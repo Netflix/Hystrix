@@ -1,0 +1,45 @@
+ext.githubProjectName = rootProject.name
+
+buildscript {
+    repositories { mavenCentral() }
+    apply from: file('gradle/buildscript.gradle'), to: buildscript 
+}
+
+allprojects {
+    repositories { mavenCentral() }
+}
+
+apply from: file('gradle/convention.gradle')
+apply from: file('gradle/maven.gradle')
+//apply from: file('gradle/check.gradle')
+apply from: file('gradle/license.gradle')
+apply from: file('gradle/release.gradle')
+
+subprojects {
+
+    group = "com.netflix.${githubProjectName}"
+
+    sourceSets {
+        test {
+            java {
+                srcDir 'src/main/java'
+            }
+        }
+    }
+    // Establish a provided scope
+    configurations {
+        provided {
+            description = 'Dependencies needed for compile but are provided at runtime or not needed'
+            transitive = false
+            visible = false
+        }
+        compile.extendsFrom provided
+    }
+    sourceSets {
+        main.compileClasspath += configurations.provided
+        main.runtimeClasspath -= configurations.provided
+        test.compileClasspath += configurations.provided
+    }
+
+}
+

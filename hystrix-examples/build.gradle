@@ -1,0 +1,4 @@
+    apply plugin: 'java'
+    dependencies {
+        compile project(':hystrix-core')
+    }
