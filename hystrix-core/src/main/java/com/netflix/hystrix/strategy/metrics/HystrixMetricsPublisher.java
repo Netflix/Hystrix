@@ -1,12 +1,12 @@
 /**
  * Copyright 2012 Netflix, Inc.
- *
+ * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -70,20 +70,10 @@ public abstract class HystrixMetricsPublisher {
      * <p>
      * Return instance of {@link HystrixMetricsPublisherCommandDefault}
      * 
-     * @param commandKey
-     *            {@link HystrixCommandKey} representing the name or type of {@link HystrixCommand}
-     * @param commandGroupKey
-     *            {@link HystrixCommandGroupKey} of {@link HystrixCommand}
-     * @param metrics
-     *            {@link HystrixCommandMetrics} instance tracking metrics for {@link HystrixCommand} instances having the key as defined by {@link HystrixCommandKey}
-     * @param circuitBreaker
-     *            {@link HystrixCircuitBreaker} instance for {@link HystrixCommand} instances having the key as defined by {@link HystrixCommandKey}
-     * @param properties
-     *            {@link HystrixCommandProperties} instance for {@link HystrixCommand} instances having the key as defined by {@link HystrixCommandKey}
      * @return instance of {@link HystrixMetricsPublisherCommand} that will have its <code>initialize</code> method invoked once.
      */
-    public HystrixMetricsPublisherCommand getMetricsPublisherForCommand(HystrixCommandKey commandKey, HystrixCommandGroupKey commandGroupKey, HystrixCommandMetrics metrics, HystrixCircuitBreaker circuitBreaker, HystrixCommandProperties properties) {
-        return new HystrixMetricsPublisherCommandDefault(commandKey, commandGroupKey, metrics, circuitBreaker, properties);
+    public HystrixMetricsPublisherCommand getMetricsPublisherForCommand() {
+        return new HystrixMetricsPublisherCommandDefault();
     }
 
     /**
@@ -95,16 +85,10 @@ public abstract class HystrixMetricsPublisher {
      * <p>
      * Return instance of {@link HystrixMetricsPublisherThreadPoolDefault}
      * 
-     * @param threadPoolKey
-     *            {@link HystrixThreadPoolKey} representing the name or type of {@link HystrixThreadPool}
-     * @param metrics
-     *            {@link HystrixThreadPoolMetrics} instance tracking metrics for the {@link HystrixThreadPool} instance having the key as defined by {@link HystrixThreadPoolKey}
-     * @param properties
-     *            {@link HystrixThreadPoolProperties} instance for the {@link HystrixThreadPool} instance having the key as defined by {@link HystrixThreadPoolKey}
      * @return instance of {@link HystrixMetricsPublisherThreadPool} that will have its <code>initialize</code> method invoked once.
      */
-    public HystrixMetricsPublisherThreadPool getMetricsPublisherForThreadPool(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolMetrics metrics, HystrixThreadPoolProperties properties) {
-        return new HystrixMetricsPublisherThreadPoolDefault(threadPoolKey, metrics, properties);
+    public HystrixMetricsPublisherThreadPool getMetricsPublisherForThreadPool() {
+        return new HystrixMetricsPublisherThreadPoolDefault();
     }
 
 }
