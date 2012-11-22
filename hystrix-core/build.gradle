@@ -6,3 +6,17 @@
         compile 'com.google.code.findbugs:jsr305:2.0.0'
         provided 'junit:junit:4.10'
     }
+
+	javadoc {
+		// the exclude isn't working, nor is there a subPackages options as docs suggest there should be
+		// we do not want the com.netflix.hystrix.util package include
+		// javadoc.exclude = ['**/util/**']
+				
+		javadoc.options.doclet = "org.benjchristensen.doclet.DocletExclude"
+		javadoc.options.docletpath = [new File('./gradle/doclet-exclude.jar')]
+		javadoc.options.stylesheetFile = new File('./gradle/javadocStyleSheet.css')
+		javadoc.options.windowTitle = "Hystrix Javadoc 1.0.x" // can this version come from a variable?
+		// The 'top' option available on command-line appears to not exist via Gradle
+		//javadoc.options.top = "<h2 class='title'>Hystrix: Latency and Fault Tolerance for Distributed Systems</h2>"
+	}
+	
