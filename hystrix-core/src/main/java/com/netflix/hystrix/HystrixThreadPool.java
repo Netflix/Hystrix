@@ -38,8 +38,8 @@ import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
  * will derive a {@link HystrixThreadPoolKey} from the injected {@link HystrixCommandGroupKey}.
  * <p>
  * The pool should be sized large enough to handle normal healthy traffic but small enough that it will constrain concurrent execution if backend calls become latent.
- * 
- * // TODO put link to wiki for docs on how to tune the threadpool
+ * <p>
+ * For more information see the Github Wiki: https://github.com/Netflix/Hystrix/wiki/Configuration#wiki-ThreadPool and https://github.com/Netflix/Hystrix/wiki/How-it-Works#wiki-Isolation
  */
 public interface HystrixThreadPool {
 
