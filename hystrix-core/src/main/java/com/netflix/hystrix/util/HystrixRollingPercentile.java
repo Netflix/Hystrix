@@ -59,8 +59,6 @@ public class HystrixRollingPercentile {
     private final HystrixProperty<Integer> numberOfBuckets;
     private final HystrixProperty<Integer> bucketDataLength;
 
-    // TODO add property overrides in constructor and set defaults using HystrixProperties with strategy pattern
-
     /*
      * This will get flipped each time a new bucket is created.
      */
