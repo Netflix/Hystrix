@@ -45,6 +45,7 @@ Thumbs.db
 */target
 /build
 */build
+build/
 
 # IntelliJ specific files/directories
 out
@@ -59,6 +60,7 @@ atlassian-ide-plugin.xml
 .project
 .settings
 .metadata
+bin/
 
 # NetBeans specific files/directories
 .nbattrs
