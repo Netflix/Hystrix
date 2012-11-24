@@ -1,12 +1,12 @@
 /**
  * Copyright 2012 Netflix, Inc.
- *
+ * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -75,12 +75,12 @@ public class HystrixMetricsPublisherFactory {
             return publisher;
         }
         // it doesn't exist so we need to create it
-        publisher = HystrixPlugins.getInstance().getMetricsPublisher(metricsPublisher).getMetricsPublisherForCommand(commandKey, commandOwner, metrics, circuitBreaker, properties);
+        publisher = HystrixPlugins.getInstance().getMetricsPublisher(metricsPublisher).getMetricsPublisherForCommand();
         // attempt to store it (race other threads)
         HystrixMetricsPublisherCommand existing = commandPublishers.putIfAbsent(commandKey.name(), publisher);
         if (existing == null) {
             // we won the thread-race to store the instance we created so initialize it
-            publisher.initialize();
+            publisher.initialize(commandKey, commandOwner, metrics, circuitBreaker, properties);
             // done registering, return instance that got cached
             return publisher;
         } else {
@@ -115,12 +115,12 @@ public class HystrixMetricsPublisherFactory {
             return publisher;
         }
         // it doesn't exist so we need to create it
-        publisher = HystrixPlugins.getInstance().getMetricsPublisher(metricsPublisher).getMetricsPublisherForThreadPool(threadPoolKey, metrics, properties);
+        publisher = HystrixPlugins.getInstance().getMetricsPublisher(metricsPublisher).getMetricsPublisherForThreadPool();
         // attempt to store it (race other threads)
         HystrixMetricsPublisherThreadPool existing = threadPoolPublishers.putIfAbsent(threadPoolKey.name(), publisher);
         if (existing == null) {
             // we won the thread-race to store the instance we created so initialize it
-            publisher.initialize();
+            publisher.initialize(threadPoolKey, metrics, properties);
             // done registering, return instance that got cached
             return publisher;
         } else {
@@ -180,20 +180,20 @@ public class HystrixMetricsPublisherFactory {
         AtomicInteger threadCounter = new AtomicInteger();
 
         @Override
-        public HystrixMetricsPublisherCommand getMetricsPublisherForCommand(HystrixCommandKey commandKey, HystrixCommandGroupKey commandOwner, HystrixCommandMetrics metrics, HystrixCircuitBreaker circuitBreaker, HystrixCommandProperties properties) {
+        public HystrixMetricsPublisherCommand getMetricsPublisherForCommand() {
             return new HystrixMetricsPublisherCommand() {
                 @Override
-                public void initialize() {
+                public void initialize(HystrixCommandKey commandKey, HystrixCommandGroupKey commandOwner, HystrixCommandMetrics metrics, HystrixCircuitBreaker circuitBreaker, HystrixCommandProperties properties) {
                     commandCounter.incrementAndGet();
                 }
             };
         }
 
         @Override
-        public HystrixMetricsPublisherThreadPool getMetricsPublisherForThreadPool(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolMetrics metrics, HystrixThreadPoolProperties properties) {
+        public HystrixMetricsPublisherThreadPool getMetricsPublisherForThreadPool() {
             return new HystrixMetricsPublisherThreadPool() {
                 @Override
-                public void initialize() {
+                public void initialize(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolMetrics metrics, HystrixThreadPoolProperties properties) {
                     threadCounter.incrementAndGet();
                 }
             };
