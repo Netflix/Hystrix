@@ -1,14 +1,14 @@
 ## Hystrix Request Servlet Filters
 
-This module contains functional examples for a J2EE/Servlet environment that initialize and use the [HystrixRequestContext](../../hystrix-core/src/main/java/com/netflix/hystrix/strategy/concurrency/HystrixRequestContext.java).
+This module contains functional examples for a J2EE/Servlet environment that initialize and uses  [HystrixRequestContext](../hystrix-core/src/main/java/com/netflix/hystrix/strategy/concurrency/HystrixRequestContext.java).
 
-You can use this module as is or implement your own as it is very simple what these classes do.
+You can use this module as is or model your own implemenation after it as these classes are very basic.
 
 If using a framework that doesn't use Servlets, or a framework with other lifecycle hooks you may need to implement your own anyways.
 
-## [HystrixRequestContextServletFilter](src/main/java/com/netflix/hystrix/contrib/requestservlet/HystrixRequestContextServletFilter.java)
+## [HystrixRequestContextServletFilter](hystrix-request-servlet/src/main/java/com/netflix/hystrix/contrib/requestservlet/HystrixRequestContextServletFilter.java)
 
-This initializes the [HystrixRequestContext](../../hystrix-core/src/main/java/com/netflix/hystrix/strategy/concurrency/HystrixRequestContext.java) at the beginning of each HTTP request and then cleans it up at the end.
+This initializes the [HystrixRequestContext](../hystrix-core/src/main/java/com/netflix/hystrix/strategy/concurrency/HystrixRequestContext.java) at the beginning of each HTTP request and then cleans it up at the end.
 
 You install it by adding the following to your web.xml:
 
@@ -24,7 +24,7 @@ You install it by adding the following to your web.xml:
   </filter-mapping>
 ```
 
-### [HystrixRequestLogViaLoggerServletFilter](src/main/java/com/netflix/hystrix/contrib/requestservlet/HystrixRequestLogViaLoggerServletFilter.java)
+### [HystrixRequestLogViaLoggerServletFilter](hystrix-request-servlet/src/main/java/com/netflix/hystrix/contrib/requestservlet/HystrixRequestLogViaLoggerServletFilter.java)
 
 This logs an INFO message with the output from [HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString()](http://netflix.github.com/Hystrix/javadoc/com/netflix/hystrix/HystrixRequestLog.html#getExecutedCommandsAsString(\)) at the end of each requet.
 
@@ -43,7 +43,7 @@ You install it by adding the following to your web.xml:
 ```
 
 
-### [HystrixRequestLogViaResponseHeaderServletFilter](src/main/java/com/netflix/hystrix/contrib/requestservlet/HystrixRequestLogViaResponseHeaderServletFilter.java)
+### [HystrixRequestLogViaResponseHeaderServletFilter](hystrix-request-servlet/src/main/java/com/netflix/hystrix/contrib/requestservlet/HystrixRequestLogViaResponseHeaderServletFilter.java)
 
 This adds the output of [HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString()](http://netflix.github.com/Hystrix/javadoc/com/netflix/hystrix/HystrixRequestLog.html#getExecutedCommandsAsString(\)) to the HTTP response as header "X-HystrixLog".
 
