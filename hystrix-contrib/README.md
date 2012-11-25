@@ -6,7 +6,7 @@ Examples of what makes sense as a contrib submodule are:
 
 - alternative metrics publishers
 - alternative properties strategies
-- request lifecycle implementations (such as [hystrix-request-servlet](./hystrix-request-servlet))
+- request lifecycle implementations (such as [hystrix-request-servlet](hystrix-contrib/hystrix-request-servlet))
 - event notification plugins
 - dashboard and monitoring tools
 
