@@ -92,10 +92,10 @@ public abstract class HystrixPropertiesChainedArchaiusProperty {
             }
 
             if (this.isValueAcceptable()) {
-                logger.info("Flipping property: " + getName() + " to use it's current value:" + getValue());
+                logger.debug("Flipping property: " + getName() + " to use it's current value:" + getValue());
                 pReference.set(this);
             } else {
-                logger.info("Flipping property: " + getName() + " to use NEXT property: " + next);
+                logger.debug("Flipping property: " + getName() + " to use NEXT property: " + next);
                 pReference.set(next);
             }
 
@@ -161,7 +161,7 @@ public abstract class HystrixPropertiesChainedArchaiusProperty {
             sProp.addCallback(new Runnable() {
                 @Override
                 public void run() {
-                    logger.info("Property changed: '" + getName() + " = " + getValue() + "'");
+                    logger.debug("Property changed: '" + getName() + " = " + getValue() + "'");
                     checkAndFlip();
                 }
             });
@@ -215,7 +215,7 @@ public abstract class HystrixPropertiesChainedArchaiusProperty {
             sProp.addCallback(new Runnable() {
                 @Override
                 public void run() {
-                    logger.info("Property changed: '" + getName() + " = " + getValue() + "'");
+                    logger.debug("Property changed: '" + getName() + " = " + getValue() + "'");
                     checkAndFlip();
                 }
             });
@@ -269,7 +269,7 @@ public abstract class HystrixPropertiesChainedArchaiusProperty {
             sProp.addCallback(new Runnable() {
                 @Override
                 public void run() {
-                    logger.info("Property changed: '" + getName() + " = " + getValue() + "'");
+                    logger.debug("Property changed: '" + getName() + " = " + getValue() + "'");
                     checkAndFlip();
                 }
             });
