@@ -56,7 +56,7 @@ import com.netflix.hystrix.HystrixRequestLog;
  * 
  * </blockquote>
  * <p>
- * You can find an implementation at <a href="https://github.com/Netflix/Hystrix/tree/master/hystrix-contrib/hystrix-request-servlet">hystrix-contrib/hystrix-request-servlet</a> on GitHub.
+ * You can find an implementation at <a target="_top" href="https://github.com/Netflix/Hystrix/tree/master/hystrix-contrib/hystrix-request-servlet">hystrix-contrib/hystrix-request-servlet</a> on GitHub.
  * <p>
  * <b>NOTE:</b> If <code>initializeContext()</code> is called then <code>shutdown()</code> must also be called or a memory leak will occur.
  */
