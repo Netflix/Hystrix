@@ -39,23 +39,24 @@ import com.netflix.hystrix.HystrixRequestLog;
  * with a
  * message such as: <blockquote> HystrixRequestContext.initializeContext() must be called at the beginning of each request before RequestVariable functionality can be used. </blockquote>
  * <p>
- * Example ServletFilter for initializing {@link HystrixRequestContext} at the beginning of an HTTP request and shutting down at the end.
+ * Example ServletFilter for initializing {@link HystrixRequestContext} at the beginning of an HTTP request and shutting down at the end:
  * 
  * <blockquote>
  * 
  * <pre>
  * public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
- * HystrixRequestContext context = HystrixRequestContext.initializeContext();
- * try {
- * chain.doFilter(request, response);
- * } finally {
- * context.shutdown();
- * }
+ *      HystrixRequestContext context = HystrixRequestContext.initializeContext();
+ *      try {
+ *           chain.doFilter(request, response);
+ *      } finally {
+ *           context.shutdown();
+ *      }
  * }
  * </pre>
  * 
  * </blockquote>
- * 
+ * <p>
+ * You can find an implementation at <a href="https://github.com/Netflix/Hystrix/tree/master/hystrix-contrib/hystrix-request-servlet">hystrix-contrib/hystrix-request-servlet</a> on GitHub.
  * <p>
  * <b>NOTE:</b> If <code>initializeContext()</code> is called then <code>shutdown()</code> must also be called or a memory leak will occur.
  */
