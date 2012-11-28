@@ -224,6 +224,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
      * @param requests
      *            {@code Collection<CollapsedRequest<ResponseType, RequestArgumentType>>} containing {@link CollapsedRequest} objects containing the arguments of each request collapsed in this batch.
      * @return Collection of {@code Collection<CollapsedRequest<ResponseType, RequestArgumentType>>} objects sharded according to business rules.
+     *         <p>The CollapsedRequest instances should not be modified or wrapped as the CollapsedRequest instance object contains state information needed to complete the execution.
      */
     protected Collection<Collection<CollapsedRequest<ResponseType, RequestArgumentType>>> shardRequests(Collection<CollapsedRequest<ResponseType, RequestArgumentType>> requests) {
         return Collections.singletonList(requests);
@@ -520,13 +521,29 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
                         // set the future on all requests so they can wait on this command completing or correctly receive errors if it fails or times out
                         Future<BatchReturnType> batchFuture = new BatchFutureWrapper(command.queue(), commandCollapser, shardRequests);
                         for (CollapsedRequest<ResponseType, RequestArgumentType> request : shardRequests) {
-                            ((CollapsedRequestFutureImpl<ResponseType, RequestArgumentType>) request).setBatchFuture(batchFuture);
+                            if (request instanceof CollapsedRequestFutureImpl) {
+                                ((CollapsedRequestFutureImpl<ResponseType, RequestArgumentType>) request).setBatchFuture(batchFuture);
+                            } else {
+                                /*
+                                 * This is not a very elegant solution but is such as edgecase that I'm not trying to determine
+                                 * an abstraction that would allow the shardRequests method to return different/wrapped CollapsedRequest
+                                 * implementations and still work with the BatchFuture requirement.
+                                 * 
+                                 * An option would be to keep the BatchFuture and CollapsedRequest separate from each other and referenced via
+                                 * a map lookup ... but that's not a design I want to pursue for the ability to manipulate data in
+                                 * the shardRequest method which is not its intended function.
+                                 * 
+                                 * This exception should only ever been seen in development if someone tries this and this message
+                                 * will tell them not to do it.
+                                 */
+                                throw new RuntimeException("The CollapsedRequest instances should not be modified or wrapped when sharding them.");
+                            }
                         }
                     } catch (Exception e) {
                         logger.error("Exception while creating and queueing command with batch.", e);
                         // if a failure occurs we want to pass that exception to all of the Futures that we've returned
                         for (CollapsedRequest<ResponseType, RequestArgumentType> request : shardRequests) {
-                            ((CollapsedRequestFutureImpl<ResponseType, RequestArgumentType>) request).setException(e);
+                            request.setException(e);
                         }
                     }
                 }
@@ -534,7 +551,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
                 logger.error("Exception while sharding requests.", e);
                 // same error handling as we do around the shards, but this is a wider net in case the shardRequest method fails
                 for (CollapsedRequest<ResponseType, RequestArgumentType> request : batch) {
-                    ((CollapsedRequestFutureImpl<ResponseType, RequestArgumentType>) request).setException(e);
+                    request.setException(e);
                 }
             }
         }
@@ -592,7 +609,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
                      * This safety-net just prevents the CollapsedRequestFutureImpl.get() from waiting on the CountDownLatch until its max timeout.
                      */
                     for (CollapsedRequest<ResponseType, RequestArgumentType> request : requests) {
-                        ((CollapsedRequestFutureImpl<ResponseType, RequestArgumentType>) request).setException(new IllegalStateException("Requests not executed before shutdown."));
+                        request.setException(new IllegalStateException("Requests not executed before shutdown."));
                     }
                 } catch (Exception e) {
                     logger.error("Failed to setException on CollapsedRequestFutureImpl instances.", e);
@@ -689,7 +706,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
                                 logger.error("Exception mapping responses to requests.", e);
                                 // if a failure occurs we want to pass that exception to all of the Futures that we've returned
                                 for (CollapsedRequest<ResponseType, RequestArgumentType> request : requests) {
-                                    ((CollapsedRequestFutureImpl<ResponseType, RequestArgumentType>) request).setException(e);
+                                    request.setException(e);
                                 }
                             }
                             mapResponseToRequestsPerformed = true;
