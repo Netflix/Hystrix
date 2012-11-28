@@ -853,7 +853,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
         @Override
         public T get() throws InterruptedException, ExecutionException {
             try {
-                return get(15, TimeUnit.SECONDS); // use a maximum wait time instead of forever
+                return get(15, TimeUnit.SECONDS); // use a maximum wait time instead of forever (this is just a safety net to prevent permanently blocking if there is a bug somewhere)
             } catch (TimeoutException e) {
                 throw new ExecutionException("Timeout while waiting.", e);
             }
