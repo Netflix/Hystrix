@@ -1334,31 +1334,12 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                     // report timeout failure (or skip this if the compareAndSet failed as that means a thread-race occurred with the execution as the object lived in the queue too long)
                     metrics.markTimeout(System.currentTimeMillis() - startTime);
                 }
+
                 try {
-                    // retrieve the fallback
-                    R fallback = getFallbackWithProtection();
-                    // mark fallback on counter
-                    metrics.markFallbackSuccess();
-                    // record the executionResult
-                    executionResult = executionResult.addEvents(HystrixEventType.TIMEOUT, HystrixEventType.FALLBACK_SUCCESS);
-                    result = fallback;
-                } catch (UnsupportedOperationException fe) {
-                    logger.debug("No fallback for HystrixCommand. ", fe); // debug only since we're throwing the exception and someone higher will do something with it
-                    HystrixRuntimeException de = new HystrixRuntimeException(FailureType.TIMEOUT, command.getClass(), getLogMessagePrefix() + " timed-out and no fallback available.", e, fe);
-                    // record the executionResult
-                    executionResult = executionResult.addEvents(HystrixEventType.TIMEOUT);
+                    result = getFallbackOrThrowException(HystrixEventType.TIMEOUT, FailureType.TIMEOUT, "timed-out", e);
+                } catch (HystrixRuntimeException re) {
                     // we want to obey the contract of NFFuture.get() and throw an ExecutionException rather than a random RuntimeException that developers wouldn't expect
-                    executionException = new ExecutionException(de);
-                    // we can't capture this in execute/queue so we do it here
-                    metrics.markExceptionThrown();
-                } catch (Throwable fe) {
-                    logger.debug("Error retrieving fallback for HystrixCommand. ", fe); // debug only since we're throwing the exception and someone higher will do something with it
-                    metrics.markFallbackFailure();
-                    HystrixRuntimeException de = new HystrixRuntimeException(FailureType.TIMEOUT, command.getClass(), getLogMessagePrefix() + " timed-out and failed retrieving fallback.", e, fe);
-                    // record the executionResult
-                    executionResult = executionResult.addEvents(HystrixEventType.TIMEOUT, HystrixEventType.FALLBACK_FAILURE);
-                    // we want to obey the contract of NFFuture.get() and throw an ExecutionException rather than a random RuntimeException that developers wouldn't expect
-                    executionException = new ExecutionException(de);
+                    executionException = new ExecutionException(re);
                     // we can't capture this in execute/queue so we do it here
                     metrics.markExceptionThrown();
                 }
@@ -1701,7 +1682,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                 // it could have been set NULL by the test
                 HystrixRequestContext.getContextForCurrentThread().shutdown();
             }
-            
+
             // force properties to be clean as well
             ConfigurationManager.getConfigInstance().clear();
         }
