@@ -789,6 +789,8 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             }
             // report failure
             metrics.markFailure(System.currentTimeMillis() - startTime);
+            // record the exception
+            executionResult = executionResult.setException(e);
             return getFallbackOrThrowException(HystrixEventType.FAILURE, FailureType.COMMAND_EXCEPTION, "failed", e);
         } finally {
             /*
@@ -868,7 +870,16 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
     }
 
     /**
-     * Whether the <code>execute()</code> resulted in a failure (exception).
+     * Whether the response was returned successfully either by executing <code>run()</code> or from cache.
+     * 
+     * @return boolean
+     */
+    public final boolean isSuccessfulExecution() {
+        return executionResult.events.contains(HystrixEventType.SUCCESS);
+    }
+
+    /**
+     * Whether the <code>run()</code> resulted in a failure (exception).
      * 
      * @return boolean
      */
@@ -877,7 +888,20 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
     }
 
     /**
-     * Whether the response received from <code>execute()</code> was the result of a failure
+     * Get the Throwable/Exception thrown that caused the failure.
+     * <p>
+     * If <code>isFailedExecution() == true</code> then this would represent the Exception thrown by the <code>run()</code> method.
+     * <p>
+     * If <code>isFailedExecution() == false</code> then this would return null.
+     * 
+     * @return Throwable or null
+     */
+    public final Throwable getFailedExecutionException() {
+        return executionResult.exception;
+    }
+
+    /**
+     * Whether the response received from was the result of some type of failure
      * and <code>getFallback()</code> being called.
      * 
      * @return boolean
@@ -887,7 +911,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
     }
 
     /**
-     * Whether the response received from <code>execute()</code> was the result of a timeout
+     * Whether the response received was the result of a timeout
      * and <code>getFallback()</code> being called.
      * 
      * @return boolean
@@ -897,7 +921,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
     }
 
     /**
-     * Whether the response received from <code>execute()</code> was a fallback as result of being
+     * Whether the response received was a fallback as result of being
      * short-circuited (meaning <code>isCircuitBreakerOpen() == true</code>) and <code>getFallback()</code> being called.
      * 
      * @return boolean
@@ -907,7 +931,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
     }
 
     /**
-     * Whether the response is from cache and <code>execute()</code> was not invoked.
+     * Whether the response is from cache and <code>run()</code> was not invoked.
      * 
      * @return boolean
      */
@@ -916,7 +940,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
     }
 
     /**
-     * Whether the response received from <code>execute()</code> was a fallback as result of being
+     * Whether the response received was a fallback as result of being
      * rejected (from thread-pool or semaphore) and <code>getFallback()</code> being called.
      * 
      * @return boolean
@@ -1048,20 +1072,26 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
     private static class ExecutionResult {
         private final List<HystrixEventType> events;
         private final int executionTime;
+        private final Throwable exception;
 
         private ExecutionResult(HystrixEventType... events) {
-            this(Arrays.asList(events), -1);
+            this(Arrays.asList(events), -1, null);
         }
 
         public ExecutionResult setExecutionTime(int executionTime) {
-            return new ExecutionResult(events, executionTime);
+            return new ExecutionResult(events, executionTime, exception);
         }
 
-        private ExecutionResult(List<HystrixEventType> events, int executionTime) {
+        public ExecutionResult setException(Throwable e) {
+            return new ExecutionResult(events, executionTime, e);
+        }
+
+        private ExecutionResult(List<HystrixEventType> events, int executionTime, Throwable e) {
             // we are safe assigning the List reference instead of deep-copying
             // because we control the original list in 'newEvent'
             this.events = events;
             this.executionTime = executionTime;
+            this.exception = e;
         }
 
         // we can return a static version since it's immutable
@@ -1079,9 +1109,8 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             for (HystrixEventType e : events) {
                 newEvents.add(e);
             }
-            return new ExecutionResult(Collections.unmodifiableList(newEvents), executionTime);
+            return new ExecutionResult(Collections.unmodifiableList(newEvents), executionTime, exception);
         }
-
     }
 
     /* ******************************************************************************** */
@@ -1702,6 +1731,8 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                 assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
                 assertEquals(1, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
 
+                assertEquals(null, command.getFailedExecutionException());
+
                 assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
                 assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
                 assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
@@ -1754,7 +1785,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
          * Test a command execution that throws an HystrixException and didn't implement getFallback.
          */
         @Test
-        public void testExcecutionKnownFailureWithNoFallback() {
+        public void testExecutionKnownFailureWithNoFallback() {
             TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
             TestHystrixCommand<Boolean> command = new KnownFailureTestCommandWithoutFallback(circuitBreaker);
             try {
@@ -1794,7 +1825,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
          * Test a command execution that throws an unknown exception (not HystrixException) and didn't implement getFallback.
          */
         @Test
-        public void testExcecutionUnknownFailureWithNoFallback() {
+        public void testExecutionUnknownFailureWithNoFallback() {
             TestHystrixCommand<Boolean> command = new UnknownFailureTestCommandWithoutFallback();
             try {
                 command.execute();
@@ -1829,7 +1860,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
          * Test a command execution that fails but has a fallback.
          */
         @Test
-        public void testExcecutionFailureWithFallback() {
+        public void testExecutionFailureWithFallback() {
             TestHystrixCommand<Boolean> command = new KnownFailureTestCommandWithFallback(new TestCircuitBreaker());
             try {
                 assertEquals(false, command.execute());
@@ -1837,6 +1868,8 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                 e.printStackTrace();
                 fail("We should have received a response from the fallback.");
             }
+
+            assertEquals("we failed with a simulated issue", command.getFailedExecutionException().getMessage());
 
             assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
             assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
@@ -1859,7 +1892,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
          * Test a command execution that fails, has getFallback implemented but that fails as well.
          */
         @Test
-        public void testExcecutionFailureWithFallbackFailure() {
+        public void testExecutionFailureWithFallbackFailure() {
             TestHystrixCommand<Boolean> command = new KnownFailureTestCommandWithFallbackFailure();
             try {
                 command.execute();
