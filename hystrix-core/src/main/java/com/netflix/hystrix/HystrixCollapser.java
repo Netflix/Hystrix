@@ -1009,7 +1009,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
     @NotThreadSafe
     public static class Setter {
         private final HystrixCollapserKey collapserKey;
-        private Scope scope;
+        private Scope scope = Scope.REQUEST; // default if nothing is set
         private HystrixPropertiesStrategy propertiesStrategy;
         private HystrixCollapserProperties.Setter propertiesSetter;
         private HystrixConcurrencyStrategy concurrencyStrategy;
