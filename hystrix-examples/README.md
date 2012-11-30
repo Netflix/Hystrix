@@ -1,6 +1,6 @@
 ## hystrix-examples
 
-This module contains examples of using HystrixCommand, HystrixCollapser and other aspects of Hystrix.
+This module contains examples of using [HystrixCommand](../../tree/master/hystrix-core/src/main/java/com/netflix/hystrix/HystrixCommand.java), [HystrixCollapser](../../tree/master/hystrix-core/src/main/java/com/netflix/hystrix/HystrixCollapser.java) and other aspects of Hystrix.
 
 ## Documentation
 
