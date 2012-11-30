@@ -8,7 +8,7 @@ Documentation related to the examples in this module is on the [How To Use](../.
 
 ## Demo
 
-To run a [demo app](Hystrix/tree/master/hystrix-examples/src/main/java/com/netflix/hystrix/examples/demo/HystrixCommandDemo.java) do the following:
+To run a [demo app](../../tree/master/hystrix-examples/src/main/java/com/netflix/hystrix/examples/demo/HystrixCommandDemo.java) do the following:
 
 ```
 $ git clone git@github.com:Netflix/Hystrix.git
@@ -37,9 +37,9 @@ Request => GetUserAccountCommand[SUCCESS][10ms], GetPaymentInformationCommand[SU
 Request => GetUserAccountCommand[FAILURE, FALLBACK_SUCCESS][6ms], GetPaymentInformationCommand[SUCCESS][11ms], GetUserAccountCommand[FAILURE, FALLBACK_SUCCESS, RESPONSE_FROM_CACHE][0ms]x2, GetOrderCommand[SUCCESS][153ms], CreditCardCommand[SUCCESS][1321ms]
 ```
 
-This demo simulates 4 different [HystrixCommand](Hystrix/tree/master/hystrix-core/src/main/java/com/netflix/hystrix/HystrixCommand.java) implementations with failures, latency, timeouts and duplicate calls in a multi-threaded environment.
+This demo simulates 4 different [HystrixCommand](../../tree/master/hystrix-core/src/main/java/com/netflix/hystrix/HystrixCommand.java) implementations with failures, latency, timeouts and duplicate calls in a multi-threaded environment.
 
-It logs the results of [HystrixRequestLog](Hystrix/tree/master/hystrix-core/src/main/java/com/netflix/hystrix/HystrixRequestLog.java) and metrics from [HystrixCommandMetrics](Hystrix/tree/master/hystrix-core/src/main/java/com/netflix/hystrix/HystrixCommandMetrics.java).
+It logs the results of [HystrixRequestLog](../../tree/master/hystrix-core/src/main/java/com/netflix/hystrix/HystrixRequestLog.java) and metrics from [HystrixCommandMetrics](../../tree/master/hystrix-core/src/main/java/com/netflix/hystrix/HystrixCommandMetrics.java).
 
 
 
