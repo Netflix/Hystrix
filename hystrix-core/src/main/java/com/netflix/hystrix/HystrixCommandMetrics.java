@@ -47,7 +47,7 @@ public class HystrixCommandMetrics {
     private static final ConcurrentHashMap<String, HystrixCommandMetrics> metrics = new ConcurrentHashMap<String, HystrixCommandMetrics>();
 
     /**
-     * Get the {@link HystrixCommandMetrics} instance for a given {@link HystrixCommandKey}.
+     * Get or create the {@link HystrixCommandMetrics} instance for a given {@link HystrixCommandKey}.
      * <p>
      * This is thread-safe and ensures only 1 {@link HystrixCommandMetrics} per {@link HystrixCommandKey}.
      * 
@@ -80,6 +80,17 @@ public class HystrixCommandMetrics {
             // we lost so return 'existing' and let the one we created be garbage collected
             return existing;
         }
+    }
+
+    /**
+     * Get the {@link HystrixCommandMetrics} instance for a given {@link HystrixCommandKey} or null if one does not exist.
+     * 
+     * @param key
+     *            {@link HystrixCommandKey} of {@link HystrixCommand} instance requesting the {@link HystrixCommandMetrics}
+     * @return {@link HystrixCommandMetrics}
+     */
+    public static HystrixCommandMetrics getInstance(HystrixCommandKey key) {
+        return metrics.get(key.name());
     }
 
     private final HystrixCommandProperties properties;
