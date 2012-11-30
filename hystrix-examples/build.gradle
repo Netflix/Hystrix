@@ -2,3 +2,8 @@
     dependencies {
         compile project(':hystrix-core')
     }
+    
+    task(runDemo, dependsOn: 'classes', type: JavaExec) {
+    	main = 'com.netflix.hystrix.examples.demo.HystrixCommandDemo'
+    	classpath = sourceSets.main.runtimeClasspath
+    }
