@@ -25,6 +25,7 @@ import javax.annotation.concurrent.ThreadSafe;
 
 import org.junit.Test;
 
+import com.netflix.hystrix.HystrixCommandMetrics.HealthCounts;
 import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifierDefault;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 
@@ -172,14 +173,15 @@ public interface HystrixCircuitBreaker {
             }
 
             // we're closed, so let's see if errors have made us so we should trip the circuit open
-
+            HealthCounts health = metrics.getHealthCounts();
+            
             // check if we are past the statisticalWindowVolumeThreshold
-            if (metrics.getHealthCounts().getTotalRequests() < properties.circuitBreakerRequestVolumeThreshold().get()) {
+            if (health.getTotalRequests() < properties.circuitBreakerRequestVolumeThreshold().get()) {
                 // we are not past the minimum volume threshold for the statisticalWindow so we'll return false immediately and not calculate anything
                 return false;
             }
 
-            if (metrics.getHealthCounts().getErrorPercentage() < properties.circuitBreakerErrorThresholdPercentage().get()) {
+            if (health.getErrorPercentage() < properties.circuitBreakerErrorThresholdPercentage().get()) {
                 return false;
             } else {
                 // our failure rate is too high, trip the circuit

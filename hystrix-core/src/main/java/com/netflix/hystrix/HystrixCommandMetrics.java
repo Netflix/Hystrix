@@ -334,7 +334,7 @@ public class HystrixCommandMetrics {
         }
     }
 
-    private volatile HealthCounts healthCountsSnapshot = null;
+    private volatile HealthCounts healthCountsSnapshot = new HealthCounts(0, 0, 0);
     private volatile AtomicLong lastHealthCountsSnapshot = new AtomicLong(System.currentTimeMillis());
 
     /**
