@@ -80,7 +80,7 @@ public class CreditCardAuthorizationResult {
      * <p>
      * If <code>isSuccess() == false</code> this will return NULL.
      * 
-     * @return
+     * @return String
      */
     public String getAuthorizationCode() {
         return authorizationCode;
@@ -91,7 +91,7 @@ public class CreditCardAuthorizationResult {
      * <p>
      * If <code>isSuccess() == false</code> this will return NULL.
      * 
-     * @return
+     * @return String
      */
     public String getTransactionID() {
         return transactionID;
@@ -102,7 +102,7 @@ public class CreditCardAuthorizationResult {
      * <p>
      * If <code>isSuccess() == true</code> this will return NULL.
      * 
-     * @return
+     * @return String
      */
     public String getErrorMessage() {
         return errorMessage;
