@@ -2,4 +2,5 @@
     dependencies {
         compile project(':hystrix-core')
         compile 'javax.servlet:javax.servlet-api:3.0.1'
+        compile 'org.json:json:20090211'
     }

@@ -17,6 +17,8 @@ package com.netflix.hystrix;
 
 import static org.junit.Assert.*;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -93,21 +95,59 @@ public class HystrixCommandMetrics {
         return metrics.get(key.name());
     }
 
+    /**
+     * All registered instances of {@link HystrixCommandMetrics}
+     * 
+     * @return {@code Collection<HystrixCommandMetrics>}
+     */
+    public static Collection<HystrixCommandMetrics> getInstances() {
+        return Collections.unmodifiableCollection(metrics.values());
+    }
+
     private final HystrixCommandProperties properties;
     private final HystrixRollingNumber counter;
     private final HystrixRollingPercentile percentileExecution;
     private final HystrixRollingPercentile percentileTotal;
     private final HystrixCommandKey key;
+    private final HystrixCommandGroupKey group;
     private final AtomicInteger executionSemaphorePermitsInUse = new AtomicInteger();
     private final HystrixEventNotifier eventNotifier;
 
     /* package */HystrixCommandMetrics(HystrixCommandKey key, HystrixCommandGroupKey commandGroup, HystrixThreadPoolKey threadPoolKey, HystrixCommandProperties properties, HystrixEventNotifier eventNotifier) {
         this.key = key;
+        this.group = commandGroup;
         this.properties = properties;
         this.counter = new HystrixRollingNumber(properties.metricsRollingStatisticalWindowInMilliseconds(), properties.metricsRollingStatisticalWindowBuckets());
         this.percentileExecution = new HystrixRollingPercentile(properties.metricsRollingPercentileWindow(), properties.metricsRollingPercentileWindowBuckets(), properties.metricsRollingPercentileBucketSize());
         this.percentileTotal = new HystrixRollingPercentile(properties.metricsRollingPercentileWindow(), properties.metricsRollingPercentileWindowBuckets(), properties.metricsRollingPercentileBucketSize());
         this.eventNotifier = eventNotifier;
+    }
+
+    /**
+     * {@link HystrixCommandKey} these metrics represent.
+     * 
+     * @return HystrixCommandKey
+     */
+    public HystrixCommandKey getCommandKey() {
+        return key;
+    }
+
+    /**
+     * {@link HystrixCommandGroupKey} of the {@link HystrixCommand} these metrics represent.
+     * 
+     * @return HystrixCommandGroupKey
+     */
+    public HystrixCommandGroupKey getCommandGroup() {
+        return group;
+    }
+
+    /**
+     * {@link HystrixCommandProperties} of the {@link HystrixCommand} these metrics represent.
+     * 
+     * @return HystrixCommandProperties
+     */
+    public HystrixCommandProperties getProperties() {
+        return properties;
     }
 
     /**

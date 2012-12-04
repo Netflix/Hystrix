@@ -130,7 +130,7 @@ public interface HystrixThreadPool {
             HystrixConcurrencyStrategy concurrencyStrategy = HystrixPlugins.getInstance().getConcurrencyStrategy();
             this.queue = concurrencyStrategy.getBlockingQueue(properties.maxQueueSize().get());
             this.threadPool = concurrencyStrategy.getThreadPool(threadPoolKey, properties.coreSize(), properties.coreSize(), properties.keepAliveTimeMinutes(), TimeUnit.MINUTES, queue);
-            this.metrics = new HystrixThreadPoolMetrics(threadPoolKey, threadPool, properties);
+            this.metrics = HystrixThreadPoolMetrics.getInstance(threadPoolKey, threadPool, properties);
 
             /* strategy: HystrixMetricsPublisherThreadPool */
             HystrixMetricsPublisherFactory.createOrRetrievePublisherForThreadPool(threadPoolKey, this.metrics, this.properties);
