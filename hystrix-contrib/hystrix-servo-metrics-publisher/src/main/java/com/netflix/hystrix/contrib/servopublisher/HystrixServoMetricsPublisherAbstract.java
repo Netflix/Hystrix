@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.hystrix.strategy.metrics;
+package com.netflix.hystrix.contrib.servopublisher;
 
 import com.netflix.hystrix.HystrixCommandMetrics;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
@@ -27,9 +27,9 @@ import com.netflix.servo.monitor.MonitorConfig;
 import com.netflix.servo.tag.Tag;
 
 /**
- * Utility used for Servo (https://github.com/Netflix/servo) based default implementations of metrics publishers.
+ * Utility used for Servo (https://github.com/Netflix/servo) based implementations of metrics publishers.
  */
-/* package */abstract class HystrixMetricsServoPublisherAbstract {
+/* package */abstract class HystrixServoMetricsPublisherAbstract {
 
     protected abstract Tag getServoTypeTag();
 
