@@ -52,8 +52,6 @@ public class HystrixPlugins {
     /**
      * Retrieve instance of {@link HystrixEventNotifier} to use based on order of precedence as defined in {@link HystrixPlugins} class header.
      * 
-     * @param injected
-     *            {@link HystrixEventNotifier} implementation as injected via {@link HystrixCommand}
      * @return {@link HystrixEventNotifier} implementation to use
      */
     public HystrixEventNotifier getEventNotifier() {
@@ -79,8 +77,6 @@ public class HystrixPlugins {
     /**
      * Retrieve instance of {@link HystrixConcurrencyStrategy} to use based on order of precedence as defined in {@link HystrixPlugins} class header.
      * 
-     * @param injected
-     *            {@link HystrixConcurrencyStrategy} implementation as injected via {@link HystrixCommand}
      * @return {@link HystrixConcurrencyStrategy} implementation to use
      */
     public HystrixConcurrencyStrategy getConcurrencyStrategy() {
@@ -106,8 +102,6 @@ public class HystrixPlugins {
     /**
      * Retrieve instance of {@link HystrixMetricsPublisher} to use based on order of precedence as defined in {@link HystrixPlugins} class header.
      * 
-     * @param injected
-     *            {@link HystrixMetricsPublisher} implementation as injected via {@link HystrixCommand}
      * @return {@link HystrixMetricsPublisher} implementation to use
      */
     public HystrixMetricsPublisher getMetricsPublisher() {
@@ -133,8 +127,6 @@ public class HystrixPlugins {
     /**
      * Retrieve instance of {@link HystrixPropertiesStrategy} to use based on order of precedence as defined in {@link HystrixPlugins} class header.
      * 
-     * @param injected
-     *            {@link HystrixPropertiesStrategy} implementation as injected via {@link HystrixCommand}
      * @return {@link HystrixPropertiesStrategy} implementation to use
      */
     public HystrixPropertiesStrategy getPropertiesStrategy() {

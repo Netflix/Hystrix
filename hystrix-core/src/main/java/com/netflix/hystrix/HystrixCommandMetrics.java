@@ -59,8 +59,6 @@ public class HystrixCommandMetrics {
      *            Pass-thru to {@link HystrixCommandMetrics} instance on first time when constructed
      * @param properties
      *            Pass-thru to {@link HystrixCommandMetrics} instance on first time when constructed
-     * @param eventNotifier
-     *            Pass-thru to {@link HystrixCommandMetrics} instance on first time when constructed
      * @return {@link HystrixCommandMetrics}
      */
     public static HystrixCommandMetrics getInstance(HystrixCommandKey key, HystrixCommandGroupKey commandGroup, HystrixCommandProperties properties) {
