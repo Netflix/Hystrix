@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns="http://java.sun.com/xml/ns/javaee" xmlns:web="http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
+	version="2.5">
+
+	<filter>
+		<display-name>HystrixRequestContextServletFilter</display-name>
+		<filter-name>HystrixRequestContextServletFilter</filter-name>
+		<filter-class>com.netflix.hystrix.contrib.requestservlet.HystrixRequestContextServletFilter</filter-class>
+	</filter>
+	<filter-mapping>
+		<filter-name>HystrixRequestContextServletFilter</filter-name>
+		<url-pattern>/*</url-pattern>
+	</filter-mapping>
+	
+	<filter>
+		<display-name>HystrixRequestLogViaResponseHeaderServletFilter</display-name>
+		<filter-name>HystrixRequestLogViaResponseHeaderServletFilter</filter-name>
+		<filter-class>com.netflix.hystrix.contrib.requestservlet.HystrixRequestLogViaResponseHeaderServletFilter</filter-class>
+	</filter>
+	<filter-mapping>
+		<filter-name>HystrixRequestLogViaResponseHeaderServletFilter</filter-name>
+		<url-pattern>/*</url-pattern>
+	</filter-mapping>
+
+	<servlet>
+		<description></description>
+		<display-name>HystrixMetricsStreamServlet</display-name>
+		<servlet-name>HystrixMetricsStreamServlet</servlet-name>
+		<servlet-class>com.netflix.hystrix.contrib.metrics.eventstream.HystrixMetricsStreamServlet</servlet-class>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>HystrixMetricsStreamServlet</servlet-name>
+		<url-pattern>/hystrix.stream</url-pattern>
+	</servlet-mapping>
+
+</web-app>

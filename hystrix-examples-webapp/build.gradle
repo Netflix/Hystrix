@@ -1,0 +1,10 @@
+apply plugin: 'java'
+apply plugin: 'war'
+apply plugin: 'eclipse-wtp'
+
+    dependencies {
+        compile project(':hystrix-core')
+        compile project(':hystrix-examples')
+        compile project(':hystrix-contrib:hystrix-request-servlet')
+        compile project(':hystrix-contrib:hystrix-metrics-event-stream')
+    }
