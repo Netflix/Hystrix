@@ -701,7 +701,7 @@ public interface HystrixCircuitBreaker {
          * Utility method for creating {@link HystrixCommandMetrics} for unit tests.
          */
         private static HystrixCommandMetrics getMetrics(HystrixCommandProperties.Setter properties) {
-            return new HystrixCommandMetrics(CommandKeyForUnitTest.KEY_ONE, CommandOwnerForUnitTest.OWNER_ONE, ThreadPoolKeyForUnitTest.THREAD_POOL_ONE, HystrixCommandProperties.Setter.asMock(properties), HystrixEventNotifierDefault.getInstance());
+            return new HystrixCommandMetrics(CommandKeyForUnitTest.KEY_ONE, CommandOwnerForUnitTest.OWNER_ONE, HystrixCommandProperties.Setter.asMock(properties), HystrixEventNotifierDefault.getInstance());
         }
 
         /**

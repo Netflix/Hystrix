@@ -224,7 +224,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         if (metrics == null) {
             // TODO this caches the first time it's loaded and will thus miss changes to threadPoolKey, properties and eventNotifier
             // We need a better way of handling this now that we have HystrixPlugins
-            this.metrics = HystrixCommandMetrics.getInstance(this.commandKey, this.commandGroup, this.threadPoolKey, this.properties, this.eventNotifier);
+            this.metrics = HystrixCommandMetrics.getInstance(this.commandKey, this.commandGroup, this.properties);
         } else {
             this.metrics = metrics;
         }

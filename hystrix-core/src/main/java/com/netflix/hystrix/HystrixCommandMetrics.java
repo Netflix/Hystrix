@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import com.netflix.hystrix.HystrixCommand.UnitTest.CommandGroupForUnitTest;
 import com.netflix.hystrix.HystrixCommand.UnitTest.CommandKeyForUnitTest;
-import com.netflix.hystrix.HystrixCommand.UnitTest.ThreadPoolKeyForUnitTest;
+import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
 import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifierDefault;
 import com.netflix.hystrix.util.HystrixRollingNumber;
@@ -57,22 +57,20 @@ public class HystrixCommandMetrics {
      *            {@link HystrixCommandKey} of {@link HystrixCommand} instance requesting the {@link HystrixCommandMetrics}
      * @param commandGroup
      *            Pass-thru to {@link HystrixCommandMetrics} instance on first time when constructed
-     * @param threadPoolKey
-     *            Pass-thru to {@link HystrixCommandMetrics} instance on first time when constructed
      * @param properties
      *            Pass-thru to {@link HystrixCommandMetrics} instance on first time when constructed
      * @param eventNotifier
      *            Pass-thru to {@link HystrixCommandMetrics} instance on first time when constructed
      * @return {@link HystrixCommandMetrics}
      */
-    public static HystrixCommandMetrics getInstance(HystrixCommandKey key, HystrixCommandGroupKey commandGroup, HystrixThreadPoolKey threadPoolKey, HystrixCommandProperties properties, HystrixEventNotifier eventNotifier) {
+    public static HystrixCommandMetrics getInstance(HystrixCommandKey key, HystrixCommandGroupKey commandGroup, HystrixCommandProperties properties) {
         // attempt to retrieve from cache first
         HystrixCommandMetrics commandMetrics = metrics.get(key.name());
         if (commandMetrics != null) {
             return commandMetrics;
         }
         // it doesn't exist so we need to create it
-        commandMetrics = new HystrixCommandMetrics(key, commandGroup, threadPoolKey, properties, eventNotifier);
+        commandMetrics = new HystrixCommandMetrics(key, commandGroup, properties, HystrixPlugins.getInstance().getEventNotifier());
         // attempt to store it (race other threads)
         HystrixCommandMetrics existing = metrics.putIfAbsent(key.name(), commandMetrics);
         if (existing == null) {
@@ -113,7 +111,7 @@ public class HystrixCommandMetrics {
     private final AtomicInteger executionSemaphorePermitsInUse = new AtomicInteger();
     private final HystrixEventNotifier eventNotifier;
 
-    /* package */HystrixCommandMetrics(HystrixCommandKey key, HystrixCommandGroupKey commandGroup, HystrixThreadPoolKey threadPoolKey, HystrixCommandProperties properties, HystrixEventNotifier eventNotifier) {
+    /* package */HystrixCommandMetrics(HystrixCommandKey key, HystrixCommandGroupKey commandGroup, HystrixCommandProperties properties, HystrixEventNotifier eventNotifier) {
         this.key = key;
         this.group = commandGroup;
         this.properties = properties;
@@ -500,7 +498,7 @@ public class HystrixCommandMetrics {
          * Utility method for creating {@link HystrixCommandMetrics} for unit tests.
          */
         private static HystrixCommandMetrics getMetrics(HystrixCommandProperties.Setter properties) {
-            return new HystrixCommandMetrics(CommandKeyForUnitTest.KEY_ONE, CommandGroupForUnitTest.OWNER_ONE, ThreadPoolKeyForUnitTest.THREAD_POOL_ONE, HystrixCommandProperties.Setter.asMock(properties), HystrixEventNotifierDefault.getInstance());
+            return new HystrixCommandMetrics(CommandKeyForUnitTest.KEY_ONE, CommandGroupForUnitTest.OWNER_ONE, HystrixCommandProperties.Setter.asMock(properties), HystrixEventNotifierDefault.getInstance());
         }
 
     }
