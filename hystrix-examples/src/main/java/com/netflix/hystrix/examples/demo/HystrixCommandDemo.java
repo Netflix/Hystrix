@@ -17,6 +17,7 @@ package com.netflix.hystrix.examples.demo;
 
 import java.math.BigDecimal;
 import java.net.HttpCookie;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -35,6 +36,10 @@ import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 public class HystrixCommandDemo {
 
     public static void main(String args[]) {
+        new HystrixCommandDemo().startDemo();
+    }
+
+    public HystrixCommandDemo() {
         /*
          * Instead of using injected properties we'll set them via Archaius
          * so the rest of the code behaves as it would in a real system
@@ -45,8 +50,6 @@ public class HystrixCommandDemo {
         ConfigurationManager.getConfigInstance().setProperty("hystrix.command.GetUserAccountCommand.execution.isolation.thread.timeoutInMilliseconds", 50);
         // set the rolling percentile more granular so we see data change every second rather than every 10 seconds as is the default 
         ConfigurationManager.getConfigInstance().setProperty("hystrix.command.default.metrics.rollingPercentile.numBuckets", 60);
-
-        new HystrixCommandDemo().startDemo();
     }
 
     /*
@@ -59,29 +62,18 @@ public class HystrixCommandDemo {
     public void startDemo() {
         startMetricsMonitor();
         while (true) {
-            executeSimulatedUserRequestForOrderConfirmationAndCreditCardPayment();
+            runSimulatedRequestOnThread();
         }
     }
 
-    public void executeSimulatedUserRequestForOrderConfirmationAndCreditCardPayment() {
+    public void runSimulatedRequestOnThread() {
         pool.execute(new Runnable() {
 
             @Override
             public void run() {
                 HystrixRequestContext context = HystrixRequestContext.initializeContext();
                 try {
-                    /* fetch user object with http cookies */
-                    UserAccount user = new GetUserAccountCommand(new HttpCookie("mockKey", "mockValueFromHttpRequest")).execute();
-
-                    /* fetch the payment information (asynchronously) for the user so the credit card payment can proceed */
-                    Future<PaymentInformation> paymentInformation = new GetPaymentInformationCommand(user).queue();
-
-                    /* fetch the order we're processing for the user */
-                    int orderIdFromRequestArgument = 13579;
-                    Order previouslySavedOrder = new GetOrderCommand(orderIdFromRequestArgument).execute();
-
-                    CreditCardCommand credit = new CreditCardCommand(previouslySavedOrder, paymentInformation.get(), new BigDecimal(123.45));
-                    credit.execute();
+                    executeSimulatedUserRequestForOrderConfirmationAndCreditCardPayment();
 
                     System.out.println("Request => " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
                 } catch (Exception e) {
@@ -90,7 +82,23 @@ public class HystrixCommandDemo {
                     context.shutdown();
                 }
             }
+
         });
+    }
+
+    public void executeSimulatedUserRequestForOrderConfirmationAndCreditCardPayment() throws InterruptedException, ExecutionException {
+        /* fetch user object with http cookies */
+        UserAccount user = new GetUserAccountCommand(new HttpCookie("mockKey", "mockValueFromHttpRequest")).execute();
+
+        /* fetch the payment information (asynchronously) for the user so the credit card payment can proceed */
+        Future<PaymentInformation> paymentInformation = new GetPaymentInformationCommand(user).queue();
+
+        /* fetch the order we're processing for the user */
+        int orderIdFromRequestArgument = 13579;
+        Order previouslySavedOrder = new GetOrderCommand(orderIdFromRequestArgument).execute();
+
+        CreditCardCommand credit = new CreditCardCommand(previouslySavedOrder, paymentInformation.get(), new BigDecimal(123.45));
+        credit.execute();
     }
 
     public void startMetricsMonitor() {
