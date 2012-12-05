@@ -15,8 +15,14 @@
  */
 package com.netflix.hystrix;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadPoolExecutor;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.netflix.hystrix.util.HystrixRollingNumber;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
@@ -26,12 +32,81 @@ import com.netflix.hystrix.util.HystrixRollingNumberEvent;
  */
 public class HystrixThreadPoolMetrics {
 
+    @SuppressWarnings("unused")
+    private static final Logger logger = LoggerFactory.getLogger(HystrixThreadPoolMetrics.class);
+
+    // String is HystrixThreadPoolKey.name() (we can't use HystrixThreadPoolKey directly as we can't guarantee it implements hashcode/equals correctly)
+    private static final ConcurrentHashMap<String, HystrixThreadPoolMetrics> metrics = new ConcurrentHashMap<String, HystrixThreadPoolMetrics>();
+
+    /**
+     * Get or create the {@link HystrixThreadPoolMetrics} instance for a given {@link HystrixThreadPoolKey}.
+     * <p>
+     * This is thread-safe and ensures only 1 {@link HystrixThreadPoolMetrics} per {@link HystrixThreadPoolKey}.
+     * 
+     * @param key
+     *            {@link HystrixThreadPoolKey} of {@link HystrixThreadPool} instance requesting the {@link HystrixThreadPoolMetrics}
+     * @param threadPool
+     *            Pass-thru of ThreadPoolExecutor to {@link HystrixThreadPoolMetrics} instance on first time when constructed
+     * @param properties
+     *            Pass-thru to {@link HystrixThreadPoolMetrics} instance on first time when constructed
+     * @return {@link HystrixThreadPoolMetrics}
+     */
+    public static HystrixThreadPoolMetrics getInstance(HystrixThreadPoolKey key, ThreadPoolExecutor threadPool, HystrixThreadPoolProperties properties) {
+        // attempt to retrieve from cache first
+        HystrixThreadPoolMetrics threadPoolMetrics = metrics.get(key.name());
+        if (threadPoolMetrics != null) {
+            return threadPoolMetrics;
+        }
+        // it doesn't exist so we need to create it
+        threadPoolMetrics = new HystrixThreadPoolMetrics(key, threadPool, properties);
+        // attempt to store it (race other threads)
+        HystrixThreadPoolMetrics existing = metrics.putIfAbsent(key.name(), threadPoolMetrics);
+        if (existing == null) {
+            // we won the thread-race to store the instance we created
+            return threadPoolMetrics;
+        } else {
+            // we lost so return 'existing' and let the one we created be garbage collected
+            return existing;
+        }
+    }
+
+    /**
+     * Get the {@link HystrixThreadPoolMetrics} instance for a given {@link HystrixThreadPoolKey} or null if one does not exist.
+     * 
+     * @param key
+     *            {@link HystrixThreadPoolKey} of {@link HystrixThreadPool} instance requesting the {@link HystrixThreadPoolMetrics}
+     * @return {@link HystrixThreadPoolMetrics}
+     */
+    public static HystrixThreadPoolMetrics getInstance(HystrixThreadPoolKey key) {
+        return metrics.get(key.name());
+    }
+
+    /**
+     * All registered instances of {@link HystrixThreadPoolMetrics}
+     * 
+     * @return {@code Collection<HystrixThreadPoolMetrics>}
+     */
+    public static Collection<HystrixThreadPoolMetrics> getInstances() {
+        return Collections.unmodifiableCollection(metrics.values());
+    }
+
+    private final HystrixThreadPoolKey threadPoolKey;
     private final HystrixRollingNumber counter;
     private final ThreadPoolExecutor threadPool;
 
-    /* package */HystrixThreadPoolMetrics(HystrixThreadPoolKey threadPoolKey, ThreadPoolExecutor threadPool, HystrixThreadPoolProperties properties) {
+    private HystrixThreadPoolMetrics(HystrixThreadPoolKey threadPoolKey, ThreadPoolExecutor threadPool, HystrixThreadPoolProperties properties) {
+        this.threadPoolKey = threadPoolKey;
         this.threadPool = threadPool;
         this.counter = new HystrixRollingNumber(properties.metricsRollingStatisticalWindowInMilliseconds(), properties.metricsRollingStatisticalWindowBuckets());
+    }
+
+    /**
+     * {@link HystrixThreadPoolKey} these metrics represent.
+     * 
+     * @return HystrixThreadPoolKey
+     */
+    public HystrixThreadPoolKey getThreadPoolKey() {
+        return threadPoolKey;
     }
 
     /**

@@ -1,19 +1,19 @@
 /**
  * Copyright 2012 Netflix, Inc.
- *
+ * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.hystrix.contrib.servostream;
+package com.netflix.hystrix.contrib.metrics.eventstream;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,6 +31,24 @@ import com.netflix.config.DynamicPropertyFactory;
 
 /**
  * Streams Hystrix metrics in text/event-stream format.
+ * <p>
+ * Install by:
+ * <p>
+ * 1) Including hystrix-metrics-event-stream-*.jar in your classpath.
+ * <p>
+ * 2) Adding the following to web.xml:
+ * <pre>{@code
+ * <servlet>
+ *  <description></description>
+ *  <display-name>HystrixMetricsStreamServlet</display-name>
+ *  <servlet-name>HystrixMetricsStreamServlet</servlet-name>
+ *  <servlet-class>com.netflix.hystrix.contrib.metrics.eventstream.HystrixMetricsStreamServlet</servlet-class>
+ * </servlet>
+ * <servlet-mapping>
+ *  <servlet-name>HystrixMetricsStreamServlet</servlet-name>
+ *  <url-pattern>/hystrix.stream</url-pattern>
+ * </servlet-mapping>
+ * } </pre>
  */
 public class HystrixMetricsStreamServlet extends HttpServlet {
 
@@ -77,7 +95,7 @@ public class HystrixMetricsStreamServlet extends HttpServlet {
             // ignore if it's not a number
         }
 
-        HystrixServoPoller poller = null;
+        HystrixMetricsPoller poller = null;
         try {
             if (numberConnections > maxConcurrentConnections.get()) {
                 response.sendError(503, "MaxConcurrentConnections reached: " + maxConcurrentConnections.get());
@@ -88,14 +106,21 @@ public class HystrixMetricsStreamServlet extends HttpServlet {
                 response.setHeader("Cache-Control", "no-cache, no-store, max-age=0, must-revalidate");
                 response.setHeader("Pragma", "no-cache");
 
-                poller = new HystrixServoPoller(delay);
+                poller = new HystrixMetricsPoller(delay);
                 // start polling and it will write directly to the output stream
-                HystrixEventStreamMetricsObserver observer = new HystrixEventStreamMetricsObserver(response);
-                poller.start(observer);
+                poller.start(response);
                 logger.info("Starting poller");
 
                 try {
-                    while (true && observer.isRunning()) {
+                    while (poller.isRunning()) {
+                        /*
+                         * The 'ping' ensures the client is still connected by writing to it.
+                         * 
+                         * It will receive an exception if the client is disconnected and then shut down the poller.
+                         * 
+                         * Without this we are vulnerable to permanently holding a connection open even if the client has disconnected if the
+                         * poller is not actually finding data and not trying to write to the stream.
+                         */
                         response.getWriter().println(":ping\n");
                         response.flushBuffer();
                         Thread.sleep(2000);

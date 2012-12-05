@@ -136,12 +136,12 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
      *            Fluent interface for constructor arguments
      */
     protected HystrixCollapser(Setter setter) {
-        this(setter.collapserKey, setter.scope, new RealCollapserTimer(), setter.propertiesStrategy, setter.propertiesSetter, setter.concurrencyStrategy);
+        this(setter.collapserKey, setter.scope, new RealCollapserTimer(), setter.propertiesSetter);
     }
 
-    private HystrixCollapser(HystrixCollapserKey collapserKey, Scope scope, CollapserTimer timer, HystrixPropertiesStrategy propertiesFactory, HystrixCollapserProperties.Setter propertiesBuilder, HystrixConcurrencyStrategy concurrencyStrategy) {
+    private HystrixCollapser(HystrixCollapserKey collapserKey, Scope scope, CollapserTimer timer, HystrixCollapserProperties.Setter propertiesBuilder) {
         /* strategy: ConcurrencyStrategy */
-        this.concurrencyStrategy = HystrixPlugins.getInstance().getConcurrencyStrategy(concurrencyStrategy);
+        this.concurrencyStrategy = HystrixPlugins.getInstance().getConcurrencyStrategy();
 
         this.timer = timer;
         this.scope = scope;
@@ -152,7 +152,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
             this.collapserKey = collapserKey;
         }
         this.requestCache = HystrixRequestCache.getInstance(this.collapserKey, this.concurrencyStrategy);
-        this.properties = HystrixPropertiesFactory.getCollapserProperties(propertiesFactory, this.collapserKey, propertiesBuilder);
+        this.properties = HystrixPropertiesFactory.getCollapserProperties(this.collapserKey, propertiesBuilder);
     }
 
     /**
@@ -1010,9 +1010,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
     public static class Setter {
         private final HystrixCollapserKey collapserKey;
         private Scope scope = Scope.REQUEST; // default if nothing is set
-        private HystrixPropertiesStrategy propertiesStrategy;
         private HystrixCollapserProperties.Setter propertiesSetter;
-        private HystrixConcurrencyStrategy concurrencyStrategy;
 
         private Setter(HystrixCollapserKey collapserKey) {
             this.collapserKey = collapserKey;
@@ -1044,20 +1042,6 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
         }
 
         /**
-         * @param propertiesStrategy
-         *            {@link HystrixPropertiesStrategy} implementation to override the default behavior.
-         *            <p>
-         *            See JavaDoc on {@link HystrixPropertiesStrategy} class header for more information.
-         *            <p>
-         *            Will use default if left NULL.
-         * @return Setter for fluent interface via method chaining
-         */
-        public Setter andPropertiesStrategy(HystrixPropertiesStrategy propertiesStrategy) {
-            this.propertiesStrategy = propertiesStrategy;
-            return this;
-        }
-
-        /**
          * @param propertiesSetter
          *            {@link HystrixCollapserProperties.Setter} that allows instance specific property overrides (which can then be overridden by dynamic properties, see
          *            {@link HystrixPropertiesStrategy} for
@@ -1071,20 +1055,6 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
             return this;
         }
 
-        /**
-         * 
-         * @param concurrencyStrategy
-         *            {@link HystrixConcurrencyStrategy} implementation to override the default behavior.
-         *            <p>
-         *            See JavaDoc on {@link HystrixConcurrencyStrategy} class header for more information.
-         *            <p>
-         *            Will use default if left NULL.
-         * @return Setter for fluent interface via method chaining
-         */
-        public Setter andConcurrencyStrategy(HystrixConcurrencyStrategy concurrencyStrategy) {
-            this.concurrencyStrategy = concurrencyStrategy;
-            return this;
-        }
     }
 
     // this is a micro-optimization but saves about 1-2microseconds (on 2011 MacBook Pro) 
@@ -1819,7 +1789,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
             public TestRequestCollapser(Scope scope, TestCollapserTimer timer, AtomicInteger counter, String value, int defaultMaxRequestsInBatch, int defaultTimerDelayInMilliseconds, ConcurrentLinkedQueue<HystrixCommand<List<String>>> executionLog) {
                 // use a CollapserKey based on the CollapserTimer object reference so it's unique for each timer as we don't want caching
                 // of properties to occur and we're using the default HystrixProperty which typically does caching
-                super(collapserKeyFromString(timer), scope, timer, null, HystrixCollapserProperties.Setter().withMaxRequestsInBatch(defaultMaxRequestsInBatch).withTimerDelayInMilliseconds(defaultTimerDelayInMilliseconds), null);
+                super(collapserKeyFromString(timer), scope, timer, HystrixCollapserProperties.Setter().withMaxRequestsInBatch(defaultMaxRequestsInBatch).withTimerDelayInMilliseconds(defaultTimerDelayInMilliseconds));
                 this.count = counter;
                 this.value = value;
                 this.commandsExecuted = executionLog;

@@ -25,6 +25,7 @@ import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.HystrixThreadPool;
 import com.netflix.hystrix.HystrixThreadPoolKey;
 import com.netflix.hystrix.HystrixThreadPoolProperties;
+import com.netflix.hystrix.strategy.HystrixPlugins;
 
 /**
  * Factory for retrieving properties implementations.
@@ -41,20 +42,14 @@ public class HystrixPropertiesFactory {
     /**
      * Get an instance of {@link HystrixCommandProperties} with the given factory {@link HystrixPropertiesStrategy} implementation for each {@link HystrixCommand} instance.
      * 
-     * @param hystrixPropertiesStrategy
-     *            Implementation of {@link HystrixPropertiesStrategy} to use
-     *            <p>
-     *            See {@link HystrixPropertiesStrategy} class header JavaDocs for precedence of how this is retrieved.
      * @param key
      *            Pass-thru to {@link HystrixPropertiesStrategy#getCommandProperties} implementation.
      * @param builder
      *            Pass-thru to {@link HystrixPropertiesStrategy#getCommandProperties} implementation.
      * @return {@link HystrixCommandProperties} instance
      */
-    public static HystrixCommandProperties getCommandProperties(HystrixPropertiesStrategy hystrixPropertiesStrategy, HystrixCommandKey key, HystrixCommandProperties.Setter builder) {
-        if (hystrixPropertiesStrategy == null) {
-            hystrixPropertiesStrategy = HystrixPropertiesStrategyDefault.getInstance();
-        }
+    public static HystrixCommandProperties getCommandProperties(HystrixCommandKey key, HystrixCommandProperties.Setter builder) {
+        HystrixPropertiesStrategy hystrixPropertiesStrategy = HystrixPlugins.getInstance().getPropertiesStrategy();
         String cacheKey = hystrixPropertiesStrategy.getCommandPropertiesCacheKey(key, builder);
         if (cacheKey != null) {
             HystrixCommandProperties properties = commandProperties.get(cacheKey);
@@ -86,20 +81,14 @@ public class HystrixPropertiesFactory {
     /**
      * Get an instance of {@link HystrixThreadPoolProperties} with the given factory {@link HystrixPropertiesStrategy} implementation for each {@link HystrixThreadPool} instance.
      * 
-     * @param hystrixPropertiesStrategy
-     *            Implementation of {@link HystrixPropertiesStrategy} to use
-     *            <p>
-     *            See {@link HystrixPropertiesStrategy} class header JavaDocs for precedence of how this is retrieved.
      * @param key
      *            Pass-thru to {@link HystrixPropertiesStrategy#getThreadPoolProperties} implementation.
      * @param builder
      *            Pass-thru to {@link HystrixPropertiesStrategy#getThreadPoolProperties} implementation.
      * @return {@link HystrixThreadPoolProperties} instance
      */
-    public static HystrixThreadPoolProperties getThreadPoolProperties(HystrixPropertiesStrategy hystrixPropertiesStrategy, HystrixThreadPoolKey key, HystrixThreadPoolProperties.Setter builder) {
-        if (hystrixPropertiesStrategy == null) {
-            hystrixPropertiesStrategy = HystrixPropertiesStrategyDefault.getInstance();
-        }
+    public static HystrixThreadPoolProperties getThreadPoolProperties(HystrixThreadPoolKey key, HystrixThreadPoolProperties.Setter builder) {
+        HystrixPropertiesStrategy hystrixPropertiesStrategy = HystrixPlugins.getInstance().getPropertiesStrategy();
         String cacheKey = hystrixPropertiesStrategy.getThreadPoolPropertiesCacheKey(key, builder);
         if (cacheKey != null) {
             HystrixThreadPoolProperties properties = threadPoolProperties.get(cacheKey);
@@ -131,20 +120,14 @@ public class HystrixPropertiesFactory {
     /**
      * Get an instance of {@link HystrixCollapserProperties} with the given factory {@link HystrixPropertiesStrategy} implementation for each {@link HystrixCollapserKey} instance.
      * 
-     * @param hystrixPropertiesStrategy
-     *            Implementation of {@link HystrixPropertiesStrategy} to use
-     *            <p>
-     *            See {@link HystrixPropertiesStrategy} class header JavaDocs for precedence of how this is retrieved.
      * @param key
      *            Pass-thru to {@link HystrixPropertiesStrategy#getCollapserProperties} implementation.
      * @param builder
      *            Pass-thru to {@link HystrixPropertiesStrategy#getCollapserProperties} implementation.
      * @return {@link HystrixCollapserProperties} instance
      */
-    public static HystrixCollapserProperties getCollapserProperties(HystrixPropertiesStrategy hystrixPropertiesStrategy, HystrixCollapserKey key, HystrixCollapserProperties.Setter builder) {
-        if (hystrixPropertiesStrategy == null) {
-            hystrixPropertiesStrategy = HystrixPropertiesStrategyDefault.getInstance();
-        }
+    public static HystrixCollapserProperties getCollapserProperties(HystrixCollapserKey key, HystrixCollapserProperties.Setter builder) {
+        HystrixPropertiesStrategy hystrixPropertiesStrategy = HystrixPlugins.getInstance().getPropertiesStrategy();
         String cacheKey = hystrixPropertiesStrategy.getCollapserPropertiesCacheKey(key, builder);
         if (cacheKey != null) {
             HystrixCollapserProperties properties = collapserProperties.get(cacheKey);
