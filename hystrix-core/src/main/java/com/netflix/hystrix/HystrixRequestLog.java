@@ -82,7 +82,7 @@ public class HystrixRequestLog {
      * @return {@link HystrixRequestLog}
      */
     public static HystrixRequestLog getCurrentRequest() {
-        return getCurrentRequest(HystrixPlugins.getInstance().getConcurrencyStrategy(null));
+        return currentRequestLog.get(HystrixPlugins.getInstance().getConcurrencyStrategy());
     }
 
     /**

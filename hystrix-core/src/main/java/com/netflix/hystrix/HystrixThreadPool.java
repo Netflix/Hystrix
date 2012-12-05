@@ -22,11 +22,10 @@ import java.util.concurrent.TimeUnit;
 
 import javax.annotation.concurrent.ThreadSafe;
 
+import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
-import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisher;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherFactory;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesFactory;
-import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 
 /**
  * ThreadPool used to executed {@link HystrixCommand#run()} on separate threads when configured to do so with {@link HystrixCommandProperties#executionIsolationStrategy()}.
@@ -87,7 +86,7 @@ public interface HystrixThreadPool {
          * 
          * @return {@link HystrixThreadPool} instance
          */
-        /* package */static HystrixThreadPool getInstance(HystrixThreadPoolKey threadPoolKey, HystrixConcurrencyStrategy concurrencyStrategy, HystrixMetricsPublisher metricsPublisher, HystrixPropertiesStrategy propertiesFactory, HystrixThreadPoolProperties.Setter propertiesBuilder) {
+        /* package */static HystrixThreadPool getInstance(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolProperties.Setter propertiesBuilder) {
             // get the key to use instead of using the object itself so that if people forget to implement equals/hashcode things will still work
             String key = threadPoolKey.name();
 
@@ -102,7 +101,7 @@ public interface HystrixThreadPool {
             // Create and add to the map ... use putIfAbsent to atomically handle the possible race-condition of
             // 2 threads hitting this point at the same time and let ConcurrentHashMap provide us our thread-safety
             // If 2 threads hit here only one will get added and the other will get a non-null response instead.
-            HystrixThreadPool poolForKey = threadPools.putIfAbsent(key, new HystrixThreadPoolDefault(threadPoolKey, concurrencyStrategy, metricsPublisher, propertiesFactory, propertiesBuilder));
+            HystrixThreadPool poolForKey = threadPools.putIfAbsent(key, new HystrixThreadPoolDefault(threadPoolKey, propertiesBuilder));
             if (poolForKey == null) {
                 // this means the putIfAbsent step just created a new one so let's retrieve and return it
                 HystrixThreadPool threadPoolJustCreated = threadPools.get(key);
@@ -126,14 +125,15 @@ public interface HystrixThreadPool {
         private final ThreadPoolExecutor threadPool;
         private final HystrixThreadPoolMetrics metrics;
 
-        public HystrixThreadPoolDefault(HystrixThreadPoolKey threadPoolKey, HystrixConcurrencyStrategy concurrencyStrategy, HystrixMetricsPublisher metricsPublisher, HystrixPropertiesStrategy propertiesFactory, HystrixThreadPoolProperties.Setter propertiesDefaults) {
-            this.properties = HystrixPropertiesFactory.getThreadPoolProperties(propertiesFactory, threadPoolKey, propertiesDefaults);
+        public HystrixThreadPoolDefault(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolProperties.Setter propertiesDefaults) {
+            this.properties = HystrixPropertiesFactory.getThreadPoolProperties(threadPoolKey, propertiesDefaults);
+            HystrixConcurrencyStrategy concurrencyStrategy = HystrixPlugins.getInstance().getConcurrencyStrategy();
             this.queue = concurrencyStrategy.getBlockingQueue(properties.maxQueueSize().get());
             this.threadPool = concurrencyStrategy.getThreadPool(threadPoolKey, properties.coreSize(), properties.coreSize(), properties.keepAliveTimeMinutes(), TimeUnit.MINUTES, queue);
-            this.metrics = new HystrixThreadPoolMetrics(threadPoolKey, threadPool, properties);
+            this.metrics = HystrixThreadPoolMetrics.getInstance(threadPoolKey, threadPool, properties);
 
             /* strategy: HystrixMetricsPublisherThreadPool */
-            HystrixMetricsPublisherFactory.createOrRetrievePublisherForThreadPool(metricsPublisher, threadPoolKey, this.metrics, this.properties);
+            HystrixMetricsPublisherFactory.createOrRetrievePublisherForThreadPool(threadPoolKey, this.metrics, this.properties);
         }
 
         @Override

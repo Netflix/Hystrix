@@ -1,12 +1,12 @@
 /**
  * Copyright 2012 Netflix, Inc.
- *
+ * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -44,18 +44,12 @@ import com.netflix.hystrix.strategy.HystrixPlugins;
  */
 public class HystrixMetricsPublisherFactory {
 
-    //TODO implement cacheKey instead of using key objects directly similar to how it's done in HystrixPropertiesFactory
-
     // String is CommandKey.name() (we can't use CommandKey directly as we can't guarantee it implements hashcode/equals correctly)
     private static final ConcurrentHashMap<String, HystrixMetricsPublisherCommand> commandPublishers = new ConcurrentHashMap<String, HystrixMetricsPublisherCommand>();
 
     /**
      * Get an instance of {@link HystrixMetricsPublisherCommand} with the given factory {@link HystrixMetricsPublisher} implementation for each {@link HystrixCommand} instance.
      * 
-     * @param metricsPublisher
-     *            Implementation of {@link HystrixMetricsPublisher} to use.
-     *            <p>
-     *            See {@link HystrixMetricsPublisher} class header JavaDocs for precedence of how this is retrieved.
      * @param commandKey
      *            Pass-thru to {@link HystrixMetricsPublisher#getMetricsPublisherForCommand} implementation
      * @param commandOwner
@@ -68,14 +62,14 @@ public class HystrixMetricsPublisherFactory {
      *            Pass-thru to {@link HystrixMetricsPublisher#getMetricsPublisherForCommand} implementation
      * @return {@link HystrixMetricsPublisherCommand} instance
      */
-    public static HystrixMetricsPublisherCommand createOrRetrievePublisherForCommand(HystrixMetricsPublisher metricsPublisher, HystrixCommandKey commandKey, HystrixCommandGroupKey commandOwner, HystrixCommandMetrics metrics, HystrixCircuitBreaker circuitBreaker, HystrixCommandProperties properties) {
+    public static HystrixMetricsPublisherCommand createOrRetrievePublisherForCommand(HystrixCommandKey commandKey, HystrixCommandGroupKey commandOwner, HystrixCommandMetrics metrics, HystrixCircuitBreaker circuitBreaker, HystrixCommandProperties properties) {
         // attempt to retrieve from cache first
         HystrixMetricsPublisherCommand publisher = commandPublishers.get(commandKey.name());
         if (publisher != null) {
             return publisher;
         }
         // it doesn't exist so we need to create it
-        publisher = HystrixPlugins.getInstance().getMetricsPublisher(metricsPublisher).getMetricsPublisherForCommand(commandKey, commandOwner, metrics, circuitBreaker, properties);
+        publisher = HystrixPlugins.getInstance().getMetricsPublisher().getMetricsPublisherForCommand(commandKey, commandOwner, metrics, circuitBreaker, properties);
         // attempt to store it (race other threads)
         HystrixMetricsPublisherCommand existing = commandPublishers.putIfAbsent(commandKey.name(), publisher);
         if (existing == null) {
@@ -108,14 +102,14 @@ public class HystrixMetricsPublisherFactory {
      *            Pass-thru to {@link HystrixMetricsPublisher#getMetricsPublisherForThreadPool} implementation
      * @return {@link HystrixMetricsPublisherThreadPool} instance
      */
-    public static HystrixMetricsPublisherThreadPool createOrRetrievePublisherForThreadPool(HystrixMetricsPublisher metricsPublisher, HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolMetrics metrics, HystrixThreadPoolProperties properties) {
+    public static HystrixMetricsPublisherThreadPool createOrRetrievePublisherForThreadPool(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolMetrics metrics, HystrixThreadPoolProperties properties) {
         // attempt to retrieve from cache first
         HystrixMetricsPublisherThreadPool publisher = threadPoolPublishers.get(threadPoolKey.name());
         if (publisher != null) {
             return publisher;
         }
         // it doesn't exist so we need to create it
-        publisher = HystrixPlugins.getInstance().getMetricsPublisher(metricsPublisher).getMetricsPublisherForThreadPool(threadPoolKey, metrics, properties);
+        publisher = HystrixPlugins.getInstance().getMetricsPublisher().getMetricsPublisherForThreadPool(threadPoolKey, metrics, properties);
         // attempt to store it (race other threads)
         HystrixMetricsPublisherThreadPool existing = threadPoolPublishers.putIfAbsent(threadPoolKey.name(), publisher);
         if (existing == null) {
@@ -138,39 +132,43 @@ public class HystrixMetricsPublisherFactory {
         @Test
         public void testSingleInitializePerKey() {
             final TestHystrixMetricsPublisher publisher = new TestHystrixMetricsPublisher();
+            HystrixPlugins.getInstance().registerMetricsPublisher(publisher);
+            try {
+                ArrayList<Thread> threads = new ArrayList<Thread>();
+                for (int i = 0; i < 20; i++) {
+                    threads.add(new Thread(new Runnable() {
 
-            ArrayList<Thread> threads = new ArrayList<Thread>();
-            for (int i = 0; i < 20; i++) {
-                threads.add(new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            HystrixMetricsPublisherFactory.createOrRetrievePublisherForCommand(TestCommandKey.TEST_A, null, null, null, null);
+                            HystrixMetricsPublisherFactory.createOrRetrievePublisherForCommand(TestCommandKey.TEST_B, null, null, null, null);
+                            HystrixMetricsPublisherFactory.createOrRetrievePublisherForThreadPool(TestThreadPoolKey.TEST_A, null, null);
+                        }
 
-                    @Override
-                    public void run() {
-                        HystrixMetricsPublisherFactory.createOrRetrievePublisherForCommand(publisher, TestCommandKey.TEST_A, null, null, null, null);
-                        HystrixMetricsPublisherFactory.createOrRetrievePublisherForCommand(publisher, TestCommandKey.TEST_B, null, null, null, null);
-                        HystrixMetricsPublisherFactory.createOrRetrievePublisherForThreadPool(publisher, TestThreadPoolKey.TEST_A, null, null);
-                    }
-
-                }));
-            }
-
-            // start them
-            for (Thread t : threads) {
-                t.start();
-            }
-
-            // wait for them to finish
-            for (Thread t : threads) {
-                try {
-                    t.join();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    }));
                 }
+
+                // start them
+                for (Thread t : threads) {
+                    t.start();
+                }
+
+                // wait for them to finish
+                for (Thread t : threads) {
+                    try {
+                        t.join();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                // we should see 2 commands and 1 threadPool publisher created
+                assertEquals(2, publisher.commandCounter.get());
+                assertEquals(1, publisher.threadCounter.get());
+            } finally {
+                // clear the plugin
+                HystrixPlugins.getInstance().registerMetricsPublisher(null);
             }
-
-            // we should see 2 commands and 1 threadPool publisher created
-            assertEquals(2, publisher.commandCounter.get());
-            assertEquals(1, publisher.threadCounter.get());
-
         }
     }
 

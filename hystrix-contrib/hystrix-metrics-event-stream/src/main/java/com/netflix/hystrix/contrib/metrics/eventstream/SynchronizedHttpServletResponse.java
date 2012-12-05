@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.hystrix.contrib.servostream;
+package com.netflix.hystrix.contrib.metrics.eventstream;
 
 import java.io.IOException;
 import java.io.PrintWriter;

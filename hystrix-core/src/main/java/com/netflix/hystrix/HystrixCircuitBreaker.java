@@ -102,6 +102,17 @@ public interface HystrixCircuitBreaker {
                 return cbForCommand;
             }
         }
+
+        /**
+         * Get the {@link HystrixCircuitBreaker} instance for a given {@link HystrixCommandKey} or null if none exists.
+         * 
+         * @param key
+         *            {@link HystrixCommandKey} of {@link HystrixCommand} instance requesting the {@link HystrixCircuitBreaker}
+         * @return {@link HystrixCircuitBreaker} for {@link HystrixCommandKey}
+         */
+        public static HystrixCircuitBreaker getInstance(HystrixCommandKey key) {
+            return circuitBreakersByCommand.get(key.name());
+        }
     }
 
     /**
@@ -174,7 +185,7 @@ public interface HystrixCircuitBreaker {
 
             // we're closed, so let's see if errors have made us so we should trip the circuit open
             HealthCounts health = metrics.getHealthCounts();
-            
+
             // check if we are past the statisticalWindowVolumeThreshold
             if (health.getTotalRequests() < properties.circuitBreakerRequestVolumeThreshold().get()) {
                 // we are not past the minimum volume threshold for the statisticalWindow so we'll return false immediately and not calculate anything
@@ -690,7 +701,7 @@ public interface HystrixCircuitBreaker {
          * Utility method for creating {@link HystrixCommandMetrics} for unit tests.
          */
         private static HystrixCommandMetrics getMetrics(HystrixCommandProperties.Setter properties) {
-            return new HystrixCommandMetrics(CommandKeyForUnitTest.KEY_ONE, CommandOwnerForUnitTest.OWNER_ONE, ThreadPoolKeyForUnitTest.THREAD_POOL_ONE, HystrixCommandProperties.Setter.asMock(properties), HystrixEventNotifierDefault.getInstance());
+            return new HystrixCommandMetrics(CommandKeyForUnitTest.KEY_ONE, CommandOwnerForUnitTest.OWNER_ONE, HystrixCommandProperties.Setter.asMock(properties), HystrixEventNotifierDefault.getInstance());
         }
 
         /**

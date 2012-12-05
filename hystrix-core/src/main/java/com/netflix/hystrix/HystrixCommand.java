@@ -61,7 +61,6 @@ import com.netflix.hystrix.strategy.concurrency.HystrixContextCallable;
 import com.netflix.hystrix.strategy.concurrency.HystrixContextRunnable;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
-import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisher;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherFactory;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesFactory;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
@@ -129,6 +128,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
     /**
      * Construct a {@link HystrixCommand} with defined {@link HystrixCommandGroupKey}.
      * <p>
+     * The {@link HystrixCommandKey} will be derived from the implementing class name.
      * 
      * @param group
      *            {@link HystrixCommandGroupKey} used to group together multiple {@link HystrixCommand} objects.
@@ -142,17 +142,18 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
     }
 
     /**
-     * Construct a {@link HystrixCommand} with defined {@link Setter} that allows
-     * injecting property and strategy overrides and other optional arguments.
+     * Construct a {@link HystrixCommand} with defined {@link Setter} that allows injecting property and strategy overrides and other optional arguments.
      * <p>
-     * Null values on everything except 'group' will result in the default being used.
+     * NOTE: The {@link HystrixCommandKey} is used to associate a {@link HystrixCommand} with {@link HystrixCircuitBreaker}, {@link HystrixCommandMetrics} and other objects.
+     * <p>
+     * Do not create multiple {@link HystrixCommand} implementations with the same {@link HystrixCommandKey} but different injected default properties as the first instantiated will win.
      * 
      * @param setter
      *            Fluent interface for constructor arguments
      */
     protected HystrixCommand(Setter setter) {
         // use 'null' to specify use the default
-        this(setter.groupKey, setter.commandKey, setter.threadPoolKey, null, null, setter.propertiesStrategy, setter.commandPropertiesDefaults, setter.threadPoolPropertiesDefaults, setter.notifier, setter.concurrencyStrategy, null, setter.metricsPublisher, null, null);
+        this(setter.groupKey, setter.commandKey, setter.threadPoolKey, null, null, setter.commandPropertiesDefaults, setter.threadPoolPropertiesDefaults, null, null, null);
     }
 
     /**
@@ -163,8 +164,8 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      * Most of the args will revert to a valid default if 'null' is passed in.
      */
     private HystrixCommand(HystrixCommandGroupKey group, HystrixCommandKey key, HystrixThreadPoolKey threadPoolKey, HystrixCircuitBreaker circuitBreaker, HystrixThreadPool threadPool,
-            HystrixPropertiesStrategy propertiesFactory, HystrixCommandProperties.Setter commandPropertiesDefaults, HystrixThreadPoolProperties.Setter threadPoolPropertiesDefaults, HystrixEventNotifier notifier,
-            HystrixConcurrencyStrategy concurrencyStrategy, HystrixCommandMetrics metrics, HystrixMetricsPublisher metricsPublisher, TryableSemaphore fallbackSemaphore, TryableSemaphore executionSemaphore) {
+            HystrixCommandProperties.Setter commandPropertiesDefaults, HystrixThreadPoolProperties.Setter threadPoolPropertiesDefaults,
+            HystrixCommandMetrics metrics, TryableSemaphore fallbackSemaphore, TryableSemaphore executionSemaphore) {
         /*
          * CommandGroup initialization
          */
@@ -187,7 +188,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         /*
          * Properties initialization
          */
-        this.properties = HystrixPropertiesFactory.getCommandProperties(propertiesFactory, this.commandKey, commandPropertiesDefaults);
+        this.properties = HystrixPropertiesFactory.getCommandProperties(this.commandKey, commandPropertiesDefaults);
 
         /*
          * ThreadPoolKey
@@ -212,16 +213,18 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         }
 
         /* strategy: HystrixEventNotifier */
-        this.eventNotifier = HystrixPlugins.getInstance().getEventNotifier(notifier);
+        this.eventNotifier = HystrixPlugins.getInstance().getEventNotifier();
 
         /* strategy: HystrixConcurrentStrategy */
-        this.concurrencyStrategy = HystrixPlugins.getInstance().getConcurrencyStrategy(concurrencyStrategy);
+        this.concurrencyStrategy = HystrixPlugins.getInstance().getConcurrencyStrategy();
 
         /*
          * Metrics initialization
          */
         if (metrics == null) {
-            this.metrics = HystrixCommandMetrics.getInstance(this.commandKey, this.commandGroup, this.threadPoolKey, this.properties, this.eventNotifier);
+            // TODO this caches the first time it's loaded and will thus miss changes to threadPoolKey, properties and eventNotifier
+            // We need a better way of handling this now that we have HystrixPlugins
+            this.metrics = HystrixCommandMetrics.getInstance(this.commandKey, this.commandGroup, this.properties);
         } else {
             this.metrics = metrics;
         }
@@ -232,6 +235,8 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         if (this.properties.circuitBreakerEnabled().get()) {
             if (circuitBreaker == null) {
                 // get the default implementation of HystrixCircuitBreaker
+                // TODO this caches the first time it's loaded and will thus miss changes to properties
+                // We need a better way of handling this now that we have HystrixPlugins
                 this.circuitBreaker = HystrixCircuitBreaker.Factory.getInstance(this.commandKey, this.commandGroup, this.properties, this.metrics);
             } else {
                 this.circuitBreaker = circuitBreaker;
@@ -241,14 +246,16 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         }
 
         /* strategy: HystrixMetricsPublisherCommand */
-        HystrixMetricsPublisherFactory.createOrRetrievePublisherForCommand(metricsPublisher, this.commandKey, this.commandGroup, this.metrics, this.circuitBreaker, this.properties);
+        // TODO this caches the first time it's loaded and will thus miss changes to properties
+        // We need a better way of handling this now that we have HystrixPlugins
+        HystrixMetricsPublisherFactory.createOrRetrievePublisherForCommand(this.commandKey, this.commandGroup, this.metrics, this.circuitBreaker, this.properties);
 
         /*
          * ThreadPool initialization
          */
         if (threadPool == null) {
             // get the default implementation of HystrixThreadPool
-            this.threadPool = HystrixThreadPool.Factory.getInstance(this.threadPoolKey, this.concurrencyStrategy, metricsPublisher, propertiesFactory, threadPoolPropertiesDefaults);
+            this.threadPool = HystrixThreadPool.Factory.getInstance(this.threadPoolKey, threadPoolPropertiesDefaults);
         } else {
             this.threadPool = threadPool;
         }
@@ -1547,12 +1554,8 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         private final HystrixCommandGroupKey groupKey;
         private HystrixCommandKey commandKey;
         private HystrixThreadPoolKey threadPoolKey;
-        private HystrixPropertiesStrategy propertiesStrategy;
         private HystrixCommandProperties.Setter commandPropertiesDefaults;
         private HystrixThreadPoolProperties.Setter threadPoolPropertiesDefaults;
-        private HystrixEventNotifier notifier;
-        private HystrixConcurrencyStrategy concurrencyStrategy;
-        private HystrixMetricsPublisher metricsPublisher;
 
         /**
          * Setter factory method containing required values.
@@ -1619,18 +1622,6 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         }
 
         /**
-         * @param propertiesStrategy
-         *            {@link HystrixPropertiesStrategy} implementation used to retrieve {@link HystrixCommandProperties} and {@link HystrixThreadPoolProperties}.
-         *            <p>
-         *            See the {@link HystrixPropertiesStrategy} JavaDocs for more information.
-         * @return Setter for fluent interface via method chaining
-         */
-        public Setter andPropertiesStrategy(HystrixPropertiesStrategy propertiesStrategy) {
-            this.propertiesStrategy = propertiesStrategy;
-            return this;
-        }
-
-        /**
          * Optional
          * 
          * @param commandPropertiesDefaults
@@ -1658,42 +1649,6 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             return this;
         }
 
-        /**
-         * @param notifier
-         *            {@link HystrixEventNotifier} implementation used to perform event notification.
-         *            <p>
-         *            See the {@link HystrixEventNotifier} JavaDocs for more information.
-         * @return Setter for fluent interface via method chaining
-         */
-        public Setter andEventNotifier(HystrixEventNotifier notifier) {
-            this.notifier = notifier;
-            return this;
-        }
-
-        /**
-         * @param concurrencyStrategy
-         *            {@link HystrixConcurrencyStrategy} implementation used for concurrency related behavior.
-         *            <p>
-         *            See {@link HystrixConcurrencyStrategy} JavaDocs for more information.
-         * @return Setter for fluent interface via method chaining
-         */
-        public Setter andConcurrencyStrategy(HystrixConcurrencyStrategy concurrencyStrategy) {
-            this.concurrencyStrategy = concurrencyStrategy;
-            return this;
-        }
-
-        /**
-         * @param metricsPublisher
-         *            {@link HystrixMetricsPublisher} implementation used for publishing metrics.
-         *            <p>
-         *            See {@link HystrixMetricsPublisher} JavaDocs for more information.
-         * @return Setter for fluent interface via method chaining
-         */
-        public Setter andMetricsPublisher(HystrixMetricsPublisher metricsPublisher) {
-            this.metricsPublisher = metricsPublisher;
-            return this;
-        }
-
     }
 
     public static class UnitTest {
@@ -1702,6 +1657,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         public void prepareForTest() {
             /* we must call this to simulate a new request lifecycle running and clearing caches */
             HystrixRequestContext.initializeContext();
+            HystrixPlugins.getInstance().registerPropertiesStrategy(TEST_PROPERTIES_FACTORY);
         }
 
         @After
@@ -1714,6 +1670,8 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
             // force properties to be clean as well
             ConfigurationManager.getConfigInstance().clear();
+
+            HystrixPlugins.getInstance().registerPropertiesStrategy(null);
         }
 
         /**
@@ -4121,9 +4079,9 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             final TestCommandBuilder builder;
 
             TestHystrixCommand(TestCommandBuilder builder) {
-                super(builder.owner, builder.dependencyKey, builder.threadPoolKey, builder.circuitBreaker, builder.threadPool, builder.propertiesFactory,
-                        builder.commandPropertiesDefaults, builder.threadPoolPropertiesDefaults, builder.notifier, builder.concurrencyStrategy, builder.metrics,
-                        builder.metricsPublisher, builder.fallbackSemaphore, builder.executionSemaphore);
+                super(builder.owner, builder.dependencyKey, builder.threadPoolKey, builder.circuitBreaker, builder.threadPool,
+                        builder.commandPropertiesDefaults, builder.threadPoolPropertiesDefaults, builder.metrics,
+                        builder.fallbackSemaphore, builder.executionSemaphore);
                 this.builder = builder;
             }
 
@@ -4138,13 +4096,9 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                 HystrixThreadPoolKey threadPoolKey = null;
                 HystrixCircuitBreaker circuitBreaker = _cb;
                 HystrixThreadPool threadPool = null;
-                HystrixPropertiesStrategy propertiesFactory = TEST_PROPERTIES_FACTORY;
                 HystrixCommandProperties.Setter commandPropertiesDefaults = HystrixCommandProperties.Setter.getUnitTestPropertiesSetter();
                 HystrixThreadPoolProperties.Setter threadPoolPropertiesDefaults = HystrixThreadPoolProperties.Setter.getUnitTestPropertiesBuilder();
-                HystrixEventNotifier notifier = null;
-                HystrixConcurrencyStrategy concurrencyStrategy = null;
                 HystrixCommandMetrics metrics = _cb.metrics;
-                HystrixMetricsPublisher metricsPublisher = null;
                 TryableSemaphore fallbackSemaphore = null;
                 TryableSemaphore executionSemaphore = null;
 
@@ -4173,11 +4127,6 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                     return this;
                 }
 
-                TestCommandBuilder setPropertiesFactory(HystrixPropertiesStrategy propertiesFactory) {
-                    this.propertiesFactory = propertiesFactory;
-                    return this;
-                }
-
                 TestCommandBuilder setCommandPropertiesDefaults(HystrixCommandProperties.Setter commandPropertiesDefaults) {
                     this.commandPropertiesDefaults = commandPropertiesDefaults;
                     return this;
@@ -4188,23 +4137,8 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                     return this;
                 }
 
-                TestCommandBuilder setNotifier(HystrixEventNotifier notifier) {
-                    this.notifier = notifier;
-                    return this;
-                }
-
-                TestCommandBuilder setConcurrencyStrategy(HystrixConcurrencyStrategy concurrencyStrategy) {
-                    this.concurrencyStrategy = concurrencyStrategy;
-                    return this;
-                }
-
                 TestCommandBuilder setMetrics(HystrixCommandMetrics metrics) {
                     this.metrics = metrics;
-                    return this;
-                }
-
-                TestCommandBuilder setMetricsPublisher(HystrixMetricsPublisher metricsPublisher) {
-                    this.metricsPublisher = metricsPublisher;
                     return this;
                 }
 
