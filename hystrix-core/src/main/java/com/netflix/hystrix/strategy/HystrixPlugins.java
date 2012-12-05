@@ -77,13 +77,6 @@ public class HystrixPlugins {
     }
 
     /**
-     * Allow resetting all strategies back to defaults.
-     */
-    public void resetToDefaults() {
-        this.notifier = null;
-    }
-
-    /**
      * Retrieve instance of {@link HystrixConcurrencyStrategy} to use based on order of precedence as defined in {@link HystrixPlugins} class header.
      * 
      * @param injected
