@@ -3,6 +3,5 @@ include 'hystrix-core', \
 'hystrix-examples', \
 'hystrix-examples-webapp', \
 'hystrix-contrib:hystrix-request-servlet', \
-'hystrix-contrib:hystrix-servo-stream', \
 'hystrix-contrib:hystrix-servo-metrics-publisher', \
 'hystrix-contrib:hystrix-metrics-event-stream'

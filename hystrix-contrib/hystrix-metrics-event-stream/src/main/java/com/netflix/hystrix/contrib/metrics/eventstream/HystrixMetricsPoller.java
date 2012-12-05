@@ -15,6 +15,8 @@
  */
 package com.netflix.hystrix.contrib.metrics.eventstream;
 
+import java.io.StringWriter;
+import java.net.SocketException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -24,9 +26,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.servlet.http.HttpServletResponse;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+import org.codehaus.jackson.JsonFactory;
+import org.codehaus.jackson.JsonGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,6 +74,7 @@ public class HystrixMetricsPoller {
     private class MetricsPoller implements Runnable {
 
         private final HttpServletResponse httpResponse;
+        private final JsonFactory jsonFactory = new JsonFactory();
 
         public MetricsPoller(HttpServletResponse httpResponse) {
             this.httpResponse = httpResponse;
@@ -89,78 +91,117 @@ public class HystrixMetricsPoller {
                     HystrixCommandKey key = commandMetrics.getCommandKey();
                     HystrixCircuitBreaker circuitBreaker = HystrixCircuitBreaker.Factory.getInstance(key);
 
-                    JSONObject json = new JSONObject();
-                    json.put("type", "HystrixCommand");
-                    json.put("name", key.name());
-                    json.put("group", commandMetrics.getCommandGroup().name());
-                    json.put("currentTime", System.currentTimeMillis());
+                    StringWriter jsonString = new StringWriter();
+                    JsonGenerator json = jsonFactory.createJsonGenerator(jsonString);
+
+                    json.writeStartObject();
+                    json.writeStringField("type", "HystrixCommand");
+                    json.writeStringField("name", key.name());
+                    json.writeStringField("group", commandMetrics.getCommandGroup().name());
+                    json.writeNumberField("currentTime", System.currentTimeMillis());
 
                     // circuit breaker
-                    json.put("isCircuitBreakerOpen", circuitBreaker.isOpen());
+                    json.writeBooleanField("isCircuitBreakerOpen", circuitBreaker.isOpen());
                     HealthCounts healthCounts = commandMetrics.getHealthCounts();
-                    json.put("errorPercentage", healthCounts.getErrorPercentage());
-                    json.put("errorCount", healthCounts.getErrorCount());
-                    json.put("requestCount", healthCounts.getTotalRequests());
+                    json.writeNumberField("errorPercentage", healthCounts.getErrorPercentage());
+                    json.writeNumberField("errorCount", healthCounts.getErrorCount());
+                    json.writeNumberField("requestCount", healthCounts.getTotalRequests());
 
                     // rolling counters
-                    json.put("rollingCountCollapsedRequests", commandMetrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSED));
-                    json.put("rollingCountExceptionsThrown", commandMetrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
-                    json.put("rollingCountFailure", commandMetrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
-                    json.put("rollingCountFallbackFailure", commandMetrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
-                    json.put("rollingCountFallbackRejection", commandMetrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
-                    json.put("rollingCountFallbackSuccess", commandMetrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
-                    json.put("rollingCountResponsesFromCache", commandMetrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
-                    json.put("rollingCountSemaphoreRejected", commandMetrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
-                    json.put("rollingCountShortCircuited", commandMetrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
-                    json.put("rollingCountSuccess", commandMetrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
-                    json.put("rollingCountThreadPoolRejected", commandMetrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
-                    json.put("rollingCountTimeout", commandMetrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
+                    json.writeNumberField("rollingCountCollapsedRequests", commandMetrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSED));
+                    json.writeNumberField("rollingCountExceptionsThrown", commandMetrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
+                    json.writeNumberField("rollingCountFailure", commandMetrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
+                    json.writeNumberField("rollingCountFallbackFailure", commandMetrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
+                    json.writeNumberField("rollingCountFallbackRejection", commandMetrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
+                    json.writeNumberField("rollingCountFallbackSuccess", commandMetrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+                    json.writeNumberField("rollingCountResponsesFromCache", commandMetrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+                    json.writeNumberField("rollingCountSemaphoreRejected", commandMetrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
+                    json.writeNumberField("rollingCountShortCircuited", commandMetrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
+                    json.writeNumberField("rollingCountSuccess", commandMetrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
+                    json.writeNumberField("rollingCountThreadPoolRejected", commandMetrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
+                    json.writeNumberField("rollingCountTimeout", commandMetrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
 
-                    json.put("currentConcurrentExecutionCount", commandMetrics.getCurrentConcurrentExecutionCount());
+                    json.writeNumberField("currentConcurrentExecutionCount", commandMetrics.getCurrentConcurrentExecutionCount());
 
                     // latency percentiles
-                    json.put("latencyExecute_mean", commandMetrics.getExecutionTimeMean());
-                    JSONArray executionLatency = new JSONArray();
-                    executionLatency.put(createLatencyTuple(commandMetrics, 0));
-                    executionLatency.put(createLatencyTuple(commandMetrics, 25));
-                    executionLatency.put(createLatencyTuple(commandMetrics, 50));
-                    executionLatency.put(createLatencyTuple(commandMetrics, 75));
-                    executionLatency.put(createLatencyTuple(commandMetrics, 90));
-                    executionLatency.put(createLatencyTuple(commandMetrics, 95));
-                    executionLatency.put(createLatencyTuple(commandMetrics, 99));
-                    executionLatency.put(createLatencyTuple(commandMetrics, 99.5));
-                    executionLatency.put(createLatencyTuple(commandMetrics, 100));
-                    json.put("latencyExecute", executionLatency);
-
-                    json.put("latencyTotal_mean", commandMetrics.getTotalTimeMean());
-                    JSONArray totalLatency = new JSONArray();
-                    totalLatency.put(createTotalLatencyTuple(commandMetrics, 0));
-                    totalLatency.put(createTotalLatencyTuple(commandMetrics, 25));
-                    totalLatency.put(createTotalLatencyTuple(commandMetrics, 50));
-                    totalLatency.put(createTotalLatencyTuple(commandMetrics, 75));
-                    totalLatency.put(createTotalLatencyTuple(commandMetrics, 90));
-                    totalLatency.put(createTotalLatencyTuple(commandMetrics, 95));
-                    totalLatency.put(createTotalLatencyTuple(commandMetrics, 99));
-                    totalLatency.put(createTotalLatencyTuple(commandMetrics, 99.5));
-                    totalLatency.put(createTotalLatencyTuple(commandMetrics, 100));
-                    json.put("latencyTotal", totalLatency);
+                    json.writeNumberField("latencyExecute_mean", commandMetrics.getExecutionTimeMean());
+                    json.writeArrayFieldStart("latencyExecute");
+                    json.writeStartObject();
+                    json.writeNumberField("0", commandMetrics.getExecutionTimePercentile(0));
+                    json.writeEndObject();
+                    json.writeStartObject();
+                    json.writeNumberField("25", commandMetrics.getExecutionTimePercentile(25));
+                    json.writeEndObject();
+                    json.writeStartObject();
+                    json.writeNumberField("50", commandMetrics.getExecutionTimePercentile(50));
+                    json.writeEndObject();
+                    json.writeStartObject();
+                    json.writeNumberField("75", commandMetrics.getExecutionTimePercentile(75));
+                    json.writeEndObject();
+                    json.writeStartObject();
+                    json.writeNumberField("90", commandMetrics.getExecutionTimePercentile(90));
+                    json.writeEndObject();
+                    json.writeStartObject();
+                    json.writeNumberField("95", commandMetrics.getExecutionTimePercentile(95));
+                    json.writeEndObject();
+                    json.writeStartObject();
+                    json.writeNumberField("99", commandMetrics.getExecutionTimePercentile(99));
+                    json.writeEndObject();
+                    json.writeStartObject();
+                    json.writeNumberField("99.5", commandMetrics.getExecutionTimePercentile(99.5));
+                    json.writeEndObject();
+                    json.writeStartObject();
+                    json.writeNumberField("100", commandMetrics.getExecutionTimePercentile(100));
+                    json.writeEndObject();
+                    json.writeEndArray();
+                    //
+                    json.writeNumberField("latencyTotal_mean", commandMetrics.getTotalTimeMean());
+                    json.writeArrayFieldStart("latencyTotal");
+                    json.writeStartObject();
+                    json.writeNumberField("0", commandMetrics.getTotalTimePercentile(0));
+                    json.writeEndObject();
+                    json.writeStartObject();
+                    json.writeNumberField("25", commandMetrics.getTotalTimePercentile(25));
+                    json.writeEndObject();
+                    json.writeStartObject();
+                    json.writeNumberField("50", commandMetrics.getTotalTimePercentile(50));
+                    json.writeEndObject();
+                    json.writeStartObject();
+                    json.writeNumberField("75", commandMetrics.getTotalTimePercentile(75));
+                    json.writeEndObject();
+                    json.writeStartObject();
+                    json.writeNumberField("90", commandMetrics.getTotalTimePercentile(90));
+                    json.writeEndObject();
+                    json.writeStartObject();
+                    json.writeNumberField("95", commandMetrics.getTotalTimePercentile(95));
+                    json.writeEndObject();
+                    json.writeStartObject();
+                    json.writeNumberField("99", commandMetrics.getTotalTimePercentile(99));
+                    json.writeEndObject();
+                    json.writeStartObject();
+                    json.writeNumberField("99.5", commandMetrics.getTotalTimePercentile(99.5));
+                    json.writeEndObject();
+                    json.writeStartObject();
+                    json.writeNumberField("100", commandMetrics.getTotalTimePercentile(100));
+                    json.writeEndObject();
+                    json.writeEndArray();
 
                     // property values for reporting what is actually seen by the command rather than what was set somewhere
                     HystrixCommandProperties commandProperties = commandMetrics.getProperties();
 
-                    json.put("propertyValue_circuitBreakerRequestVolumeThreshold", commandProperties.circuitBreakerRequestVolumeThreshold().get());
-                    json.put("propertyValue_circuitBreakerSleepWindowInMilliseconds", commandProperties.circuitBreakerSleepWindowInMilliseconds().get());
-                    json.put("propertyValue_circuitBreakerErrorThresholdPercentage", commandProperties.circuitBreakerErrorThresholdPercentage().get());
-                    json.put("propertyValue_circuitBreakerForceOpen", commandProperties.circuitBreakerForceOpen().get());
-                    json.put("propertyValue_circuitBreakerForceClosed", commandProperties.circuitBreakerForceClosed().get());
-                    json.put("propertyValue_circuitBreakerEnabled", commandProperties.circuitBreakerEnabled().get());
+                    json.writeNumberField("propertyValue_circuitBreakerRequestVolumeThreshold", commandProperties.circuitBreakerRequestVolumeThreshold().get());
+                    json.writeNumberField("propertyValue_circuitBreakerSleepWindowInMilliseconds", commandProperties.circuitBreakerSleepWindowInMilliseconds().get());
+                    json.writeNumberField("propertyValue_circuitBreakerErrorThresholdPercentage", commandProperties.circuitBreakerErrorThresholdPercentage().get());
+                    json.writeBooleanField("propertyValue_circuitBreakerForceOpen", commandProperties.circuitBreakerForceOpen().get());
+                    json.writeBooleanField("propertyValue_circuitBreakerForceClosed", commandProperties.circuitBreakerForceClosed().get());
+                    json.writeBooleanField("propertyValue_circuitBreakerEnabled", commandProperties.circuitBreakerEnabled().get());
 
-                    json.put("propertyValue_executionIsolationStrategy", commandProperties.executionIsolationStrategy().get().name());
-                    json.put("propertyValue_executionIsolationThreadTimeoutInMilliseconds", commandProperties.executionIsolationThreadTimeoutInMilliseconds().get());
-                    json.put("propertyValue_executionIsolationThreadInterruptOnTimeout", commandProperties.executionIsolationThreadInterruptOnTimeout().get());
-                    json.put("propertyValue_executionIsolationThreadPoolKeyOverride", commandProperties.executionIsolationThreadPoolKeyOverride().get());
-                    json.put("propertyValue_executionIsolationSemaphoreMaxConcurrentRequests", commandProperties.executionIsolationSemaphoreMaxConcurrentRequests().get());
-                    json.put("propertyValue_fallbackIsolationSemaphoreMaxConcurrentRequests", commandProperties.fallbackIsolationSemaphoreMaxConcurrentRequests().get());
+                    json.writeStringField("propertyValue_executionIsolationStrategy", commandProperties.executionIsolationStrategy().get().name());
+                    json.writeNumberField("propertyValue_executionIsolationThreadTimeoutInMilliseconds", commandProperties.executionIsolationThreadTimeoutInMilliseconds().get());
+                    json.writeBooleanField("propertyValue_executionIsolationThreadInterruptOnTimeout", commandProperties.executionIsolationThreadInterruptOnTimeout().get());
+                    json.writeStringField("propertyValue_executionIsolationThreadPoolKeyOverride", commandProperties.executionIsolationThreadPoolKeyOverride().get());
+                    json.writeNumberField("propertyValue_executionIsolationSemaphoreMaxConcurrentRequests", commandProperties.executionIsolationSemaphoreMaxConcurrentRequests().get());
+                    json.writeNumberField("propertyValue_fallbackIsolationSemaphoreMaxConcurrentRequests", commandProperties.fallbackIsolationSemaphoreMaxConcurrentRequests().get());
 
                     /*
                      * The following are commented out as these rarely change and are verbose for streaming for something people don't change.
@@ -174,11 +215,14 @@ public class HystrixMetricsPoller {
                     //                    json.put("propertyValue_metricsRollingStatisticalWindowBuckets", commandProperties.metricsRollingStatisticalWindowBuckets().get());
                     //                    json.put("propertyValue_metricsRollingStatisticalWindowInMilliseconds", commandProperties.metricsRollingStatisticalWindowInMilliseconds().get());
 
-                    json.put("propertyValue_requestCacheEnabled", commandProperties.requestCacheEnabled().get());
-                    json.put("propertyValue_requestLogEnabled", commandProperties.requestLogEnabled().get());
+                    json.writeBooleanField("propertyValue_requestCacheEnabled", commandProperties.requestCacheEnabled().get());
+                    json.writeBooleanField("propertyValue_requestLogEnabled", commandProperties.requestLogEnabled().get());
+
+                    json.writeEndObject();
+                    json.close();
 
                     // output to stream
-                    httpResponse.getWriter().println("data: " + json.toString() + "\n");
+                    httpResponse.getWriter().println("data: " + jsonString.getBuffer().toString() + "\n");
 
                     // flush a batch if applicable
                     if (flushCount == BATCH_SIZE) {
@@ -193,24 +237,29 @@ public class HystrixMetricsPoller {
                     flushCount++;
                     HystrixThreadPoolKey key = threadPoolMetrics.getThreadPoolKey();
 
-                    JSONObject json = new JSONObject();
-                    json.put("type", "HystrixThreadPool");
-                    json.put("name", key.name());
-                    json.put("currentTime", System.currentTimeMillis());
+                    StringWriter jsonString = new StringWriter();
+                    JsonGenerator json = jsonFactory.createJsonGenerator(jsonString);
+                    json.writeStartObject();
 
-                    json.put("currentActiveCount", threadPoolMetrics.getCurrentActiveCount());
-                    json.put("currentCompletedTaskCount", threadPoolMetrics.getCurrentCompletedTaskCount());
-                    json.put("currentCorePoolSize", threadPoolMetrics.getCurrentCorePoolSize());
-                    json.put("currentLargestPoolSize", threadPoolMetrics.getCurrentLargestPoolSize());
-                    json.put("currentMaximumPoolSize", threadPoolMetrics.getCurrentMaximumPoolSize());
-                    json.put("currentPoolSize", threadPoolMetrics.getCurrentPoolSize());
-                    json.put("currentQueueSize", threadPoolMetrics.getCurrentQueueSize());
-                    json.put("currentTaskCount", threadPoolMetrics.getCurrentTaskCount());
-                    json.put("rollingCountThreadsExecuted", threadPoolMetrics.getRollingCountThreadsExecuted());
-                    json.put("rollingMaxActiveThreads", threadPoolMetrics.getRollingMaxActiveThreads());
+                    json.writeStringField("type", "HystrixThreadPool");
+                    json.writeStringField("name", key.name());
+                    json.writeNumberField("currentTime", System.currentTimeMillis());
 
+                    json.writeNumberField("currentActiveCount", threadPoolMetrics.getCurrentActiveCount().intValue());
+                    json.writeNumberField("currentCompletedTaskCount", threadPoolMetrics.getCurrentCompletedTaskCount().longValue());
+                    json.writeNumberField("currentCorePoolSize", threadPoolMetrics.getCurrentCorePoolSize().intValue());
+                    json.writeNumberField("currentLargestPoolSize", threadPoolMetrics.getCurrentLargestPoolSize().intValue());
+                    json.writeNumberField("currentMaximumPoolSize", threadPoolMetrics.getCurrentMaximumPoolSize().intValue());
+                    json.writeNumberField("currentPoolSize", threadPoolMetrics.getCurrentPoolSize().intValue());
+                    json.writeNumberField("currentQueueSize", threadPoolMetrics.getCurrentQueueSize().intValue());
+                    json.writeNumberField("currentTaskCount", threadPoolMetrics.getCurrentTaskCount().longValue());
+                    json.writeNumberField("rollingCountThreadsExecuted", threadPoolMetrics.getRollingCountThreadsExecuted());
+                    json.writeNumberField("rollingMaxActiveThreads", threadPoolMetrics.getRollingMaxActiveThreads());
+
+                    json.writeEndObject();
+                    json.close();
                     // output to stream
-                    httpResponse.getWriter().println("data: " + json.toString() + "\n");
+                    httpResponse.getWriter().println("data: " + jsonString.getBuffer().toString() + "\n");
 
                     // flush a batch if applicable
                     if (flushCount == BATCH_SIZE) {
@@ -221,6 +270,12 @@ public class HystrixMetricsPoller {
 
                 // flush again at the end for anything not flushed above
                 httpResponse.flushBuffer();
+            } catch (SocketException e) {
+                // this is expected whenever a client disconnects so we won't log it verbosely
+                logger.debug("SocketException (most likely that client disconnected) while streaming metrics", e);
+                // shutdown
+                stop();
+                return;
             } catch (Exception e) {
                 logger.warn("Failed to stream metrics", e);
                 // shutdown
@@ -228,19 +283,6 @@ public class HystrixMetricsPoller {
                 return;
             }
         }
-
-        private JSONObject createLatencyTuple(HystrixCommandMetrics commandMetrics, double percentile) throws JSONException {
-            JSONObject latency = new JSONObject();
-            latency.put(String.valueOf(percentile), commandMetrics.getExecutionTimePercentile(percentile));
-            return latency;
-        }
-
-        private JSONObject createTotalLatencyTuple(HystrixCommandMetrics commandMetrics, double percentile) throws JSONException {
-            JSONObject latency = new JSONObject();
-            latency.put(String.valueOf(percentile), commandMetrics.getTotalTimePercentile(percentile));
-            return latency;
-        }
-
     }
 
     private class MetricsPollerThreadFactory implements ThreadFactory {
