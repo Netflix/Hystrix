@@ -125,66 +125,30 @@ public class HystrixMetricsPoller {
 
                     // latency percentiles
                     json.writeNumberField("latencyExecute_mean", commandMetrics.getExecutionTimeMean());
-                    json.writeArrayFieldStart("latencyExecute");
-                    json.writeStartObject();
+                    json.writeObjectFieldStart("latencyExecute");
                     json.writeNumberField("0", commandMetrics.getExecutionTimePercentile(0));
-                    json.writeEndObject();
-                    json.writeStartObject();
                     json.writeNumberField("25", commandMetrics.getExecutionTimePercentile(25));
-                    json.writeEndObject();
-                    json.writeStartObject();
                     json.writeNumberField("50", commandMetrics.getExecutionTimePercentile(50));
-                    json.writeEndObject();
-                    json.writeStartObject();
                     json.writeNumberField("75", commandMetrics.getExecutionTimePercentile(75));
-                    json.writeEndObject();
-                    json.writeStartObject();
                     json.writeNumberField("90", commandMetrics.getExecutionTimePercentile(90));
-                    json.writeEndObject();
-                    json.writeStartObject();
                     json.writeNumberField("95", commandMetrics.getExecutionTimePercentile(95));
-                    json.writeEndObject();
-                    json.writeStartObject();
                     json.writeNumberField("99", commandMetrics.getExecutionTimePercentile(99));
-                    json.writeEndObject();
-                    json.writeStartObject();
                     json.writeNumberField("99.5", commandMetrics.getExecutionTimePercentile(99.5));
-                    json.writeEndObject();
-                    json.writeStartObject();
                     json.writeNumberField("100", commandMetrics.getExecutionTimePercentile(100));
                     json.writeEndObject();
-                    json.writeEndArray();
                     //
                     json.writeNumberField("latencyTotal_mean", commandMetrics.getTotalTimeMean());
-                    json.writeArrayFieldStart("latencyTotal");
-                    json.writeStartObject();
+                    json.writeObjectFieldStart("latencyTotal");
                     json.writeNumberField("0", commandMetrics.getTotalTimePercentile(0));
-                    json.writeEndObject();
-                    json.writeStartObject();
                     json.writeNumberField("25", commandMetrics.getTotalTimePercentile(25));
-                    json.writeEndObject();
-                    json.writeStartObject();
                     json.writeNumberField("50", commandMetrics.getTotalTimePercentile(50));
-                    json.writeEndObject();
-                    json.writeStartObject();
                     json.writeNumberField("75", commandMetrics.getTotalTimePercentile(75));
-                    json.writeEndObject();
-                    json.writeStartObject();
                     json.writeNumberField("90", commandMetrics.getTotalTimePercentile(90));
-                    json.writeEndObject();
-                    json.writeStartObject();
                     json.writeNumberField("95", commandMetrics.getTotalTimePercentile(95));
-                    json.writeEndObject();
-                    json.writeStartObject();
                     json.writeNumberField("99", commandMetrics.getTotalTimePercentile(99));
-                    json.writeEndObject();
-                    json.writeStartObject();
                     json.writeNumberField("99.5", commandMetrics.getTotalTimePercentile(99.5));
-                    json.writeEndObject();
-                    json.writeStartObject();
                     json.writeNumberField("100", commandMetrics.getTotalTimePercentile(100));
                     json.writeEndObject();
-                    json.writeEndArray();
 
                     // property values for reporting what is actually seen by the command rather than what was set somewhere
                     HystrixCommandProperties commandProperties = commandMetrics.getProperties();
@@ -210,13 +174,15 @@ public class HystrixMetricsPoller {
 
                     //                    json.put("propertyValue_metricsRollingPercentileEnabled", commandProperties.metricsRollingPercentileEnabled().get());
                     //                    json.put("propertyValue_metricsRollingPercentileBucketSize", commandProperties.metricsRollingPercentileBucketSize().get());
-                    //                    json.put("propertyValue_metricsRollingPercentileWindow", commandProperties.metricsRollingPercentileWindow().get());
+                    //                    json.put("propertyValue_metricsRollingPercentileWindow", commandProperties.metricsRollingPercentileWindowInMilliseconds().get());
                     //                    json.put("propertyValue_metricsRollingPercentileWindowBuckets", commandProperties.metricsRollingPercentileWindowBuckets().get());
                     //                    json.put("propertyValue_metricsRollingStatisticalWindowBuckets", commandProperties.metricsRollingStatisticalWindowBuckets().get());
-                    //                    json.put("propertyValue_metricsRollingStatisticalWindowInMilliseconds", commandProperties.metricsRollingStatisticalWindowInMilliseconds().get());
+                    json.writeNumberField("propertyValue_metricsRollingStatisticalWindowInMilliseconds", commandProperties.metricsRollingStatisticalWindowInMilliseconds().get());
 
                     json.writeBooleanField("propertyValue_requestCacheEnabled", commandProperties.requestCacheEnabled().get());
                     json.writeBooleanField("propertyValue_requestLogEnabled", commandProperties.requestLogEnabled().get());
+
+                    json.writeNumberField("reportingHosts", 1); // this will get summed across all instances in a cluster
 
                     json.writeEndObject();
                     json.close();
@@ -255,6 +221,9 @@ public class HystrixMetricsPoller {
                     json.writeNumberField("currentTaskCount", threadPoolMetrics.getCurrentTaskCount().longValue());
                     json.writeNumberField("rollingCountThreadsExecuted", threadPoolMetrics.getRollingCountThreadsExecuted());
                     json.writeNumberField("rollingMaxActiveThreads", threadPoolMetrics.getRollingMaxActiveThreads());
+
+                    json.writeNumberField("propertyValue_queueSizeRejectionThreshold", threadPoolMetrics.getProperties().queueSizeRejectionThreshold().get());
+                    json.writeNumberField("propertyValue_metricsRollingStatisticalWindowInMilliseconds", threadPoolMetrics.getProperties().metricsRollingStatisticalWindowInMilliseconds().get());
 
                     json.writeEndObject();
                     json.close();
