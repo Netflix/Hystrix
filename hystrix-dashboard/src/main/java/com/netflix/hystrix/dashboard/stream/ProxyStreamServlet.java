@@ -43,19 +43,32 @@ public class ProxyStreamServlet extends HttpServlet {
             response.setStatus(500);
             response.getWriter().println("Required parameter 'origin' missing. Example: 107.20.175.135:7001");
         }
+        origin = origin.trim();
+        
         HttpGet httpget = null;
         InputStream is = null;
+        boolean hasFirstParameter = false;
         StringBuilder url = new StringBuilder();
         if (!origin.startsWith("http")) {
             url.append("http://");
         }
         url.append(origin);
+        if (origin.contains("?")) {
+            hasFirstParameter = true;
+        }
         @SuppressWarnings("unchecked")
         Map<String, String[]> params = request.getParameterMap();
         for (String key : params.keySet()) {
             if (!key.equals("origin")) {
                 String[] values = params.get(key);
-                url.append("&").append(key).append("=").append(values[0]);
+                String value = values[0].trim();
+                if (hasFirstParameter) {
+                    url.append("&");
+                } else {
+                    url.append("?");
+                    hasFirstParameter = true;
+                }
+                url.append(key).append("=").append(value);
             }
         }
         String proxyUrl = url.toString();

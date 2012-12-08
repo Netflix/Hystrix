@@ -36,9 +36,11 @@
 	<br>
 	
 	<h2>Hystrix Dashboard</h2>
-	<input id="stream" type="textfield" size="120" placeholder="http://hostname:port/turbine/turbine.stream?cluster=default"></input>
+	<input id="stream" type="textfield" size="120" placeholder="http://hostname:port/turbine/turbine.stream"></input>
 	<br><br>
-	<i>Cluster via Turbine:</i> http://turbine-hostname:port/turbine.stream?cluster=default
+	<i>Cluster via Turbine (default cluster):</i> http://turbine-hostname:port/turbine.stream
+	<br>
+	<i>Cluster via Turbine (custom cluster):</i> http://turbine-hostname:port/turbine.stream?cluster=[clusterName]
 	<br>
 	<i>Single Hystrix App:</i> http://hystrix-app:port/hystrix.stream
 	<br><br>
