@@ -1,0 +1,33 @@
+
+	<div class="spacer"></div>
+
+	<div class="rate">
+		<a href="javascript://" title="Total Execution Rate per Second per Reporting Host" class="tooltip rate"><span class="smaller">Host: </span><span class="ratePerSecondPerHost"><%= addCommas(ratePerSecondPerHost) %></span>/s</a>
+	</div>
+	<div class="rate">	
+		<a href="javascript://" title="Total Execution Rate per Second for Cluster" class="tooltip rate"><span class="smaller">Cluster: </span><span class="ratePerSecond"><%= addCommas(ratePerSecond) %></span>/s</a>
+	</div>
+	
+	<div class="spacer"></div>
+	
+		<div class="tableRow">
+			<div class="cell header left">Active</div>
+			<div class="cell data left"><%= currentActiveCount%></div>
+			
+			<div class="cell header right">Max Active</div>
+			<div class="cell data right"><%= addCommas(rollingMaxActiveThreads)%></div>
+		</div>
+
+		<div class="tableRow">
+			<div class="cell header left">Queued</div>
+			<div class="cell data left"><%= currentQueueSize %></div>
+			<div class="cell header right">Executions</div>
+			<div class="cell data right"><%= addCommas(rollingCountThreadsExecuted)%></div>
+		</div>
+		<div class="tableRow">
+			<div class="cell header left">Pool Size</div>
+			<div class="cell data left"><%= currentPoolSize %></div>
+			<div class="cell header right">Queue Size</div>
+			<div class="cell data right"><%= propertyValue_queueSizeRejectionThreshold %></div>
+		</div>
+	

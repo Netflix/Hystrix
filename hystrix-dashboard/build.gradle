@@ -1,0 +1,9 @@
+apply plugin: 'java'
+apply plugin: 'war'
+
+    dependencies {
+        compile 'javax.servlet:servlet-api:2.5'
+        compile 'org.apache.httpcomponents:httpclient:4.2.1'
+        compile 'log4j:log4j:1.2.17'
+        compile 'org.slf4j:slf4j-log4j12:1.6.6'
+    }

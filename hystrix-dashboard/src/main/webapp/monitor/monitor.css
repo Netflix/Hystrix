@@ -1,0 +1,104 @@
+.container {
+	padding-left: 20px;
+	padding-right: 20px;
+}
+
+.row {
+	width: 100%;
+	margin: 0 auto;
+	overflow: hidden;
+}
+
+.spacer {
+	width: 100%;
+	margin: 0 auto;
+	padding-top:4px;
+	clear:both;
+}
+
+
+.last {
+	margin-right: 0px;
+}
+
+.menubar {
+	overflow: hidden;
+	border-bottom: 1px solid black;
+}
+
+.menubar div {
+	padding-bottom:5px;
+
+	margin: 0 auto;
+	overflow: hidden;
+	
+	font-size: 80%;
+	font-family:'Bookman Old Style',Bookman,'URW Bookman L','Palatino Linotype',serif;
+	
+	float:left;
+}
+
+.menubar .title {
+	float: left;
+	padding-right: 20px;
+	
+	font-size: 110%;
+	font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+	font-weight: bold;
+	
+	vertical-align: bottom;
+}
+
+.menubar .menu_actions {
+	float: left;
+	position:relative;
+	top: 4px;
+}
+
+.menubar .menu_legend {
+	float: right;
+	position:relative;
+	top: 4px;
+	
+}
+
+h3.sectionHeader {
+	color: black;
+	font-size: 110%;
+	padding-top: 4px;
+	padding-bottom: 4px;
+	padding-left: 8px;
+	font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+	background: lightgrey;
+}
+
+.success {
+	color: green;	
+}
+.shortCircuited {
+	color: blue;	
+}
+.latent {
+	color: #FFCC00;	/* shade of dark yellow */
+}
+.timeout {
+	color: #FF9900;	 /* shade of orange */
+}
+.failure {
+	color: red;	
+}
+
+.rejected {
+	color: purple;
+}
+	
+.exceptionsThrown {
+	color: brown;
+}
+
+@media screen and (max-width: 1100px) {
+	.container {
+		padding-left: 5px;
+		padding-right: 5px;
+	}
+}

@@ -1,0 +1,36 @@
+<div class="monitor" id="CIRCUIT_<%= name %>" style="position:relative;">
+	<%
+		var displayName = name;
+		if(displayName.substring(0, 36) == 'APIDependencyCommand_CircuitBreaker_') {
+			displayName = displayName.substring(36, displayName.length);
+		}
+	%>
+	
+	<div id="chart_CIRCUIT_<%= name %>" class="chart" style="position:absolute;top:0px;left:0; float:left; width:100%; height:100%;"></div>
+    <div style="position:absolute;top:0x;width:100%;height:15px;opacity:0.8; background:white;">
+    	<% if(includeDetailIcon) { %>
+    	<p class="name" style="padding-right:16px">
+    		<%= displayName %>
+    		<a href="../dependencies/command.jsp?name=<%= name %>"><img src="../components/hystrixCommand/magnifying-glass-icon-20.png" height="14px" width="14px" border="0" style="position: absolute; right:0px;"></a>
+    	</p>
+    	<% }  else { %>
+    	<p class="name"><%= displayName %></p>
+    	<% }  %>
+    </div>
+	<div style="position:absolute;top:15px;; opacity:0.8; background:white; width:100%; height:95%;">
+		<div class="monitor_data"></div>
+	</div>
+	<div id="graph_CIRCUIT_<%= name %>" class="graph" style="position:absolute;top:25px;left:0; float:left; width:140px; height:62px;"></div>
+
+	<script>
+		var y = 200;
+		var vis = d3.select("#chart_CIRCUIT_<%= name %>").append("svg:svg").attr("width", "100%").attr("height", "100%");
+		/* add a circle -- we don't use the data point, we set it manually, so just passing in [1] */
+		var circle = vis.selectAll("circle").data([1]).enter().append("svg:circle");
+		/* setup the initial styling and sizing of the circle */
+		circle.style("fill", "green").attr("cx", "30%").attr("cy", "30%").attr("r", 5);
+		
+		/* add the line graph - it will be populated by javascript, no default to show here */
+		var graph = d3.select("#graph_CIRCUIT_<%= name %>").append("svg:svg").attr("width", "100%").attr("height", "100%");
+	</script>
+</div>

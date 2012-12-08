@@ -1,0 +1,73 @@
+	<div class="counters">
+		
+		<div class="cell line">
+			<a href="javascript://" title="Error Percentage [Latent + Timed-out + Threadpool Rejected + Failure / Total]" class="tooltip errorPercentage"><span class="value"><%= errorPercentage %></span> %</a>
+		</div>
+		
+		<div class="cell borderRight">
+			<% if(propertyValue_executionIsolationStrategy == 'THREAD') { %>
+				<a href="javascript://" title="Timed-out Request Count" class="line tooltip timeout"><%= addCommas(rollingCountTimeout) %></a>
+				<a href="javascript://" title="Threadpool Rejected Request Count" class="line tooltip rejected"><%= addCommas(rollingCountThreadPoolRejected) %></a>
+			<% } %>
+			<a href="javascript://" title="Failure Request Count" class="line tooltip failure"><%= addCommas(rollingCountFailure) %></a> 
+		</div>
+		<div class="cell borderRight">
+			<a href="javascript://" title="Successful Request Count" class="line tooltip success"><%= addCommas(rollingCountSuccess) %></a>
+			<a href="javascript://" title="Short-circuited Request Count" class="line tooltip shortCircuited"><%= addCommas(rollingCountShortCircuited) %></a>
+			<br>
+		</div>
+	</div>
+
+	<div class="rate">
+		<a href="javascript://" title="Total Request Rate per Second per Reporting Host" class="tooltip rate"><span class="smaller">Host: </span><span class="ratePerSecondPerHost"><%= addCommas(roundNumber(ratePerSecondPerHost)) %></span>/s</a>
+	</div>
+	<div class="rate">	
+		<a href="javascript://" title="Total Request Rate per Second for Cluster" class="tooltip rate"><span class="smaller">Cluster: </span><span class="ratePerSecond"><%= addCommas(roundNumber(ratePerSecond)) %></span>/s</a>
+	</div>
+		
+		<div class="circuitStatus">
+		<% if(propertyValue_circuitBreakerForceClosed) { %>
+			<span class="smaller">[ <font color="orange">Forced Closed</font> ]</span>
+		<% } %>
+		<% if(propertyValue_circuitBreakerForceOpen) { %>
+			Circuit <font color="red">Forced Open</font>
+		<% } else { %>
+			<% if(isCircuitBreakerOpen == reportingHosts) { %>
+				Circuit <font color="red">Open</font>
+			<% } else if(isCircuitBreakerOpen == 0) { %>
+				Circuit <font color="green">Closed</font>
+			<% } else {
+				/* We have some circuits that are open */  
+			%>
+				Circuit <font color="orange"><%= isCircuitBreakerOpen.replace("true", "Open").replace("false", "Closed") %>)</font>
+			<% }  %>
+		<% } %>
+		</div>
+		
+		<div class="spacer"></div>
+		
+		<div class="tableRow">
+			<% if(typeof reportingHosts != 'undefined') { %>
+			<div class="cell header">Hosts</div>
+			<div class="cell data"><%= reportingHosts %></div>
+			<% } else { %>
+			<div class="cell header">Host</div>
+			<div class="cell data">Single</div>
+			<% } %>
+			<div class="cell header">90th</div>
+			<div class="cell data latency90"><span class="value"><%= getInstanceAverage(latencyExecute['90'], reportingHosts, false) %></span>ms</div>
+		</div>
+		<div class="tableRow">
+			<div class="cell header">Median</div>
+			<div class="cell data latencyMedian"><span class="value"><%= getInstanceAverage(latencyExecute['50'], reportingHosts, false) %></span>ms</div>
+			<div class="cell header">99th</div>
+			<div class="cell data latency99"><span class="value"><%= getInstanceAverage(latencyExecute['99'], reportingHosts, false) %></span>ms</div>
+		</div>
+		<div class="tableRow">
+			<div class="cell header">Mean</div>
+			<div class="cell data latencyMean"><span class="value"><%= latencyExecute_mean %></span>ms</div>
+			<div class="cell header">99.5th</div>
+			<div class="cell data latency995"><span class="value"><%= getInstanceAverage(latencyExecute['99.5'], reportingHosts, false) %></span>ms</div>
+		</div>
+	
+<!-- 	<a href="">History</a> <a href="">EPIC</a> <a href="">Actions</a> -->

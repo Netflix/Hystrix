@@ -5,5 +5,5 @@ include 'hystrix-core', \
 'hystrix-contrib:hystrix-request-servlet', \
 'hystrix-contrib:hystrix-servo-metrics-publisher', \
 'hystrix-contrib:hystrix-metrics-event-stream', \
-'hystrix-contrib:hystrix-yammer-metrics-publisher'
-
+'hystrix-contrib:hystrix-yammer-metrics-publisher' \
+'hystrix-dashboard'

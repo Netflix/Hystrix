@@ -1,0 +1,199 @@
+.dependencies .spacer {
+	width: 100%;
+	margin: 0 auto;
+	padding-top:4px;
+	clear:both;
+}
+
+
+.dependencies .last {
+	margin-right: 0px;
+}
+
+.dependencies span.loading {
+	display: block;
+	padding-top: 6%;
+	padding-bottom: 6%;
+	color: gray;
+	text-align: center;
+}
+
+.dependencies span.loading.failed {
+	color: red;
+}
+
+
+.dependencies div.monitor {
+	float: left;
+	margin-right:5px;
+	margin-top:5px;
+}
+
+.dependencies div.monitor p.name {
+	font-weight:bold;
+	font-size: 10pt;
+	text-align: right;	
+	padding-bottom: 5px;
+}
+
+.dependencies div.monitor_data {
+	margin: 0 auto;	
+}
+
+/* override the HREF when we have specified it as a tooltip to not act like a link */
+.dependencies div.monitor_data a.tooltip {
+	text-decoration: none;
+	cursor: default;	
+}
+
+.dependencies div.monitor_data div.counters {
+	text-align: right;	
+	padding-bottom: 10px;
+	font-size: 10pt;
+	clear: both;
+	
+}
+
+.dependencies div.monitor_data div.counters div.cell {
+	display: inline;
+	float: right;
+}
+
+.dependencies .borderRight {
+	border-right: 1px solid grey;
+	padding-right: 6px;
+	padding-left: 8px;
+}
+
+.dependencies div.cell .line {
+	display: block;
+}
+
+.dependencies div.monitor_data a,
+.dependencies span.rate_value {
+	font-weight:bold;	
+}
+
+
+.dependencies span.smaller {
+	font-size: 8pt;
+	color: grey;	
+}
+
+
+
+.dependencies div.tableRow {
+	width:100%;
+	white-space: nowrap;
+	font-size: 8pt;	
+	margin: 0 auto;
+	clear:both;
+	padding-left:26%;
+}
+
+.dependencies div.tableRow .cell {
+	float:left;
+}
+
+.dependencies div.tableRow .header {
+	width:18%;
+	text-align:right;
+	padding-right:2%;
+}
+
+.dependencies div.tableRow .data {
+	width:17%;
+	font-weight: bold;
+	text-align:right;
+}
+
+
+.dependencies div.monitor {
+	width: 245px; /* we want a fixed width instead of percentage as I want the boxes to be a set size and then fill in as many as can fit in each row ... this allows 3 columns on an iPad */
+	height: 150px;
+}
+
+.dependencies .success {
+	color: green;	
+}
+.dependencies .shortCircuited {
+	color: blue;	
+}
+.dependencies .latent {
+	color: #FFCC00;	/* shade of dark yellow */
+}
+.dependencies .timeout {
+	color: #FF9900;	 /* shade of orange */
+}
+.dependencies .failure {
+	color: red;	
+}
+
+.dependencies .rejected {
+	color: purple;
+}
+	
+.dependencies .exceptionsThrown {
+	color: brown;
+}
+
+.dependencies div.monitor_data a.rate {
+	color: black;	
+	font-size: 11pt;
+}
+
+.dependencies div.rate {
+	padding-top: 1px;
+	clear:both;
+	text-align:right;
+}
+
+.dependencies .errorPercentage {
+	color: grey;	
+}
+
+.dependencies div.cell .errorPercentage {
+	padding-left:5px;
+	font-size: 12pt !important;
+}
+
+
+.dependencies div.monitor div.chart {
+}
+
+.dependencies div.monitor div.chart svg {
+}
+
+.dependencies div.monitor div.chart svg text {
+	fill: white;
+}
+
+
+.dependencies div.circuitStatus {
+	width:100%;
+	white-space: nowrap;
+	font-size: 9pt;	
+	margin: 0 auto;
+	clear:both;
+	text-align:right;
+	padding-top: 4px;
+}
+
+.dependencies #hidden {
+    width:1px;
+    height:1px;
+    background: lightgrey;
+    display: none;
+}
+
+
+
+/* sparkline */
+.dependencies path {
+	stroke: steelblue;
+	stroke-width: 1;
+	fill: none;
+}
+
+
+}
