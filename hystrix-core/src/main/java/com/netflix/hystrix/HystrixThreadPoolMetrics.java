@@ -93,10 +93,12 @@ public class HystrixThreadPoolMetrics {
     private final HystrixThreadPoolKey threadPoolKey;
     private final HystrixRollingNumber counter;
     private final ThreadPoolExecutor threadPool;
+    private final HystrixThreadPoolProperties properties;
 
     private HystrixThreadPoolMetrics(HystrixThreadPoolKey threadPoolKey, ThreadPoolExecutor threadPool, HystrixThreadPoolProperties properties) {
         this.threadPoolKey = threadPoolKey;
         this.threadPool = threadPool;
+        this.properties = properties;
         this.counter = new HystrixRollingNumber(properties.metricsRollingStatisticalWindowInMilliseconds(), properties.metricsRollingStatisticalWindowBuckets());
     }
 
@@ -107,6 +109,15 @@ public class HystrixThreadPoolMetrics {
      */
     public HystrixThreadPoolKey getThreadPoolKey() {
         return threadPoolKey;
+    }
+
+    /**
+     * {@link HystrixThreadPoolProperties} of the {@link HystrixThreadPool} these metrics represent.
+     * 
+     * @return HystrixThreadPoolProperties
+     */
+    public HystrixThreadPoolProperties getProperties() {
+        return properties;
     }
 
     /**
