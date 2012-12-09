@@ -4,4 +4,6 @@ include 'hystrix-core', \
 'hystrix-examples-webapp', \
 'hystrix-contrib:hystrix-request-servlet', \
 'hystrix-contrib:hystrix-servo-metrics-publisher', \
-'hystrix-contrib:hystrix-metrics-event-stream'
+'hystrix-contrib:hystrix-metrics-event-stream', \
+'hystrix-contrib:hystrix-yammer-metrics-publisher'
+
