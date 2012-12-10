@@ -16,15 +16,12 @@
 package com.netflix.hystrix.contrib.metrics.eventstream;
 
 import java.io.StringWriter;
-import java.net.SocketException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import javax.servlet.http.HttpServletResponse;
 
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonGenerator;
@@ -41,7 +38,7 @@ import com.netflix.hystrix.HystrixThreadPoolMetrics;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 
 /**
- * Polls Hystrix metrics and writes them to an HttpServletResponse.
+ * Polls Hystrix metrics and output JSON strings for each metric to a MetricsPollerListener.
  */
 public class HystrixMetricsPoller {
 
@@ -49,45 +46,48 @@ public class HystrixMetricsPoller {
     private final ScheduledExecutorService executor;
     private final int delay;
     private final AtomicBoolean running = new AtomicBoolean(true);
-    private final int BATCH_SIZE = 10;// how many event before flushing
 
     public HystrixMetricsPoller(int delay) {
         executor = new ScheduledThreadPoolExecutor(1, new MetricsPollerThreadFactory());
         this.delay = delay;
     }
 
-    public synchronized void start(HttpServletResponse httpResponse) {
+    public synchronized void start(MetricsAsJsonPollerListener listener) {
         logger.info("Starting HystrixMetricsPoller");
-        executor.scheduleWithFixedDelay(new MetricsPoller(httpResponse), 0, delay, TimeUnit.MILLISECONDS);
+        executor.scheduleWithFixedDelay(new MetricsPoller(listener), 0, delay, TimeUnit.MILLISECONDS);
     }
 
     public synchronized void stop() {
-        logger.info("Stopping the Servo Metrics Poller");
-        running.set(false);
-        executor.shutdownNow();
+        // use compareAndSet not for concurrency reasons (this is synchronized) 
+        // just as a double-check so only one execution of this method will result in it doing the shutdown
+        if (running.compareAndSet(true, false)) {
+            logger.info("Stopping the Servo Metrics Poller");
+            executor.shutdownNow();
+        }
     }
 
     public boolean isRunning() {
         return running.get();
     }
 
+    public static interface MetricsAsJsonPollerListener {
+        public void handleJsonMetric(String json);
+    }
+
     private class MetricsPoller implements Runnable {
 
-        private final HttpServletResponse httpResponse;
+        private final MetricsAsJsonPollerListener listener;
         private final JsonFactory jsonFactory = new JsonFactory();
 
-        public MetricsPoller(HttpServletResponse httpResponse) {
-            this.httpResponse = httpResponse;
+        public MetricsPoller(MetricsAsJsonPollerListener listener) {
+            this.listener = listener;
         }
 
         @Override
         public void run() {
             try {
-                int flushCount = 0; // use to flush batches of data rather than all at once or one at a time
-
                 // command metrics
                 for (HystrixCommandMetrics commandMetrics : HystrixCommandMetrics.getInstances()) {
-                    flushCount++;
                     HystrixCommandKey key = commandMetrics.getCommandKey();
                     HystrixCircuitBreaker circuitBreaker = HystrixCircuitBreaker.Factory.getInstance(key);
 
@@ -187,20 +187,12 @@ public class HystrixMetricsPoller {
                     json.writeEndObject();
                     json.close();
 
-                    // output to stream
-                    httpResponse.getWriter().println("data: " + jsonString.getBuffer().toString() + "\n");
-
-                    // flush a batch if applicable
-                    if (flushCount == BATCH_SIZE) {
-                        flushCount = 0;
-                        httpResponse.flushBuffer();
-                    }
-
+                    // output to handler
+                    listener.handleJsonMetric(jsonString.getBuffer().toString());
                 }
 
                 // thread pool metrics
                 for (HystrixThreadPoolMetrics threadPoolMetrics : HystrixThreadPoolMetrics.getInstances()) {
-                    flushCount++;
                     HystrixThreadPoolKey key = threadPoolMetrics.getThreadPoolKey();
 
                     StringWriter jsonString = new StringWriter();
@@ -228,25 +220,11 @@ public class HystrixMetricsPoller {
                     json.writeEndObject();
                     json.close();
                     // output to stream
-                    httpResponse.getWriter().println("data: " + jsonString.getBuffer().toString() + "\n");
-
-                    // flush a batch if applicable
-                    if (flushCount == BATCH_SIZE) {
-                        flushCount = 0;
-                        httpResponse.flushBuffer();
-                    }
+                    listener.handleJsonMetric(jsonString.getBuffer().toString());
                 }
 
-                // flush again at the end for anything not flushed above
-                httpResponse.flushBuffer();
-            } catch (SocketException e) {
-                // this is expected whenever a client disconnects so we won't log it verbosely
-                logger.debug("SocketException (most likely that client disconnected) while streaming metrics", e);
-                // shutdown
-                stop();
-                return;
             } catch (Exception e) {
-                logger.warn("Failed to stream metrics", e);
+                logger.warn("Failed to output metrics as JSON", e);
                 // shutdown
                 stop();
                 return;
