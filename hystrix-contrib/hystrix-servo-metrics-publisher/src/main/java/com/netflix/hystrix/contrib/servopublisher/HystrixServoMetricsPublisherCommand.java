@@ -205,7 +205,7 @@ public class HystrixServoMetricsPublisherCommand extends HystrixServoMetricsPubl
         monitors.add(new GaugeMetric(MonitorConfig.builder("latencyExecute_percentile_75").build()) {
             @Override
             public Number getValue() {
-                return metrics.getExecutionTimePercentile(90);
+                return metrics.getExecutionTimePercentile(75);
             }
         });
         monitors.add(new GaugeMetric(MonitorConfig.builder("latencyExecute_percentile_90").build()) {
