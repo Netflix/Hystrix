@@ -1,0 +1,5 @@
+    apply plugin: 'java'
+    dependencies {
+        compile project(':hystrix-core')
+        compile 'com.yammer.metrics:metrics-core:2.2.0'
+    }
