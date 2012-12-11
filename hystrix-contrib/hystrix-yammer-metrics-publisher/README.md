@@ -6,7 +6,7 @@ See the [Metrics & Monitoring](https://github.com/Netflix/Hystrix/wiki/Metrics-a
 
 # Binaries
 
-Binaries and dependency information for Maven, Ivy, Gradle and others can be found at [http://search.maven.org](http://search.maven.org/#browse%7C1189450796).
+Binaries and dependency information for Maven, Ivy, Gradle and others can be found at [http://search.maven.org](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22hystrix-yammer-metrics-publisher%22).
 
 Example for Maven:
 
