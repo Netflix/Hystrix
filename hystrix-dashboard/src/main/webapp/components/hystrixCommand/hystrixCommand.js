@@ -305,7 +305,7 @@
 						data = newDataPoint;
 					} else {
 						// v: VALUE, t: TIME_IN_MILLISECONDS
-						data = [{"v":newDataPoint,"t":currentTimeMilliseconds}];
+						data = [{"v":parseFloat(newDataPoint),"t":currentTimeMilliseconds}];
 					}
 					self[variablePrefix + cssTarget + '_data'] = data;
 				} else {
@@ -314,7 +314,7 @@
 						data = newDataPoint;
 					} else {
 						// else we just add to the existing one
-						data.push({"v":newDataPoint,"t":currentTimeMilliseconds});
+						data.push({"v":parseFloat(newDataPoint),"t":currentTimeMilliseconds});
 					}
 				}
 				
@@ -335,7 +335,7 @@
 					data.shift();
 				} 
 				
-				var xScale = d3.time.scale().domain([new Date(currentTimeMilliseconds-(60*1000*2)), new Date(currentTimeMilliseconds)]).range([0, 140]); // y goes DOWN, so 60 is the "lowest"
+				var xScale = d3.time.scale().domain([new Date(currentTimeMilliseconds-(60*1000*2)), new Date(currentTimeMilliseconds)]).range([0, 140]);
 				
 				var yMin = d3.min(data, function(d) { return d.v; });
 				var yMax = d3.max(data, function(d) { return d.v; });
