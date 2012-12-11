@@ -103,13 +103,13 @@ Example for Maven:
 <dependency>
     <groupId>com.netflix.hystrix</groupId>
     <artifactId>hystrix-metrics-event-stream</artifactId>
-    <version>1.1.1</version>
+    <version>1.1.2</version>
 </dependency>
 ```
 and for Ivy:
 
 ```xml
-<dependency org="com.netflix.hystrix" name="hystrix-metrics-event-stream" rev="1.1.0" />
+<dependency org="com.netflix.hystrix" name="hystrix-metrics-event-stream" rev="1.1.2" />
 ```
 
 # Installation
