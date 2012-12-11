@@ -4,4 +4,4 @@ Web application that demonstrates functionality from [hystrix-examples](https://
 
 The [hystrix-dashboard](https://github.com/Netflix/Hystrix/tree/master/hystrix-dashboard) can be used on this example app to monitor its metrics.
 
-<img src="http://netflix.github.com/Hystrix/images/hystrix-examples-webapp-home.png">
+<img src="https://raw.github.com/wiki/Netflix/Hystrix/images/hystrix-examples-webapp-home.png">
