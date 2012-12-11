@@ -4,4 +4,4 @@ View the [Dashboard Wiki](https://github.com/Netflix/Hystrix/wiki/Dashboard) for
 
 <img src="https://github.com/Netflix/Hystrix/wiki/images/dashboard-example-640.png">
 
-<img src="https://github.com/Netflix/Hystrix/wiki/dashboard-home.png">
+<img src="https://github.com/Netflix/Hystrix/wiki/images/dashboard-home.png">
