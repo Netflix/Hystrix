@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns="http://java.sun.com/xml/ns/javaee" xmlns:web="http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
+	version="2.5">
+
+	<servlet>
+		<description />
+		<display-name>MockStreamServlet</display-name>
+		<servlet-name>MockStreamServlet</servlet-name>
+		<servlet-class>com.netflix.hystrix.dashboard.stream.MockStreamServlet</servlet-class>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>MockStreamServlet</servlet-name>
+		<url-pattern>/mock.stream</url-pattern>
+	</servlet-mapping>
+
+
+	<servlet>
+		<description />
+		<display-name>ProxyStreamServlet</display-name>
+		<servlet-name>ProxyStreamServlet</servlet-name>
+		<servlet-class>com.netflix.hystrix.dashboard.stream.ProxyStreamServlet</servlet-class>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>ProxyStreamServlet</servlet-name>
+		<url-pattern>/proxy.stream</url-pattern>
+	</servlet-mapping>
+
+</web-app>

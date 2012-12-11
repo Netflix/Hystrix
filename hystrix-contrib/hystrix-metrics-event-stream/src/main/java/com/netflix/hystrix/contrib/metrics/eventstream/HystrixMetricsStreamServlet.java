@@ -16,8 +16,12 @@
 package com.netflix.hystrix.contrib.metrics.eventstream;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.annotation.concurrent.ThreadSafe;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -79,9 +83,6 @@ public class HystrixMetricsStreamServlet extends HttpServlet {
      * @throws java.io.IOException
      */
     private void handleRequest(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        /* wrap so we synchronize writes since the response object will be shared across multiple threads for async writing */
-        response = new SynchronizedHttpServletResponse(response);
-
         /* ensure we aren't allowing more connections than we want */
         int numberConnections = concurrentConnections.incrementAndGet();
 
@@ -107,37 +108,70 @@ public class HystrixMetricsStreamServlet extends HttpServlet {
                 response.setHeader("Pragma", "no-cache");
 
                 poller = new HystrixMetricsPoller(delay);
+                MetricJsonListener jsonListener = new MetricJsonListener();
                 // start polling and it will write directly to the output stream
-                poller.start(response);
+                poller.start(jsonListener);
                 logger.info("Starting poller");
 
+                // we will use a "single-writer" approach where the Servlet thread does all the writing
+                // by fetching JSON messages from the MetricJsonListener to write them to the output
                 try {
                     while (poller.isRunning()) {
-                        /*
-                         * The 'ping' ensures the client is still connected by writing to it.
-                         * 
-                         * It will receive an exception if the client is disconnected and then shut down the poller.
-                         * 
-                         * Without this we are vulnerable to permanently holding a connection open even if the client has disconnected if the
-                         * poller is not actually finding data and not trying to write to the stream.
-                         */
-                        response.getWriter().println(":ping\n");
+                        List<String> jsonMessages = jsonListener.getJsonMetrics();
+                        for (String json : jsonMessages) {
+                            response.getWriter().println("data: " + json + "\n");
+                        }
+                        // after outputting all the messages we will flush the stream
                         response.flushBuffer();
-                        Thread.sleep(2000);
+                        // now wait the 'delay' time
+                        Thread.sleep(delay);
                     }
                 } catch (Exception e) {
-                    // do nothing on interruptions.
-                    logger.error("Failed to write", e);
+                    poller.stop();
+                    logger.error("Failed to write. Will stop polling.", e);
                 }
-                logger.error("Stopping Turbine stream to connection");
+                logger.debug("Stopping Turbine stream to connection");
             }
         } catch (Exception e) {
-            logger.error("Error initializing servlet for Servo event stream.", e);
+            logger.error("Error initializing servlet for metrics event stream.", e);
         } finally {
             concurrentConnections.decrementAndGet();
             if (poller != null) {
                 poller.stop();
             }
+        }
+    }
+
+    /**
+     * This will be called from another thread so needs to be thread-safe.
+     */
+    @ThreadSafe
+    private static class MetricJsonListener implements HystrixMetricsPoller.MetricsAsJsonPollerListener {
+
+        /**
+         * Setting limit to 1000. In a healthy system there isn't any reason to hit this limit so if we do it will throw an exception which causes the poller to stop.
+         * <p>
+         * This is a safety check against a runaway poller causing memory leaks.
+         */
+        private final LinkedBlockingQueue<String> jsonMetrics = new LinkedBlockingQueue<String>(1000);
+
+        /**
+         * Store JSON messages in a queue.
+         */
+        @Override
+        public void handleJsonMetric(String json) {
+            jsonMetrics.add(json);
+        }
+
+        /**
+         * Get all JSON messages in the queue.
+         * 
+         * @return
+         */
+        public List<String> getJsonMetrics() {
+            ArrayList<String> metrics = new ArrayList<String>();
+            jsonMetrics.drainTo(metrics);
+            return metrics;
         }
     }
 }
