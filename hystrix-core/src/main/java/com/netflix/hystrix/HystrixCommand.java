@@ -4398,7 +4398,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             protected Boolean run() {
                 System.out.println("***** running");
                 try {
-                    Thread.sleep(timeout * 2);
+                    Thread.sleep(timeout * 10);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
