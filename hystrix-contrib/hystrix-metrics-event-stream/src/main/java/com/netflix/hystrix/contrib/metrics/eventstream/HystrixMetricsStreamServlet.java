@@ -107,10 +107,10 @@ public class HystrixMetricsStreamServlet extends HttpServlet {
                 response.setHeader("Cache-Control", "no-cache, no-store, max-age=0, must-revalidate");
                 response.setHeader("Pragma", "no-cache");
 
-                poller = new HystrixMetricsPoller(delay);
                 MetricJsonListener jsonListener = new MetricJsonListener();
+                poller = new HystrixMetricsPoller(jsonListener, delay);
                 // start polling and it will write directly to the output stream
-                poller.start(jsonListener);
+                poller.start();
                 logger.info("Starting poller");
 
                 // we will use a "single-writer" approach where the Servlet thread does all the writing
