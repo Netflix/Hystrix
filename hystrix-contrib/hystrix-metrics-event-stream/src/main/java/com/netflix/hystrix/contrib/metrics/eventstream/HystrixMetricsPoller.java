@@ -56,6 +56,7 @@ public class HystrixMetricsPoller {
     private final int delay;
     private final AtomicBoolean running = new AtomicBoolean(false);
     private volatile ScheduledFuture<?> scheduledTask = null;
+    private final MetricsAsJsonPollerListener listener;
 
     /**
      * Allocate resources to begin polling.
@@ -66,9 +67,12 @@ public class HystrixMetricsPoller {
      * <p>
      * Use <code>pause</code> to temporarily stop polling that can be restarted again with <code>start</code>.
      * 
+     * @param MetricsAsJsonPollerListener
+     *            for callbacks
      * @param delay
      */
-    public HystrixMetricsPoller(int delay) {
+    public HystrixMetricsPoller(MetricsAsJsonPollerListener listener, int delay) {
+        this.listener = listener;
         executor = new ScheduledThreadPoolExecutor(1, new MetricsPollerThreadFactory());
         this.delay = delay;
     }
@@ -76,7 +80,7 @@ public class HystrixMetricsPoller {
     /**
      * Start polling.
      */
-    public synchronized void start(MetricsAsJsonPollerListener listener) {
+    public synchronized void start() {
         // use compareAndSet to make sure it starts only once and when not running
         if (running.compareAndSet(false, true)) {
             logger.info("Starting HystrixMetricsPoller");
@@ -304,9 +308,18 @@ public class HystrixMetricsPoller {
 
         @Test
         public void testStartStopStart() {
-            HystrixMetricsPoller poller = new HystrixMetricsPoller(100);
+            final AtomicInteger metricsCount = new AtomicInteger();
+
+            HystrixMetricsPoller poller = new HystrixMetricsPoller(new MetricsAsJsonPollerListener() {
+
+                @Override
+                public void handleJsonMetric(String json) {
+                    System.out.println("Received: " + json);
+                    metricsCount.incrementAndGet();
+                }
+            }, 100);
             try {
-                final AtomicInteger metricsCount = new AtomicInteger();
+
                 HystrixCommand<Boolean> test = new HystrixCommand<Boolean>(HystrixCommandGroupKey.Factory.asKey("HystrixMetricsPollerTest")) {
 
                     @Override
@@ -317,14 +330,7 @@ public class HystrixMetricsPoller {
                 };
                 test.execute();
 
-                poller.start(new MetricsAsJsonPollerListener() {
-
-                    @Override
-                    public void handleJsonMetric(String json) {
-                        System.out.println("Received: " + json);
-                        metricsCount.incrementAndGet();
-                    }
-                });
+                poller.start();
 
                 try {
                     Thread.sleep(500);
@@ -349,14 +355,7 @@ public class HystrixMetricsPoller {
                 // they should be the same since we were paused
                 assertTrue(v2 == v1);
 
-                poller.start(new MetricsAsJsonPollerListener() {
-
-                    @Override
-                    public void handleJsonMetric(String json) {
-                        System.out.println("Received: " + json);
-                        metricsCount.incrementAndGet();
-                    }
-                });
+                poller.start();
 
                 try {
                     Thread.sleep(500);
