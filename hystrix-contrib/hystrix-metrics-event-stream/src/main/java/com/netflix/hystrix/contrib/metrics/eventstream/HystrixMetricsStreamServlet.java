@@ -127,7 +127,7 @@ public class HystrixMetricsStreamServlet extends HttpServlet {
                         Thread.sleep(delay);
                     }
                 } catch (Exception e) {
-                    poller.stop();
+                    poller.shutdown();
                     logger.error("Failed to write. Will stop polling.", e);
                 }
                 logger.debug("Stopping Turbine stream to connection");
@@ -137,7 +137,7 @@ public class HystrixMetricsStreamServlet extends HttpServlet {
         } finally {
             concurrentConnections.decrementAndGet();
             if (poller != null) {
-                poller.stop();
+                poller.shutdown();
             }
         }
     }
