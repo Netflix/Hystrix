@@ -2,5 +2,5 @@
     dependencies {
         compile project(':hystrix-core')
         compile 'org.codehaus.jackson:jackson-core-asl:1.9.2'
-        compile 'javax.servlet:servlet-api:2.5'
+        provided 'javax.servlet:servlet-api:2.5'
     }
