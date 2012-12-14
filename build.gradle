@@ -21,5 +21,10 @@ subprojects {
 
     sourceSets.test.java.srcDir 'src/main/java'
 
+    // Establish a provided scope
+    configurations {
+        compile.extendsFrom provided
+    }
+
 }
 
