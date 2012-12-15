@@ -6,16 +6,17 @@
         provided 'junit:junit:4.10'
     }
 
-	javadoc {
-		// the exclude isn't working, nor is there a subPackages options as docs suggest there should be
-		// we do not want the com.netflix.hystrix.util package include
-		// javadoc.exclude = ['**/util/**']
+    javadoc {
+        // the exclude isn't working, nor is there a subPackages options as docs suggest there should be
+        // we do not want the com.netflix.hystrix.util package include
+        exclude '**/util/**'
 				
-		javadoc.options.doclet = "org.benjchristensen.doclet.DocletExclude"
-		javadoc.options.docletpath = [new File('./gradle/doclet-exclude.jar')]
-		javadoc.options.stylesheetFile = new File('./gradle/javadocStyleSheet.css')
-		javadoc.options.windowTitle = "Hystrix Javadoc 1.0.x" // can this version come from a variable?
-		// The 'top' option available on command-line appears to not exist via Gradle
-		//javadoc.options.top = "<h2 class='title'>Hystrix: Latency and Fault Tolerance for Distributed Systems</h2>"
-	}
+        options {
+            doclet = "org.benjchristensen.doclet.DocletExclude"
+            docletpath = [rootProject.file('./gradle/doclet-exclude.jar')]
+            stylesheetFile = rootProject.file('./gradle/javadocStyleSheet.css')
+            windowTitle = "Hystrix Javadoc ${project.version}"
+        }
+        options.addStringOption('top').value = '<a href="https://github.com/Netflix/Hystrix"><img width="92" height="79" border="0" align="left" src="http://netflix.github.com/Hystrix/images/hystrix-logo-small.png"></a><h2 class="title" style="padding-top:40px">Hystrix: Latency and Fault Tolerance for Distributed Systems</h2>'
+    }
 	
