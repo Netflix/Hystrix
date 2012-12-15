@@ -26,3 +26,5 @@ subprojects {
     }
 }
 
+// Prevent contrib project from being published
+project('hystrix-contrib').task('uploadMavenCentral', overwrite:true) { }
