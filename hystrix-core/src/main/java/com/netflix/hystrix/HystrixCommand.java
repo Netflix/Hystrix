@@ -153,7 +153,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      */
     protected HystrixCommand(Setter setter) {
         // use 'null' to specify use the default
-        this(setter.groupKey, setter.commandKey, setter.threadPoolKey, null, null, setter.commandPropertiesDefaults, setter.threadPoolPropertiesDefaults, null, null, null);
+        this(setter.groupKey, setter.commandKey, setter.threadPoolKey, null, null, setter.commandPropertiesDefaults, setter.threadPoolPropertiesDefaults, null, null, null, null);
     }
 
     /**
@@ -165,7 +165,8 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      */
     private HystrixCommand(HystrixCommandGroupKey group, HystrixCommandKey key, HystrixThreadPoolKey threadPoolKey, HystrixCircuitBreaker circuitBreaker, HystrixThreadPool threadPool,
             HystrixCommandProperties.Setter commandPropertiesDefaults, HystrixThreadPoolProperties.Setter threadPoolPropertiesDefaults,
-            HystrixCommandMetrics metrics, TryableSemaphore fallbackSemaphore, TryableSemaphore executionSemaphore) {
+            HystrixCommandMetrics metrics, TryableSemaphore fallbackSemaphore, TryableSemaphore executionSemaphore,
+            HystrixPropertiesStrategy propertiesStrategy) {
         /*
          * CommandGroup initialization
          */
@@ -188,7 +189,12 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         /*
          * Properties initialization
          */
-        this.properties = HystrixPropertiesFactory.getCommandProperties(this.commandKey, commandPropertiesDefaults);
+        if (propertiesStrategy == null) {
+            this.properties = HystrixPropertiesFactory.getCommandProperties(this.commandKey, commandPropertiesDefaults);
+        } else {
+            // used for unit testing
+            this.properties = propertiesStrategy.getCommandProperties(this.commandKey, commandPropertiesDefaults);
+        }
 
         /*
          * ThreadPoolKey
@@ -1657,7 +1663,6 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         public void prepareForTest() {
             /* we must call this to simulate a new request lifecycle running and clearing caches */
             HystrixRequestContext.initializeContext();
-            HystrixPlugins.getInstance().registerPropertiesStrategy(TEST_PROPERTIES_FACTORY);
         }
 
         @After
@@ -1670,8 +1675,6 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
             // force properties to be clean as well
             ConfigurationManager.getConfigInstance().clear();
-
-            HystrixPlugins.getInstance().registerPropertiesStrategy(null);
         }
 
         /**
@@ -3945,7 +3948,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
             } catch (Exception e) {
                 e.printStackTrace();
-                fail("We received an exception.");
+                fail("We received an exception => " + e.getMessage());
             }
         }
 
@@ -4081,7 +4084,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             TestHystrixCommand(TestCommandBuilder builder) {
                 super(builder.owner, builder.dependencyKey, builder.threadPoolKey, builder.circuitBreaker, builder.threadPool,
                         builder.commandPropertiesDefaults, builder.threadPoolPropertiesDefaults, builder.metrics,
-                        builder.fallbackSemaphore, builder.executionSemaphore);
+                        builder.fallbackSemaphore, builder.executionSemaphore, TEST_PROPERTIES_FACTORY);
                 this.builder = builder;
             }
 
