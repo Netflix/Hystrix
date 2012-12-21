@@ -4,6 +4,9 @@
 		if(displayName.substring(0, 36) == 'APIDependencyCommand_CircuitBreaker_') {
 			displayName = displayName.substring(36, displayName.length);
 		}
+		if(displayName.length > 32) {
+			displayName = displayName.substring(0,4) + "..." + displayName.substring(displayName.length-20, displayName.length);
+		}
 	%>
 	
 	<div id="chart_CIRCUIT_<%= name %>" class="chart" style="position:absolute;top:0px;left:0; float:left; width:100%; height:100%;"></div>
