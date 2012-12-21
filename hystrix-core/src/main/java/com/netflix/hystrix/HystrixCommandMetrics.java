@@ -114,8 +114,8 @@ public class HystrixCommandMetrics {
         this.group = commandGroup;
         this.properties = properties;
         this.counter = new HystrixRollingNumber(properties.metricsRollingStatisticalWindowInMilliseconds(), properties.metricsRollingStatisticalWindowBuckets());
-        this.percentileExecution = new HystrixRollingPercentile(properties.metricsRollingPercentileWindow(), properties.metricsRollingPercentileWindowBuckets(), properties.metricsRollingPercentileBucketSize());
-        this.percentileTotal = new HystrixRollingPercentile(properties.metricsRollingPercentileWindow(), properties.metricsRollingPercentileWindowBuckets(), properties.metricsRollingPercentileBucketSize());
+        this.percentileExecution = new HystrixRollingPercentile(properties.metricsRollingPercentileWindowInMilliseconds(), properties.metricsRollingPercentileWindowBuckets(), properties.metricsRollingPercentileBucketSize());
+        this.percentileTotal = new HystrixRollingPercentile(properties.metricsRollingPercentileWindowInMilliseconds(), properties.metricsRollingPercentileWindowBuckets(), properties.metricsRollingPercentileBucketSize());
         this.eventNotifier = eventNotifier;
     }
 
