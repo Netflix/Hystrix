@@ -4414,6 +4414,12 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                     Thread.sleep(timeout * 10);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
+                    // ignore and sleep some more to simulate a dependency that doesn't obey interrupts
+                    try {
+                        Thread.sleep(timeout * 2);
+                    } catch (Exception e2) {
+                        // ignore
+                    }
                 }
                 return true;
             }
