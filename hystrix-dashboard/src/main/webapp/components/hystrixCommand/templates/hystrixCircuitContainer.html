@@ -1,9 +1,6 @@
 <div class="monitor" id="CIRCUIT_<%= name %>" style="position:relative;">
 	<%
 		var displayName = name;
-		if(displayName.substring(0, 36) == 'APIDependencyCommand_CircuitBreaker_') {
-			displayName = displayName.substring(36, displayName.length);
-		}
 		if(displayName.length > 32) {
 			displayName = displayName.substring(0,4) + "..." + displayName.substring(displayName.length-20, displayName.length);
 		}
