@@ -87,6 +87,9 @@
 		 */
 		function preProcessData(data) {
 			validateData(data);
+			// clean up the 'name' field so it doesn't have invalid characters
+			data.name = data.name.replace(/[.:-]/g,'_');
+			// do math
 			converAllAvg(data);
 			calcRatePerSecond(data);
 		}
