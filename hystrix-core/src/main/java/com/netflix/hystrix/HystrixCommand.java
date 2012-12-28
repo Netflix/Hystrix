@@ -417,27 +417,20 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                     return getFallbackOrThrowException(HystrixEventType.SHORT_CIRCUITED, FailureType.SHORTCIRCUIT, "short-circuited");
                 }
 
-                try {
-
-                    if (properties.executionIsolationStrategy().get().equals(ExecutionIsolationStrategy.THREAD)) {
-                        // we want to run in a separate thread with timeout protection
-                        R r = queueInThread().get();
+                if (properties.executionIsolationStrategy().get().equals(ExecutionIsolationStrategy.THREAD)) {
+                    // we want to run in a separate thread with timeout protection
+                    return queueInThread().get();
+                } else {
+                    try {
+                        R r = executeWithSemaphore();
                         return r;
-                    } else {
-                        try {
-                            R r = executeWithSemaphore();
-                            return r;
-                        } catch (RuntimeException e) {
-                            // count that we're throwing an exception and rethrow
-                            metrics.markExceptionThrown();
-                            throw e;
-                        }
+                    } catch (RuntimeException e) {
+                        // count that we're throwing an exception and rethrow
+                        metrics.markExceptionThrown();
+                        throw e;
                     }
-
-                } finally {
-                    // the total execution time for the user thread including queuing, thread scheduling, run() execution
-                    metrics.addUserThreadExecutionTime(System.currentTimeMillis() - invocationStartTime.get());
                 }
+
             } catch (Throwable e) {
                 if (e instanceof HystrixBadRequestException) {
                     throw (HystrixBadRequestException) e;
@@ -458,20 +451,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                 throw new HystrixRuntimeException(FailureType.COMMAND_EXCEPTION, this.getClass(), message, e, null);
             }
         } finally {
-            if (properties.requestLogEnabled().get()) {
-                // log this command execution regardless of what happened
-                if (concurrencyStrategy instanceof HystrixConcurrencyStrategyDefault) {
-                    // if we're using the default we support only optionally using a request context
-                    if (HystrixRequestContext.isCurrentThreadInitialized()) {
-                        HystrixRequestLog.getCurrentRequest(concurrencyStrategy).addExecutedCommand(this);
-                    }
-                } else {
-                    // if it's a custom strategy it must ensure the context is initialized
-                    if (HystrixRequestLog.getCurrentRequest(concurrencyStrategy) != null) {
-                        HystrixRequestLog.getCurrentRequest(concurrencyStrategy).addExecutedCommand(this);
-                    }
-                }
-            }
+            recordExecutedCommand();
         }
     }
 
@@ -496,6 +476,9 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                 return response;
             } finally {
                 executionSemaphore.release();
+
+                /* execution time on execution via semaphore */
+                recordTotalExecutionTime(invocationStartTime.get());
             }
         } else {
             // mark on counter
@@ -558,20 +541,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                 throw e;
             }
         } finally {
-            if (properties.requestLogEnabled().get()) {
-                // log this command execution regardless of what happened
-                if (concurrencyStrategy instanceof HystrixConcurrencyStrategyDefault) {
-                    // if we're using the default we support only optionally using a request context
-                    if (HystrixRequestContext.isCurrentThreadInitialized()) {
-                        HystrixRequestLog.getCurrentRequest(concurrencyStrategy).addExecutedCommand(this);
-                    }
-                } else {
-                    // if it's a custom strategy it must ensure the context is initialized
-                    if (HystrixRequestLog.getCurrentRequest(concurrencyStrategy) != null) {
-                        HystrixRequestLog.getCurrentRequest(concurrencyStrategy).addExecutedCommand(this);
-                    }
-                }
-            }
+            recordExecutedCommand();
         }
     }
 
@@ -656,6 +626,9 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                 executionCompleted.countDown();
                 // release the semaphore
                 executionSemaphore.release();
+
+                /* execution time on queue via semaphore */
+                recordTotalExecutionTime(invocationStartTime.get());
             }
         } else {
             metrics.markSemaphoreRejection();
@@ -666,9 +639,6 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
     }
 
     private Future<R> queueInThread() {
-        // we want to run as a thread
-        long startTime = System.currentTimeMillis();
-
         // mark that we are executing in a thread (even if we end up being rejected we still were a THREAD execution and not SEMAPHORE)
         isExecutedInThread.set(true);
 
@@ -678,7 +648,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         // a snapshot of time so the thread can measure how long it waited before executing
         final long timeBeforeExecution = System.currentTimeMillis();
         // wrap the synchronous execute() method in a Callable and execute in the threadpool
-        QueuedExecutionFuture future = new QueuedExecutionFuture(this, startTime, threadPool.getExecutor(), new HystrixContextCallable<R>(new Callable<R>() {
+        QueuedExecutionFuture future = new QueuedExecutionFuture(this, threadPool.getExecutor(), new HystrixContextCallable<R>(new Callable<R>() {
 
             @Override
             public R call() throws Exception {
@@ -807,14 +777,6 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             executionResult = executionResult.setException(e);
             return getFallbackOrThrowException(HystrixEventType.FAILURE, FailureType.COMMAND_EXCEPTION, "failed", e);
         } finally {
-            /*
-             * we record the executionTime for command execution
-             * if the command is never executed (rejected, short-circuited, etc) then it will be left unset
-             * for this metric we include failures and successes as we use it for per-request profiling and debugging
-             * whereas 'metrics.addCommandExecutionTime(duration)' is used by stats across many requests
-             */
-            executionResult = executionResult.setExecutionTime((int) (System.currentTimeMillis() - startTime));
-
             // record that we're completed
             isExecutionComplete.set(true);
         }
@@ -848,6 +810,47 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             logger.debug("HystrixCommand Fallback Rejection."); // debug only since we're throwing the exception and someone higher will do something with it
             // if we couldn't acquire a permit, we "fail fast" by throwing an exception
             throw new HystrixRuntimeException(FailureType.REJECTED_SEMAPHORE_FALLBACK, this.getClass(), getLogMessagePrefix() + " fallback execution rejected.", null, null);
+        }
+    }
+
+    /**
+     * Record the duration of execution as response or exception is being returned to the caller.
+     */
+    private void recordTotalExecutionTime(long startTime) {
+        long duration = System.currentTimeMillis() - startTime;
+        // the total execution time for the user thread including queuing, thread scheduling, run() execution
+        metrics.addUserThreadExecutionTime(duration);
+
+        /*
+         * We record the executionTime for command execution.
+         * 
+         * If the command is never executed (rejected, short-circuited, etc) then it will be left unset.
+         * 
+         * For this metric we include failures and successes as we use it for per-request profiling and debugging
+         * whereas 'metrics.addCommandExecutionTime(duration)' is used by stats across many requests.
+         */
+        executionResult = executionResult.setExecutionTime((int) duration);
+    }
+
+    /**
+     * Record that this command was executed in the HystrixRequestLog.
+     * <p>
+     * This can be treated as an async operation as it just adds a references to "this" in the log even if the current command is still executing.
+     */
+    private void recordExecutedCommand() {
+        if (properties.requestLogEnabled().get()) {
+            // log this command execution regardless of what happened
+            if (concurrencyStrategy instanceof HystrixConcurrencyStrategyDefault) {
+                // if we're using the default we support only optionally using a request context
+                if (HystrixRequestContext.isCurrentThreadInitialized()) {
+                    HystrixRequestLog.getCurrentRequest(concurrencyStrategy).addExecutedCommand(this);
+                }
+            } else {
+                // if it's a custom strategy it must ensure the context is initialized
+                if (HystrixRequestLog.getCurrentRequest(concurrencyStrategy) != null) {
+                    HystrixRequestLog.getCurrentRequest(concurrencyStrategy).addExecutedCommand(this);
+                }
+            }
         }
     }
 
@@ -1241,7 +1244,6 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         private final ThreadPoolExecutor executor;
         private final Callable<R> callable;
         private final HystrixCommand<R> command;
-        private final long startTime;
         private final CountDownLatch actualResponseReceived = new CountDownLatch(1);
         private final AtomicBoolean actualFutureExecuted = new AtomicBoolean(false);
         private volatile R result; // the result of the get()
@@ -1250,9 +1252,8 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         private final CountDownLatch futureStarted = new CountDownLatch(1);
         private final AtomicBoolean started = new AtomicBoolean(false);
 
-        public QueuedExecutionFuture(HystrixCommand<R> command, long startTime, ThreadPoolExecutor executor, Callable<R> callable) {
+        public QueuedExecutionFuture(HystrixCommand<R> command, ThreadPoolExecutor executor, Callable<R> callable) {
             this.command = command;
-            this.startTime = startTime;
             this.executor = executor;
             this.callable = callable;
         }
@@ -1375,7 +1376,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                 // mark this command as timed-out so the run() when it completes can ignore it
                 if (isCommandTimedOut.compareAndSet(false, true)) {
                     // report timeout failure (or skip this if the compareAndSet failed as that means a thread-race occurred with the execution as the object lived in the queue too long)
-                    metrics.markTimeout(System.currentTimeMillis() - startTime);
+                    metrics.markTimeout(System.currentTimeMillis() - invocationStartTime.get());
                 }
 
                 try {
@@ -1389,6 +1390,9 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             } finally {
                 // mark that we are done and other threads can proceed
                 actualResponseReceived.countDown();
+
+                /* execution time on threaded execution */
+                recordTotalExecutionTime(invocationStartTime.get());
             }
         }
 
@@ -2357,7 +2361,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                 command.execute();
                 fail("we shouldn't get here");
             } catch (Exception e) {
-                e.printStackTrace();
+                //                e.printStackTrace();
                 if (e instanceof HystrixRuntimeException) {
                     HystrixRuntimeException de = (HystrixRuntimeException) e;
                     assertNotNull(de.getFallbackException());
@@ -2369,6 +2373,9 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                     fail("the exception should be HystrixRuntimeException");
                 }
             }
+            // the time should be 50+ since we timeout at 50ms
+            assertTrue("Execution Time is: " + command.getExecutionTimeInMilliseconds(), command.getExecutionTimeInMilliseconds() >= 50);
+
             assertTrue(command.isResponseTimedOut());
             assertFalse(command.isResponseFromFallback());
             assertFalse(command.isResponseRejected());
@@ -2398,6 +2405,8 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             TestHystrixCommand<Boolean> command = new TestCommandWithTimeout(50, TestCommandWithTimeout.FALLBACK_SUCCESS);
             try {
                 assertEquals(false, command.execute());
+                // the time should be 50+ since we timeout at 50ms
+                assertTrue("Execution Time is: " + command.getExecutionTimeInMilliseconds(), command.getExecutionTimeInMilliseconds() >= 50);
                 assertTrue(command.isResponseTimedOut());
                 assertTrue(command.isResponseFromFallback());
             } catch (Exception e) {
@@ -2443,7 +2452,8 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                     fail("the exception should be HystrixRuntimeException");
                 }
             }
-
+            // the time should be 50+ since we timeout at 50ms
+            assertTrue("Execution Time is: " + command.getExecutionTimeInMilliseconds(), command.getExecutionTimeInMilliseconds() >= 50);
             assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
             assertEquals(1, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
             assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
@@ -4405,6 +4415,12 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                     Thread.sleep(timeout * 10);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
+                    // ignore and sleep some more to simulate a dependency that doesn't obey interrupts
+                    try {
+                        Thread.sleep(timeout * 2);
+                    } catch (Exception e2) {
+                        // ignore
+                    }
                 }
                 return true;
             }
