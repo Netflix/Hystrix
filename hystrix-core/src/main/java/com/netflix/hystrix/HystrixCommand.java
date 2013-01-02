@@ -17,6 +17,7 @@ package com.netflix.hystrix;
 
 import static org.junit.Assert.*;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -303,7 +304,8 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      * Implement this method with code to be executed when {@link #execute()} or {@link #queue()} are invoked.
      * 
      * @return R response type
-     * @throws Exception if command execution fails
+     * @throws Exception
+     *             if command execution fails
      */
     protected abstract R run() throws Exception;
 
@@ -4217,6 +4219,30 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
         }
 
+        /**
+         * Test a checked Exception being thrown
+         */
+        @Test
+        public void testCheckedException() {
+            TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
+            CommandWithCheckedException command = new CommandWithCheckedException(circuitBreaker);
+            try {
+                command.execute();
+                fail("we expect to receive a " + Exception.class.getSimpleName());
+            } catch (Exception e) {
+                assertEquals("simulated checked exception message", e.getCause().getMessage());
+            }
+
+            assertEquals("simulated checked exception message", command.getFailedExecutionException().getMessage());
+
+            assertTrue(command.getExecutionTimeInMilliseconds() > -1);
+            assertTrue(command.isFailedExecution());
+
+            assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
+            assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
+            assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
+        }
+
         /* ******************************************************************************** */
         /* ******************************************************************************** */
         /* private HystrixCommand class implementations for unit testing */
@@ -4876,6 +4902,20 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             @Override
             protected Boolean getFallback() {
                 return false;
+            }
+
+        }
+
+        private static class CommandWithCheckedException extends TestHystrixCommand<Boolean> {
+
+            public CommandWithCheckedException(TestCircuitBreaker circuitBreaker) {
+                super(testPropsBuilder()
+                        .setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics));
+            }
+
+            @Override
+            protected Boolean run() throws Exception {
+                throw new IOException("simulated checked exception message");
             }
 
         }
