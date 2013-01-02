@@ -1,0 +1,278 @@
+(ns com.netflix.hystrix.core-test
+  (:use com.netflix.hystrix.core)
+  (:require [clojure.test :refer [deftest testing is are use-fixtures]])
+  (:import [com.netflix.hystrix HystrixExecutable]
+           [com.netflix.hystrix.strategy.concurrency HystrixRequestContext]))
+
+; wrap each test in hystrix context
+(defn request-context-fixture
+  [f]
+  (try
+    (HystrixRequestContext/initializeContext)
+    (f)
+    (finally
+      (when-let [c (HystrixRequestContext/getContextForCurrentThread)]
+        (.shutdown c)))))
+
+(use-fixtures :each request-context-fixture)
+
+; This is an ugly hack until this Clojuresque issue is fixed:
+;    https://bitbucket.org/clojuresque/clojuresque/issue/4/compile-and-test-tasks-may-hang-if
+;  Basically just schedule a JVM shutdown once all the tests have run. This
+;  will utterly break if there are ever any more Clojure namespaces to test.
+(defn clojuresque-shutdown-hack
+  [f]
+  (try
+    (f)
+    (finally
+      (future
+        (Thread/sleep 1000)
+        (println "Forcing Clojuresque test process to exit")
+        (System/exit 0)))))
+
+(use-fixtures :once clojuresque-shutdown-hack)
+
+(deftest test-command-key
+  (testing "returns nil when input is nil"
+    (is (nil? (command-key nil))))
+
+  (testing "returns existing key unchanged"
+    (let [k (command-key "foo")]
+      (is (identical? k (command-key k)))))
+
+  (testing "Makes a key from a string"
+    (let [^com.netflix.hystrix.HystrixCommandKey k (command-key "foo")]
+      (is (instance? com.netflix.hystrix.HystrixCommandKey k))
+      (is (= "foo" (.name k)))))
+
+  (testing "Makes a key from a keyword"
+    (let [^com.netflix.hystrix.HystrixCommandKey k (command-key :bar)]
+      (is (instance? com.netflix.hystrix.HystrixCommandKey k))
+      (is (= "bar" (.name k))))))
+
+(deftest test-normalize-collapser-scope
+  (testing "throws on nil"
+    (is (thrown? IllegalArgumentException (collapser-scope nil))))
+  (testing "throws on unknown"
+    (is (thrown? IllegalArgumentException (collapser-scope :foo))))
+  (testing "Returns a scope unchanged"
+    (is (= com.netflix.hystrix.HystrixCollapser$Scope/REQUEST
+           (collapser-scope com.netflix.hystrix.HystrixCollapser$Scope/REQUEST))))
+  (testing "Returns a request scope"
+    (is (= com.netflix.hystrix.HystrixCollapser$Scope/REQUEST
+           (collapser-scope :request))))
+  (testing "Returns a global scope"
+    (is (= com.netflix.hystrix.HystrixCollapser$Scope/GLOBAL
+           (collapser-scope :global)))))
+
+(deftest test-instantiate
+  (let [base-def {:type :command
+                  :group-key :my-group
+                  :command-key :my-command
+                  :run-fn + }]
+    (testing "makes a HystrixCommand"
+      (let [c (instantiate (normalize base-def))]
+        (is (instance? com.netflix.hystrix.HystrixCommand c))))
+
+    (testing "makes a HystrixCommand that executes :run-fn with given args"
+      (let [c (instantiate (normalize base-def) 99 42)]
+        (is (= 141 (.execute c)))))
+
+    (testing "makes a HystrixCommand that executes :fallback-fn with given args"
+      (let [c (instantiate (normalize (assoc base-def
+                                             :run-fn (fn [& args] (throw (IllegalStateException.)))
+                                             :fallback-fn -))
+                           99 42)]
+        (is (= (- 99 42) (.execute c)))))
+
+    (testing "makes a HystrixCommand that implements getCacheKey"
+
+      (let [context (com.netflix.hystrix.strategy.concurrency.HystrixRequestContext/initializeContext)]
+        (try
+          (let [call-count (atom 0) ; make sure run-fn is only called once
+                test-def (normalize (assoc base-def
+                                           :run-fn       (fn [arg] (swap! call-count inc) (str arg "!"))
+                                           :cache-key-fn (fn [arg] arg)))
+                result1 (.execute (instantiate test-def "hi"))
+                result2 (.execute (instantiate test-def "hi"))]
+            (is (= "hi!" result1 result2))
+            (is (= 1 @call-count)))
+          (finally
+            (.shutdown context))))))
+  (testing "throws if :hystrix metadata isn't found in a var"
+    (is (thrown? IllegalArgumentException
+                 (instantiate #'map))))
+  (testing "throws if it doesn't know what to do"
+    (is (thrown? IllegalArgumentException
+                 (instantiate [1 2 2])))))
+
+(deftest test-execute
+  (let [base-def {:type :command
+                  :group-key :my-group
+                  :command-key :my-command }]
+    (testing "executes a HystrixCommand"
+      (is (= "hello-world")
+          (execute (instantiate (normalize (assoc base-def :run-fn str))
+                                "hello" "-" "world"))))
+
+    (testing "throws IllegalStateException if called twice on same instance"
+      (let [instance (instantiate (normalize (assoc base-def :run-fn str)) "hi")]
+        (is (thrown? IllegalStateException
+                     (execute instance)
+                     (execute instance)))))
+
+    (testing "throws if there are trailing args"
+      (is (thrown? IllegalArgumentException
+                   (execute (instantiate (normalize base-def)) "hello" "-" "world"))))
+
+    (testing "instantiates and executes a command"
+      (is (= "hello-world")
+          (execute (normalize (assoc base-def :run-fn str))
+                   "hello" "-" "world")))))
+
+(deftest test-queue
+  (let [base-def {:type :command
+                  :group-key :my-group
+                  :command-key :my-command
+                  :run-fn + }]
+
+    (testing "throws IllegalStateException if called twice on same instance"
+      (let [instance (instantiate (normalize base-def))]
+        (is (thrown? IllegalStateException
+                     (queue instance)
+                     (queue instance)))))
+
+    (testing "queues a HystrixCommand"
+      (is (= "hello-world")
+          (.get (queue (instantiate (normalize (assoc base-def :run-fn str))
+                                    "hello" "-" "world")))))
+
+    (testing "throws if there are trailing args"
+      (is (thrown? IllegalArgumentException
+                   (queue (instantiate (normalize base-def)) "hello" "-" "world"))))
+
+    (testing "instantiates and queues a command"
+      (let [qc (queue (normalize (assoc base-def :run-fn str)) "hello" "-" "world")]
+        (is (instance? HystrixExecutable (instance qc)))
+        (is (future? qc))
+        (is (= "hello-world" (.get qc) @qc))
+        (is (.isDone qc))))))
+
+(deftest test-collapser
+  (#'com.netflix.hystrix.core/reset-collapser :to-upper-collapser)
+  ; These atoms are only for testing. In real life, collapser functions should *neve*
+  ; have side effects.
+  (let [batch-calls (atom [])
+        map-fn-calls (atom [])
+        collapse-fn-calls (atom [])
+        to-upper-batch  (fn [xs] (mapv #(.toUpperCase ^String %) xs))
+        ; Define a batch version of to-upper
+        command (normalize {:type        :command
+                            :group-key   :my-group
+                            :command-key :to-upper-batcher
+                            :run-fn      (fn [xs]
+                                           (swap! batch-calls conj (count xs))
+                                           (to-upper-batch xs))})
+
+        ; Define a collapser for to-upper
+        collapser (normalize {:type          :collapser
+                              :collapser-key :to-upper-collapser
+                              :collapse-fn   (fn [arg-lists]
+                                               (swap! collapse-fn-calls conj (count arg-lists))
+                                               ; batch to-upper takes a list of strings, i.e. the first/only
+                                               ; arg of each request
+                                               (instantiate command (mapv first arg-lists)))
+                              :map-fn        (fn [arg-lists uppered]
+                                               (swap! map-fn-calls conj (count arg-lists))
+                                               ; batch to-upper returns results in same order as input so
+                                               ; we can just to a direct mapping without looking in the
+                                               ; results.
+                                               uppered) })]
+    (testing "that it actually works"
+      (let [n 100
+            inputs           (mapv #(str "xyx" %) (range n))
+            expected-results (to-upper-batch inputs)
+            to-upper         (partial queue collapser)
+            queued           (doall (map (fn [x]
+                                           (Thread/sleep 1)
+                                           (to-upper x))
+                                         inputs))
+            results          (doall (map deref queued))]
+        (println "Got collapses with sizes:" @collapse-fn-calls)
+        (println "Got maps with sizes:" @map-fn-calls)
+        (println "Got batches with sizes:" @batch-calls)
+        (is (= n (count expected-results) (count results)))
+        (is (= expected-results results))
+        (is (not (empty? @collapse-fn-calls)))
+        (is (not (empty? @map-fn-calls)))
+        (is (not (empty? @batch-calls)))))))
+
+(defcommand my-fn-command
+  "A doc string"
+  {:meta :data
+   :hystrix/fallback-fn (constantly 500)}
+  [a b]
+  (+ a b))
+
+(deftest test-defcommand
+  (let [hm (-> #'my-fn-command meta :hystrix)]
+    (testing "defines a fn in a var"
+      (is (fn? my-fn-command))
+      (is (map? hm))
+      (is (= "my-fn-command" (.name (:command-key hm))))
+      (is (= "com.netflix.hystrix.core-test" (.name (:group-key hm))))
+      (is (= :data (-> #'my-fn-command meta :meta)))
+      (= 500 ((:fallback-fn hm))))
+    (testing "defines a functioning command"
+      (is (= 99 (my-fn-command 88 11)))
+      (is (= 100 (execute #'my-fn-command 89 11)))
+      (is (= 101 (deref (queue #'my-fn-command 89 12)))))))
+
+
+(defcollapser my-collapser
+  "a doc string"
+  {:meta :data}
+  (collapse [arg-lists] "collapse")
+  (map      [batch-result arg-lists] "map"))
+
+(deftest test-defcollapser
+  (let [hm (-> #'my-collapser meta :hystrix)]
+    (testing "defines a collapser in a var"
+      (is (fn? my-collapser))
+      (is (map? hm))
+      (is (= "com.netflix.hystrix.core-test/my-collapser" (.name (:collapser-key hm))))
+      (is (= :collapser (:type hm)))
+      (is (= "a doc string" (-> #'my-collapser meta :doc)))
+      (is (= :data (-> #'my-collapser meta :meta)))
+      (is (= "collapse" ((:collapse-fn hm) nil)))
+      (is (= "map" ((:map-fn hm) nil nil))))))
+
+; This is a version of the larger batcher example above using macros
+(defcommand to-upper-batcher
+  "a batch version of to-upper"
+  [xs]
+  (mapv #(.toUpperCase ^String %) xs))
+
+(defcollapser to-upper-collapser
+  "A collapser that dispatches to to-upper-batcher"
+  (collapse [arg-lists]
+    (instantiate #'to-upper-batcher (mapv first arg-lists)))
+  (map [arg-lists uppered]
+    uppered))
+
+(deftest test-defd-collapser
+  (testing "that it actually works"
+    (let [single-call      (to-upper-collapser "v") ; just to make sure collapser works as a fn
+          n 100
+          inputs           (mapv #(str "xyx" %) (range n))
+          expected-results (to-upper-batcher inputs)
+          to-upper         (partial queue #'to-upper-collapser)
+          queued           (doall (map (fn [x]
+                                         (Thread/sleep 1)
+                                         (to-upper x))
+                                       inputs))
+          results          (doall (map deref queued))]
+      (is (= "V" single-call))
+      (is (= n (count expected-results) (count results)))
+      (is (= expected-results results)))))
+
