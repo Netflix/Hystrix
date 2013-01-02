@@ -1,7 +1,7 @@
     apply plugin: 'java'
     dependencies {
         compile project(':hystrix-core')
-        provided 'junit:junit:4.10'
+        provided 'junit:junit-dep:4.10'
     }
     
     task(runDemo, dependsOn: 'classes', type: JavaExec) {
