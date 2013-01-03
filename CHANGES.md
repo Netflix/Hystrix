@@ -1,5 +1,11 @@
 # Hystrix Releases #
 
+### Version 1.1.3 ###
+
+* [Pull 47](https://github.com/Netflix/Hystrix/pull/47) Support pausing/resuming metrics poller
+* [Pull 48](https://github.com/Netflix/Hystrix/pull/48) Fixing non-deterministic unit test
+* README files added to submodules
+
 ### Version 1.1.2 ###
 
 * [Pull 44](https://github.com/Netflix/Hystrix/pull/44) Hystrix Dashboard
