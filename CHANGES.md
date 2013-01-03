@@ -1,9 +1,18 @@
-# Hystrix #
+# Hystrix Releases #
+
+### Version 1.1.1 ###
+
+* [Issue 24](https://github.com/Netflix/Hystrix/issues/24) Yammer Metrics Support
+* [Pull 43](https://github.com/Netflix/Hystrix/pull/43) Fix the wrong percentile for latencyExecute_percentile_75 in the Servo publisher
 
 ### Version 1.1.0 ###
 
 * [Pull 32](https://github.com/Netflix/Hystrix/pull/32) servo-event-stream module
 * [Pull 33](https://github.com/Netflix/Hystrix/pull/33) Remove Servo dependency from core, move to submodule
+* [Pull 35](https://github.com/Netflix/Hystrix/pull/35) Metrics event stream
+* [Issue 34](https://github.com/Netflix/Hystrix/issues/34) Remove Strategy Injection on HystrixCommand
+* [Pull 36](https://github.com/Netflix/Hystrix/pull/36) example webapp
+* [Pull 37](https://github.com/Netflix/Hystrix/pull/37) Migrate metrics stream from org.json.JSONObject to Jackson
 
 ### Version 1.0.3 ###
 
