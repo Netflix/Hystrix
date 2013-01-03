@@ -1,6 +1,6 @@
 # Hystrix Releases #
 
-### Version 1.1.7 ###
+### Version 1.1.7 [Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.1.7%22) ###
 
 * [Pull 67](https://github.com/Netflix/Hystrix/pull/67) Unit tests for request log and checked exceptions
 * [Pull 66](https://github.com/Netflix/Hystrix/pull/66) Making provided scope transtive
