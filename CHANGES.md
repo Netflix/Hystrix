@@ -1,5 +1,19 @@
 # Hystrix Releases #
 
+### Version 1.1.7 ###
+
+* [Pull 67](https://github.com/Netflix/Hystrix/pull/67) Unit tests for request log and checked exceptions
+* [Pull 66](https://github.com/Netflix/Hystrix/pull/66) Making provided scope transtive
+* [Pull 65](https://github.com/Netflix/Hystrix/pull/65) Fixed gitignore definition of build output directories
+* [Issue 63](https://github.com/Netflix/Hystrix/issues/63) Add "throws Exception" to HystrixCommand run() method
+* [Pull 62](https://github.com/Netflix/Hystrix/pull/62) applying js fixes to threadPool ui
+* [Pull 61](https://github.com/Netflix/Hystrix/pull/61) Request log with timeouts
+* [Issue 55](https://github.com/Netflix/Hystrix/issues/55) HysrixRequestLog: Missing Events and Time on Timeouts
+* [Issue 20](https://github.com/Netflix/Hystrix/issues/20) TotalExecutionTime not tracked on queue()
+* [Pull 57](https://github.com/Netflix/Hystrix/pull/57) Dashboard js fix
+* [Issue 39](https://github.com/Netflix/Hystrix/issues/39) HystrixPlugins Bootstrapping Problem - Race Conditions
+* [Pull 52](https://github.com/Netflix/Hystrix/pull/52) Gradle Build Changes
+
 ### Version 1.1.6 ###
 
 * [Pull 51](https://github.com/Netflix/Hystrix/pull/51) Merging in gradle-template, specifically provided
