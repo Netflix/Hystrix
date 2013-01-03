@@ -1,5 +1,9 @@
 # Hystrix Releases #
 
+### Version 1.1.4 ###
+
+* [Pull 49](https://github.com/Netflix/Hystrix/pull/49) Cleaner design (for metrics) by injecting listener into constructor.
+
 ### Version 1.1.3 ###
 
 * [Pull 47](https://github.com/Netflix/Hystrix/pull/47) Support pausing/resuming metrics poller
