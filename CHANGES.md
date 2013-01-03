@@ -1,5 +1,9 @@
 # Hystrix Releases #
 
+### Version 1.1.6 ###
+
+* [Pull 51](https://github.com/Netflix/Hystrix/pull/51) Merging in gradle-template, specifically provided
+
 ### Version 1.1.5 ###
 
 * [Pull 50](https://github.com/Netflix/Hystrix/pull/50) Make javax.servlet-api a 'provided' dependency not 'compile'
