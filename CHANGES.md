@@ -1,5 +1,10 @@
 # Hystrix #
 
+### Version 1.1.0 ###
+
+* [Pull 32](https://github.com/Netflix/Hystrix/pull/32) servo-event-stream module
+* [Pull 33](https://github.com/Netflix/Hystrix/pull/33) Remove Servo dependency from core, move to submodule
+
 ### Version 1.0.3 ###
 
 * [Pull 4](https://github.com/Netflix/Hystrix/pull/4) Contrib request context servlet filters 
