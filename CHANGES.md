@@ -1,5 +1,9 @@
 # Hystrix Releases #
 
+### Version 1.1.5 ###
+
+* [Pull 50](https://github.com/Netflix/Hystrix/pull/50) Make javax.servlet-api a 'provided' dependency not 'compile'
+
 ### Version 1.1.4 ###
 
 * [Pull 49](https://github.com/Netflix/Hystrix/pull/49) Cleaner design (for metrics) by injecting listener into constructor.
