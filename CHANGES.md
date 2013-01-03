@@ -1,5 +1,9 @@
 # Hystrix Releases #
 
+### Version 1.1.2 ###
+
+* [Pull 44](https://github.com/Netflix/Hystrix/pull/44) Hystrix Dashboard
+
 ### Version 1.1.1 ###
 
 * [Issue 24](https://github.com/Netflix/Hystrix/issues/24) Yammer Metrics Support
