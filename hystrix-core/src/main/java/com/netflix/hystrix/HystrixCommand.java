@@ -1239,7 +1239,6 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
     private class QueuedExecutionFuture implements CommandFuture<R> {
         private final ThreadPoolExecutor executor;
         private final Callable<R> callable;
-        private final HystrixCommand<R> command;
         private final CountDownLatch actualResponseReceived = new CountDownLatch(1);
         private final AtomicBoolean actualFutureExecuted = new AtomicBoolean(false);
         private volatile R result; // the result of the get()
@@ -1249,7 +1248,6 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         private final AtomicBoolean started = new AtomicBoolean(false);
 
         public QueuedExecutionFuture(HystrixCommand<R> command, ThreadPoolExecutor executor, Callable<R> callable) {
-            this.command = command;
             this.executor = executor;
             this.callable = callable;
         }
@@ -1531,10 +1529,6 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
         public int getNumberOfPermitsUsed() {
             return count.get();
-        }
-
-        public int getNumberOfPermits() {
-            return numberOfPermits.get();
         }
 
     }
