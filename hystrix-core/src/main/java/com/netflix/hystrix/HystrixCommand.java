@@ -427,7 +427,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                     }
                 }
 
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 if (e instanceof HystrixBadRequestException) {
                     throw (HystrixBadRequestException) e;
                 }
@@ -756,7 +756,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
              * HystrixBadRequestException is treated differently and allowed to propagate without any stats tracking or fallback logic
              */
             throw e;
-        } catch (Throwable e) {
+        } catch (Exception e) {
             if (isCommandTimedOut.get()) {
                 // http://jira/browse/API-4905 HystrixCommand: Error/Timeout Double-count if both occur
                 // this means we have already timed out then we don't count this error stat and we just return
@@ -1038,7 +1038,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
     /**
      * @throws HystrixRuntimeException
      */
-    private R getFallbackOrThrowException(HystrixEventType eventType, FailureType failureType, String message, Throwable e) {
+    private R getFallbackOrThrowException(HystrixEventType eventType, FailureType failureType, String message, Exception e) {
         try {
             // retrieve the fallback
             R fallback = getFallbackWithProtection();
@@ -1052,7 +1052,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             // record the executionResult
             executionResult = executionResult.addEvents(eventType);
             throw new HystrixRuntimeException(failureType, this.getClass(), getLogMessagePrefix() + " " + message + " and no fallback available.", e, fe);
-        } catch (Throwable fe) {
+        } catch (Exception fe) {
             logger.error("Error retrieving fallback for HystrixCommand. ", fe);
             metrics.markFallbackFailure();
             // record the executionResult
@@ -1085,7 +1085,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
     private static class ExecutionResult {
         private final List<HystrixEventType> events;
         private final int executionTime;
-        private final Throwable exception;
+        private final Exception exception;
 
         private ExecutionResult(HystrixEventType... events) {
             this(Arrays.asList(events), -1, null);
@@ -1095,11 +1095,11 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             return new ExecutionResult(events, executionTime, exception);
         }
 
-        public ExecutionResult setException(Throwable e) {
+        public ExecutionResult setException(Exception e) {
             return new ExecutionResult(events, executionTime, e);
         }
 
-        private ExecutionResult(List<HystrixEventType> events, int executionTime, Throwable e) {
+        private ExecutionResult(List<HystrixEventType> events, int executionTime, Exception e) {
             // we are safe assigning the List reference instead of deep-copying
             // because we control the original list in 'newEvent'
             this.events = events;
