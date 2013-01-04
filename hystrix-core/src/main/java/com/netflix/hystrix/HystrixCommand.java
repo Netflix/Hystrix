@@ -229,8 +229,6 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
          * Metrics initialization
          */
         if (metrics == null) {
-            // TODO this caches the first time it's loaded and will thus miss changes to threadPoolKey, properties and eventNotifier
-            // We need a better way of handling this now that we have HystrixPlugins
             this.metrics = HystrixCommandMetrics.getInstance(this.commandKey, this.commandGroup, this.properties);
         } else {
             this.metrics = metrics;
@@ -242,8 +240,6 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         if (this.properties.circuitBreakerEnabled().get()) {
             if (circuitBreaker == null) {
                 // get the default implementation of HystrixCircuitBreaker
-                // TODO this caches the first time it's loaded and will thus miss changes to properties
-                // We need a better way of handling this now that we have HystrixPlugins
                 this.circuitBreaker = HystrixCircuitBreaker.Factory.getInstance(this.commandKey, this.commandGroup, this.properties, this.metrics);
             } else {
                 this.circuitBreaker = circuitBreaker;
@@ -253,8 +249,6 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         }
 
         /* strategy: HystrixMetricsPublisherCommand */
-        // TODO this caches the first time it's loaded and will thus miss changes to properties
-        // We need a better way of handling this now that we have HystrixPlugins
         HystrixMetricsPublisherFactory.createOrRetrievePublisherForCommand(this.commandKey, this.commandGroup, this.metrics, this.circuitBreaker, this.properties);
 
         /*
