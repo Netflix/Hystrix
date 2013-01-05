@@ -470,7 +470,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
                 // we want to run it synchronously
                 R response = executeCommand();
-                response = executionHook.onSuccess(this, response);
+                response = executionHook.onComplete(this, response);
                 // put in cache
                 if (isRequestCachingEnabled()) {
                     requestCache.putIfAbsent(getCacheKey(), asFutureForCache(response));
@@ -626,7 +626,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
                 // execute outside of future so that fireAndForget will still work (ie. someone calls queue() but not get()) and so that multiple requests can be deduped through request caching
                 R r = executeCommand();
-                r = executionHook.onSuccess(this, r);
+                r = executionHook.onComplete(this, r);
                 value.set(r);
 
                 return responseFuture;
@@ -704,7 +704,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
                     // execute the command
                     R r = executeCommand();
-                    return executionHook.onSuccess(_this, r);
+                    return executionHook.onComplete(_this, r);
                 } catch (Exception e) {
                     if (!isCommandTimedOut.get()) {
                         // count (if we didn't timeout) that we are throwing an exception and re-throw it
@@ -1101,7 +1101,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             metrics.markFallbackSuccess();
             // record the executionResult
             executionResult = executionResult.addEvents(eventType, HystrixEventType.FALLBACK_SUCCESS);
-            return executionHook.onSuccess(this, fallback);
+            return executionHook.onComplete(this, fallback);
         } catch (UnsupportedOperationException fe) {
             logger.debug("No fallback for HystrixCommand. ", fe); // debug only since we're throwing the exception and someone higher will do something with it
             // record the executionResult
@@ -5795,9 +5795,9 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             Object endExecuteSuccessResponse = null;
 
             @Override
-            public <T> T onSuccess(HystrixCommand<T> commandInstance, T response) {
+            public <T> T onComplete(HystrixCommand<T> commandInstance, T response) {
                 endExecuteSuccessResponse = response;
-                return super.onSuccess(commandInstance, response);
+                return super.onComplete(commandInstance, response);
             }
 
             Exception endExecuteFailureException = null;

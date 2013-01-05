@@ -116,15 +116,17 @@ public abstract class HystrixCommandExecutionHook {
     }
 
     /**
-     * Invoked after successful completion of {@link HystrixCommand} execution.
+     * Invoked after completion of {@link HystrixCommand} execution that results in a response.
+     * <p>
+     * The response can come either from {@link HystrixCommand#run()} or {@link HystrixCommand#getFallback()}.
      * 
      * @param commandInstance
      *            The executing HystrixCommand instance.
      * @param response
-     *            from {@link HystrixCommand}
+     *            from {@link HystrixCommand#run()} or {@link HystrixCommand#getFallback()}.
      * @return T response object that can be modified, decorated, replaced or just returned as a pass-thru.
      */
-    public <T> T onSuccess(HystrixCommand<T> commandInstance, T response) {
+    public <T> T onComplete(HystrixCommand<T> commandInstance, T response) {
         // pass-thru by default
         return response;
     }
