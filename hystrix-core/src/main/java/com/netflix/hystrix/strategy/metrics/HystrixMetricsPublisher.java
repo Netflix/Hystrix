@@ -16,7 +16,6 @@
 package com.netflix.hystrix.strategy.metrics;
 
 import com.netflix.hystrix.HystrixCircuitBreaker;
-import com.netflix.hystrix.HystrixCollapser;
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandGroupKey;
 import com.netflix.hystrix.HystrixCommandKey;
@@ -33,27 +32,8 @@ import com.netflix.hystrix.strategy.HystrixPlugins;
  * exposed, published or otherwise retrievable by external systems such as Servo (https://github.com/Netflix/servo)
  * for monitoring and statistical purposes.
  * <p>
- * Custom implementations of this interface can be used to override default behavior via 2 mechanisms:
- * <p>
- * 1) Injection
- * <p>
- * Implementations can be injected into {@link HystrixCommand} and {@link HystrixCollapser} implementation constructors.
- * <p>
- * 2) Plugin
- * <p>
- * Using {@link HystrixPlugins#registerMetricsPublisher} an implementation can be registered globally to take precedence and override all other implementations.
- * <p>
- * The order of precedence is:
- * <ol>
- * <li>plugin registered globally using {@link HystrixPlugins#registerMetricsPublisher}</li>
- * <li>injected via {@link HystrixCommand} and {@link HystrixCollapser} constructors</li>
- * <li>default implementation {@link HystrixMetricsPublisherDefault}</li>
- * </ol>
- * <p>
- * The injection approach is effective for {@link HystrixCommand} and {@link HystrixCollapser} implementations where you wish to have a different default mechanism for publishing metrics without
- * overriding all implementations. It is also useful when distributing a library where static override should not be used.
- * <p>
- * The globally registered plugin is useful when using commands from 3rd party libraries and you want to override how properties are defined for all implementations in your entire system.
+ * See {@link HystrixPlugins} or the Hystrix GitHub Wiki for information on configuring plugins: <a
+ * href="https://github.com/Netflix/Hystrix/wiki/Plugins">https://github.com/Netflix/Hystrix/wiki/Plugins</a>.
  */
 public abstract class HystrixMetricsPublisher {
 
