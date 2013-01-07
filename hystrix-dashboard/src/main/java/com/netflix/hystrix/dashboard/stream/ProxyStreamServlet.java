@@ -143,8 +143,8 @@ public class ProxyStreamServlet extends HttpServlet {
             HttpConnectionParams.setSoTimeout(httpParams, 10000);
 
             /* number of connections to allow */
-            threadSafeConnectionManager.setDefaultMaxPerRoute(40);
-            threadSafeConnectionManager.setMaxTotal(40);
+            threadSafeConnectionManager.setDefaultMaxPerRoute(400);
+            threadSafeConnectionManager.setMaxTotal(400);
         }
     }
 }
