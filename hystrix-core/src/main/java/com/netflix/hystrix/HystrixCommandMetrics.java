@@ -114,8 +114,8 @@ public class HystrixCommandMetrics {
         this.group = commandGroup;
         this.properties = properties;
         this.counter = new HystrixRollingNumber(properties.metricsRollingStatisticalWindowInMilliseconds(), properties.metricsRollingStatisticalWindowBuckets());
-        this.percentileExecution = new HystrixRollingPercentile(properties.metricsRollingPercentileWindowInMilliseconds(), properties.metricsRollingPercentileWindowBuckets(), properties.metricsRollingPercentileBucketSize());
-        this.percentileTotal = new HystrixRollingPercentile(properties.metricsRollingPercentileWindowInMilliseconds(), properties.metricsRollingPercentileWindowBuckets(), properties.metricsRollingPercentileBucketSize());
+        this.percentileExecution = new HystrixRollingPercentile(properties.metricsRollingPercentileWindowInMilliseconds(), properties.metricsRollingPercentileWindowBuckets(), properties.metricsRollingPercentileBucketSize(), properties.metricsRollingPercentileEnabled());
+        this.percentileTotal = new HystrixRollingPercentile(properties.metricsRollingPercentileWindowInMilliseconds(), properties.metricsRollingPercentileWindowBuckets(), properties.metricsRollingPercentileBucketSize(), properties.metricsRollingPercentileEnabled());
         this.eventNotifier = eventNotifier;
     }
 
@@ -364,9 +364,7 @@ public class HystrixCommandMetrics {
      * Execution time of {@link HystrixCommand#run()}.
      */
     /* package */void addCommandExecutionTime(long duration) {
-        if (properties.metricsRollingPercentileEnabled().get()) {
-            percentileExecution.addValue((int) duration);
-        }
+        percentileExecution.addValue((int) duration);
     }
 
     /**
@@ -376,9 +374,7 @@ public class HystrixCommandMetrics {
      * This differs from {@link #addCommandExecutionTime} in that this covers all of the threading and scheduling overhead, not just the execution of the {@link HystrixCommand#run()} method.
      */
     /* package */void addUserThreadExecutionTime(long duration) {
-        if (properties.metricsRollingPercentileEnabled().get()) {
-            percentileTotal.addValue((int) duration);
-        }
+        percentileTotal.addValue((int) duration);
     }
 
     private volatile HealthCounts healthCountsSnapshot = new HealthCounts(0, 0, 0);
