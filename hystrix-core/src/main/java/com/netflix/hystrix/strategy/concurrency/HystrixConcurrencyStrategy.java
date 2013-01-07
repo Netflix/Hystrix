@@ -37,27 +37,8 @@ import com.netflix.hystrix.strategy.properties.HystrixProperty;
  * For example, every {@link Callable} executed by {@link HystrixCommand} will call {@link #wrapCallable(Callable)} to give a chance for custom implementations to decorate the {@link Callable} with
  * additional behavior.
  * <p>
- * Custom implementations of this interface can be used to override default behavior via 2 mechanisms:
- * <p>
- * 1) Injection
- * <p>
- * Implementations can be injected into {@link HystrixCommand} and {@link HystrixCollapser} implementation constructors.
- * <p>
- * 2) Plugin
- * <p>
- * Using {@link HystrixPlugins#registerConcurrencyStrategy} an implementation can be registered globally to take precedence and override all other implementations.
- * <p>
- * The order of precedence is:
- * <ol>
- * <li>plugin registered globally using {@link HystrixPlugins#registerConcurrencyStrategy}</li>
- * <li>injected via {@link HystrixCommand} and {@link HystrixCollapser} constructors</li>
- * <li>default implementation {@link HystrixConcurrencyStrategyDefault}</li>
- * </ol>
- * <p>
- * The injection approach is effective for {@link HystrixCommand} and {@link HystrixCollapser} implementations where you wish to have a different default strategy without
- * overriding all implementations. It is also useful when distributing a library where static override should not be used.
- * <p>
- * The globally registered plugin is useful when using commands from 3rd party libraries and you want to override the strategy for all implementations in your entire system.
+ * See {@link HystrixPlugins} or the Hystrix GitHub Wiki for information on configuring plugins: <a
+ * href="https://github.com/Netflix/Hystrix/wiki/Plugins">https://github.com/Netflix/Hystrix/wiki/Plugins</a>.
  */
 public abstract class HystrixConcurrencyStrategy {
 

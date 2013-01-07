@@ -26,6 +26,8 @@ import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategyDefault;
 import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
 import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifierDefault;
+import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
+import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHookDefault;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisher;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherDefault;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
@@ -48,6 +50,7 @@ public class HystrixPlugins {
     private final AtomicReference<HystrixConcurrencyStrategy> concurrencyStrategy = new AtomicReference<HystrixConcurrencyStrategy>();
     private final AtomicReference<HystrixMetricsPublisher> metricsPublisher = new AtomicReference<HystrixMetricsPublisher>();
     private final AtomicReference<HystrixPropertiesStrategy> propertiesFactory = new AtomicReference<HystrixPropertiesStrategy>();
+    private final AtomicReference<HystrixCommandExecutionHook> commandExecutionHook = new AtomicReference<HystrixCommandExecutionHook>();
 
     private HystrixPlugins() {
 
@@ -205,6 +208,49 @@ public class HystrixPlugins {
      */
     public void registerPropertiesStrategy(HystrixPropertiesStrategy impl) {
         if (!propertiesFactory.compareAndSet(null, impl)) {
+            throw new IllegalStateException("Another strategy was already registered.");
+        }
+    }
+
+    /**
+     * Retrieve instance of {@link HystrixCommandExecutionHook} to use based on order of precedence as defined in {@link HystrixPlugins} class header.
+     * <p>
+     * Override default by using {@link #registerCommandExecutionHook(HystrixCommandExecutionHook)} or setting property: <code>hystrix.plugin.HystrixCommandExecutionHook.implementation</code> with the
+     * full classname to
+     * load.
+     * 
+     * @return {@link HystrixCommandExecutionHook} implementation to use
+     * 
+     * @since 1.2
+     */
+    public HystrixCommandExecutionHook getCommandExecutionHook() {
+        if (commandExecutionHook.get() == null) {
+            // check for an implementation from System.getProperty first
+            Object impl = getPluginImplementationViaProperty(HystrixCommandExecutionHook.class);
+            if (impl == null) {
+                // nothing set via properties so initialize with default 
+                commandExecutionHook.compareAndSet(null, HystrixCommandExecutionHookDefault.getInstance());
+                // we don't return from here but call get() again in case of thread-race so the winner will always get returned
+            } else {
+                // we received an implementation from the system property so use it
+                commandExecutionHook.compareAndSet(null, (HystrixCommandExecutionHook) impl);
+            }
+        }
+        return commandExecutionHook.get();
+    }
+
+    /**
+     * Register a {@link HystrixCommandExecutionHook} implementation as a global override of any injected or default implementations.
+     * 
+     * @param impl
+     *            {@link HystrixCommandExecutionHook} implementation
+     * @throws IllegalStateException
+     *             if called more than once or after the default was initialized (if usage occurs before trying to register)
+     * 
+     * @since 1.2
+     */
+    public void registerCommandExecutionHook(HystrixCommandExecutionHook impl) {
+        if (!commandExecutionHook.compareAndSet(null, impl)) {
             throw new IllegalStateException("Another strategy was already registered.");
         }
     }
