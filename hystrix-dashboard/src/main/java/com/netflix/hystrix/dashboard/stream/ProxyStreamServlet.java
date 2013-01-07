@@ -95,6 +95,9 @@ public class ProxyStreamServlet extends HttpServlet {
                 while ((b = is.read()) != -1) {
                     try {
                         os.write(b);
+                        if (b == 10 /** flush buffer on line feed */) {
+                            os.flush();
+                        }
                     } catch (Exception e) {
                         if (e.getClass().getSimpleName().equalsIgnoreCase("ClientAbortException")) {
                             // don't throw an exception as this means the user closed the connection
