@@ -1095,40 +1095,59 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      */
     private R getFallbackOrThrowException(HystrixEventType eventType, FailureType failureType, String message, Exception e) {
         try {
-            // retrieve the fallback
-            R fallback = getFallbackWithProtection();
-            // mark fallback on counter
-            metrics.markFallbackSuccess();
-            // record the executionResult
-            executionResult = executionResult.addEvents(eventType, HystrixEventType.FALLBACK_SUCCESS);
-            return executionHook.onComplete(this, fallback);
-        } catch (UnsupportedOperationException fe) {
-            logger.debug("No fallback for HystrixCommand. ", fe); // debug only since we're throwing the exception and someone higher will do something with it
-            // record the executionResult
-            executionResult = executionResult.addEvents(eventType);
+            if (properties.fallbackEnabled().get()) {
+                /* fallback behavior is permitted so attempt */
+                try {
+                    // retrieve the fallback
+                    R fallback = getFallbackWithProtection();
+                    // mark fallback on counter
+                    metrics.markFallbackSuccess();
+                    // record the executionResult
+                    executionResult = executionResult.addEvents(eventType, HystrixEventType.FALLBACK_SUCCESS);
+                    return executionHook.onComplete(this, fallback);
+                } catch (UnsupportedOperationException fe) {
+                    logger.debug("No fallback for HystrixCommand. ", fe); // debug only since we're throwing the exception and someone higher will do something with it
+                    // record the executionResult
+                    executionResult = executionResult.addEvents(eventType);
 
-            /* executionHook for all errors */
-            try {
-                e = executionHook.onError(this, failureType, e);
-            } catch (Exception hookException) {
-                logger.warn("Error calling ExecutionHook.onError", hookException);
+                    /* executionHook for all errors */
+                    try {
+                        e = executionHook.onError(this, failureType, e);
+                    } catch (Exception hookException) {
+                        logger.warn("Error calling ExecutionHook.onError", hookException);
+                    }
+
+                    throw new HystrixRuntimeException(failureType, this.getClass(), getLogMessagePrefix() + " " + message + " and no fallback available.", e, fe);
+                } catch (Exception fe) {
+                    logger.error("Error retrieving fallback for HystrixCommand. ", fe);
+                    metrics.markFallbackFailure();
+                    // record the executionResult
+                    executionResult = executionResult.addEvents(eventType, HystrixEventType.FALLBACK_FAILURE);
+
+                    /* executionHook for all errors */
+                    try {
+                        e = executionHook.onError(this, failureType, e);
+                    } catch (Exception hookException) {
+                        logger.warn("Error calling ExecutionHook.onError", hookException);
+                    }
+
+                    throw new HystrixRuntimeException(failureType, this.getClass(), getLogMessagePrefix() + " " + message + " and failed retrieving fallback.", e, fe);
+                }
+            } else {
+                /* fallback is disabled so throw HystrixRuntimeException */
+
+                logger.debug("Fallback disabled for HystrixCommand so will throw HystrixRuntimeException. ", e); // debug only since we're throwing the exception and someone higher will do something with it
+                // record the executionResult
+                executionResult = executionResult.addEvents(eventType);
+
+                /* executionHook for all errors */
+                try {
+                    e = executionHook.onError(this, failureType, e);
+                } catch (Exception hookException) {
+                    logger.warn("Error calling ExecutionHook.onError", hookException);
+                }
+                throw new HystrixRuntimeException(failureType, this.getClass(), getLogMessagePrefix() + " " + message + " and fallback disabled.", e, null);
             }
-
-            throw new HystrixRuntimeException(failureType, this.getClass(), getLogMessagePrefix() + " " + message + " and no fallback available.", e, fe);
-        } catch (Exception fe) {
-            logger.error("Error retrieving fallback for HystrixCommand. ", fe);
-            metrics.markFallbackFailure();
-            // record the executionResult
-            executionResult = executionResult.addEvents(eventType, HystrixEventType.FALLBACK_FAILURE);
-
-            /* executionHook for all errors */
-            try {
-                e = executionHook.onError(this, failureType, e);
-            } catch (Exception hookException) {
-                logger.warn("Error calling ExecutionHook.onError", hookException);
-            }
-
-            throw new HystrixRuntimeException(failureType, this.getClass(), getLogMessagePrefix() + " " + message + " and failed retrieving fallback.", e, fe);
         } finally {
             // record that we're completed (to handle non-successful events we do it here as well as at the end of executeCommand
             isExecutionComplete.set(true);
@@ -5046,6 +5065,48 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             assertEquals(0, command.builder.executionHook.threadComplete.get());
         }
 
+        /**
+         * Test a command execution that fails but has a fallback.
+         */
+        @Test
+        public void testExecutionFailureWithFallbackImplementedButDisabled() {
+            TestHystrixCommand<Boolean> commandEnabled = new KnownFailureTestCommandWithFallback(new TestCircuitBreaker(), true);
+            try {
+                assertEquals(false, commandEnabled.execute());
+            } catch (Exception e) {
+                e.printStackTrace();
+                fail("We should have received a response from the fallback.");
+            }
+
+            TestHystrixCommand<Boolean> commandDisabled = new KnownFailureTestCommandWithFallback(new TestCircuitBreaker(), false);
+            try {
+                assertEquals(false, commandDisabled.execute());
+                fail("expect exception thrown");
+            } catch (Exception e) {
+                // expected
+            }
+
+            assertEquals("we failed with a simulated issue", commandDisabled.getFailedExecutionException().getMessage());
+
+            assertTrue(commandDisabled.isFailedExecution());
+
+            assertEquals(0, commandDisabled.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
+            assertEquals(1, commandDisabled.builder.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
+            assertEquals(1, commandDisabled.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
+            assertEquals(0, commandDisabled.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
+            assertEquals(0, commandDisabled.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
+            assertEquals(0, commandDisabled.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+            assertEquals(0, commandDisabled.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
+            assertEquals(0, commandDisabled.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
+            assertEquals(0, commandDisabled.builder.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
+            assertEquals(0, commandDisabled.builder.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
+            assertEquals(0, commandDisabled.builder.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+
+            assertEquals(100, commandDisabled.builder.metrics.getHealthCounts().getErrorPercentage());
+
+            assertEquals(2, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        }
+
         /* ******************************************************************************** */
         /* ******************************************************************************** */
         /* private HystrixCommand class implementations for unit testing */
@@ -5234,6 +5295,11 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
             public KnownFailureTestCommandWithFallback(TestCircuitBreaker circuitBreaker) {
                 super(testPropsBuilder().setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics));
+            }
+
+            public KnownFailureTestCommandWithFallback(TestCircuitBreaker circuitBreaker, boolean fallbackEnabled) {
+                super(testPropsBuilder().setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics)
+                        .setCommandPropertiesDefaults(HystrixCommandProperties.Setter.getUnitTestPropertiesSetter().withFallbackEnabled(fallbackEnabled)));
             }
 
             @Override
