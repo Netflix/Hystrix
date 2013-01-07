@@ -19,14 +19,21 @@ import java.util.List;
 
 import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
-import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.HystrixEventType;
+import com.netflix.hystrix.strategy.HystrixPlugins;
 
 /**
  * Abstract EventNotifier that allows receiving notifications for different events with default implementations.
  * <p>
  * See {@link HystrixPlugins} or the Hystrix GitHub Wiki for information on configuring plugins: <a
  * href="https://github.com/Netflix/Hystrix/wiki/Plugins">https://github.com/Netflix/Hystrix/wiki/Plugins</a>.
+ * <p>
+ * <b>Note on thread-safety and performance</b>
+ * <p>
+ * A single implementation of this class will be used globally so methods on this class will be invoked concurrently from multiple threads so all functionality must be thread-safe.
+ * <p>
+ * Methods are also invoked synchronously and will add to execution time of the commands so all behavior should be fast. If anything time-consuming is to be done it should be spawned asynchronously
+ * onto separate worker threads.
  */
 public abstract class HystrixEventNotifier {
 

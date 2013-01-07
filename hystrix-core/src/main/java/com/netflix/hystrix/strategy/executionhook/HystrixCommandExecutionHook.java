@@ -26,6 +26,15 @@ import com.netflix.hystrix.strategy.HystrixPlugins;
  * <p>
  * See {@link HystrixPlugins} or the Hystrix GitHub Wiki for information on configuring plugins: <a
  * href="https://github.com/Netflix/Hystrix/wiki/Plugins">https://github.com/Netflix/Hystrix/wiki/Plugins</a>.
+ * <p>
+ * <b>Note on thread-safety and performance</b>
+ * <p>
+ * A single implementation of this class will be used globally so methods on this class will be invoked concurrently from multiple threads so all functionality must be thread-safe.
+ * <p>
+ * Methods are also invoked synchronously and will add to execution time of the commands so all behavior should be fast. If anything time-consuming is to be done it should be spawned asynchronously
+ * onto separate worker threads.
+ * 
+ * @since 1.2
  * */
 public abstract class HystrixCommandExecutionHook {
 
@@ -34,6 +43,8 @@ public abstract class HystrixCommandExecutionHook {
      * 
      * @param commandInstance
      *            The executing HystrixCommand instance.
+     * 
+     * @since 1.2
      */
     public <T> void onRunStart(HystrixCommand<T> commandInstance) {
         // do nothing by default
@@ -47,6 +58,8 @@ public abstract class HystrixCommandExecutionHook {
      * @param response
      *            from {@link HystrixCommand#run()}
      * @return T response object that can be modified, decorated, replaced or just returned as a pass-thru.
+     * 
+     * @since 1.2
      */
     public <T> T onRunSuccess(HystrixCommand<T> commandInstance, T response) {
         // pass-thru by default
@@ -61,6 +74,8 @@ public abstract class HystrixCommandExecutionHook {
      * @param e
      *            Exception thrown by {@link HystrixCommand#run()}
      * @return Exception that can be decorated, replaced or just returned as a pass-thru.
+     * 
+     * @since 1.2
      */
     public <T> Exception onRunError(HystrixCommand<T> commandInstance, Exception e) {
         // pass-thru by default
@@ -72,6 +87,8 @@ public abstract class HystrixCommandExecutionHook {
      * 
      * @param commandInstance
      *            The executing HystrixCommand instance.
+     * 
+     * @since 1.2
      */
     public <T> void onFallbackStart(HystrixCommand<T> commandInstance) {
         // do nothing by default
@@ -85,6 +102,8 @@ public abstract class HystrixCommandExecutionHook {
      * @param fallbackResponse
      *            from {@link HystrixCommand#getFallback()}
      * @return T response object that can be modified, decorated, replaced or just returned as a pass-thru.
+     * 
+     * @since 1.2
      */
     public <T> T onFallbackSuccess(HystrixCommand<T> commandInstance, T fallbackResponse) {
         // pass-thru by default
@@ -99,6 +118,8 @@ public abstract class HystrixCommandExecutionHook {
      * @param e
      *            Exception thrown by {@link HystrixCommand#getFallback()}
      * @return Exception that can be decorated, replaced or just returned as a pass-thru.
+     * 
+     * @since 1.2
      */
     public <T> Exception onFallbackError(HystrixCommand<T> commandInstance, Exception e) {
         // pass-thru by default
@@ -110,6 +131,8 @@ public abstract class HystrixCommandExecutionHook {
      * 
      * @param commandInstance
      *            The executing HystrixCommand instance.
+     * 
+     * @since 1.2
      */
     public <T> void onStart(HystrixCommand<T> commandInstance) {
         // do nothing by default
@@ -125,6 +148,8 @@ public abstract class HystrixCommandExecutionHook {
      * @param response
      *            from {@link HystrixCommand#run()} or {@link HystrixCommand#getFallback()}.
      * @return T response object that can be modified, decorated, replaced or just returned as a pass-thru.
+     * 
+     * @since 1.2
      */
     public <T> T onComplete(HystrixCommand<T> commandInstance, T response) {
         // pass-thru by default
@@ -143,6 +168,8 @@ public abstract class HystrixCommandExecutionHook {
      * @param e
      *            Exception thrown by {@link HystrixCommand}
      * @return Exception that can be decorated, replaced or just returned as a pass-thru.
+     * 
+     * @since 1.2
      */
     public <T> Exception onError(HystrixCommand<T> commandInstance, FailureType failureType, Exception e) {
         // pass-thru by default
@@ -154,6 +181,8 @@ public abstract class HystrixCommandExecutionHook {
      * 
      * @param commandInstance
      *            The executing HystrixCommand instance.
+     * 
+     * @since 1.2
      */
     public <T> void onThreadStart(HystrixCommand<T> commandInstance) {
         // do nothing by default
@@ -164,6 +193,8 @@ public abstract class HystrixCommandExecutionHook {
      * 
      * @param commandInstance
      *            The executing HystrixCommand instance.
+     * 
+     * @since 1.2
      */
     public <T> void onThreadComplete(HystrixCommand<T> commandInstance) {
         // do nothing by default

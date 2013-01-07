@@ -220,6 +220,8 @@ public class HystrixPlugins {
      * load.
      * 
      * @return {@link HystrixCommandExecutionHook} implementation to use
+     * 
+     * @since 1.2
      */
     public HystrixCommandExecutionHook getCommandExecutionHook() {
         if (commandExecutionHook.get() == null) {
@@ -244,6 +246,8 @@ public class HystrixPlugins {
      *            {@link HystrixCommandExecutionHook} implementation
      * @throws IllegalStateException
      *             if called more than once or after the default was initialized (if usage occurs before trying to register)
+     * 
+     * @since 1.2
      */
     public void registerCommandExecutionHook(HystrixCommandExecutionHook impl) {
         if (!commandExecutionHook.compareAndSet(null, impl)) {
