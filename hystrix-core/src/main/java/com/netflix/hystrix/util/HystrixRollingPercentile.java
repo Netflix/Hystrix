@@ -58,6 +58,7 @@ public class HystrixRollingPercentile {
     private final HystrixProperty<Integer> timeInMilliseconds;
     private final HystrixProperty<Integer> numberOfBuckets;
     private final HystrixProperty<Integer> bucketDataLength;
+    private final HystrixProperty<Boolean> enabled;
 
     /*
      * This will get flipped each time a new bucket is created.
@@ -78,17 +79,22 @@ public class HystrixRollingPercentile {
      *            {@code HystrixProperty<Integer>} for number of values stored in each bucket
      *            <p>
      *            Example: 1000 to store a max of 1000 values in each 5 second bucket
+     * @param enabled
+     *            {@code HystrixProperty<Boolean>} whether data should be tracked and percentiles calculated.
+     *            <p>
+     *            If 'false' methods will do nothing.
      */
-    public HystrixRollingPercentile(HystrixProperty<Integer> timeInMilliseconds, HystrixProperty<Integer> numberOfBuckets, HystrixProperty<Integer> bucketDataLength) {
-        this(ACTUAL_TIME, timeInMilliseconds, numberOfBuckets, bucketDataLength);
+    public HystrixRollingPercentile(HystrixProperty<Integer> timeInMilliseconds, HystrixProperty<Integer> numberOfBuckets, HystrixProperty<Integer> bucketDataLength, HystrixProperty<Boolean> enabled) {
+        this(ACTUAL_TIME, timeInMilliseconds, numberOfBuckets, bucketDataLength, enabled);
 
     }
 
-    private HystrixRollingPercentile(Time time, HystrixProperty<Integer> timeInMilliseconds, HystrixProperty<Integer> numberOfBuckets, HystrixProperty<Integer> bucketDataLength) {
+    private HystrixRollingPercentile(Time time, HystrixProperty<Integer> timeInMilliseconds, HystrixProperty<Integer> numberOfBuckets, HystrixProperty<Integer> bucketDataLength, HystrixProperty<Boolean> enabled) {
         this.time = time;
         this.timeInMilliseconds = timeInMilliseconds;
         this.numberOfBuckets = numberOfBuckets;
         this.bucketDataLength = bucketDataLength;
+        this.enabled = enabled;
 
         if (this.timeInMilliseconds.get() % this.numberOfBuckets.get() != 0) {
             throw new IllegalArgumentException("The timeInMilliseconds must divide equally into numberOfBuckets. For example 1000/10 is ok, 1000/11 is not.");
@@ -104,6 +110,10 @@ public class HystrixRollingPercentile {
      *            Value to be stored in current bucket such as execution latency in milliseconds
      */
     public void addValue(int... value) {
+        /* no-op if disabled */
+        if (!enabled.get())
+            return;
+
         for (int v : value) {
             try {
                 getCurrentBucket().data.addValue(v);
@@ -125,6 +135,10 @@ public class HystrixRollingPercentile {
      * @return int percentile value
      */
     public int getPercentile(double percentile) {
+        /* no-op if disabled */
+        if (!enabled.get())
+            return -1;
+
         // force logic to move buckets forward in case other requests aren't making it happen
         getCurrentBucket();
         // fetch the current snapshot
@@ -137,6 +151,10 @@ public class HystrixRollingPercentile {
      * @return mean of all values
      */
     public int getMean() {
+        /* no-op if disabled */
+        if (!enabled.get())
+            return -1;
+
         // force logic to move buckets forward in case other requests aren't making it happen
         getCurrentBucket();
         // fetch the current snapshot
@@ -261,6 +279,10 @@ public class HystrixRollingPercentile {
      * Force a reset so that percentiles start being gathered from scratch.
      */
     public void reset() {
+        /* no-op if disabled */
+        if (!enabled.get())
+            return;
+
         // clear buckets so we start over again
         buckets.clear();
     }
@@ -603,11 +625,12 @@ public class HystrixRollingPercentile {
         private static final HystrixProperty<Integer> timeInMilliseconds = HystrixProperty.Factory.asProperty(60000);
         private static final HystrixProperty<Integer> numberOfBuckets = HystrixProperty.Factory.asProperty(12); // 12 buckets at 5000ms each
         private static final HystrixProperty<Integer> bucketDataLength = HystrixProperty.Factory.asProperty(1000);
+        private static final HystrixProperty<Boolean> enabled = HystrixProperty.Factory.asProperty(true);
 
         @Test
         public void testRolling() {
             MockedTime time = new MockedTime();
-            HystrixRollingPercentile p = new HystrixRollingPercentile(time, timeInMilliseconds, numberOfBuckets, bucketDataLength);
+            HystrixRollingPercentile p = new HystrixRollingPercentile(time, timeInMilliseconds, numberOfBuckets, bucketDataLength, enabled);
             p.addValue(1000);
             p.addValue(1000);
             p.addValue(1000);
@@ -670,7 +693,7 @@ public class HystrixRollingPercentile {
         @Test
         public void testValueIsZeroAfterRollingWindowPassesAndNoTraffic() {
             MockedTime time = new MockedTime();
-            HystrixRollingPercentile p = new HystrixRollingPercentile(time, timeInMilliseconds, numberOfBuckets, bucketDataLength);
+            HystrixRollingPercentile p = new HystrixRollingPercentile(time, timeInMilliseconds, numberOfBuckets, bucketDataLength, enabled);
             p.addValue(1000);
             p.addValue(1000);
             p.addValue(1000);
@@ -702,7 +725,7 @@ public class HystrixRollingPercentile {
             System.out.println("\n\n***************************** testSampleDataOverTime1 \n");
 
             MockedTime time = new MockedTime();
-            HystrixRollingPercentile p = new HystrixRollingPercentile(time, timeInMilliseconds, numberOfBuckets, bucketDataLength);
+            HystrixRollingPercentile p = new HystrixRollingPercentile(time, timeInMilliseconds, numberOfBuckets, bucketDataLength, enabled);
             int previousTime = 0;
             for (int i = 0; i < SampleDataHolder1.data.length; i++) {
                 int timeInMillisecondsSinceStart = SampleDataHolder1.data[i][0];
@@ -742,7 +765,7 @@ public class HystrixRollingPercentile {
             System.out.println("\n\n***************************** testSampleDataOverTime2 \n");
             MockedTime time = new MockedTime();
             int previousTime = 0;
-            HystrixRollingPercentile p = new HystrixRollingPercentile(time, timeInMilliseconds, numberOfBuckets, bucketDataLength);
+            HystrixRollingPercentile p = new HystrixRollingPercentile(time, timeInMilliseconds, numberOfBuckets, bucketDataLength, enabled);
             for (int i = 0; i < SampleDataHolder2.data.length; i++) {
                 int timeInMillisecondsSinceStart = SampleDataHolder2.data[i][0];
                 int latency = SampleDataHolder2.data[i][1];
@@ -876,6 +899,27 @@ public class HystrixRollingPercentile {
             PercentileSnapshot p = getPercentileForValues(951772, 951567, 951937, 951959, 951442, 950610, 951591, 951195, 951772, 950925, 951990, 951682);
             Assert.assertEquals(951983, p.getPercentile(90));
             Assert.assertEquals(951990, p.getPercentile(100));
+        }
+
+        /**
+         * This code should work without throwing exceptions but the data returned will all be -1 since the rolling percentile is disabled.
+         */
+        @Test
+        public void testDoesNothingWhenDisabled() {
+            MockedTime time = new MockedTime();
+            int previousTime = 0;
+            HystrixRollingPercentile p = new HystrixRollingPercentile(time, timeInMilliseconds, numberOfBuckets, bucketDataLength, HystrixProperty.Factory.asProperty(false));
+            for (int i = 0; i < SampleDataHolder2.data.length; i++) {
+                int timeInMillisecondsSinceStart = SampleDataHolder2.data[i][0];
+                int latency = SampleDataHolder2.data[i][1];
+                time.increment(timeInMillisecondsSinceStart - previousTime);
+                previousTime = timeInMillisecondsSinceStart;
+                p.addValue(latency);
+            }
+
+            assertEquals(-1, p.getPercentile(50));
+            assertEquals(-1, p.getPercentile(75));
+            assertEquals(-1, p.getMean());
         }
 
         private static class MockedTime implements Time {
