@@ -3,5 +3,6 @@ com.netflix.hystrix.exception
 com.netflix.hystrix.strategy
 com.netflix.hystrix.strategy.concurrency
 com.netflix.hystrix.strategy.eventnotifier
+com.netflix.hystrix.strategy.executionhook
 com.netflix.hystrix.strategy.metrics
 com.netflix.hystrix.strategy.properties
