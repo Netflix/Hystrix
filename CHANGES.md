@@ -7,8 +7,8 @@
   * [Pull 71](https://github.com/Netflix/Hystrix/pull/71) jettyRun support for running webapps via gradle
 * [Issue 15](https://github.com/Netflix/Hystrix/issues/15) Property to disable percentile calculations
 * [Issue 69](https://github.com/Netflix/Hystrix/issues/69) Property to disable fallbacks
-* [Issue 73](https://github.com/Netflix/Hystrix/issues/73) Make servlet-api a provided dependency
-* [Issue 74](https://github.com/Netflix/Hystrix/issues/74) Dashboard problem when using Turbine (Stream not flushing)
+* [Pull 73](https://github.com/Netflix/Hystrix/pull/73) Make servlet-api a provided dependency
+* [Pull 74](https://github.com/Netflix/Hystrix/pull/74) Dashboard problem when using Turbine (Stream not flushing)
 
 ### Version 1.1.7 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.1.7%22)) ###
 
