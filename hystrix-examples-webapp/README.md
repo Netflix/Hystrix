@@ -4,4 +4,16 @@ Web application that demonstrates functionality from [hystrix-examples](https://
 
 The [hystrix-dashboard](https://github.com/Netflix/Hystrix/tree/master/hystrix-dashboard) can be used on this example app to monitor its metrics.
 
+# Run via Gradle
+
+```
+$ git clone git@github.com:Netflix/Hystrix.git
+$ cd Hystrix/hystrix-examples-webapp
+$ ../gradlew jettyRun
+> Building > :hystrix-examples-webapp:jettyRun > Running at http://localhost:8989/hystrix-examples-webapp
+```
+
+Once running, open <a href="http://localhost:8989/hystrix-examples-webapp">http://localhost:8989/hystrix-examples-webapp</a>.
+
+
 <img src="https://raw.github.com/wiki/Netflix/Hystrix/images/hystrix-examples-webapp-home.png">
