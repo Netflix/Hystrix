@@ -30,11 +30,11 @@ Example for Maven:
 <dependency>
     <groupId>com.netflix.hystrix</groupId>
     <artifactId>hystrix-core</artifactId>
-    <version>1.0.2</version>
+    <version>1.2.0</version>
 </dependency>
 ```
 and for Ivy:
 
 ```xml
-<dependency org="com.netflix.hystrix" name="hystrix-core" rev="1.0.2" />
+<dependency org="com.netflix.hystrix" name="hystrix-core" rev="1.2.0" />
 ```
