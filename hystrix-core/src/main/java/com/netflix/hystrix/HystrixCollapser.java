@@ -610,6 +610,10 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
                      */
                     for (CollapsedRequest<ResponseType, RequestArgumentType> request : requests) {
                         request.setException(new IllegalStateException("Requests not executed before shutdown."));
+                        /**
+                         * https://github.com/Netflix/Hystrix/issues/78 Include more info when collapsed requests remain in queue
+                         */
+                        logger.warn("Request still in queue but not be executed due to RequestCollapser shutdown. Argument => " + request.getArgument() + "   Request Object => " + request, new IllegalStateException());
                     }
                 } catch (Exception e) {
                     logger.error("Failed to setException on CollapsedRequestFutureImpl instances.", e);
