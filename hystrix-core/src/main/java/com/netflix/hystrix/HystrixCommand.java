@@ -1334,6 +1334,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         private volatile R result; // the result of the get()
         private volatile ExecutionException executionException; // in case an exception is thrown
         private volatile Future<R> actualFuture = null;
+        private volatile boolean isInterrupted = false;
         private final CountDownLatch futureStarted = new CountDownLatch(1);
         private final AtomicBoolean started = new AtomicBoolean(false);
 
@@ -1381,6 +1382,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                     // wait for if block above to finish on a different thread
                     futureStarted.await();
                 } catch (InterruptedException e) {
+                    isInterrupted = true;
                     logger.error(getLogMessagePrefix() + ": Unexpected interruption while waiting on other thread submitting to queue.", e);
                     actualFuture = asFuture(getFallbackOrThrowException(HystrixEventType.THREAD_POOL_REJECTED, FailureType.REJECTED_THREAD_EXECUTION, "Unexpected interruption while waiting on other thread submitting to queue.", e));
                 }
@@ -1450,7 +1452,20 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                 // this check needs to be inside the try/finally so even if an exception is thrown
                 // we will countDown the latch and release threads
                 if (!started.get() || actualFuture == null) {
-                    throw new IllegalStateException("Future was not started.");
+                    /**
+                     * https://github.com/Netflix/Hystrix/issues/80
+                     * 
+                     * Output any extra information that can help tracking down how this failed
+                     * as it most likely means there's a concurrency bug.
+                     */
+                    throw new IllegalStateException("Future was not started.  Key: "
+                            + getCommandKey().name() + "  ActualFuture: " + actualFuture
+                            + "  Started: " + started.get() + "  actualFutureExecuted: " + actualFutureExecuted.get()
+                            + "  futureStarted: " + futureStarted.getCount()
+                            + "  isInterrupted: " + isInterrupted
+                            + "  actualResponseReceived: " + actualResponseReceived.getCount()
+                            + "  isCommandTimedOut: " + isCommandTimedOut.get()
+                            + "  Events: " + Arrays.toString(getExecutionEvents().toArray()));
                 }
                 // get on the actualFuture with timeout values from properties
                 result = actualFuture.get(properties.executionIsolationThreadTimeoutInMilliseconds().get(), TimeUnit.MILLISECONDS);
