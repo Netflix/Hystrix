@@ -85,22 +85,21 @@ public class HystrixMetricsStreamServlet extends HttpServlet {
     private void handleRequest(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         /* ensure we aren't allowing more connections than we want */
         int numberConnections = concurrentConnections.incrementAndGet();
-
-        int delay = 500;
-        try {
-            String d = request.getParameter("delay");
-            if (d != null) {
-                delay = Integer.parseInt(d);
-            }
-        } catch (Exception e) {
-            // ignore if it's not a number
-        }
-
         HystrixMetricsPoller poller = null;
         try {
             if (numberConnections > maxConcurrentConnections.get()) {
                 response.sendError(503, "MaxConcurrentConnections reached: " + maxConcurrentConnections.get());
             } else {
+
+                int delay = 500;
+                try {
+                    String d = request.getParameter("delay");
+                    if (d != null) {
+                        delay = Integer.parseInt(d);
+                    }
+                } catch (Exception e) {
+                    // ignore if it's not a number
+                }
 
                 /* initialize response */
                 response.setHeader("Content-Type", "text/event-stream");
@@ -118,14 +117,24 @@ public class HystrixMetricsStreamServlet extends HttpServlet {
                 try {
                     while (poller.isRunning()) {
                         List<String> jsonMessages = jsonListener.getJsonMetrics();
-                        for (String json : jsonMessages) {
-                            response.getWriter().println("data: " + json + "\n");
+                        if (jsonMessages.isEmpty()) {
+                            // https://github.com/Netflix/Hystrix/issues/85 hystrix.stream holds connection open if no metrics
+                            // we send a ping to test the connection so that we'll get an IOException if the client has disconnected
+                            response.getWriter().println("ping: \n");
+                        } else {
+                            for (String json : jsonMessages) {
+                                response.getWriter().println("data: " + json + "\n");
+                            }
                         }
                         // after outputting all the messages we will flush the stream
                         response.flushBuffer();
                         // now wait the 'delay' time
                         Thread.sleep(delay);
                     }
+                } catch (IOException e) {
+                    poller.shutdown();
+                    // debug instead of error as we expect to get these whenever a client disconnects or network issue occurs
+                    logger.debug("IOException while trying to write (generally caused by client disconnecting). Will stop polling.", e);
                 } catch (Exception e) {
                     poller.shutdown();
                     logger.error("Failed to write. Will stop polling.", e);
