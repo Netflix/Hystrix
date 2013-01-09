@@ -1,11 +1,11 @@
-    apply plugin: 'java'
-    dependencies {
-        compile project(':hystrix-core')
-        provided 'junit:junit-dep:4.10'
-    }
-    
-    task(runDemo, dependsOn: 'classes', type: JavaExec) {
-    	main = 'com.netflix.hystrix.examples.demo.HystrixCommandDemo'
-    	classpath = sourceSets.main.runtimeClasspath
-    }
+apply plugin: 'java'
+dependencies {
+    compile project(':hystrix-core')
+    provided 'junit:junit-dep:4.10'
+}
+
+task(runDemo, dependsOn: 'classes', type: JavaExec) {
+	main = 'com.netflix.hystrix.examples.demo.HystrixCommandDemo'
+	classpath = sourceSets.main.runtimeClasspath
+}
 
