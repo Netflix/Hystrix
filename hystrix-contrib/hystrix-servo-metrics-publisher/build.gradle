@@ -1,5 +1,5 @@
-    apply plugin: 'java'
-    dependencies {
-        compile project(':hystrix-core')
-        compile 'com.netflix.servo:servo-core:0.4.27'
-    }
+apply plugin: 'java'
+dependencies {
+    compile project(':hystrix-core')
+    compile 'com.netflix.servo:servo-core:0.4.27'
+}

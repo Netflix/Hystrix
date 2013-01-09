@@ -1,5 +1,5 @@
-    apply plugin: 'java'
-    dependencies {
-        compile project(':hystrix-core')
-        provided 'javax.servlet:servlet-api:2.5'
-    }
+apply plugin: 'java'
+dependencies {
+    compile project(':hystrix-core')
+    provided 'javax.servlet:servlet-api:2.5'
+}
