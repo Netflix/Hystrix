@@ -277,6 +277,8 @@ public class HystrixMetricsPoller {
                     json.writeNumberField("propertyValue_queueSizeRejectionThreshold", threadPoolMetrics.getProperties().queueSizeRejectionThreshold().get());
                     json.writeNumberField("propertyValue_metricsRollingStatisticalWindowInMilliseconds", threadPoolMetrics.getProperties().metricsRollingStatisticalWindowInMilliseconds().get());
 
+                    json.writeNumberField("reportingHosts", 1); // this will get summed across all instances in a cluster
+                    
                     json.writeEndObject();
                     json.close();
                     // output to stream
