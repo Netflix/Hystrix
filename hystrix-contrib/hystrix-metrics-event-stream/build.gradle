@@ -1,7 +1,17 @@
-    apply plugin: 'java'
-    dependencies {
-        compile project(':hystrix-core')
-        compile 'org.codehaus.jackson:jackson-core-asl:1.9.2'
-        provided 'javax.servlet:servlet-api:2.5'
-        provided 'junit:junit:4.10'
-    }
+apply plugin: 'java'
+apply plugin: 'eclipse'
+
+dependencies {
+    compile project(':hystrix-core')
+    compile 'org.codehaus.jackson:jackson-core-asl:1.9.2'
+    provided 'javax.servlet:servlet-api:2.5'
+    provided 'junit:junit-dep:4.10'
+}
+
+eclipse {
+  classpath {
+    plusConfigurations += configurations.provided
+    downloadSources = true
+    downloadJavadoc = true
+  }
+}
