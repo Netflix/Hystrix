@@ -161,7 +161,12 @@ public class HystrixMetricsPoller {
                     json.writeNumberField("currentTime", System.currentTimeMillis());
 
                     // circuit breaker
-                    json.writeBooleanField("isCircuitBreakerOpen", circuitBreaker.isOpen());
+                    if (circuitBreaker == null) {
+                        // circuit breaker is disabled and thus never open
+                        json.writeBooleanField("isCircuitBreakerOpen", false);
+                    } else {
+                        json.writeBooleanField("isCircuitBreakerOpen", circuitBreaker.isOpen());
+                    }
                     HealthCounts healthCounts = commandMetrics.getHealthCounts();
                     json.writeNumberField("errorPercentage", healthCounts.getErrorPercentage());
                     json.writeNumberField("errorCount", healthCounts.getErrorCount());
