@@ -10,7 +10,7 @@ By contributing your code, you agree to license your contribution under the term
 
 All files are released with the Apache 2.0 license.
 
-If you are added a new file it should have a header like this:
+If you are adding a new file it should have a header like this:
 
 ```
 /**
