@@ -43,6 +43,17 @@ import com.netflix.hystrix.strategy.concurrency.HystrixRequestVariableLifecycle;
 public class HystrixRequestLog {
     private static final Logger logger = LoggerFactory.getLogger(HystrixRequestLog.class);
 
+    /**
+     * RequestLog: Reduce Chance of Memory Leak
+     * https://github.com/Netflix/Hystrix/issues/53
+     * 
+     * Upper limit on RequestLog before ignoring further additions and logging warnings.
+     * 
+     * Intended to help prevent memory leaks when someone isn't aware of the
+     * HystrixRequestContext lifecycle or enabling/disabling RequestLog.
+     */
+    private static final int MAX_STORAGE = 1000;
+
     private static final HystrixRequestVariableHolder<HystrixRequestLog> currentRequestLog = new HystrixRequestVariableHolder<HystrixRequestLog>(new HystrixRequestVariableLifecycle<HystrixRequestLog>() {
         @Override
         public HystrixRequestLog initialValue() {
@@ -58,7 +69,7 @@ public class HystrixRequestLog {
     /**
      * History of {@link HystrixCommand} executed in this request.
      */
-    private LinkedBlockingQueue<HystrixCommand<?>> executedCommands = new LinkedBlockingQueue<HystrixCommand<?>>();
+    private LinkedBlockingQueue<HystrixCommand<?>> executedCommands = new LinkedBlockingQueue<HystrixCommand<?>>(MAX_STORAGE);
 
     // prevent public instantiation
     private HystrixRequestLog() {
@@ -101,7 +112,10 @@ public class HystrixRequestLog {
      *            {@code HystrixCommand<?>}
      */
     /* package */void addExecutedCommand(HystrixCommand<?> command) {
-        executedCommands.add(command);
+        if (!executedCommands.offer(command)) {
+            // see RequestLog: Reduce Chance of Memory Leak https://github.com/Netflix/Hystrix/issues/53
+            logger.warn("RequestLog ignoring command after reaching limit of " + MAX_STORAGE + ". See https://github.com/Netflix/Hystrix/issues/53 for more information.");
+        }
     }
 
     /**
@@ -306,6 +320,24 @@ public class HystrixRequestLog {
                 context.shutdown();
             }
 
+        }
+
+        @Test
+        public void testMaxLimit() {
+            HystrixRequestContext context = HystrixRequestContext.initializeContext();
+            try {
+                for (int i = 0; i < MAX_STORAGE; i++) {
+                    new TestCommand("A", false, true).execute();
+                }
+                // then execute again some more
+                for (int i = 0; i < 10; i++) {
+                    new TestCommand("A", false, true).execute();
+                }
+
+                assertEquals(MAX_STORAGE, HystrixRequestLog.getCurrentRequest().executedCommands.size());
+            } finally {
+                context.shutdown();
+            }
         }
     }
 
