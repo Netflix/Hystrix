@@ -102,7 +102,7 @@ public class HystrixMetricsStreamServlet extends HttpServlet {
                 }
 
                 /* initialize response */
-                response.setHeader("Content-Type", "text/event-stream");
+                response.setHeader("Content-Type", "text/event-stream;charset=UTF-8");
                 response.setHeader("Cache-Control", "no-cache, no-store, max-age=0, must-revalidate");
                 response.setHeader("Pragma", "no-cache");
 
