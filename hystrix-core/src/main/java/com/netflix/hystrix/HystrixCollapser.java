@@ -160,7 +160,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
      * 
      * @return {@link HystrixCollapserKey} identifying this {@link HystrixCollapser} instance
      */
-    public final HystrixCollapserKey getCollapserKey() {
+    public HystrixCollapserKey getCollapserKey() {
         return collapserKey;
     }
 
@@ -179,7 +179,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
      * 
      * @return {@link Scope} that collapsing should be performed within.
      */
-    public final Scope getScope() {
+    public Scope getScope() {
         return scope;
     }
 
