@@ -334,14 +334,14 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      *         The {@link HystrixCommandGroupKey} is used to represent a common relationship between commands. For example, a library or team name, the system all related commands interace with,
      *         common business purpose etc.
      */
-    public final HystrixCommandGroupKey getCommandGroup() {
+    public HystrixCommandGroupKey getCommandGroup() {
         return commandGroup;
     }
 
     /**
      * @return {@link HystrixCommandKey} identifying this command instance for statistics, circuit-breaker, properties, etc.
      */
-    public final HystrixCommandKey getCommandKey() {
+    public HystrixCommandKey getCommandKey() {
         return commandKey;
     }
 
@@ -349,11 +349,11 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      * @return {@link HystrixThreadPoolKey} identifying which thread-pool this command uses (when configured to run on separate threads via
      *         {@link HystrixCommandProperties#executionIsolationStrategy()}).
      */
-    public final HystrixThreadPoolKey getThreadPoolKey() {
+    public HystrixThreadPoolKey getThreadPoolKey() {
         return threadPoolKey;
     }
 
-    /* package */final HystrixCircuitBreaker getCircuitBreaker() {
+    /* package */HystrixCircuitBreaker getCircuitBreaker() {
         return circuitBreaker;
     }
 
@@ -362,7 +362,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      * 
      * @return HystrixCommandMetrics
      */
-    public final HystrixCommandMetrics getMetrics() {
+    public HystrixCommandMetrics getMetrics() {
         return metrics;
     }
 
@@ -371,7 +371,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      * 
      * @return HystrixCommandProperties
      */
-    public final HystrixCommandProperties getProperties() {
+    public HystrixCommandProperties getProperties() {
         return properties;
     }
 
@@ -395,7 +395,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      * @throws HystrixBadRequestException
      *             if invalid arguments or state were used representing a user failure, not a system failure
      */
-    public final R execute() {
+    public R execute() {
         try {
             /* used to track userThreadExecutionTime */
             if (!invocationStartTime.compareAndSet(-1, System.currentTimeMillis())) {
@@ -510,7 +510,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      * @throws HystrixBadRequestException
      *             via {@code Future.get()} in {@link ExecutionException#getCause()} if invalid arguments or state were used representing a user failure, not a system failure
      */
-    public final Future<R> queue() {
+    public Future<R> queue() {
         try {
             /* used to track userThreadExecutionTime */
             if (!invocationStartTime.compareAndSet(-1, System.currentTimeMillis())) {
@@ -911,7 +911,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      * 
      * @return boolean
      */
-    public final boolean isCircuitBreakerOpen() {
+    public boolean isCircuitBreakerOpen() {
         return circuitBreaker.isOpen();
     }
 
@@ -920,7 +920,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      * 
      * @return boolean
      */
-    public final boolean isExecutionComplete() {
+    public boolean isExecutionComplete() {
         return isExecutionComplete.get();
     }
 
@@ -933,7 +933,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      * 
      * @return boolean
      */
-    public final boolean isExecutedInThread() {
+    public boolean isExecutedInThread() {
         return isExecutedInThread.get();
     }
 
@@ -942,7 +942,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      * 
      * @return boolean
      */
-    public final boolean isSuccessfulExecution() {
+    public boolean isSuccessfulExecution() {
         return executionResult.events.contains(HystrixEventType.SUCCESS);
     }
 
@@ -951,7 +951,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      * 
      * @return boolean
      */
-    public final boolean isFailedExecution() {
+    public boolean isFailedExecution() {
         return executionResult.events.contains(HystrixEventType.FAILURE);
     }
 
@@ -964,7 +964,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      * 
      * @return Throwable or null
      */
-    public final Throwable getFailedExecutionException() {
+    public Throwable getFailedExecutionException() {
         return executionResult.exception;
     }
 
@@ -974,7 +974,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      * 
      * @return boolean
      */
-    public final boolean isResponseFromFallback() {
+    public boolean isResponseFromFallback() {
         return executionResult.events.contains(HystrixEventType.FALLBACK_SUCCESS);
     }
 
@@ -984,7 +984,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      * 
      * @return boolean
      */
-    public final boolean isResponseTimedOut() {
+    public boolean isResponseTimedOut() {
         return executionResult.events.contains(HystrixEventType.TIMEOUT);
     }
 
@@ -994,7 +994,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      * 
      * @return boolean
      */
-    public final boolean isResponseShortCircuited() {
+    public boolean isResponseShortCircuited() {
         return executionResult.events.contains(HystrixEventType.SHORT_CIRCUITED);
     }
 
@@ -1003,7 +1003,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      * 
      * @return boolean
      */
-    public final boolean isResponseFromCache() {
+    public boolean isResponseFromCache() {
         return executionResult.events.contains(HystrixEventType.RESPONSE_FROM_CACHE);
     }
 
@@ -1013,7 +1013,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      * 
      * @return boolean
      */
-    public final boolean isResponseRejected() {
+    public boolean isResponseRejected() {
         return executionResult.events.contains(HystrixEventType.THREAD_POOL_REJECTED) || executionResult.events.contains(HystrixEventType.SEMAPHORE_REJECTED);
     }
 
@@ -1024,7 +1024,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      * 
      * @return {@code List<HystrixEventType>}
      */
-    public final List<HystrixEventType> getExecutionEvents() {
+    public List<HystrixEventType> getExecutionEvents() {
         return executionResult.events;
     }
 
@@ -1033,7 +1033,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      * 
      * @return int
      */
-    public final int getExecutionTimeInMilliseconds() {
+    public int getExecutionTimeInMilliseconds() {
         return executionResult.executionTime;
     }
 
