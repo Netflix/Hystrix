@@ -1,0 +1,37 @@
+    buildscript {
+        repositories {
+            mavenRepo name: 'clojars', url: 'http://clojars.org/repo'
+        }
+        dependencies {
+            classpath 'clojuresque:clojuresque:1.5.5'
+        }
+    }
+    apply plugin: 'clojure'
+
+    repositories {
+        mavenCentral()
+        clojarsRepo()
+    }
+
+    dependencies {
+        compile project(':hystrix-core')
+        compile 'org.clojure:clojure:1.4.0'
+    }
+
+    // This is a bit of a hack to get a copy of the classpath so I can use
+    // Leiningen to get a nrepl server going. One day Clojuresque might support it.
+    task outputClasspath {
+        def outputFile = new File('runtimeClasspath')
+        dependsOn classes
+        // This task is fast, so always running it is ok.
+        //inputs.files sourceSets.main.runtimeClasspath
+        //outputs.file outputFile
+        doFirst {
+            outputFile.withWriter {
+                it.write sourceSets.main.runtimeClasspath.asPath
+            }
+        }
+    }
+    build.dependsOn outputClasspath
+
+// vim:ft=groovy

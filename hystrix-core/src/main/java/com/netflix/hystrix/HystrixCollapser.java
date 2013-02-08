@@ -347,6 +347,18 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
     }
 
     /**
+     * Reset the global and request-scoped state for the given collapser key.
+     *
+     * This is intended to support uses of collapsers in an environment like a REPL
+     * where the definition of a collapser may change. It is not thread-safe and should
+     * not be used in a production environment.
+     */
+    public static void resetCollapser(HystrixCollapserKey key) {
+        globalScopedCollapsers.remove(key.name());
+        requestScopedCollapsers.remove(key.name());
+    }
+
+    /**
      * Static global cache of RequestCollapsers for Scope.GLOBAL
      */
     // String is CollapserKey.name() (we can't use CollapserKey directly as we can't guarantee it implements hashcode/equals correctly)
