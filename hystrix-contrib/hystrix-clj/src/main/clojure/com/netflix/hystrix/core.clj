@@ -1,4 +1,4 @@
-(ns ^{:doc
+(ns com.netflix.hystrix.core
   "THESE BINDINGS ARE EXPERIMENTAL AND SUBJECT TO CHANGE
 
   Functions for defining and executing Hystrix dependency commands and collapsers.
@@ -120,9 +120,7 @@
 
   The com.netflix.hystric.core/defcollapser macro is a helper for defining this map and storing it
   in a callable var.
-
-  " }
-  com.netflix.hystrix.core
+  "
   (:require [clojure.set :as set])
   (:import [java.util.concurrent Future]
            [com.netflix.hystrix
