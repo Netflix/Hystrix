@@ -18,20 +18,22 @@
         compile 'org.clojure:clojure:1.4.0'
     }
 
-    // This is a bit of a hack to get a copy of the classpath so I can use
-    // Leiningen to get a nrepl server going. One day Clojuresque might support it.
-    task outputClasspath {
-        def outputFile = new File('runtimeClasspath')
-        dependsOn classes
-        // This task is fast, so always running it is ok.
-        //inputs.files sourceSets.main.runtimeClasspath
-        //outputs.file outputFile
-        doFirst {
-            outputFile.withWriter {
-                it.write sourceSets.main.runtimeClasspath.asPath
-            }
-        }
+    ////////////////////////////////////////////////////////////////////////////////
+    // Define a task that runs an nrepl server. The port is given with the nreplPort
+    // property:
+    //    gradlew nrepl -PnreplPort=9999
+    // or put the property in ~/.gradle/gradle.properties
+    configurations { nrepl }
+    dependencies { nrepl 'org.clojure:tools.nrepl:0.2.1' }
+    task nrepl(type: JavaExec) {
+        classpath configurations.nrepl.asPath,
+                  project.sourceSets.main.clojure.srcDirs,
+                  project.sourceSets.test.clojure.srcDirs,
+                  sourceSets.main.runtimeClasspath
+        main = "clojure.main"
+        args '--eval', "(ns gradle-nrepl (:require [clojure.tools.nrepl.server :refer (start-server stop-server)]))",
+            '--eval', "(println \"Starting nrepl server on port $nreplPort\")",
+            '--eval', "(def server (start-server :port $nreplPort))"
     }
-    build.dependsOn outputClasspath
 
 // vim:ft=groovy
