@@ -41,7 +41,7 @@ You have a function that interacts with an untrusted dependency:
   ... make the request ...)
 
 ; execute the request
-(make-request \"baz\")
+(make-request "baz")
 ```
 
 and you want to make it a Hystrix dependency command. Do this:
@@ -52,9 +52,9 @@ and you want to make it a Hystrix dependency command. Do this:
   ... make the request ...)
 
 ; execute the request
-(make-request \"baz\")
+(make-request "baz")
 
 ; or queue for async execution
-(queue #'make-request \"baz\")
+(queue #'make-request "baz")
 ```
 
