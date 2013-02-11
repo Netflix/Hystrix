@@ -4,7 +4,7 @@ This module contains examples of using [HystrixCommand](https://github.com/Netfl
 
 ## Documentation
 
-Documentation related to the examples in this module is on the [How To Use](https://github.com/Netflix/wiki/How-To-Use) page.
+Documentation related to the examples in this module is on the [How To Use](https://github.com/Netflix/Hystrix/wiki/How-To-Use) page.
 
 ## Demo
 
