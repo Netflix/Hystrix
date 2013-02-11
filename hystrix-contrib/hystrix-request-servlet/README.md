@@ -28,7 +28,7 @@ and for Ivy:
 
 # Installation
 
-## [HystrixRequestContextServletFilter](hystrix-request-servlet/src/main/java/com/netflix/hystrix/contrib/requestservlet/HystrixRequestContextServletFilter.java)
+## [HystrixRequestContextServletFilter](https://github.com/Netflix/Hystrix/tree/master/hystrix-contrib/hystrix-request-servlet/src/main/java/com/netflix/hystrix/contrib/requestservlet/HystrixRequestContextServletFilter.java)
 
 This initializes the [HystrixRequestContext](https://github.com/Netflix/Hystrix/tree/master/hystrix-core/src/main/java/com/netflix/hystrix/strategy/concurrency/HystrixRequestContext.java) at the beginning of each HTTP request and then cleans it up at the end.
 
