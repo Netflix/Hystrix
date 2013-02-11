@@ -4,11 +4,11 @@ This is the core module of Hystrix.
 
 Key classes you're most likely to interact with are:
 
-- HystrixCommand [Source](./hystrix-core/src/main/java/com/netflix/hystrix/HystrixCommand.java) [Javadoc](http://netflix.github.com/Hystrix/javadoc/com/netflix/hystrix/HystrixCommand.html)
-- HystrixCollapser [Source](./hystrix-core/src/main/java/com/netflix/hystrix/HystrixCollapser.java) [Javadoc](http://netflix.github.com/Hystrix/javadoc/com/netflix/hystrix/HystrixCollapser.html)
-- HystrixRequestLog [Source](./hystrix-core/src/main/java/com/netflix/hystrix/HystrixRequestLog.java) [Javadoc](http://netflix.github.com/Hystrix/javadoc/com/netflix/hystrix/HystrixRequestLog.html)
-- HystrixPlugins [Source](./hystrix-core/src/main/java/com/netflix/hystrix/strategy/HystrixPlugins.java) [Javadoc](http://netflix.github.com/Hystrix/javadoc/com/netflix/hystrix/strategy/HystrixPlugins.html)
-- HystrixRequestContext [Source](./hystrix-core/src/main/java/com/netflix/hystrix/strategy/concurrency/HystrixRequestContext.java) [Javadoc](http://netflix.github.com/Hystrix/javadoc/com/netflix/hystrix/strategy/concurrency/HystrixRequestContext.html)
+- HystrixCommand [Source](https://github.com/Netflix/Hystrix/tree/master/hystrix-core/src/main/java/com/netflix/hystrix/HystrixCommand.java) [Javadoc](http://netflix.github.com/Hystrix/javadoc/com/netflix/hystrix/HystrixCommand.html)
+- HystrixCollapser [Source](https://github.com/Netflix/Hystrix/tree/master/hystrix-core/src/main/java/com/netflix/hystrix/HystrixCollapser.java) [Javadoc](http://netflix.github.com/Hystrix/javadoc/com/netflix/hystrix/HystrixCollapser.html)
+- HystrixRequestLog [Source](https://github.com/Netflix/Hystrix/tree/master/hystrix-core/src/main/java/com/netflix/hystrix/HystrixRequestLog.java) [Javadoc](http://netflix.github.com/Hystrix/javadoc/com/netflix/hystrix/HystrixRequestLog.html)
+- HystrixPlugins [Source](https://github.com/Netflix/Hystrix/tree/master/hystrix-core/src/main/java/com/netflix/hystrix/strategy/HystrixPlugins.java) [Javadoc](http://netflix.github.com/Hystrix/javadoc/com/netflix/hystrix/strategy/HystrixPlugins.html)
+- HystrixRequestContext [Source](https://github.com/Netflix/Hystrix/tree/master/hystrix-core/src/main/java/com/netflix/hystrix/strategy/concurrency/HystrixRequestContext.java) [Javadoc](http://netflix.github.com/Hystrix/javadoc/com/netflix/hystrix/strategy/concurrency/HystrixRequestContext.html)
 
 ## Documentation
 
