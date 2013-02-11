@@ -12,9 +12,9 @@ Key classes you're most likely to interact with are:
 
 ## Documentation
 
-A general project README can be found at the [project home](../../).
+A general project README can be found at the [project home](https://github.com/Netflix/Hystrix).
 
-The [Wiki](../../wiki) contains detailed documentation.
+The [Wiki](https://github.com/Netflix/Hystrix/wiki) contains detailed documentation.
 
 
 ## Maven Central
