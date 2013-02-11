@@ -1,6 +1,6 @@
 # Hystrix Request Servlet Filters
 
-This module contains functional examples for a J2EE/Servlet environment that initialize and uses  [HystrixRequestContext](../hystrix-core/src/main/java/com/netflix/hystrix/strategy/concurrency/HystrixRequestContext.java).
+This module contains functional examples for a J2EE/Servlet environment that initialize and uses  [HystrixRequestContext](https://github.com/Netflix/Hystrix/tree/master/hystrix-core/src/main/java/com/netflix/hystrix/strategy/concurrency/HystrixRequestContext.java).
 
 You can use this module as is or model your own implementation after it as these classes are very basic.
 
@@ -30,7 +30,7 @@ and for Ivy:
 
 ## [HystrixRequestContextServletFilter](hystrix-request-servlet/src/main/java/com/netflix/hystrix/contrib/requestservlet/HystrixRequestContextServletFilter.java)
 
-This initializes the [HystrixRequestContext](../hystrix-core/src/main/java/com/netflix/hystrix/strategy/concurrency/HystrixRequestContext.java) at the beginning of each HTTP request and then cleans it up at the end.
+This initializes the [HystrixRequestContext](https://github.com/Netflix/Hystrix/tree/master/hystrix-core/src/main/java/com/netflix/hystrix/strategy/concurrency/HystrixRequestContext.java) at the beginning of each HTTP request and then cleans it up at the end.
 
 You install it by adding the following to your web.xml:
 
@@ -65,7 +65,7 @@ You install it by adding the following to your web.xml:
 ```
 
 
-### [HystrixRequestLogViaResponseHeaderServletFilter](hystrix-request-servlet/src/main/java/com/netflix/hystrix/contrib/requestservlet/HystrixRequestLogViaResponseHeaderServletFilter.java)
+### [HystrixRequestLogViaResponseHeaderServletFilter](https://github.com/Netflix/Hystrix/tree/master/hystrix-contrib/hystrix-request-servlet/src/main/java/com/netflix/hystrix/contrib/requestservlet/HystrixRequestLogViaResponseHeaderServletFilter.java)
 
 This adds the output of [HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString()](http://netflix.github.com/Hystrix/javadoc/com/netflix/hystrix/HystrixRequestLog.html#getExecutedCommandsAsString(\)) to the HTTP response as header "X-HystrixLog".
 
