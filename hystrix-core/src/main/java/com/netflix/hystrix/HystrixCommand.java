@@ -503,10 +503,13 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      * <p>
      * We don't throw an exception but just flip to synchronous execution so code doesn't need to change in order to switch a command from running on a separate thread to the calling thread.
      * 
-     * 
      * @return {@code Future<R>} Result of {@link #run()} execution or a fallback from {@link #getFallback()} if the command fails for any reason.
-     * @throws HystrixRuntimeException
-     *             via {@code Future.get()} in {@link ExecutionException#getCause()} if a failure occurs and a fallback cannot be retrieved
+     * @throws HystrixRuntimeException if a fallback does not exist
+     *              <p>
+     *              <ul>
+     *                  <li>via {@code Future.get()} in {@link ExecutionException#getCause()} if a failure occurs</li>
+     *                  <li>or immediately if the command can not be queued (such as short-circuited or thread-pool/semaphore rejected)</li>
+     *              </ul>
      * @throws HystrixBadRequestException
      *             via {@code Future.get()} in {@link ExecutionException#getCause()} if invalid arguments or state were used representing a user failure, not a system failure
      */
