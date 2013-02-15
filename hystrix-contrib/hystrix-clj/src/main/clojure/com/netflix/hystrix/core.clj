@@ -132,8 +132,6 @@
               HystrixCollapser$Setter
               HystrixCollapser$CollapsedRequest]))
 
-(declare reset-collapser)
-
 (defmacro ^:private key-fn
   "Make a function that creates keys of the given class given one of:
 
@@ -307,8 +305,7 @@
 
 (defn collapser
   "Helper function that takes a definition map for a HystrixCollapser and returns a normalized
-  version ready for use with execute and queue. It also ensures that global/cached collapser
-  state is reset.
+  version ready for use with execute and queue.
 
   See ns documentation for valid keys.
 
@@ -319,7 +316,6 @@
   (let [result (-> options-map
                  (assoc :type :collapser)
                  normalize)]
-    (reset-collapser (:collapser-key result))
     result))
 
 (defmacro defcollapser
@@ -518,10 +514,6 @@
 
 ;################################################################################
 ; :collapser impl
-
-(defn- reset-collapser
-  [key]
-  (HystrixCollapser/resetCollapser (collapser-key key)))
 
 (defmethod normalize :collapser
   [definition]
