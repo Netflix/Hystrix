@@ -100,6 +100,13 @@ public class HystrixCommandMetrics {
         return Collections.unmodifiableCollection(metrics.values());
     }
 
+    /**
+     * Clears all state from metrics. If new requests come in instances will be recreated and metrics started from scratch.
+     */
+    /* package */ static void reset() {
+        metrics.clear();
+    }
+
     private final HystrixCommandProperties properties;
     private final HystrixRollingNumber counter;
     private final HystrixRollingPercentile percentileExecution;
