@@ -66,6 +66,17 @@ public class HystrixTimer {
         return INSTANCE;
     }
 
+    /**
+     * Clears all listeners.
+     * <p>
+     * NOTE: This will result in race conditions if {@link #addTimerListener(com.netflix.hystrix.util.HystrixTimer.TimerListener)} is being concurrently called.
+     * </p>
+     */
+    public static void reset() {
+        INSTANCE.listenersPerInterval.clear();
+        INSTANCE.intervals.clear();
+    }
+
     private TickThread tickThread = new TickThread();
     private ConcurrentHashMap<Integer, ConcurrentLinkedQueue<Reference<TimerListener>>> listenersPerInterval = new ConcurrentHashMap<Integer, ConcurrentLinkedQueue<Reference<TimerListener>>>();
     private ConcurrentLinkedQueue<TimerInterval> intervals = new ConcurrentLinkedQueue<TimerInterval>();
