@@ -76,13 +76,13 @@ Example for Maven:
 <dependency>
     <groupId>com.netflix.hystrix</groupId>
     <artifactId>hystrix-core</artifactId>
-    <version>1.2.2</version>
+    <version>x.y.z</version>
 </dependency>
 ```
 and for Ivy:
 
 ```xml
-<dependency org="com.netflix.hystrix" name="hystrix-core" rev="1.2.2" />
+<dependency org="com.netflix.hystrix" name="hystrix-core" rev="x.y.z" />
 ```
 
 If you need to download the jars instead of using a build system, create a Maven pom file like this with the desired version:
@@ -100,7 +100,7 @@ If you need to download the jars instead of using a build system, create a Maven
 		<dependency>
 			<groupId>com.netflix.hystrix</groupId>
 			<artifactId>hystrix-core</artifactId>
-			<version>1.2.2</version>
+			<version>x.y.z</version>
 			<scope/>
 		</dependency>
 	</dependencies>
@@ -162,7 +162,7 @@ Request => GetUserAccountCommand[FAILURE, FALLBACK_SUCCESS][6ms], GetPaymentInfo
 
 This demo simulates 4 different [HystrixCommand](https://github.com/Netflix/Hystrix/tree/master/hystrix-core/src/main/java/com/netflix/hystrix/HystrixCommand.java) implementations with failures, latency, timeouts and duplicate calls in a multi-threaded environment.
 
-It logs the results of [HystrixRequestLog](https://github.com/Netflix/Hystrix/tree/master/hystrix-core/src/main/java/com/netflix/hystrix/HystrixRequestLog.java) and metrics from [HystrixCommandMetrics](Hystrix/tree/master/hystrix-core/src/main/java/com/netflix/hystrix/HystrixCommandMetrics.java).
+It logs the results of [HystrixRequestLog](https://github.com/Netflix/Hystrix/tree/master/hystrix-core/src/main/java/com/netflix/hystrix/HystrixRequestLog.java) and metrics from [HystrixCommandMetrics](https://github.com/Netflix/Hystrix/tree/master/hystrix-core/src/main/java/com/netflix/hystrix/HystrixCommandMetrics.java).
 
 ## Dashboard
 
