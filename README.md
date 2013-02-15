@@ -6,7 +6,7 @@ Hystrix is a latency and fault tolerance library designed to isolate points of a
 
 ## Full Documentation
 
-See the [Wiki](Hystrix/wiki) for full documentation, examples, operational details and other information.
+See the [Wiki](https://github.com/Netflix/Hystrix/wiki/) for full documentation, examples, operational details and other information.
 
 See the [Javadoc](http://netflix.github.com/Hystrix/javadoc) for the API.
 
@@ -62,7 +62,7 @@ String s = new CommandHelloWorld("Bob").execute();
 Future<String> s = new CommandHelloWorld("Bob").queue();
 ```
 
-More examples and information can be found in the [How To Use](Hystrix/wiki/How-To-Use) section.
+More examples and information can be found in the [How To Use](https://github.com/Netflix/Hystrix/wiki/How-To-Use) section.
 
 Example source code can be found in the [hystrix-examples](Hystrix/tree/master/hystrix-examples/src/main/java/com/netflix/hystrix/examples) module.
 
@@ -127,7 +127,7 @@ $ cd Hystrix/
 $ ./gradlew build
 ```
 
-Futher details on building can be found on the [Getting Started](Hystrix/wiki/Getting-Started) page of the wiki.
+Futher details on building can be found on the [Getting Started](https://github.com/Netflix/Hystrix/wiki/Getting-Started) page of the wiki.
 
 ## Run Demo
 
