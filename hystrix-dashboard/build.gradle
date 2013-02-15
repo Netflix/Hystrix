@@ -2,6 +2,7 @@ apply plugin: 'java'
 apply plugin: 'war'
 apply plugin: 'jetty'
 apply plugin: 'eclipse'
+apply plugin: 'idea'
 
 dependencies {
     provided 'javax.servlet:servlet-api:2.5'
@@ -16,8 +17,17 @@ jettyRun {
 
 eclipse {
   classpath {
-    plusConfigurations += configurations.provided
-    downloadSources = true
-    downloadJavadoc = true
+		// include 'provided' dependencies on the classpath
+		plusConfigurations += configurations.provided
+		downloadSources = true
+		downloadJavadoc = true
   }
+}
+
+
+idea {
+	module {
+		// include 'provided' dependencies on the classpath
+		scopes.PROVIDED.plus += configurations.provided
+	}
 }
