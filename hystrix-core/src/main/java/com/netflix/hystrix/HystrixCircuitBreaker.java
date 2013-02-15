@@ -113,6 +113,13 @@ public interface HystrixCircuitBreaker {
         public static HystrixCircuitBreaker getInstance(HystrixCommandKey key) {
             return circuitBreakersByCommand.get(key.name());
         }
+
+        /**
+         * Clears all circuit breakers. If new requests come in instances will be recreated.
+         */
+        /* package */ static void reset() {
+            circuitBreakersByCommand.clear();
+        }
     }
 
     /**

@@ -26,6 +26,9 @@ import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherFactory;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesFactory;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 /**
  * ThreadPool used to executed {@link HystrixCommand#run()} on separate threads when configured to do so with {@link HystrixCommandProperties#executionIsolationStrategy()}.
@@ -113,13 +116,48 @@ public interface HystrixThreadPool {
                 return poolForKey;
             }
         }
+
+        /**
+         * Initiate the shutdown of all {@link HystrixThreadPool} instances.
+         * <p>
+         * NOTE: This is NOT thread-safe if HystrixCommands are concurrently being executed
+         * and causing thread-pools to initialize while also trying to shutdown.
+         * </p>
+         */
+        /* package */ static synchronized void shutdown() {
+            for (HystrixThreadPool pool : threadPools.values()) {
+                pool.getExecutor().shutdown();
+            }
+            threadPools.clear();
+        }
+
+        /**
+         * Initiate the shutdown of all {@link HystrixThreadPool} instances and wait up to the given time on each pool to complete.
+         * <p>
+         * NOTE: This is NOT thread-safe if HystrixCommands are concurrently being executed
+         * and causing thread-pools to initialize while also trying to shutdown.
+         * </p>
+         */
+        /* package */ static synchronized void shutdown(long timeout, TimeUnit unit) {
+            for (HystrixThreadPool pool : threadPools.values()) {
+                pool.getExecutor().shutdown();
+            }
+            for (HystrixThreadPool pool : threadPools.values()) {
+                try {
+                    pool.getExecutor().awaitTermination(timeout, unit);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException("Interrupted while waiting for thread-pools to terminate. Pools may not be correctly shutdown or cleared.", e);
+                }
+            }
+            threadPools.clear();
+        }
     }
 
     /**
      * @ExcludeFromJavadoc
      */
     @ThreadSafe
-    /* package */static class HystrixThreadPoolDefault implements HystrixThreadPool {
+    /* package */ static class HystrixThreadPoolDefault implements HystrixThreadPool {
         private final HystrixThreadPoolProperties properties;
         private final BlockingQueue<Runnable> queue;
         private final ThreadPoolExecutor threadPool;
@@ -172,6 +210,45 @@ public interface HystrixThreadPool {
             }
         }
 
+    }
+
+    public static class UnitTest {
+
+        @Test
+        public void testShutdown() {
+            // other unit tests will probably have run before this so get the count
+            int count = Factory.threadPools.size();
+
+            HystrixThreadPool pool = Factory.getInstance(HystrixThreadPoolKey.Factory.asKey("threadPoolFactoryTest"),
+                    HystrixThreadPoolProperties.Setter.getUnitTestPropertiesBuilder());
+
+            assertEquals(count + 1, Factory.threadPools.size());
+            assertFalse(pool.getExecutor().isShutdown());
+
+            Factory.shutdown();
+
+            // ensure all pools were removed from the cache
+            assertEquals(0, Factory.threadPools.size());
+            assertTrue(pool.getExecutor().isShutdown());
+        }
+
+        @Test
+        public void testShutdownWithWait() {
+            // other unit tests will probably have run before this so get the count
+            int count = Factory.threadPools.size();
+
+            HystrixThreadPool pool = Factory.getInstance(HystrixThreadPoolKey.Factory.asKey("threadPoolFactoryTest"),
+                    HystrixThreadPoolProperties.Setter.getUnitTestPropertiesBuilder());
+
+            assertEquals(count + 1, Factory.threadPools.size());
+            assertFalse(pool.getExecutor().isShutdown());
+
+            Factory.shutdown(1, TimeUnit.SECONDS);
+
+            // ensure all pools were removed from the cache
+            assertEquals(0, Factory.threadPools.size());
+            assertTrue(pool.getExecutor().isShutdown());
+        }
     }
 
 }
