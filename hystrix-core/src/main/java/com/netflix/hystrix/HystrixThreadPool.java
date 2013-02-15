@@ -124,7 +124,7 @@ public interface HystrixThreadPool {
          * and causing thread-pools to initialize while also trying to shutdown.
          * </p>
          */
-        public static synchronized void shutdown() {
+        /* package */ static synchronized void shutdown() {
             for (HystrixThreadPool pool : threadPools.values()) {
                 pool.getExecutor().shutdown();
             }
@@ -138,7 +138,7 @@ public interface HystrixThreadPool {
          * and causing thread-pools to initialize while also trying to shutdown.
          * </p>
          */
-        public static synchronized void shutdown(long timeout, TimeUnit unit) {
+        /* package */ static synchronized void shutdown(long timeout, TimeUnit unit) {
             for (HystrixThreadPool pool : threadPools.values()) {
                 pool.getExecutor().shutdown();
             }
