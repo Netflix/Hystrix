@@ -70,6 +70,8 @@ Example source code can be found in the [hystrix-examples](https://github.com/Ne
 
 Binaries and dependency information for Maven, Ivy, Gradle and others can be found at [http://search.maven.org](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20a%3A%22hystrix-core%22).
 
+Change history and version numbers => [CHANGES.md](https://github.com/Netflix/Hystrix/blob/master/CHANGES.md)
+
 Example for Maven:
 
 ```xml
