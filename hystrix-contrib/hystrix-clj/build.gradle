@@ -7,6 +7,8 @@
         }
     }
     apply plugin: 'clojure'
+	apply plugin: 'eclipse'
+	apply plugin: 'idea'
 
     repositories {
         mavenCentral()
@@ -18,11 +20,26 @@
         compile 'org.clojure:clojure:1.4.0'
     }
 
+	/*
+	 * Add Counterclockwise and include 'provided' dependencies
+	 */
+	eclipse {
+	  project {
+	    natures "ccw.nature"
+	  }
+	  classpath {
+	    downloadSources = true
+	    downloadJavadoc = true
+	  }
+	}
+
+
     ////////////////////////////////////////////////////////////////////////////////
     // Define a task that runs an nrepl server. The port is given with the nreplPort
     // property:
     //    gradlew nrepl -PnreplPort=9999
     // or put the property in ~/.gradle/gradle.properties
+	def nreplPort = 9999 // hardcoding to 9999 until figuring out how to make this not break Eclipse project import when the property isn't defined
     configurations { nrepl }
     dependencies { nrepl 'org.clojure:tools.nrepl:0.2.1' }
     task nrepl(type: JavaExec) {
