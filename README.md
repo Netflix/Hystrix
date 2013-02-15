@@ -64,7 +64,7 @@ Future<String> s = new CommandHelloWorld("Bob").queue();
 
 More examples and information can be found in the [How To Use](https://github.com/Netflix/Hystrix/wiki/How-To-Use) section.
 
-Example source code can be found in the [hystrix-examples](Hystrix/tree/master/hystrix-examples/src/main/java/com/netflix/hystrix/examples) module.
+Example source code can be found in the [hystrix-examples](https://github.com/Netflix/Hystrix/tree/master/hystrix-examples/src/main/java/com/netflix/hystrix/examples) module.
 
 ## Binaries
 
@@ -131,7 +131,7 @@ Futher details on building can be found on the [Getting Started](https://github.
 
 ## Run Demo
 
-To run a [demo app](Hystrix/tree/master/hystrix-examples/src/main/java/com/netflix/hystrix/examples/demo/HystrixCommandDemo.java) do the following:
+To run a [demo app](https://github.com/Netflix/Hystrix/tree/master/hystrix-examples/src/main/java/com/netflix/hystrix/examples/demo/HystrixCommandDemo.java) do the following:
 
 ```
 $ git clone git@github.com:Netflix/Hystrix.git
@@ -160,9 +160,9 @@ Request => GetUserAccountCommand[SUCCESS][10ms], GetPaymentInformationCommand[SU
 Request => GetUserAccountCommand[FAILURE, FALLBACK_SUCCESS][6ms], GetPaymentInformationCommand[SUCCESS][11ms], GetUserAccountCommand[FAILURE, FALLBACK_SUCCESS, RESPONSE_FROM_CACHE][0ms]x2, GetOrderCommand[SUCCESS][153ms], CreditCardCommand[SUCCESS][1321ms]
 ```
 
-This demo simulates 4 different [HystrixCommand](Hystrix/tree/master/hystrix-core/src/main/java/com/netflix/hystrix/HystrixCommand.java) implementations with failures, latency, timeouts and duplicate calls in a multi-threaded environment.
+This demo simulates 4 different [HystrixCommand](https://github.com/Netflix/Hystrix/tree/master/hystrix-core/src/main/java/com/netflix/hystrix/HystrixCommand.java) implementations with failures, latency, timeouts and duplicate calls in a multi-threaded environment.
 
-It logs the results of [HystrixRequestLog](Hystrix/tree/master/hystrix-core/src/main/java/com/netflix/hystrix/HystrixRequestLog.java) and metrics from [HystrixCommandMetrics](Hystrix/tree/master/hystrix-core/src/main/java/com/netflix/hystrix/HystrixCommandMetrics.java).
+It logs the results of [HystrixRequestLog](https://github.com/Netflix/Hystrix/tree/master/hystrix-core/src/main/java/com/netflix/hystrix/HystrixRequestLog.java) and metrics from [HystrixCommandMetrics](Hystrix/tree/master/hystrix-core/src/main/java/com/netflix/hystrix/HystrixCommandMetrics.java).
 
 ## Dashboard
 
@@ -174,7 +174,7 @@ More information can be found on the [Dashboard Wiki](https://github.com/Netflix
 
 ## Bugs and Feedback
 
-For bugs, questions and discussions please use the [Github Issues](Hystrix/issues).
+For bugs, questions and discussions please use the [Github Issues](https://github.com/Netflix/Hystrix/issues).
 
  
 ## LICENSE
