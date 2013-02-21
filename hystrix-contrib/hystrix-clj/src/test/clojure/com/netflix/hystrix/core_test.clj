@@ -16,21 +16,15 @@
 
 (use-fixtures :each request-context-fixture)
 
-; This is an ugly hack until this Clojuresque issue is fixed:
-;    https://bitbucket.org/clojuresque/clojuresque/issue/4/compile-and-test-tasks-may-hang-if
-;  Basically just schedule a JVM shutdown once all the tests have run. This
-;  will utterly break if there are ever any more Clojure namespaces to test.
-(defn clojuresque-shutdown-hack
+; In the end, reset Hystrix so that Clojuresque will exit after running tests.
+(defn hystrix-reset-fixture
   [f]
   (try
     (f)
     (finally
-      (future
-        (Thread/sleep 1000)
-        (println "Forcing Clojuresque test process to exit")
-        (System/exit 0)))))
+      (com.netflix.hystrix.Hystrix/reset))))
 
-(use-fixtures :once clojuresque-shutdown-hack)
+(use-fixtures :once hystrix-reset-fixture)
 
 (deftest test-command-key
   (testing "returns nil when input is nil"
@@ -65,6 +59,21 @@
     (is (= com.netflix.hystrix.HystrixCollapser$Scope/GLOBAL
            (collapser-scope :global)))))
 
+(deftest test-normalize-command
+  (testing "throws if :init-fn isn't a fn"
+    (is (thrown-with-msg? IllegalArgumentException #"^.*init-fn.*$"
+                          (normalize {:type :command
+                                      :run-fn +
+                                      :init-fn 999})))))
+
+(deftest test-normalize-collapser
+  (testing "throws if :init-fn isn't a fn"
+    (is (thrown-with-msg? IllegalArgumentException #"^.*init-fn.*$"
+                          (normalize {:type :collapser
+                                      :collapse-fn (fn [& args])
+                                      :map-fn (fn [& args])
+                                      :init-fn "foo"})))))
+
 (deftest test-instantiate
   (let [base-def {:type :command
                   :group-key :my-group
@@ -73,6 +82,15 @@
     (testing "makes a HystrixCommand"
       (let [c (instantiate (normalize base-def))]
         (is (instance? com.netflix.hystrix.HystrixCommand c))))
+
+    (testing "makes a HystrixCommand and calls :init-fn"
+      (let [called (atom nil)
+            init-fn (fn [d s] (reset! called [d s]) s)
+            c (instantiate (normalize (assoc base-def :init-fn init-fn)))
+            [d s] @called]
+        (is (not (nil? @called)))
+        (is (map? d))
+        (is (instance? com.netflix.hystrix.HystrixCommand$Setter s))))
 
     (testing "makes a HystrixCommand that executes :run-fn with given args"
       (let [c (instantiate (normalize base-def) 99 42)]
@@ -159,8 +177,7 @@
         (is (.isDone qc))))))
 
 (deftest test-collapser
-  (#'com.netflix.hystrix.core/reset-collapser :to-upper-collapser)
-  ; These atoms are only for testing. In real life, collapser functions should *neve*
+  ; These atoms are only for testing. In real life, collapser functions should *never*
   ; have side effects.
   (let [batch-calls (atom [])
         map-fn-calls (atom [])
