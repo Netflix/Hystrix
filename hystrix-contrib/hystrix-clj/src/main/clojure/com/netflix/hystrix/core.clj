@@ -49,6 +49,17 @@
       A function which the same args as :run-fn that calculates a cache key for the
       given args. Optional, defaults to nil, i.e. no caching.
 
+    :init-fn
+
+      A function that takes a definition map and HystrixCommand$Setter which should return
+      a HystrixCommand$Setter (usually the one passed in) to ultimately be passed to the
+      constructor of the HystrixCommand. For example,
+
+          (fn [_ setter]
+            (.andCommandPropertiesDefaults setter ...))
+
+      This is your escape hatch into raw Hystrix.
+
   The com.netflix.hystrix.core/defcommand macro is a helper for defining this map and storing it
   in a var. For example, here's a definition for an addition command:
 
@@ -117,6 +128,17 @@
       A function that calculates a String cache key for the args passed to the
       collapser. Optional, defaults to a function returning nil, i.e. no caching.
       This function should be completely free of side effects.
+
+    :init-fn
+
+      A function that takes a definition map and HystrixCollapser$Setter which should return
+      a HystrixCollapser$Setter (usually the one passed in) to ultimately be passed to the
+      constructor of the HystrixCollapser. For example,
+
+          (fn [_ setter]
+            (.andCollapserPropertiesDefaults setter ...))
+
+      This is your escape hatch into raw Hystrix.
 
   The com.netflix.hystric.core/defcollapser macro is a helper for defining this map and storing it
   in a callable var.
@@ -236,7 +258,8 @@
                  :hystrix/fallback-fn     :fallback-fn
                  :hystrix/group-key       :group-key
                  :hystrix/command-key     :command-key
-                 :hystrix/thread-pool-key :thread-pool-key }]
+                 :hystrix/thread-pool-key :thread-pool-key
+                 :hystrix/init-fn         :init-fn }]
     (set/rename-keys (select-keys meta-map (keys key-map)) key-map)))
 
 (defmacro defcommand
@@ -300,7 +323,8 @@
   (let [key-map {:hystrix/collapser-key :collapser-key
                  :hystrix/shared-fn     :shard-fn
                  :hystrix/scope         :scope
-                 :hystrix/cache-key-fn  :cache-key-fn }]
+                 :hystrix/cache-key-fn  :cache-key-fn
+                 :hystrix/init-fn       :init-fn }]
     (set/rename-keys (select-keys meta-map (keys key-map)) key-map)))
 
 (defn collapser
@@ -492,18 +516,25 @@
     ((required-fn :run-fn))
     ((optional-fn :fallback-fn))
     ((optional-fn :cache-key-fn))
+    ((optional-fn :init-fn))
 
     (update-in [:group-key] group-key)
     (update-in [:command-key] command-key)
     (update-in [:thread-pool-key] thread-pool-key)))
 
 (defmethod instantiate* :command
-  [{:keys [group-key command-key thread-pool-key run-fn fallback-fn cache-key-fn]} & args]
-  (let [setter (doto (HystrixCommand$Setter/withGroupKey group-key)
-                 ; TODO other properties
+  [{:keys [group-key command-key thread-pool-key
+           run-fn fallback-fn cache-key-fn
+           init-fn] :as def-map} & args]
+  (let [setter (-> (HystrixCommand$Setter/withGroupKey group-key)
                  (.andCommandKey    command-key)
-                 (.andThreadPoolKey thread-pool-key))]
-    (proxy [HystrixCommand] [setter]
+                 (.andThreadPoolKey thread-pool-key))
+        setter (if init-fn
+                 (init-fn def-map setter)
+                 setter)]
+    (when (not (instance? HystrixCommand$Setter setter))
+      (throw (IllegalStateException. (str ":init-fn didn't return HystrixCommand$Setter instance"))))
+    (proxy [HystrixCommand] [^HystrixCommand$Setter setter]
       (run []         (apply run-fn args))
       (getFallback [] (if fallback-fn
                         (apply fallback-fn args)
@@ -522,6 +553,7 @@
     ((required-fn :map-fn))
     ((optional-fn :shard-fn))
     ((optional-fn :cache-key-fn))
+    ((optional-fn :init-fn))
 
     (update-in [:collapser-key] collapser-key)
     (update-in [:scope]         (fnil collapser-scope HystrixCollapser$Scope/REQUEST))))
@@ -531,11 +563,17 @@
   (.getArgument request))
 
 (defmethod instantiate* :collapser
-  [{:keys [collapser-key scope collapse-fn map-fn shard-fn cache-key-fn]} & args]
-  (let [setter (doto (HystrixCollapser$Setter/withCollapserKey collapser-key)
-                 ; TODO other properties
-                 (.andScope scope))]
-    (proxy [HystrixCollapser] [setter]
+  [{:keys [collapser-key scope
+           collapse-fn map-fn shard-fn cache-key-fn
+           init-fn] :as def-map} & args]
+  (let [setter (-> (HystrixCollapser$Setter/withCollapserKey collapser-key)
+                 (.andScope scope))
+        setter (if init-fn
+                 (init-fn def-map setter)
+                 setter)]
+    (when (not (instance? HystrixCollapser$Setter setter))
+      (throw (IllegalStateException. (str ":init-fn didn't return HystrixCollapser$Setter instance"))))
+    (proxy [HystrixCollapser] [^HystrixCollapser$Setter setter]
       (getCacheKey [] (if cache-key-fn
                         (apply cache-key-fn args)))
 
