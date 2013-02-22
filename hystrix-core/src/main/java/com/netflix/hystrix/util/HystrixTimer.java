@@ -1,12 +1,12 @@
 /**
  * Copyright 2012 Netflix, Inc.
- *
+ * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.concurrent.NotThreadSafe;
 
@@ -55,8 +56,6 @@ public class HystrixTimer {
 
     private HystrixTimer() {
         // private to prevent public instantiation
-        // start up tick thread
-        tickThread.start();
     }
 
     /**
@@ -73,11 +72,18 @@ public class HystrixTimer {
      * </p>
      */
     public static void reset() {
+        // interrupt the thread to shut it down
+        TickThread t = INSTANCE.tickThread.get();
+        if (t != null) {
+            t.interrupt();
+        }
+        // clear the queues
         INSTANCE.listenersPerInterval.clear();
         INSTANCE.intervals.clear();
     }
 
-    private TickThread tickThread = new TickThread();
+    // use AtomicReference so we can use CAS to ensure once-and-only-once initialization after reset
+    private AtomicReference<TickThread> tickThread = new AtomicReference<TickThread>();
     private ConcurrentHashMap<Integer, ConcurrentLinkedQueue<Reference<TimerListener>>> listenersPerInterval = new ConcurrentHashMap<Integer, ConcurrentLinkedQueue<Reference<TimerListener>>>();
     private ConcurrentLinkedQueue<TimerInterval> intervals = new ConcurrentLinkedQueue<TimerInterval>();
 
@@ -103,6 +109,8 @@ public class HystrixTimer {
      * @return reference to the TimerListener that allows cleanup via the <code>clear()</code> method
      */
     public Reference<TimerListener> addTimerListener(TimerListener listener) {
+        startThreadIfNeeded();
+        // add the listener
         if (!listenersPerInterval.containsKey(listener.getIntervalTimeInMilliseconds())) {
             listenersPerInterval.putIfAbsent(listener.getIntervalTimeInMilliseconds(), new ConcurrentLinkedQueue<Reference<TimerListener>>());
             intervals.add(new TimerInterval(listener.getIntervalTimeInMilliseconds()));
@@ -110,6 +118,21 @@ public class HystrixTimer {
         SoftReference<TimerListener> reference = new SoftReference<TimerListener>(listener);
         listenersPerInterval.get(listener.getIntervalTimeInMilliseconds()).add(reference);
         return reference;
+    }
+
+    /**
+     * Since we allow resetting the timer (shutting down the thread) we need to lazily re-start it if it starts being used again.
+     * <p>
+     * This does the lazy initialization and start of the thread in a thread-safe manner while having little cost the rest of the time.
+     */
+    protected void startThreadIfNeeded() {
+        // create and start thread if one doesn't exist
+        if (tickThread.get() == null) {
+            if (tickThread.compareAndSet(null, new TickThread())) {
+                // start the thread that we 'won' setting
+                tickThread.get().start();
+            }
+        }
     }
 
     private class TickThread extends Thread {
@@ -124,7 +147,7 @@ public class HystrixTimer {
         public void run() {
             long diffBetweenNowAndInterval = 0;
             long timeToNextInterval = 0;
-            while (true) {
+            while (true && !isInterrupted()) {
                 try {
                     for (TimerInterval interval : intervals) {
                         // if enough time has elapsed for this interval then tick the listeners
@@ -171,10 +194,17 @@ public class HystrixTimer {
                     Thread.sleep(timeToNextInterval);
                     // reset to 0
                     timeToNextInterval = 0;
+                } catch (InterruptedException e) {
+                    logger.error("Thread interrupted so will shut down.", e);
+                    // mark status so the while loop will exit
+                    Thread.currentThread().interrupt();
                 } catch (Exception e) {
                     logger.error("Error in TickThread run loop.", e);
                 }
             }
+            logger.info("HystrixTimer thread was interrupted so is shutting down.");
+            // clear out the state of this thread so it can be restarted (if reset hasn't already occurred)
+            tickThread.compareAndSet(this, null);
         }
     }
 
@@ -349,6 +379,52 @@ public class HystrixTimer {
             assertTrue(l1.tickCount.get() > 7);
             // we should have no ticks on l2 because we removed it
             assertEquals(0, l2.tickCount.get());
+        }
+
+        @Test
+        public void testThreadInterrupt() {
+            HystrixTimer timer = HystrixTimer.getInstance();
+            TestListener l1 = new TestListener(50, "A");
+            timer.addTimerListener(l1);
+
+            TickThread t = timer.tickThread.get();
+            // send interrupt
+            t.interrupt();
+            // assert that the thread is shutdown 
+            assertTrue(t.isInterrupted());
+            try {
+                t.join(2000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException("thread should have died but didn't", e);
+            }
+            assertFalse(t.isAlive());
+
+            // assert the thread is now null after shutdown
+            TickThread t2 = timer.tickThread.get();
+            assertNull(t2);
+
+            // assert that it starts itself back up when we interact with it again
+            TestListener l2 = new TestListener(50, "A");
+            timer.addTimerListener(l2);
+            TickThread t3 = timer.tickThread.get();
+            assertNotNull(t3);
+            assertNotSame(t, t2);
+
+            // assert that reset shuts the thread down same as manual interrupt
+            TickThread t4 = INSTANCE.tickThread.get();
+            assertNotNull(t4);
+            // perform reset which should shut it down
+            HystrixTimer.reset();
+
+            // assert that the thread is shutdown 
+            try {
+                t4.join(2000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException("thread should have died but didn't", e);
+            }
+            assertFalse(t4.isAlive());
+
+            assertNull(timer.tickThread.get());
         }
 
         private static class TestListener implements TimerListener {
