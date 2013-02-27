@@ -19,13 +19,12 @@ import static org.junit.Assert.*;
 
 import java.lang.ref.Reference;
 import java.lang.ref.SoftReference;
-import java.util.Iterator;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-
-import javax.annotation.concurrent.NotThreadSafe;
 
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -35,18 +34,6 @@ import com.netflix.hystrix.HystrixCollapser;
 
 /**
  * Timer used by the {@link HystrixCollapser} to trigger batch executions.
- * <p>
- * Used instead of java.util.Timer because:
- * <ul>
- * <li>Creating a large number of tasks that then need to be cancelled is inefficient with java.util.Timer and requires the use of purge() to prevent memory leaks which is synchronized and iterates
- * all items in queue.</li>
- * <li>We can use non-blocking data structures now that didn't exist when java.util.Timer was written.</li>
- * <li>We can optimize for the specific use case of {@link HystrixCollapser} instead of being generic to any tasks being submitted. Specifically, we can 'tick' every 10ms (for example) and fire all
- * {@link HystrixCollapser} interested in that time, rather than each instance needing a separate task that gets scheduled independently.</li>
- * <li>We can use a simple add/remove listener model rather than a Task which gets submitted but has no way to explicitly remove itself other than cancel and wait to eventually be cleaned out - or
- * have to use purge() to force it out</li>
- * <li>We can use soft-references to ensure we don't cause memory leaks even if cleanup doesn't occur.</li>
- * </ul>
  */
 public class HystrixTimer {
 
@@ -72,20 +59,11 @@ public class HystrixTimer {
      * </p>
      */
     public static void reset() {
-        // interrupt the thread to shut it down
-        TickThread t = INSTANCE.tickThread.get();
-        if (t != null) {
-            t.interrupt();
-        }
-        // clear the queues
-        INSTANCE.listenersPerInterval.clear();
-        INSTANCE.intervals.clear();
+        ScheduledExecutor ex = INSTANCE.executor.getAndSet(null);
+        ex.getThreadPool().shutdownNow();
     }
 
-    // use AtomicReference so we can use CAS to ensure once-and-only-once initialization after reset
-    private AtomicReference<TickThread> tickThread = new AtomicReference<TickThread>();
-    private ConcurrentHashMap<Integer, ConcurrentLinkedQueue<Reference<TimerListener>>> listenersPerInterval = new ConcurrentHashMap<Integer, ConcurrentLinkedQueue<Reference<TimerListener>>>();
-    private ConcurrentLinkedQueue<TimerInterval> intervals = new ConcurrentLinkedQueue<TimerInterval>();
+    private AtomicReference<ScheduledExecutor> executor = new AtomicReference<ScheduledExecutor>();
 
     /**
      * Add a {@link TimerListener} that will be executed until it is garbage collected or removed by clearing the returned {@link Reference}.
@@ -108,16 +86,42 @@ public class HystrixTimer {
      *            TimerListener implementation that will be triggered according to its <code>getIntervalTimeInMilliseconds()</code> method implementation.
      * @return reference to the TimerListener that allows cleanup via the <code>clear()</code> method
      */
-    public Reference<TimerListener> addTimerListener(TimerListener listener) {
+    public Reference<TimerListener> addTimerListener(final TimerListener listener) {
         startThreadIfNeeded();
         // add the listener
-        if (!listenersPerInterval.containsKey(listener.getIntervalTimeInMilliseconds())) {
-            listenersPerInterval.putIfAbsent(listener.getIntervalTimeInMilliseconds(), new ConcurrentLinkedQueue<Reference<TimerListener>>());
-            intervals.add(new TimerInterval(listener.getIntervalTimeInMilliseconds()));
+
+        Runnable r = new Runnable() {
+
+            @Override
+            public void run() {
+                try {
+                    listener.tick();
+                } catch (Exception e) {
+                    logger.error("Failed while ticking TimerListener", e);
+                }
+            }
+        };
+
+        ScheduledFuture<?> f = executor.get().getThreadPool().scheduleAtFixedRate(r, listener.getIntervalTimeInMilliseconds(), listener.getIntervalTimeInMilliseconds(), TimeUnit.MILLISECONDS);
+        return new TimerReference(listener, f);
+    }
+
+    private class TimerReference extends SoftReference<TimerListener> {
+
+        private final ScheduledFuture<?> f;
+
+        TimerReference(TimerListener referent, ScheduledFuture<?> f) {
+            super(referent);
+            this.f = f;
         }
-        SoftReference<TimerListener> reference = new SoftReference<TimerListener>(listener);
-        listenersPerInterval.get(listener.getIntervalTimeInMilliseconds()).add(reference);
-        return reference;
+
+        @Override
+        public void clear() {
+            super.clear();
+            // stop this ScheduledFuture from any further executions
+            f.cancel(false);
+        }
+
     }
 
     /**
@@ -127,84 +131,34 @@ public class HystrixTimer {
      */
     protected void startThreadIfNeeded() {
         // create and start thread if one doesn't exist
-        if (tickThread.get() == null) {
-            if (tickThread.compareAndSet(null, new TickThread())) {
-                // start the thread that we 'won' setting
-                tickThread.get().start();
+        if (executor.get() == null) {
+            if (executor.compareAndSet(null, new ScheduledExecutor())) {
+                // initialize the executor that we 'won' setting
+                executor.get().initialize();
             }
         }
     }
 
-    private class TickThread extends Thread {
+    private static class ScheduledExecutor {
+        private volatile ScheduledThreadPoolExecutor executor;
 
-        TickThread() {
-            super(HystrixTimer.class.getSimpleName() + "_Tick");
-            // this thread will live forever in the background and has no cleanup requirements so should be considered a daemon
-            setDaemon(true);
+        /**
+         * We want this only done once when created in compareAndSet so use an initialize method
+         */
+        public void initialize() {
+            executor = new ScheduledThreadPoolExecutor(Runtime.getRuntime().availableProcessors(), new ThreadFactory() {
+                final AtomicInteger counter = new AtomicInteger();
+
+                @Override
+                public Thread newThread(Runnable r) {
+                    return new Thread(r, "HystrixTimer-" + counter.incrementAndGet());
+                }
+
+            });
         }
 
-        @Override
-        public void run() {
-            long diffBetweenNowAndInterval = 0;
-            long timeToNextInterval = 0;
-            while (true && !isInterrupted()) {
-                try {
-                    for (TimerInterval interval : intervals) {
-                        // if enough time has elapsed for this interval then tick the listeners
-                        if (interval.getNextScheduledExecution() <= System.currentTimeMillis()) {
-                            ConcurrentLinkedQueue<Reference<TimerListener>> listeners = listenersPerInterval.get(interval.getTimeInMilliseconds());
-                            if (listeners != null && listeners.size() > 0) {
-                                // if we have listeners we perform this logic otherwise we'll ignore it
-                                // this avoids scheduling and doing work we shouldn't (such as a very small interval like 1ms that has no listeners that would cause the thread to wake every 1ms for no value)
-                                Iterator<Reference<TimerListener>> listenerIterator = listeners.iterator();
-                                while (listenerIterator.hasNext()) {
-                                    Reference<TimerListener> referenceToListener = listenerIterator.next();
-                                    try {
-                                        TimerListener listener = referenceToListener.get();
-                                        if (listener != null) {
-                                            listener.tick();
-                                        } else {
-                                            // the SoftReference has been cleared (use the iterator to remove it)
-                                            listenerIterator.remove();
-                                        }
-                                    } catch (Exception e) {
-                                        // ignore errors from the listener ... they are for the listener itself to deal with
-                                        logger.warn("Error while executing TimerListener.tick().", e);
-                                    }
-                                }
-
-                                // increment the nextScheduledExecution since we just executed it
-                                interval.tick();
-
-                                // determine time until this interval should tick (for example, interval of 25ms and 10ms has passed, then 15ms is time until the next tick that we want)
-                                diffBetweenNowAndInterval = interval.getNextScheduledExecution() - System.currentTimeMillis();
-                                // if this interval is smaller than the timeToNextInterval then set it as the next time to wake up
-                                if (timeToNextInterval == 0 || diffBetweenNowAndInterval < timeToNextInterval) {
-                                    timeToNextInterval = diffBetweenNowAndInterval;
-                                }
-                            }
-                        }
-                    }
-
-                    // we iterated all above intervals/listeners and resulted in a 'timeToNextInterval' that is the next time we need to wake up, so sleep until then
-                    // if timeToNextInterval still == 0, then we'll default to 10ms as this means we have no listeners on any intervals so we'll sleep and wake until we get some
-                    if (timeToNextInterval <= 0) {
-                        timeToNextInterval = 10;
-                    }
-                    Thread.sleep(timeToNextInterval);
-                    // reset to 0
-                    timeToNextInterval = 0;
-                } catch (InterruptedException e) {
-                    logger.error("Thread interrupted so will shut down.", e);
-                    // mark status so the while loop will exit
-                    Thread.currentThread().interrupt();
-                } catch (Exception e) {
-                    logger.error("Error in TickThread run loop.", e);
-                }
-            }
-            logger.info("HystrixTimer thread was interrupted so is shutting down.");
-            // clear out the state of this thread so it can be restarted (if reset hasn't already occurred)
-            tickThread.compareAndSet(this, null);
+        public ScheduledThreadPoolExecutor getThreadPool() {
+            return executor;
         }
     }
 
@@ -225,57 +179,6 @@ public class HystrixTimer {
          * How often this TimerListener should 'tick' defined in milliseconds.
          */
         public int getIntervalTimeInMilliseconds();
-    }
-
-    /**
-     * This class is NOT thread-safe and is expected to be used only within the TickThread such that it can be mutated safely.
-     */
-    @NotThreadSafe
-    private static class TimerInterval {
-        private final int timeInMilliseconds;
-        private long nextScheduledExecution = System.currentTimeMillis();
-
-        public TimerInterval(int timeInMilliseconds) {
-            this.timeInMilliseconds = timeInMilliseconds;
-        }
-
-        public void tick() {
-            nextScheduledExecution = System.currentTimeMillis() + timeInMilliseconds;
-        }
-
-        public int getTimeInMilliseconds() {
-            return timeInMilliseconds;
-        }
-
-        public long getNextScheduledExecution() {
-            return nextScheduledExecution;
-        }
-
-        @Override
-        public int hashCode() {
-            final int prime = 31;
-            int result = 1;
-            result = prime * result + (int) (nextScheduledExecution ^ (nextScheduledExecution >>> 32));
-            result = prime * result + timeInMilliseconds;
-            return result;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj)
-                return true;
-            if (obj == null)
-                return false;
-            if (getClass() != obj.getClass())
-                return false;
-            TimerInterval other = (TimerInterval) obj;
-            if (nextScheduledExecution != other.nextScheduledExecution)
-                return false;
-            if (timeInMilliseconds != other.timeInMilliseconds)
-                return false;
-            return true;
-        }
-
     }
 
     public static class UnitTest {
@@ -378,53 +281,34 @@ public class HystrixTimer {
             // l1 should continue ticking
             assertTrue(l1.tickCount.get() > 7);
             // we should have no ticks on l2 because we removed it
+            System.out.println("tickCount.get(): " + l2.tickCount.get() + " on l2: " + l2);
             assertEquals(0, l2.tickCount.get());
         }
 
         @Test
-        public void testThreadInterrupt() {
+        public void testReset() {
             HystrixTimer timer = HystrixTimer.getInstance();
             TestListener l1 = new TestListener(50, "A");
             timer.addTimerListener(l1);
 
-            TickThread t = timer.tickThread.get();
-            // send interrupt
-            t.interrupt();
-            // assert that the thread is shutdown 
-            assertTrue(t.isInterrupted());
-            try {
-                t.join(2000);
-            } catch (InterruptedException e) {
-                throw new RuntimeException("thread should have died but didn't", e);
-            }
-            assertFalse(t.isAlive());
+            ScheduledExecutor ex = timer.executor.get();
 
-            // assert the thread is now null after shutdown
-            TickThread t2 = timer.tickThread.get();
-            assertNull(t2);
+            assertFalse(ex.executor.isShutdown());
 
-            // assert that it starts itself back up when we interact with it again
-            TestListener l2 = new TestListener(50, "A");
-            timer.addTimerListener(l2);
-            TickThread t3 = timer.tickThread.get();
-            assertNotNull(t3);
-            assertNotSame(t, t2);
-
-            // assert that reset shuts the thread down same as manual interrupt
-            TickThread t4 = INSTANCE.tickThread.get();
-            assertNotNull(t4);
             // perform reset which should shut it down
             HystrixTimer.reset();
 
-            // assert that the thread is shutdown 
-            try {
-                t4.join(2000);
-            } catch (InterruptedException e) {
-                throw new RuntimeException("thread should have died but didn't", e);
-            }
-            assertFalse(t4.isAlive());
+            assertTrue(ex.executor.isShutdown());
+            assertNull(timer.executor.get());
 
-            assertNull(timer.tickThread.get());
+            // assert it starts up again on use
+            TestListener l2 = new TestListener(50, "A");
+            timer.addTimerListener(l2);
+
+            ScheduledExecutor ex2 = timer.executor.get();
+
+            assertFalse(ex2.executor.isShutdown());
+
         }
 
         private static class TestListener implements TimerListener {
