@@ -806,10 +806,10 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                 // this means we have already timed out then we don't count this error stat and we just return
                 // as this means the user-thread has already returned, we've already done fallback logic
                 // and we've already counted the timeout stat
-                logger.error("Error executing HystrixCommand [TimedOut]", e);
+                logger.error("Error executing HystrixCommand.run() [TimedOut]. Proceeding to fallback logic ...", e);
                 return null;
             } else {
-                logger.error("Error executing HystrixCommand", e);
+                logger.error("Error executing HystrixCommand.run(). Proceeding to fallback logic ...", e);
             }
             // report failure
             metrics.markFailure(System.currentTimeMillis() - startTime);
