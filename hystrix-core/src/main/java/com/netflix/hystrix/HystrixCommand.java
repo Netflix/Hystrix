@@ -465,9 +465,6 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         // acquire a permit
         if (executionSemaphore.tryAcquire()) {
             try {
-                // allow tracking how many concurrent threads are in here the same way we do with threadpool
-                metrics.markExecutionSemaphoreUsedPermitsCount(executionSemaphore.getNumberOfPermitsUsed());
-
                 // we want to run it synchronously
                 R response = executeCommand();
                 response = executionHook.onComplete(this, response);
@@ -562,9 +559,6 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         TryableSemaphore executionSemaphore = getExecutionSemaphore();
         // acquire a permit
         if (executionSemaphore.tryAcquire()) {
-            // allow tracking how many concurrent threads are in here the same way we do with threadpool
-            metrics.markExecutionSemaphoreUsedPermitsCount(executionSemaphore.getNumberOfPermitsUsed());
-
             final CountDownLatch executionCompleted = new CountDownLatch(1);
             try {
                 /**
@@ -763,6 +757,8 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
         /* capture start time for logging */
         long startTime = System.currentTimeMillis();
+        // allow tracking how many concurrent threads are executing
+        metrics.incrementConcurrentExecutionCount();
         try {
             executionHook.onRunStart(this);
             R response = executionHook.onRunSuccess(this, run());
@@ -810,10 +806,10 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                 // this means we have already timed out then we don't count this error stat and we just return
                 // as this means the user-thread has already returned, we've already done fallback logic
                 // and we've already counted the timeout stat
-                logger.error("Error executing HystrixCommand [TimedOut]", e);
+                logger.error("Error executing HystrixCommand.run() [TimedOut]. Proceeding to fallback logic ...", e);
                 return null;
             } else {
-                logger.error("Error executing HystrixCommand", e);
+                logger.error("Error executing HystrixCommand.run(). Proceeding to fallback logic ...", e);
             }
             // report failure
             metrics.markFailure(System.currentTimeMillis() - startTime);
@@ -821,6 +817,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             executionResult = executionResult.setException(e);
             return getFallbackOrThrowException(HystrixEventType.FAILURE, FailureType.COMMAND_EXCEPTION, "failed", e);
         } finally {
+            metrics.decrementConcurrentExecutionCount();
             // record that we're completed
             isExecutionComplete.set(true);
         }

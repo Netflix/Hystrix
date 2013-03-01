@@ -113,7 +113,7 @@ public class HystrixCommandMetrics {
     private final HystrixRollingPercentile percentileTotal;
     private final HystrixCommandKey key;
     private final HystrixCommandGroupKey group;
-    private final AtomicInteger executionSemaphorePermitsInUse = new AtomicInteger();
+    private final AtomicInteger concurrentExecutionCount = new AtomicInteger();
     private final HystrixEventNotifier eventNotifier;
 
     /* package */HystrixCommandMetrics(HystrixCommandKey key, HystrixCommandGroupKey commandGroup, HystrixCommandProperties properties, HystrixEventNotifier eventNotifier) {
@@ -248,7 +248,7 @@ public class HystrixCommandMetrics {
      * @return int
      */
     public int getCurrentConcurrentExecutionCount() {
-        return executionSemaphorePermitsInUse.get();
+        return concurrentExecutionCount.get();
     }
 
     /**
@@ -307,12 +307,21 @@ public class HystrixCommandMetrics {
     }
 
     /**
-     * Record how many executionSemaphore permits are in use right now.
+     * Increment concurrent requests counter.
      * 
      * @param numberOfPermitsUsed
      */
-    /* package */void markExecutionSemaphoreUsedPermitsCount(int numberOfPermitsUsed) {
-        executionSemaphorePermitsInUse.set(numberOfPermitsUsed);
+    /* package */void incrementConcurrentExecutionCount() {
+        concurrentExecutionCount.incrementAndGet();
+    }
+    
+    /**
+     * Increment concurrent requests counter.
+     * 
+     * @param numberOfPermitsUsed
+     */
+    /* package */void decrementConcurrentExecutionCount() {
+        concurrentExecutionCount.decrementAndGet();
     }
 
     /**
