@@ -60,7 +60,9 @@ public class HystrixTimer {
      */
     public static void reset() {
         ScheduledExecutor ex = INSTANCE.executor.getAndSet(null);
-        ex.getThreadPool().shutdownNow();
+        if (ex != null && ex.getThreadPool() != null) {
+            ex.getThreadPool().shutdownNow();
+        }
     }
 
     private AtomicReference<ScheduledExecutor> executor = new AtomicReference<ScheduledExecutor>();
@@ -309,6 +311,10 @@ public class HystrixTimer {
 
             assertFalse(ex2.executor.isShutdown());
 
+            // reset again to shutdown what we just started
+            HystrixTimer.reset();
+            // try resetting again to make sure it's idempotent (ie. doesn't blow up on an NPE)
+            HystrixTimer.reset();
         }
 
         private static class TestListener implements TimerListener {
