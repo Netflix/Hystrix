@@ -64,12 +64,24 @@ public class HystrixMetricsStreamServlet extends HttpServlet {
     private static AtomicInteger concurrentConnections = new AtomicInteger(0);
     private static DynamicIntProperty maxConcurrentConnections = DynamicPropertyFactory.getInstance().getIntProperty("hystrix.stream.maxConcurrentConnections", 5);
 
+    private volatile boolean isDestroyed = false;
+    
     /**
      * Handle incoming GETs
      */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         handleRequest(request, response);
+    }
+    
+    /**
+     * Handle servlet being undeployed by gracefully releasing connections so poller threads stop.
+     */
+    @Override
+    public void destroy() {
+        /* set marker so the loops can break out */
+        isDestroyed = true;
+        super.destroy();
     }
 
     /**
@@ -115,7 +127,7 @@ public class HystrixMetricsStreamServlet extends HttpServlet {
                 // we will use a "single-writer" approach where the Servlet thread does all the writing
                 // by fetching JSON messages from the MetricJsonListener to write them to the output
                 try {
-                    while (poller.isRunning()) {
+                    while (poller.isRunning() && !isDestroyed) {
                         List<String> jsonMessages = jsonListener.getJsonMetrics();
                         if (jsonMessages.isEmpty()) {
                             // https://github.com/Netflix/Hystrix/issues/85 hystrix.stream holds connection open if no metrics
@@ -126,8 +138,15 @@ public class HystrixMetricsStreamServlet extends HttpServlet {
                                 response.getWriter().println("data: " + json + "\n");
                             }
                         }
+                        
+                        /* shortcut breaking out of loop if we have been destroyed */
+                        if(isDestroyed) {
+                            break;
+                        }
+                        
                         // after outputting all the messages we will flush the stream
                         response.flushBuffer();
+                        
                         // now wait the 'delay' time
                         Thread.sleep(delay);
                     }
