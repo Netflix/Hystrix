@@ -465,6 +465,8 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         // acquire a permit
         if (executionSemaphore.tryAcquire()) {
             try {
+                // store the command that is being run
+                Hystrix.startCurrentThreadExecutingCommand(getCommandKey());
                 // we want to run it synchronously
                 R response = executeCommand();
                 response = executionHook.onComplete(this, response);
@@ -479,6 +481,9 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                 return response;
             } finally {
                 executionSemaphore.release();
+
+                // pop the command that is being run
+                Hystrix.endCurrentThreadExecutingCommand();
 
                 /* execution time on execution via semaphore */
                 recordTotalExecutionTime(invocationStartTime.get());
@@ -622,6 +627,9 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                     }
                 }
 
+                // store the command that is being run
+                Hystrix.startCurrentThreadExecutingCommand(getCommandKey());
+
                 // execute outside of future so that fireAndForget will still work (ie. someone calls queue() but not get()) and so that multiple requests can be deduped through request caching
                 R r = executeCommand();
                 r = executionHook.onComplete(this, r);
@@ -634,6 +642,9 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                 executionCompleted.countDown();
                 // release the semaphore
                 executionSemaphore.release();
+
+                // pop the command that is being run
+                Hystrix.endCurrentThreadExecutingCommand();
 
                 /* execution time on queue via semaphore */
                 recordTotalExecutionTime(invocationStartTime.get());
@@ -670,6 +681,9 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
                     // execution hook
                     executionHook.onThreadStart(_this);
+
+                    // store the command that is being run
+                    Hystrix.startCurrentThreadExecutingCommand(getCommandKey());
 
                     // count the active thread
                     threadPool.markThreadExecution();
@@ -711,6 +725,9 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                     throw e;
                 } finally {
                     threadPool.markThreadCompletion();
+                    // pop this off the thread now that it's done
+                    Hystrix.endCurrentThreadExecutingCommand();
+
                     try {
                         executionHook.onThreadComplete(_this);
                     } catch (Exception e) {
@@ -3349,7 +3366,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             final AtomicBoolean exceptionReceived = new AtomicBoolean();
 
             final TryableSemaphore semaphore =
-                new TryableSemaphore(HystrixProperty.Factory.asProperty(1));
+                    new TryableSemaphore(HystrixProperty.Factory.asProperty(1));
 
             Runnable r = new HystrixContextRunnable(new Runnable() {
 
@@ -3421,7 +3438,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             final AtomicBoolean exceptionReceived = new AtomicBoolean();
 
             final TryableSemaphore semaphore =
-                new TryableSemaphore(HystrixProperty.Factory.asProperty(1));
+                    new TryableSemaphore(HystrixProperty.Factory.asProperty(1));
 
             Runnable r = new HystrixContextRunnable(new Runnable() {
 
@@ -3551,7 +3568,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
             // this semaphore will be shared across multiple command instances
             final TryableSemaphore sharedSemaphore =
-                new TryableSemaphore(HystrixProperty.Factory.asProperty(3));
+                    new TryableSemaphore(HystrixProperty.Factory.asProperty(3));
 
             // used to wait until all commands have started
             final CountDownLatch startLatch = new CountDownLatch(sharedSemaphore.numberOfPermits.get() + 1);
@@ -3574,13 +3591,13 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             // I create extra threads and commands so that I can verify that some of them fail to obtain a semaphore
             final int sharedThreadCount = sharedSemaphore.numberOfPermits.get() * 2;
             final Thread[] sharedSemaphoreThreads = new Thread[sharedThreadCount];
-            for(int i=0; i<sharedThreadCount; i++) {
+            for (int i = 0; i < sharedThreadCount; i++) {
                 sharedSemaphoreThreads[i] = new Thread(sharedSemaphoreRunnable);
             }
 
             // creates thread using isolated semaphore
             final TryableSemaphore isolatedSemaphore =
-                new TryableSemaphore(HystrixProperty.Factory.asProperty(1));
+                    new TryableSemaphore(HystrixProperty.Factory.asProperty(1));
 
             final CountDownLatch isolatedLatch = new CountDownLatch(1);
 
@@ -3602,7 +3619,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             assertEquals("wrong number of permits for shared semaphore", 0, sharedSemaphore.getNumberOfPermitsUsed());
             assertEquals("wrong number of permits for isolated semaphore", 0, isolatedSemaphore.getNumberOfPermitsUsed());
 
-            for(int i=0; i<sharedThreadCount; i++) {
+            for (int i = 0; i < sharedThreadCount; i++) {
                 sharedSemaphoreThreads[i].start();
             }
             isolatedThread.start();
@@ -3616,16 +3633,16 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
             // verifies that all semaphores are in use
             assertEquals("wrong number of permits for shared semaphore",
-                sharedSemaphore.numberOfPermits.get().longValue(), sharedSemaphore.getNumberOfPermitsUsed());
+                    sharedSemaphore.numberOfPermits.get().longValue(), sharedSemaphore.getNumberOfPermitsUsed());
             assertEquals("wrong number of permits for isolated semaphore",
-                isolatedSemaphore.numberOfPermits.get().longValue(), isolatedSemaphore.getNumberOfPermitsUsed());
+                    isolatedSemaphore.numberOfPermits.get().longValue(), isolatedSemaphore.getNumberOfPermitsUsed());
 
             // signals commands to finish
             sharedLatch.countDown();
             isolatedLatch.countDown();
 
             try {
-                for(int i=0; i<sharedThreadCount; i++) {
+                for (int i = 0; i < sharedThreadCount; i++) {
                     sharedSemaphoreThreads[i].join();
                 }
                 isolatedThread.join();
@@ -5289,7 +5306,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         public void testExecutionHookFailureWithSemaphoreIsolation() {
             /* test with execute() */
             final TryableSemaphore semaphore =
-                new TryableSemaphore(HystrixProperty.Factory.asProperty(0));
+                    new TryableSemaphore(HystrixProperty.Factory.asProperty(0));
 
             TestSemaphoreCommand command = new TestSemaphoreCommand(new TestCircuitBreaker(), semaphore, 200);
             try {
@@ -5932,8 +5949,8 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             private TestSemaphoreCommand(TestCircuitBreaker circuitBreaker, TryableSemaphore semaphore, long executionSleep) {
                 super(testPropsBuilder().setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics)
                         .setCommandPropertiesDefaults(HystrixCommandProperties.Setter.getUnitTestPropertiesSetter()
-                            .withExecutionIsolationStrategy(ExecutionIsolationStrategy.SEMAPHORE))
-                         .setExecutionSemaphore(semaphore));
+                                .withExecutionIsolationStrategy(ExecutionIsolationStrategy.SEMAPHORE))
+                        .setExecutionSemaphore(semaphore));
                 this.executionSleep = executionSleep;
             }
 
@@ -5957,16 +5974,18 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             private final CountDownLatch startLatch, waitLatch;
 
             /**
-             *
+             * 
              * @param circuitBreaker
              * @param semaphore
-             * @param startLatch this command calls {@link java.util.concurrent.CountDownLatch#countDown()} immediately
-             * upon running
-             * @param waitLatch this command calls {@link java.util.concurrent.CountDownLatch#await()} once it starts
-             * to run.  The caller can use the latch to signal the command to finish
+             * @param startLatch
+             *            this command calls {@link java.util.concurrent.CountDownLatch#countDown()} immediately
+             *            upon running
+             * @param waitLatch
+             *            this command calls {@link java.util.concurrent.CountDownLatch#await()} once it starts
+             *            to run. The caller can use the latch to signal the command to finish
              */
             private LatchedSemaphoreCommand(TestCircuitBreaker circuitBreaker, TryableSemaphore semaphore,
-                CountDownLatch startLatch, CountDownLatch waitLatch) {
+                    CountDownLatch startLatch, CountDownLatch waitLatch) {
                 super(testPropsBuilder().setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics)
                         .setCommandPropertiesDefaults(HystrixCommandProperties.Setter.getUnitTestPropertiesSetter().withExecutionIsolationStrategy(ExecutionIsolationStrategy.SEMAPHORE))
                         .setExecutionSemaphore(semaphore));
