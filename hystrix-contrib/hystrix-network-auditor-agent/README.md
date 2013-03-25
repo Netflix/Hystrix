@@ -29,7 +29,7 @@ In other words it's easy to either be unaware of a vulnerability or "[drift into
 Add the following to the JVM command-line:
 
 ```
--javaagent:/var/root/hystrix-network-auditor-agent-1.2.13.jar
+-javaagent:/var/root/hystrix-network-auditor-agent-x.y.zjar
 ```
 
 This will be loaded in the boot classloader and instrument `java.net` and `java.io` classes.
