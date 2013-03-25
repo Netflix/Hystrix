@@ -1,5 +1,13 @@
 # Hystrix Releases #
 
+### Version 1.2.14 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.2.14%22)) ###
+
+* [Issue 116](https://github.com/Netflix/Hystrix/issues/116) Mechanism for Auditing Network Access Not Isolated by Hystrix
+ 
+A new module for instrumenting network access to identify calls not wrapped by Hystrix.
+
+See the module README for more information: https://github.com/Netflix/Hystrix/tree/master/hystrix-contrib/hystrix-network-auditor-agent
+
 ### Version 1.2.13 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.2.13%22)) ###
 
 * [Issue 127](https://github.com/Netflix/Hystrix/issues/127) Add destroy() method to MetricsServlet
