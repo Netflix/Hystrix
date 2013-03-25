@@ -69,3 +69,9 @@ Here is an example that increments an overall counter and records the stack trac
         }
     }
 ```
+
+# Deployment Model
+
+This is not expected to run on all production instances but as part of a canary process.
+
+For example the Netflix API team intends to have long-running canaries using this agent and treat it like "canaries in the coalmine" that are always running and alert us if network traffic shows up that we are not aware of and not wrapped by Hystrix.
