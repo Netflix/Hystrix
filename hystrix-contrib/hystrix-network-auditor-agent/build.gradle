@@ -1,0 +1,17 @@
+apply plugin: 'java'
+dependencies {
+    compile 'org.javassist:javassist:3.17.1-GA'
+
+    jar {
+        // make a fatjar otherwise it's painful getting the boot-class-path correct when deploying
+        from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+        manifest {
+            attributes( 
+                "Agent-Class": "com.netflix.hystrix.contrib.networkauditor.HystrixNetworkAuditorAgent", 
+                "Can-Redefine-Classes": true, 
+                "Can-Retransform-Classes": true, 
+                "Boot-Class-Path": "hystrix-network-auditor-agent-" + version + ".jar",
+                "Premain-Class": "com.netflix.hystrix.contrib.networkauditor.HystrixNetworkAuditorAgent")
+        }
+    }
+}
