@@ -1,6 +1,6 @@
 apply plugin: 'java'
 dependencies {
-    compile 'org.javassist:javassist:3.17.1-GA'
+    compile 'org.javassist:javassist:3.16.1-GA'
 
     jar {
         // make a fatjar otherwise it's painful getting the boot-class-path correct when deploying
