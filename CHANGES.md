@@ -1,5 +1,11 @@
 # Hystrix Releases #
 
+### Version 1.2.15 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.2.15%22)) ###
+
+This is fixing a bug introduced in the last release that affects semaphore isolated commands that use request caching.
+
+* [Pull 133](https://github.com/Netflix/Hystrix/pull/133) Fix NoSuchElement Exception
+
 ### Version 1.2.14 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.2.14%22)) ###
 
 * [Issue 116](https://github.com/Netflix/Hystrix/issues/116) Mechanism for Auditing Network Access Not Isolated by Hystrix
