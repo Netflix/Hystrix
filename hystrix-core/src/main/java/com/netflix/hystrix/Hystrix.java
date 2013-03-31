@@ -3,9 +3,12 @@ package com.netflix.hystrix;
 import static org.junit.Assert.*;
 
 import java.util.LinkedList;
+import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.netflix.hystrix.HystrixCommand.Setter;
 import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
@@ -14,6 +17,8 @@ import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
  * Lifecycle management of Hystrix.
  */
 public class Hystrix {
+
+    private static final Logger logger = LoggerFactory.getLogger(Hystrix.class);
 
     /**
      * Reset state and release resources in use (such as thread-pools).
@@ -81,11 +86,24 @@ public class Hystrix {
     }
 
     /* package */static void startCurrentThreadExecutingCommand(HystrixCommandKey key) {
-        currentCommand.get().push(key);
+        try {
+            currentCommand.get().push(key);
+        } catch (Exception e) {
+            logger.warn("Unable to record command starting", e);
+        }
     }
 
     /* package */static void endCurrentThreadExecutingCommand() {
-        currentCommand.get().pop();
+        try {
+            if (!currentCommand.get().isEmpty()) {
+                currentCommand.get().pop();
+            }
+        } catch (NoSuchElementException e) {
+            // this shouldn't be possible since we check for empty above and this is thread-isolated
+            logger.debug("No command found to end.", e);
+        } catch (Exception e) {
+            logger.warn("Unable to end command.", e);
+        }
     }
 
     public static class UnitTest {
