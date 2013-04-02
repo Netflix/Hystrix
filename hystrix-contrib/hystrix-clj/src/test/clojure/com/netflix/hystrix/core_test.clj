@@ -104,19 +104,15 @@
         (is (= (- 99 42) (.execute c)))))
 
     (testing "makes a HystrixCommand that implements getCacheKey"
-
-      (let [context (com.netflix.hystrix.strategy.concurrency.HystrixRequestContext/initializeContext)]
-        (try
-          (let [call-count (atom 0) ; make sure run-fn is only called once
-                test-def (normalize (assoc base-def
-                                           :run-fn       (fn [arg] (swap! call-count inc) (str arg "!"))
-                                           :cache-key-fn (fn [arg] arg)))
-                result1 (.execute (instantiate test-def "hi"))
-                result2 (.execute (instantiate test-def "hi"))]
-            (is (= "hi!" result1 result2))
-            (is (= 1 @call-count)))
-          (finally
-            (.shutdown context))))))
+      (with-context
+        (let [call-count (atom 0) ; make sure run-fn is only called once
+               test-def (normalize (assoc base-def
+                                     :run-fn       (fn [arg] (swap! call-count inc) (str arg "!"))
+                                     :cache-key-fn (fn [arg] arg)))
+               result1 (.execute (instantiate test-def "hi"))
+               result2 (.execute (instantiate test-def "hi"))]
+          (is (= "hi!" result1 result2))
+          (is (= 1 @call-count))))))
   (testing "throws if :hystrix metadata isn't found in a var"
     (is (thrown? IllegalArgumentException
                  (instantiate #'map))))
@@ -292,4 +288,3 @@
       (is (= "V" single-call))
       (is (= n (count expected-results) (count results)))
       (is (= expected-results results)))))
-
