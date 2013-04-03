@@ -104,7 +104,7 @@
         (is (= (- 99 42) (.execute c)))))
 
     (testing "makes a HystrixCommand that implements getCacheKey"
-      (with-context
+      (with-request-context
         (let [call-count (atom 0) ; make sure run-fn is only called once
                test-def (normalize (assoc base-def
                                      :run-fn       (fn [arg] (swap! call-count inc) (str arg "!"))

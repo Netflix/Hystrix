@@ -227,7 +227,7 @@
 
 ;################################################################################
 
-(defmacro with-context
+(defmacro with-request-context
   "Executes body within a new Hystrix Context"
   [& body]
   `(let [context# (HystrixRequestContext/initializeContext)]
