@@ -152,7 +152,9 @@
               HystrixCollapser
               HystrixCollapser$Scope
               HystrixCollapser$Setter
-              HystrixCollapser$CollapsedRequest]))
+              HystrixCollapser$CollapsedRequest]
+           [com.netflix.hystrix.strategy.concurrency
+             HystrixRequestContext]))
 
 (defmacro ^:private key-fn
   "Make a function that creates keys of the given class given one of:
@@ -224,6 +226,15 @@
 (defmulti instantiate* (fn [definition & _] (:type definition)))
 
 ;################################################################################
+
+(defmacro with-request-context
+  "Executes body within a new Hystrix Context"
+  [& body]
+  `(let [context# (HystrixRequestContext/initializeContext)]
+     (try
+       ~@body
+       (finally
+         (.shutdown context#)))))
 
 (defn command
   "Helper function that takes a definition map for a HystrixCommand and returns a normalized
@@ -599,4 +610,3 @@
             (if (instance? Exception response)
               (.setException request ^Exception response)
               (.setResponse request response))))))))
-
