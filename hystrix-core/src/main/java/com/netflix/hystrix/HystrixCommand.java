@@ -627,24 +627,26 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                     }
                 }
 
-                // store the command that is being run
-                Hystrix.startCurrentThreadExecutingCommand(getCommandKey());
+                try {
+                    // store the command that is being run
+                    Hystrix.startCurrentThreadExecutingCommand(getCommandKey());
 
-                // execute outside of future so that fireAndForget will still work (ie. someone calls queue() but not get()) and so that multiple requests can be deduped through request caching
-                R r = executeCommand();
-                r = executionHook.onComplete(this, r);
-                value.set(r);
+                    // execute outside of future so that fireAndForget will still work (ie. someone calls queue() but not get()) and so that multiple requests can be deduped through request caching
+                    R r = executeCommand();
+                    r = executionHook.onComplete(this, r);
+                    value.set(r);
 
-                return responseFuture;
+                    return responseFuture;
+                } finally {
+                    // pop the command that is being run
+                    Hystrix.endCurrentThreadExecutingCommand();
+                }
 
             } finally {
                 // mark that we're completed
                 executionCompleted.countDown();
                 // release the semaphore
                 executionSemaphore.release();
-
-                // pop the command that is being run
-                Hystrix.endCurrentThreadExecutingCommand();
 
                 /* execution time on queue via semaphore */
                 recordTotalExecutionTime(invocationStartTime.get());
@@ -682,9 +684,6 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                     // execution hook
                     executionHook.onThreadStart(_this);
 
-                    // store the command that is being run
-                    Hystrix.startCurrentThreadExecutingCommand(getCommandKey());
-
                     // count the active thread
                     threadPool.markThreadExecution();
 
@@ -714,9 +713,17 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                         return null;
                     }
 
-                    // execute the command
-                    R r = executeCommand();
-                    return executionHook.onComplete(_this, r);
+                    try {
+                        // store the command that is being run
+                        Hystrix.startCurrentThreadExecutingCommand(getCommandKey());
+
+                        // execute the command
+                        R r = executeCommand();
+                        return executionHook.onComplete(_this, r);
+                    } finally {
+                        // pop this off the thread now that it's done
+                        Hystrix.endCurrentThreadExecutingCommand();
+                    }
                 } catch (Exception e) {
                     if (!isCommandTimedOut.get()) {
                         // count (if we didn't timeout) that we are throwing an exception and re-throw it
@@ -725,8 +732,6 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                     throw e;
                 } finally {
                     threadPool.markThreadCompletion();
-                    // pop this off the thread now that it's done
-                    Hystrix.endCurrentThreadExecutingCommand();
 
                     try {
                         executionHook.onThreadComplete(_this);
