@@ -1,5 +1,13 @@
 # Hystrix Releases #
 
+### Version 1.2.16 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.2.16%22)) ###
+
+This is fixing a bug introduced in the last release that affects semaphore isolated commands that use request caching.
+
+* [Pull 132](https://github.com/Netflix/Hystrix/pull/132) Add `with-context` macro for conviently wrapping collapsers in thier own context
+* [Pull 136](https://github.com/Netflix/Hystrix/pull/136) Fixed the mock stream
+* [Pull 137](https://github.com/Netflix/Hystrix/pull/137) Limit scope of CurrentThreadExecutingCommand
+
 ### Version 1.2.15 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.2.15%22)) ###
 
 This is fixing a bug introduced in the last release that affects semaphore isolated commands that use request caching.
