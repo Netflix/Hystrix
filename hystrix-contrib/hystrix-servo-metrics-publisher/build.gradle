@@ -1,5 +1,24 @@
 apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+
 dependencies {
     compile project(':hystrix-core')
     compile 'com.netflix.servo:servo-core:0.4.27'
+}
+
+eclipse {
+    classpath {
+        // include 'provided' dependencies on the classpath
+        plusConfigurations += configurations.provided
+        downloadSources = true
+        downloadJavadoc = true
+    }
+}
+
+idea {
+    module {
+        // include 'provided' dependencies on the classpath
+        scopes.PROVIDED.plus += configurations.provided
+    }
 }
