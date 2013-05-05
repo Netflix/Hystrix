@@ -397,102 +397,25 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      */
     public R execute() {
         try {
-            /* used to track userThreadExecutionTime */
-            if (!invocationStartTime.compareAndSet(-1, System.currentTimeMillis())) {
-                throw new IllegalStateException("This instance can only be executed once. Please instantiate a new instance.");
+            return queue().get();
+        } catch (Exception e) {
+            if (e instanceof HystrixBadRequestException) {
+                throw (HystrixBadRequestException) e;
             }
-            try {
-                /* try from cache first */
-                if (isRequestCachingEnabled()) {
-                    Future<R> fromCache = requestCache.get(getCacheKey());
-                    if (fromCache != null) {
-                        /* mark that we received this response from cache */
-                        metrics.markResponseFromCache();
-                        return asCachedFuture(fromCache).get();
-                    }
-                }
-
-                // mark that we're starting execution on the ExecutionHook
-                executionHook.onStart(this);
-
-                /* determine if we're allowed to execute */
-                if (!circuitBreaker.allowRequest()) {
-                    // record that we are returning a short-circuited fallback
-                    metrics.markShortCircuited();
-                    // short-circuit and go directly to fallback
-                    return getFallbackOrThrowException(HystrixEventType.SHORT_CIRCUITED, FailureType.SHORTCIRCUIT, "short-circuited");
-                }
-
-                try {
-                    if (properties.executionIsolationStrategy().get().equals(ExecutionIsolationStrategy.THREAD)) {
-                        // we want to run in a separate thread with timeout protection
-                        return queueInThread().get();
-                    } else {
-                        return executeWithSemaphore();
-                    }
-                } catch (RuntimeException e) {
-                    // count that we're throwing an exception and rethrow
-                    metrics.markExceptionThrown();
-                    throw e;
-                }
-
-            } catch (Exception e) {
-                if (e instanceof HystrixBadRequestException) {
-                    throw (HystrixBadRequestException) e;
-                }
-                if (e.getCause() instanceof HystrixBadRequestException) {
-                    throw (HystrixBadRequestException) e.getCause();
-                }
-                if (e instanceof HystrixRuntimeException) {
-                    throw (HystrixRuntimeException) e;
-                }
-                // if we have an exception we know about we'll throw it directly without the wrapper exception
-                if (e.getCause() instanceof HystrixRuntimeException) {
-                    throw (HystrixRuntimeException) e.getCause();
-                }
-                // we don't know what kind of exception this is so create a generic message and throw a new HystrixRuntimeException
-                String message = getLogMessagePrefix() + " failed while executing.";
-                logger.debug(message, e); // debug only since we're throwing the exception and someone higher will do something with it
-                throw new HystrixRuntimeException(FailureType.COMMAND_EXCEPTION, this.getClass(), message, e, null);
+            if (e.getCause() instanceof HystrixBadRequestException) {
+                throw (HystrixBadRequestException) e.getCause();
             }
-        } finally {
-            recordExecutedCommand();
-        }
-    }
-
-    private R executeWithSemaphore() {
-        TryableSemaphore executionSemaphore = getExecutionSemaphore();
-        // acquire a permit
-        if (executionSemaphore.tryAcquire()) {
-            try {
-                // store the command that is being run
-                Hystrix.startCurrentThreadExecutingCommand(getCommandKey());
-                // we want to run it synchronously
-                R response = executeCommand();
-                response = executionHook.onComplete(this, response);
-                // put in cache
-                if (isRequestCachingEnabled()) {
-                    requestCache.putIfAbsent(getCacheKey(), asFutureForCache(response));
-                }
-                /*
-                 * We don't bother looking for whether someone else also put it in the cache since we've already executed and received a response.
-                 * In this path we are synchronous so don't have the option of queuing a Future.
-                 */
-                return response;
-            } finally {
-                executionSemaphore.release();
-
-                // pop the command that is being run
-                Hystrix.endCurrentThreadExecutingCommand();
-
-                /* execution time on execution via semaphore */
-                recordTotalExecutionTime(invocationStartTime.get());
+            if (e instanceof HystrixRuntimeException) {
+                throw (HystrixRuntimeException) e;
             }
-        } else {
-            // mark on counter
-            metrics.markSemaphoreRejection();
-            logger.debug("HystrixCommand Execution Rejection by Semaphore"); // debug only since we're throwing the exception and someone higher will do something with it
-            return getFallbackOrThrowException(HystrixEventType.SEMAPHORE_REJECTED, FailureType.REJECTED_SEMAPHORE_EXECUTION, "could not acquire a semaphore for execution");
+            // if we have an exception we know about we'll throw it directly without the wrapper exception
+            if (e.getCause() instanceof HystrixRuntimeException) {
+                throw (HystrixRuntimeException) e.getCause();
+            }
+            // we don't know what kind of exception this is so create a generic message and throw a new HystrixRuntimeException
+            String message = getLogMessagePrefix() + " failed while executing.";
+            logger.debug(message, e); // debug only since we're throwing the exception and someone higher will do something with it
+            throw new HystrixRuntimeException(FailureType.COMMAND_EXCEPTION, this.getClass(), message, e, null);
         }
     }
 
@@ -1258,10 +1181,6 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      */
     protected String getCacheKey() {
         return null;
-    }
-
-    private Future<R> asFutureForCache(final R value) {
-        return asFuture(value);
     }
 
     /**
