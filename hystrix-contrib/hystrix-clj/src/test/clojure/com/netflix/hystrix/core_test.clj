@@ -16,16 +16,6 @@
 
 (use-fixtures :each request-context-fixture)
 
-; In the end, reset Hystrix so that Clojuresque will exit after running tests.
-(defn hystrix-reset-fixture
-  [f]
-  (try
-    (f)
-    (finally
-      (com.netflix.hystrix.Hystrix/reset))))
-
-(use-fixtures :once hystrix-reset-fixture)
-
 (deftest test-command-key
   (testing "returns nil when input is nil"
     (is (nil? (command-key nil))))
