@@ -3,7 +3,7 @@
             mavenRepo name: 'clojars', url: 'http://clojars.org/repo'
         }
         dependencies {
-            classpath 'clojuresque:clojuresque:1.5.4'
+            classpath 'clojuresque:clojuresque:1.5.8'
         }
     }
     apply plugin: 'clojure'
