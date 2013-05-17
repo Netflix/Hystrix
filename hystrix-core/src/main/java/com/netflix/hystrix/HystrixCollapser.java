@@ -335,7 +335,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
                 // we can't add it to the command metrics because the command can change each time (dynamic key for example)
                 // and we don't have access to it when responding from cache
                 // collapserMetrics.markResponseFromCache();
-                return fromCache.toFuture();
+                return fromCache.toBlockingObservable().toFuture();
             }
         }
 

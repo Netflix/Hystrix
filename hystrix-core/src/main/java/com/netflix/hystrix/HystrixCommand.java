@@ -53,9 +53,9 @@ import rx.Observer;
 import rx.Scheduler;
 import rx.Subscription;
 import rx.concurrency.Schedulers;
+import rx.operators.AtomicObservableSubscription;
 import rx.subjects.ReplaySubject;
 import rx.subscriptions.Subscriptions;
-import rx.util.AtomicObservableSubscription;
 import rx.util.functions.Action0;
 import rx.util.functions.Func1;
 import rx.util.functions.Func2;
@@ -457,7 +457,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
          * is going to sit waiting on it.
          */
         final Observable<R> o = toObservable(Schedulers.immediate(), false);
-        final Future<R> f = o.toFuture();
+        final Future<R> f = o.toBlockingObservable().toFuture();
 
         /* special handling of error states that throw immediately */
         if (f.isDone()) {
@@ -2225,7 +2225,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                 assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
                 assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
                 assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
-                assertEquals(true, command.observe().single());
+                assertEquals(true, command.observe().toBlockingObservable().single());
                 assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
                 assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
                 assertEquals(1, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
@@ -3083,7 +3083,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         public void testObservedExecutionTimeoutWithNoFallback() {
             TestHystrixCommand<Boolean> command = new TestCommandWithTimeout(50, TestCommandWithTimeout.FALLBACK_NOT_IMPLEMENTED);
             try {
-                command.observe().single();
+                command.observe().toBlockingObservable().single();
                 fail("we shouldn't get here");
             } catch (Exception e) {
                 e.printStackTrace();
@@ -3129,7 +3129,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         public void testObservedExecutionTimeoutWithFallback() {
             TestHystrixCommand<Boolean> command = new TestCommandWithTimeout(50, TestCommandWithTimeout.FALLBACK_SUCCESS);
             try {
-                assertEquals(false, command.observe().single());
+                assertEquals(false, command.observe().toBlockingObservable().single());
             } catch (Exception e) {
                 e.printStackTrace();
                 fail("We should have received a response from the fallback.");
@@ -3162,7 +3162,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         public void testObservedExecutionTimeoutFallbackFailure() {
             TestHystrixCommand<Boolean> command = new TestCommandWithTimeout(50, TestCommandWithTimeout.FALLBACK_FAILURE);
             try {
-                command.observe().single();
+                command.observe().toBlockingObservable().single();
                 fail("we shouldn't get here");
             } catch (Exception e) {
                 if (e instanceof HystrixRuntimeException) {

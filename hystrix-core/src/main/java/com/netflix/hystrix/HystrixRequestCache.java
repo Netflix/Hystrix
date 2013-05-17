@@ -291,10 +291,10 @@ public class HystrixRequestCache {
                 HystrixRequestCache cache2 = HystrixRequestCache.getInstance(HystrixCommandKey.Factory.asKey("command2"), strategy);
                 cache2.putIfAbsent("valueA", new TestObservable("a3"));
 
-                assertEquals("a1", cache1.get("valueA").last());
-                assertEquals("b1", cache1.get("valueB").last());
+                assertEquals("a1", cache1.get("valueA").toBlockingObservable().last());
+                assertEquals("b1", cache1.get("valueB").toBlockingObservable().last());
 
-                assertEquals("a3", cache2.get("valueA").last());
+                assertEquals("a3", cache2.get("valueA").toBlockingObservable().last());
                 assertNull(cache2.get("valueB"));
             } catch (Exception e) {
                 fail("Exception: " + e.getMessage());
@@ -321,7 +321,7 @@ public class HystrixRequestCache {
             try {
                 HystrixRequestCache cache1 = HystrixRequestCache.getInstance(HystrixCommandKey.Factory.asKey("command1"), strategy);
                 cache1.putIfAbsent("valueA", new TestObservable("a1"));
-                assertEquals("a1", cache1.get("valueA").last());
+                assertEquals("a1", cache1.get("valueA").toBlockingObservable().last());
                 cache1.clear("valueA");
                 assertNull(cache1.get("valueA"));
             } catch (Exception e) {
