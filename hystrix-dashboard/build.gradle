@@ -28,6 +28,6 @@ eclipse {
 idea {
 	module {
 		// include 'provided' dependencies on the classpath
-		scopes.PROVIDED.plus += configurations.provided
+		scopes.COMPILE.plus += configurations.provided
 	}
 }
