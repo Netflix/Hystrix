@@ -970,12 +970,12 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
     }
 
     /**
-     * Whether the <code>run()</code> resulted in a failure (exception).
+     * Whether the <code>run()</code> timed out during execution.
      * 
      * @return boolean
      */
-    public boolean isFailedExecution() {
-        return executionResult.events.contains(HystrixEventType.FAILURE);
+    public boolean isCommandTimedOut() {
+        return isCommandTimedOut.get();
     }
 
     /**
