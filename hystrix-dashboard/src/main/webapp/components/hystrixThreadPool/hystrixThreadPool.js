@@ -86,12 +86,14 @@
 			data.name = data.name.replace(/[.:-]/g,'_');
 			// do math
 			converAllAvg(data);
+			calcRatePerSecond(data);
 		}
 		
 		function converAllAvg(data) {
-			convertAvg(data, "propertyValue_corePoolSize", false);
 			convertAvg(data, "propertyValue_queueSizeRejectionThreshold", false);
-			convertAvg(data, "rollingThreadExecutions", false);
+			
+			// the following will break when it becomes a compound string if the property is dynamically changed
+			convertAvg(data, "propertyValue_metricsRollingStatisticalWindowInMilliseconds", false);
 		}
 		
 		function convertAvg(data, key, decimal) {
@@ -102,6 +104,17 @@
 			}
 		}
 		
+		function calcRatePerSecond(data) {
+			var numberSeconds = data["propertyValue_metricsRollingStatisticalWindowInMilliseconds"] / 1000;
+
+			var totalThreadsExecuted = data["rollingCountThreadsExecuted"];
+			if (totalThreadsExecuted < 0) {
+				totalThreadsExecuted = 0;
+			}
+			data["ratePerSecond"] =  roundNumber(totalThreadsExecuted / numberSeconds);
+			data["ratePerSecondPerHost"] =  roundNumber(totalThreadsExecuted / numberSeconds / data["reportingHosts"]);
+	    }
+
 		function validateData(data) {
 			
 			assertNotNull(data,"type");
@@ -173,20 +186,14 @@
 				addNew = true;
 			}
 			
-			var ratePerSecondPerHost = roundNumber(data.rollingCountThreadsExecuted/data.reportingHosts);
-			
-			data.ratePerSecond = data.rollingCountThreadsExecuted;
-			data.ratePerSecondPerHost = ratePerSecondPerHost;
-			
 			// set the rate on the div element so it's available for sorting
 			$('#THREAD_POOL_' + data.name).attr('rate_value', data.ratePerSecondPerHost);
 			
 			// now update/insert the data
 			$('#THREAD_POOL_' + data.name + ' div.monitor_data').html(tmpl(htmlTemplate, data));
 
-			
 			// set variables for circle visualization
-			var rate = ratePerSecondPerHost;
+			var rate = data.ratePerSecondPerHost;
 			// we will treat each item in queue as 1% of an error visualization
 			// ie. 5 threads in queue per instance == 5% error percentage
 			var errorPercentage = data.currentQueueSize / data.reportingHosts; 
