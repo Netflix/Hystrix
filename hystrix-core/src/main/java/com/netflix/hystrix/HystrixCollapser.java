@@ -45,6 +45,15 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import rx.Observable;
+import rx.Observer;
+import rx.Scheduler;
+import rx.Subscription;
+import rx.concurrency.Schedulers;
+import rx.subjects.ReplaySubject;
+import rx.subscriptions.Subscriptions;
+import rx.util.functions.Func1;
+
 import com.netflix.hystrix.HystrixCommand.UnitTest.TestHystrixCommand;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
 import com.netflix.hystrix.strategy.HystrixPlugins;
@@ -317,6 +326,19 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
     public Future<ResponseType> queue() {
         RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType> collapser = null;
 
+        /* try from cache first */
+        if (properties.requestCachingEnabled().get()) {
+            Observable<ResponseType> fromCache = requestCache.get(getCacheKey());
+            if (fromCache != null) {
+                /* mark that we received this response from cache */
+                // TODO Add collapser metrics so we can capture this information
+                // we can't add it to the command metrics because the command can change each time (dynamic key for example)
+                // and we don't have access to it when responding from cache
+                // collapserMetrics.markResponseFromCache();
+                return fromCache.toBlockingObservable().toFuture();
+            }
+        }
+
         if (Scope.REQUEST == getScope()) {
             collapser = getCollapserForUserRequest();
         } else if (Scope.GLOBAL == getScope()) {
@@ -325,18 +347,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
             logger.warn("Invalid Scope: " + getScope() + "  Defaulting to REQUEST scope.");
             collapser = getCollapserForUserRequest();
         }
-        /* try from cache first */
-        if (properties.requestCachingEnabled().get()) {
-            Future<ResponseType> fromCache = requestCache.get(getCacheKey());
-            if (fromCache != null) {
-                /* mark that we received this response from cache */
-                // TODO Add collapser metrics so we can capture this information
-                // we can't add it to the command metrics because the command can change each time (dynamic key for example)
-                // and we don't have access to it when responding from cache
-                // collapserMetrics.markResponseFromCache();
-                return fromCache;
-            }
-        }
+
         Future<ResponseType> response = collapser.submitRequest(getRequestArgument());
         if (properties.requestCachingEnabled().get()) {
             /*
@@ -348,10 +359,38 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
              * If this is an issue we can make a lazy-future that gets set in the cache
              * then only the winning 'put' will be invoked to actually call 'submitRequest'
              */
-            requestCache.putIfAbsent(getCacheKey(), response);
+            requestCache.putIfAbsent(getCacheKey(), Observable.toObservable(response));
         }
+
         return response;
     }
+
+    //    public Observable<ResponseType> observe() {
+    //        // us a ReplaySubject to buffer the eagerly subscribed-to Observable
+    //        ReplaySubject<ResponseType> subject = ReplaySubject.create();
+    //        // eagerly kick off subscription
+    //        toObservable().subscribe(subject);
+    //        // return the subject that can be subscribed to later while the execution has already started
+    //        return subject;
+    //    }
+    //
+    //    public Observable<ResponseType> toObservable(Scheduler scheduler) {
+    //
+    //        // create an Observable that will lazily execute when subscribed to
+    //        Observable<ResponseType> o = Observable.create(new Func1<Observer<ResponseType>, Subscription>() {
+    //
+    //            @Override
+    //            public Subscription call(Observer<ResponseType> observer) {
+    //            }
+    //
+    //        });
+    //
+    //        return o;
+    //    }
+    //
+    //    public Observable<ResponseType> toObservable() {
+    //        return toObservable(Schedulers.threadPoolForComputation());
+    //    }
 
     /**
      * Static global cache of RequestCollapsers for Scope.GLOBAL

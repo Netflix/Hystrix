@@ -18,14 +18,16 @@ package com.netflix.hystrix;
 import static org.junit.Assert.*;
 
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import rx.Observable;
+import rx.Observer;
+import rx.Subscription;
+import rx.subscriptions.Subscriptions;
+import rx.util.functions.Func1;
 
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategyDefault;
@@ -54,15 +56,15 @@ public class HystrixRequestCache {
      * <p>
      * Key => CommandPrefix + CacheKey : Future<?> from queue()
      */
-    private static final HystrixRequestVariableHolder<ConcurrentHashMap<ValueCacheKey, Future<?>>> requestVariableForCache = new HystrixRequestVariableHolder<ConcurrentHashMap<ValueCacheKey, Future<?>>>(new HystrixRequestVariableLifecycle<ConcurrentHashMap<ValueCacheKey, Future<?>>>() {
+    private static final HystrixRequestVariableHolder<ConcurrentHashMap<ValueCacheKey, Observable<?>>> requestVariableForCache = new HystrixRequestVariableHolder<ConcurrentHashMap<ValueCacheKey, Observable<?>>>(new HystrixRequestVariableLifecycle<ConcurrentHashMap<ValueCacheKey, Observable<?>>>() {
 
         @Override
-        public ConcurrentHashMap<ValueCacheKey, Future<?>> initialValue() {
-            return new ConcurrentHashMap<ValueCacheKey, Future<?>>();
+        public ConcurrentHashMap<ValueCacheKey, Observable<?>> initialValue() {
+            return new ConcurrentHashMap<ValueCacheKey, Observable<?>>();
         }
 
         @Override
-        public void shutdown(ConcurrentHashMap<ValueCacheKey, Future<?>> value) {
+        public void shutdown(ConcurrentHashMap<ValueCacheKey, Observable<?>> value) {
             // nothing to shutdown
         };
 
@@ -104,11 +106,11 @@ public class HystrixRequestCache {
      */
     // suppressing warnings because we are using a raw Future since it's in a heterogeneous ConcurrentHashMap cache
     @SuppressWarnings({ "unchecked" })
-    public <T> Future<T> get(String cacheKey) {
+    /* package */<T> Observable<T> get(String cacheKey) {
         ValueCacheKey key = getRequestCacheKey(cacheKey);
         if (key != null) {
             /* look for the stored value */
-            return (Future<T>) requestVariableForCache.get(concurrencyStrategy).get(key);
+            return (Observable<T>) requestVariableForCache.get(concurrencyStrategy).get(key);
         }
         return null;
     }
@@ -127,11 +129,11 @@ public class HystrixRequestCache {
      */
     // suppressing warnings because we are using a raw Future since it's in a heterogeneous ConcurrentHashMap cache
     @SuppressWarnings({ "unchecked" })
-    public <T> Future<T> putIfAbsent(String cacheKey, Future<T> f) {
+    /* package */<T> Observable<T> putIfAbsent(String cacheKey, Observable<T> f) {
         ValueCacheKey key = getRequestCacheKey(cacheKey);
         if (key != null) {
             /* look for the stored value */
-            Future<T> alreadySet = (Future<T>) requestVariableForCache.get(concurrencyStrategy).putIfAbsent(key, f);
+            Observable<T> alreadySet = (Observable<T>) requestVariableForCache.get(concurrencyStrategy).putIfAbsent(key, f);
             if (alreadySet != null) {
                 // someone beat us so we didn't cache this
                 return alreadySet;
@@ -282,17 +284,17 @@ public class HystrixRequestCache {
             HystrixRequestContext context = HystrixRequestContext.initializeContext();
             try {
                 HystrixRequestCache cache1 = HystrixRequestCache.getInstance(HystrixCommandKey.Factory.asKey("command1"), strategy);
-                cache1.putIfAbsent("valueA", new TestFuture("a1"));
-                cache1.putIfAbsent("valueA", new TestFuture("a2"));
-                cache1.putIfAbsent("valueB", new TestFuture("b1"));
+                cache1.putIfAbsent("valueA", new TestObservable("a1"));
+                cache1.putIfAbsent("valueA", new TestObservable("a2"));
+                cache1.putIfAbsent("valueB", new TestObservable("b1"));
 
                 HystrixRequestCache cache2 = HystrixRequestCache.getInstance(HystrixCommandKey.Factory.asKey("command2"), strategy);
-                cache2.putIfAbsent("valueA", new TestFuture("a3"));
+                cache2.putIfAbsent("valueA", new TestObservable("a3"));
 
-                assertEquals("a1", cache1.get("valueA").get());
-                assertEquals("b1", cache1.get("valueB").get());
+                assertEquals("a1", cache1.get("valueA").toBlockingObservable().last());
+                assertEquals("b1", cache1.get("valueB").toBlockingObservable().last());
 
-                assertEquals("a3", cache2.get("valueA").get());
+                assertEquals("a3", cache2.get("valueA").toBlockingObservable().last());
                 assertNull(cache2.get("valueB"));
             } catch (Exception e) {
                 fail("Exception: " + e.getMessage());
@@ -318,8 +320,8 @@ public class HystrixRequestCache {
             HystrixRequestContext context = HystrixRequestContext.initializeContext();
             try {
                 HystrixRequestCache cache1 = HystrixRequestCache.getInstance(HystrixCommandKey.Factory.asKey("command1"), strategy);
-                cache1.putIfAbsent("valueA", new TestFuture("a1"));
-                assertEquals("a1", cache1.get("valueA").get());
+                cache1.putIfAbsent("valueA", new TestObservable("a1"));
+                assertEquals("a1", cache1.get("valueA").toBlockingObservable().last());
                 cache1.clear("valueA");
                 assertNull(cache1.get("valueA"));
             } catch (Exception e) {
@@ -330,39 +332,19 @@ public class HystrixRequestCache {
             }
         }
 
-        private static class TestFuture implements Future<String> {
+        private static class TestObservable extends Observable<String> {
+            public TestObservable(final String value) {
+                super(new Func1<Observer<String>, Subscription>() {
 
-            private final String value;
+                    @Override
+                    public Subscription call(Observer<String> observer) {
+                        observer.onNext(value);
+                        observer.onCompleted();
+                        return Subscriptions.empty();
+                    }
 
-            public TestFuture(String value) {
-                this.value = value;
+                });
             }
-
-            @Override
-            public boolean cancel(boolean mayInterruptIfRunning) {
-                return false;
-            }
-
-            @Override
-            public boolean isCancelled() {
-                return false;
-            }
-
-            @Override
-            public boolean isDone() {
-                return false;
-            }
-
-            @Override
-            public String get() throws InterruptedException, ExecutionException {
-                return value;
-            }
-
-            @Override
-            public String get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-                return value;
-            }
-
         }
 
     }

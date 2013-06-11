@@ -31,9 +31,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.netflix.hystrix.HystrixCollapser;
+import com.netflix.hystrix.HystrixCommand;
 
 /**
- * Timer used by the {@link HystrixCollapser} to trigger batch executions.
+ * Timer used by {@link HystrixCommand} to timeout async executions and {@link HystrixCollapser} to trigger batch executions.
  */
 public class HystrixTimer {
 
@@ -46,7 +47,7 @@ public class HystrixTimer {
     }
 
     /**
-     * Retrieve the global instance with a single backing thread.
+     * Retrieve the global instance.
      */
     public static HystrixTimer getInstance() {
         return INSTANCE;
