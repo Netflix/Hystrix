@@ -589,10 +589,18 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                         timer.clear();
 
                         // determine how long we should wait for, taking into account time since work started
-                        // and when this thread came in to block
-                        long timeRemaining = (originalCommand.invocationStartTime
-                                + originalCommand.properties.executionIsolationThreadTimeoutInMilliseconds().get())
-                                - System.currentTimeMillis();
+                        // and when this thread came in to block. If invocationTime hasn't been set then assume time remaining is entire timeout value
+                        // as this maybe a case of multiple threads trying to run this command in which one thread wins but even before the winning thread is able to set
+                        // the starttime another thread going via the Cached command route gets here first.
+                        long timeout = originalCommand.properties.executionIsolationThreadTimeoutInMilliseconds().get();
+                        long timeRemaining = timeout;
+                        long currTime = System.currentTimeMillis();
+                        if(originalCommand.invocationStartTime != -1) {
+                                 timeRemaining = (originalCommand.invocationStartTime
+                                                + originalCommand.properties.executionIsolationThreadTimeoutInMilliseconds().get())
+                                                - currTime;
+
+                        }
                         if (timeRemaining > 0) {
                             // we need to block with the calculated timeout
                             try {
@@ -4535,6 +4543,71 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
             assertEquals(3, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
         }
+        
+       /* @Test
+        public void testNoRequestCacheOnTimeoutThrowsException() throws Exception {
+            TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
+            NoRequestCacheTimeoutWithoutFallback r1 = new NoRequestCacheTimeoutWithoutFallback(circuitBreaker);
+            try {
+                System.out.println("r1 value: " + r1.execute());
+                // we should have thrown an exception
+                fail("expected a timeout");
+            } catch (HystrixRuntimeException e) {
+                assertTrue(r1.isResponseTimedOut());
+                // what we want
+            }
+
+            NoRequestCacheTimeoutWithoutFallback r2 = new NoRequestCacheTimeoutWithoutFallback(circuitBreaker);
+            try {
+                r2.execute();
+                // we should have thrown an exception
+                fail("expected a timeout");
+            } catch (HystrixRuntimeException e) {
+                assertTrue(r2.isResponseTimedOut());
+                // what we want
+            }
+
+            NoRequestCacheTimeoutWithoutFallback r3 = new NoRequestCacheTimeoutWithoutFallback(circuitBreaker);
+            Future<Boolean> f3 = r3.queue();
+            try {
+                f3.get();
+                // we should have thrown an exception
+                fail("expected a timeout");
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+                assertTrue(r3.isResponseTimedOut());
+                // what we want
+            }
+
+            Thread.sleep(500); // timeout on command is set to 200ms
+
+            NoRequestCacheTimeoutWithoutFallback r4 = new NoRequestCacheTimeoutWithoutFallback(circuitBreaker);
+            try {
+                r4.execute();
+                // we should have thrown an exception
+                fail("expected a timeout");
+            } catch (HystrixRuntimeException e) {
+                assertTrue(r4.isResponseTimedOut());
+                assertFalse(r4.isResponseFromFallback());
+                // what we want
+            }
+
+            assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
+            assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
+            assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
+            assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
+            assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
+            assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+            assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
+            assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
+            assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
+            assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
+            assertEquals(3, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+
+            assertEquals(100, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
+
+            assertEquals(4, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        }*/
 
         @Test
         public void testRequestCacheOnTimeoutCausesNullPointerException() throws Exception {
@@ -6219,6 +6292,31 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                     e.printStackTrace();
                 }
                 return true;
+            }
+        }
+        
+        private static class NoRequestCacheTimeoutWithoutFallback extends TestHystrixCommand<Boolean> {
+            public NoRequestCacheTimeoutWithoutFallback(TestCircuitBreaker circuitBreaker) {
+                super(testPropsBuilder().setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics)
+                        .setCommandPropertiesDefaults(HystrixCommandProperties.Setter.getUnitTestPropertiesSetter().withExecutionIsolationThreadTimeoutInMilliseconds(200)));
+
+                // we want it to timeout
+            }
+
+            @Override
+            protected Boolean run() {
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    System.out.println(">>>> Sleep Interrupted: " + e.getMessage());
+                    //                    e.printStackTrace();
+                }
+                return true;
+            }
+
+            @Override
+            public String getCacheKey() {
+                return null;
             }
         }
 
