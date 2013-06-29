@@ -456,7 +456,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
          * It also just makes no sense to use a separate thread to timeout the command when the calling thread
          * is going to sit waiting on it.
          */
-        final Observable<R> o = toObservable(Schedulers.immediate(), false);
+        final ObservableCommand<R> o = toObservable(Schedulers.immediate(), false);
         final Future<R> f = o.toBlockingObservable().toFuture();
 
         /* special handling of error states that throw immediately */
@@ -544,19 +544,14 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
              * @throws InterruptedException
              * @throws ExecutionException
              */
-            protected R performBlockingGetWithTimeout(final Observable<R> o, final Future<R> f) throws InterruptedException, ExecutionException {
+            protected R performBlockingGetWithTimeout(final ObservableCommand<R> o, final Future<R> f) throws InterruptedException, ExecutionException {
                 // shortcut if already done
                 if (f.isDone()) {
                     return f.get();
                 }
 
                 // it's still working so proceed with blocking/timeout logic
-                HystrixCommand<R> originalCommand = null;
-                if (o instanceof CachedObservableResponse) {
-                    originalCommand = ((CachedObservableResponse<R>) o).originalObservable.originalCommand;
-                } else if (o instanceof CachedObservableOriginal) {
-                    originalCommand = ((CachedObservableOriginal<R>) o).originalCommand;
-                }
+                HystrixCommand<R> originalCommand = o.getCommand();
                 /**
                  * One thread will get the timeoutTimer if it's set and clear it then do blocking timeout.
                  * <p>
@@ -566,6 +561,8 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                  * This "originalCommand" concept exists because of request caching. We only do the work and timeout logic
                  * on the original, not the cached responses. However, whichever the first thread is that comes in to block
                  * will be the one who performs the timeout logic.
+                 * <p>
+                 * If request caching is disabled then it will always go into here.
                  */
                 if (originalCommand != null) {
                     Reference<TimerListener> timer = originalCommand.timeoutTimer.getAndSet(null);
@@ -595,10 +592,10 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                         long timeout = originalCommand.properties.executionIsolationThreadTimeoutInMilliseconds().get();
                         long timeRemaining = timeout;
                         long currTime = System.currentTimeMillis();
-                        if(originalCommand.invocationStartTime != -1) {
-                                 timeRemaining = (originalCommand.invocationStartTime
-                                                + originalCommand.properties.executionIsolationThreadTimeoutInMilliseconds().get())
-                                                - currTime;
+                        if (originalCommand.invocationStartTime != -1) {
+                            timeRemaining = (originalCommand.invocationStartTime
+                                    + originalCommand.properties.executionIsolationThreadTimeoutInMilliseconds().get())
+                                    - currTime;
 
                         }
                         if (timeRemaining > 0) {
@@ -684,7 +681,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         return toObservable(observeOn, true);
     }
 
-    private Observable<R> toObservable(Scheduler observeOn, boolean performAsyncTimeout) {
+    private ObservableCommand<R> toObservable(Scheduler observeOn, boolean performAsyncTimeout) {
         /* this is a stateful object so can only be used once */
         if (!started.compareAndSet(false, true)) {
             throw new IllegalStateException("This instance can only be executed once. Please instantiate a new instance.");
@@ -783,11 +780,14 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             Observable<R> fromCache = requestCache.putIfAbsent(getCacheKey(), o);
             if (fromCache != null) {
                 // another thread beat us so we'll use the cached value instead
-                return new CachedObservableResponse<R>((CachedObservableOriginal<R>) fromCache, this);
+                o = new CachedObservableResponse<R>((CachedObservableOriginal<R>) fromCache, this);
             }
+            // we just created an ObservableCommand so we cast and return it
+            return (ObservableCommand<R>) o;
+        } else {
+            // no request caching so a simple wrapper just to pass 'this' along with the Observable
+            return new ObservableCommand<R>(o, this);
         }
-
-        return o;
     }
 
     /**
@@ -797,20 +797,45 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      * 
      * @param <R>
      */
-    private static class CachedObservableOriginal<R> extends Observable<R> {
+    private static class CachedObservableOriginal<R> extends ObservableCommand<R> {
 
         final HystrixCommand<R> originalCommand;
 
-        CachedObservableOriginal(final Observable<R> actual, HystrixCommand<R> original) {
+        CachedObservableOriginal(final Observable<R> actual, HystrixCommand<R> command) {
             super(new Func1<Observer<R>, Subscription>() {
 
                 @Override
                 public Subscription call(final Observer<R> observer) {
                     return actual.subscribe(observer);
                 }
-            });
-            this.originalCommand = original;
+            }, command);
+            this.originalCommand = command;
         }
+    }
+
+    private static class ObservableCommand<R> extends Observable<R> {
+        private final HystrixCommand<R> command;
+
+        ObservableCommand(Func1<Observer<R>, Subscription> func, final HystrixCommand<R> command) {
+            super(func);
+            this.command = command;
+        }
+
+        public HystrixCommand<R> getCommand() {
+            return command;
+        }
+
+        ObservableCommand(final Observable<R> originalObservable, final HystrixCommand<R> command) {
+            super(new Func1<Observer<R>, Subscription>() {
+
+                @Override
+                public Subscription call(Observer<R> observer) {
+                    return originalObservable.subscribe(observer);
+                }
+            });
+            this.command = command;
+        }
+
     }
 
     /**
@@ -821,7 +846,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      * 
      * @param <R>
      */
-    private static class CachedObservableResponse<R> extends Observable<R> {
+    private static class CachedObservableResponse<R> extends ObservableCommand<R> {
         final CachedObservableOriginal<R> originalObservable;
 
         CachedObservableResponse(final CachedObservableOriginal<R> originalObservable, final HystrixCommand<R> commandOfDuplicateCall) {
@@ -861,8 +886,15 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                         }
                     });
                 }
-            });
+            }, commandOfDuplicateCall);
             this.originalObservable = originalObservable;
+        }
+
+        /*
+         * This is a cached response so we want the command of the observable we're wrapping.
+         */
+        public HystrixCommand<R> getCommand() {
+            return originalObservable.originalCommand;
         }
     }
 
@@ -4543,8 +4575,8 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
             assertEquals(3, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
         }
-        
-       /* @Test
+
+        @Test
         public void testNoRequestCacheOnTimeoutThrowsException() throws Exception {
             TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
             NoRequestCacheTimeoutWithoutFallback r1 = new NoRequestCacheTimeoutWithoutFallback(circuitBreaker);
@@ -4593,7 +4625,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             }
 
             assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
-            assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
+            assertEquals(4, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
             assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
             assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
             assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
@@ -4601,13 +4633,13 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
             assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
             assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
-            assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
-            assertEquals(3, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+            assertEquals(4, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
+            assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
             assertEquals(100, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
 
             assertEquals(4, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
-        }*/
+        }
 
         @Test
         public void testRequestCacheOnTimeoutCausesNullPointerException() throws Exception {
@@ -6294,7 +6326,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                 return true;
             }
         }
-        
+
         private static class NoRequestCacheTimeoutWithoutFallback extends TestHystrixCommand<Boolean> {
             public NoRequestCacheTimeoutWithoutFallback(TestCircuitBreaker circuitBreaker) {
                 super(testPropsBuilder().setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics)
