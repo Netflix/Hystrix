@@ -71,7 +71,7 @@ public class HystrixProxyFactory<T> {
 
 	public T build(String commandGroupKey) {
 		if (commandGroupKey == null) {
-			throw new IllegalArgumentException("command key cannot be null");
+			throw new IllegalArgumentException("group key cannot be null");
 		}
 		return build(HystrixCommandGroupKey.Factory.asKey(commandGroupKey));
 	}
@@ -82,8 +82,15 @@ public class HystrixProxyFactory<T> {
 
 	@java.lang.SuppressWarnings("unchecked")
 	public T build(final HystrixCommand.Setter setter) {
+		if (setter == null) {
+			throw new IllegalArgumentException("properties Setter cannot be null");
+		}
+
 		return (T) Proxy.newProxyInstance(_interface.getClassLoader(), new Class[]{_interface}, new InvocationHandler() {
 			public @Override Object invoke(Object proxy, final Method method, final Object[] args) throws Throwable {
+				// forms a command key from the method name
+				setter.andCommandKey(HystrixCommandKey.Factory.asKey(method.getName()));
+
 				return new HystrixCommand<Object>(setter) {
 
 					// run using the proxy provided to us when the factory was construct4ed
