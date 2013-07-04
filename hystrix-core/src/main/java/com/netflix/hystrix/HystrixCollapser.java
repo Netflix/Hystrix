@@ -52,6 +52,7 @@ import rx.subscriptions.BooleanSubscription;
 import rx.util.functions.Func1;
 
 import com.netflix.hystrix.HystrixCommand.UnitTest.TestHystrixCommand;
+import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
 import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
@@ -280,6 +281,17 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
      */
     protected abstract void mapResponseToRequests(BatchReturnType batchResponse, Collection<CollapsedRequest<ResponseType, RequestArgumentType>> requests);
 
+    /**
+     * Used for asynchronous execution with a callback by subscribing to the {@link Observable}.
+     * <p>
+     * This eagerly starts execution the same as {@link #queue()} and {@link #execute()}.
+     * A lazy {@link Observable} can be obtained from {@link #toObservable()}.
+     * <p>
+     * See https://github.com/Netflix/RxJava/wiki for more information.
+     * 
+     * @return {@code Observable<R>} that executes and calls back with the result of of {@link HystrixCommand}{@code <BatchReturnType>} execution after passing through {@link #mapResponseToRequests}
+     *         to transform the {@code <BatchReturnType>} into {@code <ResponseType>}
+     */
     public Observable<ResponseType> observe() {
         // us a ReplaySubject to buffer the eagerly subscribed-to Observable
         ReplaySubject<ResponseType> subject = ReplaySubject.create();
@@ -289,12 +301,37 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
         return subject;
     }
 
+    /**
+     * A lazy {@link Observable} that will execute when subscribed to.
+     * <p>
+     * <b>Callback Scheduling</b>
+     * <p>
+     * <ul>
+     * <li>When using {@link ExecutionIsolationStrategy#THREAD} this defaults to using {@link Schedulers#threadPoolForComputation()} for callbacks.</li>
+     * <li>When using {@link ExecutionIsolationStrategy#SEMAPHORE} this defaults to using {@link Schedulers#immediate()} for callbacks.</li>
+     * </ul>
+     * <p>
+     * See https://github.com/Netflix/RxJava/wiki for more information.
+     * 
+     * @return {@code Observable<R>} that lazily executes and calls back with the result of of {@link HystrixCommand}{@code <BatchReturnType>} execution after passing through
+     *         {@link #mapResponseToRequests} to transform the {@code <BatchReturnType>} into {@code <ResponseType>}
+     */
     public Observable<ResponseType> toObservable() {
         // when we callback with the data we want to do the work
         // on a separate thread than the one giving us the callback
         return toObservable(Schedulers.threadPoolForComputation());
     }
 
+    /**
+     * A lazy {@link Observable} that will execute when subscribed to.
+     * <p>
+     * See https://github.com/Netflix/RxJava/wiki for more information.
+     * 
+     * @param observeOn
+     *            The {@link Scheduler} to execute callbacks on.
+     * @return {@code Observable<R>} that lazily executes and calls back with the result of of {@link HystrixCommand}{@code <BatchReturnType>} execution after passing through
+     *         {@link #mapResponseToRequests} to transform the {@code <BatchReturnType>} into {@code <ResponseType>}
+     */
     public Observable<ResponseType> toObservable(Scheduler observeOn) {
 
         RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType> collapser = null;

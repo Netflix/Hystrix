@@ -164,6 +164,9 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      * NOTE: The {@link HystrixCommandKey} is used to associate a {@link HystrixCommand} with {@link HystrixCircuitBreaker}, {@link HystrixCommandMetrics} and other objects.
      * <p>
      * Do not create multiple {@link HystrixCommand} implementations with the same {@link HystrixCommandKey} but different injected default properties as the first instantiated will win.
+     * <p>
+     * Properties passed in via {@link Setter#andCommandPropertiesDefaults} or {@link Setter#andThreadPoolPropertiesDefaults} are cached for the given {@link HystrixCommandKey} for the life of the JVM
+     * or until {@link Hystrix#reset()} is called. Dynamic properties allow runtime changes. Read more on the <a href="https://github.com/Netflix/Hystrix/wiki/Configuration">Hystrix Wiki</a>.
      * 
      * @param setter
      *            Fluent interface for constructor arguments
@@ -659,6 +662,16 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         return new HystrixRuntimeException(FailureType.COMMAND_EXCEPTION, this.getClass(), message, e, null);
     }
 
+    /**
+     * Used for asynchronous execution of command with a callback by subscribing to the {@link Observable}.
+     * <p>
+     * This eagerly starts execution of the command the same as {@link #queue()} and {@link #execute()}.
+     * A lazy {@link Observable} can be obtained from {@link #toObservable()}.
+     * <p>
+     * See https://github.com/Netflix/RxJava/wiki for more information.
+     * 
+     * @return {@code Observable<R>} that executes and calls back with the result of {@link #run()} execution or a fallback from {@link #getFallback()} if the command fails for any reason.
+     */
     public Observable<R> observe() {
         // us a ReplaySubject to buffer the eagerly subscribed-to Observable
         ReplaySubject<R> subject = ReplaySubject.create();
@@ -668,6 +681,20 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         return subject;
     }
 
+    /**
+     * A lazy {@link Observable} that will execute the command when subscribed to.
+     * <p>
+     * <b>Callback Scheduling</b>
+     * <p>
+     * <ul>
+     * <li>When using {@link ExecutionIsolationStrategy#THREAD} this defaults to using {@link Schedulers#threadPoolForComputation()} for callbacks.</li>
+     * <li>When using {@link ExecutionIsolationStrategy#SEMAPHORE} this defaults to using {@link Schedulers#immediate()} for callbacks.</li>
+     * </ul>
+     * <p>
+     * See https://github.com/Netflix/RxJava/wiki for more information.
+     * 
+     * @return {@code Observable<R>} that lazily executes and calls back with the result of {@link #run()} execution or a fallback from {@link #getFallback()} if the command fails for any reason.
+     */
     public Observable<R> toObservable() {
         if (properties.executionIsolationStrategy().get().equals(ExecutionIsolationStrategy.THREAD)) {
             return toObservable(Schedulers.threadPoolForComputation());
@@ -678,6 +705,15 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         }
     }
 
+    /**
+     * A lazy {@link Observable} that will execute the command when subscribed to.
+     * <p>
+     * See https://github.com/Netflix/RxJava/wiki for more information.
+     * 
+     * @param observeOn
+     *            The {@link Scheduler} to execute callbacks on.
+     * @return {@code Observable<R>} that lazily executes and calls back with the result of {@link #run()} execution or a fallback from {@link #getFallback()} if the command fails for any reason.
+     */
     public Observable<R> toObservable(Scheduler observeOn) {
         return toObservable(observeOn, true);
     }
