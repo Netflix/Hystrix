@@ -673,6 +673,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             return toObservable(Schedulers.threadPoolForComputation());
         } else {
             // semaphore isolation is all blocking, no new threads involved
+            // so we'll use the calling thread
             return toObservable(Schedulers.immediate());
         }
     }
