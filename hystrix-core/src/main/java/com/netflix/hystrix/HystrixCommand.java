@@ -1528,17 +1528,19 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             if (properties.fallbackEnabled().get()) {
                 /* fallback behavior is permitted so attempt */
                 try {
+                    // record the executionResult
+                    // do this before executing fallback so it can be queried from within getFallback (see See https://github.com/Netflix/Hystrix/pull/144)
+                    executionResult = executionResult.addEvents(eventType);
+
                     // retrieve the fallback
                     R fallback = getFallbackWithProtection();
                     // mark fallback on counter
                     metrics.markFallbackSuccess();
                     // record the executionResult
-                    executionResult = executionResult.addEvents(eventType, HystrixEventType.FALLBACK_SUCCESS);
+                    executionResult = executionResult.addEvents(HystrixEventType.FALLBACK_SUCCESS);
                     return executionHook.onComplete(this, fallback);
                 } catch (UnsupportedOperationException fe) {
                     logger.debug("No fallback for HystrixCommand. ", fe); // debug only since we're throwing the exception and someone higher will do something with it
-                    // record the executionResult
-                    executionResult = executionResult.addEvents(eventType);
 
                     /* executionHook for all errors */
                     try {
@@ -1552,7 +1554,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                     logger.error("Error retrieving fallback for HystrixCommand. ", fe);
                     metrics.markFallbackFailure();
                     // record the executionResult
-                    executionResult = executionResult.addEvents(eventType, HystrixEventType.FALLBACK_FAILURE);
+                    executionResult = executionResult.addEvents(HystrixEventType.FALLBACK_FAILURE);
 
                     /* executionHook for all errors */
                     try {
@@ -5820,6 +5822,37 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             assertEquals(100, commandDisabled.builder.metrics.getHealthCounts().getErrorPercentage());
 
             assertEquals(2, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        }
+
+        @Test
+        public void testExecutionTimeoutValue() {
+            HystrixCommand.Setter properties = HystrixCommand.Setter
+                    .withGroupKey(HystrixCommandGroupKey.Factory.asKey("TestKey"))
+                    .andCommandPropertiesDefaults(HystrixCommandProperties.Setter()
+                            .withExecutionIsolationThreadTimeoutInMilliseconds(50));
+
+            HystrixCommand<String> command = new HystrixCommand<String>(properties) {
+                @Override
+                protected String run() throws Exception {
+                    Thread.sleep(3000);
+                    // should never reach here
+                    return "hello";
+                }
+
+                @Override
+                protected String getFallback() {
+                    if (isResponseTimedOut()) {
+                        return "timed-out";
+                    } else {
+                        return "abc";
+                    }
+                }
+            };
+
+            String value = command.execute();
+            assertTrue(command.isResponseTimedOut());
+            assertEquals("expected fallback value", "timed-out", value);
+
         }
 
         /* ******************************************************************************** */
