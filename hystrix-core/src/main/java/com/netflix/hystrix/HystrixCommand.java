@@ -969,13 +969,22 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         return executionResult.events.contains(HystrixEventType.SUCCESS);
     }
 
+	/**
+	 * Whether the <code>run()</code> resulted in a failure (exception).
+	 *
+	 * @return boolean
+	 */
+	public boolean isFailedExecution() {
+		return executionResult.events.contains(HystrixEventType.FAILURE);
+	}
+
     /**
-     * Whether the <code>run()</code> resulted in a failure (exception).
+     * Whether the <code>run()</code> timed out during execution.
      * 
      * @return boolean
      */
-    public boolean isFailedExecution() {
-        return executionResult.events.contains(HystrixEventType.FAILURE);
+    public boolean isCommandTimedOut() {
+        return isCommandTimedOut.get();
     }
 
     /**
