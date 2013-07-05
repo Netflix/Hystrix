@@ -5,6 +5,7 @@
 * [Pull 138](https://github.com/Netflix/Hystrix/pull/138) Eclipse and IDEA Config
 * [Pull 141](https://github.com/Netflix/Hystrix/pull/141) Upgrade Clojuresque (hystrix-clj builds)
 * [Pull 139](https://github.com/Netflix/Hystrix/pull/139) Fix dashboard math bug on thread pool rate calculations
+* [Pull 149](https://github.com/Netflix/Hystrix/pull/149) Allow getFallback to query failure states
 
 ### Version 1.2.16 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.2.16%22)) ###
 
