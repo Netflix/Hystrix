@@ -1869,6 +1869,37 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             ConfigurationManager.getConfigInstance().clear();
         }
 
+	    @Test
+	    public void testExecutionTimeoutValue() {
+		    HystrixCommand.Setter properties = HystrixCommand.Setter
+				.withGroupKey(HystrixCommandGroupKey.Factory.asKey("TestKey"))
+				.andCommandPropertiesDefaults(HystrixCommandProperties.Setter()
+					.withExecutionIsolationThreadTimeoutInMilliseconds(1000))
+		    ;
+
+	        HystrixCommand<String> command = new HystrixCommand<String>(properties) {
+		        @Override
+		        protected String run() throws Exception {
+			        Thread.sleep(3000);
+
+			        String value = "1";
+			        value += "23";
+			        
+			        // should never reach here
+			        return value;
+		        }
+
+		        @Override
+		        protected String getFallback() {
+			        assertTrue("expected response to be timed out", isResponseTimedOut());
+			        return "abc";
+		        }
+	        };
+
+		    assertEquals("expected fallback value", "abc", command.execute());
+		    assertTrue("expected response to be timed out", command.isResponseTimedOut());
+	    }
+
         /**
          * Test a successful command execution.
          */
