@@ -68,7 +68,7 @@
 				
 				if(data && data.type == 'HystrixThreadPool') {
 					if (data.deleteData == 'true') {
-						deleteThreadPool(data.name);
+						deleteThreadPool(data.escapedName);
 					} else {
 						displayThreadPool(data);
 					}
@@ -82,8 +82,8 @@
 		 */
 		function preProcessData(data) {
 			validateData(data);
-			// clean up the 'name' field so it doesn't have invalid characters
-			data.name = data.name.replace(/[.:-]/g,'_');
+			// escape string used in jQuery & d3 selectors
+			data.escapedName = data.name.replace(/([ !"#$%&'()*+,./:;<=>?@[\]^`{|}~])/g,'\\$1');
 			// do math
 			converAllAvg(data);
 			calcRatePerSecond(data);
@@ -167,7 +167,7 @@
 			
 			var addNew = false;
 			// check if we need to create the container
-			if(!$('#THREAD_POOL_' + data.name).length) {
+			if(!$('#THREAD_POOL_' + data.escapedName).length) {
 				// it doesn't exist so add it
 				var html = tmpl(htmlTemplateContainer, data);
 				// remove the loading thing first
@@ -180,17 +180,17 @@
 				$('#' + containerId + ' div.monitor').last().addClass('last');
 				
 				// add the default sparkline graph
-				d3.selectAll('#graph_THREAD_POOL_' + data.name + ' svg').append("svg:path");
+				d3.selectAll('#graph_THREAD_POOL_' + data.escapedName + ' svg').append("svg:path");
 				
 				// remember this is new so we can trigger a sort after setting data
 				addNew = true;
 			}
 			
 			// set the rate on the div element so it's available for sorting
-			$('#THREAD_POOL_' + data.name).attr('rate_value', data.ratePerSecondPerHost);
+			$('#THREAD_POOL_' + data.escapedName).attr('rate_value', data.ratePerSecondPerHost);
 			
 			// now update/insert the data
-			$('#THREAD_POOL_' + data.name + ' div.monitor_data').html(tmpl(htmlTemplate, data));
+			$('#THREAD_POOL_' + data.escapedName + ' div.monitor_data').html(tmpl(htmlTemplate, data));
 
 			// set variables for circle visualization
 			var rate = data.ratePerSecondPerHost;
@@ -198,7 +198,7 @@
 			// ie. 5 threads in queue per instance == 5% error percentage
 			var errorPercentage = data.currentQueueSize / data.reportingHosts; 
 			
-			updateCircle('#THREAD_POOL_' + data.name + ' circle', rate, errorPercentage);
+			updateCircle('#THREAD_POOL_' + data.escapedName + ' circle', rate, errorPercentage);
 			
 			if(addNew) {
 				// sort since we added a new circuit
@@ -244,8 +244,8 @@
 				.style("fill", self.colorRange(errorPercentage));
 		}
 		
-		/* private */ function deleteThreadPool(circuitName) {
-			$('#THREAD_POOL_' + circuitName).remove();
+		/* private */ function deleteThreadPool(poolName) {
+			$('#THREAD_POOL_' + poolName).remove();
 		}
 		
 	}
