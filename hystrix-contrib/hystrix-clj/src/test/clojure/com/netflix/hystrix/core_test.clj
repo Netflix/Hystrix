@@ -1,8 +1,18 @@
 (ns com.netflix.hystrix.core-test
   (:use com.netflix.hystrix.core)
   (:require [clojure.test :refer [deftest testing is are use-fixtures]])
-  (:import [com.netflix.hystrix HystrixExecutable]
+  (:import [com.netflix.hystrix Hystrix HystrixExecutable]
            [com.netflix.hystrix.strategy.concurrency HystrixRequestContext]))
+
+; reset hystrix after each execution, for consistency and sanity
+(defn reset-fixture
+  [f]
+  (try
+    (f)
+    (finally
+      (Hystrix/reset))))
+
+(use-fixtures :once reset-fixture)
 
 ; wrap each test in hystrix context
 (defn request-context-fixture
