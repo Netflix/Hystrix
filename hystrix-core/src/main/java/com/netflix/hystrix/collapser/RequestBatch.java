@@ -54,11 +54,12 @@ public class RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> {
          * The 'read' just means non-exclusive even though we are writing.
          */
         if (batchLock.readLock().tryLock()) {
-            /* double-check now that we have the lock - if the batch is started we reject the offer */
-            if (batchStarted.get()) {
-                return null;
-            }
             try {
+                /* double-check now that we have the lock - if the batch is started we reject the offer */
+                if (batchStarted.get()) {
+                    return null;
+                }
+
                 int s = count.incrementAndGet();
                 if (s > maxBatchSize) {
                     return null;
