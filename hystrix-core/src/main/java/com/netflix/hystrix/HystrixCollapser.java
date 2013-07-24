@@ -742,6 +742,27 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
         }
 
         @Test
+        public void testUnsubscribeOnOneDoesntKillBatch() throws Exception {
+            TestCollapserTimer timer = new TestCollapserTimer();
+            Future<String> response1 = new TestRequestCollapser(timer, counter, 1).queue();
+            Future<String> response2 = new TestRequestCollapser(timer, counter, 2).queue();
+
+            // kill the first
+            response1.cancel(true);
+
+            timer.incrementTime(10); // let time pass that equals the default delay/period
+
+            // the first is cancelled so should return null
+            assertEquals(null, response1.get());
+            // we should still get a response on the second
+            assertEquals("2", response2.get());
+
+            assertEquals(1, counter.get());
+
+            assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        }
+
+        @Test
         public void testShardedRequests() throws Exception {
             TestCollapserTimer timer = new TestCollapserTimer();
             Future<String> response1 = new TestShardedRequestCollapser(timer, counter, "1a").queue();
