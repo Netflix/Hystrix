@@ -26,13 +26,15 @@
 
 	<script>
 		var y = 200;
-		var vis = d3.select("#chart_CIRCUIT_<%= name %>").append("svg:svg").attr("width", "100%").attr("height", "100%");
+		/* escape with two backslashes */
+		var vis = d3.select("#chart_CIRCUIT_<%= name.replace(/([ !"#$%&'()*+,./:;<=>?@[\]^`{|}~])/g,'\\\\$1') %>").append("svg:svg").attr("width", "100%").attr("height", "100%");
 		/* add a circle -- we don't use the data point, we set it manually, so just passing in [1] */
 		var circle = vis.selectAll("circle").data([1]).enter().append("svg:circle");
 		/* setup the initial styling and sizing of the circle */
 		circle.style("fill", "green").attr("cx", "30%").attr("cy", "30%").attr("r", 5);
 		
 		/* add the line graph - it will be populated by javascript, no default to show here */
-		var graph = d3.select("#graph_CIRCUIT_<%= name %>").append("svg:svg").attr("width", "100%").attr("height", "100%");
+		/* escape with two backslashes */
+		var graph = d3.select("#graph_CIRCUIT_<%= name.replace(/([ !"#$%&'()*+,./:;<=>?@[\]^`{|}~])/g,'\\\\$1') %>").append("svg:svg").attr("width", "100%").attr("height", "100%");
 	</script>
 </div>

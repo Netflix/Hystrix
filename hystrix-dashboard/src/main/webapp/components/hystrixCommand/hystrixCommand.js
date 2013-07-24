@@ -73,7 +73,7 @@
 				
 				if(data && data.type == 'HystrixCommand') {
 					if (data.deleteData == 'true') {
-						deleteCircuit(data.name);
+						deleteCircuit(data.escapedName);
 					} else {
 						displayCircuit(data);
 					}
@@ -87,13 +87,13 @@
 		 */
 		function preProcessData(data) {
 			validateData(data);
-			// clean up the 'name' field so it doesn't have invalid characters
-			data.name = data.name.replace(/[.:-]/g,'_');
+			// escape string used in jQuery & d3 selectors
+			data.escapedName = data.name.replace(/([ !"#$%&'()*+,./:;<=>?@[\]^`{|}~])/g,'\\$1');
 			// do math
 			converAllAvg(data);
 			calcRatePerSecond(data);
 		}
-		
+
 		/**
 		 * Since the stream of data can be aggregated from multiple hosts in a tiered manner
 		 * the aggregation just sums everything together and provides us the denominator (reportingHosts)
@@ -208,7 +208,7 @@
 			
 			var addNew = false;
 			// check if we need to create the container
-			if(!$('#CIRCUIT_' + data.name).length) {
+			if(!$('#CIRCUIT_' + data.escapedName).length) {
 				// args for display
 				if(self.args.includeDetailIcon != undefined && self.args.includeDetailIcon) {
 					data.includeDetailIcon = true;
@@ -224,7 +224,7 @@
 				$('#' + containerId + '').append(html);
 				
 				// add the default sparkline graph
-				d3.selectAll('#graph_CIRCUIT_' + data.name + ' svg').append("svg:path");
+				d3.selectAll('#graph_CIRCUIT_' + data.escapedName + ' svg').append("svg:path");
 				
 				// remember this is new so we can trigger a sort after setting data
 				addNew = true;
@@ -232,7 +232,7 @@
 			
 			
 			// now update/insert the data
-			$('#CIRCUIT_' + data.name + ' div.monitor_data').html(tmpl(hystrixTemplateCircuit, data));
+			$('#CIRCUIT_' + data.escapedName + ' div.monitor_data').html(tmpl(hystrixTemplateCircuit, data));
 			
 			var ratePerSecond = data.ratePerSecond;
 			var ratePerSecondPerHost = data.ratePerSecondPerHost;
@@ -240,19 +240,19 @@
 			var errorThenVolume = (data.errorPercentage * 100000000) +  ratePerSecond;
 			
 			// set the rates on the div element so it's available for sorting
-			$('#CIRCUIT_' + data.name).attr('rate_value', ratePerSecond);
-			$('#CIRCUIT_' + data.name).attr('error_then_volume', errorThenVolume);
+			$('#CIRCUIT_' + data.escapedName).attr('rate_value', ratePerSecond);
+			$('#CIRCUIT_' + data.escapedName).attr('error_then_volume', errorThenVolume);
 			
 			// update errorPercentage color on page
-			$('#CIRCUIT_' + data.name + ' a.errorPercentage').css('color', self.circuitErrorPercentageColorRange(data.errorPercentage));
+			$('#CIRCUIT_' + data.escapedName + ' a.errorPercentage').css('color', self.circuitErrorPercentageColorRange(data.errorPercentage));
 			
-			updateCircle('circuit', '#CIRCUIT_' + data.name + ' circle', ratePerSecondPerHostDisplay, data.errorPercentage);
+			updateCircle('circuit', '#CIRCUIT_' + data.escapedName + ' circle', ratePerSecondPerHostDisplay, data.errorPercentage);
 			
 			if(data.graphValues) {
 				// we have a set of values to initialize with
-				updateSparkline('circuit', '#CIRCUIT_' + data.name + ' path', data.graphValues);
+				updateSparkline('circuit', '#CIRCUIT_' + data.escapedName + ' path', data.graphValues);
 			} else {
-				updateSparkline('circuit', '#CIRCUIT_' + data.name + ' path', ratePerSecond);
+				updateSparkline('circuit', '#CIRCUIT_' + data.escapedName + ' path', ratePerSecond);
 			}
 
 			if(addNew) {

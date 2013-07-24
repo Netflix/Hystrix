@@ -23,7 +23,8 @@
 			var errorPercentageData = [99];
 		<% } %>
 		var y = 200;
-		var vis = d3.select("#chart_THREAD_POOL_<%= name %>").append("svg:svg").attr("width", "100%").attr("height", "100%");
+		/* escape with two backslashes */
+		var vis = d3.select("#chart_THREAD_POOL_<%= name.replace(/([ !"#$%&'()*+,./:;<=>?@[\]^`{|}~])/g,'\\\\$1') %>").append("svg:svg").attr("width", "100%").attr("height", "100%");
 		/* add a circle -- we don't use the data point, we set it manually, so just passing in [1] */
 		var circle = vis.selectAll("circle").data([1]).enter().append("svg:circle");
 		/* setup the initial styling and sizing of the circle */
