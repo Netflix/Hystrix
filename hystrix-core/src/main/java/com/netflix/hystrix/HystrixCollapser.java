@@ -28,7 +28,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.concurrent.NotThreadSafe;
 
@@ -674,71 +673,6 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
             System.out.println("number of executions: " + counter.get());
             assertEquals(3, counter.get());
             assertEquals(3, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
-        }
-
-        /**
-         * Check when the Timer is latent that the Future.get() will trigger the batch execution.
-         * 
-         * @throws Exception
-         */
-        //@Test // commented out during version 1.3 work ... questioning if still needed ... testing performance numbers
-        public void testBatchExecutesViaGetIfTimerDoesntFire() throws Exception {
-            TestCollapserTimer timer = new TestCollapserTimer();
-            Future<String> response1 = new TestRequestCollapser(timer, counter, 1).queue();
-            Future<String> response2 = new TestRequestCollapser(timer, counter, 2).queue();
-
-            // purposefully don't increment the timer
-
-            assertEquals("1", response1.get());
-            assertEquals("2", response2.get());
-
-            assertEquals(1, counter.get());
-
-            assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
-        }
-
-        /**
-         * Check when the Timer is latent that the Future.get() will trigger the batch execution.
-         * 
-         * @throws Exception
-         */
-        //@Test // commented out during version 1.3 work ... questioning if still needed ... testing performance numbers
-        public void testBatchExecutesViaGetIfTimerDoesntFireMultiThreaded() throws Exception {
-            final TestCollapserTimer timer = new TestCollapserTimer();
-            final AtomicReference<String> v1 = new AtomicReference<String>();
-            final AtomicReference<String> v2 = new AtomicReference<String>();
-
-            Thread t1 = new Thread(new HystrixContextRunnable(new Runnable() {
-
-                @Override
-                public void run() {
-                    v1.set(new TestRequestCollapser(timer, counter, 1).execute());
-                }
-
-            }));
-            Thread t2 = new Thread(new HystrixContextRunnable(new Runnable() {
-
-                @Override
-                public void run() {
-                    v2.set(new TestRequestCollapser(timer, counter, 2).execute());
-                }
-
-            }));
-
-            t1.start();
-            t2.start();
-
-            // purposefully don't increment the timer
-
-            t1.join();
-            t2.join();
-
-            assertEquals("1", v1.get());
-            assertEquals("2", v2.get());
-
-            assertEquals(1, counter.get());
-
-            assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
         }
 
         @Test
