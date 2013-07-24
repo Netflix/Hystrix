@@ -1235,10 +1235,10 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                 // this means we have already timed out then we don't count this error stat and we just return
                 // as this means the user-thread has already returned, we've already done fallback logic
                 // and we've already counted the timeout stat
-                logger.error("Error executing HystrixCommand.run() [TimedOut]. Proceeding to fallback logic ...", e);
+                logger.debug("Error executing HystrixCommand.run() [TimedOut]. Proceeding to fallback logic ...", e);
                 return null;
             } else {
-                logger.error("Error executing HystrixCommand.run(). Proceeding to fallback logic ...", e);
+                logger.debug("Error executing HystrixCommand.run(). Proceeding to fallback logic ...", e);
             }
             // report failure
             metrics.markFailure(System.currentTimeMillis() - startTime);
@@ -1551,7 +1551,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
                     throw new HystrixRuntimeException(failureType, this.getClass(), getLogMessagePrefix() + " " + message + " and no fallback available.", e, fe);
                 } catch (Exception fe) {
-                    logger.error("Error retrieving fallback for HystrixCommand. ", fe);
+                    logger.debug("HystrixCommand execution " + failureType.name() + " and fallback retrieval failed.", fe);
                     metrics.markFallbackFailure();
                     // record the executionResult
                     executionResult = executionResult.addEvents(HystrixEventType.FALLBACK_FAILURE);
