@@ -1,5 +1,11 @@
 # Hystrix Releases #
 
+### Version 1.2.18 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.2.18%22)) ###
+
+* [Pull 152](https://github.com/Netflix/Hystrix/pull/152) Escape meta-characters to fix dashboard
+* [Pull 156](https://github.com/Netflix/Hystrix/pull/156) Improve hystrix-clj docs
+* [Pull 155](https://github.com/Netflix/Hystrix/pull/155) Reset Hystrix after hystrix-clj tests have run
+
 ### Version 1.2.17 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.2.17%22)) ###
 
 * [Pull 138](https://github.com/Netflix/Hystrix/pull/138) Eclipse and IDEA Config
