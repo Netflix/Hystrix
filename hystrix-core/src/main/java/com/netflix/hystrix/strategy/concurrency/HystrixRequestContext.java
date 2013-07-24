@@ -63,16 +63,16 @@ import com.netflix.hystrix.HystrixRequestLog;
 public class HystrixRequestContext {
 
     /*
-     * ThreadLocal on each thread will hold the HystrixRequestVariableState.
+     * InheritableThreadLocal on each thread will hold the HystrixRequestVariableState.
      * 
-     * Shutdown will clear the state inside HystrixRequestContext but not nullify the ThreadLocal on all
+     * Shutdown will clear the state inside HystrixRequestContext but not nullify the InheritableThreadLocal on all
      * child threads as these threads will not be known by the parent when cleanupAfterRequest() is called.
      * 
      * However, the only thing held by those child threads until they are re-used and re-initialized is an empty
      * HystrixRequestContext object with the ConcurrentHashMap within it nulled out since once it is nullified
      * from the parent thread it is shared across all child threads.
      */
-    private static ThreadLocal<HystrixRequestContext> requestVariables = new ThreadLocal<HystrixRequestContext>();
+    private static InheritableThreadLocal<HystrixRequestContext> requestVariables = new InheritableThreadLocal<HystrixRequestContext>();
 
     public static boolean isCurrentThreadInitialized() {
         HystrixRequestContext context = requestVariables.get();
@@ -138,7 +138,7 @@ public class HystrixRequestContext {
                 }
             }
             // null out so it can be garbage collected even if the containing object is still
-            // being held in ThreadLocals on threads that weren't cleaned up
+            // being held in InheritableThreadLocals on threads that weren't cleaned up
             state = null;
         }
     };
