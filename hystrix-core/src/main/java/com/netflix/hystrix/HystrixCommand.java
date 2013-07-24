@@ -413,6 +413,8 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      *             if a failure occurs and a fallback cannot be retrieved
      * @throws HystrixBadRequestException
      *             if invalid arguments or state were used representing a user failure, not a system failure
+     * @throws IllegalStateException
+     *             if invoked more than once
      */
     public R execute() {
         try {
@@ -441,6 +443,8 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      *             </ul>
      * @throws HystrixBadRequestException
      *             via {@code Future.get()} in {@link ExecutionException#getCause()} if invalid arguments or state were used representing a user failure, not a system failure
+     * @throws IllegalStateException
+     *             if invoked more than once
      */
     public Future<R> queue() {
         /*
@@ -637,12 +641,15 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
     /**
      * Take an Exception and determine whether to throw it, its cause or a new HystrixRuntimeException.
      * <p>
-     * This will only throw an HystrixRuntimeException or HystrixBadRequestException
+     * This will only throw an HystrixRuntimeException, HystrixBadRequestException or IllegalStateException
      * 
      * @param e
-     * @return HystrixRuntimeException or HystrixBadRequestException
+     * @return HystrixRuntimeException, HystrixBadRequestException or IllegalStateException
      */
     protected RuntimeException decomposeException(Exception e) {
+        if (e instanceof IllegalStateException) {
+            return (IllegalStateException) e;
+        }
         if (e instanceof HystrixBadRequestException) {
             return (HystrixBadRequestException) e;
         }
@@ -694,6 +701,8 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      * See https://github.com/Netflix/RxJava/wiki for more information.
      * 
      * @return {@code Observable<R>} that lazily executes and calls back with the result of {@link #run()} execution or a fallback from {@link #getFallback()} if the command fails for any reason.
+     * @throws IllegalStateException
+     *             if invoked more than once
      */
     public Observable<R> toObservable() {
         if (properties.executionIsolationStrategy().get().equals(ExecutionIsolationStrategy.THREAD)) {
@@ -713,6 +722,8 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      * @param observeOn
      *            The {@link Scheduler} to execute callbacks on.
      * @return {@code Observable<R>} that lazily executes and calls back with the result of {@link #run()} execution or a fallback from {@link #getFallback()} if the command fails for any reason.
+     * @throws IllegalStateException
+     *             if invoked more than once
      */
     public Observable<R> toObservable(Scheduler observeOn) {
         return toObservable(observeOn, true);
@@ -1938,7 +1949,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                 // second should fail
                 command.execute();
                 fail("we should not allow this ... it breaks the state of request logs");
-            } catch (Exception e) {
+            } catch (IllegalStateException e) {
                 e.printStackTrace();
                 // we want to get here
             }
@@ -1947,7 +1958,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                 // queue should also fail
                 command.queue();
                 fail("we should not allow this ... it breaks the state of request logs");
-            } catch (Exception e) {
+            } catch (IllegalStateException e) {
                 e.printStackTrace();
                 // we want to get here
             }
