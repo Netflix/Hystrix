@@ -11,10 +11,15 @@
   A command or collapser definition map can be passed to the execute and queue functions to
   invoke the command.
 
+  The main Hystrix documentation can be found at https://github.com/Netflix/Hystrix. In particular,
+  you may find the Javadocs useful if you need to drop down into Java:
+  http://netflix.github.io/Hystrix/javadoc/
+
   # HystrixCommand
 
-  A HystrixCommand is a representation for an interaction network, or otherwise untrusted resource.
-  See the Hystrix documentation (https://github.com/Netflix/Hystrix) for more details.
+  A HystrixCommand is a representation for an interaction with a network dependency, or other
+  untrusted resource. See the Hystrix documentation (https://github.com/Netflix/Hystrix) for
+  more details.
 
   A command is defined by a map with the following keys:
 
@@ -59,6 +64,11 @@
             (.andCommandPropertiesDefaults setter ...))
 
       This is your escape hatch into raw Hystrix.
+      ... but NOTE: Hystrix does a fair bit of configuration caching and that caching is keyed
+      by command key. Thus, many of the settings you apply within :init-fn will only apply
+      the *first time it is invoked*. After that, they're ignored. This means that some REPL-based
+      dynamicism is lost and that :init-fn shouldn't be used to configure a HystrixCommand at
+      run-time. Instead use Archaius properties as described in the Hystrix docs.
 
   The com.netflix.hystrix.core/defcommand macro is a helper for defining this map and storing it
   in a var. For example, here's a definition for an addition command:
@@ -138,7 +148,8 @@
           (fn [_ setter]
             (.andCollapserPropertiesDefaults setter ...))
 
-      This is your escape hatch into raw Hystrix.
+      This is your escape hatch into raw Hystrix. Please see additional notes about :init-fn
+      above. They apply to collapsers as well.
 
   The com.netflix.hystric.core/defcollapser macro is a helper for defining this map and storing it
   in a callable var.
@@ -178,10 +189,49 @@
          :else
            (throw (IllegalArgumentException. (str "Don't know how to make " ~class " from " key-name#)))))))
 
-(def command-key     (key-fn com.netflix.hystrix.HystrixCommandKey))
-(def group-key       (key-fn com.netflix.hystrix.HystrixCommandGroupKey))
-(def thread-pool-key (key-fn com.netflix.hystrix.HystrixThreadPoolKey))
-(def collapser-key   (key-fn com.netflix.hystrix.HystrixCollapserKey))
+(def command-key
+  "Given a string or keyword, returns a HystrixCommandKey. nil and HystrixCommandKey instances
+  are returned unchanged.
+
+  This function is rarely needed since most hystrix-clj functions will do this automatically.
+
+  See:
+    com.netflix.hystrix.HystrixCommandKey
+  "
+  (key-fn com.netflix.hystrix.HystrixCommandKey))
+
+(def group-key
+  "Given a string or keyword, returns a HystrixCommandGroupKey. nil and HystrixCommandGroupKey
+  instances are returned unchanged.
+
+  This function is rarely needed since most hystrix-clj functions will do this automatically.
+
+  See:
+    com.netflix.hystrix.HystrixCommandGroupKey
+  "
+  (key-fn com.netflix.hystrix.HystrixCommandGroupKey))
+
+(def thread-pool-key
+  "Given a string or keyword, returns a HystrixThreadPoolGroupKey. nil and HystrixThreadPoolKey
+  instances are returned unchanged.
+
+  This function is rarely needed since most hystrix-clj functions will do this automatically.
+
+  See:
+    com.netflix.hystrix.HystrixThreadPoolKey
+  "
+  (key-fn com.netflix.hystrix.HystrixThreadPoolKey))
+
+(def collapser-key
+  "Given a string or keyword, returns a HystrixCollapserKey. nil and HystrixCollapserKey
+  instances are returned unchanged.
+
+  This function is rarely needed since most hystrix-clj functions will do this automatically.
+
+  See:
+    com.netflix.hystrix.HystrixCollapserKey
+  "
+  (key-fn com.netflix.hystrix.HystrixCollapserKey))
 
 (defn ^HystrixCollapser$Scope collapser-scope
   [v]
@@ -228,7 +278,19 @@
 ;################################################################################
 
 (defmacro with-request-context
-  "Executes body within a new Hystrix Context"
+  "Executes body within a new Hystrix Context.
+
+  Initializes a new HystrixRequestContext, executes the code and then shuts down the
+  context. Evaluates to the result of body.
+
+  Example:
+
+    (with-request-context
+      (... some code that uses Hystrix ...))
+
+  See:
+    com.netflix.hystrix.strategy.concurrency.HystrixRequestContext
+  "
   [& body]
   `(let [context# (HystrixRequestContext/initializeContext)]
      (try
@@ -240,8 +302,7 @@
   "Helper function that takes a definition map for a HystrixCommand and returns a normalized
   version ready for use with execute and queue.
 
-  See ns documentation for valid keys.
-
+  See com.netflix.hystrix.core ns documentation for valid keys.
 
   See:
     com.netflix.hystrix.core/defcommand
@@ -285,6 +346,8 @@
   The *var* defined by this macro can be passed to the execute and queue functions as if
   it were a HystrixCommand definition map. The complete definition map is stored under the
   :hystrix key in the var's metadata.
+
+  See com.netflix.hystrix.core ns documentation for valid keys.
 
   Example:
 
@@ -342,7 +405,7 @@
   "Helper function that takes a definition map for a HystrixCollapser and returns a normalized
   version ready for use with execute and queue.
 
-  See ns documentation for valid keys.
+  See com.netflix.hystrix.core ns documentation for valid keys.
 
   See:
     com.netflix.hystrix.core/defcollapser
@@ -369,6 +432,8 @@
   the :hystrix namespace, e.g. :scope becomes :hystrix/scope. Obviously,
   :hystrix/collapse-fn and :hystrix/map-fn are ignored since they're inferred from the body
   of the macro.
+
+  See com.netflix.hystrix.core ns documentation for valid keys.
 
   Example:
 
@@ -438,13 +503,18 @@
     * A normalized definition map for a command
     * A HystrixExecutable instance and no additional arguments
 
-  One typical use case for this function is to create a batch command in the :collapse-fn of a collapser.
+  One typical use case for this function is to create a batch command in the :collapse-fn of a collapser. Another is to get an actual HystrixCommand instance to get access to additional methods
+  it provides.
 
   See:
     com.neflix.hystrix.core/normalize
     com.neflix.hystrix.core/execute
     com.neflix.hystrix.core/queue
   "
+  {:arglists '[[defcommand-var & args]
+               [defcollapser-var & args]
+               [definition-map & args]
+               [HystrixExecutable] ]}
   [definition & args]
   (cond
     (var? definition)
