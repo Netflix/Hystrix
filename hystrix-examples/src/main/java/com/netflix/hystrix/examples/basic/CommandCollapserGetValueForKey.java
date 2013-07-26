@@ -98,15 +98,18 @@ public class CommandCollapserGetValueForKey extends HystrixCollapser<List<String
                 assertEquals("ValueForKey: 3", f3.get());
                 assertEquals("ValueForKey: 4", f4.get());
 
-                // assert that the batch command 'GetValueForKey' was in fact
-                // executed and that it executed only once
-                assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
-                HystrixCommand<?> command = HystrixRequestLog.getCurrentRequest().getExecutedCommands().toArray(new HystrixCommand<?>[1])[0];
-                // assert the command is the one we're expecting
-                assertEquals("GetValueForKey", command.getCommandKey().name());
-                // confirm that it was a COLLAPSED command execution
-                assertTrue(command.getExecutionEvents().contains(HystrixEventType.COLLAPSED));
-                assertTrue(command.getExecutionEvents().contains(HystrixEventType.SUCCESS));
+                // assert that the batch command 'GetValueForKey' was in fact executed and that it executed only 
+                // once or twice (due to non-determinism of scheduler since this example uses the real timer)
+                if (HystrixRequestLog.getCurrentRequest().getExecutedCommands().size() > 2) {
+                    fail("some of the commands should have been collapsed");
+                }
+                for (HystrixCommand<?> command : HystrixRequestLog.getCurrentRequest().getExecutedCommands()) {
+                    // assert the command is the one we're expecting
+                    assertEquals("GetValueForKey", command.getCommandKey().name());
+                    // confirm that it was a COLLAPSED command execution
+                    assertTrue(command.getExecutionEvents().contains(HystrixEventType.COLLAPSED));
+                    assertTrue(command.getExecutionEvents().contains(HystrixEventType.SUCCESS));
+                }
             } finally {
                 context.shutdown();
             }

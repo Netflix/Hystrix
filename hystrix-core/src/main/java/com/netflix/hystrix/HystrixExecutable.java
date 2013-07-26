@@ -17,6 +17,10 @@ package com.netflix.hystrix;
 
 import java.util.concurrent.Future;
 
+import rx.Observable;
+import rx.concurrency.Schedulers;
+
+import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
 import com.netflix.hystrix.exception.HystrixBadRequestException;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
 
@@ -55,5 +59,36 @@ public interface HystrixExecutable<R> {
      *             if the {@link HystrixCommand} instance considers request arguments to be invalid and needs to throw an error that does not represent a system failure
      */
     public Future<R> queue();
+
+    /**
+     * Used for asynchronous execution of command with a callback by subscribing to the {@link Observable}.
+     * <p>
+     * This eagerly starts execution of the command the same as {@link #queue()} and {@link #execute()}.
+     * A lazy {@link Observable} can be obtained from {@link HystrixCommand#toObservable()} or {@link HystrixCollapser#toObservable()}.
+     * <p>
+     * <b>Callback Scheduling</b>
+     * <p>
+     * <ul>
+     * <li>When using {@link ExecutionIsolationStrategy#THREAD} this defaults to using {@link Schedulers#threadPoolForComputation()} for callbacks.</li>
+     * <li>When using {@link ExecutionIsolationStrategy#SEMAPHORE} this defaults to using {@link Schedulers#immediate()} for callbacks.</li>
+     * </ul>
+     * Use {@link HystrixCommand#toObservable(rx.Scheduler)} or {@link HystrixCollapser#toObservable(rx.Scheduler)} to schedule the callback differently.
+     * <p>
+     * See https://github.com/Netflix/RxJava/wiki for more information.
+     * 
+     * @return {@code Observable<R>} that executes and calls back with the result of {@link #run()} execution or a fallback from {@link #getFallback()} if the command fails for any reason.
+     * @throws HystrixRuntimeException
+     *             if a fallback does not exist
+     *             <p>
+     *             <ul>
+     *             <li>via {@code Observer#onError} if a failure occurs</li>
+     *             <li>or immediately if the command can not be queued (such as short-circuited, thread-pool/semaphore rejected)</li>
+     *             </ul>
+     * @throws HystrixBadRequestException
+     *             via {@code Observer#onError} if invalid arguments or state were used representing a user failure, not a system failure
+     * @throws IllegalStateException
+     *             if invoked more than once
+     */
+    public Observable<R> observe();
 
 }
