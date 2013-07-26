@@ -23,21 +23,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import javax.annotation.concurrent.NotThreadSafe;
-import javax.annotation.concurrent.ThreadSafe;
 
 import org.junit.After;
 import org.junit.Before;
@@ -45,18 +37,24 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import rx.Observable;
+import rx.Scheduler;
+import rx.concurrency.Schedulers;
+import rx.subjects.ReplaySubject;
+
 import com.netflix.hystrix.HystrixCommand.UnitTest.TestHystrixCommand;
+import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
+import com.netflix.hystrix.collapser.CollapserTimer;
+import com.netflix.hystrix.collapser.HystrixCollapserBridge;
+import com.netflix.hystrix.collapser.RealCollapserTimer;
+import com.netflix.hystrix.collapser.RequestCollapser;
+import com.netflix.hystrix.collapser.RequestCollapserFactory;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
 import com.netflix.hystrix.strategy.HystrixPlugins;
-import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
-import com.netflix.hystrix.strategy.concurrency.HystrixContextCallable;
 import com.netflix.hystrix.strategy.concurrency.HystrixContextRunnable;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestVariableHolder;
-import com.netflix.hystrix.strategy.concurrency.HystrixRequestVariableLifecycle;
-import com.netflix.hystrix.strategy.properties.HystrixPropertiesFactory;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
-import com.netflix.hystrix.util.HystrixTimer;
 import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 
 /**
@@ -80,7 +78,11 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
  */
 public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArgumentType> implements HystrixExecutable<ResponseType> {
 
-    private static final Logger logger = LoggerFactory.getLogger(HystrixCollapser.class);
+    static final Logger logger = LoggerFactory.getLogger(HystrixCollapser.class);
+
+    private final RequestCollapserFactory<BatchReturnType, ResponseType, RequestArgumentType> collapserFactory;
+    private final HystrixRequestCache requestCache;
+    private final HystrixCollapserBridge<BatchReturnType, ResponseType, RequestArgumentType> collapserInstanceWrapper;
 
     /**
      * The scope of request collapsing.
@@ -95,17 +97,6 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
     public static enum Scope {
         REQUEST, GLOBAL
     }
-
-    private final CollapserTimer timer;
-    private final HystrixCollapserKey collapserKey;
-    private final HystrixCollapserProperties properties;
-    private final Scope scope;
-    private final HystrixConcurrencyStrategy concurrencyStrategy;
-
-    /*
-     * Instance of RequestCache logic
-     */
-    private final HystrixRequestCache requestCache;
 
     /**
      * Collapser with default {@link HystrixCollapserKey} derived from the implementing class name and scoped to {@link Scope#REQUEST} and default configuration.
@@ -138,19 +129,51 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
     }
 
     private HystrixCollapser(HystrixCollapserKey collapserKey, Scope scope, CollapserTimer timer, HystrixCollapserProperties.Setter propertiesBuilder) {
-        /* strategy: ConcurrencyStrategy */
-        this.concurrencyStrategy = HystrixPlugins.getInstance().getConcurrencyStrategy();
-
-        this.timer = timer;
-        this.scope = scope;
         if (collapserKey == null || collapserKey.name().trim().equals("")) {
             String defaultKeyName = getDefaultNameFromClass(getClass());
-            this.collapserKey = HystrixCollapserKey.Factory.asKey(defaultKeyName);
-        } else {
-            this.collapserKey = collapserKey;
+            collapserKey = HystrixCollapserKey.Factory.asKey(defaultKeyName);
         }
-        this.requestCache = HystrixRequestCache.getInstance(this.collapserKey, this.concurrencyStrategy);
-        this.properties = HystrixPropertiesFactory.getCollapserProperties(this.collapserKey, propertiesBuilder);
+
+        this.collapserFactory = new RequestCollapserFactory<BatchReturnType, ResponseType, RequestArgumentType>(collapserKey, scope, timer, propertiesBuilder);
+        this.requestCache = HystrixRequestCache.getInstance(collapserKey, HystrixPlugins.getInstance().getConcurrencyStrategy());
+
+        final HystrixCollapser<BatchReturnType, ResponseType, RequestArgumentType> self = this;
+
+        /**
+         * Used to pass public method invocation to the underlying implementation in a separate package while leaving the methods 'protected' in this class.
+         */
+        collapserInstanceWrapper = new HystrixCollapserBridge<BatchReturnType, ResponseType, RequestArgumentType>() {
+
+            @Override
+            public Collection<Collection<CollapsedRequest<ResponseType, RequestArgumentType>>> shardRequests(Collection<CollapsedRequest<ResponseType, RequestArgumentType>> requests) {
+                return self.shardRequests(requests);
+            }
+
+            @Override
+            public Observable<BatchReturnType> createObservableCommand(Collection<CollapsedRequest<ResponseType, RequestArgumentType>> requests) {
+                HystrixCommand<BatchReturnType> command = self.createCommand(requests);
+
+                // mark the number of requests being collapsed together
+                command.markAsCollapsedCommand(requests.size());
+
+                return command.toObservable();
+            }
+
+            @Override
+            public void mapResponseToRequests(BatchReturnType batchResponse, Collection<CollapsedRequest<ResponseType, RequestArgumentType>> requests) {
+                self.mapResponseToRequests(batchResponse, requests);
+            }
+
+            @Override
+            public HystrixCollapserKey getCollapserKey() {
+                return self.getCollapserKey();
+            }
+
+        };
+    }
+
+    private HystrixCollapserProperties getProperties() {
+        return collapserFactory.getProperties();
     }
 
     /**
@@ -159,7 +182,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
      * @return {@link HystrixCollapserKey} identifying this {@link HystrixCollapser} instance
      */
     public HystrixCollapserKey getCollapserKey() {
-        return collapserKey;
+        return collapserFactory.getCollapserKey();
     }
 
     /**
@@ -178,7 +201,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
      * @return {@link Scope} that collapsing should be performed within.
      */
     public Scope getScope() {
-        return scope;
+        return collapserFactory.getScope();
     }
 
     /**
@@ -275,6 +298,103 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
     protected abstract void mapResponseToRequests(BatchReturnType batchResponse, Collection<CollapsedRequest<ResponseType, RequestArgumentType>> requests);
 
     /**
+     * Used for asynchronous execution with a callback by subscribing to the {@link Observable}.
+     * <p>
+     * This eagerly starts execution the same as {@link #queue()} and {@link #execute()}.
+     * A lazy {@link Observable} can be obtained from {@link #toObservable()}.
+     * <p>
+     * <b>Callback Scheduling</b>
+     * <p>
+     * <ul>
+     * <li>When using {@link ExecutionIsolationStrategy#THREAD} this defaults to using {@link Schedulers#threadPoolForComputation()} for callbacks.</li>
+     * <li>When using {@link ExecutionIsolationStrategy#SEMAPHORE} this defaults to using {@link Schedulers#immediate()} for callbacks.</li>
+     * </ul>
+     * Use {@link #toObservable(rx.Scheduler)} to schedule the callback differently.
+     * <p>
+     * See https://github.com/Netflix/RxJava/wiki for more information.
+     * 
+     * @return {@code Observable<R>} that executes and calls back with the result of of {@link HystrixCommand}{@code <BatchReturnType>} execution after passing through {@link #mapResponseToRequests}
+     *         to transform the {@code <BatchReturnType>} into {@code <ResponseType>}
+     */
+    public Observable<ResponseType> observe() {
+        // us a ReplaySubject to buffer the eagerly subscribed-to Observable
+        ReplaySubject<ResponseType> subject = ReplaySubject.create();
+        // eagerly kick off subscription
+        toObservable().subscribe(subject);
+        // return the subject that can be subscribed to later while the execution has already started
+        return subject;
+    }
+
+    /**
+     * A lazy {@link Observable} that will execute when subscribed to.
+     * <p>
+     * <b>Callback Scheduling</b>
+     * <p>
+     * <ul>
+     * <li>When using {@link ExecutionIsolationStrategy#THREAD} this defaults to using {@link Schedulers#threadPoolForComputation()} for callbacks.</li>
+     * <li>When using {@link ExecutionIsolationStrategy#SEMAPHORE} this defaults to using {@link Schedulers#immediate()} for callbacks.</li>
+     * </ul>
+     * <p>
+     * See https://github.com/Netflix/RxJava/wiki for more information.
+     * 
+     * @return {@code Observable<R>} that lazily executes and calls back with the result of of {@link HystrixCommand}{@code <BatchReturnType>} execution after passing through
+     *         {@link #mapResponseToRequests} to transform the {@code <BatchReturnType>} into {@code <ResponseType>}
+     */
+    public Observable<ResponseType> toObservable() {
+        // when we callback with the data we want to do the work
+        // on a separate thread than the one giving us the callback
+        return toObservable(Schedulers.threadPoolForComputation());
+    }
+
+    /**
+     * A lazy {@link Observable} that will execute when subscribed to.
+     * <p>
+     * See https://github.com/Netflix/RxJava/wiki for more information.
+     * 
+     * @param observeOn
+     *            The {@link Scheduler} to execute callbacks on.
+     * @return {@code Observable<R>} that lazily executes and calls back with the result of of {@link HystrixCommand}{@code <BatchReturnType>} execution after passing through
+     *         {@link #mapResponseToRequests} to transform the {@code <BatchReturnType>} into {@code <ResponseType>}
+     */
+    public Observable<ResponseType> toObservable(Scheduler observeOn) {
+
+        /* try from cache first */
+        if (getProperties().requestCachingEnabled().get()) {
+            Observable<ResponseType> fromCache = requestCache.get(getCacheKey());
+            if (fromCache != null) {
+                /* mark that we received this response from cache */
+                // TODO Add collapser metrics so we can capture this information
+                // we can't add it to the command metrics because the command can change each time (dynamic key for example)
+                // and we don't have access to it when responding from cache
+                // collapserMetrics.markResponseFromCache();
+                return fromCache;
+            }
+        }
+
+        RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType> requestCollapser = collapserFactory.getRequestCollapser(collapserInstanceWrapper);
+        Observable<ResponseType> response = requestCollapser.submitRequest(getRequestArgument());
+        if (getProperties().requestCachingEnabled().get()) {
+            /*
+             * A race can occur here with multiple threads queuing but only one will be cached.
+             * This means we can have some duplication of requests in a thread-race but we're okay
+             * with having some inefficiency in duplicate requests in the same batch
+             * and then subsequent requests will retrieve a previously cached Observable.
+             * 
+             * If this is an issue we can make a lazy-future that gets set in the cache
+             * then only the winning 'put' will be invoked to actually call 'submitRequest'
+             */
+            Observable<ResponseType> o = response.cache();
+            Observable<ResponseType> fromCache = requestCache.putIfAbsent(getCacheKey(), o);
+            if (fromCache == null) {
+                response = o;
+            } else {
+                response = fromCache;
+            }
+        }
+        return response;
+    }
+
+    /**
      * Used for synchronous execution.
      * <p>
      * If {@link Scope#REQUEST} is being used then synchronous execution will only result in collapsing if other threads are running within the same scope.
@@ -299,6 +419,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
             // we don't know what kind of exception this is so create a generic message and throw a new HystrixRuntimeException
             String message = getClass().getSimpleName() + " HystrixCollapser failed while executing.";
             logger.debug(message, e); // debug only since we're throwing the exception and someone higher will do something with it
+            //TODO should this be made a HystrixRuntimeException?
             throw new RuntimeException(message, e);
         }
     }
@@ -315,577 +436,53 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
      *             within an <code>ExecutionException.getCause()</code> (thrown by {@link Future#get}) if an error occurs and a fallback cannot be retrieved
      */
     public Future<ResponseType> queue() {
-        RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType> collapser = null;
-
-        if (Scope.REQUEST == getScope()) {
-            collapser = getCollapserForUserRequest();
-        } else if (Scope.GLOBAL == getScope()) {
-            collapser = getCollapserForGlobalScope();
-        } else {
-            logger.warn("Invalid Scope: " + getScope() + "  Defaulting to REQUEST scope.");
-            collapser = getCollapserForUserRequest();
-        }
-        /* try from cache first */
-        if (properties.requestCachingEnabled().get()) {
-            Future<ResponseType> fromCache = requestCache.get(getCacheKey());
-            if (fromCache != null) {
-                /* mark that we received this response from cache */
-                // TODO Add collapser metrics so we can capture this information
-                // we can't add it to the command metrics because the command can change each time (dynamic key for example)
-                // and we don't have access to it when responding from cache
-                // collapserMetrics.markResponseFromCache();
-                return fromCache;
-            }
-        }
-        Future<ResponseType> response = collapser.submitRequest(getRequestArgument());
-        if (properties.requestCachingEnabled().get()) {
-            /*
-             * A race can occur here with multiple threads queuing but only one will be cached.
-             * This means we can have some duplication of requests in a thread-race but we're okay
-             * with having some inefficiency in duplicate requests in the same batch
-             * and then subsequent requests will retrieve a previously cached Future.
-             * 
-             * If this is an issue we can make a lazy-future that gets set in the cache
-             * then only the winning 'put' will be invoked to actually call 'submitRequest'
-             */
-            requestCache.putIfAbsent(getCacheKey(), response);
-        }
-        return response;
+        final Observable<ResponseType> o = toObservable();
+        return o.toBlockingObservable().toFuture();
     }
 
     /**
-     * Static global cache of RequestCollapsers for Scope.GLOBAL
-     */
-    // String is CollapserKey.name() (we can't use CollapserKey directly as we can't guarantee it implements hashcode/equals correctly)
-    private static ConcurrentHashMap<String, RequestCollapser<?, ?, ?>> globalScopedCollapsers = new ConcurrentHashMap<String, RequestCollapser<?, ?, ?>>();
-
-    @SuppressWarnings("unchecked")
-    private RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType> getCollapserForGlobalScope() {
-        RequestCollapser<?, ?, ?> collapser = globalScopedCollapsers.get(getCollapserKey().name());
-        if (collapser != null) {
-            return (RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType>) collapser;
-        }
-        // create new collapser using 'this' first instance as the one that will get cached for future executions ('this' is stateless so we can do that)
-        RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType> newCollapser = new RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType>(this, timer, concurrencyStrategy);
-        RequestCollapser<?, ?, ?> existing = globalScopedCollapsers.putIfAbsent(getCollapserKey().name(), newCollapser);
-        if (existing == null) {
-            // we won
-            return newCollapser;
-        } else {
-            // we lost ... another thread beat us
-            // shutdown the one we created but didn't get stored
-            newCollapser.shutdown();
-            // return the existing one
-            return (RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType>) existing;
-        }
-    }
-
-    /**
-     * Static global cache of RequestVariables with RequestCollapsers for Scope.REQUEST
-     */
-    // String is HystrixCollapserKey.name() (we can't use HystrixCollapserKey directly as we can't guarantee it implements hashcode/equals correctly)
-    private static ConcurrentHashMap<String, HystrixRequestVariableHolder<RequestCollapser<?, ?, ?>>> requestScopedCollapsers = new ConcurrentHashMap<String, HystrixRequestVariableHolder<RequestCollapser<?, ?, ?>>>();
-
-    /* we are casting because the Map needs to be <?, ?> but we know it is <ReturnType, RequestArgumentType> for this thread */
-    @SuppressWarnings("unchecked")
-    private RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType> getCollapserForUserRequest() {
-        return (RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType>) getRequestVariableForCommand(getCollapserKey()).get(concurrencyStrategy);
-    }
-
-    /**
-     * Lookup (or create and store) the RequestVariable for a given HystrixCollapserKey.
-     * 
-     * @param key
-     * @return HystrixRequestVariableHolder
-     */
-    @SuppressWarnings("unchecked")
-    private HystrixRequestVariableHolder<RequestCollapser<?, ?, ?>> getRequestVariableForCommand(final HystrixCollapserKey key) {
-        HystrixRequestVariableHolder<RequestCollapser<?, ?, ?>> requestVariable = requestScopedCollapsers.get(key.name());
-        if (requestVariable == null) {
-            // create new collapser using 'this' first instance as the one that will get cached for future executions ('this' is stateless so we can do that)
-            @SuppressWarnings({ "rawtypes" })
-            RequestCollapserRequestVariable newCollapser = new RequestCollapserRequestVariable(this, timer, concurrencyStrategy);
-            HystrixRequestVariableHolder<RequestCollapser<?, ?, ?>> existing = requestScopedCollapsers.putIfAbsent(key.name(), newCollapser);
-            if (existing == null) {
-                // this thread won, so return the one we just created
-                requestVariable = newCollapser;
-            } else {
-                // another thread beat us (this should only happen when we have concurrency on the FIRST request for the life of the app for this HystrixCollapser class)
-                requestVariable = existing;
-                /*
-                 * This *should* be okay to discard the created object without cleanup as the RequestVariable implementation
-                 * should properly do lazy-initialization and only call initialValue() the first time get() is called.
-                 * 
-                 * If it does not correctly follow this contract then there is a chance of a memory leak here.
-                 */
-            }
-        }
-        return requestVariable;
-    }
-
-    /**
-     * Request scoped RequestCollapser that lives inside a RequestVariable.
+     * Key to be used for request caching.
      * <p>
-     * This depends on the RequestVariable getting reset before each user request in NFFilter to ensure the RequestCollapser is new for each user request.
+     * By default this returns null which means "do not cache".
+     * <p>
+     * To enable caching override this method and return a string key uniquely representing the state of a command instance.
+     * <p>
+     * If multiple command instances in the same request scope match keys then only the first will be executed and all others returned from cache.
+     * 
+     * @return String cacheKey or null if not to cache
      */
-    private static final class RequestCollapserRequestVariable<BatchReturnType, ResponseType, RequestArgumentType> extends HystrixRequestVariableHolder<RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType>> {
-
-        /**
-         * NOTE: There is only 1 instance of this for the life of the app per HystrixCollapser instance. The state changes on each request via the initialValue()/get() methods.
-         * <p>
-         * Thus, do NOT put any instance variables in this class that are not static for all threads.
-         */
-
-        private RequestCollapserRequestVariable(final HystrixCollapser<BatchReturnType, ResponseType, RequestArgumentType> commandCollapser, final CollapserTimer timer, final HystrixConcurrencyStrategy concurrencyStrategy) {
-            super(new HystrixRequestVariableLifecycle<RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType>>() {
-                @Override
-                public RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType> initialValue() {
-                    // this gets calls once per request per HystrixCollapser instance
-                    return new RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType>(commandCollapser, timer, concurrencyStrategy);
-                }
-
-                @Override
-                public void shutdown(RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType> currentCollapser) {
-                    // shut down the RequestCollapser (the internal timer tasks)
-                    if (currentCollapser != null) {
-                        currentCollapser.shutdown();
-                    }
-                }
-            });
-        }
-
-    }
-
-    private static class RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> {
-        private final long creationTime = System.currentTimeMillis();
-        private final HystrixCollapser<BatchReturnType, ResponseType, RequestArgumentType> commandCollapser;
-        private final ConcurrentLinkedQueue<CollapsedRequest<ResponseType, RequestArgumentType>> requests = new ConcurrentLinkedQueue<CollapsedRequest<ResponseType, RequestArgumentType>>();
-        // use AtomicInteger to count so we can use ConcurrentLinkedQueue instead of LinkedBlockingQueue
-        private final AtomicInteger count = new AtomicInteger(0);
-        private final HystrixCollapserProperties properties;
-        private final int maxBatchSize;
-        private final CountDownLatch batchCompleted = new CountDownLatch(1);
-        private final AtomicBoolean batchStarted = new AtomicBoolean();
-
-        private ReentrantReadWriteLock batchLock = new ReentrantReadWriteLock();
-
-        private volatile BatchFutureWrapper<BatchReturnType, ResponseType, RequestArgumentType> batchFuture;
-
-        public RequestBatch(HystrixCollapserProperties properties, HystrixCollapser<BatchReturnType, ResponseType, RequestArgumentType> commandCollapser, int maxBatchSize) {
-            this.properties = properties;
-            this.commandCollapser = commandCollapser;
-            this.maxBatchSize = maxBatchSize;
-        }
-
-        /**
-         * @return Future if offer accepted, null if batch is full, already started or completed
-         */
-        public Future<ResponseType> offer(RequestArgumentType arg) {
-            /* if the batch is started we reject the offer */
-            if (batchStarted.get()) {
-                return null;
-            }
-
-            /*
-             * The 'read' just means non-exclusive even though we are writing.
-             */
-            if (batchLock.readLock().tryLock()) {
-                try {
-                    int s = count.incrementAndGet();
-                    if (s > maxBatchSize) {
-                        return null;
-                    } else {
-                        CollapsedRequestFutureImpl<ResponseType, RequestArgumentType> f = new CollapsedRequestFutureImpl<ResponseType, RequestArgumentType>(this, arg);
-                        requests.add(f);
-                        return f;
-                    }
-                } finally {
-                    batchLock.readLock().unlock();
-                }
-            } else {
-                return null;
-            }
-        }
-
-        /**
-         * Collapsed requests are triggered for batch execution and the array of arguments is passed in.
-         * <p>
-         * IMPORTANT IMPLEMENTATION DETAILS => The expected contract (responsibilities) of this method implementation is:
-         * <p>
-         * <ul>
-         * <li>Do NOT block => Do the work on a separate worker thread. Do not perform inline otherwise it will block other requests.</li>
-         * <li>Set ALL CollapsedRequest response values => Set the response values T on each CollapsedRequest<T, R>, even if the response is NULL otherwise the user thread waiting on the response will
-         * think a response was never received and will either block indefinitely or will timeout while waiting.</li>
-         * </ul>
-         * 
-         * @param args
-         */
-        public void executeBatchIfNotAlreadyStarted() {
-            /*
-             * - check that we only execute once since there's multiple paths to do so (timer, waiting thread or max batch size hit)
-             * - close the gate so 'offer' can no longer be invoked and we turn those threads away so they create a new batch
-             */
-            if (batchStarted.compareAndSet(false, true)) {
-                /* wait for 'offer' threads to finish before executing the batch so 'requests' is complete */
-                batchLock.writeLock().lock();
-                try {
-                    // shard batches
-                    Collection<Collection<CollapsedRequest<ResponseType, RequestArgumentType>>> shards = commandCollapser.shardRequests(requests);
-                    if (shards.size() == 1) {
-                        // not sharded so we'll get the single BatchFutureWrapper and assign it to this batch
-                        for (Collection<CollapsedRequest<ResponseType, RequestArgumentType>> shardRequests : shards) {
-                            try {
-                                // create a new command to handle this batch of requests
-                                HystrixCommand<BatchReturnType> command = commandCollapser.createCommand(shardRequests);
-
-                                // mark the number of requests being collapsed together
-                                command.markAsCollapsedCommand(shardRequests.size());
-
-                                // set the future on all requests so they can wait on this command completing or correctly receive errors if it fails or times out
-                                batchFuture = new NonShardedBatchFutureWrapper<BatchReturnType, ResponseType, RequestArgumentType>(command.queue(), commandCollapser, shardRequests);
-                            } catch (Exception e) {
-                                logger.error("Exception while creating and queueing command with batch.", e);
-                                // if a failure occurs we want to pass that exception to all of the Futures that we've returned
-                                for (CollapsedRequest<ResponseType, RequestArgumentType> request : shardRequests) {
-                                    try {
-                                        request.setException(e);
-                                    } catch (IllegalStateException e2) {
-                                        logger.debug("Failed trying to setException on CollapsedRequest", e2);
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        // sharded
-                        List<BatchFutureWrapper<BatchReturnType, ResponseType, RequestArgumentType>> futurePerShard = new ArrayList<BatchFutureWrapper<BatchReturnType, ResponseType, RequestArgumentType>>();
-                        // for each shard (1 or more) create a command, queue it and connect the Futures
-                        for (Collection<CollapsedRequest<ResponseType, RequestArgumentType>> shardRequests : shards) {
-                            try {
-                                // create a new command to handle this batch of requests
-                                HystrixCommand<BatchReturnType> command = commandCollapser.createCommand(shardRequests);
-
-                                // mark the number of requests being collapsed together
-                                command.markAsCollapsedCommand(shardRequests.size());
-
-                                // set the future on all requests so they can wait on this command completing or correctly receive errors if it fails or times out
-                                futurePerShard.add(new NonShardedBatchFutureWrapper<BatchReturnType, ResponseType, RequestArgumentType>(command.queue(), commandCollapser, shardRequests));
-                            } catch (Exception e) {
-                                logger.error("Exception while creating and queueing command with batch.", e);
-                                // if a failure occurs we want to pass that exception to all of the Futures that we've returned
-                                for (CollapsedRequest<ResponseType, RequestArgumentType> request : shardRequests) {
-                                    try {
-                                        request.setException(e);
-                                    } catch (IllegalStateException e2) {
-                                        logger.debug("Failed trying to setException on CollapsedRequest", e2);
-                                    }
-                                }
-                            }
-                        }
-                        // wrap the list of shards in a single reference for the entire batch
-                        batchFuture = new ShardedBatchFutureWrapper<BatchReturnType, ResponseType, RequestArgumentType>(futurePerShard);
-                    }
-
-                } catch (Exception e) {
-                    logger.error("Exception while sharding requests.", e);
-                    // same error handling as we do around the shards, but this is a wider net in case the shardRequest method fails
-                    for (CollapsedRequest<ResponseType, RequestArgumentType> request : requests) {
-                        try {
-                            request.setException(e);
-                        } catch (IllegalStateException e2) {
-                            logger.debug("Failed trying to setException on CollapsedRequest", e2);
-                        }
-                    }
-                } finally {
-                    batchLock.writeLock().unlock();
-                    batchCompleted.countDown();
-                }
-            }
-        }
-
-        public void awaitBatchCompletion(CollapsedRequest<ResponseType, RequestArgumentType> request) throws InterruptedException, ExecutionException {
-            if (batchCompleted.getCount() > 0) {
-                if (!batchStarted.get()) {
-                    // batch is not started, so so if enough time has passed to do it before the Timer thread gets to it
-                    long timeSinceCreation = System.currentTimeMillis() - creationTime;
-                    // if we've passed the time
-                    if (timeSinceCreation >= properties.timerDelayInMilliseconds().get()) {
-                        // try to executeBatch (only one thread will win this)
-                        executeBatchIfNotAlreadyStarted();
-                    } else {
-                        // wait for batch to execute
-                        if (!batchCompleted.await(properties.timerDelayInMilliseconds().get() - timeSinceCreation, TimeUnit.MILLISECONDS)) {
-                            // timed-out before timer triggered so try to executeBatch (only one thread will win this)
-                            executeBatchIfNotAlreadyStarted();
-                        }
-                    }
-                }
-
-                // catch any threads not working above for the work to complete
-                batchCompleted.await();
-            }
-
-            // Wait on Future completing and performing the mapResponse work. 
-            // Passing in timeout values here are ignored since it goes to the underlying HystrixCommand
-            // The possible vulnerability would be mapResponseToRequests being bad code and being latent.
-            if (batchFuture != null) {
-                // it can be null if an error occurred executing the batch
-                batchFuture.awaitAndThenMapResponsesToRequests(request);
-            }
-        }
-
+    protected String getCacheKey() {
+        return null;
     }
 
     /**
-     * Must be thread-safe since it exists within a ThreadVariable which is request-scoped and can be accessed from multiple threads.
+     * Clears all state. If new requests come in instances will be recreated and metrics started from scratch.
      */
-    @ThreadSafe
-    private static class RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType> {
-
-        private final HystrixCollapser<BatchReturnType, ResponseType, RequestArgumentType> commandCollapser;
-        private final AtomicReference<RequestBatch<BatchReturnType, ResponseType, RequestArgumentType>> batch = new AtomicReference<RequestBatch<BatchReturnType, ResponseType, RequestArgumentType>>();
-        private final AtomicReference<Reference<TimerListener>> timerListenerReference = new AtomicReference<Reference<TimerListener>>();
-        private final AtomicBoolean timerListenerRegistered = new AtomicBoolean();
-        private final CollapserTimer timer;
-        private final HystrixCollapserProperties properties;
-        private final HystrixConcurrencyStrategy concurrencyStrategy;
-
-        /**
-         * @param maxRequestsInBatch
-         *            Maximum number of requests to include in a batch. If request count hits this threshold it will result in batch executions earlier than the scheduled delay interval.
-         * @param timerDelayInMilliseconds
-         *            Interval between batch executions.
-         * @param commandCollapser
-         */
-        public RequestCollapser(HystrixCollapser<BatchReturnType, ResponseType, RequestArgumentType> commandCollapser, CollapserTimer timer, HystrixConcurrencyStrategy concurrencyStrategy) {
-            this.commandCollapser = commandCollapser; // the command with implementation of abstract methods we need 
-            this.concurrencyStrategy = concurrencyStrategy;
-            this.properties = commandCollapser.properties;
-            this.timer = timer;
-            batch.set(new RequestBatch<BatchReturnType, ResponseType, RequestArgumentType>(properties, commandCollapser, properties.maxRequestsInBatch().get()));
-        }
-
-        /**
-         * Submit a request to a batch. If the batch maxSize is hit trigger the batch immediately.
-         * 
-         * @param arg
-         * @return
-         */
-        public Future<ResponseType> submitRequest(RequestArgumentType arg) {
-            /*
-             * We only want the timer ticking if there are actually things to do so we register it the first time something is added.
-             */
-            if (!timerListenerRegistered.get() && timerListenerRegistered.compareAndSet(false, true)) {
-                /* schedule the collapsing task to be executed every x milliseconds (x defined inside CollapsedTask) */
-                timerListenerReference.set(timer.addListener(new CollapsedTask()));
-            }
-
-            // loop until succeed (compare-and-set spin-loop)
-            while (true) {
-                RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> b = batch.get();
-                Future<ResponseType> f = b.offer(arg);
-                // it will always get a Future unless we hit the max batch size
-                if (f != null) {
-                    return f;
-                } else {
-                    // we hit max batch size so create a new batch and set it if another thread doesn't beat us
-                    executeBatchAndCreateNew(b);
-                }
-            }
-        }
-
-        private void executeBatchAndCreateNew(RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> b) {
-            if (batch.compareAndSet(b, new RequestBatch<BatchReturnType, ResponseType, RequestArgumentType>(properties, commandCollapser, properties.maxRequestsInBatch().get()))) {
-                // this thread won so trigger the previous batch
-                b.executeBatchIfNotAlreadyStarted();
-            }
-        }
-
-        /**
-         * Called from RequestVariable.shutdown() to unschedule the task.
-         */
-        public void shutdown() {
-            Collection<CollapsedRequest<ResponseType, RequestArgumentType>> requests = batch.get().requests;
-            if (requests.size() > 0) {
-                logger.warn("Requests still exist in queue but will not be executed due to RequestCollapser shutdown: " + requests.size(), new IllegalStateException());
-                /*
-                 * In the event that there is a concurrency bug or thread scheduling prevents the timer from ticking we need to handle this so the Future.get() calls do not block.
-                 * 
-                 * I haven't been able to reproduce this use case on-demand but when stressing a machine saw this occur briefly right after the JVM paused (logs stopped scrolling).
-                 * 
-                 * This safety-net just prevents the CollapsedRequestFutureImpl.get() from waiting on the CountDownLatch until its max timeout.
-                 */
-                for (CollapsedRequest<ResponseType, RequestArgumentType> request : requests) {
-                    try {
-                        request.setException(new IllegalStateException("Requests not executed before shutdown."));
-                    } catch (Exception e) {
-                        logger.debug("Failed to setException on CollapsedRequestFutureImpl instances.", e);
-                    }
-                    /**
-                     * https://github.com/Netflix/Hystrix/issues/78 Include more info when collapsed requests remain in queue
-                     */
-                    logger.warn("Request still in queue but not be executed due to RequestCollapser shutdown. Argument => " + request.getArgument() + "   Request Object => " + request, new IllegalStateException());
-                }
-
-            }
-            if (timerListenerReference.get() != null) {
-                // if the timer was started we'll clear it
-                timerListenerReference.get().clear();
-            }
-        }
-
-        /**
-         * Executed on each Timer interval to drain the queue and execute the batch command.
-         */
-        private class CollapsedTask implements TimerListener {
-            final Callable<Void> callableWithContextOfParent;
-
-            CollapsedTask() {
-                // this gets executed from the context of a HystrixCommand parent thread (such as a Tomcat thread)
-                // so we create the callable now where we can capture the thread context
-                callableWithContextOfParent = concurrencyStrategy.wrapCallable(new HystrixContextCallable<Void>(new Callable<Void>() {
-                    // the wrapCallable call allows a strategy to capture thread-context if desired
-
-                    @Override
-                    public Void call() throws Exception {
-                        try {
-                            // do execution within context of wrapped Callable
-                            executeBatchAndCreateNew(batch.get());
-                        } catch (Throwable t) {
-                            logger.error("Error occurred trying to executeRequestsFromQueue.", t);
-                            // ignore error so we don't kill the Timer mainLoop and prevent further items from being scheduled
-                            // http://jira.netflix.com/browse/API-5042 HystrixCommand: Collapser TimerThread Vulnerable to Shutdown
-                        }
-                        return null;
-                    }
-
-                }));
-            }
-
-            @Override
-            public void tick() {
-
-                // don't bother if we don't have any requests queued up
-                if (batch.get().requests.size() > 0) {
-                    // this gets executed from the context of the CollapserTimer thread
-                    try {
-                        callableWithContextOfParent.call();
-                    } catch (Exception e) {
-                        logger.error("Error occurred trying to execute callable inside CollapsedTask from Timer.", e);
-                        e.printStackTrace();
-                    }
-                }
-            }
-
-            @Override
-            public int getIntervalTimeInMilliseconds() {
-                return properties.timerDelayInMilliseconds().get();
-            }
-
-        }
-
+    /* package */static void reset() {
+        RequestCollapserFactory.reset();
     }
 
-    private static interface BatchFutureWrapper<BatchReturnType, ResponseType, RequestArgumentType> {
-        public void awaitAndThenMapResponsesToRequests(CollapsedRequest<ResponseType, RequestArgumentType> collapsedRequest) throws InterruptedException;
-    }
-
-    private static class NonShardedBatchFutureWrapper<BatchReturnType, ResponseType, RequestArgumentType> implements BatchFutureWrapper<BatchReturnType, ResponseType, RequestArgumentType> {
-        private final Future<BatchReturnType> actualFuture;
-        private final HystrixCollapser<BatchReturnType, ResponseType, RequestArgumentType> command;
-        private final Collection<CollapsedRequest<ResponseType, RequestArgumentType>> requests;
-        private final CountDownLatch isCompleted = new CountDownLatch(1);
-        private AtomicBoolean mapResponseWork = new AtomicBoolean(false);
-
-        private NonShardedBatchFutureWrapper(Future<BatchReturnType> actualFuture, HystrixCollapser<BatchReturnType, ResponseType, RequestArgumentType> command, Collection<CollapsedRequest<ResponseType, RequestArgumentType>> requests) {
-            this.actualFuture = actualFuture;
-            this.command = command;
-            this.requests = requests;
+    private static String getDefaultNameFromClass(@SuppressWarnings("rawtypes") Class<? extends HystrixCollapser> cls) {
+        String fromCache = defaultNameCache.get(cls);
+        if (fromCache != null) {
+            return fromCache;
         }
-
-        public void awaitAndThenMapResponsesToRequests(CollapsedRequest<ResponseType, RequestArgumentType> collapsedRequest) throws InterruptedException {
-            /* only one thread should do this and all the rest will proceed to actualFuture.get() */
-            if (mapResponseWork.compareAndSet(false, true)) {
-                try {
-                    try {
-                        /* we only want one thread to execute the above code */
-                        command.mapResponseToRequests(actualFuture.get(), requests);
-                    } catch (Exception e) {
-                        logger.error("Exception mapping responses to requests.", e);
-                        // if a failure occurs we want to pass that exception to all of the Futures that we've returned
-                        for (CollapsedRequest<ResponseType, RequestArgumentType> request : requests) {
-                            try {
-                                if (((CollapsedRequestFutureImpl<ResponseType, RequestArgumentType>) request).responseReference.get() == null) {
-                                    request.setException(e);
-                                }
-                            } catch (IllegalStateException e2) {
-                                // if we have partial responses set in mapResponseToRequests
-                                // then we may get IllegalStateException as we loop over them
-                                // so we'll log but continue to the rest
-                                logger.error("Partial success of 'mapResponseToRequests' resulted in IllegalStateException while setting Exception. Continuing ... ", e2);
-                            }
-                        }
-                    }
-
-                    // check that all requests had setResponse or setException invoked in case 'mapResponseToRequests' was implemented poorly
-                    for (CollapsedRequest<ResponseType, RequestArgumentType> request : requests) {
-                        try {
-                            if (((CollapsedRequestFutureImpl<ResponseType, RequestArgumentType>) request).responseReference.get() == null) {
-                                request.setException(new IllegalStateException("No response set by " + command.getCollapserKey().name() + " 'mapResponseToRequests' implementation."));
-                            }
-                        } catch (IllegalStateException e2) {
-                            logger.debug("Partial success of 'mapResponseToRequests' resulted in IllegalStateException while setting 'No response set' Exception. Continuing ... ", e2);
-                        }
-                    }
-                } finally {
-                    // release all threads waiting on mapResponseToRequests being done
-                    isCompleted.countDown();
-                }
-            }
-
-            // all other threads will wait until the block above is completed
-            isCompleted.await();
+        // generate the default
+        // default HystrixCommandKey to use if the method is not overridden
+        String name = cls.getSimpleName();
+        if (name.equals("")) {
+            // we don't have a SimpleName (anonymous inner class) so use the full class name
+            name = cls.getName();
+            name = name.substring(name.lastIndexOf('.') + 1, name.length());
         }
-
-    }
-
-    private static class ShardedBatchFutureWrapper<BatchReturnType, ResponseType, RequestArgumentType> implements BatchFutureWrapper<BatchReturnType, ResponseType, RequestArgumentType> {
-        private final List<BatchFutureWrapper<BatchReturnType, ResponseType, RequestArgumentType>> shards;
-
-        public ShardedBatchFutureWrapper(List<BatchFutureWrapper<BatchReturnType, ResponseType, RequestArgumentType>> shards) {
-            this.shards = shards;
-        }
-
-        @Override
-        public void awaitAndThenMapResponsesToRequests(CollapsedRequest<ResponseType, RequestArgumentType> collapsedRequest) throws InterruptedException {
-            // TODO have a map of collapsedRequest to shard so it only blocks on it, not all
-            for (BatchFutureWrapper<BatchReturnType, ResponseType, RequestArgumentType> shard : shards) {
-                shard.awaitAndThenMapResponsesToRequests(collapsedRequest);
-            }
-        }
-
-    }
-
-    private static interface CollapserTimer {
-
-        public Reference<TimerListener> addListener(TimerListener collapseTask);
-
-    }
-
-    private static class RealCollapserTimer implements CollapserTimer {
-        /* single global timer that all collapsers will schedule their tasks on */
-        private final static HystrixTimer timer = HystrixTimer.getInstance();
-
-        @Override
-        public Reference<TimerListener> addListener(TimerListener collapseTask) {
-            return timer.addTimerListener(collapseTask);
-        }
-
+        defaultNameCache.put(cls, name);
+        return name;
     }
 
     /**
      * A request argument RequestArgumentType that was collapsed for batch processing and needs a response ResponseType set on it by the <code>executeBatch</code> implementation.
      */
-    public static interface CollapsedRequest<ResponseType, RequestArgumentType> {
+    public interface CollapsedRequest<ResponseType, RequestArgumentType> {
         /**
          * The request argument passed into the {@link HystrixCollapser} instance constructor which was then collapsed.
          * 
@@ -911,215 +508,6 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
          *             if called more than once or after setResponse.
          */
         public void setException(Exception exception);
-    }
-
-    /*
-     * Private implementation class that combines the Future<T> and CollapsedRequest<T, R> functionality.
-     * <p>
-     * We expose these via interfaces only since we want clients to only see Future<T> and implementors to only see CollapsedRequest<T, R>, not the combination of the two.
-     * 
-     * @param <T>
-     * 
-     * @param <R>
-     */
-    private static class CollapsedRequestFutureImpl<T, R> implements CollapsedRequest<T, R>, Future<T> {
-        private final R argument;
-        private final AtomicReference<ResponseHolder<T>> responseReference = new AtomicReference<ResponseHolder<T>>();
-        private final RequestBatch<?, T, R> batch;
-
-        public CollapsedRequestFutureImpl(RequestBatch<?, T, R> batch, R arg) {
-            this.argument = arg;
-            this.batch = batch;
-        }
-
-        /**
-         * The request argument.
-         * 
-         * @return request argument
-         */
-        @Override
-        public R getArgument() {
-            return argument;
-        }
-
-        /**
-         * When set any client thread blocking on get() will immediately be unblocked and receive the response.
-         * 
-         * @throws IllegalStateException
-         *             if called more than once or after setException.
-         * @param response
-         */
-        @Override
-        public void setResponse(T response) {
-            /* only set it if null */
-            boolean didSet = responseReference.compareAndSet(null, new ResponseHolder<T>(response, null));
-            // if it was already set to an exception, then throw an IllegalStateException as the developer should not be trying to set both
-            if (!didSet || responseReference.get().getException() != null) {
-                throw new IllegalStateException("Response or Exception has already been set.");
-            }
-        }
-
-        /**
-         * When set any client thread blocking on get() will immediately be unblocked and receive the exception.
-         * 
-         * @throws IllegalStateException
-         *             if called more than once or after setResponse.
-         * @param response
-         */
-        @Override
-        public void setException(Exception e) {
-            /* only set it if null */
-            boolean didSet = responseReference.compareAndSet(null, new ResponseHolder<T>(null, e));
-            // if it was already set to a response, then throw an IllegalStateException as the developer should not be trying to set both
-            if (!didSet || responseReference.get().getResponse() != null) {
-                throw new IllegalStateException("Response or Exception has already been set.");
-            }
-        }
-
-        @Override
-        public boolean cancel(boolean mayInterruptIfRunning) {
-            throw new IllegalStateException("We don't support cancelling tasks submitted for batch execution.");
-        }
-
-        @Override
-        public boolean isCancelled() {
-            return false;
-        }
-
-        @Override
-        public boolean isDone() {
-            return responseReference.get() != null;
-        }
-
-        @Override
-        public T get() throws InterruptedException, ExecutionException {
-            return getValueFromBatch();
-        }
-
-        @Override
-        public T get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-            return getValueFromBatch();
-        }
-
-        public T getValueFromBatch() throws InterruptedException, ExecutionException {
-            try {
-                // wait for completion or throw exception
-                batch.awaitBatchCompletion(this);
-                if (responseReference.get() == null) {
-                    /*
-                     * https://github.com/Netflix/Hystrix/issues/80
-                     * This should never happen because mapResponseToRequests checks for NULLs and calls setException.
-                     * If this happens it means we have a concurrency bug somewhere
-                     */
-                    throw new ExecutionException("Null ResponseReference", new IllegalStateException("ResponseReference is NULL. Please file a bug at https://github.com/Netflix/Hystrix/issues"));
-                } else {
-                    // we got past here so let's return the response now
-                    if (responseReference.get().getException() != null) {
-                        throw new ExecutionException(responseReference.get().getException());
-                    }
-                    return responseReference.get().getResponse();
-                }
-            } catch (ExecutionException e) {
-                logger.error("ExecutionException on CollapsedRequest.get", e);
-                throw e;
-            }
-        }
-
-        /**
-         * Used for atomic compound updates.
-         */
-        private static class ResponseHolder<T> {
-            private final T response;
-            private final Exception e;
-
-            public ResponseHolder(T response, Exception e) {
-                this.response = response;
-                this.e = e;
-            }
-
-            public T getResponse() {
-                return response;
-            }
-
-            public Exception getException() {
-                return e;
-            }
-
-            @Override
-            public int hashCode() {
-                final int prime = 31;
-                int result = 1;
-                result = prime * result + ((e == null) ? 0 : e.hashCode());
-                result = prime * result + ((response == null) ? 0 : response.hashCode());
-                return result;
-            }
-
-            @SuppressWarnings("rawtypes")
-            @Override
-            public boolean equals(Object obj) {
-                if (this == obj)
-                    return true;
-                if (obj == null)
-                    return false;
-                if (getClass() != obj.getClass())
-                    return false;
-                ResponseHolder other = (ResponseHolder) obj;
-                if (e == null) {
-                    if (other.e != null)
-                        return false;
-                } else if (!e.equals(other.e))
-                    return false;
-                if (response == null) {
-                    if (other.response != null)
-                        return false;
-                } else if (!response.equals(other.response))
-                    return false;
-                return true;
-            }
-
-        }
-    }
-
-    /**
-     * Key to be used for request caching.
-     * <p>
-     * By default this returns null which means "do not cache".
-     * <p>
-     * To enable caching override this method and return a string key uniquely representing the state of a command instance.
-     * <p>
-     * If multiple command instances in the same request scope match keys then only the first will be executed and all others returned from cache.
-     * 
-     * @return String cacheKey or null if not to cache
-     */
-    protected String getCacheKey() {
-        return null;
-    }
-
-    /**
-     * Clears all state. If new requests come in instances will be recreated and metrics started from scratch.
-     */
-    /* package */static void reset() {
-        defaultNameCache.clear();
-        globalScopedCollapsers.clear();
-        requestScopedCollapsers.clear();
-        HystrixTimer.reset();
-    }
-
-    private static String getDefaultNameFromClass(@SuppressWarnings("rawtypes") Class<? extends HystrixCollapser> cls) {
-        String fromCache = defaultNameCache.get(cls);
-        if (fromCache != null) {
-            return fromCache;
-        }
-        // generate the default
-        // default HystrixCommandKey to use if the method is not overridden
-        String name = cls.getSimpleName();
-        if (name.equals("")) {
-            // we don't have a SimpleName (anonymous inner class) so use the full class name
-            name = cls.getName();
-            name = name.substring(name.lastIndexOf('.') + 1, name.length());
-        }
-        defaultNameCache.put(cls, name);
-        return name;
     }
 
     /**
@@ -1197,8 +585,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
         public void init() {
             counter.set(0);
             // since we're going to modify properties of the same class between tests, wipe the cache each time
-            requestScopedCollapsers.clear();
-            globalScopedCollapsers.clear();
+            reset();
             /* we must call this to simulate a new request lifecycle running and clearing caches */
             HystrixRequestContext.initializeContext();
         }
@@ -1296,65 +683,21 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
             assertEquals(3, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
         }
 
-        /**
-         * Check when the Timer is latent that the Future.get() will trigger the batch execution.
-         * 
-         * @throws Exception
-         */
         @Test
-        public void testBatchExecutesViaGetIfTimerDoesntFire() throws Exception {
+        public void testUnsubscribeOnOneDoesntKillBatch() throws Exception {
             TestCollapserTimer timer = new TestCollapserTimer();
             Future<String> response1 = new TestRequestCollapser(timer, counter, 1).queue();
             Future<String> response2 = new TestRequestCollapser(timer, counter, 2).queue();
 
-            // purposefully don't increment the timer
+            // kill the first
+            response1.cancel(true);
 
-            assertEquals("1", response1.get());
+            timer.incrementTime(10); // let time pass that equals the default delay/period
+
+            // the first is cancelled so should return null
+            assertEquals(null, response1.get());
+            // we should still get a response on the second
             assertEquals("2", response2.get());
-
-            assertEquals(1, counter.get());
-
-            assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
-        }
-
-        /**
-         * Check when the Timer is latent that the Future.get() will trigger the batch execution.
-         * 
-         * @throws Exception
-         */
-        @Test
-        public void testBatchExecutesViaGetIfTimerDoesntFireMultiThreaded() throws Exception {
-            final TestCollapserTimer timer = new TestCollapserTimer();
-            final AtomicReference<String> v1 = new AtomicReference<String>();
-            final AtomicReference<String> v2 = new AtomicReference<String>();
-
-            Thread t1 = new Thread(new HystrixContextRunnable(new Runnable() {
-
-                @Override
-                public void run() {
-                    v1.set(new TestRequestCollapser(timer, counter, 1).execute());
-                }
-
-            }));
-            Thread t2 = new Thread(new HystrixContextRunnable(new Runnable() {
-
-                @Override
-                public void run() {
-                    v2.set(new TestRequestCollapser(timer, counter, 2).execute());
-                }
-
-            }));
-
-            t1.start();
-            t2.start();
-
-            // purposefully don't increment the timer
-
-            t1.join();
-            t2.join();
-
-            assertEquals("1", v1.get());
-            assertEquals("2", v2.get());
 
             assertEquals(1, counter.get());
 
@@ -1387,7 +730,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
             Future<String> response2 = new TestRequestCollapser(timer, counter, "2").queue();
 
             // simulate a new request
-            requestScopedCollapsers.clear();
+            RequestCollapserFactory.resetRequest();
 
             Future<String> response3 = new TestRequestCollapser(timer, counter, "3").queue();
             Future<String> response4 = new TestRequestCollapser(timer, counter, "4").queue();
@@ -1411,7 +754,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
             Future<String> response2 = new TestGloballyScopedRequestCollapser(timer, counter, "2").queue();
 
             // simulate a new request
-            requestScopedCollapsers.clear();
+            RequestCollapserFactory.resetRequest();
 
             Future<String> response3 = new TestGloballyScopedRequestCollapser(timer, counter, "3").queue();
             Future<String> response4 = new TestGloballyScopedRequestCollapser(timer, counter, "4").queue();
@@ -1519,7 +862,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
 
             System.out.println("timer.tasks.size() B: " + timer.tasks.size());
 
-            HystrixRequestVariableHolder<RequestCollapser<?, ?, ?>> rv = requestScopedCollapsers.get(new TestRequestCollapser(timer, counter, 1).getCollapserKey().name());
+            HystrixRequestVariableHolder<RequestCollapser<?, ?, ?>> rv = RequestCollapserFactory.getRequestVariable(new TestRequestCollapser(timer, counter, 1).getCollapserKey().name());
 
             assertNotNull(rv);
             // they should have all been removed as part of ThreadContext.remove()
@@ -1594,7 +937,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
             // simulate request lifecycle
             requestContext.shutdown();
 
-            HystrixRequestVariableHolder<RequestCollapser<?, ?, ?>> rv = requestScopedCollapsers.get(new TestRequestCollapser(timer, counter, 1).getCollapserKey().name());
+            HystrixRequestVariableHolder<RequestCollapser<?, ?, ?>> rv = RequestCollapserFactory.getRequestVariable(new TestRequestCollapser(timer, counter, 1).getCollapserKey().name());
 
             assertNotNull(rv);
             // they should have all been removed as part of ThreadContext.remove()
@@ -2023,7 +1366,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
             }
 
             @Override
-            public HystrixCommand<List<String>> createCommand(final Collection<HystrixCollapser.CollapsedRequest<String, String>> requests) {
+            public HystrixCommand<List<String>> createCommand(final Collection<CollapsedRequest<String, String>> requests) {
                 /* return a mocked command */
                 HystrixCommand<List<String>> command = new TestCollapserCommand(requests);
                 if (commandsExecuted != null) {
@@ -2040,7 +1383,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
                 // for simplicity I'll assume it's a 1:1 mapping between lists ... in real implementations they often need to index to maps
                 // to allow random access as the response size does not match the request size
                 if (batchResponse.size() != requests.size()) {
-                    throw new RuntimeException("lists don't match in size");
+                    throw new RuntimeException("lists don't match in size => " + batchResponse.size() + " : " + requests.size());
                 }
                 int i = 0;
                 for (CollapsedRequest<String, String> request : requests) {
@@ -2061,11 +1404,11 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
             }
 
             @Override
-            protected Collection<Collection<HystrixCollapser.CollapsedRequest<String, String>>> shardRequests(Collection<HystrixCollapser.CollapsedRequest<String, String>> requests) {
-                Collection<HystrixCollapser.CollapsedRequest<String, String>> typeA = new ArrayList<HystrixCollapser.CollapsedRequest<String, String>>();
-                Collection<HystrixCollapser.CollapsedRequest<String, String>> typeB = new ArrayList<HystrixCollapser.CollapsedRequest<String, String>>();
+            protected Collection<Collection<CollapsedRequest<String, String>>> shardRequests(Collection<CollapsedRequest<String, String>> requests) {
+                Collection<CollapsedRequest<String, String>> typeA = new ArrayList<CollapsedRequest<String, String>>();
+                Collection<CollapsedRequest<String, String>> typeB = new ArrayList<CollapsedRequest<String, String>>();
 
-                for (HystrixCollapser.CollapsedRequest<String, String> request : requests) {
+                for (CollapsedRequest<String, String> request : requests) {
                     if (request.getArgument().endsWith("a")) {
                         typeA.add(request);
                     } else if (request.getArgument().endsWith("b")) {
@@ -2073,7 +1416,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
                     }
                 }
 
-                ArrayList<Collection<HystrixCollapser.CollapsedRequest<String, String>>> shards = new ArrayList<Collection<HystrixCollapser.CollapsedRequest<String, String>>>();
+                ArrayList<Collection<CollapsedRequest<String, String>>> shards = new ArrayList<Collection<CollapsedRequest<String, String>>>();
                 shards.add(typeA);
                 shards.add(typeB);
                 return shards;
@@ -2102,7 +1445,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
             }
 
             @Override
-            public HystrixCommand<List<String>> createCommand(Collection<com.netflix.hystrix.HystrixCollapser.CollapsedRequest<String, String>> requests) {
+            public HystrixCommand<List<String>> createCommand(Collection<CollapsedRequest<String, String>> requests) {
                 throw new RuntimeException("some failure");
             }
 
@@ -2118,7 +1461,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
             }
 
             @Override
-            public HystrixCommand<List<String>> createCommand(Collection<com.netflix.hystrix.HystrixCollapser.CollapsedRequest<String, String>> requests) {
+            public HystrixCommand<List<String>> createCommand(Collection<CollapsedRequest<String, String>> requests) {
                 // args don't matter as it's short-circuited
                 return new ShortCircuitedCommand();
             }
@@ -2135,7 +1478,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
             }
 
             @Override
-            public void mapResponseToRequests(List<String> batchResponse, Collection<com.netflix.hystrix.HystrixCollapser.CollapsedRequest<String, String>> requests) {
+            public void mapResponseToRequests(List<String> batchResponse, Collection<CollapsedRequest<String, String>> requests) {
                 // pretend we blow up with an NPE
                 throw new NullPointerException("batchResponse was null and we blew up");
             }
@@ -2153,6 +1496,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
 
             @Override
             protected List<String> run() {
+                System.out.println(">>> TestCollapserCommand run() ... batch size: " + requests.size());
                 // simulate a batch request
                 ArrayList<String> response = new ArrayList<String>();
                 for (CollapsedRequest<String, String> request : requests) {
