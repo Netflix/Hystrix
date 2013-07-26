@@ -277,6 +277,21 @@
 
 ;################################################################################
 
+(def ^:dynamic *command*
+  "A dynamic var which is bound to the HystrixCommand instance during execution of
+  :run-fn and :fallback-fn.
+
+  It's occasionally useful, especially for fallbacks, to base the result on the state of
+  the comand. The fallback might vary based on whether it was triggered by an application
+  error versus a timeout.
+
+  Note: As always with dynamic vars be careful about scoping. This binding only holds for
+  the duration of the :run-fn or :fallback-fn.
+  "
+  nil)
+
+;################################################################################
+
 (defmacro with-request-context
   "Executes body within a new Hystrix Context.
 
@@ -616,10 +631,14 @@
     (when (not (instance? HystrixCommand$Setter setter))
       (throw (IllegalStateException. (str ":init-fn didn't return HystrixCommand$Setter instance"))))
     (proxy [HystrixCommand] [^HystrixCommand$Setter setter]
-      (run []         (apply run-fn args))
-      (getFallback [] (if fallback-fn
-                        (apply fallback-fn args)
-                        (throw (UnsupportedOperationException. "No :fallback-fn provided"))))
+      (run []
+        (binding [*command* this]
+          (apply run-fn args)))
+      (getFallback []
+        (if fallback-fn
+          (binding [*command* this]
+            (apply fallback-fn args))
+          (throw (UnsupportedOperationException. "No :fallback-fn provided"))))
       (getCacheKey [] (if cache-key-fn
                         (apply cache-key-fn args))))))
 
