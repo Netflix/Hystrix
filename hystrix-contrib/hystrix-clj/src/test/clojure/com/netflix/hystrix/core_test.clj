@@ -172,6 +172,31 @@
         (is (= "hello-world" (.get qc) @qc))
         (is (.isDone qc))))))
 
+(deftest test-this-command-binding
+  (let [base-def {:type :command
+                  :group-key :test-this-command-binding-group
+                  :command-key :test-this-command-binding
+                  }]
+    (testing "this is bound while :run-fn is executing"
+      (let [captured (atom nil)
+            command-def (normalize (assoc base-def
+                                          :run-fn (fn []
+                                                    (reset! captured *command*))))
+            command (instantiate command-def)]
+        (.execute command)
+        (is (identical? command @captured))))
+
+
+    (testing "this is bound while :fallback-fn is executing"
+      (let [captured (atom nil)
+            command-def (normalize (assoc base-def
+                                          :run-fn (fn [] (throw (Exception. "FALLBACK!")))
+                                          :fallback-fn (fn [] (reset! captured *command*))
+                                          ))
+            command (instantiate command-def)]
+        (.execute command)
+        (is (identical? command @captured))))))
+
 (deftest test-collapser
   ; These atoms are only for testing. In real life, collapser functions should *never*
   ; have side effects.
