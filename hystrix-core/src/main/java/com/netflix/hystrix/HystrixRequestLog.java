@@ -207,6 +207,8 @@ public class HystrixRequestLog {
 
     public static class UnitTest {
 
+        private static final String DIGITS_REGEX = "\\[\\d+";
+
         @Test
         public void testSuccess() {
             HystrixRequestContext context = HystrixRequestContext.initializeContext();
@@ -214,7 +216,7 @@ public class HystrixRequestLog {
                 new TestCommand("A", false, true).execute();
                 String log = HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString();
                 // strip the actual count so we can compare reliably
-                log = log.replaceAll("\\[\\d", "[");
+                log = log.replaceAll(DIGITS_REGEX, "[");
                 assertEquals("TestCommand[SUCCESS][ms]", log);
             } finally {
                 context.shutdown();
@@ -234,7 +236,7 @@ public class HystrixRequestLog {
                 new TestCommand("A", false, true).execute();
                 String log = HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString();
                 // strip the actual count so we can compare reliably
-                log = log.replaceAll("\\[\\d", "[");
+                log = log.replaceAll(DIGITS_REGEX, "[");
                 assertEquals("TestCommand[SUCCESS][ms], TestCommand[SUCCESS, RESPONSE_FROM_CACHE][ms]x4", log);
             } finally {
                 context.shutdown();
@@ -254,7 +256,7 @@ public class HystrixRequestLog {
                 new TestCommand("A", true, false).execute();
                 String log = HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString();
                 // strip the actual count so we can compare reliably
-                log = log.replaceAll("\\[\\d", "[");
+                log = log.replaceAll(DIGITS_REGEX, "[");
                 assertEquals("TestCommand[FAILURE, FALLBACK_SUCCESS][ms], TestCommand[FAILURE, FALLBACK_SUCCESS, RESPONSE_FROM_CACHE][ms]x4", log);
             } finally {
                 context.shutdown();
@@ -277,7 +279,7 @@ public class HystrixRequestLog {
                 }
                 String log = HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString();
                 // strip the actual count so we can compare reliably
-                log = log.replaceAll("\\[\\d", "[");
+                log = log.replaceAll(DIGITS_REGEX, "[");
                 assertEquals("TestCommand[FAILURE, FALLBACK_FAILURE][ms], TestCommand[FAILURE, FALLBACK_FAILURE, RESPONSE_FROM_CACHE][ms]", log);
             } finally {
                 context.shutdown();
@@ -314,7 +316,7 @@ public class HystrixRequestLog {
                 }
                 String log = HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString();
                 // strip the actual count so we can compare reliably
-                log = log.replaceAll("\\[\\d", "[");
+                log = log.replaceAll(DIGITS_REGEX, "[");
                 assertEquals("GetData[SUCCESS][ms], PutData[SUCCESS][ms], GetValues[SUCCESS][ms], GetValues[SUCCESS, RESPONSE_FROM_CACHE][ms], TestCommand[FAILURE, FALLBACK_FAILURE][ms], TestCommand[FAILURE, FALLBACK_FAILURE, RESPONSE_FROM_CACHE][ms]", log);
             } finally {
                 context.shutdown();
