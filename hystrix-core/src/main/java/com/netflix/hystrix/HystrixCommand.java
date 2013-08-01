@@ -53,7 +53,7 @@ import rx.Observer;
 import rx.Scheduler;
 import rx.Subscription;
 import rx.concurrency.Schedulers;
-import rx.operators.AtomicObservableSubscription;
+import rx.operators.SafeObservableSubscription;
 import rx.subjects.ReplaySubject;
 import rx.subscriptions.Subscriptions;
 import rx.util.functions.Action0;
@@ -949,7 +949,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                         }
 
                         @Override
-                        public void onError(Exception e) {
+                        public void onError(Throwable e) {
                             completeCommand();
                             observer.onError(e);
                         }
@@ -991,7 +991,9 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
                 @Override
                 public Subscription call(final Observer<R> observer) {
-                    final AtomicObservableSubscription s = new AtomicObservableSubscription();
+                    // TODO this is using a private API of Rx so either move off of it or get Rx to make it public
+                    // TODO better yet, get TimeoutObservable part of Rx
+                    final SafeObservableSubscription s = new SafeObservableSubscription();
 
                     TimerListener listener = new TimerListener() {
 
@@ -1054,7 +1056,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                         }
 
                         @Override
-                        public void onError(Exception e) {
+                        public void onError(Throwable e) {
                             tl.clear();
                             observer.onError(e);
                         }
@@ -1272,7 +1274,14 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
              * HystrixBadRequestException is treated differently and allowed to propagate without any stats tracking or fallback logic
              */
             throw e;
-        } catch (Exception e) {
+        } catch (Throwable t) {
+            Exception e = null;
+            if (t instanceof Exception) {
+                e = (Exception) t;
+            } else {
+                // Hystrix 1.x uses Exception, not Throwable so to prevent a breaking change Throwable will be wrapped in Exception
+                e = new Exception("Throwable caught while executing.", t);
+            }
             try {
                 e = executionHook.onRunError(this, e);
             } catch (Exception hookException) {
@@ -2435,7 +2444,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                 }
 
                 @Override
-                public void onError(Exception e) {
+                public void onError(Throwable e) {
                     latch.countDown();
                     e.printStackTrace();
 
@@ -2490,7 +2499,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                 }
 
                 @Override
-                public void onError(Exception e) {
+                public void onError(Throwable e) {
                     latch.countDown();
                     e.printStackTrace();
 
@@ -2546,7 +2555,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                 }
 
                 @Override
-                public void onError(Exception e) {
+                public void onError(Throwable e) {
                     latch.countDown();
                     e.printStackTrace();
 
@@ -5065,7 +5074,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
          * Test a checked Exception being thrown
          */
         @Test
-        public void testCheckedException() {
+        public void testCheckedExceptionViaExecute() {
             TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
             CommandWithCheckedException command = new CommandWithCheckedException(circuitBreaker);
             try {
@@ -5076,6 +5085,167 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             }
 
             assertEquals("simulated checked exception message", command.getFailedExecutionException().getMessage());
+
+            assertTrue(command.getExecutionTimeInMilliseconds() > -1);
+            assertTrue(command.isFailedExecution());
+
+            assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
+            assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
+            assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
+        }
+
+        /**
+         * Test a java.lang.Error being thrown
+         * 
+         * @throws InterruptedException
+         */
+        @Test
+        public void testCheckedExceptionViaObserve() throws InterruptedException {
+            TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
+            CommandWithCheckedException command = new CommandWithCheckedException(circuitBreaker);
+            final AtomicReference<Throwable> t = new AtomicReference<Throwable>();
+            final CountDownLatch latch = new CountDownLatch(1);
+            try {
+                command.observe().subscribe(new Observer<Boolean>() {
+
+                    @Override
+                    public void onCompleted() {
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        t.set(e);
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void onNext(Boolean args) {
+
+                    }
+
+                });
+            } catch (Exception e) {
+                e.printStackTrace();
+                fail("we should not get anything thrown, it should be emitted via the Observer#onError method");
+            }
+
+            latch.await(1, TimeUnit.SECONDS);
+            assertNotNull(t.get());
+            t.get().printStackTrace();
+
+            assertTrue(t.get() instanceof HystrixRuntimeException);
+            assertEquals("simulated checked exception message", t.get().getCause().getMessage());
+            assertEquals("simulated checked exception message", command.getFailedExecutionException().getMessage());
+
+            assertTrue(command.getExecutionTimeInMilliseconds() > -1);
+            assertTrue(command.isFailedExecution());
+
+            assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
+            assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
+            assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
+        }
+
+        /**
+         * Test a java.lang.Error being thrown
+         */
+        @Test
+        public void testErrorThrownViaExecute() {
+            TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
+            CommandWithErrorThrown command = new CommandWithErrorThrown(circuitBreaker);
+            try {
+                command.execute();
+                fail("we expect to receive a " + Error.class.getSimpleName());
+            } catch (Exception e) {
+                // the actual error is an extra cause level deep because Hystrix needs to wrap Throwable/Error as it's public
+                // methods only support Exception and it's not a strong enough reason to break backwards compatibility and jump to version 2.x
+                // so HystrixRuntimeException -> wrapper Exception -> actual Error
+                assertEquals("simulated java.lang.Error message", e.getCause().getCause().getMessage());
+            }
+
+            assertEquals("simulated java.lang.Error message", command.getFailedExecutionException().getCause().getMessage());
+
+            assertTrue(command.getExecutionTimeInMilliseconds() > -1);
+            assertTrue(command.isFailedExecution());
+
+            assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
+            assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
+            assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
+        }
+
+        /**
+         * Test a java.lang.Error being thrown
+         */
+        @Test
+        public void testErrorThrownViaQueue() {
+            TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
+            CommandWithErrorThrown command = new CommandWithErrorThrown(circuitBreaker);
+            try {
+                command.queue().get();
+                fail("we expect to receive an Exception");
+            } catch (Exception e) {
+                // one cause down from ExecutionException to HystrixRuntime
+                // then the actual error is an extra cause level deep because Hystrix needs to wrap Throwable/Error as it's public
+                // methods only support Exception and it's not a strong enough reason to break backwards compatibility and jump to version 2.x
+                // so ExecutionException -> HystrixRuntimeException -> wrapper Exception -> actual Error
+                assertEquals("simulated java.lang.Error message", e.getCause().getCause().getCause().getMessage());
+            }
+
+            assertEquals("simulated java.lang.Error message", command.getFailedExecutionException().getCause().getMessage());
+
+            assertTrue(command.getExecutionTimeInMilliseconds() > -1);
+            assertTrue(command.isFailedExecution());
+
+            assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
+            assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
+            assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
+        }
+
+        /**
+         * Test a java.lang.Error being thrown
+         * 
+         * @throws InterruptedException
+         */
+        @Test
+        public void testErrorThrownViaObserve() throws InterruptedException {
+            TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
+            CommandWithErrorThrown command = new CommandWithErrorThrown(circuitBreaker);
+            final AtomicReference<Throwable> t = new AtomicReference<Throwable>();
+            final CountDownLatch latch = new CountDownLatch(1);
+            try {
+                command.observe().subscribe(new Observer<Boolean>() {
+
+                    @Override
+                    public void onCompleted() {
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        t.set(e);
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void onNext(Boolean args) {
+
+                    }
+
+                });
+            } catch (Exception e) {
+                e.printStackTrace();
+                fail("we should not get anything thrown, it should be emitted via the Observer#onError method");
+            }
+
+            latch.await(1, TimeUnit.SECONDS);
+            assertNotNull(t.get());
+            t.get().printStackTrace();
+
+            assertTrue(t.get() instanceof HystrixRuntimeException);
+            // the actual error is an extra cause level deep because Hystrix needs to wrap Throwable/Error as it's public
+            // methods only support Exception and it's not a strong enough reason to break backwards compatibility and jump to version 2.x
+            assertEquals("simulated java.lang.Error message", t.get().getCause().getCause().getMessage());
+            assertEquals("simulated java.lang.Error message", command.getFailedExecutionException().getCause().getMessage());
 
             assertTrue(command.getExecutionTimeInMilliseconds() > -1);
             assertTrue(command.isFailedExecution());
@@ -6702,6 +6872,20 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             @Override
             protected Boolean getFallback() {
                 return false;
+            }
+
+        }
+
+        private static class CommandWithErrorThrown extends TestHystrixCommand<Boolean> {
+
+            public CommandWithErrorThrown(TestCircuitBreaker circuitBreaker) {
+                super(testPropsBuilder()
+                        .setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics));
+            }
+
+            @Override
+            protected Boolean run() throws Exception {
+                throw new Error("simulated java.lang.Error message");
             }
 
         }
