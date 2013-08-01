@@ -185,7 +185,14 @@ public class RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> {
         }
 
         @Override
-        public void onError(Exception e) {
+        public void onError(Throwable t) {
+            Exception e = null;
+            if (t instanceof Exception) {
+                e = (Exception) t;
+            } else {
+                // Hystrix 1.x uses Exception, not Throwable so to prevent a breaking change Throwable will be wrapped in Exception
+                e = new Exception("Throwable caught while executing command with batch.", t);
+            }
             logger.error("Exception while executing command with batch.", e);
             // if a failure occurs we want to pass that exception to all of the Futures that we've returned
             for (CollapsedRequest<ResponseType, RequestArgumentType> request : requests) {
