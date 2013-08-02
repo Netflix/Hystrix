@@ -59,15 +59,15 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
             if (subscription.isUnsubscribed()) {
                 return;
             }
-            CollapsedRequestObservableFunction.ResponseHolder<T> r = rh.get();
-            if (r.getResponse() != null) {
+            ResponseHolder<T> r = rh.get();
+            if (r.isResponseSet()) {
                 throw new IllegalStateException("setResponse can only be called once");
             }
             if (r.getException() != null) {
                 throw new IllegalStateException("Exception is already set so response can not be => Response: " + response + " subscription: " + subscription.isUnsubscribed() + "  observer: " + r.getObserver() + "  Exception: " + r.getException().getMessage(), r.getException());
             }
 
-            CollapsedRequestObservableFunction.ResponseHolder<T> nr = new CollapsedRequestObservableFunction.ResponseHolder<T>(r.getObserver(), response, r.getException());
+            ResponseHolder<T> nr = r.setResponse(response);
             if (rh.compareAndSet(r, nr)) {
                 // success
                 sendResponseIfRequired(subscription, nr);
@@ -90,8 +90,8 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
             }
             CollapsedRequestObservableFunction.ResponseHolder<T> r = rh.get();
             // only proceed if neither response is set
-            if (r.getResponse() == null && r.getException() == null) {
-                CollapsedRequestObservableFunction.ResponseHolder<T> nr = new CollapsedRequestObservableFunction.ResponseHolder<T>(r.getObserver(), r.getResponse(), e);
+            if (!r.isResponseSet() && r.getException() == null) {
+                ResponseHolder<T> nr = r.setException(e);
                 if (rh.compareAndSet(r, nr)) {
                     // success
                     sendResponseIfRequired(subscription, nr);
@@ -123,11 +123,11 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
             if (r.getException() != null) {
                 throw new IllegalStateException("setException can only be called once");
             }
-            if (r.getResponse() != null) {
+            if (r.isResponseSet()) {
                 throw new IllegalStateException("Response is already set so exception can not be => Response: " + r.getResponse() + "  Exception: " + e.getMessage(), e);
             }
 
-            CollapsedRequestObservableFunction.ResponseHolder<T> nr = new CollapsedRequestObservableFunction.ResponseHolder<T>(r.getObserver(), r.getResponse(), e);
+            ResponseHolder<T> nr = r.setException(e);
             if (rh.compareAndSet(r, nr)) {
                 // success
                 sendResponseIfRequired(subscription, nr);
@@ -145,7 +145,7 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
             if (r.getObserver() != null) {
                 throw new IllegalStateException("Only 1 Observer can subscribe. Use multicast/publish/cache/etc for multiple subscribers.");
             }
-            CollapsedRequestObservableFunction.ResponseHolder<T> nr = new CollapsedRequestObservableFunction.ResponseHolder<T>(observer, r.getResponse(), r.getException());
+            ResponseHolder<T> nr = r.setObserver(observer);
             if (rh.compareAndSet(r, nr)) {
                 // success
                 sendResponseIfRequired(subscription, nr);
@@ -160,7 +160,7 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
     private static <T> void sendResponseIfRequired(BooleanSubscription subscription, CollapsedRequestObservableFunction.ResponseHolder<T> r) {
         if (!subscription.isUnsubscribed()) {
             Observer<T> o = r.getObserver();
-            if (o == null || (r.getException() == null && r.getResponse() == null)) {
+            if (o == null || (r.getException() == null && !r.isResponseSet())) {
                 // not ready to send
                 return;
             }
@@ -178,26 +178,49 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
      * Used for atomic compound updates.
      */
     private static class ResponseHolder<T> {
-        private final T response;
+        // I'm using AtomicReference as if it's an Option monad instead of creating yet another object
+        // so I know if 'response' is null versus the value set being null so I can tell if a response is set
+        // even if the value set is null
+        private final AtomicReference<T> r;
         private final Exception e;
-        private final Observer<T> observer;
+        private final Observer<T> o;
 
         public ResponseHolder() {
             this(null, null, null);
         }
 
-        public ResponseHolder(Observer<T> observer, T response, Exception e) {
-            this.observer = observer;
-            this.response = response;
-            this.e = e;
+        private ResponseHolder(AtomicReference<T> response, Exception exception, Observer<T> observer) {
+            this.o = observer;
+            this.r = response;
+            this.e = exception;
+        }
+
+        public ResponseHolder<T> setResponse(T response) {
+            return new ResponseHolder<T>(new AtomicReference<T>(response), e, o);
+        }
+
+        public ResponseHolder<T> setObserver(Observer<T> observer) {
+            return new ResponseHolder<T>(r, e, observer);
+        }
+
+        public ResponseHolder<T> setException(Exception exception) {
+            return new ResponseHolder<T>(r, exception, o);
         }
 
         public Observer<T> getObserver() {
-            return observer;
+            return o;
         }
 
         public T getResponse() {
-            return response;
+            if (r == null) {
+                return null;
+            } else {
+                return r.get();
+            }
+        }
+
+        public boolean isResponseSet() {
+            return r != null;
         }
 
         public Exception getException() {
@@ -218,6 +241,18 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
 
             // fetch value
             assertEquals("theResponse", v.get());
+        }
+
+        @Test
+        public void testSetNullResponseSuccess() throws InterruptedException, ExecutionException {
+            CollapsedRequestObservableFunction<String, String> cr = new CollapsedRequestObservableFunction<String, String>("hello");
+            Observable<String> o = Observable.create(cr);
+            Future<String> v = o.toBlockingObservable().toFuture();
+
+            cr.setResponse(null);
+
+            // fetch value
+            assertEquals(null, v.get());
         }
 
         @Test
