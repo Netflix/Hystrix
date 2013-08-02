@@ -1313,6 +1313,53 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
             assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
         }
 
+        /**
+         * Test a Void response type - null being set as response.
+         * 
+         * @throws Exception
+         */
+        @Test
+        public void testVoidResponseTypeFireAndForgetCollapsing1() throws Exception {
+            TestCollapserTimer timer = new TestCollapserTimer();
+            Future<Void> response1 = new TestCollapserWithVoidResponseType(timer, counter, 1).queue();
+            Future<Void> response2 = new TestCollapserWithVoidResponseType(timer, counter, 2).queue();
+            timer.incrementTime(100); // let time pass that equals the default delay/period
+
+            // normally someone wouldn't wait on these, but we need to make sure they do in fact return
+            // and not block indefinitely in case someone does call get()
+            assertEquals(null, response1.get());
+            assertEquals(null, response2.get());
+
+            assertEquals(1, counter.get());
+
+            assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        }
+
+        /**
+         * Test a Void response type - response never being set in mapResponseToRequest
+         * 
+         * @throws Exception
+         */
+        @Test
+        public void testVoidResponseTypeFireAndForgetCollapsing2() throws Exception {
+            TestCollapserTimer timer = new TestCollapserTimer();
+            Future<Void> response1 = new TestCollapserWithVoidResponseTypeAndMissingMapResponseToRequests(timer, counter, 1).queue();
+            Future<Void> response2 = new TestCollapserWithVoidResponseTypeAndMissingMapResponseToRequests(timer, counter, 2).queue();
+            timer.incrementTime(100); // let time pass that equals the default delay/period
+
+            // we will fetch one of these just so we wait for completion ... but expect an error
+            try {
+                assertEquals(null, response1.get());
+                fail("expected an error as mapResponseToRequests did not set responses");
+            } catch (Exception e) {
+                // do nothing
+            }
+
+            assertEquals(1, counter.get());
+
+            assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        }
+
         private static class TestRequestCollapser extends HystrixCollapser<List<String>, String, String> {
 
             private final AtomicInteger count;
@@ -1564,6 +1611,22 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
 
         }
 
+        private static class FireAndForgetCommand extends HystrixCommand<Void> {
+
+            protected FireAndForgetCommand(List<Integer> values) {
+                super(HystrixCommand.Setter.withGroupKey(
+                        HystrixCommandGroupKey.Factory.asKey("fireAndForgetCommand"))
+                        .andCommandPropertiesDefaults(HystrixCommandProperties.Setter.getUnitTestPropertiesSetter()));
+            }
+
+            @Override
+            protected Void run() throws Exception {
+                System.out.println("*** FireAndForgetCommand execution ");
+                return null;
+            }
+
+        }
+
         private static class TestCollapserTimer implements CollapserTimer {
 
             private final ConcurrentLinkedQueue<ATask> tasks = new ConcurrentLinkedQueue<ATask>();
@@ -1683,6 +1746,75 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
                 }
 
             };
+        }
+
+        private static class TestCollapserWithVoidResponseType extends HystrixCollapser<Void, Void, Integer> {
+
+            private final AtomicInteger count;
+            private final Integer value;
+
+            public TestCollapserWithVoidResponseType(TestCollapserTimer timer, AtomicInteger counter, int value) {
+                super(collapserKeyFromString(timer), Scope.REQUEST, timer, HystrixCollapserProperties.Setter().withMaxRequestsInBatch(1000).withTimerDelayInMilliseconds(50));
+                this.count = counter;
+                this.value = value;
+            }
+
+            @Override
+            public Integer getRequestArgument() {
+                return value;
+            }
+
+            @Override
+            protected HystrixCommand<Void> createCommand(Collection<CollapsedRequest<Void, Integer>> requests) {
+
+                ArrayList<Integer> args = new ArrayList<Integer>();
+                for (CollapsedRequest<Void, Integer> request : requests) {
+                    args.add(request.getArgument());
+                }
+                return new FireAndForgetCommand(args);
+            }
+
+            @Override
+            protected void mapResponseToRequests(Void batchResponse, Collection<CollapsedRequest<Void, Integer>> requests) {
+                count.incrementAndGet();
+                for (CollapsedRequest<Void, Integer> r : requests) {
+                    r.setResponse(null);
+                }
+            }
+
+        }
+
+        private static class TestCollapserWithVoidResponseTypeAndMissingMapResponseToRequests extends HystrixCollapser<Void, Void, Integer> {
+
+            private final AtomicInteger count;
+            private final Integer value;
+
+            public TestCollapserWithVoidResponseTypeAndMissingMapResponseToRequests(TestCollapserTimer timer, AtomicInteger counter, int value) {
+                super(collapserKeyFromString(timer), Scope.REQUEST, timer, HystrixCollapserProperties.Setter().withMaxRequestsInBatch(1000).withTimerDelayInMilliseconds(50));
+                this.count = counter;
+                this.value = value;
+            }
+
+            @Override
+            public Integer getRequestArgument() {
+                return value;
+            }
+
+            @Override
+            protected HystrixCommand<Void> createCommand(Collection<CollapsedRequest<Void, Integer>> requests) {
+
+                ArrayList<Integer> args = new ArrayList<Integer>();
+                for (CollapsedRequest<Void, Integer> request : requests) {
+                    args.add(request.getArgument());
+                }
+                return new FireAndForgetCommand(args);
+            }
+
+            @Override
+            protected void mapResponseToRequests(Void batchResponse, Collection<CollapsedRequest<Void, Integer>> requests) {
+                count.incrementAndGet();
+            }
+
         }
     }
 }
