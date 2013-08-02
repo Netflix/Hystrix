@@ -1360,6 +1360,21 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
 
             assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
         }
+        
+        /**
+         * Test a Void response type with execute - response being set in mapResponseToRequest to null
+         * 
+         * @throws Exception
+         */
+        @Test
+        public void testVoidResponseTypeFireAndForgetCollapsing3() throws Exception {
+            CollapserTimer timer = new RealCollapserTimer();
+            assertNull(new TestCollapserWithVoidResponseType(timer, counter, 1).execute());
+
+            assertEquals(1, counter.get());
+
+            assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        }
 
         private static class TestRequestCollapser extends HystrixCollapser<List<String>, String, String> {
 
@@ -1622,7 +1637,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
 
             @Override
             protected Void run() throws Exception {
-                System.out.println("*** FireAndForgetCommand execution ");
+                System.out.println("*** FireAndForgetCommand execution: " + Thread.currentThread());
                 return null;
             }
 
@@ -1754,7 +1769,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
             private final AtomicInteger count;
             private final Integer value;
 
-            public TestCollapserWithVoidResponseType(TestCollapserTimer timer, AtomicInteger counter, int value) {
+            public TestCollapserWithVoidResponseType(CollapserTimer timer, AtomicInteger counter, int value) {
                 super(collapserKeyFromString(timer), Scope.REQUEST, timer, HystrixCollapserProperties.Setter().withMaxRequestsInBatch(1000).withTimerDelayInMilliseconds(50));
                 this.count = counter;
                 this.value = value;
@@ -1790,7 +1805,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
             private final AtomicInteger count;
             private final Integer value;
 
-            public TestCollapserWithVoidResponseTypeAndMissingMapResponseToRequests(TestCollapserTimer timer, AtomicInteger counter, int value) {
+            public TestCollapserWithVoidResponseTypeAndMissingMapResponseToRequests(CollapserTimer timer, AtomicInteger counter, int value) {
                 super(collapserKeyFromString(timer), Scope.REQUEST, timer, HystrixCollapserProperties.Setter().withMaxRequestsInBatch(1000).withTimerDelayInMilliseconds(50));
                 this.count = counter;
                 this.value = value;
