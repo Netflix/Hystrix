@@ -1351,8 +1351,9 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
             try {
                 assertEquals(null, response1.get());
                 fail("expected an error as mapResponseToRequests did not set responses");
-            } catch (Exception e) {
-                // do nothing
+            } catch (ExecutionException e) {
+                assertTrue(e.getCause() instanceof IllegalStateException);
+                assertTrue(e.getCause().getMessage().startsWith("No response set by"));
             }
 
             assertEquals(1, counter.get());
