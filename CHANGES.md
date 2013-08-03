@@ -1,5 +1,31 @@
 # Hystrix Releases #
 
+### Version 1.3.0 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.3.0%22)) ###
+
+This version integrations Hystrix with [RxJava](https://github.com/Netflix/RxJava) to enable non-blocking reactive execution and functional composition.
+
+Async execution can now be done reactively with the `observe()` method and it will callback when the value is received:
+
+```java
+Observable<String> s = new CommandHelloWorld("World").observe();
+```
+
+A simple example of subscribing to the value (using a Groovy lambda instead of anonymous inner class):
+
+```groovy
+s.subscribe({ value -> println(value) })
+```
+
+A "Hello World" example of reactive execution can be [found on the wiki](https://github.com/Netflix/Hystrix/wiki/How-To-Use#wiki-Reactive-Execution).
+
+More can be learned about RxJava and the composition features at https://github.com/Netflix/RxJava/wiki
+
+This release is a major refactoring of the Hystrix codebase. To assert correctness and performance it was run in production canary servers on the Netflix API several times during development and for over a week during release candidate stages. Prior to this release the 1.3.0.RC1 version has been running in full Netflix API production for several days performing billions of executions a day.
+
+* [Pull 151](https://github.com/Netflix/Hystrix/pull/151) Version 1.3 - RxJava Observable Integration
+* [Pull 158](https://github.com/Netflix/Hystrix/pull/158) Expose current HystrixCommand to fns
+
+
 ### Version 1.2.18 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.2.18%22)) ###
 
 * [Pull 152](https://github.com/Netflix/Hystrix/pull/152) Escape meta-characters to fix dashboard
