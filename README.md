@@ -60,6 +60,7 @@ This command could be used like this:
 ```java
 String s = new CommandHelloWorld("Bob").execute();
 Future<String> s = new CommandHelloWorld("Bob").queue();
+Observable<String> s = new CommandHelloWorld("Bob").observe();
 ```
 
 More examples and information can be found in the [How To Use](https://github.com/Netflix/Hystrix/wiki/How-To-Use) section.
