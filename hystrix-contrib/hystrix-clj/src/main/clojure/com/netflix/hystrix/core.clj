@@ -167,6 +167,8 @@
            [com.netflix.hystrix.strategy.concurrency
              HystrixRequestContext]))
 
+(set! *warn-on-reflection* true)
+
 (defmacro ^:private key-fn
   "Make a function that creates keys of the given class given one of:
 
@@ -602,6 +604,64 @@
   [definition & args]
   (let [^HystrixExecutable instance (apply instantiate definition args)]
     (queued-command instance (.queue instance))))
+
+(defn observe
+  "Asynchronously execute the command or collapser specified by the given normalized definition
+  with the given arguments. Returns an rx.Observable which can be subscribed to.
+
+  Note that this will eagerly begin execution of the command, even if there are no subscribers.
+  Use observe-later for lazy semantics.
+
+  If definition is already a HystrixExecutable and no args are given, observes it and returns
+  an Observable as described above. NEVER OBSERVE A HystrixExecutable MORE THAN ONCE.
+
+  See:
+    http://netflix.github.io/Hystrix/javadoc/com/netflix/hystrix/HystrixCommand.html#observe()
+    http://netflix.github.io/Hystrix/javadoc/com/netflix/hystrix/HystrixCollapser.html#observe()
+    http://netflix.github.io/RxJava/javadoc/rx/Observable.html
+  "
+  [definition & args]
+  (let [^HystrixExecutable instance (apply instantiate definition args)]
+    (.observe instance)))
+
+(defprotocol ^:private ObserveLater
+  "A protocol solely to eliminate reflection warnings because .toObservable
+  can be found on both HystrixCommand and HystrixCollapser, but not in their
+  common base class HystrixExecutable."
+  (^:private observe-later* [this])
+  (^:private observe-later-on* [this scheduler]))
+
+(extend-protocol ObserveLater
+  HystrixCommand
+    (observe-later* [this] (.toObservable this))
+    (observe-later-on* [this scheduler] (.toObservable this scheduler))
+  HystrixCollapser
+    (observe-later* [this] (.toObservable this))
+    (observe-later-on* [this scheduler] (.toObservable this scheduler)))
+
+(defn observe-later
+  "Same as #'com.netflix.hystrix.core/observe, but command execution does not begin until the
+  returned Observable is subscribed to.
+
+  See:
+    http://netflix.github.io/Hystrix/javadoc/com/netflix/hystrix/HystrixCommand.html#toObservable())
+    http://netflix.github.io/RxJava/javadoc/rx/Observable.html
+  "
+  [definition & args]
+  (observe-later* (apply instantiate definition args)))
+
+(defn observe-later-on
+  "Same as #'com.netflix.hystrix.core/observe-later but an explicit scheduler can be provided
+  for the callback.
+
+  See:
+    com.netflix.hystrix.core/observe-later
+    com.netflix.hystrix.core/observe
+    http://netflix.github.io/Hystrix/javadoc/com/netflix/hystrix/HystrixCommand.html#toObservable(Scheduler)
+    http://netflix.github.io/RxJava/javadoc/rx/Observable.html
+  "
+  [definition scheduler & args]
+  (observe-later-on* (apply instantiate definition args) scheduler))
 
 ;################################################################################
 ; :command impl
