@@ -2,7 +2,8 @@
   (:use com.netflix.hystrix.core)
   (:require [clojure.test :refer [deftest testing is are use-fixtures]])
   (:import [com.netflix.hystrix Hystrix HystrixExecutable]
-           [com.netflix.hystrix.strategy.concurrency HystrixRequestContext]))
+           [com.netflix.hystrix.strategy.concurrency HystrixRequestContext]
+           [rx Observable]))
 
 ; reset hystrix after each execution, for consistency and sanity
 (defn reset-fixture
@@ -171,6 +172,15 @@
         (is (future? qc))
         (is (= "hello-world" (.get qc) @qc))
         (is (.isDone qc))))))
+
+(deftest test-observe
+  (let [base-def {:type :command
+                  :group-key :my-group
+                  :command-key :my-command
+                  :run-fn + }]
+      (testing "returns an observable"
+        (let [ob (observe (normalize (assoc base-def :run-fn str)) "")]
+          (is (instance? Observable ob))))))
 
 (deftest test-this-command-binding
   (let [base-def {:type :command

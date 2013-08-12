@@ -603,6 +603,21 @@
   (let [^HystrixExecutable instance (apply instantiate definition args)]
     (queued-command instance (.queue instance))))
 
+(defn observe
+  "The same as queue but returns a rx.Observable (http://netflix.github.io/RxJava/javadoc/rx/Observable.html).
+
+  Examples:
+
+    (let [ob (observe my-command 1 2 3)]
+      ... subscribe to observer ...)
+
+  See:
+    http://netflix.github.com/Hystrix/javadoc/com/netflix/hystrix/HystrixCommand.html#observe()
+  "
+  [definition & args]
+  (let [^HystrixExecutable instance (apply instantiate definition args)]
+    (.observe instance)))
+
 ;################################################################################
 ; :command impl
 
