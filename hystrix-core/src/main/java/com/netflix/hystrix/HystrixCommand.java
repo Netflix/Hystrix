@@ -834,10 +834,10 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         }
 
         // error handling
-        o = o.onErrorResumeNext(new Func1<Exception, Observable<R>>() {
+        o = o.onErrorResumeNext(new Func1<Throwable, Observable<R>>() {
 
             @Override
-            public Observable<R> call(Exception e) {
+            public Observable<R> call(Throwable e) {
                 // count that we are throwing an exception and re-throw it
                 metrics.markExceptionThrown();
                 return Observable.error(e);
