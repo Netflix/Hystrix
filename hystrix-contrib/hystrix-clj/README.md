@@ -58,3 +58,6 @@ and you want to make it a Hystrix dependency command. Do this:
 (queue #'make-request "baz")
 ```
 
+# Event Stream
+
+A Clojure version of hystrix-event-stream can be found at https://github.com/josephwilk/hystrix-event-stream-clj
