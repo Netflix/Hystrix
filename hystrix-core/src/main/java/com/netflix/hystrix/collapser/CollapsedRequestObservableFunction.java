@@ -8,7 +8,9 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
 
+
 import rx.Observable;
+import rx.Observable.OnSubscribeFunc;
 import rx.Observer;
 import rx.Subscription;
 import rx.subscriptions.BooleanSubscription;
@@ -22,12 +24,12 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
  * This is an internal implementation class that combines the Observable<T> and CollapsedRequest<T, R> functionality.
  * <p>
  * We publicly expose these via interfaces only since we want clients to only see Observable<T> and implementors to only see CollapsedRequest<T, R>, not the combination of the two.
- * 
+ *
  * @param <T>
- * 
+ *
  * @param <R>
  */
-/* package */class CollapsedRequestObservableFunction<T, R> implements CollapsedRequest<T, R>, Func1<Observer<T>, Subscription> {
+/* package */class CollapsedRequestObservableFunction<T, R> implements CollapsedRequest<T, R>, OnSubscribeFunc<T> {
     private final R argument;
     private final AtomicReference<CollapsedRequestObservableFunction.ResponseHolder<T>> rh = new AtomicReference<CollapsedRequestObservableFunction.ResponseHolder<T>>(new CollapsedRequestObservableFunction.ResponseHolder<T>());
     private final BooleanSubscription subscription = new BooleanSubscription();
@@ -38,7 +40,7 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
 
     /**
      * The request argument.
-     * 
+     *
      * @return request argument
      */
     @Override
@@ -48,7 +50,7 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
 
     /**
      * When set any client thread blocking on get() will immediately be unblocked and receive the response.
-     * 
+     *
      * @throws IllegalStateException
      *             if called more than once or after setException.
      * @param response
@@ -80,7 +82,7 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
 
     /**
      * Set an exception if a response is not yet received otherwise skip it
-     * 
+     *
      * @param e
      */
     public void setExceptionIfResponseNotReceived(Exception e) {
@@ -108,7 +110,7 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
 
     /**
      * When set any client thread blocking on get() will immediately be unblocked and receive the exception.
-     * 
+     *
      * @throws IllegalStateException
      *             if called more than once or after setResponse.
      * @param response
@@ -139,7 +141,7 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
     }
 
     @Override
-    public Subscription call(Observer<T> observer) {
+    public Subscription onSubscribe(Observer<? super T> observer) {
         while (true) {
             CollapsedRequestObservableFunction.ResponseHolder<T> r = rh.get();
             if (r.getObserver() != null) {
@@ -159,7 +161,7 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
 
     private static <T> void sendResponseIfRequired(BooleanSubscription subscription, CollapsedRequestObservableFunction.ResponseHolder<T> r) {
         if (!subscription.isUnsubscribed()) {
-            Observer<T> o = r.getObserver();
+            Observer<? super T> o = r.getObserver();
             if (o == null || (r.getException() == null && !r.isResponseSet())) {
                 // not ready to send
                 return;
@@ -183,13 +185,13 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
         // even if the value set is null
         private final AtomicReference<T> r;
         private final Exception e;
-        private final Observer<T> o;
+        private final Observer<? super T> o;
 
         public ResponseHolder() {
             this(null, null, null);
         }
 
-        private ResponseHolder(AtomicReference<T> response, Exception exception, Observer<T> observer) {
+        private ResponseHolder(AtomicReference<T> response, Exception exception, Observer<? super T> observer) {
             this.o = observer;
             this.r = response;
             this.e = exception;
@@ -199,7 +201,7 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
             return new ResponseHolder<T>(new AtomicReference<T>(response), e, o);
         }
 
-        public ResponseHolder<T> setObserver(Observer<T> observer) {
+        public ResponseHolder<T> setObserver(Observer<? super T> observer) {
             return new ResponseHolder<T>(r, e, observer);
         }
 
@@ -207,7 +209,7 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
             return new ResponseHolder<T>(r, exception, o);
         }
 
-        public Observer<T> getObserver() {
+        public Observer<? super T> getObserver() {
             return o;
         }
 
