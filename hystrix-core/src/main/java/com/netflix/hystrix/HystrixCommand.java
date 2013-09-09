@@ -1,12 +1,12 @@
 /**
  * Copyright 2012 Netflix, Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -49,6 +49,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import rx.Observable;
+import rx.Observable.OnSubscribeFunc;
 import rx.Observer;
 import rx.Scheduler;
 import rx.Subscription;
@@ -87,7 +88,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 /**
  * Used to wrap code that will execute potentially risky functionality (typically meaning a service call over the network)
  * with fault and latency tolerance, statistics and performance metrics capture, circuit breaker and bulkhead functionality.
- * 
+ *
  * @param <R>
  *            the return type
  */
@@ -146,7 +147,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      * Construct a {@link HystrixCommand} with defined {@link HystrixCommandGroupKey}.
      * <p>
      * The {@link HystrixCommandKey} will be derived from the implementing class name.
-     * 
+     *
      * @param group
      *            {@link HystrixCommandGroupKey} used to group together multiple {@link HystrixCommand} objects.
      *            <p>
@@ -167,7 +168,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      * <p>
      * Properties passed in via {@link Setter#andCommandPropertiesDefaults} or {@link Setter#andThreadPoolPropertiesDefaults} are cached for the given {@link HystrixCommandKey} for the life of the JVM
      * or until {@link Hystrix#reset()} is called. Dynamic properties allow runtime changes. Read more on the <a href="https://github.com/Netflix/Hystrix/wiki/Configuration">Hystrix Wiki</a>.
-     * 
+     *
      * @param setter
      *            Fluent interface for constructor arguments
      */
@@ -218,11 +219,11 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
         /*
          * ThreadPoolKey
-         * 
+         *
          * This defines which thread-pool this command should run on.
-         * 
+         *
          * It uses the HystrixThreadPoolKey if provided, then defaults to use HystrixCommandGroup.
-         * 
+         *
          * It can then be overridden by a property if defined so it can be changed at runtime.
          */
         if (this.properties.executionIsolationThreadPoolKeyOverride().get() == null) {
@@ -315,14 +316,14 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         return name;
     }
 
-    // this is a micro-optimization but saves about 1-2microseconds (on 2011 MacBook Pro) 
+    // this is a micro-optimization but saves about 1-2microseconds (on 2011 MacBook Pro)
     // on the repetitive string processing that will occur on the same classes over and over again
     @SuppressWarnings("rawtypes")
     private static ConcurrentHashMap<Class<? extends HystrixCommand>, String> defaultNameCache = new ConcurrentHashMap<Class<? extends HystrixCommand>, String>();
 
     /**
      * Implement this method with code to be executed when {@link #execute()} or {@link #queue()} are invoked.
-     * 
+     *
      * @return R response type
      * @throws Exception
      *             if command execution fails
@@ -340,7 +341,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      * access and possibly has another level of fallback that does not involve network access.
      * <p>
      * DEFAULT BEHAVIOR: It throws UnsupportedOperationException.
-     * 
+     *
      * @return R or throw UnsupportedOperationException if not implemented
      */
     protected R getFallback() {
@@ -378,7 +379,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
     /**
      * The {@link HystrixCommandMetrics} associated with this {@link HystrixCommand} instance.
-     * 
+     *
      * @return HystrixCommandMetrics
      */
     public HystrixCommandMetrics getMetrics() {
@@ -387,7 +388,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
     /**
      * The {@link HystrixCommandProperties} associated with this {@link HystrixCommand} instance.
-     * 
+     *
      * @return HystrixCommandProperties
      */
     public HystrixCommandProperties getProperties() {
@@ -396,7 +397,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
     /**
      * Allow the Collapser to mark this command instance as being used for a collapsed request and how many requests were collapsed.
-     * 
+     *
      * @param sizeOfBatch
      */
     /* package */void markAsCollapsedCommand(int sizeOfBatch) {
@@ -406,7 +407,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
     /**
      * Used for synchronous execution of command.
-     * 
+     *
      * @return R
      *         Result of {@link #run()} execution or a fallback from {@link #getFallback()} if the command fails for any reason.
      * @throws HystrixRuntimeException
@@ -432,7 +433,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      * NOTE: If configured to not run in a separate thread, this will have the same effect as {@link #execute()} and will block.
      * <p>
      * We don't throw an exception but just flip to synchronous execution so code doesn't need to change in order to switch a command from running on a separate thread to the calling thread.
-     * 
+     *
      * @return {@code Future<R>} Result of {@link #run()} execution or a fallback from {@link #getFallback()} if the command fails for any reason.
      * @throws HystrixRuntimeException
      *             if a fallback does not exist
@@ -449,16 +450,16 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
     public Future<R> queue() {
         /*
          * --- Schedulers.immediate()
-         * 
+         *
          * We use the 'immediate' schedule since Future.get() is blocking so we don't want to bother doing the callback to the Future on a separate thread
          * as we don't need to separate the Hystrix thread from user threads since they are already providing it via the Future.get() call.
-         * 
+         *
          * --- performAsyncTimeout: false
-         * 
+         *
          * We pass 'false' to tell the Observable we will block on it so it doesn't schedule an async timeout.
-         * 
+         *
          * This optimizes for using the calling thread to do the timeout rather than scheduling another thread.
-         * 
+         *
          * In a tight-loop of executing commands this optimization saves a few microseconds per execution.
          * It also just makes no sense to use a separate thread to timeout the command when the calling thread
          * is going to sit waiting on it.
@@ -512,40 +513,40 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
             /**
              * --- Non-Blocking Timeout (performAsyncTimeout:true) ---
-             * 
+             *
              * When 'toObservable' is done with non-blocking timeout then timeout functionality is provided
              * by a separate HystrixTimer thread that will "tick" and cancel the underlying async Future inside the Observable.
-             * 
+             *
              * This method allows stealing that responsibility and letting the thread that's going to block anyways
              * do the work to reduce pressure on the HystrixTimer.
-             * 
+             *
              * Blocking via queue().get() on a non-blocking timeout will work it's just less efficient
              * as it involves an extra thread and cancels the scheduled action that does the timeout.
-             * 
+             *
              * --- Blocking Timeout (performAsyncTimeout:false) ---
-             * 
+             *
              * When blocking timeout is assumed (default behavior for execute/queue flows) then the async
              * timeout will not have been scheduled and this will wait in a blocking manner and if a timeout occurs
              * trigger the timeout logic that comes from inside the Observable/Observer.
-             * 
-             * 
+             *
+             *
              * --- Examples
-             * 
+             *
              * Stack for timeout with performAsyncTimeout=false (note the calling thread via get):
-             * 
+             *
              * at com.netflix.hystrix.HystrixCommand$TimeoutObservable$1$1.tick(HystrixCommand.java:788)
              * at com.netflix.hystrix.HystrixCommand$1.performBlockingGetWithTimeout(HystrixCommand.java:536)
              * at com.netflix.hystrix.HystrixCommand$1.get(HystrixCommand.java:484)
              * at com.netflix.hystrix.HystrixCommand.execute(HystrixCommand.java:413)
-             * 
-             * 
+             *
+             *
              * Stack for timeout with performAsyncTimeout=true (note the HystrixTimer involved):
-             * 
+             *
              * at com.netflix.hystrix.HystrixCommand$TimeoutObservable$1$1.tick(HystrixCommand.java:799)
              * at com.netflix.hystrix.util.HystrixTimer$1.run(HystrixTimer.java:101)
-             * 
-             * 
-             * 
+             *
+             *
+             *
              * @param o
              * @param f
              * @throws InterruptedException
@@ -576,15 +577,15 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                     if (timer != null) {
                         /**
                          * If an async timeout was scheduled then:
-                         * 
+                         *
                          * - We are going to clear the Reference<TimerListener> so the scheduler threads stop managing the timeout
                          * and we'll take over instead since we're going to be blocking on it anyways.
-                         * 
+                         *
                          * - Other threads (since we won the race) will just wait on the normal Future which will release
                          * once the Observable is marked as completed (which may come via timeout)
-                         * 
+                         *
                          * If an async timeout was not scheduled:
-                         * 
+                         *
                          * - We go through the same flow as we receive the same interfaces just the "timer.clear()" will do nothing.
                          */
                         // get the timer we'll use to perform the timeout
@@ -642,7 +643,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      * Take an Exception and determine whether to throw it, its cause or a new HystrixRuntimeException.
      * <p>
      * This will only throw an HystrixRuntimeException, HystrixBadRequestException or IllegalStateException
-     * 
+     *
      * @param e
      * @return HystrixRuntimeException, HystrixBadRequestException or IllegalStateException
      */
@@ -684,7 +685,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      * Use {@link #toObservable(rx.Scheduler)} to schedule the callback differently.
      * <p>
      * See https://github.com/Netflix/RxJava/wiki for more information.
-     * 
+     *
      * @return {@code Observable<R>} that executes and calls back with the result of {@link #run()} execution or a fallback from {@link #getFallback()} if the command fails for any reason.
      * @throws HystrixRuntimeException
      *             if a fallback does not exist
@@ -718,9 +719,9 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      * </ul>
      * <p>
      * See https://github.com/Netflix/RxJava/wiki for more information.
-     * 
+     *
      * @return {@code Observable<R>} that lazily executes and calls back with the result of {@link #run()} execution or a fallback from {@link #getFallback()} if the command fails for any reason.
-     * 
+     *
      * @throws HystrixRuntimeException
      *             if a fallback does not exist
      *             <p>
@@ -747,7 +748,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      * A lazy {@link Observable} that will execute the command when subscribed to.
      * <p>
      * See https://github.com/Netflix/RxJava/wiki for more information.
-     * 
+     *
      * @param observeOn
      *            The {@link Scheduler} to execute callbacks on.
      * @return {@code Observable<R>} that lazily executes and calls back with the result of {@link #run()} execution or a fallback from {@link #getFallback()} if the command fails for any reason.
@@ -786,10 +787,10 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         final HystrixCommand<R> _this = this;
 
         // create an Observable that will lazily execute when subscribed to
-        Observable<R> o = Observable.create(new Func1<Observer<R>, Subscription>() {
+        Observable<R> o = Observable.create(new OnSubscribeFunc<R>() {
 
             @Override
-            public Subscription call(Observer<R> observer) {
+            public Subscription onSubscribe(Observer<? super R> observer) {
                 try {
                     /* used to track userThreadExecutionTime */
                     invocationStartTime = System.currentTimeMillis();
@@ -880,7 +881,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      * Wraps a source Observable and remembers the original HystrixCommand.
      * <p>
      * Used for request caching so multiple commands can respond from a single Observable but also get access to the originating HystrixCommand.
-     * 
+     *
      * @param <R>
      */
     private static class CachedObservableOriginal<R> extends ObservableCommand<R> {
@@ -888,10 +889,10 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         final HystrixCommand<R> originalCommand;
 
         CachedObservableOriginal(final Observable<R> actual, HystrixCommand<R> command) {
-            super(new Func1<Observer<R>, Subscription>() {
+            super(new OnSubscribeFunc<R>() {
 
                 @Override
-                public Subscription call(final Observer<R> observer) {
+                public Subscription onSubscribe(final Observer<? super R> observer) {
                     return actual.subscribe(observer);
                 }
             }, command);
@@ -902,7 +903,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
     private static class ObservableCommand<R> extends Observable<R> {
         private final HystrixCommand<R> command;
 
-        ObservableCommand(Func1<Observer<R>, Subscription> func, final HystrixCommand<R> command) {
+        ObservableCommand(OnSubscribeFunc<R> func, final HystrixCommand<R> command) {
             super(func);
             this.command = command;
         }
@@ -912,10 +913,10 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         }
 
         ObservableCommand(final Observable<R> originalObservable, final HystrixCommand<R> command) {
-            super(new Func1<Observer<R>, Subscription>() {
+            super(new OnSubscribeFunc<R>() {
 
                 @Override
-                public Subscription call(Observer<R> observer) {
+                public Subscription onSubscribe(Observer<? super R> observer) {
                     return originalObservable.subscribe(observer);
                 }
             });
@@ -929,17 +930,17 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      * <p>
      * As the Observable completes it copies state used for ExecutionResults
      * and metrics that differentiate between the original and the de-duped "response from cache" command execution.
-     * 
+     *
      * @param <R>
      */
     private static class CachedObservableResponse<R> extends ObservableCommand<R> {
         final CachedObservableOriginal<R> originalObservable;
 
         CachedObservableResponse(final CachedObservableOriginal<R> originalObservable, final HystrixCommand<R> commandOfDuplicateCall) {
-            super(new Func1<Observer<R>, Subscription>() {
+            super(new OnSubscribeFunc<R>() {
 
                 @Override
-                public Subscription call(final Observer<R> observer) {
+                public Subscription onSubscribe(final Observer<? super R> observer) {
                     return originalObservable.subscribe(new Observer<R>() {
 
                         @Override
@@ -987,10 +988,10 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
     private static class TimeoutObservable<R> extends Observable<R> {
 
         public TimeoutObservable(final Observable<R> o, final HystrixCommand<R> originalCommand, final boolean isNonBlocking) {
-            super(new Func1<Observer<R>, Subscription>() {
+            super(new OnSubscribeFunc<R>() {
 
                 @Override
-                public Subscription call(final Observer<R> observer) {
+                public Subscription onSubscribe(final Observer<? super R> observer) {
                     // TODO this is using a private API of Rx so either move off of it or get Rx to make it public
                     // TODO better yet, get TimeoutObservable part of Rx
                     final SafeObservableSubscription s = new SafeObservableSubscription();
@@ -1005,7 +1006,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                                 // report timeout failure
                                 originalCommand.metrics.markTimeout(System.currentTimeMillis() - originalCommand.invocationStartTime);
 
-                                // we record execution time because we are returning before 
+                                // we record execution time because we are returning before
                                 originalCommand.recordTotalExecutionTime(originalCommand.invocationStartTime);
 
                                 try {
@@ -1036,7 +1037,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                     } else {
                         /*
                          * Otherwise we just set the hook that queue().get() can trigger if a timeout occurs.
-                         * 
+                         *
                          * This allows the blocking and non-blocking approaches to be coded basically the same way
                          * though it is admittedly awkward if we were just blocking (the use of Reference annoys me for example)
                          */
@@ -1072,7 +1073,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         }
     }
 
-    private Subscription subscribeWithSemaphoreIsolation(final Observer<R> observer) {
+    private Subscription subscribeWithSemaphoreIsolation(final Observer<? super R> observer) {
         TryableSemaphore executionSemaphore = getExecutionSemaphore();
         // acquire a permit
         if (executionSemaphore.tryAcquire()) {
@@ -1117,7 +1118,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         }
     }
 
-    private Subscription subscribeWithThreadIsolation(final Observer<R> observer) {
+    private Subscription subscribeWithThreadIsolation(final Observer<? super R> observer) {
         // mark that we are executing in a thread (even if we end up being rejected we still were a THREAD execution and not SEMAPHORE)
         isExecutedInThread.set(true);
 
@@ -1128,7 +1129,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
         try {
             if (!threadPool.isQueueSpaceAvailable()) {
-                // we are at the property defined max so want to throw a RejectedExecutionException to simulate reaching the real max 
+                // we are at the property defined max so want to throw a RejectedExecutionException to simulate reaching the real max
                 throw new RejectedExecutionException("Rejected command because thread-pool queueSize is at rejection threshold.");
             }
 
@@ -1224,13 +1225,13 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      * Executes the command and marks success/failure on the circuit-breaker and calls <code>getFallback</code> if a failure occurs.
      * <p>
      * This does NOT use the circuit-breaker to determine if the command should be executed, use <code>execute()</code> for that. This method will ALWAYS attempt to execute the method.
-     * 
+     *
      * @return R
      */
     private R executeCommand() {
         /**
          * NOTE: Be very careful about what goes in this method. It gets invoked within another thread in most circumstances.
-         * 
+         *
          * The modifications of booleans 'isResponseFromFallback' etc are going across thread-boundaries thus those
          * variables MUST be volatile otherwise they are not guaranteed to be seen by the user thread when the executing thread modifies them.
          */
@@ -1317,7 +1318,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      * <p>
      * If something in the <code>getFallback()</code> implementation is latent (such as a network call) then the semaphore will cause us to start rejecting requests rather than allowing potentially
      * all threads to pile up and block.
-     * 
+     *
      * @return K
      * @throws UnsupportedOperationException
      *             if getFallback() not implemented
@@ -1362,9 +1363,9 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
         /*
          * We record the executionTime for command execution.
-         * 
+         *
          * If the command is never executed (rejected, short-circuited, etc) then it will be left unset.
-         * 
+         *
          * For this metric we include failures and successes as we use it for per-request profiling and debugging
          * whereas 'metrics.addCommandExecutionTime(duration)' is used by stats across many requests.
          */
@@ -1396,7 +1397,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
     /**
      * Whether the 'circuit-breaker' is open meaning that <code>execute()</code> will immediately return
      * the <code>getFallback()</code> response and not attempt a HystrixCommand execution.
-     * 
+     *
      * @return boolean
      */
     public boolean isCircuitBreakerOpen() {
@@ -1405,7 +1406,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
     /**
      * If this command has completed execution either successfully, via fallback or failure.
-     * 
+     *
      * @return boolean
      */
     public boolean isExecutionComplete() {
@@ -1418,7 +1419,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      * This should be called only once execute()/queue()/fireOrForget() are called otherwise it will always return false.
      * <p>
      * This specifies if a thread execution actually occurred, not just if it is configured to be executed in a thread.
-     * 
+     *
      * @return boolean
      */
     public boolean isExecutedInThread() {
@@ -1427,7 +1428,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
     /**
      * Whether the response was returned successfully either by executing <code>run()</code> or from cache.
-     * 
+     *
      * @return boolean
      */
     public boolean isSuccessfulExecution() {
@@ -1436,7 +1437,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
     /**
      * Whether the <code>run()</code> resulted in a failure (exception).
-     * 
+     *
      * @return boolean
      */
     public boolean isFailedExecution() {
@@ -1449,7 +1450,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      * If <code>isFailedExecution() == true</code> then this would represent the Exception thrown by the <code>run()</code> method.
      * <p>
      * If <code>isFailedExecution() == false</code> then this would return null.
-     * 
+     *
      * @return Throwable or null
      */
     public Throwable getFailedExecutionException() {
@@ -1459,7 +1460,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
     /**
      * Whether the response received from was the result of some type of failure
      * and <code>getFallback()</code> being called.
-     * 
+     *
      * @return boolean
      */
     public boolean isResponseFromFallback() {
@@ -1469,7 +1470,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
     /**
      * Whether the response received was the result of a timeout
      * and <code>getFallback()</code> being called.
-     * 
+     *
      * @return boolean
      */
     public boolean isResponseTimedOut() {
@@ -1479,7 +1480,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
     /**
      * Whether the response received was a fallback as result of being
      * short-circuited (meaning <code>isCircuitBreakerOpen() == true</code>) and <code>getFallback()</code> being called.
-     * 
+     *
      * @return boolean
      */
     public boolean isResponseShortCircuited() {
@@ -1488,7 +1489,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
     /**
      * Whether the response is from cache and <code>run()</code> was not invoked.
-     * 
+     *
      * @return boolean
      */
     public boolean isResponseFromCache() {
@@ -1498,7 +1499,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
     /**
      * Whether the response received was a fallback as result of being
      * rejected (from thread-pool or semaphore) and <code>getFallback()</code> being called.
-     * 
+     *
      * @return boolean
      */
     public boolean isResponseRejected() {
@@ -1509,7 +1510,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      * List of HystrixCommandEventType enums representing events that occurred during execution.
      * <p>
      * Examples of events are SUCCESS, FAILURE, TIMEOUT, and SHORT_CIRCUITED
-     * 
+     *
      * @return {@code List<HystrixEventType>}
      */
     public List<HystrixEventType> getExecutionEvents() {
@@ -1518,7 +1519,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
     /**
      * The execution time of this command instance in milliseconds, or -1 if not executed.
-     * 
+     *
      * @return int
      */
     public int getExecutionTimeInMilliseconds() {
@@ -1527,7 +1528,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
     /**
      * Get the TryableSemaphore this HystrixCommand should use if a fallback occurs.
-     * 
+     *
      * @param circuitBreaker
      * @param fallbackSemaphore
      * @return TryableSemaphore
@@ -1550,7 +1551,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
     /**
      * Get the TryableSemaphore this HystrixCommand should use for execution if not running in a separate thread.
-     * 
+     *
      * @param circuitBreaker
      * @param fallbackSemaphore
      * @return TryableSemaphore
@@ -1692,7 +1693,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
         /**
          * Creates a new ExecutionResult by adding the defined 'events' to the ones on the current instance.
-         * 
+         *
          * @param events
          * @return
          */
@@ -1720,7 +1721,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
      * To enable caching override this method and return a string key uniquely representing the state of a command instance.
      * <p>
      * If multiple command instances in the same request scope match keys then only the first will be executed and all others returned from cache.
-     * 
+     *
      * @return cacheKey
      */
     protected String getCacheKey() {
@@ -1754,7 +1755,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         /**
          * Use like this:
          * <p>
-         * 
+         *
          * <pre>
          * if (s.tryAcquire()) {
          * try {
@@ -1764,7 +1765,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
          * }
          * }
          * </pre>
-         * 
+         *
          * @return boolean
          */
         public boolean tryAcquire() {
@@ -1780,7 +1781,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         /**
          * ONLY call release if tryAcquire returned true.
          * <p>
-         * 
+         *
          * <pre>
          * if (s.tryAcquire()) {
          * try {
@@ -1830,7 +1831,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
          * Setter factory method containing required values.
          * <p>
          * All optional arguments can be set via the chained methods.
-         * 
+         *
          * @param groupKey
          *            {@link HystrixCommandGroupKey} used to group together multiple {@link HystrixCommand} objects.
          *            <p>
@@ -1846,7 +1847,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
          * Setter factory method with required values.
          * <p>
          * All optional arguments can be set via the chained methods.
-         * 
+         *
          * @param groupKey
          *            {@link HystrixCommandGroupKey} used to group together multiple {@link HystrixCommand} objects.
          *            <p>
@@ -1892,7 +1893,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
         /**
          * Optional
-         * 
+         *
          * @param commandPropertiesDefaults
          *            {@link HystrixCommandProperties.Setter} with property overrides for this specific instance of {@link HystrixCommand}.
          *            <p>
@@ -1906,7 +1907,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
         /**
          * Optional
-         * 
+         *
          * @param threadPoolPropertiesDefaults
          *            {@link HystrixThreadPoolProperties.Setter} with property overrides for the {@link HystrixThreadPool} used by this specific instance of {@link HystrixCommand}.
          *            <p>
@@ -2416,12 +2417,12 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                 private final Scheduler self = this;
 
                 @Override
-                public <T> Subscription schedule(T state, Func2<Scheduler, T, Subscription> action) {
+                public <T> Subscription schedule(T state, Func2<? super Scheduler, ? super T, ? extends Subscription> action) {
                     return schedule(state, action, 0, TimeUnit.MILLISECONDS);
                 }
 
                 @Override
-                public <T> Subscription schedule(final T state, final Func2<Scheduler, T, Subscription> action, long delayTime, TimeUnit unit) {
+                public <T> Subscription schedule(final T state, final Func2<? super Scheduler, ? super T, ? extends Subscription> action, long delayTime, TimeUnit unit) {
                     new Thread("RxScheduledThread") {
                         @Override
                         public void run() {
@@ -5012,7 +5013,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             } catch (ExecutionException e) {
                 e.printStackTrace();
                 if (e.getCause() instanceof HystrixBadRequestException) {
-                    // success    
+                    // success
                 } else {
                     fail("We expect a " + HystrixBadRequestException.class.getSimpleName() + " but got a " + e.getClass().getSimpleName());
                 }
@@ -5096,7 +5097,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
         /**
          * Test a java.lang.Error being thrown
-         * 
+         *
          * @throws InterruptedException
          */
         @Test
@@ -5203,7 +5204,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
         /**
          * Test a java.lang.Error being thrown
-         * 
+         *
          * @throws InterruptedException
          */
         @Test
@@ -6684,7 +6685,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             private final CountDownLatch startLatch, waitLatch;
 
             /**
-             * 
+             *
              * @param circuitBreaker
              * @param semaphore
              * @param startLatch
