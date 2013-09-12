@@ -49,6 +49,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import rx.Observable;
+import rx.Observable.OnSubscribeFunc;
 import rx.Observer;
 import rx.Scheduler;
 import rx.Subscription;
@@ -786,10 +787,10 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         final HystrixCommand<R> _this = this;
 
         // create an Observable that will lazily execute when subscribed to
-        Observable<R> o = Observable.create(new Func1<Observer<R>, Subscription>() {
+        Observable<R> o = Observable.create(new OnSubscribeFunc<R>() {
 
             @Override
-            public Subscription call(Observer<R> observer) {
+            public Subscription onSubscribe(Observer<? super R> observer) {
                 try {
                     /* used to track userThreadExecutionTime */
                     invocationStartTime = System.currentTimeMillis();
@@ -888,10 +889,10 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         final HystrixCommand<R> originalCommand;
 
         CachedObservableOriginal(final Observable<R> actual, HystrixCommand<R> command) {
-            super(new Func1<Observer<R>, Subscription>() {
+            super(new OnSubscribeFunc<R>() {
 
                 @Override
-                public Subscription call(final Observer<R> observer) {
+                public Subscription onSubscribe(final Observer<? super R> observer) {
                     return actual.subscribe(observer);
                 }
             }, command);
@@ -902,7 +903,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
     private static class ObservableCommand<R> extends Observable<R> {
         private final HystrixCommand<R> command;
 
-        ObservableCommand(Func1<Observer<R>, Subscription> func, final HystrixCommand<R> command) {
+        ObservableCommand(OnSubscribeFunc<R> func, final HystrixCommand<R> command) {
             super(func);
             this.command = command;
         }
@@ -912,10 +913,10 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         }
 
         ObservableCommand(final Observable<R> originalObservable, final HystrixCommand<R> command) {
-            super(new Func1<Observer<R>, Subscription>() {
+            super(new OnSubscribeFunc<R>() {
 
                 @Override
-                public Subscription call(Observer<R> observer) {
+                public Subscription onSubscribe(Observer<? super R> observer) {
                     return originalObservable.subscribe(observer);
                 }
             });
@@ -936,10 +937,10 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         final CachedObservableOriginal<R> originalObservable;
 
         CachedObservableResponse(final CachedObservableOriginal<R> originalObservable, final HystrixCommand<R> commandOfDuplicateCall) {
-            super(new Func1<Observer<R>, Subscription>() {
+            super(new OnSubscribeFunc<R>() {
 
                 @Override
-                public Subscription call(final Observer<R> observer) {
+                public Subscription onSubscribe(final Observer<? super R> observer) {
                     return originalObservable.subscribe(new Observer<R>() {
 
                         @Override
@@ -987,10 +988,10 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
     private static class TimeoutObservable<R> extends Observable<R> {
 
         public TimeoutObservable(final Observable<R> o, final HystrixCommand<R> originalCommand, final boolean isNonBlocking) {
-            super(new Func1<Observer<R>, Subscription>() {
+            super(new OnSubscribeFunc<R>() {
 
                 @Override
-                public Subscription call(final Observer<R> observer) {
+                public Subscription onSubscribe(final Observer<? super R> observer) {
                     // TODO this is using a private API of Rx so either move off of it or get Rx to make it public
                     // TODO better yet, get TimeoutObservable part of Rx
                     final SafeObservableSubscription s = new SafeObservableSubscription();
@@ -1072,7 +1073,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         }
     }
 
-    private Subscription subscribeWithSemaphoreIsolation(final Observer<R> observer) {
+    private Subscription subscribeWithSemaphoreIsolation(final Observer<? super R> observer) {
         TryableSemaphore executionSemaphore = getExecutionSemaphore();
         // acquire a permit
         if (executionSemaphore.tryAcquire()) {
@@ -1117,7 +1118,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         }
     }
 
-    private Subscription subscribeWithThreadIsolation(final Observer<R> observer) {
+    private Subscription subscribeWithThreadIsolation(final Observer<? super R> observer) {
         // mark that we are executing in a thread (even if we end up being rejected we still were a THREAD execution and not SEMAPHORE)
         isExecutedInThread.set(true);
 
@@ -2416,12 +2417,12 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                 private final Scheduler self = this;
 
                 @Override
-                public <T> Subscription schedule(T state, Func2<Scheduler, T, Subscription> action) {
+                public <T> Subscription schedule(T state, Func2<? super Scheduler, ? super T, ? extends Subscription> action) {
                     return schedule(state, action, 0, TimeUnit.MILLISECONDS);
                 }
 
                 @Override
-                public <T> Subscription schedule(final T state, final Func2<Scheduler, T, Subscription> action, long delayTime, TimeUnit unit) {
+                public <T> Subscription schedule(final T state, final Func2<? super Scheduler, ? super T, ? extends Subscription> action, long delayTime, TimeUnit unit) {
                     new Thread("RxScheduledThread") {
                         @Override
                         public void run() {
