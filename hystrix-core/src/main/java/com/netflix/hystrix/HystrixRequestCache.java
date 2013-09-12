@@ -24,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import rx.Observable;
+import rx.Observable.OnSubscribeFunc;
 import rx.Observer;
 import rx.Subscription;
 import rx.subscriptions.Subscriptions;
@@ -334,10 +335,10 @@ public class HystrixRequestCache {
 
         private static class TestObservable extends Observable<String> {
             public TestObservable(final String value) {
-                super(new Func1<Observer<String>, Subscription>() {
+                super(new OnSubscribeFunc<String>() {
 
                     @Override
-                    public Subscription call(Observer<String> observer) {
+                    public Subscription onSubscribe(Observer<? super String> observer) {
                         observer.onNext(value);
                         observer.onCompleted();
                         return Subscriptions.empty();
