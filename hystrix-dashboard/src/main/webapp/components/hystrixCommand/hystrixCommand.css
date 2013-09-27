@@ -119,9 +119,6 @@
 .dependencies .shortCircuited {
 	color: blue;	
 }
-.dependencies .latent {
-	color: #FFCC00;	/* shade of dark yellow */
-}
 .dependencies .timeout {
 	color: #FF9900;	 /* shade of orange */
 }
