@@ -7,7 +7,7 @@
 * [Pull 183](https://github.com/Netflix/Hystrix/pull/183) Bugfix to HystrixBadRequestException handling
 * [Pull 184](https://github.com/Netflix/Hystrix/pull/184) BugFix: queue() BadRequestException Handling on Cached Response
 * [Pull 185](https://github.com/Netflix/Hystrix/pull/185) BugFix: Observable.observeOn Scheduler Lost RequestContext
-* [Commit 0fb0d3d](https://github.com/Netflix/Hystrix/commit/0fb0d3d25e406f8b6240d312c2ee1f515c77fc13) RxJava 0.14
+* [0fb0d3d](https://github.com/Netflix/Hystrix/commit/0fb0d3d25e406f8b6240d312c2ee1f515c77fc13) RxJava 0.14
 
 ### Version 1.3.5 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.3.5%22)) ###
 
