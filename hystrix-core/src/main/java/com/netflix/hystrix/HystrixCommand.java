@@ -474,7 +474,9 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                 return f;
             } catch (Exception e) {
                 RuntimeException re = decomposeException(e);
-                if (re instanceof HystrixRuntimeException) {
+                if (re instanceof HystrixBadRequestException) {
+                    return f;
+                } else if (re instanceof HystrixRuntimeException) {
                     HystrixRuntimeException hre = (HystrixRuntimeException) re;
                     if (hre.getFailureType() == FailureType.COMMAND_EXCEPTION || hre.getFailureType() == FailureType.TIMEOUT) {
                         // we don't throw these types from queue() only from queue().get() as they are execution errors
@@ -5025,6 +5027,40 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
             assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
         }
+        
+        /**
+         * Test that BadRequestException behavior works the same on a cached response.
+         */
+        @Test
+        public void testBadRequestExceptionViaQueueInThreadOnResponseFromCache() {
+            TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
+
+            // execute once to cache the value
+            try {
+                new BadRequestCommand(circuitBreaker, ExecutionIsolationStrategy.THREAD).execute();
+            } catch (Throwable e) {
+                // ignore
+            }
+
+            try {
+                new BadRequestCommand(circuitBreaker, ExecutionIsolationStrategy.THREAD).queue().get();
+                fail("we expect to receive a " + HystrixBadRequestException.class.getSimpleName());
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+                if (e.getCause() instanceof HystrixBadRequestException) {
+                    // success    
+                } else {
+                    fail("We expect a " + HystrixBadRequestException.class.getSimpleName() + " but got a " + e.getClass().getSimpleName());
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                fail();
+            }
+
+            assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
+            assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
+            assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
+        }
 
         /**
          * Test that a BadRequestException can be thrown and not count towards errors and bypasses fallback.
@@ -5057,14 +5093,18 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             try {
                 new BadRequestCommand(circuitBreaker, ExecutionIsolationStrategy.SEMAPHORE).queue().get();
                 fail("we expect to receive a " + HystrixBadRequestException.class.getSimpleName());
-            } catch (HystrixBadRequestException e) {
-                // success
+            } catch (ExecutionException e) {
                 e.printStackTrace();
+                if (e.getCause() instanceof HystrixBadRequestException) {
+                    // success    
+                } else {
+                    fail("We expect a " + HystrixBadRequestException.class.getSimpleName() + " but got a " + e.getClass().getSimpleName());
+                }
             } catch (Exception e) {
                 e.printStackTrace();
-                fail("We expect a " + HystrixBadRequestException.class.getSimpleName() + " but got a " + e.getClass().getSimpleName());
+                fail();
             }
-
+            
             assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
             assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
             assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
@@ -6872,6 +6912,11 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             @Override
             protected Boolean getFallback() {
                 return false;
+            }
+
+            @Override
+            protected String getCacheKey() {
+                return "one";
             }
 
         }
