@@ -391,7 +391,7 @@
   "
   {:arglists '([name doc-string? attr-map? [params*] & body])}
   [name & opts]
-  (let [command-key         (str name)
+  (let [command-key         (str *ns* "/" name )
         group-key           (str *ns*)
         [m [params & body]] (split-def-meta opts)
         m                   (if-not (contains? m :arglists)
