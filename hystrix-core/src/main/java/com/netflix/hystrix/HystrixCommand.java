@@ -1264,11 +1264,10 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                 if (decorated instanceof HystrixBadRequestException) {
                     e = (HystrixBadRequestException) decorated;
                 } else {
-                    logger.warn("ExecutionHook.endRunFailure returned an exception that was not an instance of HystrixBadRequestException so will be ignored.", decorated);
+                    logger.warn("ExecutionHook.onRunError returned an exception that was not an instance of HystrixBadRequestException so will be ignored.", decorated);
                 }
-                throw e;
             } catch (Exception hookException) {
-                logger.warn("Error calling ExecutionHook.endRunFailure", hookException);
+                logger.warn("Error calling ExecutionHook.onRunError", hookException);
             }
 
             /*
