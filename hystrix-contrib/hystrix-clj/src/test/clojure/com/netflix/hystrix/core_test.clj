@@ -306,7 +306,7 @@
     (testing "defines a fn in a var"
       (is (fn? my-fn-command))
       (is (map? hm))
-      (is (= "my-fn-command" (.name (:command-key hm))))
+      (is (= "com.netflix.hystrix.core-test/my-fn-command" (.name (:command-key hm))))
       (is (= "com.netflix.hystrix.core-test" (.name (:group-key hm))))
       (is (= :data (-> #'my-fn-command meta :meta)))
       (= 500 ((:fallback-fn hm))))
