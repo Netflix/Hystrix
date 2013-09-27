@@ -73,6 +73,7 @@ import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategyDefault;
 import com.netflix.hystrix.strategy.concurrency.HystrixContextCallable;
 import com.netflix.hystrix.strategy.concurrency.HystrixContextRunnable;
+import com.netflix.hystrix.strategy.concurrency.HystrixContextScheduler;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
 import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
@@ -848,7 +849,12 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         });
 
         // we want to hand off work to a different scheduler so we don't tie up the Hystrix thread
-        o = o.observeOn(observeOn);
+        if (!Schedulers.immediate().equals(observeOn)) {
+            // don't waste overhead if it's the 'immediate' scheduler
+            // otherwise we'll 'observeOn' and wrap with the HystrixContextScheduler
+            // to copy state across threads (if threads are involved)
+            o = o.observeOn(new HystrixContextScheduler(observeOn));
+        }
 
         o = o.finallyDo(new Action0() {
 
