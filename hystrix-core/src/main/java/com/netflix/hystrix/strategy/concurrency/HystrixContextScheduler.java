@@ -15,32 +15,36 @@
  */
 package com.netflix.hystrix.strategy.concurrency;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 import rx.Scheduler;
 import rx.Subscription;
+import rx.subscriptions.MultipleAssignmentSubscription;
 import rx.util.functions.Func2;
 
 /**
- * Wrap a {@link Scheduler} so that scheduled actions are wrapped with {@link HystrixContextFunc2} so that 
+ * Wrap a {@link Scheduler} so that scheduled actions are wrapped with {@link HystrixContextFunc2} so that
  * the {@link HystrixRequestContext} is properly copied across threads (if they are used by the {@link Scheduler}).
  */
 public class HystrixContextScheduler extends Scheduler {
 
+    private final HystrixConcurrencyStrategy concurrencyStrategy;
     private final Scheduler actualScheduler;
 
-    public HystrixContextScheduler(Scheduler scheduler) {
+    public HystrixContextScheduler(HystrixConcurrencyStrategy concurrencyStrategy, Scheduler scheduler) {
         this.actualScheduler = scheduler;
+        this.concurrencyStrategy = concurrencyStrategy;
     }
 
     @Override
-    public <T> Subscription schedule(T state, Func2<? super Scheduler, ? super T, ? extends Subscription> action) {
-        return actualScheduler.schedule(state, new HystrixContextFunc2<T>(action));
+    public <T> Subscription schedule(final T state, final Func2<? super Scheduler, ? super T, ? extends Subscription> action) {
+        return actualScheduler.schedule(state, new HystrixContextFunc2<T>(concurrencyStrategy, action));
     }
 
     @Override
     public <T> Subscription schedule(T state, Func2<? super Scheduler, ? super T, ? extends Subscription> action, long delayTime, TimeUnit unit) {
-        return actualScheduler.schedule(state, new HystrixContextFunc2<T>(action), delayTime, unit);
+        return actualScheduler.schedule(state, new HystrixContextFunc2<T>(concurrencyStrategy, action), delayTime, unit);
     }
 
 }

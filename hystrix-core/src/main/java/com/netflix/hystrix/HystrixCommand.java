@@ -853,7 +853,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             // don't waste overhead if it's the 'immediate' scheduler
             // otherwise we'll 'observeOn' and wrap with the HystrixContextScheduler
             // to copy state across threads (if threads are involved)
-            o = o.observeOn(new HystrixContextScheduler(observeOn));
+            o = o.observeOn(new HystrixContextScheduler(concurrencyStrategy, observeOn));
         }
 
         o = o.finallyDo(new Action0() {
