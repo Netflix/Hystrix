@@ -108,10 +108,12 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
     private volatile ExecutionResult executionResult = ExecutionResult.EMPTY;
 
     /* If this command executed and timed-out */
-    private final AtomicBoolean isCommandTimedOut = new AtomicBoolean(false);
+    private final AtomicReference<TimedOutStatus> isCommandTimedOut = new AtomicReference<TimedOutStatus>(TimedOutStatus.NOT_EXECUTED); 
     private final AtomicBoolean isExecutionComplete = new AtomicBoolean(false);
     private final AtomicBoolean isExecutedInThread = new AtomicBoolean(false);
 
+    private static enum TimedOutStatus {NOT_EXECUTED, EXECUTED, TIMED_OUT};
+    
     private final HystrixCommandKey commandKey;
     private final HystrixCommandGroupKey commandGroup;
 
@@ -1008,7 +1010,9 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
                         @Override
                         public void tick() {
-                            if (originalCommand.isCommandTimedOut.compareAndSet(false, true)) {
+                            // if we can go from NOT_EXECUTED to TIMED_OUT then we do the timeout codepath
+                            // otherwise it means we lost a race and the run() execution completed
+                            if (originalCommand.isCommandTimedOut.compareAndSet(TimedOutStatus.NOT_EXECUTED, TimedOutStatus.TIMED_OUT)) {
                                 // do fallback logic
 
                                 // report timeout failure
@@ -1163,20 +1167,23 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
                             // execute the command
                             R r = executeCommand();
-                            if (isCommandTimedOut.get()) {
+                            // if we can go from NOT_EXECUTED to EXECUTED then we did not timeout
+                            if (isCommandTimedOut.compareAndSet(TimedOutStatus.NOT_EXECUTED, TimedOutStatus.EXECUTED)) {
+                                // give the hook an opportunity to modify it
+                                r = executionHook.onComplete(_this, r);
+                                // pass to the observer
+                                observer.onNext(r);
+                                // state changes before termination
+                                preTerminationWork();
+                                /* now complete which releases the consumer */
+                                observer.onCompleted();
+                                return r;
+                            } else {
+                                // this means we lost the race and the timeout logic has or is being executed
                                 // state changes before termination
                                 preTerminationWork();
                                 return null;
                             }
-                            // give the hook an opportunity to modify it
-                            r = executionHook.onComplete(_this, r);
-                            // pass to the observer
-                            observer.onNext(r);
-                            // state changes before termination
-                            preTerminationWork();
-                            /* now complete which releases the consumer */
-                            observer.onCompleted();
-                            return r;
                         } finally {
                             // pop this off the thread now that it's done
                             Hystrix.endCurrentThreadExecutingCommand();
@@ -1254,7 +1261,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             long duration = System.currentTimeMillis() - startTime;
             metrics.addCommandExecutionTime(duration);
 
-            if (isCommandTimedOut.get()) {
+            if (isCommandTimedOut.get() == TimedOutStatus.TIMED_OUT) {
                 // the command timed out in the wrapping thread so we will return immediately
                 // and not increment any of the counters below or other such logic
                 return null;
@@ -1296,7 +1303,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                 logger.warn("Error calling ExecutionHook.endRunFailure", hookException);
             }
 
-            if (isCommandTimedOut.get()) {
+            if (isCommandTimedOut.get() == TimedOutStatus.TIMED_OUT) {
                 // http://jira/browse/API-4905 HystrixCommand: Error/Timeout Double-count if both occur
                 // this means we have already timed out then we don't count this error stat and we just return
                 // as this means the user-thread has already returned, we've already done fallback logic
