@@ -112,7 +112,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
     private final AtomicBoolean isExecutionComplete = new AtomicBoolean(false);
     private final AtomicBoolean isExecutedInThread = new AtomicBoolean(false);
 
-    private static enum TimedOutStatus {NOT_EXECUTED, EXECUTED, TIMED_OUT};
+    private static enum TimedOutStatus {NOT_EXECUTED, COMPLETED, TIMED_OUT};
     
     private final HystrixCommandKey commandKey;
     private final HystrixCommandGroupKey commandGroup;
@@ -1167,8 +1167,8 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
                             // execute the command
                             R r = executeCommand();
-                            // if we can go from NOT_EXECUTED to EXECUTED then we did not timeout
-                            if (isCommandTimedOut.compareAndSet(TimedOutStatus.NOT_EXECUTED, TimedOutStatus.EXECUTED)) {
+                            // if we can go from NOT_EXECUTED to COMPLETED then we did not timeout
+                            if (isCommandTimedOut.compareAndSet(TimedOutStatus.NOT_EXECUTED, TimedOutStatus.COMPLETED)) {
                                 // give the hook an opportunity to modify it
                                 r = executionHook.onComplete(_this, r);
                                 // pass to the observer
@@ -1191,7 +1191,10 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                     } catch (Exception e) {
                         // state changes before termination
                         preTerminationWork();
-                        observer.onError(e);
+                        // if we can go from NOT_EXECUTED to COMPLETED then we did not timeout
+                        if (isCommandTimedOut.compareAndSet(TimedOutStatus.NOT_EXECUTED, TimedOutStatus.COMPLETED)) {
+                            observer.onError(e);
+                        }
                         throw e;
                     }
                 }
