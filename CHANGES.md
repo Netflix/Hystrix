@@ -1,5 +1,11 @@
 # Hystrix Releases #
 
+### Version 1.3.7 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.3.7%22)) ###
+
+* [Pull 189](https://github.com/Netflix/Hystrix/pull/189) BugFix: Race condition between run() and timeout
+* [Pull 190](https://github.com/Netflix/Hystrix/pull/190) BugFix: ConcurrencyStrategy.wrapCallable was not being used on callbacks
+
+
 ### Version 1.3.6 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.3.6%22)) ###
 
 * [Pull 181](https://github.com/Netflix/Hystrix/pull/181) [hystrix-contrib/hystrix-clj] Making Command keys quantified by namespaces
