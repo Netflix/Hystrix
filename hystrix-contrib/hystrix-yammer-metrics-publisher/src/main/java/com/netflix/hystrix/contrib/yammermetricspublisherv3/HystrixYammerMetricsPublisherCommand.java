@@ -11,8 +11,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.hystrix.contrib.yammermetricspublisher;
+package com.netflix.hystrix.contrib.yammermetricspublisherv3;
 
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.MetricRegistry;
 import com.netflix.hystrix.HystrixCircuitBreaker;
 import com.netflix.hystrix.HystrixCommandGroupKey;
 import com.netflix.hystrix.HystrixCommandKey;
@@ -20,9 +22,6 @@ import com.netflix.hystrix.HystrixCommandMetrics;
 import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherCommand;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
-import com.yammer.metrics.core.Gauge;
-import com.yammer.metrics.core.MetricName;
-import com.yammer.metrics.core.MetricsRegistry;
 
 /**
  * Implementation of {@link HystrixMetricsPublisherCommand} using Yammer Metrics (https://github.com/codahale/metrics)
@@ -33,11 +32,11 @@ public class HystrixYammerMetricsPublisherCommand implements HystrixMetricsPubli
     private final HystrixCommandMetrics metrics;
     private final HystrixCircuitBreaker circuitBreaker;
     private final HystrixCommandProperties properties;
-    private final MetricsRegistry metricsRegistry;
+    private final MetricRegistry metricsRegistry;
     private final String metricGroup;
     private final String metricType;
 
-    public HystrixYammerMetricsPublisherCommand(HystrixCommandKey commandKey, HystrixCommandGroupKey commandGroupKey, HystrixCommandMetrics metrics, HystrixCircuitBreaker circuitBreaker, HystrixCommandProperties properties, MetricsRegistry metricsRegistry) {
+    public HystrixYammerMetricsPublisherCommand(HystrixCommandKey commandKey, HystrixCommandGroupKey commandGroupKey, HystrixCommandMetrics metrics, HystrixCircuitBreaker circuitBreaker, HystrixCommandProperties properties, MetricRegistry metricsRegistry) {
         this.key = commandKey;
         this.commandGroupKey = commandGroupKey;
         this.metrics = metrics;
@@ -50,17 +49,17 @@ public class HystrixYammerMetricsPublisherCommand implements HystrixMetricsPubli
 
     @Override
     public void initialize() {
-        metricsRegistry.newGauge(createMetricName("isCircuitBreakerOpen"), new Gauge<Boolean>() {
+        metricsRegistry.register(createMetricName("isCircuitBreakerOpen"), new Gauge<Boolean>() {
             @Override
-            public Boolean value() {
+            public Boolean getValue() {
                 return circuitBreaker.isOpen();
             }
         });
 
         // allow monitor to know exactly at what point in time these stats are for so they can be plotted accurately
-        metricsRegistry.newGauge(createMetricName("currentTime"), new Gauge<Long>() {
+        metricsRegistry.register(createMetricName("currentTime"), new Gauge<Long>() {
             @Override
-            public Long value() {
+            public Long getValue() {
                 return System.currentTimeMillis();
             }
         });
@@ -94,226 +93,226 @@ public class HystrixYammerMetricsPublisherCommand implements HystrixMetricsPubli
         createRollingCountForEvent("rollingCountTimeout", HystrixRollingNumberEvent.TIMEOUT);
 
         // the number of executionSemaphorePermits in use right now 
-        metricsRegistry.newGauge(createMetricName("executionSemaphorePermitsInUse"), new Gauge<Integer>() {
+        metricsRegistry.register(createMetricName("executionSemaphorePermitsInUse"), new Gauge<Integer>() {
             @Override
-            public Integer value() {
+            public Integer getValue() {
                 return metrics.getCurrentConcurrentExecutionCount();
             }
         });
         
         // error percentage derived from current metrics 
-        metricsRegistry.newGauge(createMetricName("errorPercentage"), new Gauge<Integer>() {
+        metricsRegistry.register(createMetricName("errorPercentage"), new Gauge<Integer>() {
             @Override
-            public Integer value() {
+            public Integer getValue() {
                 return metrics.getHealthCounts().getErrorPercentage();
             }
         });
 
         // latency metrics
-        metricsRegistry.newGauge(createMetricName("latencyExecute_mean"), new Gauge<Integer>() {
+        metricsRegistry.register(createMetricName("latencyExecute_mean"), new Gauge<Integer>() {
             @Override
-            public Integer value() {
+            public Integer getValue() {
                 return metrics.getExecutionTimeMean();
             }
         });
-        metricsRegistry.newGauge(createMetricName("latencyExecute_percentile_5"), new Gauge<Integer>() {
+        metricsRegistry.register(createMetricName("latencyExecute_percentile_5"), new Gauge<Integer>() {
             @Override
-            public Integer value() {
+            public Integer getValue() {
                 return metrics.getExecutionTimePercentile(5);
             }
         });
-        metricsRegistry.newGauge(createMetricName("latencyExecute_percentile_25"), new Gauge<Integer>() {
+        metricsRegistry.register(createMetricName("latencyExecute_percentile_25"), new Gauge<Integer>() {
             @Override
-            public Integer value() {
+            public Integer getValue() {
                 return metrics.getExecutionTimePercentile(25);
             }
         });
-        metricsRegistry.newGauge(createMetricName("latencyExecute_percentile_50"), new Gauge<Integer>() {
+        metricsRegistry.register(createMetricName("latencyExecute_percentile_50"), new Gauge<Integer>() {
             @Override
-            public Integer value() {
+            public Integer getValue() {
                 return metrics.getExecutionTimePercentile(50);
             }
         });
-        metricsRegistry.newGauge(createMetricName("latencyExecute_percentile_75"), new Gauge<Integer>() {
+        metricsRegistry.register(createMetricName("latencyExecute_percentile_75"), new Gauge<Integer>() {
             @Override
-            public Integer value() {
+            public Integer getValue() {
                 return metrics.getExecutionTimePercentile(75);
             }
         });
-        metricsRegistry.newGauge(createMetricName("latencyExecute_percentile_90"), new Gauge<Integer>() {
+        metricsRegistry.register(createMetricName("latencyExecute_percentile_90"), new Gauge<Integer>() {
             @Override
-            public Integer value() {
+            public Integer getValue() {
                 return metrics.getExecutionTimePercentile(90);
             }
         });
-        metricsRegistry.newGauge(createMetricName("latencyExecute_percentile_99"), new Gauge<Integer>() {
+        metricsRegistry.register(createMetricName("latencyExecute_percentile_99"), new Gauge<Integer>() {
             @Override
-            public Integer value() {
+            public Integer getValue() {
                 return metrics.getExecutionTimePercentile(99);
             }
         });
-        metricsRegistry.newGauge(createMetricName("latencyExecute_percentile_995"), new Gauge<Integer>() {
+        metricsRegistry.register(createMetricName("latencyExecute_percentile_995"), new Gauge<Integer>() {
             @Override
-            public Integer value() {
+            public Integer getValue() {
                 return metrics.getExecutionTimePercentile(99.5);
             }
         });
 
-        metricsRegistry.newGauge(createMetricName("latencyTotal_mean"), new Gauge<Integer>() {
+        metricsRegistry.register(createMetricName("latencyTotal_mean"), new Gauge<Integer>() {
             @Override
-            public Integer value() {
+            public Integer getValue() {
                 return metrics.getTotalTimeMean();
             }
         });
-        metricsRegistry.newGauge(createMetricName("latencyTotal_percentile_5"), new Gauge<Integer>() {
+        metricsRegistry.register(createMetricName("latencyTotal_percentile_5"), new Gauge<Integer>() {
             @Override
-            public Integer value() {
+            public Integer getValue() {
                 return metrics.getTotalTimePercentile(5);
             }
         });
-        metricsRegistry.newGauge(createMetricName("latencyTotal_percentile_25"), new Gauge<Integer>() {
+        metricsRegistry.register(createMetricName("latencyTotal_percentile_25"), new Gauge<Integer>() {
             @Override
-            public Integer value() {
+            public Integer getValue() {
                 return metrics.getTotalTimePercentile(25);
             }
         });
-        metricsRegistry.newGauge(createMetricName("latencyTotal_percentile_50"), new Gauge<Integer>() {
+        metricsRegistry.register(createMetricName("latencyTotal_percentile_50"), new Gauge<Integer>() {
             @Override
-            public Integer value() {
+            public Integer getValue() {
                 return metrics.getTotalTimePercentile(50);
             }
         });
-        metricsRegistry.newGauge(createMetricName("latencyTotal_percentile_75"), new Gauge<Integer>() {
+        metricsRegistry.register(createMetricName("latencyTotal_percentile_75"), new Gauge<Integer>() {
             @Override
-            public Integer value() {
+            public Integer getValue() {
                 return metrics.getTotalTimePercentile(75);
             }
         });
-        metricsRegistry.newGauge(createMetricName("latencyTotal_percentile_90"), new Gauge<Integer>() {
+        metricsRegistry.register(createMetricName("latencyTotal_percentile_90"), new Gauge<Integer>() {
             @Override
-            public Integer value() {
+            public Integer getValue() {
                 return metrics.getTotalTimePercentile(90);
             }
         });
-        metricsRegistry.newGauge(createMetricName("latencyTotal_percentile_99"), new Gauge<Integer>() {
+        metricsRegistry.register(createMetricName("latencyTotal_percentile_99"), new Gauge<Integer>() {
             @Override
-            public Integer value() {
+            public Integer getValue() {
                 return metrics.getTotalTimePercentile(99);
             }
         });
-        metricsRegistry.newGauge(createMetricName("latencyTotal_percentile_995"), new Gauge<Integer>() {
+        metricsRegistry.register(createMetricName("latencyTotal_percentile_995"), new Gauge<Integer>() {
             @Override
-            public Integer value() {
+            public Integer getValue() {
                 return metrics.getTotalTimePercentile(99.5);
             }
         });
 
         // group
-        metricsRegistry.newGauge(createMetricName("commandGroup"), new Gauge<String>() {
+        metricsRegistry.register(createMetricName("commandGroup"), new Gauge<String>() {
             @Override
-            public String value() {
+            public String getValue() {
                 return commandGroupKey != null ? commandGroupKey.name() : null;
             }
         });
 
         // properties (so the values can be inspected and monitored)
-        metricsRegistry.newGauge(createMetricName("propertyValue_rollingStatisticalWindowInMilliseconds"), new Gauge<Number>() {
+        metricsRegistry.register(createMetricName("propertyValue_rollingStatisticalWindowInMilliseconds"), new Gauge<Number>() {
             @Override
-            public Number value() {
+            public Number getValue() {
                 return properties.metricsRollingStatisticalWindowInMilliseconds().get();
             }
         });
-        metricsRegistry.newGauge(createMetricName("propertyValue_circuitBreakerRequestVolumeThreshold"), new Gauge<Number>() {
+        metricsRegistry.register(createMetricName("propertyValue_circuitBreakerRequestVolumeThreshold"), new Gauge<Number>() {
             @Override
-            public Number value() {
+            public Number getValue() {
                 return properties.circuitBreakerRequestVolumeThreshold().get();
             }
         });
-        metricsRegistry.newGauge(createMetricName("propertyValue_circuitBreakerSleepWindowInMilliseconds"), new Gauge<Number>() {
+        metricsRegistry.register(createMetricName("propertyValue_circuitBreakerSleepWindowInMilliseconds"), new Gauge<Number>() {
             @Override
-            public Number value() {
+            public Number getValue() {
                 return properties.circuitBreakerSleepWindowInMilliseconds().get();
             }
         });
-        metricsRegistry.newGauge(createMetricName("propertyValue_circuitBreakerErrorThresholdPercentage"), new Gauge<Number>() {
+        metricsRegistry.register(createMetricName("propertyValue_circuitBreakerErrorThresholdPercentage"), new Gauge<Number>() {
             @Override
-            public Number value() {
+            public Number getValue() {
                 return properties.circuitBreakerErrorThresholdPercentage().get();
             }
         });
-        metricsRegistry.newGauge(createMetricName("propertyValue_circuitBreakerForceOpen"), new Gauge<Boolean>() {
+        metricsRegistry.register(createMetricName("propertyValue_circuitBreakerForceOpen"), new Gauge<Boolean>() {
             @Override
-            public Boolean value() {
+            public Boolean getValue() {
                 return properties.circuitBreakerForceOpen().get();
             }
         });
-        metricsRegistry.newGauge(createMetricName("propertyValue_circuitBreakerForceClosed"), new Gauge<Boolean>() {
+        metricsRegistry.register(createMetricName("propertyValue_circuitBreakerForceClosed"), new Gauge<Boolean>() {
             @Override
-            public Boolean value() {
+            public Boolean getValue() {
                 return properties.circuitBreakerForceClosed().get();
             }
         });
-        metricsRegistry.newGauge(createMetricName("propertyValue_executionIsolationThreadTimeoutInMilliseconds"), new Gauge<Number>() {
+        metricsRegistry.register(createMetricName("propertyValue_executionIsolationThreadTimeoutInMilliseconds"), new Gauge<Number>() {
             @Override
-            public Number value() {
+            public Number getValue() {
                 return properties.executionIsolationThreadTimeoutInMilliseconds().get();
             }
         });
-        metricsRegistry.newGauge(createMetricName("propertyValue_executionIsolationStrategy"), new Gauge<String>() {
+        metricsRegistry.register(createMetricName("propertyValue_executionIsolationStrategy"), new Gauge<String>() {
             @Override
-            public String value() {
+            public String getValue() {
                 return properties.executionIsolationStrategy().get().name();
             }
         });
-        metricsRegistry.newGauge(createMetricName("propertyValue_metricsRollingPercentileEnabled"), new Gauge<Boolean>() {
+        metricsRegistry.register(createMetricName("propertyValue_metricsRollingPercentileEnabled"), new Gauge<Boolean>() {
             @Override
-            public Boolean value() {
+            public Boolean getValue() {
                 return properties.metricsRollingPercentileEnabled().get();
             }
         });
-        metricsRegistry.newGauge(createMetricName("propertyValue_requestCacheEnabled"), new Gauge<Boolean>() {
+        metricsRegistry.register(createMetricName("propertyValue_requestCacheEnabled"), new Gauge<Boolean>() {
             @Override
-            public Boolean value() {
+            public Boolean getValue() {
                 return properties.requestCacheEnabled().get();
             }
         });
-        metricsRegistry.newGauge(createMetricName("propertyValue_requestLogEnabled"), new Gauge<Boolean>() {
+        metricsRegistry.register(createMetricName("propertyValue_requestLogEnabled"), new Gauge<Boolean>() {
             @Override
-            public Boolean value() {
+            public Boolean getValue() {
                 return properties.requestLogEnabled().get();
             }
         });
-        metricsRegistry.newGauge(createMetricName("propertyValue_executionIsolationSemaphoreMaxConcurrentRequests"), new Gauge<Number>() {
+        metricsRegistry.register(createMetricName("propertyValue_executionIsolationSemaphoreMaxConcurrentRequests"), new Gauge<Number>() {
             @Override
-            public Number value() {
+            public Number getValue() {
                 return properties.executionIsolationSemaphoreMaxConcurrentRequests().get();
             }
         });
-        metricsRegistry.newGauge(createMetricName("propertyValue_fallbackIsolationSemaphoreMaxConcurrentRequests"), new Gauge<Number>() {
+        metricsRegistry.register(createMetricName("propertyValue_fallbackIsolationSemaphoreMaxConcurrentRequests"), new Gauge<Number>() {
             @Override
-            public Number value() {
+            public Number getValue() {
                 return properties.fallbackIsolationSemaphoreMaxConcurrentRequests().get();
             }
         });
     }
 
-    protected MetricName createMetricName(String name) {
-        return new MetricName(metricGroup, metricType, name);
+    protected String createMetricName(String name) {
+        return MetricRegistry.name(metricGroup, metricType, name);
     }
 
     protected void createCumulativeCountForEvent(String name, final HystrixRollingNumberEvent event) {
-        metricsRegistry.newGauge(createMetricName(name), new Gauge<Long>() {
+        metricsRegistry.register(createMetricName(name), new Gauge<Long>() {
             @Override
-            public Long value() {
+            public Long getValue() {
                 return metrics.getCumulativeCount(event);
             }
         });
     }
 
     protected void createRollingCountForEvent(String name, final HystrixRollingNumberEvent event) {
-        metricsRegistry.newGauge(createMetricName(name), new Gauge<Long>() {
+        metricsRegistry.register(createMetricName(name), new Gauge<Long>() {
             @Override
-            public Long value() {
+            public Long getValue() {
                 return metrics.getRollingCount(event);
             }
         });

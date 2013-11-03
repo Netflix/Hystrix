@@ -11,8 +11,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.hystrix.contrib.yammermetricspublisher;
+package com.netflix.hystrix.contrib.yammermetricspublisherv3;
 
+import com.codahale.metrics.MetricRegistry;
 import com.netflix.hystrix.HystrixCircuitBreaker;
 import com.netflix.hystrix.HystrixCommandGroupKey;
 import com.netflix.hystrix.HystrixCommandKey;
@@ -24,20 +25,18 @@ import com.netflix.hystrix.HystrixThreadPoolProperties;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisher;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherCommand;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherThreadPool;
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.MetricsRegistry;
 
 /**
  * Yammer Metrics (https://github.com/codahale/metrics) implementation of {@link HystrixMetricsPublisher}.
  */
 public class HystrixYammerMetricsPublisher extends HystrixMetricsPublisher {
-    private final MetricsRegistry metricsRegistry;
+    private final MetricRegistry metricsRegistry;
 
     public HystrixYammerMetricsPublisher() {
-        this(Metrics.defaultRegistry());
+        this(new MetricRegistry());
     }
 
-    public HystrixYammerMetricsPublisher(MetricsRegistry metricsRegistry) {
+    public HystrixYammerMetricsPublisher(MetricRegistry metricsRegistry) {
         this.metricsRegistry = metricsRegistry;
     }
 
