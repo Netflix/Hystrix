@@ -1150,6 +1150,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
                 @Override
                 public R call() throws Exception {
+                	boolean recordDuration = true;
                     try {
                         // assign 'callingThread' to our NFExceptionThreadingUtility ThreadLocal variable so that if we blow up
                         // anywhere along the way the exception knows who the calling thread is and can include it in the stacktrace
@@ -1164,7 +1165,6 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                         try {
                             // store the command that is being run
                             Hystrix.startCurrentThreadExecutingCommand(getCommandKey());
-
                             // execute the command
                             R r = executeCommand();
                             // if we can go from NOT_EXECUTED to COMPLETED then we did not timeout
@@ -1174,14 +1174,16 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                                 // pass to the observer
                                 observer.onNext(r);
                                 // state changes before termination
-                                preTerminationWork();
+                                preTerminationWork(recordDuration);
                                 /* now complete which releases the consumer */
                                 observer.onCompleted();
                                 return r;
                             } else {
                                 // this means we lost the race and the timeout logic has or is being executed
                                 // state changes before termination
-                                preTerminationWork();
+                            	// do not recordDuration as this is a timeout and the tick would have set the duration already.
+                            	recordDuration = false;
+                                preTerminationWork(recordDuration);
                                 return null;
                             }
                         } finally {
@@ -1190,7 +1192,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                         }
                     } catch (Exception e) {
                         // state changes before termination
-                        preTerminationWork();
+                        preTerminationWork(recordDuration);
                         // if we can go from NOT_EXECUTED to COMPLETED then we did not timeout
                         if (isCommandTimedOut.compareAndSet(TimedOutStatus.NOT_EXECUTED, TimedOutStatus.COMPLETED)) {
                             observer.onError(e);
@@ -1199,10 +1201,11 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                     }
                 }
 
-                private void preTerminationWork() {
-                    /* execution time (must occur before terminal state otherwise a race condition can occur if requested by client) */
-                    recordTotalExecutionTime(invocationStartTime);
-
+                private void preTerminationWork(boolean recordDuration) {
+                	if(recordDuration) {
+                		/* execution time (must occur before terminal state otherwise a race condition can occur if requested by client) */
+                		recordTotalExecutionTime(invocationStartTime);
+                	}
                     threadPool.markThreadCompletion();
 
                     try {
