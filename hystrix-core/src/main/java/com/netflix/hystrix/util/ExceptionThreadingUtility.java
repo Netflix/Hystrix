@@ -15,6 +15,8 @@
  */
 package com.netflix.hystrix.util;
 
+import org.apache.commons.lang.ArrayUtils;
+
 import java.util.Arrays;
 
 /**
@@ -30,24 +32,36 @@ public class ExceptionThreadingUtility {
         Throwable callingThrowable = new Throwable(messageForCause);
         if (stack[0].toString().startsWith("java.lang.Thread.getStackTrace")) {
             // get rid of the first item on the stack that says "java.lang.Thread.getStackTrace"
-            StackTraceElement newStack[] = Arrays.copyOfRange(stack, 1, stack.length);
-            stack = newStack;
+            stack = Arrays.copyOfRange( stack, 1, stack.length );
         }
         callingThrowable.setStackTrace(stack);
 
         while (e.getCause() != null) {
             e = e.getCause();
         }
+
         // check that we're not recursively wrapping an exception that already had the cause set, and if not then add our artificial 'cause'
-        if (!messageForCause.equals(e.getMessage())) {
-            // we now have 'e' as the last in the chain
-            try {
-                e.initCause(callingThrowable);
-            } catch (Throwable t) {
-                // ignore
-                // the javadocs say that some Throwables (depending on how they're made) will never
-                // let me call initCause without blowing up even if it returns null
+        StackTraceElement[] existingStack = e.getStackTrace();
+
+        if ( existingStack.length >= stack.length ) {
+            boolean foundDifference = false;
+            for ( int i = 0; i < stack.length; i++ ) {
+                if (!existingStack[existingStack.length-i+1].equals(stack[stack.length-i+1])) {
+                    foundDifference = true;
+                    break;
+                }
             }
+            if ( foundDifference ) {
+                return;
+            }
+        }
+
+        try {
+            e.setStackTrace( ( StackTraceElement[] ) ArrayUtils.addAll( e.getStackTrace(), stack ) );
+        } catch (Throwable t) {
+            // ignore
+            // the javadocs say that some Throwables (depending on how they're made) will never
+            // let me call initCause without blowing up even if it returns null
         }
     }
 
