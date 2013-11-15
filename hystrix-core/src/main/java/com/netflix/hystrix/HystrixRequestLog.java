@@ -70,6 +70,11 @@ public class HystrixRequestLog {
      * History of {@link HystrixCommand} executed in this request.
      */
     private LinkedBlockingQueue<HystrixCommand<?>> executedCommands = new LinkedBlockingQueue<HystrixCommand<?>>(MAX_STORAGE);
+    
+    /**
+     * History of {@link AbstractHystrixCommand} executed in this request.
+     */
+    private LinkedBlockingQueue<AbstractHystrixCommand<?>> allExecutedCommands = new LinkedBlockingQueue<AbstractHystrixCommand<?>>(MAX_STORAGE);
 
     // prevent public instantiation
     private HystrixRequestLog() {
@@ -104,6 +109,15 @@ public class HystrixRequestLog {
     public Collection<HystrixCommand<?>> getExecutedCommands() {
         return Collections.unmodifiableCollection(executedCommands);
     }
+    
+    /**
+     * Retrieve {@link HystrixCommand} instances that were executed during this {@link HystrixRequestContext}.
+     * 
+     * @return {@code Collection<HystrixCommand<?>>}
+     */
+    public Collection<AbstractHystrixCommand<?>> getAllExecutedCommands() {
+        return Collections.unmodifiableCollection(allExecutedCommands);
+    }
 
     /**
      * Add {@link HystrixCommand} instance to the request log.
@@ -113,6 +127,20 @@ public class HystrixRequestLog {
      */
     /* package */void addExecutedCommand(HystrixCommand<?> command) {
         if (!executedCommands.offer(command)) {
+            // see RequestLog: Reduce Chance of Memory Leak https://github.com/Netflix/Hystrix/issues/53
+            logger.warn("RequestLog ignoring command after reaching limit of " + MAX_STORAGE + ". See https://github.com/Netflix/Hystrix/issues/53 for more information.");
+        }
+        addExecutedCommand((AbstractHystrixCommand<?>)command);
+    }
+    
+    /**
+     * Add {@link HystrixCommand} instance to the request log.
+     * 
+     * @param command
+     *            {@code HystrixCommand<?>}
+     */
+    /* package */void addExecutedCommand(AbstractHystrixCommand<?> command) {
+        if (!allExecutedCommands.offer(command)) {
             // see RequestLog: Reduce Chance of Memory Leak https://github.com/Netflix/Hystrix/issues/53
             logger.warn("RequestLog ignoring command after reaching limit of " + MAX_STORAGE + ". See https://github.com/Netflix/Hystrix/issues/53 for more information.");
         }
@@ -146,7 +174,7 @@ public class HystrixRequestLog {
             LinkedHashMap<String, Integer> aggregatedCommandsExecuted = new LinkedHashMap<String, Integer>();
             Map<String, Integer> aggregatedCommandExecutionTime = new HashMap<String, Integer>();
 
-            for (HystrixCommand<?> command : executedCommands) {
+            for (AbstractHystrixCommand<?> command : allExecutedCommands) {
                 StringBuilder displayString = new StringBuilder();
                 displayString.append(command.getCommandKey().name());
 

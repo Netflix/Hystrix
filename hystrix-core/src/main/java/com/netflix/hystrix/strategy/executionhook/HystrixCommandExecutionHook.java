@@ -15,8 +15,12 @@
  */
 package com.netflix.hystrix.strategy.executionhook;
 
+import rx.Observable;
+
+import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
+import com.netflix.hystrix.HystrixNonBlockingCommand;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
 import com.netflix.hystrix.exception.HystrixRuntimeException.FailureType;
 import com.netflix.hystrix.strategy.HystrixPlugins;
@@ -49,6 +53,10 @@ public abstract class HystrixCommandExecutionHook {
     public <T> void onRunStart(HystrixCommand<T> commandInstance) {
         // do nothing by default
     }
+    
+    public <T> void onRunStart(HystrixNonBlockingCommand<T> commandInstance) {
+        // do nothing by default
+    }
 
     /**
      * Invoked after successful execution of {@link HystrixCommand#run()} with response value.
@@ -66,6 +74,11 @@ public abstract class HystrixCommandExecutionHook {
         return response;
     }
 
+    public <T> T onRunSuccess(HystrixNonBlockingCommand<T> commandInstance, T response) {
+        // pass-thru by default
+        return response;
+    }
+    
     /**
      * Invoked after failed execution of {@link HystrixCommand#run()} with thrown Exception.
      * 
@@ -81,6 +94,11 @@ public abstract class HystrixCommandExecutionHook {
         // pass-thru by default
         return e;
     }
+    
+    public <T> Exception onRunError(HystrixNonBlockingCommand<T> commandInstance, Exception e) {
+        // pass-thru by default
+        return e;
+    }
 
     /**
      * Invoked before {@link HystrixCommand#getFallback()} is about to be executed.
@@ -91,6 +109,10 @@ public abstract class HystrixCommandExecutionHook {
      * @since 1.2
      */
     public <T> void onFallbackStart(HystrixCommand<T> commandInstance) {
+        // do nothing by default
+    }
+    
+    public <T> void onFallbackStart(HystrixNonBlockingCommand<T> commandInstance) {
         // do nothing by default
     }
 
@@ -106,6 +128,11 @@ public abstract class HystrixCommandExecutionHook {
      * @since 1.2
      */
     public <T> T onFallbackSuccess(HystrixCommand<T> commandInstance, T fallbackResponse) {
+        // pass-thru by default
+        return fallbackResponse;
+    }
+    
+    public <T> T onFallbackSuccess(HystrixNonBlockingCommand<T> commandInstance, T fallbackResponse) {
         // pass-thru by default
         return fallbackResponse;
     }
@@ -125,6 +152,11 @@ public abstract class HystrixCommandExecutionHook {
         // pass-thru by default
         return e;
     }
+    
+    public <T> Exception onFallbackError(HystrixNonBlockingCommand<T> commandInstance, Exception e) {
+        // pass-thru by default
+        return e;
+    }
 
     /**
      * Invoked before {@link HystrixCommand} executes.
@@ -138,6 +170,10 @@ public abstract class HystrixCommandExecutionHook {
         // do nothing by default
     }
 
+    public <T> void onStart(HystrixNonBlockingCommand<T> commandInstance) {
+        // do nothing by default
+    }
+    
     /**
      * Invoked after completion of {@link HystrixCommand} execution that results in a response.
      * <p>
@@ -152,6 +188,11 @@ public abstract class HystrixCommandExecutionHook {
      * @since 1.2
      */
     public <T> T onComplete(HystrixCommand<T> commandInstance, T response) {
+        // pass-thru by default
+        return response;
+    }
+    
+    public <T> T onComplete(HystrixNonBlockingCommand<T> commandInstance, T response) {
         // pass-thru by default
         return response;
     }
@@ -175,6 +216,11 @@ public abstract class HystrixCommandExecutionHook {
         // pass-thru by default
         return e;
     }
+    
+    public <T> Exception onError(HystrixNonBlockingCommand<T> commandInstance, FailureType failureType, Exception e) {
+        // pass-thru by default
+        return e;
+    }
 
     /**
      * Invoked at start of thread execution when {@link HystrixCommand} is executed using {@link ExecutionIsolationStrategy#THREAD}.
@@ -187,6 +233,10 @@ public abstract class HystrixCommandExecutionHook {
     public <T> void onThreadStart(HystrixCommand<T> commandInstance) {
         // do nothing by default
     }
+    
+    public <T> void onThreadStart(HystrixNonBlockingCommand<T> commandInstance) {
+        // do nothing by default
+    }
 
     /**
      * Invoked at completion of thread execution when {@link HystrixCommand} is executed using {@link ExecutionIsolationStrategy#THREAD}.
@@ -197,6 +247,10 @@ public abstract class HystrixCommandExecutionHook {
      * @since 1.2
      */
     public <T> void onThreadComplete(HystrixCommand<T> commandInstance) {
+        // do nothing by default
+    }
+    
+    public <T> void onThreadComplete(HystrixNonBlockingCommand<T> commandInstance) {
         // do nothing by default
     }
 
