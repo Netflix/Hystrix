@@ -82,6 +82,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 /**
  * Used to wrap code that will execute potentially risky functionality (typically meaning a service call over the network)
  * with fault and latency tolerance, statistics and performance metrics capture, circuit breaker and bulkhead functionality.
+ * This command is essentially a blocking command but provides an Observable facade if used with  observe()
  * 
  * @param <R>
  *            the return type

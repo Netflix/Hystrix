@@ -78,9 +78,11 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 /**
  * Used to wrap code that will execute potentially risky functionality (typically meaning a service call over the network)
  * with fault and latency tolerance, statistics and performance metrics capture, circuit breaker and bulkhead functionality.
+ * This command should be used for a purely non-blocking call pattern. The caller of this command will be subscribed to the Observable<R> returned by the run() method.  
  * 
  * @param <R>
  *            the return type
+ * @author njoshi           
  */
 @ThreadSafe
 public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixCommand<R> implements HystrixExecutable<R> {
@@ -5861,7 +5863,7 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
             AtomicInteger startExecute = new AtomicInteger();
 
             @Override
-            public <T> void onStart(HystrixNonBlockingCommand<T> commandInstance) {
+            public <T> void onStart(AbstractHystrixCommand<T> commandInstance) {
                 super.onStart(commandInstance);
                 startExecute.incrementAndGet();
             }
@@ -5869,7 +5871,7 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
             Object endExecuteSuccessResponse = null;
 
             @Override
-            public <T> T onComplete(HystrixNonBlockingCommand<T> commandInstance, T response) {
+            public <T> T onComplete(AbstractHystrixCommand<T> commandInstance, T response) {
                 endExecuteSuccessResponse = response;
                 return super.onComplete(commandInstance, response);
             }
@@ -5878,7 +5880,7 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
             FailureType endExecuteFailureType = null;
 
             @Override
-            public <T> Exception onError(HystrixNonBlockingCommand<T> commandInstance, FailureType failureType, Exception e) {
+            public <T> Exception onError(AbstractHystrixCommand<T> commandInstance, FailureType failureType, Exception e) {
                 endExecuteFailureException = e;
                 endExecuteFailureType = failureType;
                 return super.onError(commandInstance, failureType, e);
@@ -5887,7 +5889,7 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
             AtomicInteger startRun = new AtomicInteger();
 
             @Override
-            public <T> void onRunStart(HystrixNonBlockingCommand<T> commandInstance) {
+            public <T> void onRunStart(AbstractHystrixCommand<T> commandInstance) {
                 super.onRunStart(commandInstance);
                 startRun.incrementAndGet();
             }
@@ -5895,7 +5897,7 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
             Object runSuccessResponse = null;
 
             @Override
-            public <T> T onRunSuccess(HystrixNonBlockingCommand<T> commandInstance, T response) {
+            public <T> T onRunSuccess(AbstractHystrixCommand<T> commandInstance, T response) {
                 runSuccessResponse = response;
                 return super.onRunSuccess(commandInstance, response);
             }
@@ -5903,7 +5905,7 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
             Exception runFailureException = null;
 
             @Override
-            public <T> Exception onRunError(HystrixNonBlockingCommand<T> commandInstance, Exception e) {
+            public <T> Exception onRunError(AbstractHystrixCommand<T> commandInstance, Exception e) {
                 runFailureException = e;
                 return super.onRunError(commandInstance, e);
             }
@@ -5911,7 +5913,7 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
             AtomicInteger startFallback = new AtomicInteger();
 
             @Override
-            public <T> void onFallbackStart(HystrixNonBlockingCommand<T> commandInstance) {
+            public <T> void onFallbackStart(AbstractHystrixCommand<T> commandInstance) {
                 super.onFallbackStart(commandInstance);
                 startFallback.incrementAndGet();
             }
@@ -5919,7 +5921,7 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
             Object fallbackSuccessResponse = null;
 
             @Override
-            public <T> T onFallbackSuccess(HystrixNonBlockingCommand<T> commandInstance, T response) {
+            public <T> T onFallbackSuccess(AbstractHystrixCommand<T> commandInstance, T response) {
                 fallbackSuccessResponse = response;
                 return super.onFallbackSuccess(commandInstance, response);
             }
@@ -5927,7 +5929,7 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
             Exception fallbackFailureException = null;
 
             @Override
-            public <T> Exception onFallbackError(HystrixNonBlockingCommand<T> commandInstance, Exception e) {
+            public <T> Exception onFallbackError(AbstractHystrixCommand<T> commandInstance, Exception e) {
                 fallbackFailureException = e;
                 return super.onFallbackError(commandInstance, e);
             }
@@ -5935,7 +5937,7 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
             AtomicInteger threadStart = new AtomicInteger();
 
             @Override
-            public <T> void onThreadStart(HystrixNonBlockingCommand<T> commandInstance) {
+            public <T> void onThreadStart(AbstractHystrixCommand<T> commandInstance) {
                 super.onThreadStart(commandInstance);
                 threadStart.incrementAndGet();
             }
@@ -5943,7 +5945,7 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
             AtomicInteger threadComplete = new AtomicInteger();
 
             @Override
-            public <T> void onThreadComplete(HystrixNonBlockingCommand<T> commandInstance) {
+            public <T> void onThreadComplete(AbstractHystrixCommand<T> commandInstance) {
                 super.onThreadComplete(commandInstance);
                 threadComplete.incrementAndGet();
             }

@@ -106,6 +106,7 @@ public class HystrixRequestLog {
      * 
      * @return {@code Collection<HystrixCommand<?>>}
      */
+    @Deprecated
     public Collection<HystrixCommand<?>> getExecutedCommands() {
         return Collections.unmodifiableCollection(executedCommands);
     }
@@ -125,6 +126,7 @@ public class HystrixRequestLog {
      * @param command
      *            {@code HystrixCommand<?>}
      */
+    @Deprecated
     /* package */void addExecutedCommand(HystrixCommand<?> command) {
         if (!executedCommands.offer(command)) {
             // see RequestLog: Reduce Chance of Memory Leak https://github.com/Netflix/Hystrix/issues/53
