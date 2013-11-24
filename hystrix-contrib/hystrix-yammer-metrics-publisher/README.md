@@ -1,6 +1,6 @@
 # hystrix-yammer-metrics-publisher
 
-This is an implementation of [HystrixMetricsPublisher](http://netflix.github.com/Hystrix/javadoc/index.html?com/netflix/hystrix/strategy/metrics/HystrixMetricsPublisher.html) that publishes metrics using [Yammer Metrics](http://metrics.codahale.com).
+This is an implementation of [HystrixMetricsPublisher](http://netflix.github.com/Hystrix/javadoc/index.html?com/netflix/hystrix/strategy/metrics/HystrixMetricsPublisher.html) that publishes metrics using [Yammer Metrics](http://metrics.codahale.com) version 2. If you are using Coda Hale Metrics version 3, please use the [hystrix-codahale-metrics-publisher](../hystrix-codahale-metrics-publisher) module instead.
 
 See the [Metrics & Monitoring](https://github.com/Netflix/Hystrix/wiki/Metrics-and-Monitoring) Wiki for more information.
 
