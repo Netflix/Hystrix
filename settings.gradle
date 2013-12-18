@@ -7,5 +7,6 @@ include 'hystrix-core', \
 'hystrix-contrib:hystrix-servo-metrics-publisher', \
 'hystrix-contrib:hystrix-metrics-event-stream', \
 'hystrix-contrib:hystrix-yammer-metrics-publisher', \
+'hystrix-contrib:hystrix-yammer-metrics3-publisher', \
 'hystrix-contrib:hystrix-network-auditor-agent', \
 'hystrix-dashboard'
