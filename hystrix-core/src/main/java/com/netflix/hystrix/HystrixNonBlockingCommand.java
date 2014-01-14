@@ -26,6 +26,7 @@ import static org.junit.Assert.fail;
 import java.io.IOException;
 import java.lang.ref.Reference;
 import java.lang.ref.SoftReference;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -196,20 +197,14 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
      *             if invoked more than once
      */
     public Observable<R> toObservable() {
-//        if (properties.executionIsolationStrategy().get().equals(ExecutionIsolationStrategy.THREAD)) {
-//            return toObservable(Schedulers.threadPoolForComputation());
-//        } else {
-            // semaphore isolation is all blocking, no new threads involved
-            // so we'll use the calling thread
-            return toObservable(Schedulers.immediate());
-        //}
+    	return toObservable(Schedulers.threadPoolForComputation());
     }
 
     
     protected ObservableCommand<R> toObservable(final Scheduler observeOn, boolean performAsyncTimeout) {
         /* this is a stateful object so can only be used once */
         boolean isNonBlocking = true;
-		if (!started.compareAndSet(false, isNonBlocking)) {
+		if (!started.compareAndSet(false, true)) {
             throw new IllegalStateException("This instance can only be executed once. Please instantiate a new instance.");
         }
 
@@ -252,14 +247,14 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
                         return Subscriptions.empty();
                     } else {
                         /* not short-circuited so proceed with queuing the execution */
-                        try {
-                        	
-                                return subscribeWithSemaphoreIsolation(observer);
+                    	try {
 
-                        } catch (RuntimeException e) {
-                            observer.onError(e);
-                            return Subscriptions.empty();
-                        }
+                    		return subscribeWithSemaphoreIsolation(observer);
+
+                    	} catch (RuntimeException e) {
+                    		observer.onError(e);
+                    		return Subscriptions.empty();
+                    	}
                     }
                 } finally {
                     recordExecutedCommand();
@@ -1373,6 +1368,8 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
             assertTrue(commandThread.get().getName().startsWith("main"));
             assertTrue(subscribeThread.get().getName().startsWith("main"));
         }
+        
+        
 
         /**
          * Test a successful command execution.
@@ -1389,6 +1386,18 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
                 @Override
                 protected Observable<Boolean> run() {
                     commandThread.set(Thread.currentThread());
+                    
+                    Func1<Integer, List<Boolean>> f1 = new Func1<Integer, List<Boolean>>() {
+
+						@Override
+						public List<Boolean> call(Integer t1) {
+							
+							return null;
+						}
+                    	
+                    };
+                    Observable.from(f1);
+                    
                     return Observable.just(true);
                 }
             };

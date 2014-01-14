@@ -535,11 +535,11 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
      * @throws IllegalStateException
      *             if invoked more than once
      */
-    public Observable<R> observe() {
+    public  Observable<R> observe() {
         // us a ReplaySubject to buffer the eagerly subscribed-to Observable
         ReplaySubject<R> subject = ReplaySubject.create();
         // eagerly kick off subscription
-        toObservable(Schedulers.immediate()).subscribe(subject);
+        toObservable().subscribe(subject);
         // return the subject that can be subscribed to later while the execution has already started
         return subject;
     }
@@ -567,7 +567,7 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
     public Observable<R> toObservable(Scheduler observeOn) {
         return toObservable(observeOn, true);
     }
- 
+    public abstract Observable<R> toObservable();
     
     protected abstract ObservableCommand<R> toObservable(final Scheduler observeOn, boolean performAsyncTimeout);
     
