@@ -40,6 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import javax.annotation.concurrent.NotThreadSafe;
 import javax.annotation.concurrent.ThreadSafe;
 
 import org.junit.After;
@@ -61,6 +62,7 @@ import rx.util.functions.Func1;
 import rx.util.functions.Func2;
 
 import com.netflix.config.ConfigurationManager;
+
 import com.netflix.hystrix.HystrixCircuitBreaker.TestCircuitBreaker;
 import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
 import com.netflix.hystrix.exception.HystrixBadRequestException;
@@ -139,6 +141,121 @@ public abstract class HystrixCommand<R> extends AbstractHystrixCommand<R> implem
             HystrixCommandMetrics metrics, TryableSemaphore fallbackSemaphore, TryableSemaphore executionSemaphore,
             HystrixPropertiesStrategy propertiesStrategy, HystrixCommandExecutionHook executionHook) {
     	super(group, key, threadPoolKey, circuitBreaker, threadPool, commandPropertiesDefaults, threadPoolPropertiesDefaults, metrics, fallbackSemaphore, executionSemaphore, propertiesStrategy, executionHook);
+    }
+
+    /**
+     * Fluent interface for arguments to the {@link HystrixNonBlockingCommand} constructor.
+     * <p>
+     * The required arguments are set via the 'with' factory method and optional arguments via the 'and' chained methods.
+     * <p>
+     * Example:
+     * <pre> {@code
+     *  Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("GroupName"))
+                .andCommandKey(HystrixCommandKey.Factory.asKey("CommandName"))
+                .andEventNotifier(notifier);
+     * } </pre>
+     */
+    @NotThreadSafe
+    public static class Setter {
+
+        protected final HystrixCommandGroupKey groupKey;
+        protected HystrixCommandKey commandKey;
+        protected HystrixThreadPoolKey threadPoolKey;
+        protected HystrixCommandProperties.Setter commandPropertiesDefaults;
+        protected HystrixThreadPoolProperties.Setter threadPoolPropertiesDefaults;
+
+        /**
+         * Setter factory method containing required values.
+         * <p>
+         * All optional arguments can be set via the chained methods.
+         * 
+         * @param groupKey
+         *            {@link HystrixCommandGroupKey} used to group together multiple {@link HystrixNonBlockingCommand} objects.
+         *            <p>
+         *            The {@link HystrixCommandGroupKey} is used to represent a common relationship between commands. For example, a library or team name, the system all related commands interace
+         *            with,
+         *            common business purpose etc.
+         */
+        protected Setter(HystrixCommandGroupKey groupKey) {
+            this.groupKey = groupKey;
+        }
+
+        /**
+         * Setter factory method with required values.
+         * <p>
+         * All optional arguments can be set via the chained methods.
+         * 
+         * @param groupKey
+         *            {@link HystrixCommandGroupKey} used to group together multiple {@link HystrixNonBlockingCommand} objects.
+         *            <p>
+         *            The {@link HystrixCommandGroupKey} is used to represent a common relationship between commands. For example, a library or team name, the system all related commands interace
+         *            with,
+         *            common business purpose etc.
+         */
+        public static Setter withGroupKey(HystrixCommandGroupKey groupKey) {
+            return new Setter(groupKey);
+        }
+
+        /**
+         * @param commandKey
+         *            {@link HystrixCommandKey} used to identify a {@link HystrixNonBlockingCommand} instance for statistics, circuit-breaker, properties, etc.
+         *            <p>
+         *            By default this will be derived from the instance class name.
+         *            <p>
+         *            NOTE: Every unique {@link HystrixCommandKey} will result in new instances of {@link HystrixCircuitBreaker}, {@link HystrixCommandMetrics} and {@link HystrixCommandProperties}.
+         *            Thus,
+         *            the number of variants should be kept to a finite and reasonable number to avoid high-memory usage or memory leacks.
+         *            <p>
+         *            Hundreds of keys is fine, tens of thousands is probably not.
+         * @return Setter for fluent interface via method chaining
+         */
+        public Setter andCommandKey(HystrixCommandKey commandKey) {
+            this.commandKey = commandKey;
+            return this;
+        }
+
+        /**
+         * @param threadPoolKey
+         *            {@link HystrixThreadPoolKey} used to define which thread-pool this command should run in (when configured to run on separate threads via
+         *            {@link HystrixCommandProperties#executionIsolationStrategy()}).
+         *            <p>
+         *            By default this is derived from the {@link HystrixCommandGroupKey} but if injected this allows multiple commands to have the same {@link HystrixCommandGroupKey} but different
+         *            thread-pools.
+         * @return Setter for fluent interface via method chaining
+         */
+        public Setter andThreadPoolKey(HystrixThreadPoolKey threadPoolKey) {
+            this.threadPoolKey = threadPoolKey;
+            return this;
+        }
+
+        /**
+         * Optional
+         * 
+         * @param commandPropertiesDefaults
+         *            {@link HystrixCommandProperties.Setter} with property overrides for this specific instance of {@link HystrixNonBlockingCommand}.
+         *            <p>
+         *            See the {@link HystrixPropertiesStrategy} JavaDocs for more information on properties and order of precedence.
+         * @return Setter for fluent interface via method chaining
+         */
+        public Setter andCommandPropertiesDefaults(HystrixCommandProperties.Setter commandPropertiesDefaults) {
+            this.commandPropertiesDefaults = commandPropertiesDefaults;
+            return this;
+        }
+
+        /**
+         * Optional
+         * 
+         * @param threadPoolPropertiesDefaults
+         *            {@link HystrixThreadPoolProperties.Setter} with property overrides for the {@link HystrixThreadPool} used by this specific instance of {@link HystrixNonBlockingCommand}.
+         *            <p>
+         *            See the {@link HystrixPropertiesStrategy} JavaDocs for more information on properties and order of precedence.
+         * @return Setter for fluent interface via method chaining
+         */
+        public Setter andThreadPoolPropertiesDefaults(HystrixThreadPoolProperties.Setter threadPoolPropertiesDefaults) {
+            this.threadPoolPropertiesDefaults = threadPoolPropertiesDefaults;
+            return this;
+        }
+
     }
 
    
@@ -395,7 +512,7 @@ public abstract class HystrixCommand<R> extends AbstractHystrixCommand<R> implem
                          * Scheduling a separate timer to do timeouts is more expensive
                          * so we'll only do it if we're being used in a non-blocking manner.
                          */
-                    	System.out.println("in isNonBlocking added timerlisterner");
+                    	
                         _tl = HystrixTimer.getInstance().addTimerListener(listener);
                     } else {
                         /*
