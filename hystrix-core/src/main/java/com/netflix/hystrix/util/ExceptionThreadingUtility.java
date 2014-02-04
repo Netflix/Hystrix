@@ -44,11 +44,11 @@ public class ExceptionThreadingUtility {
         callingThrowable.setStackTrace(stack);
 
         while (e.getCause() != null) {
-            if (seenCauses.contains(e.getCause())) {
+            e = e.getCause();
+            if (seenCauses.contains(e)) {
                 break;
             } else {
-                seenCauses.add(e.getCause());
-                e = e.getCause();
+                seenCauses.add(e);
             }
         }
         // check that we're not recursively wrapping an exception that already had the cause set, and if not then add our artificial 'cause'
@@ -132,12 +132,18 @@ public class ExceptionThreadingUtility {
         @Test
         public void testAttachCallingThreadStackParentThenChild() {
             ExceptionThreadingUtility.attachCallingThreadStack(ex1, ex2.getStackTrace());
+            assertEquals("Ex1", ex1.getMessage());
             assertEquals("Ex2", ex1.getCause().getMessage());
+            assertEquals("Ex2", ex2.getMessage());
+            assertEquals("Ex1", ex2.getCause().getMessage());
         }
 
         @Test
         public void testAttachCallingThreadStackChildThenParent() {
             ExceptionThreadingUtility.attachCallingThreadStack(ex2, ex1.getStackTrace());
+            assertEquals("Ex1", ex1.getMessage());
+            assertEquals("Ex2", ex1.getCause().getMessage());
+            assertEquals("Ex2", ex2.getMessage());
             assertEquals("Ex1", ex2.getCause().getMessage());
         }
 
@@ -145,6 +151,8 @@ public class ExceptionThreadingUtility {
         public void testAttachCallingThreadStackAddExceptionsToEachOther() {
             ExceptionThreadingUtility.attachCallingThreadStack(ex1, ex2.getStackTrace());
             ExceptionThreadingUtility.attachCallingThreadStack(ex2, ex1.getStackTrace());
+            assertEquals("Ex1", ex1.getMessage());
+            assertEquals("Ex2", ex2.getMessage());
             assertEquals("Ex2", ex1.getCause().getMessage());
             assertEquals("Ex1", ex2.getCause().getMessage());
         }
@@ -152,6 +160,9 @@ public class ExceptionThreadingUtility {
         @Test
         public void testAttachCallingThreadStackAddExceptionToItself() {
             ExceptionThreadingUtility.attachCallingThreadStack(ex2, ex2.getStackTrace());
+            assertEquals("Ex1", ex1.getMessage());
+            assertEquals("Ex2", ex1.getCause().getMessage());
+            assertEquals("Ex2", ex2.getMessage());
             assertEquals("Ex1", ex2.getCause().getMessage());
         }
     }
