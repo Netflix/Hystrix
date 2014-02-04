@@ -15,7 +15,13 @@
  */
 package com.netflix.hystrix.util;
 
+import org.junit.Test;
+
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Used to capture a stacktrace from one thread and append it to the stacktrace of another
@@ -27,6 +33,8 @@ public class ExceptionThreadingUtility {
     private final static String messageForCause = "Calling Thread included as the last 'caused by' on the chain.";
 
     private static void attachCallingThreadStack(Throwable e, StackTraceElement[] stack) {
+        Set<Throwable> seenCauses = new HashSet<Throwable>();
+
         Throwable callingThrowable = new Throwable(messageForCause);
         if (stack[0].toString().startsWith("java.lang.Thread.getStackTrace")) {
             // get rid of the first item on the stack that says "java.lang.Thread.getStackTrace"
@@ -36,7 +44,12 @@ public class ExceptionThreadingUtility {
         callingThrowable.setStackTrace(stack);
 
         while (e.getCause() != null) {
-            e = e.getCause();
+            if (seenCauses.contains(e.getCause())) {
+                break;
+            } else {
+                seenCauses.add(e.getCause());
+                e = e.getCause();
+            }
         }
         // check that we're not recursively wrapping an exception that already had the cause set, and if not then add our artificial 'cause'
         if (!messageForCause.equals(e.getMessage())) {
@@ -106,5 +119,40 @@ public class ExceptionThreadingUtility {
 
     public static void assignCallingThread(Thread callingThread) {
         callingThreadCache.set(callingThread);
+    }
+
+    public static class UnitTest {
+        private final Throwable ex1 = new Throwable("Ex1");
+        private final Throwable ex2 = new Throwable("Ex2", ex1);
+
+        public UnitTest() {
+            ex1.initCause(ex2);
+        }
+
+        @Test
+        public void testAttachCallingThreadStackParentThenChild() {
+            ExceptionThreadingUtility.attachCallingThreadStack(ex1, ex2.getStackTrace());
+            assertEquals("Ex2", ex1.getCause().getMessage());
+        }
+
+        @Test
+        public void testAttachCallingThreadStackChildThenParent() {
+            ExceptionThreadingUtility.attachCallingThreadStack(ex2, ex1.getStackTrace());
+            assertEquals("Ex1", ex2.getCause().getMessage());
+        }
+
+        @Test
+        public void testAttachCallingThreadStackAddExceptionsToEachOther() {
+            ExceptionThreadingUtility.attachCallingThreadStack(ex1, ex2.getStackTrace());
+            ExceptionThreadingUtility.attachCallingThreadStack(ex2, ex1.getStackTrace());
+            assertEquals("Ex2", ex1.getCause().getMessage());
+            assertEquals("Ex1", ex2.getCause().getMessage());
+        }
+
+        @Test
+        public void testAttachCallingThreadStackAddExceptionToItself() {
+            ExceptionThreadingUtility.attachCallingThreadStack(ex2, ex2.getStackTrace());
+            assertEquals("Ex1", ex2.getCause().getMessage());
+        }
     }
 }
