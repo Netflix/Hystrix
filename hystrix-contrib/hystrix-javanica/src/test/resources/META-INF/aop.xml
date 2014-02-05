@@ -1,0 +1,11 @@
+<aspectj>
+
+    <aspects>
+        <aspect name="com.netflix.hystrix.contrib.javanica.aop.aspectj.HystrixCommandAspect"/>
+    </aspects>
+
+    <weaver options="-verbose">
+        <include within="*"/>
+    </weaver>
+
+</aspectj>
