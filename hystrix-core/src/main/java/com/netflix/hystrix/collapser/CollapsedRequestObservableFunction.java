@@ -13,7 +13,6 @@ import rx.Observable.OnSubscribeFunc;
 import rx.Observer;
 import rx.Subscription;
 import rx.subscriptions.BooleanSubscription;
-import rx.util.functions.Func1;
 
 import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
 

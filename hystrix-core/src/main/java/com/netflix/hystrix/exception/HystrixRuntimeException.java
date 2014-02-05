@@ -17,7 +17,6 @@ package com.netflix.hystrix.exception;
 
 import com.netflix.hystrix.AbstractHystrixCommand;
 import com.netflix.hystrix.HystrixCommand;
-import com.netflix.hystrix.HystrixNonBlockingCommand;
 import com.netflix.hystrix.util.ExceptionThreadingUtility;
 
 /**
