@@ -47,13 +47,15 @@ import rx.Observable;
 import rx.Observable.OnSubscribeFunc;
 import rx.Observer;
 import rx.Scheduler;
+import rx.Subscriber;
 import rx.Subscription;
-import rx.concurrency.Schedulers;
+import rx.schedulers.Schedulers;
 import rx.operators.SafeObservableSubscription;
+import rx.subscriptions.CompositeSubscription;
 import rx.subscriptions.Subscriptions;
 import rx.util.functions.Action0;
+import rx.util.functions.Action1;
 import rx.util.functions.Func1;
-import rx.util.functions.Func2;
 
 import com.netflix.config.ConfigurationManager;
 import com.netflix.hystrix.HystrixCircuitBreaker.TestCircuitBreaker;
@@ -458,13 +460,13 @@ public abstract class HystrixCommand<R> extends AbstractHystrixCommand<R> implem
     private static class TimeoutObservable<R> extends Observable<R> {
 
         public TimeoutObservable(final Observable<R> o, final HystrixCommand<R> originalCommand, final boolean isNonBlocking) {
-            super(new OnSubscribeFunc<R>() {
+            super(new OnSubscribe<R>() {
 
                 @Override
-                public Subscription onSubscribe(final Observer<? super R> observer) {
+                public void call(final Subscriber<? super R> observer) {
                     // TODO this is using a private API of Rx so either move off of it or get Rx to make it public
                     // TODO better yet, get TimeoutObservable part of Rx
-                    final SafeObservableSubscription s = new SafeObservableSubscription();
+                    final CompositeSubscription s = new CompositeSubscription();
 
                     TimerListener listener = new TimerListener() {
 
@@ -521,7 +523,7 @@ public abstract class HystrixCommand<R> extends AbstractHystrixCommand<R> implem
                     // set externally so execute/queue can see this
                     originalCommand.timeoutTimer.set(tl);
 
-                    return s.wrap(o.subscribe(new Observer<R>() {
+                    o.subscribe(new Subscriber<R>(s) {
 
                         @Override
                         public void onCompleted() {
@@ -540,7 +542,7 @@ public abstract class HystrixCommand<R> extends AbstractHystrixCommand<R> implem
                             observer.onNext(v);
                         }
 
-                    }));
+                    });
                 }
             });
         }
@@ -678,14 +680,14 @@ public abstract class HystrixCommand<R> extends AbstractHystrixCommand<R> implem
 
             })));
 
-            return new Subscription() {
+            return Subscriptions.create(new Action0() {
 
                 @Override
-                public void unsubscribe() {
+                public void call() {
                     f.cancel(properties.executionIsolationThreadInterruptOnTimeout().get());
                 }
 
-            };
+            });
 
         } catch (RejectedExecutionException e) {
             // mark on counter
@@ -1425,22 +1427,47 @@ public abstract class HystrixCommand<R> extends AbstractHystrixCommand<R> implem
 
                 private final Scheduler self = this;
 
+
                 @Override
-                public <T> Subscription schedule(T state, Func2<? super Scheduler, ? super T, ? extends Subscription> action) {
-                    return schedule(state, action, 0, TimeUnit.MILLISECONDS);
+                public Subscription schedule(Action1<Inner> action) {
+                    return schedule(action, 0, TimeUnit.MILLISECONDS);
                 }
 
                 @Override
-                public <T> Subscription schedule(final T state, final Func2<? super Scheduler, ? super T, ? extends Subscription> action, long delayTime, TimeUnit unit) {
+                public Subscription schedule(final Action1<Inner> action, long delayTime, TimeUnit unit) {
                     new Thread("RxScheduledThread") {
                         @Override
                         public void run() {
-                            action.call(self, state);
+                            action.call(new CustomInner());
                         }
                     }.start();
 
                     // not testing unsubscribe behavior
                     return Subscriptions.empty();
+                }
+                
+                final class CustomInner extends Inner {
+
+                    @Override
+                    public void unsubscribe() {
+                        
+                    }
+
+                    @Override
+                    public boolean isUnsubscribed() {
+                        return false;
+                    }
+
+                    @Override
+                    public void schedule(Action1<Inner> action, long delayTime, TimeUnit unit) {
+                        throw new IllegalStateException("Not implemented");
+                    }
+
+                    @Override
+                    public void schedule(Action1<Inner> action) {
+                        throw new IllegalStateException("Not implemented");
+                    }
+                    
                 }
 
             };

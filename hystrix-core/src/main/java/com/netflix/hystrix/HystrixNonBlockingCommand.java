@@ -46,9 +46,11 @@ import rx.Observable;
 import rx.Observable.OnSubscribeFunc;
 import rx.Observer;
 import rx.Scheduler;
+import rx.Subscriber;
 import rx.Subscription;
 import rx.concurrency.Schedulers;
 import rx.operators.SafeObservableSubscription;
+import rx.subscriptions.CompositeSubscription;
 import rx.subscriptions.Subscriptions;
 import rx.util.functions.Action0;
 import rx.util.functions.Func1;
@@ -429,13 +431,11 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
     private static class TimeoutObservable<R> extends Observable<R> {
 
         public TimeoutObservable(final Observable<R> o, final HystrixNonBlockingCommand<R> originalCommand, final boolean isNonBlocking) {
-            super(new OnSubscribeFunc<R>() {
+            super(new OnSubscribe<R>() {
 
                 @Override
-                public Subscription onSubscribe(final Observer<? super R> observer) {
-                    // TODO this is using a private API of Rx so either move off of it or get Rx to make it public
-                    // TODO better yet, get TimeoutObservable part of Rx
-                    final SafeObservableSubscription s = new SafeObservableSubscription();
+                public void call(final Subscriber<? super R> observer) {
+                    final CompositeSubscription s = new CompositeSubscription();
 
                     TimerListener listener = new TimerListener() {
 
@@ -493,7 +493,7 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
                     // set externally so execute/queue can see this
                     originalCommand.timeoutTimer.set(tl);
 
-                    return s.wrap(o.subscribe(new Observer<R>() {
+                    o.subscribe(new Subscriber<R>(s) {
 
                         @Override
                         public void onCompleted() {
@@ -512,7 +512,7 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
                             observer.onNext(v);
                         }
 
-                    }));
+                    });
                 }
             });
         }

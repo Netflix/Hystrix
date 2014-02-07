@@ -24,9 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import rx.Observable;
-import rx.Observer;
-import rx.Subscription;
-import rx.subscriptions.Subscriptions;
+import rx.Subscriber;
 
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategyDefault;
@@ -333,13 +331,12 @@ public class HystrixRequestCache {
 
         private static class TestObservable extends Observable<String> {
             public TestObservable(final String value) {
-                super(new OnSubscribeFunc<String>() {
+                super(new OnSubscribe<String>() {
 
                     @Override
-                    public Subscription onSubscribe(Observer<? super String> observer) {
+                    public void call(Subscriber<? super String> observer) {
                         observer.onNext(value);
                         observer.onCompleted();
-                        return Subscriptions.empty();
                     }
 
                 });

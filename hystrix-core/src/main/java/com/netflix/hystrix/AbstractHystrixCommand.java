@@ -35,8 +35,9 @@ import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Observer;
 import rx.Scheduler;
+import rx.Subscriber;
 import rx.Subscription;
-import rx.concurrency.Schedulers;
+import rx.schedulers.Schedulers;
 import rx.subjects.ReplaySubject;
 
 import com.netflix.hystrix.HystrixCircuitBreaker.NoOpCircuitBreaker;
@@ -618,7 +619,7 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
     protected static class ObservableCommand<R> extends Observable<R> {
         private final AbstractHystrixCommand<R> command;
 
-        ObservableCommand(OnSubscribeFunc<R> func, final AbstractHystrixCommand<R> command) {
+        ObservableCommand(OnSubscribe<R> func, final AbstractHystrixCommand<R> command) {
             super(func);
             this.command = command;
         }
@@ -628,11 +629,11 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
         }
 
         ObservableCommand(final Observable<R> originalObservable, final AbstractHystrixCommand<R> command) {
-            super(new OnSubscribeFunc<R>() {
+            super(new OnSubscribe<R>() {
 
                 @Override
-                public Subscription onSubscribe(Observer<? super R> observer) {
-                    return originalObservable.subscribe(observer);
+                public void call(Subscriber<? super R> observer) {
+                    originalObservable.subscribe(observer);
                 }
             });
             this.command = command;
@@ -652,11 +653,11 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
         final AbstractHystrixCommand<R> originalCommand;
 
         CachedObservableOriginal(final Observable<R> actual, AbstractHystrixCommand<R> command) {
-            super(new OnSubscribeFunc<R>() {
+            super(new OnSubscribe<R>() {
 
                 @Override
-                public Subscription onSubscribe(final Observer<? super R> observer) {
-                    return actual.subscribe(observer);
+                public void call(final Subscriber<? super R> observer) {
+                    actual.subscribe(observer);
                 }
             }, command);
             this.originalCommand = command;
@@ -677,11 +678,11 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
         final CachedObservableOriginal<R> originalObservable;
 
         CachedObservableResponse(final CachedObservableOriginal<R> originalObservable, final AbstractHystrixCommand<R> commandOfDuplicateCall) {
-            super(new OnSubscribeFunc<R>() {
+            super(new OnSubscribe<R>() {
 
                 @Override
-                public Subscription onSubscribe(final Observer<? super R> observer) {
-                    return originalObservable.subscribe(new Observer<R>() {
+                public void call(final Subscriber<? super R> observer) {
+                    originalObservable.subscribe(new Subscriber<R>() {
 
                         @Override
                         public void onCompleted() {
