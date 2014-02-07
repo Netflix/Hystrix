@@ -64,7 +64,7 @@ public class HystrixContextFunc2<T> implements Func2<Scheduler, T, Subscription>
                     // set the state of this thread to that of its parent
                     HystrixRequestContext.setContextOnCurrentThread(parentThreadState);
                     // execute actual Func2 with the state of the parent
-                    return actual.call(t1Holder.get(), t2Holder.get());
+                    return actual.call(new HystrixContextScheduler(concurrencyStrategy, t1Holder.get()), t2Holder.get());
                 } finally {
                     // restore this thread back to its original state
                     HystrixRequestContext.setContextOnCurrentThread(existingState);
