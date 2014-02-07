@@ -1,5 +1,11 @@
 # Hystrix Releases #
 
+### Version 1.3.9 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.3.9%22)) ###
+
+* [Pull 210](https://github.com/Netflix/Hystrix/pull/210) HystrixContextScheduler was not wrapping the Inner Scheduler
+* [Pull 206](https://github.com/Netflix/Hystrix/pull/206) Bugfix ExceptionThreadingUtility
+* [Pull 203](https://github.com/Netflix/Hystrix/pull/203) Made HystrixTimer initialization thread-safe
+
 ### Version 1.3.8 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.3.8%22)) ###
 
 * [Pull 194](https://github.com/Netflix/Hystrix/pull/194) BugFix: Do not overwrite user thread duration in case of timeouts
