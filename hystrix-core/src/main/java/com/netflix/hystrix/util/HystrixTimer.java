@@ -134,7 +134,7 @@ public class HystrixTimer {
      */
     protected void startThreadIfNeeded() {
         // create and start thread if one doesn't exist
-        if (executor.get() == null) {
+        while (executor.get() == null || ! executor.get().isInitialized()) {
             if (executor.compareAndSet(null, new ScheduledExecutor())) {
                 // initialize the executor that we 'won' setting
                 executor.get().initialize();
@@ -144,6 +144,7 @@ public class HystrixTimer {
 
     private static class ScheduledExecutor {
         private volatile ScheduledThreadPoolExecutor executor;
+        private volatile boolean initialized;
 
         /**
          * We want this only done once when created in compareAndSet so use an initialize method
@@ -158,10 +159,15 @@ public class HystrixTimer {
                 }
 
             });
+            initialized = true;
         }
 
         public ScheduledThreadPoolExecutor getThreadPool() {
             return executor;
+        }
+
+        public boolean isInitialized() {
+            return initialized;
         }
     }
 
