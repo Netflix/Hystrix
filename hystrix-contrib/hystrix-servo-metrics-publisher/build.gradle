@@ -4,7 +4,7 @@ apply plugin: 'idea'
 
 dependencies {
     compile project(':hystrix-core')
-    compile 'com.netflix.servo:servo-core:0.4.49'
+    compile 'com.netflix.servo:servo-core:0.4.32'
 }
 
 eclipse {
