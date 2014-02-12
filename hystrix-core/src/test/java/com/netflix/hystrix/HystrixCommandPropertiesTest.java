@@ -203,7 +203,7 @@ public class HystrixCommandPropertiesTest {
     @Test
     public void testBooleanCodeDefault() {
         HystrixCommandProperties properties = new TestPropertiesCommand(TestKey.TEST, new HystrixCommandProperties.Setter(), "unitTestPrefix");
-        assertEquals(default_circuitBreakerForceClosed, properties.circuitBreakerForceClosed().get());
+        assertEquals(HystrixCommandProperties.default_circuitBreakerForceClosed, properties.circuitBreakerForceClosed().get());
     }
 
     @Test
@@ -271,7 +271,7 @@ public class HystrixCommandPropertiesTest {
     @Test
     public void testIntegerCodeDefault() {
         HystrixCommandProperties properties = new TestPropertiesCommand(TestKey.TEST, new HystrixCommandProperties.Setter(), "unitTestPrefix");
-        assertEquals(default_metricsRollingStatisticalWindow, properties.metricsRollingStatisticalWindowInMilliseconds().get());
+        assertEquals(HystrixCommandProperties.default_metricsRollingStatisticalWindow, properties.metricsRollingStatisticalWindowInMilliseconds().get());
     }
 
     @Test

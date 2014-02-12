@@ -1,12 +1,12 @@
 /**
  * Copyright 2012 Netflix, Inc.
- *
+ * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -44,7 +44,7 @@ import com.netflix.hystrix.strategy.properties.HystrixProperty;
  * For example, on each read to getSum/getCount it will iterate buckets to sum the data so that on writes we don't need to maintain the overall sum and pay the synchronization cost at each write to
  * ensure the sum is up-to-date when the read can easily iterate each bucket to get the sum when it needs it.
  * <p>
- * See inner-class UnitTest for usage and expected behavior examples.
+ * See UnitTest for usage and expected behavior examples.
  */
 @ThreadSafe
 public class HystrixRollingNumber {
@@ -53,10 +53,10 @@ public class HystrixRollingNumber {
 
     private static final Time ACTUAL_TIME = new ActualTime();
     private final Time time;
-    private final HystrixProperty<Integer> timeInMilliseconds;
-    private final HystrixProperty<Integer> numberOfBuckets;
+    final HystrixProperty<Integer> timeInMilliseconds;
+    final HystrixProperty<Integer> numberOfBuckets;
 
-    private final BucketCircularArray buckets;
+    final BucketCircularArray buckets;
     private final CumulativeSum cumulativeSum = new CumulativeSum();
 
     public HystrixRollingNumber(HystrixProperty<Integer> timeInMilliseconds, HystrixProperty<Integer> numberOfBuckets) {
@@ -64,7 +64,7 @@ public class HystrixRollingNumber {
     }
 
     /* used for unit testing */
-    private HystrixRollingNumber(Time time, int timeInMilliseconds, int numberOfBuckets) {
+    /* package for testing */HystrixRollingNumber(Time time, int timeInMilliseconds, int numberOfBuckets) {
         this(time, HystrixProperty.Factory.asProperty(timeInMilliseconds), HystrixProperty.Factory.asProperty(numberOfBuckets));
     }
 
@@ -80,7 +80,7 @@ public class HystrixRollingNumber {
         buckets = new BucketCircularArray(numberOfBuckets.get());
     }
 
-    private int getBucketSizeInMilliseconds() {
+    /* package for testing */int getBucketSizeInMilliseconds() {
         return timeInMilliseconds.get() / numberOfBuckets.get();
     }
 
@@ -248,7 +248,7 @@ public class HystrixRollingNumber {
 
     private ReentrantLock newBucketLock = new ReentrantLock();
 
-    private Bucket getCurrentBucket() {
+    /* package for testing */Bucket getCurrentBucket() {
         long currentTime = time.getCurrentTimeInMillis();
 
         /* a shortcut to try and get the most common result of immediately finding the current bucket */
@@ -344,7 +344,7 @@ public class HystrixRollingNumber {
         }
     }
 
-    private static interface Time {
+    /* package */static interface Time {
         public long getCurrentTimeInMillis();
     }
 
@@ -360,7 +360,7 @@ public class HystrixRollingNumber {
     /**
      * Counters for a given 'bucket' of time.
      */
-    private static class Bucket {
+    /* package */static class Bucket {
         final long windowStart;
         final LongAdder[] adderForCounterType;
         final LongMaxUpdater[] updaterForCounterType;
@@ -422,7 +422,7 @@ public class HystrixRollingNumber {
     /**
      * Cumulative counters (from start of JVM) from each Type
      */
-    private static class CumulativeSum {
+    /* package */static class CumulativeSum {
         final LongAdder[] adderForCounterType;
         final LongMaxUpdater[] updaterForCounterType;
 
@@ -501,7 +501,7 @@ public class HystrixRollingNumber {
      * <p>
      * benjchristensen => This implementation was chosen based on performance testing I did and documented at: http://benjchristensen.com/2011/10/08/atomiccirculararray/
      */
-    private class BucketCircularArray implements Iterable<Bucket> {
+    /* package */class BucketCircularArray implements Iterable<Bucket> {
         private final AtomicReference<ListState> state;
         private final int dataLength; // we don't resize, we always stay the same, so remember this
         private final int numBuckets;

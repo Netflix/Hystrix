@@ -8,6 +8,8 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.netflix.hystrix.strategy.properties.HystrixProperty;
+import com.netflix.hystrix.util.HystrixRollingPercentile.PercentileSnapshot;
+import com.netflix.hystrix.util.HystrixRollingPercentile.Time;
 
 public class HystrixRollingPercentileTest {
 

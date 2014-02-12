@@ -6,6 +6,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
 
+import com.netflix.hystrix.util.HystrixRollingNumber.Time;
 
 public class HystrixRollingNumberTest {
 
@@ -674,5 +675,4 @@ public class HystrixRollingNumberTest {
 
     }
 
-    
 }
