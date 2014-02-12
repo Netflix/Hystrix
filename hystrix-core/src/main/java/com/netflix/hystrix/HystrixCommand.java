@@ -44,17 +44,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import rx.Observable;
-import rx.Observable.OnSubscribeFunc;
+import rx.Observable.OnSubscribe;
+import rx.Observable.Operator;
 import rx.Observer;
 import rx.Scheduler;
 import rx.Subscriber;
-import rx.Subscription;
 import rx.schedulers.Schedulers;
-import rx.operators.SafeObservableSubscription;
 import rx.subscriptions.CompositeSubscription;
 import rx.subscriptions.Subscriptions;
 import rx.util.functions.Action0;
-import rx.util.functions.Action1;
 import rx.util.functions.Func1;
 
 import com.netflix.config.ConfigurationManager;
@@ -361,10 +359,10 @@ public abstract class HystrixCommand<R> extends AbstractHystrixCommand<R> implem
         final HystrixCommand<R> _this = this;
 
         // create an Observable that will lazily execute when subscribed to
-        Observable<R> o = Observable.create(new OnSubscribeFunc<R>() {
+        Observable<R> o = Observable.create(new OnSubscribe<R>() {
 
             @Override
-            public Subscription onSubscribe(Observer<? super R> observer) {
+            public void call(Subscriber<? super R> observer) {
                 try {
                     /* used to track userThreadExecutionTime */
                     invocationStartTime = System.currentTimeMillis();
@@ -383,18 +381,16 @@ public abstract class HystrixCommand<R> extends AbstractHystrixCommand<R> implem
                         } catch (Exception e) {
                             observer.onError(e);
                         }
-                        return Subscriptions.empty();
                     } else {
                         /* not short-circuited so proceed with queuing the execution */
                         try {
                             if (properties.executionIsolationStrategy().get().equals(ExecutionIsolationStrategy.THREAD)) {
-                                return subscribeWithThreadIsolation(observer);
+                                subscribeWithThreadIsolation(observer);
                             } else {
-                                return subscribeWithSemaphoreIsolation(observer);
+                                subscribeWithSemaphoreIsolation(observer);
                             }
                         } catch (RuntimeException e) {
                             observer.onError(e);
-                            return Subscriptions.empty();
                         }
                     }
                 } finally {
@@ -405,7 +401,7 @@ public abstract class HystrixCommand<R> extends AbstractHystrixCommand<R> implem
 
         if (properties.executionIsolationStrategy().get().equals(ExecutionIsolationStrategy.THREAD)) {
             // wrap for timeout support
-            o = new TimeoutObservable<R>(o, _this, performAsyncTimeout);
+            o = o.lift(new TimeoutOperator<R>(_this, performAsyncTimeout));
         }
 
         // error handling
@@ -457,98 +453,103 @@ public abstract class HystrixCommand<R> extends AbstractHystrixCommand<R> implem
     }
 
    
-    private static class TimeoutObservable<R> extends Observable<R> {
+    private static class TimeoutOperator<R> implements Operator<R, R> {
 
-        public TimeoutObservable(final Observable<R> o, final HystrixCommand<R> originalCommand, final boolean isNonBlocking) {
-            super(new OnSubscribe<R>() {
+        final HystrixCommand<R> originalCommand;
+        final boolean isNonBlocking;
+        
+        public TimeoutOperator(final HystrixCommand<R> originalCommand, final boolean isNonBlocking) {
+            this.originalCommand = originalCommand;
+            this.isNonBlocking = isNonBlocking;
+        }
+        @Override
+        public Subscriber<R> call(final Subscriber<? super R> child) {
+            // onSubscribe setup the timer
+            final CompositeSubscription s = new CompositeSubscription();
+
+            TimerListener listener = new TimerListener() {
 
                 @Override
-                public void call(final Subscriber<? super R> observer) {
-                    // TODO this is using a private API of Rx so either move off of it or get Rx to make it public
-                    // TODO better yet, get TimeoutObservable part of Rx
-                    final CompositeSubscription s = new CompositeSubscription();
+                public void tick() {
+                    // if we can go from NOT_EXECUTED to TIMED_OUT then we do the timeout codepath
+                    // otherwise it means we lost a race and the run() execution completed
+                    if (originalCommand.isCommandTimedOut.compareAndSet(TimedOutStatus.NOT_EXECUTED, TimedOutStatus.TIMED_OUT)) {
+                        // do fallback logic
 
-                    TimerListener listener = new TimerListener() {
+                        // report timeout failure
+                        originalCommand.metrics.markTimeout(System.currentTimeMillis() - originalCommand.invocationStartTime);
 
-                        @Override
-                        public void tick() {
-                            // if we can go from NOT_EXECUTED to TIMED_OUT then we do the timeout codepath
-                            // otherwise it means we lost a race and the run() execution completed
-                            if (originalCommand.isCommandTimedOut.compareAndSet(TimedOutStatus.NOT_EXECUTED, TimedOutStatus.TIMED_OUT)) {
-                                // do fallback logic
+                        // we record execution time because we are returning before 
+                        originalCommand.recordTotalExecutionTime(originalCommand.invocationStartTime);
 
-                                // report timeout failure
-                                originalCommand.metrics.markTimeout(System.currentTimeMillis() - originalCommand.invocationStartTime);
-
-                                // we record execution time because we are returning before 
-                                originalCommand.recordTotalExecutionTime(originalCommand.invocationStartTime);
-
-                                try {
-                                    R v = originalCommand.getFallbackOrThrowException(HystrixEventType.TIMEOUT, FailureType.TIMEOUT, "timed-out", new TimeoutException());
-                                    observer.onNext(v);
-                                    observer.onCompleted();
-                                } catch (HystrixRuntimeException re) {
-                                    observer.onError(re);
-                                }
-                            }
-
-                            s.unsubscribe();
+                        try {
+                            R v = originalCommand.getFallbackOrThrowException(HystrixEventType.TIMEOUT, FailureType.TIMEOUT, "timed-out", new TimeoutException());
+                            child.onNext(v);
+                            child.onCompleted();
+                        } catch (HystrixRuntimeException re) {
+                            child.onError(re);
                         }
-
-                        @Override
-                        public int getIntervalTimeInMilliseconds() {
-                            return originalCommand.properties.executionIsolationThreadTimeoutInMilliseconds().get();
-                        }
-                    };
-
-                    Reference<TimerListener> _tl = null;
-                    if (isNonBlocking) {
-                        /*
-                         * Scheduling a separate timer to do timeouts is more expensive
-                         * so we'll only do it if we're being used in a non-blocking manner.
-                         */
-                    	
-                        _tl = HystrixTimer.getInstance().addTimerListener(listener);
-                    } else {
-                        /*
-                         * Otherwise we just set the hook that queue().get() can trigger if a timeout occurs.
-                         * 
-                         * This allows the blocking and non-blocking approaches to be coded basically the same way
-                         * though it is admittedly awkward if we were just blocking (the use of Reference annoys me for example)
-                         */
-                        _tl = new SoftReference<TimerListener>(listener);
                     }
-                    final Reference<TimerListener> tl = _tl;
 
-                    // set externally so execute/queue can see this
-                    originalCommand.timeoutTimer.set(tl);
-
-                    o.subscribe(new Subscriber<R>(s) {
-
-                        @Override
-                        public void onCompleted() {
-                            tl.clear();
-                            observer.onCompleted();
-                        }
-
-                        @Override
-                        public void onError(Throwable e) {
-                            tl.clear();
-                            observer.onError(e);
-                        }
-
-                        @Override
-                        public void onNext(R v) {
-                            observer.onNext(v);
-                        }
-
-                    });
+                    s.unsubscribe();
                 }
-            });
+
+                @Override
+                public int getIntervalTimeInMilliseconds() {
+                    return originalCommand.properties.executionIsolationThreadTimeoutInMilliseconds().get();
+                }
+            };
+
+            Reference<TimerListener> _tl = null;
+            if (isNonBlocking) {
+                /*
+                 * Scheduling a separate timer to do timeouts is more expensive
+                 * so we'll only do it if we're being used in a non-blocking manner.
+                 */
+                _tl = HystrixTimer.getInstance().addTimerListener(listener);
+            } else {
+                /*
+                 * Otherwise we just set the hook that queue().get() can trigger if a timeout occurs.
+                 * 
+                 * This allows the blocking and non-blocking approaches to be coded basically the same way
+                 * though it is admittedly awkward if we were just blocking (the use of Reference annoys me for example)
+                 */
+                _tl = new SoftReference<TimerListener>(listener);
+            }
+            final Reference<TimerListener> tl = _tl;
+
+            // set externally so execute/queue can see this
+            originalCommand.timeoutTimer.set(tl);
+            
+            
+            return new Subscriber<R>(child) {
+
+                @Override
+                public void onCompleted() {
+                    tl.clear();
+                    child.onCompleted();
+                }
+
+                @Override
+                public void onError(Throwable e) {
+                    tl.clear();
+                    child.onError(e);
+                }
+
+                @Override
+                public void onNext(R t) {
+                    // as soon as we receive data we will turn off the timer
+                    tl.clear();
+                    child.onNext(t);
+                }
+                
+            };
         }
+        
+
     }
 
-    private Subscription subscribeWithSemaphoreIsolation(final Observer<? super R> observer) {
+    private void subscribeWithSemaphoreIsolation(final Subscriber<? super R> observer) {
         TryableSemaphore executionSemaphore = getExecutionSemaphore();
         // acquire a permit
         if (executionSemaphore.tryAcquire()) {
@@ -565,14 +566,10 @@ public abstract class HystrixCommand<R> extends AbstractHystrixCommand<R> implem
                     recordTotalExecutionTime(invocationStartTime);
                     /* now complete which releases the consumer */
                     observer.onCompleted();
-                    // empty subscription since we executed synchronously
-                    return Subscriptions.empty();
                 } catch (Exception e) {
                     /* execution time (must occur before terminal state otherwise a race condition can occur if requested by client) */
                     recordTotalExecutionTime(invocationStartTime);
                     observer.onError(e);
-                    // empty subscription since we executed synchronously
-                    return Subscriptions.empty();
                 } finally {
                     // pop the command that is being run
                     Hystrix.endCurrentThreadExecutingCommand();
@@ -588,12 +585,10 @@ public abstract class HystrixCommand<R> extends AbstractHystrixCommand<R> implem
             // retrieve a fallback or throw an exception if no fallback available
             observer.onNext(getFallbackOrThrowException(HystrixEventType.SEMAPHORE_REJECTED, FailureType.REJECTED_SEMAPHORE_EXECUTION, "could not acquire a semaphore for execution"));
             observer.onCompleted();
-            // empty subscription since we executed synchronously
-            return Subscriptions.empty();
         }
     }
 
-    private Subscription subscribeWithThreadIsolation(final Observer<? super R> observer) {
+    private void subscribeWithThreadIsolation(final Subscriber<? super R> observer) {
         // mark that we are executing in a thread (even if we end up being rejected we still were a THREAD execution and not SEMAPHORE)
         isExecutedInThread.set(true);
 
@@ -680,28 +675,27 @@ public abstract class HystrixCommand<R> extends AbstractHystrixCommand<R> implem
 
             })));
 
-            return Subscriptions.create(new Action0() {
+
+            observer.add(Subscriptions.create(new Action0() {
 
                 @Override
                 public void call() {
                     f.cancel(properties.executionIsolationThreadInterruptOnTimeout().get());
                 }
 
-            });
-
+            }));
+            
         } catch (RejectedExecutionException e) {
             // mark on counter
             metrics.markThreadPoolRejection();
             // use a fallback instead (or throw exception if not implemented)
             observer.onNext(getFallbackOrThrowException(HystrixEventType.THREAD_POOL_REJECTED, FailureType.REJECTED_THREAD_EXECUTION, "could not be queued for execution", e));
             observer.onCompleted();
-            return Subscriptions.empty();
         } catch (Exception e) {
             // unknown exception
             logger.error(getLogMessagePrefix() + ": Unexpected exception while submitting to queue.", e);
             observer.onNext(getFallbackOrThrowException(HystrixEventType.THREAD_POOL_REJECTED, FailureType.REJECTED_THREAD_EXECUTION, "had unexpected exception while attempting to queue for execution.", e));
             observer.onCompleted();
-            return Subscriptions.empty();
         }
     }
 
@@ -1408,103 +1402,56 @@ public abstract class HystrixCommand<R> extends AbstractHystrixCommand<R> implem
          */
         @Test
         public void testObserveOnScheduler() throws Exception {
+            for (int i = 0; i < 5; i++) {
+                final AtomicReference<Thread> commandThread = new AtomicReference<Thread>();
+                final AtomicReference<Thread> subscribeThread = new AtomicReference<Thread>();
 
-            final AtomicReference<Thread> commandThread = new AtomicReference<Thread>();
-            final AtomicReference<Thread> subscribeThread = new AtomicReference<Thread>();
-
-            TestHystrixCommand<Boolean> command = new TestHystrixCommand<Boolean>(TestHystrixCommand.testPropsBuilder()) {
-
-                @Override
-                protected Boolean run() {
-                    commandThread.set(Thread.currentThread());
-                    return true;
-                }
-            };
-
-            final CountDownLatch latch = new CountDownLatch(1);
-
-            Scheduler customScheduler = new Scheduler() {
-
-                private final Scheduler self = this;
-
-
-                @Override
-                public Subscription schedule(Action1<Inner> action) {
-                    return schedule(action, 0, TimeUnit.MILLISECONDS);
-                }
-
-                @Override
-                public Subscription schedule(final Action1<Inner> action, long delayTime, TimeUnit unit) {
-                    new Thread("RxScheduledThread") {
-                        @Override
-                        public void run() {
-                            action.call(new CustomInner());
-                        }
-                    }.start();
-
-                    // not testing unsubscribe behavior
-                    return Subscriptions.empty();
-                }
-                
-                final class CustomInner extends Inner {
+                TestHystrixCommand<Boolean> command = new TestHystrixCommand<Boolean>(TestHystrixCommand.testPropsBuilder()) {
 
                     @Override
-                    public void unsubscribe() {
-                        
+                    protected Boolean run() {
+                        commandThread.set(Thread.currentThread());
+                        return true;
+                    }
+                };
+
+                final CountDownLatch latch = new CountDownLatch(1);
+
+                command.toObservable(Schedulers.newThread()).subscribe(new Observer<Boolean>() {
+
+                    @Override
+                    public void onCompleted() {
+                        latch.countDown();
+
                     }
 
                     @Override
-                    public boolean isUnsubscribed() {
-                        return false;
+                    public void onError(Throwable e) {
+                        latch.countDown();
+                        e.printStackTrace();
+
                     }
 
                     @Override
-                    public void schedule(Action1<Inner> action, long delayTime, TimeUnit unit) {
-                        throw new IllegalStateException("Not implemented");
+                    public void onNext(Boolean args) {
+                        subscribeThread.set(Thread.currentThread());
                     }
+                });
 
-                    @Override
-                    public void schedule(Action1<Inner> action) {
-                        throw new IllegalStateException("Not implemented");
-                    }
-                    
+                if (!latch.await(2000, TimeUnit.MILLISECONDS)) {
+                    fail("timed out");
                 }
 
-            };
+                assertNotNull(commandThread.get());
+                assertNotNull(subscribeThread.get());
 
-            command.toObservable(customScheduler).subscribe(new Observer<Boolean>() {
+                System.out.println("Command Thread: " + commandThread.get());
+                System.out.println("Subscribe Thread: " + subscribeThread.get());
 
-                @Override
-                public void onCompleted() {
-                    latch.countDown();
-
-                }
-
-                @Override
-                public void onError(Throwable e) {
-                    latch.countDown();
-                    e.printStackTrace();
-
-                }
-
-                @Override
-                public void onNext(Boolean args) {
-                    subscribeThread.set(Thread.currentThread());
-                }
-            });
-
-            if (!latch.await(2000, TimeUnit.MILLISECONDS)) {
-                fail("timed out");
+                assertTrue(commandThread.get().getName().startsWith("hystrix-"));
+                assertFalse(subscribeThread.get().getName().startsWith("hystrix-"));
+                assertTrue(subscribeThread.get().getName().startsWith("Rx"));
             }
-
-            assertNotNull(commandThread.get());
-            assertNotNull(subscribeThread.get());
-
-            System.out.println("Command Thread: " + commandThread.get());
-            System.out.println("Subscribe Thread: " + subscribeThread.get());
-
-            assertTrue(commandThread.get().getName().startsWith("hystrix-"));
-            assertTrue(subscribeThread.get().getName().equals("RxScheduledThread"));
         }
 
         /**
