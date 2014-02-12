@@ -7,7 +7,7 @@ dependencies {
     compile 'com.netflix.rxjava:rxjava-core:[0.14,0.15)'
     compile 'org.slf4j:slf4j-api:1.7.0'
     compile 'com.google.code.findbugs:jsr305:2.0.0'
-    provided 'junit:junit-dep:4.10'
+    testCompile 'junit:junit-dep:4.10'
 }
 
 javadoc {

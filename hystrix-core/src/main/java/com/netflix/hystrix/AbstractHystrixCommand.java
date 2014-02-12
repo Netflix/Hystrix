@@ -33,10 +33,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import rx.Observable;
-import rx.Observer;
 import rx.Scheduler;
 import rx.Subscriber;
-import rx.Subscription;
 import rx.schedulers.Schedulers;
 import rx.subjects.ReplaySubject;
 

@@ -15,8 +15,6 @@
  */
 package com.netflix.hystrix;
 
-import static org.junit.Assert.*;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,15 +22,11 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.netflix.hystrix.HystrixCommand.UnitTest.CommandGroupForUnitTest;
-import com.netflix.hystrix.HystrixCommand.UnitTest.CommandKeyForUnitTest;
 import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
-import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifierDefault;
 import com.netflix.hystrix.util.HystrixRollingNumber;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 import com.netflix.hystrix.util.HystrixRollingPercentile;
@@ -457,60 +451,6 @@ public class HystrixCommandMetrics {
         public int getErrorPercentage() {
             return errorPercentage;
         }
-    }
-
-    public static class UnitTest {
-
-        /**
-         * Testing the ErrorPercentage because this method could be easy to miss when making changes elsewhere.
-         */
-        @Test
-        public void testGetErrorPercentage() {
-
-            try {
-                HystrixCommandProperties.Setter properties = HystrixCommandProperties.Setter.getUnitTestPropertiesSetter();
-                HystrixCommandMetrics metrics = getMetrics(properties);
-
-                metrics.markSuccess(100);
-                assertEquals(0, metrics.getHealthCounts().getErrorPercentage());
-
-                metrics.markFailure(1000);
-                assertEquals(50, metrics.getHealthCounts().getErrorPercentage());
-
-                metrics.markSuccess(100);
-                metrics.markSuccess(100);
-                assertEquals(25, metrics.getHealthCounts().getErrorPercentage());
-
-                metrics.markTimeout(5000);
-                metrics.markTimeout(5000);
-                assertEquals(50, metrics.getHealthCounts().getErrorPercentage());
-
-                metrics.markSuccess(100);
-                metrics.markSuccess(100);
-                metrics.markSuccess(100);
-
-                // latent
-                metrics.markSuccess(5000);
-
-                // 6 success + 1 latent success + 1 failure + 2 timeout = 10 total
-                // latent success not considered error
-                // error percentage = 1 failure + 2 timeout / 10
-                assertEquals(30, metrics.getHealthCounts().getErrorPercentage());
-
-            } catch (Exception e) {
-                e.printStackTrace();
-                fail("Error occurred: " + e.getMessage());
-            }
-
-        }
-
-        /**
-         * Utility method for creating {@link HystrixCommandMetrics} for unit tests.
-         */
-        private static HystrixCommandMetrics getMetrics(HystrixCommandProperties.Setter properties) {
-            return new HystrixCommandMetrics(CommandKeyForUnitTest.KEY_ONE, CommandGroupForUnitTest.OWNER_ONE, HystrixCommandProperties.Setter.asMock(properties), HystrixEventNotifierDefault.getInstance());
-        }
-
     }
 
 }

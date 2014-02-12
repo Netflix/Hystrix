@@ -18,11 +18,11 @@ package com.netflix.hystrix.strategy.concurrency;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.netflix.hystrix.strategy.concurrency.HystrixContextScheduler.HystrixContextInnerScheduler;
-
 import rx.Scheduler.Inner;
 import rx.util.functions.Action1;
 import rx.util.functions.Func2;
+
+import com.netflix.hystrix.strategy.concurrency.HystrixContextScheduler.HystrixContextInnerScheduler;
 
 /**
  * Wrapper around {@link Func2} that manages the {@link HystrixRequestContext} initialization and cleanup for the execution of the {@link Func2}

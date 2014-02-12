@@ -15,13 +15,7 @@
  */
 package com.netflix.hystrix.strategy.metrics;
 
-import static org.junit.Assert.*;
-
-import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.junit.Test;
 
 import com.netflix.hystrix.HystrixCircuitBreaker;
 import com.netflix.hystrix.HystrixCommand;
@@ -95,14 +89,14 @@ public class HystrixMetricsPublisherFactory {
         this(HystrixPlugins.getInstance().getMetricsPublisher());
     }
 
-    private HystrixMetricsPublisherFactory(HystrixMetricsPublisher strategy) {
+    /* package */ HystrixMetricsPublisherFactory(HystrixMetricsPublisher strategy) {
         this.strategy = strategy;
     }
 
     // String is CommandKey.name() (we can't use CommandKey directly as we can't guarantee it implements hashcode/equals correctly)
     private final ConcurrentHashMap<String, HystrixMetricsPublisherCommand> commandPublishers = new ConcurrentHashMap<String, HystrixMetricsPublisherCommand>();
 
-    private HystrixMetricsPublisherCommand getPublisherForCommand(HystrixCommandKey commandKey, HystrixCommandGroupKey commandOwner, HystrixCommandMetrics metrics, HystrixCircuitBreaker circuitBreaker, HystrixCommandProperties properties) {
+    /* package */ HystrixMetricsPublisherCommand getPublisherForCommand(HystrixCommandKey commandKey, HystrixCommandGroupKey commandOwner, HystrixCommandMetrics metrics, HystrixCircuitBreaker circuitBreaker, HystrixCommandProperties properties) {
         // attempt to retrieve from cache first
         HystrixMetricsPublisherCommand publisher = commandPublishers.get(commandKey.name());
         if (publisher != null) {
@@ -127,7 +121,7 @@ public class HystrixMetricsPublisherFactory {
     // String is ThreadPoolKey.name() (we can't use ThreadPoolKey directly as we can't guarantee it implements hashcode/equals correctly)
     private final ConcurrentHashMap<String, HystrixMetricsPublisherThreadPool> threadPoolPublishers = new ConcurrentHashMap<String, HystrixMetricsPublisherThreadPool>();
 
-    private HystrixMetricsPublisherThreadPool getPublisherForThreadPool(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolMetrics metrics, HystrixThreadPoolProperties properties) {
+    /* package */ HystrixMetricsPublisherThreadPool getPublisherForThreadPool(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolMetrics metrics, HystrixThreadPoolProperties properties) {
         // attempt to retrieve from cache first
         HystrixMetricsPublisherThreadPool publisher = threadPoolPublishers.get(threadPoolKey.name());
         if (publisher != null) {
@@ -149,81 +143,4 @@ public class HystrixMetricsPublisherFactory {
         }
     }
 
-    public static class UnitTest {
-
-        /**
-         * Assert that we only call a publisher once for a given Command or ThreadPool key.
-         */
-        @Test
-        public void testSingleInitializePerKey() {
-            final TestHystrixMetricsPublisher publisher = new TestHystrixMetricsPublisher();
-            final HystrixMetricsPublisherFactory factory = new HystrixMetricsPublisherFactory(publisher);
-            ArrayList<Thread> threads = new ArrayList<Thread>();
-            for (int i = 0; i < 20; i++) {
-                threads.add(new Thread(new Runnable() {
-
-                    @Override
-                    public void run() {
-                        factory.getPublisherForCommand(TestCommandKey.TEST_A, null, null, null, null);
-                        factory.getPublisherForCommand(TestCommandKey.TEST_B, null, null, null, null);
-                        factory.getPublisherForThreadPool(TestThreadPoolKey.TEST_A, null, null);
-                    }
-
-                }));
-            }
-
-            // start them
-            for (Thread t : threads) {
-                t.start();
-            }
-
-            // wait for them to finish
-            for (Thread t : threads) {
-                try {
-                    t.join();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            // we should see 2 commands and 1 threadPool publisher created
-            assertEquals(2, publisher.commandCounter.get());
-            assertEquals(1, publisher.threadCounter.get());
-        }
-    }
-
-    private static class TestHystrixMetricsPublisher extends HystrixMetricsPublisher {
-
-        AtomicInteger commandCounter = new AtomicInteger();
-        AtomicInteger threadCounter = new AtomicInteger();
-
-        @Override
-        public HystrixMetricsPublisherCommand getMetricsPublisherForCommand(HystrixCommandKey commandKey, HystrixCommandGroupKey commandOwner, HystrixCommandMetrics metrics, HystrixCircuitBreaker circuitBreaker, HystrixCommandProperties properties) {
-            return new HystrixMetricsPublisherCommand() {
-                @Override
-                public void initialize() {
-                    commandCounter.incrementAndGet();
-                }
-            };
-        }
-
-        @Override
-        public HystrixMetricsPublisherThreadPool getMetricsPublisherForThreadPool(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolMetrics metrics, HystrixThreadPoolProperties properties) {
-            return new HystrixMetricsPublisherThreadPool() {
-                @Override
-                public void initialize() {
-                    threadCounter.incrementAndGet();
-                }
-            };
-        }
-
-    }
-
-    private static enum TestCommandKey implements HystrixCommandKey {
-        TEST_A, TEST_B;
-    }
-
-    private static enum TestThreadPoolKey implements HystrixThreadPoolKey {
-        TEST_A, TEST_B;
-    }
 }
