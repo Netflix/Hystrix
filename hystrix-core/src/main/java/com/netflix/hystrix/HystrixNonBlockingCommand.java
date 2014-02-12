@@ -43,13 +43,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import rx.Observable;
-import rx.Observable.OnSubscribeFunc;
+import rx.Observable.OnSubscribe;
 import rx.Observer;
 import rx.Scheduler;
 import rx.Subscriber;
 import rx.Subscription;
-import rx.concurrency.Schedulers;
-import rx.operators.SafeObservableSubscription;
+import rx.schedulers.Schedulers;
 import rx.subscriptions.CompositeSubscription;
 import rx.subscriptions.Subscriptions;
 import rx.util.functions.Action0;
@@ -331,10 +330,10 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
         final HystrixNonBlockingCommand<R> _this = this;
 
         // create an Observable that will lazily execute when subscribed to
-        Observable<R> o = Observable.create(new OnSubscribeFunc<R>() {
+        Observable<R> o = Observable.create(new OnSubscribe<R>() {
 
             @Override
-            public Subscription onSubscribe(Observer<? super R> observer) {
+            public void call(Subscriber<? super R> observer) {
                 try {
                     /* used to track userThreadExecutionTime */
                     invocationStartTime = System.currentTimeMillis();
@@ -348,25 +347,21 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
                         metrics.markShortCircuited();
                         // short-circuit and go directly to fallback (or throw an exception if no fallback implemented)
                         try {
-                            Observable<R> f = (getFallbackOrThrowException(HystrixEventType.SHORT_CIRCUITED, FailureType.SHORTCIRCUIT, "short-circuited"));
-                            return f.subscribe(observer);
-                            
+                            Observable<R> f = getFallbackOrThrowException(HystrixEventType.SHORT_CIRCUITED, FailureType.SHORTCIRCUIT, "short-circuited");
+                            observer.add(f.subscribe(observer));
                         } catch (Exception e) {
                             observer.onError(e);
                         }
-                        return Subscriptions.empty();
                     } else {
                         /* not short-circuited so proceed with queuing the execution */
                     	try {
-
-                    		return subscribeWithSemaphoreIsolation(observer);
-
+                    	    subscribeWithSemaphoreIsolation(observer);
                     	} catch (RuntimeException e) {
                     		observer.onError(e);
-                    		return Subscriptions.empty();
                     	}
                     }
                 } finally {
+                    // TODO this won't work
                     recordExecutedCommand();
                 }
             }
@@ -520,8 +515,8 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
 
 
     
-    private Subscription subscribeWithSemaphoreIsolation(final Observer<? super R> observer) {
-        TryableSemaphore executionSemaphore = getExecutionSemaphore();
+    private void subscribeWithSemaphoreIsolation(final Subscriber<? super R> observer) {
+        final TryableSemaphore executionSemaphore = getExecutionSemaphore();
         // acquire a permit
         if (executionSemaphore.tryAcquire()) {
             try {
@@ -537,7 +532,6 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
                     	recordTotalExecutionTime(invocationStartTime);
                     	//observer.onError(new Exception("command timed out"));
                     	// empty subscription since we executed synchronously
-                    	return Subscriptions.empty();
                     }
                     
                     final HystrixNonBlockingCommand<R> _cmd = this;
@@ -548,23 +542,33 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
         				public R call(R t1) {
         			
         					return executionHook.onComplete(_cmd, t1);
-        				}
-                    		
+                        }
+
+                    }).finallyDo(new Action0() {
+
+                        @Override
+                        public void call() {
+                            // TODO ... this stuff needs to go in here doesn't it?
+                            
+                            
+                            // pop the command that is being run
+//                            Hystrix.endCurrentThreadExecutingCommand();
+                            // release the semaphore
+//                            executionSemaphore.release();
+                        }
+
                     });
-                    
-                     Subscription s = r.subscribe(observer);
-       
+
+                    observer.add(r.subscribe(observer));
+
                     /* execution time (must occur before terminal state otherwise a race condition can occur if requested by client) */
                     recordTotalExecutionTime(invocationStartTime);
                     /* now complete which releases the consumer */
-              
-                    return s;
                 } catch (Exception e) {
                     /* execution time (must occur before terminal state otherwise a race condition can occur if requested by client) */
                     recordTotalExecutionTime(invocationStartTime);
                     observer.onError(e);
                     // empty subscription since we executed synchronously
-                    return Subscriptions.empty();
                 } finally {
                     // pop the command that is being run
                     Hystrix.endCurrentThreadExecutingCommand();
@@ -579,7 +583,7 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
             logger.debug("HystrixCommand Execution Rejection by Semaphore."); // debug only since we're throwing the exception and someone higher will do something with it
             // retrieve a fallback or throw an exception if no fallback available
             Observable<R> f = (getFallbackOrThrowException(HystrixEventType.SEMAPHORE_REJECTED, FailureType.REJECTED_SEMAPHORE_EXECUTION, "could not acquire a semaphore for execution"));
-            return f.subscribe(observer);
+            observer.add(f.subscribe(observer));
 
         }
     }
