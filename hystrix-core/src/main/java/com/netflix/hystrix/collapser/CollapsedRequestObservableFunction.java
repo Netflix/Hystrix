@@ -2,9 +2,9 @@ package com.netflix.hystrix.collapser;
 
 import java.util.concurrent.atomic.AtomicReference;
 
-import rx.Observable.OnSubscribeFunc;
+import rx.Observable.OnSubscribe;
 import rx.Observer;
-import rx.Subscription;
+import rx.Subscriber;
 import rx.subscriptions.BooleanSubscription;
 
 import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
@@ -20,7 +20,7 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
  * 
  * @param <R>
  */
-/* package */class CollapsedRequestObservableFunction<T, R> implements CollapsedRequest<T, R>, OnSubscribeFunc<T> {
+/* package */class CollapsedRequestObservableFunction<T, R> implements CollapsedRequest<T, R>, OnSubscribe<T> {
     private final R argument;
     private final AtomicReference<CollapsedRequestObservableFunction.ResponseHolder<T>> rh = new AtomicReference<CollapsedRequestObservableFunction.ResponseHolder<T>>(new CollapsedRequestObservableFunction.ResponseHolder<T>());
     private final BooleanSubscription subscription = new BooleanSubscription();
@@ -132,7 +132,8 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
     }
 
     @Override
-    public Subscription onSubscribe(Observer<? super T> observer) {
+    public void call(Subscriber<? super T> observer) {
+        observer.add(subscription);
         while (true) {
             CollapsedRequestObservableFunction.ResponseHolder<T> r = rh.get();
             if (r.getObserver() != null) {
@@ -147,7 +148,6 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
                 // we'll retry
             }
         }
-        return subscription;
     }
 
     private static <T> void sendResponseIfRequired(BooleanSubscription subscription, CollapsedRequestObservableFunction.ResponseHolder<T> r) {

@@ -281,7 +281,7 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
      *             if invoked more than once
      */
     public Observable<R> toObservable() {
-    	return toObservable(Schedulers.threadPoolForComputation());
+    	return toObservable(Schedulers.computation());
     }
 
     

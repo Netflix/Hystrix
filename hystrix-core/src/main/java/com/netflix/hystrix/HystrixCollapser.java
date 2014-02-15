@@ -327,7 +327,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
     public Observable<ResponseType> toObservable() {
         // when we callback with the data we want to do the work
         // on a separate thread than the one giving us the callback
-        return toObservable(Schedulers.threadPoolForComputation());
+        return toObservable(Schedulers.computation());
     }
 
     /**
