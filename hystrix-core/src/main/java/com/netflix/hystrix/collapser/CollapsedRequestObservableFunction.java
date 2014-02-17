@@ -49,9 +49,6 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
     @Override
     public void setResponse(T response) {
         while (true) {
-            if (subscription.isUnsubscribed()) {
-                return;
-            }
             ResponseHolder<T> r = rh.get();
             if (r.isResponseSet()) {
                 throw new IllegalStateException("setResponse can only be called once");
@@ -60,6 +57,9 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
                 throw new IllegalStateException("Exception is already set so response can not be => Response: " + response + " subscription: " + subscription.isUnsubscribed() + "  observer: " + r.getObserver() + "  Exception: " + r.getException().getMessage(), r.getException());
             }
 
+            if (subscription.isUnsubscribed()) {
+                return;
+            }
             ResponseHolder<T> nr = r.setResponse(response);
             if (rh.compareAndSet(r, nr)) {
                 // success
@@ -109,9 +109,6 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
     @Override
     public void setException(Exception e) {
         while (true) {
-            if (subscription.isUnsubscribed()) {
-                return;
-            }
             CollapsedRequestObservableFunction.ResponseHolder<T> r = rh.get();
             if (r.getException() != null) {
                 throw new IllegalStateException("setException can only be called once");
@@ -120,6 +117,9 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
                 throw new IllegalStateException("Response is already set so exception can not be => Response: " + r.getResponse() + "  Exception: " + e.getMessage(), e);
             }
 
+            if (subscription.isUnsubscribed()) {
+                return;
+            }
             ResponseHolder<T> nr = r.setException(e);
             if (rh.compareAndSet(r, nr)) {
                 // success
