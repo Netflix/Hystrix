@@ -40,7 +40,7 @@ public class HystrixPluginsTest {
     @Test
     public void testEventNotifierViaProperty() {
         try {
-            String fullClass = getFullClassNameForTestClass(HystrixEventNotifierTestImpl.class);
+            String fullClass = HystrixEventNotifierTestImpl.class.getName();
             System.setProperty("hystrix.plugin.HystrixEventNotifier.implementation", fullClass);
             HystrixEventNotifier impl = HystrixPlugins.getInstance().getEventNotifier();
             assertTrue(impl instanceof HystrixEventNotifierTestImpl);
@@ -70,7 +70,7 @@ public class HystrixPluginsTest {
     @Test
     public void testConcurrencyStrategyViaProperty() {
         try {
-            String fullClass = getFullClassNameForTestClass(HystrixConcurrencyStrategyTestImpl.class);
+            String fullClass = HystrixConcurrencyStrategyTestImpl.class.getName();
             System.setProperty("hystrix.plugin.HystrixConcurrencyStrategy.implementation", fullClass);
             HystrixConcurrencyStrategy impl = HystrixPlugins.getInstance().getConcurrencyStrategy();
             assertTrue(impl instanceof HystrixConcurrencyStrategyTestImpl);
@@ -100,7 +100,7 @@ public class HystrixPluginsTest {
     @Test
     public void testMetricsPublisherViaProperty() {
         try {
-            String fullClass = getFullClassNameForTestClass(HystrixMetricsPublisherTestImpl.class);
+            String fullClass = HystrixMetricsPublisherTestImpl.class.getName();
             System.setProperty("hystrix.plugin.HystrixMetricsPublisher.implementation", fullClass);
             HystrixMetricsPublisher impl = HystrixPlugins.getInstance().getMetricsPublisher();
             assertTrue(impl instanceof HystrixMetricsPublisherTestImpl);
@@ -130,7 +130,7 @@ public class HystrixPluginsTest {
     @Test
     public void testPropertiesStrategyViaProperty() {
         try {
-            String fullClass = getFullClassNameForTestClass(HystrixPropertiesStrategyTestImpl.class);
+            String fullClass = HystrixPropertiesStrategyTestImpl.class.getName();
             System.setProperty("hystrix.plugin.HystrixPropertiesStrategy.implementation", fullClass);
             HystrixPropertiesStrategy impl = HystrixPlugins.getInstance().getPropertiesStrategy();
             assertTrue(impl instanceof HystrixPropertiesStrategyTestImpl);
@@ -142,10 +142,6 @@ public class HystrixPluginsTest {
     // inside UnitTest so it is stripped from Javadocs
     public static class HystrixPropertiesStrategyTestImpl extends HystrixPropertiesStrategy {
         // just use defaults
-    }
-
-    private static String getFullClassNameForTestClass(Class<?> cls) {
-        return HystrixPlugins.class.getPackage().getName() + "." + HystrixPlugins.class.getSimpleName() + "$UnitTest$" + cls.getSimpleName();
     }
 
 }
