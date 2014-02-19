@@ -22,9 +22,9 @@ import rx.Observable;
 import rx.Observable.OnSubscribe;
 import rx.Observer;
 import rx.Subscriber;
+import rx.functions.Action1;
+import rx.functions.Func1;
 import rx.schedulers.Schedulers;
-import rx.util.functions.Action1;
-import rx.util.functions.Func1;
 
 import com.netflix.config.ConfigurationManager;
 import com.netflix.hystrix.AbstractHystrixCommand.TryableSemaphore;

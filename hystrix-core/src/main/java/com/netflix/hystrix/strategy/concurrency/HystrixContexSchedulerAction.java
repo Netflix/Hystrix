@@ -19,8 +19,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicReference;
 
 import rx.Scheduler.Inner;
-import rx.util.functions.Action1;
-import rx.util.functions.Func2;
+import rx.functions.Action1;
+import rx.functions.Func2;
 
 import com.netflix.hystrix.strategy.concurrency.HystrixContextScheduler.HystrixContextInnerScheduler;
 
