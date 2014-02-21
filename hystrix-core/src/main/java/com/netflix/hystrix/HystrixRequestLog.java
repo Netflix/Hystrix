@@ -124,7 +124,6 @@ public class HystrixRequestLog {
      *            {@code HystrixCommand<?>}
      */
     /* package */void addExecutedCommand(AbstractHystrixCommand<?> command) {
-        System.out.println("&&&&&&& add request to log: " + command + "  thread: " + Thread.currentThread());
         if (!allExecutedCommands.offer(command)) {
             // see RequestLog: Reduce Chance of Memory Leak https://github.com/Netflix/Hystrix/issues/53
             logger.warn("RequestLog ignoring command after reaching limit of " + MAX_STORAGE + ". See https://github.com/Netflix/Hystrix/issues/53 for more information.");
