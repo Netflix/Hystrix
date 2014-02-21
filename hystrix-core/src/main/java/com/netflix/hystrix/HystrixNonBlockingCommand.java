@@ -49,18 +49,16 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 /**
  * Used to wrap code that will execute potentially risky functionality (typically meaning a service call over the network)
  * with fault and latency tolerance, statistics and performance metrics capture, circuit breaker and bulkhead functionality.
- * This command should be used for a purely non-blocking call pattern. The caller of this command will be subscribed to the Observable<R> returned by the run() method.  
+ * This command should be used for a purely non-blocking call pattern. The caller of this command will be subscribed to the Observable<R> returned by the run() method.
  * 
  * @param <R>
  *            the return type
- * @author njoshi           
  */
 @ThreadSafe
 public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixCommand<R> implements HystrixExecutable<R> {
 
     private static final Logger logger = LoggerFactory.getLogger(HystrixNonBlockingCommand.class);
 
-     
     /**
      * Construct a {@link HystrixNonBlockingCommand} with defined {@link HystrixCommandGroupKey}.
      * <p>
@@ -102,11 +100,11 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
      * <p>
      * Most of the args will revert to a valid default if 'null' is passed in.
      */
-    /* package */ HystrixNonBlockingCommand(HystrixCommandGroupKey group, HystrixCommandKey key, HystrixThreadPoolKey threadPoolKey, HystrixCircuitBreaker circuitBreaker, HystrixThreadPool threadPool,
+    /* package */HystrixNonBlockingCommand(HystrixCommandGroupKey group, HystrixCommandKey key, HystrixThreadPoolKey threadPoolKey, HystrixCircuitBreaker circuitBreaker, HystrixThreadPool threadPool,
             HystrixCommandProperties.Setter commandPropertiesDefaults, HystrixThreadPoolProperties.Setter threadPoolPropertiesDefaults,
             HystrixCommandMetrics metrics, TryableSemaphore fallbackSemaphore, TryableSemaphore executionSemaphore,
             HystrixPropertiesStrategy propertiesStrategy, HystrixCommandExecutionHook executionHook) {
-    	super(group, key, threadPoolKey, circuitBreaker, threadPool, commandPropertiesDefaults, threadPoolPropertiesDefaults, metrics, fallbackSemaphore, executionSemaphore, propertiesStrategy, executionHook);
+        super(group, key, threadPoolKey, circuitBreaker, threadPool, commandPropertiesDefaults, threadPoolPropertiesDefaults, metrics, fallbackSemaphore, executionSemaphore, propertiesStrategy, executionHook);
     }
 
     /**
@@ -224,8 +222,6 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
 
     }
 
-
-    
     /**
      * Implement this method with code to be executed when {@link #execute()} or {@link #queue()} are invoked.
      * 
@@ -242,7 +238,8 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
      * <p>
      * In other words, this should be a static or cached result that can immediately be returned upon failure.
      * <p>
-     * If network traffic is wanted for fallback (such as going to MemCache) then the fallback implementation should invoke another {@link HystrixNonBlockingCommand} instance that protects against that network
+     * If network traffic is wanted for fallback (such as going to MemCache) then the fallback implementation should invoke another {@link HystrixNonBlockingCommand} instance that protects against
+     * that network
      * access and possibly has another level of fallback that does not involve network access.
      * <p>
      * DEFAULT BEHAVIOR: It throws UnsupportedOperationException.
@@ -253,7 +250,6 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
         throw new UnsupportedOperationException("No fallback available.");
     }
 
- 
     /**
      * A lazy {@link Observable} that will execute the command when subscribed to.
      * <p>
@@ -281,14 +277,13 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
      *             if invoked more than once
      */
     public Observable<R> toObservable() {
-    	return toObservable(Schedulers.computation());
+        return toObservable(Schedulers.computation());
     }
 
-    
     protected ObservableCommand<R> toObservable(final Scheduler observeOn, boolean performAsyncTimeout) {
         /* this is a stateful object so can only be used once */
         boolean isNonBlocking = true;
-		if (!started.compareAndSet(false, true)) {
+        if (!started.compareAndSet(false, true)) {
             throw new IllegalStateException("This instance can only be executed once. Please instantiate a new instance.");
         }
 
@@ -329,11 +324,11 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
                         }
                     } else {
                         /* not short-circuited so proceed with queuing the execution */
-                    	try {
-                    	    subscribeWithSemaphoreIsolation(observer);
-                    	} catch (RuntimeException e) {
-                    		observer.onError(e);
-                    	}
+                        try {
+                            subscribeWithSemaphoreIsolation(observer);
+                        } catch (RuntimeException e) {
+                            observer.onError(e);
+                        }
                     }
                 } finally {
                     // TODO this won't work
@@ -342,11 +337,9 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
             }
         });
 
-      
         // wrap for timeout support
-        	
+
         o = new TimeoutObservable<R>(o, _this, isNonBlocking);
-      
 
         // error handling
         o = o.onErrorResumeNext(new Func1<Throwable, Observable<R>>() {
@@ -396,8 +389,6 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
         }
     }
 
-   
-    
     private static class TimeoutObservable<R> extends Observable<R> {
 
         public TimeoutObservable(final Observable<R> o, final HystrixNonBlockingCommand<R> originalCommand, final boolean isNonBlocking) {
@@ -411,7 +402,7 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
 
                         @Override
                         public void tick() {
-                        	
+
                             // if we can go from NOT_EXECUTED to TIMED_OUT then we do the timeout codepath
                             // otherwise it means we lost a race and the run() execution completed
                             if (originalCommand.isCommandTimedOut.compareAndSet(TimedOutStatus.NOT_EXECUTED, TimedOutStatus.TIMED_OUT)) {
@@ -419,20 +410,20 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
 
                                 // report timeout failure
                                 originalCommand.metrics.markTimeout(System.currentTimeMillis() - originalCommand.invocationStartTime);
-                                
+
                                 // we record execution time because we are returning before 
                                 originalCommand.recordTotalExecutionTime(originalCommand.invocationStartTime);
 
                                 try {
-                                	
+
                                     Observable<R> v = originalCommand.getFallbackOrThrowException(HystrixEventType.TIMEOUT, FailureType.TIMEOUT, "timed-out", new TimeoutException());
                                     v.subscribe(observer);
-                                    
+
                                 } catch (HystrixRuntimeException re) {
                                     observer.onError(re);
                                 }
                             }
-  
+
                             s.unsubscribe();
                         }
 
@@ -488,8 +479,6 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
         }
     }
 
-
-    
     private void subscribeWithSemaphoreIsolation(final Subscriber<? super R> observer) {
         final TryableSemaphore executionSemaphore = getExecutionSemaphore();
         // acquire a permit
@@ -501,22 +490,22 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
 
                     // execute outside of future so that fireAndForget will still work (ie. someone calls queue() but not get()) and so that multiple requests can be deduped through request caching
                     Observable<R> r = executeCommand();
-                    
-                    if (isCommandTimedOut.get() == TimedOutStatus.TIMED_OUT) {
-                    	
-                    	recordTotalExecutionTime(invocationStartTime);
-                    	//observer.onError(new Exception("command timed out"));
-                    	// empty subscription since we executed synchronously
-                    }
-                    
-                    final HystrixNonBlockingCommand<R> _cmd = this;
-                    
-                     r = r.map(new Func1<R,R>() {
 
-        				@Override
-        				public R call(R t1) {
-        			
-        					return executionHook.onComplete(_cmd, t1);
+                    if (isCommandTimedOut.get() == TimedOutStatus.TIMED_OUT) {
+
+                        recordTotalExecutionTime(invocationStartTime);
+                        //observer.onError(new Exception("command timed out"));
+                        // empty subscription since we executed synchronously
+                    }
+
+                    final HystrixNonBlockingCommand<R> _cmd = this;
+
+                    r = r.map(new Func1<R, R>() {
+
+                        @Override
+                        public R call(R t1) {
+
+                            return executionHook.onComplete(_cmd, t1);
                         }
 
                     }).finallyDo(new Action0() {
@@ -524,12 +513,11 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
                         @Override
                         public void call() {
                             // TODO ... this stuff needs to go in here doesn't it?
-                            
-                            
+
                             // pop the command that is being run
-//                            Hystrix.endCurrentThreadExecutingCommand();
+                            //                            Hystrix.endCurrentThreadExecutingCommand();
                             // release the semaphore
-//                            executionSemaphore.release();
+                            //                            executionSemaphore.release();
                         }
 
                     });
@@ -583,29 +571,27 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
         // allow tracking how many concurrent threads are executing
         metrics.incrementConcurrentExecutionCount();
         try {
-        	final HystrixNonBlockingCommand<R> _cmd = this;
+            final HystrixNonBlockingCommand<R> _cmd = this;
             executionHook.onRunStart(this);
-            Observable<R> response = run().map(new Func1<R,R>() {
+            Observable<R> response = run().map(new Func1<R, R>() {
 
-				@Override
-				public R call(R t1) {
-			
-					return executionHook.onRunSuccess(_cmd, t1);
-				}
-            	
-            		
+                @Override
+                public R call(R t1) {
+
+                    return executionHook.onRunSuccess(_cmd, t1);
+                }
+
             });
-            
-                       
+
             long duration = System.currentTimeMillis() - startTime;
             metrics.addCommandExecutionTime(duration);
 
             if (isCommandTimedOut.get() == TimedOutStatus.TIMED_OUT) {
-            	
+
                 // the command timed out in the wrapping thread so we will return immediately
                 // and not increment any of the counters below or other such logic
-            	return null;
-                
+                return null;
+
             } else {
                 // report success
                 executionResult = executionResult.addEvents(HystrixEventType.SUCCESS);
@@ -617,7 +603,7 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
         } catch (HystrixBadRequestException e) {
             try {
                 Exception decorated = executionHook.onRunError(this, e);
-            	
+
                 if (decorated instanceof HystrixBadRequestException) {
                     e = (HystrixBadRequestException) decorated;
                 } else {
@@ -651,7 +637,7 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
                 // as this means the user-thread has already returned, we've already done fallback logic
                 // and we've already counted the timeout stat
                 logger.debug("Error executing HystrixCommand.run() [TimedOut]. Proceeding to fallback logic ...", e);
-                                
+
                 return null;
             } else {
                 logger.debug("Error executing HystrixCommand.run(). Proceeding to fallback logic ...", e);
@@ -685,29 +671,28 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
      */
     private Observable<R> getFallbackWithProtection() {
         TryableSemaphore fallbackSemaphore = getFallbackSemaphore();
-        
+
         // acquire a permit
         if (fallbackSemaphore.tryAcquire()) {
             try {
-            
+
                 executionHook.onFallbackStart(this);
                 final HystrixNonBlockingCommand<R> _cmd = this;
-                Observable<R> response = getFallback().map(new Func1<R,R>() {
+                Observable<R> response = getFallback().map(new Func1<R, R>() {
 
-					@Override
-					public R call(R t1) {
-						
-						return executionHook.onFallbackSuccess(_cmd, t1);
-					}
-                	
+                    @Override
+                    public R call(R t1) {
+
+                        return executionHook.onFallbackSuccess(_cmd, t1);
+                    }
+
                 });
-                
+
                 return response;
 
-            	
             } catch (RuntimeException e) {
                 Exception decorated = executionHook.onFallbackError(this, e);
-                
+
                 if (decorated instanceof RuntimeException) {
                     e = (RuntimeException) decorated;
                 } else {
@@ -717,20 +702,19 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
                 // re-throw to calling method
                 throw e;
             } finally {
-            
+
                 fallbackSemaphore.release();
             }
         } else {
             metrics.markFallbackRejection();
-            
+
             logger.debug("HystrixCommand Fallback Rejection."); // debug only since we're throwing the exception and someone higher will do something with it
             // if we couldn't acquire a permit, we "fail fast" by throwing an exception
             throw new HystrixRuntimeException(FailureType.REJECTED_SEMAPHORE_FALLBACK, this.getClass(), getLogMessagePrefix() + " fallback execution rejected.", null, null);
-            
+
         }
     }
 
-  
     /**
      * @throws HystrixRuntimeException
      */
@@ -756,18 +740,18 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
                     metrics.markFallbackSuccess();
                     // record the executionResult
                     executionResult = executionResult.addEvents(HystrixEventType.FALLBACK_SUCCESS);
-                    
-                    final HystrixNonBlockingCommand<R> _cmd = this;
-                    
-                    fallback = fallback.map(new Func1<R,R>() {
 
-       				@Override
-       				public R call(R t1) {
-       			
-       					return executionHook.onComplete(_cmd, t1);
-       				}
-                   		
-                   });
+                    final HystrixNonBlockingCommand<R> _cmd = this;
+
+                    fallback = fallback.map(new Func1<R, R>() {
+
+                        @Override
+                        public R call(R t1) {
+
+                            return executionHook.onComplete(_cmd, t1);
+                        }
+
+                    });
 
                     return fallback;
                 } catch (UnsupportedOperationException fe) {
@@ -781,7 +765,7 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
                     }
 
                     throw new HystrixRuntimeException(failureType, this.getClass(), getLogMessagePrefix() + " " + message + " and no fallback available.", e, fe);
-                    
+
                 } catch (Exception fe) {
                     logger.debug("HystrixCommand execution " + failureType.name() + " and fallback retrieval failed.", fe);
                     metrics.markFallbackFailure();
@@ -796,7 +780,7 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
                     }
 
                     throw new HystrixRuntimeException(failureType, this.getClass(), getLogMessagePrefix() + " " + message + " and failed retrieving fallback.", e, fe);
-                    
+
                 }
             } else {
                 /* fallback is disabled so throw HystrixRuntimeException */
@@ -812,15 +796,14 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
                     logger.warn("Error calling ExecutionHook.onError", hookException);
                 }
                 throw new HystrixRuntimeException(failureType, this.getClass(), getLogMessagePrefix() + " " + message + " and fallback disabled.", e, null);
-                
+
             }
         } finally {
             // record that we're completed (to handle non-successful events we do it here as well as at the end of executeCommand
             isExecutionComplete.set(true);
         }
     }
-    
-    
+
     /**
      * Record that this command was executed in the HystrixRequestLog.
      * <p>
@@ -843,5 +826,4 @@ public abstract class HystrixNonBlockingCommand<R> extends AbstractHystrixComman
         }
     }
 
-   
 }
