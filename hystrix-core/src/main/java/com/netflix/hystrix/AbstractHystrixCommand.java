@@ -45,6 +45,8 @@ import com.netflix.hystrix.exception.HystrixRuntimeException;
 import com.netflix.hystrix.exception.HystrixRuntimeException.FailureType;
 import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
+import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategyDefault;
+import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
 import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherFactory;
@@ -55,34 +57,36 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 
 /**
  * Parent HystrixCommand class that holds the common functionality needed by extending classeses.
+ * 
  * @author njoshi
- *
+ * 
  * @param <R>
  */
 
 public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> {
 
-	private static final Logger logger = LoggerFactory.getLogger(AbstractHystrixCommand.class);
-	protected final HystrixCircuitBreaker circuitBreaker;
+    private static final Logger logger = LoggerFactory.getLogger(AbstractHystrixCommand.class);
+    protected final HystrixCircuitBreaker circuitBreaker;
     protected final HystrixThreadPool threadPool;
     protected final HystrixThreadPoolKey threadPoolKey;
     protected final HystrixCommandProperties properties;
-    
-	
-	protected static enum TimedOutStatus {NOT_EXECUTED, COMPLETED, TIMED_OUT};
-	
+
+    protected static enum TimedOutStatus {
+        NOT_EXECUTED, COMPLETED, TIMED_OUT
+    };
+
     protected final HystrixCommandMetrics metrics;
-    
+
     protected final HystrixCommandKey commandKey;
     protected final HystrixCommandGroupKey commandGroup;
-    
+
     /**
      * Plugin implementations
      */
     protected final HystrixEventNotifier eventNotifier;
     protected final HystrixConcurrencyStrategy concurrencyStrategy;
     protected final HystrixCommandExecutionHook executionHook;
-    
+
     /* FALLBACK Semaphore */
     protected final TryableSemaphore fallbackSemaphoreOverride;
     /* each circuit has a semaphore to restrict concurrent fallback execution */
@@ -99,27 +103,25 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
 
     protected AtomicBoolean started = new AtomicBoolean();
     protected volatile long invocationStartTime = -1;
-    
+
     /* result of execution (if this command instance actually gets executed, which may not occur due to request caching) */
     protected volatile ExecutionResult executionResult = ExecutionResult.EMPTY;
 
     /* If this command executed and timed-out */
-    protected final AtomicReference<TimedOutStatus> isCommandTimedOut = new AtomicReference<TimedOutStatus>(TimedOutStatus.NOT_EXECUTED); 
+    protected final AtomicReference<TimedOutStatus> isCommandTimedOut = new AtomicReference<TimedOutStatus>(TimedOutStatus.NOT_EXECUTED);
     protected final AtomicBoolean isExecutionComplete = new AtomicBoolean(false);
     protected final AtomicBoolean isExecutedInThread = new AtomicBoolean(false);
-
-
 
     /**
      * Instance of RequestCache logic
      */
     protected final HystrixRequestCache requestCache;
+    protected final HystrixRequestLog currentRequestLog;
 
- // this is a micro-optimization but saves about 1-2microseconds (on 2011 MacBook Pro) 
+    // this is a micro-optimization but saves about 1-2microseconds (on 2011 MacBook Pro) 
     // on the repetitive string processing that will occur on the same classes over and over again
     @SuppressWarnings("rawtypes")
     private static ConcurrentHashMap<Class<? extends AbstractHystrixCommand>, String> defaultNameCache = new ConcurrentHashMap<Class<? extends AbstractHystrixCommand>, String>();
-
 
     private static String getDefaultNameFromClass(@SuppressWarnings("rawtypes") Class<? extends AbstractHystrixCommand> cls) {
         String fromCache = defaultNameCache.get(cls);
@@ -137,7 +139,7 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
         defaultNameCache.put(cls, name);
         return name;
     }
-    
+
     protected AbstractHystrixCommand(HystrixCommandGroupKey group, HystrixCommandKey key, HystrixThreadPoolKey threadPoolKey, HystrixCircuitBreaker circuitBreaker, HystrixThreadPool threadPool,
             HystrixCommandProperties.Setter commandPropertiesDefaults, HystrixThreadPoolProperties.Setter threadPoolPropertiesDefaults,
             HystrixCommandMetrics metrics, TryableSemaphore fallbackSemaphore, TryableSemaphore executionSemaphore,
@@ -251,12 +253,26 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
 
         /* setup the request cache for this instance */
         this.requestCache = HystrixRequestCache.getInstance(this.commandKey, this.concurrencyStrategy);
-    }
-    
-    
-  
 
-	/**
+        /* store reference to request log regardless of which thread later hits it */
+        if (concurrencyStrategy instanceof HystrixConcurrencyStrategyDefault) {
+            // if we're using the default we support only optionally using a request context
+            if (HystrixRequestContext.isCurrentThreadInitialized()) {
+                currentRequestLog = HystrixRequestLog.getCurrentRequest(concurrencyStrategy);
+            } else {
+                currentRequestLog = null;
+            }
+        } else {
+            // if it's a custom strategy it must ensure the context is initialized
+            if (HystrixRequestLog.getCurrentRequest(concurrencyStrategy) != null) {
+                currentRequestLog = HystrixRequestLog.getCurrentRequest(concurrencyStrategy);
+            } else {
+                currentRequestLog = null;
+            }
+        }
+    }
+
+    /**
      * Allow the Collapser to mark this command instance as being used for a collapsed request and how many requests were collapsed.
      * 
      * @param sizeOfBatch
@@ -265,8 +281,7 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
         getMetrics().markCollapsed(sizeOfBatch);
         executionResult = executionResult.addEvents(HystrixEventType.COLLAPSED);
     }
-    
-    
+
     /**
      * Used for synchronous execution of command.
      * 
@@ -502,7 +517,7 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
         };
 
     }
-    
+
     /**
      * Used for asynchronous execution of command with a callback by subscribing to the {@link Observable}.
      * <p>
@@ -532,7 +547,7 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
      * @throws IllegalStateException
      *             if invoked more than once
      */
-    public  Observable<R> observe() {
+    public Observable<R> observe() {
         // us a ReplaySubject to buffer the eagerly subscribed-to Observable
         ReplaySubject<R> subject = ReplaySubject.create();
         // eagerly kick off subscription
@@ -540,7 +555,7 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
         // return the subject that can be subscribed to later while the execution has already started
         return subject;
     }
-    
+
     /**
      * A lazy {@link Observable} that will execute the command when subscribed to.
      * <p>
@@ -564,10 +579,11 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
     public Observable<R> toObservable(Scheduler observeOn) {
         return toObservable(observeOn, true);
     }
+
     public abstract Observable<R> toObservable();
-    
+
     protected abstract ObservableCommand<R> toObservable(final Scheduler observeOn, boolean performAsyncTimeout);
-    
+
     /**
      * Get the TryableSemaphore this HystrixCommand should use if a fallback occurs.
      * 
@@ -638,7 +654,7 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
         }
 
     }
-    
+
     /**
      * Wraps a source Observable and remembers the original HystrixCommand.
      * <p>
@@ -661,8 +677,6 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
             this.originalCommand = command;
         }
     }
-
-   
 
     /**
      * Wraps a CachedObservableOriginal as it is being returned from cache.
@@ -723,9 +737,9 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
             return originalObservable.originalCommand;
         }
     }
-    
+
     /**
-     * @return {@link HystrixCommandGroupKey} used to group together multiple {@link HystrixNonBlockingCommand} objects.
+     * @return {@link HystrixCommandGroupKey} used to group together multiple {@link HystrixObservableCommand} objects.
      *         <p>
      *         The {@link HystrixCommandGroupKey} is used to represent a common relationship between commands. For example, a library or team name, the system all related commands interace with,
      *         common business purpose etc.
@@ -754,7 +768,7 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
     }
 
     /**
-     * The {@link HystrixCommandMetrics} associated with this {@link HystrixNonBlockingCommand} instance.
+     * The {@link HystrixCommandMetrics} associated with this {@link HystrixObservableCommand} instance.
      * 
      * @return HystrixCommandMetrics
      */
@@ -763,7 +777,7 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
     }
 
     /**
-     * The {@link HystrixCommandProperties} associated with this {@link HystrixNonBlockingCommand} instance.
+     * The {@link HystrixCommandProperties} associated with this {@link HystrixObservableCommand} instance.
      * 
      * @return HystrixCommandProperties
      */
@@ -771,8 +785,7 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
         return properties;
     }
 
-		
-	/**
+    /**
      * Record the duration of execution as response or exception is being returned to the caller.
      */
     protected void recordTotalExecutionTime(long startTime) {
@@ -790,7 +803,21 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
          */
         executionResult = executionResult.setExecutionTime((int) duration);
     }
-    
+
+    /**
+     * Record that this command was executed in the HystrixRequestLog.
+     * <p>
+     * This can be treated as an async operation as it just adds a references to "this" in the log even if the current command is still executing.
+     */
+    protected void recordExecutedCommand() {
+        if (properties.requestLogEnabled().get()) {
+            // log this command execution regardless of what happened
+            if (currentRequestLog != null) {
+                currentRequestLog.addExecutedCommand(this);
+            }
+        }
+    }
+
     /**
      * Take an Exception and determine whether to throw it, its cause or a new HystrixRuntimeException.
      * <p>
@@ -820,10 +847,10 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
         String message = getLogMessagePrefix() + " failed while executing.";
         logger.debug(message, e); // debug only since we're throwing the exception and someone higher will do something with it
         return new HystrixRuntimeException(FailureType.COMMAND_EXCEPTION, this.getClass(), message, e, null);
-       
+
     }
-	
-	/* ******************************************************************************** */
+
+    /* ******************************************************************************** */
     /* ******************************************************************************** */
     /* TryableSemaphore */
     /* ******************************************************************************** */
@@ -842,12 +869,10 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
         public TryableSemaphore(HystrixProperty<Integer> numberOfPermits) {
             this.numberOfPermits = numberOfPermits;
         }
-        
-       
 
         /**
          * Use like this:
-         * <p>   
+         * <p>
          * 
          * <pre>
          * if (s.tryAcquire()) {
@@ -894,7 +919,7 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
         }
 
     }
-    
+
     /* ******************************************************************************** */
     /* ******************************************************************************** */
     /* Result Status */
@@ -955,17 +980,16 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
             }
             return new ExecutionResult(Collections.unmodifiableList(newEvents), executionTime, exception);
         }
-        
-                
+
         public int getExecutionTime() {
-        	return executionTime;
+            return executionTime;
         }
-        
+
         public Exception getException() {
-        	return exception;
+            return exception;
         }
     }
-    
+
     /* ******************************************************************************** */
     /* ******************************************************************************** */
     /* RequestCache */
@@ -991,13 +1015,9 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
         return properties.requestCacheEnabled().get();
     }
 
-    
     protected String getLogMessagePrefix() {
         return getCommandKey().name();
     }
-
-
-    abstract protected void recordExecutedCommand();
 
     /**
      * Whether the 'circuit-breaker' is open meaning that <code>execute()</code> will immediately return
@@ -1131,8 +1151,4 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
         return executionResult.getExecutionTime();
     }
 
-    
-
-
-	
 }

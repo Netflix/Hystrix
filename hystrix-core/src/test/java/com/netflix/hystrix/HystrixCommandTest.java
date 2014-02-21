@@ -88,6 +88,8 @@ public class HystrixCommandTest {
 
             assertEquals(0, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
+            System.out.println("request log: " + HystrixRequestLog.getCurrentRequest());
+            
             assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
 
         } catch (Exception e) {

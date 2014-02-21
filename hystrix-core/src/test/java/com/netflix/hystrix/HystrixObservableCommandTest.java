@@ -40,7 +40,7 @@ import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 import com.netflix.hystrix.strategy.properties.HystrixProperty;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 
-public class HystrixNonBlockingCommandTest {
+public class HystrixObservableCommandTest {
 
     @Before
     public void prepareForTest() {
@@ -108,6 +108,7 @@ public class HystrixNonBlockingCommandTest {
         assertFalse(command.isExecutionComplete());
         // first should succeed
         assertEquals(true, command.execute());
+        System.out.println(">> completed, checking metrics");
         assertTrue(command.isExecutionComplete());
         assertFalse(command.isExecutedInThread());
         assertTrue(command.getExecutionTimeInMilliseconds() > -1);
@@ -709,6 +710,7 @@ public class HystrixNonBlockingCommandTest {
 
         // semaphore should be on the calling thread
         assertTrue(commandThread.get().getName().equals(mainThreadName));
+        System.out.println("testObserveOnImmediateSchedulerByDefaultForSemaphoreIsolation: " + subscribeThread.get() + " => " + mainThreadName);
         assertTrue(subscribeThread.get().getName().equals(mainThreadName));
     }
 
@@ -2018,6 +2020,7 @@ public class HystrixNonBlockingCommandTest {
 
         // the execution log for command3 should show it came from cache
         assertEquals(2, command3.getExecutionEvents().size()); // it will include the SUCCESS + RESPONSE_FROM_CACHE
+        assertTrue(command3.getExecutionEvents().contains(HystrixEventType.SUCCESS));
         assertTrue(command3.getExecutionEvents().contains(HystrixEventType.RESPONSE_FROM_CACHE));
         assertTrue(command3.getExecutionTimeInMilliseconds() == -1);
         assertTrue(command3.isResponseFromCache());
@@ -2036,6 +2039,7 @@ public class HystrixNonBlockingCommandTest {
 
         assertEquals(0, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
 
+        System.out.println("executedCommand: " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
         assertEquals(3, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
@@ -2501,7 +2505,7 @@ public class HystrixNonBlockingCommandTest {
 
         assertEquals(5, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
 
-        HystrixNonBlockingCommand<?>[] executeCommands = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().toArray(new HystrixNonBlockingCommand<?>[] {});
+        HystrixObservableCommand<?>[] executeCommands = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().toArray(new HystrixObservableCommand<?>[] {});
 
         System.out.println(":executeCommands[0].getExecutionEvents()" + executeCommands[0].getExecutionEvents());
         assertEquals(2, executeCommands[0].getExecutionEvents().size());
@@ -3807,19 +3811,36 @@ public class HystrixNonBlockingCommandTest {
         //     assertEquals(2, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
     }
 
-    @Test
-    public void testExecutionTimeoutValue() {
-        HystrixNonBlockingCommand.Setter properties = HystrixNonBlockingCommand.Setter
+    /**
+     * Test that we can still use thread isolation if desired.
+     */
+    @Test(timeout = 500)
+    public void testSynchronousExecutionTimeoutValueViaExecute() {
+        HystrixObservableCommand.Setter properties = HystrixObservableCommand.Setter
                 .withGroupKey(HystrixCommandGroupKey.Factory.asKey("TestKey"))
                 .andCommandPropertiesDefaults(HystrixCommandProperties.Setter()
+                        .withExecutionIsolationStrategy(ExecutionIsolationStrategy.THREAD)
                         .withExecutionIsolationThreadTimeoutInMilliseconds(50));
 
-        HystrixNonBlockingCommand<String> command = new HystrixNonBlockingCommand<String>(properties) {
+        System.out.println(">>>>> Begin: " + System.currentTimeMillis());
+
+        HystrixObservableCommand<String> command = new HystrixObservableCommand<String>(properties) {
             @Override
-            protected Observable<String> run() throws Exception {
-                Thread.sleep(3000);
-                // should never reach here
-                return Observable.from("hello");
+            protected Observable<String> run() {
+                return Observable.create(new OnSubscribe<String>() {
+
+                    @Override
+                    public void call(Subscriber<? super String> t1) {
+                        try {
+                            Thread.sleep(2000);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        t1.onNext("hello");
+                        t1.onCompleted();
+                    }
+
+                });
             }
 
             @Override
@@ -3832,10 +3853,95 @@ public class HystrixNonBlockingCommandTest {
             }
         };
 
+        System.out.println(">>>>> Start: " + System.currentTimeMillis());
         String value = command.execute();
+        System.out.println(">>>>> End: " + System.currentTimeMillis());
         assertTrue(command.isResponseTimedOut());
         assertEquals("expected fallback value", "timed-out", value);
+    }
 
+    @Test(timeout = 500)
+    public void testSynchronousExecutionUsingThreadIsolationTimeoutValueViaObserve() {
+        HystrixObservableCommand.Setter properties = HystrixObservableCommand.Setter
+                .withGroupKey(HystrixCommandGroupKey.Factory.asKey("TestKey"))
+                .andCommandPropertiesDefaults(HystrixCommandProperties.Setter()
+                        .withExecutionIsolationStrategy(ExecutionIsolationStrategy.THREAD)
+                        .withExecutionIsolationThreadTimeoutInMilliseconds(50));
+
+        HystrixObservableCommand<String> command = new HystrixObservableCommand<String>(properties) {
+            @Override
+            protected Observable<String> run() {
+                return Observable.create(new OnSubscribe<String>() {
+
+                    @Override
+                    public void call(Subscriber<? super String> t1) {
+                        try {
+                            Thread.sleep(2000);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        t1.onNext("hello");
+                        t1.onCompleted();
+                    }
+
+                });
+            }
+
+            @Override
+            protected Observable<String> getFallback() {
+                if (isResponseTimedOut()) {
+                    return Observable.from("timed-out");
+                } else {
+                    return Observable.from("abc");
+                }
+            }
+        };
+
+        String value = command.observe().toBlockingObservable().last();
+        assertTrue(command.isResponseTimedOut());
+        assertEquals("expected fallback value", "timed-out", value);
+    }
+
+    @Test(timeout = 500)
+    public void testAsyncExecutionTimeoutValueViaObserve() {
+        HystrixObservableCommand.Setter properties = HystrixObservableCommand.Setter
+                .withGroupKey(HystrixCommandGroupKey.Factory.asKey("TestKey"))
+                .andCommandPropertiesDefaults(HystrixCommandProperties.Setter()
+                        .withExecutionIsolationThreadTimeoutInMilliseconds(50));
+
+        HystrixObservableCommand<String> command = new HystrixObservableCommand<String>(properties) {
+            @Override
+            protected Observable<String> run() {
+                return Observable.create(new OnSubscribe<String>() {
+
+                    @Override
+                    public void call(Subscriber<? super String> t1) {
+                        try {
+                            Thread.sleep(2000);
+                        } catch (InterruptedException e) {
+                            System.out.println("********** interrupted on timeout");
+                            e.printStackTrace();
+                        }
+                        // should never reach here
+                        t1.onNext("hello");
+                        t1.onCompleted();
+                    }
+                }).subscribeOn(Schedulers.newThread());
+            }
+
+            @Override
+            protected Observable<String> getFallback() {
+                if (isResponseTimedOut()) {
+                    return Observable.from("timed-out");
+                } else {
+                    return Observable.from("abc");
+                }
+            }
+        };
+
+        String value = command.observe().toBlockingObservable().last();
+        assertTrue(command.isResponseTimedOut());
+        assertEquals("expected fallback value", "timed-out", value);
     }
 
     /* ******************************************************************************** */
@@ -3847,7 +3953,7 @@ public class HystrixNonBlockingCommandTest {
     /**
      * Used by UnitTest command implementations to provide base defaults for constructor and a builder pattern for the arguments being passed in.
      */
-    /* package */static abstract class TestHystrixCommand<K> extends HystrixNonBlockingCommand<K> {
+    /* package */static abstract class TestHystrixCommand<K> extends HystrixObservableCommand<K> {
 
         final TestCommandBuilder builder;
 
@@ -4528,7 +4634,7 @@ public class HystrixNonBlockingCommandTest {
         }
 
         @Override
-        protected Observable<Boolean> run() throws Exception {
+        protected Observable<Boolean> run() {
             // TODO duplicate with error inside async Observable
             throw new Error("simulated java.lang.Error message");
         }
@@ -4543,9 +4649,8 @@ public class HystrixNonBlockingCommandTest {
         }
 
         @Override
-        protected Observable<Boolean> run() throws Exception {
-            // TODO duplicate with error inside async Observable
-            throw new IOException("simulated checked exception message");
+        protected Observable<Boolean> run() {
+            return Observable.error(new IOException("simulated checked exception message"));
         }
 
     }

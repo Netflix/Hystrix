@@ -116,7 +116,7 @@ public abstract class HystrixCommand<R> extends AbstractHystrixCommand<R> implem
     }
 
     /**
-     * Fluent interface for arguments to the {@link HystrixNonBlockingCommand} constructor.
+     * Fluent interface for arguments to the {@link HystrixObservableCommand} constructor.
      * <p>
      * The required arguments are set via the 'with' factory method and optional arguments via the 'and' chained methods.
      * <p>
@@ -142,7 +142,7 @@ public abstract class HystrixCommand<R> extends AbstractHystrixCommand<R> implem
          * All optional arguments can be set via the chained methods.
          * 
          * @param groupKey
-         *            {@link HystrixCommandGroupKey} used to group together multiple {@link HystrixNonBlockingCommand} objects.
+         *            {@link HystrixCommandGroupKey} used to group together multiple {@link HystrixObservableCommand} objects.
          *            <p>
          *            The {@link HystrixCommandGroupKey} is used to represent a common relationship between commands. For example, a library or team name, the system all related commands interace
          *            with,
@@ -158,7 +158,7 @@ public abstract class HystrixCommand<R> extends AbstractHystrixCommand<R> implem
          * All optional arguments can be set via the chained methods.
          * 
          * @param groupKey
-         *            {@link HystrixCommandGroupKey} used to group together multiple {@link HystrixNonBlockingCommand} objects.
+         *            {@link HystrixCommandGroupKey} used to group together multiple {@link HystrixObservableCommand} objects.
          *            <p>
          *            The {@link HystrixCommandGroupKey} is used to represent a common relationship between commands. For example, a library or team name, the system all related commands interace
          *            with,
@@ -170,7 +170,7 @@ public abstract class HystrixCommand<R> extends AbstractHystrixCommand<R> implem
 
         /**
          * @param commandKey
-         *            {@link HystrixCommandKey} used to identify a {@link HystrixNonBlockingCommand} instance for statistics, circuit-breaker, properties, etc.
+         *            {@link HystrixCommandKey} used to identify a {@link HystrixObservableCommand} instance for statistics, circuit-breaker, properties, etc.
          *            <p>
          *            By default this will be derived from the instance class name.
          *            <p>
@@ -204,7 +204,7 @@ public abstract class HystrixCommand<R> extends AbstractHystrixCommand<R> implem
          * Optional
          * 
          * @param commandPropertiesDefaults
-         *            {@link HystrixCommandProperties.Setter} with property overrides for this specific instance of {@link HystrixNonBlockingCommand}.
+         *            {@link HystrixCommandProperties.Setter} with property overrides for this specific instance of {@link HystrixObservableCommand}.
          *            <p>
          *            See the {@link HystrixPropertiesStrategy} JavaDocs for more information on properties and order of precedence.
          * @return Setter for fluent interface via method chaining
@@ -218,7 +218,7 @@ public abstract class HystrixCommand<R> extends AbstractHystrixCommand<R> implem
          * Optional
          * 
          * @param threadPoolPropertiesDefaults
-         *            {@link HystrixThreadPoolProperties.Setter} with property overrides for the {@link HystrixThreadPool} used by this specific instance of {@link HystrixNonBlockingCommand}.
+         *            {@link HystrixThreadPoolProperties.Setter} with property overrides for the {@link HystrixThreadPool} used by this specific instance of {@link HystrixObservableCommand}.
          *            <p>
          *            See the {@link HystrixPropertiesStrategy} JavaDocs for more information on properties and order of precedence.
          * @return Setter for fluent interface via method chaining
@@ -336,7 +336,7 @@ public abstract class HystrixCommand<R> extends AbstractHystrixCommand<R> implem
         }
 
         final HystrixCommand<R> _this = this;
-
+        
         // create an Observable that will lazily execute when subscribed to
         Observable<R> o = Observable.create(new OnSubscribe<R>() {
 
@@ -883,26 +883,4 @@ public abstract class HystrixCommand<R> extends AbstractHystrixCommand<R> implem
         }
     }
 
-    /**
-     * Record that this command was executed in the HystrixRequestLog.
-     * <p>
-     * This can be treated as an async operation as it just adds a references to "this" in the log even if the current command is still executing.
-     */
-    protected void recordExecutedCommand() {
-        if (properties.requestLogEnabled().get()) {
-            // log this command execution regardless of what happened
-            if (concurrencyStrategy instanceof HystrixConcurrencyStrategyDefault) {
-                // if we're using the default we support only optionally using a request context
-                if (HystrixRequestContext.isCurrentThreadInitialized()) {
-                    HystrixRequestLog.getCurrentRequest(concurrencyStrategy).addExecutedCommand(this);
-                }
-            } else {
-                // if it's a custom strategy it must ensure the context is initialized
-                if (HystrixRequestLog.getCurrentRequest(concurrencyStrategy) != null) {
-                    HystrixRequestLog.getCurrentRequest(concurrencyStrategy).addExecutedCommand(this);
-                }
-            }
-        }
-    }
-    
 }
