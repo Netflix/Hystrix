@@ -54,7 +54,6 @@ public class HystrixRequestLog {
     private static final HystrixRequestVariableHolder<HystrixRequestLog> currentRequestLog = new HystrixRequestVariableHolder<HystrixRequestLog>(new HystrixRequestVariableLifecycle<HystrixRequestLog>() {
         @Override
         public HystrixRequestLog initialValue() {
-            System.out.println("$$$$$$$$$$ new requestLog on thread: " + Thread.currentThread());
             return new HystrixRequestLog();
         }
 
