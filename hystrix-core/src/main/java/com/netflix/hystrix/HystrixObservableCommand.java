@@ -315,7 +315,7 @@ public abstract class HystrixObservableCommand<R> extends AbstractHystrixCommand
         });
 
         // wrap for timeout support
-        o = o.lift(new TimeoutObservable<R>(_this, performAsyncTimeout));
+        o = o.lift(new HystrixObservableTimeoutOperator<R>(_this, performAsyncTimeout));
 
         // error handling
         o = o.onErrorResumeNext(new Func1<Throwable, Observable<R>>() {
@@ -740,12 +740,12 @@ public abstract class HystrixObservableCommand<R> extends AbstractHystrixCommand
         }
     }
 
-    private static class TimeoutObservable<R> implements Operator<R, R> {
+    private static class HystrixObservableTimeoutOperator<R> implements Operator<R, R> {
 
         final HystrixObservableCommand<R> originalCommand;
         final boolean isNonBlocking;
 
-        public TimeoutObservable(final HystrixObservableCommand<R> originalCommand, final boolean isNonBlocking) {
+        public HystrixObservableTimeoutOperator(final HystrixObservableCommand<R> originalCommand, final boolean isNonBlocking) {
             this.originalCommand = originalCommand;
             this.isNonBlocking = isNonBlocking;
         }
