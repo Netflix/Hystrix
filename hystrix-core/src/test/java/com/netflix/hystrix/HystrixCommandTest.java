@@ -21,6 +21,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import rx.Observer;
+import rx.Scheduler;
 import rx.schedulers.Schedulers;
 
 import com.netflix.config.ConfigurationManager;
@@ -30,7 +31,9 @@ import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
 import com.netflix.hystrix.exception.HystrixBadRequestException;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
 import com.netflix.hystrix.exception.HystrixRuntimeException.FailureType;
+import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.concurrency.HystrixContextRunnable;
+import com.netflix.hystrix.strategy.concurrency.HystrixContextScheduler;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
@@ -4637,6 +4640,11 @@ public class HystrixCommandTest {
         public ThreadPoolExecutor getExecutor() {
             return pool;
         }
+        
+        @Override
+        public Scheduler getScheduler() {
+            return new HystrixContextScheduler(HystrixPlugins.getInstance().getConcurrencyStrategy(), this);
+        }
 
         @Override
         public void markThreadExecution() {
@@ -4652,6 +4660,7 @@ public class HystrixCommandTest {
         public boolean isQueueSpaceAvailable() {
             return queue.size() < rejectionQueueSizeThreshold;
         }
+
 
     }
 
@@ -4971,6 +4980,11 @@ public class HystrixCommandTest {
                         public boolean isQueueSpaceAvailable() {
                             // always return false so we reject everything
                             return false;
+                        }
+
+                        @Override
+                        public Scheduler getScheduler() {
+                            return new HystrixContextScheduler(HystrixPlugins.getInstance().getConcurrencyStrategy(), this);
                         }
 
                     }));

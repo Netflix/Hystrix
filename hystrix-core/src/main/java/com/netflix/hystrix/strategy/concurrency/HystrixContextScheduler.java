@@ -15,11 +15,15 @@
  */
 package com.netflix.hystrix.strategy.concurrency;
 
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+
+import com.netflix.hystrix.HystrixThreadPool;
 
 import rx.Scheduler;
 import rx.Subscription;
 import rx.functions.Action1;
+import rx.schedulers.Schedulers;
 import rx.subscriptions.BooleanSubscription;
 
 /**
@@ -30,10 +34,18 @@ public class HystrixContextScheduler extends Scheduler {
 
     private final HystrixConcurrencyStrategy concurrencyStrategy;
     private final Scheduler actualScheduler;
+    private final HystrixThreadPool threadPool;
 
     public HystrixContextScheduler(HystrixConcurrencyStrategy concurrencyStrategy, Scheduler scheduler) {
         this.actualScheduler = scheduler;
         this.concurrencyStrategy = concurrencyStrategy;
+        this.threadPool = null;
+    }
+
+    public HystrixContextScheduler(HystrixConcurrencyStrategy concurrencyStrategy, HystrixThreadPool threadPool) {
+        this.concurrencyStrategy = concurrencyStrategy;
+        this.threadPool = threadPool;
+        this.actualScheduler = Schedulers.executor(threadPool.getExecutor());
     }
 
     @Override
@@ -66,21 +78,31 @@ public class HystrixContextScheduler extends Scheduler {
 
         @Override
         public void schedule(Action1<Inner> action, long delayTime, TimeUnit unit) {
+            if (threadPool != null) {
+                if (!threadPool.isQueueSpaceAvailable()) {
+                    throw new RejectedExecutionException("Rejected command because thread-pool queueSize is at rejection threshold.");
+                }
+            }
             actualScheduler.schedule(new HystrixContexSchedulerAction(concurrencyStrategy, action), delayTime, unit);
         }
 
         @Override
         public void schedule(Action1<Inner> action) {
+            if (threadPool != null) {
+                if (!threadPool.isQueueSpaceAvailable()) {
+                    throw new RejectedExecutionException("Rejected command because thread-pool queueSize is at rejection threshold.");
+                }
+            }
             actualScheduler.schedule(new HystrixContexSchedulerAction(concurrencyStrategy, action));
         }
 
     }
-    
+
     public static class HystrixContextInnerScheduler extends Inner {
-        
+
         private final HystrixConcurrencyStrategy concurrencyStrategy;
         private final Inner actual;
-        
+
         HystrixContextInnerScheduler(HystrixConcurrencyStrategy concurrencyStrategy, Inner actual) {
             this.concurrencyStrategy = concurrencyStrategy;
             this.actual = actual;
@@ -105,6 +127,6 @@ public class HystrixContextScheduler extends Scheduler {
         public void schedule(Action1<Inner> action) {
             actual.schedule(new HystrixContexSchedulerAction(concurrencyStrategy, action));
         }
-        
+
     }
 }

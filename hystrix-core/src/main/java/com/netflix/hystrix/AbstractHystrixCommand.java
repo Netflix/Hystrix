@@ -1150,5 +1150,16 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
     public int getExecutionTimeInMilliseconds() {
         return executionResult.getExecutionTime();
     }
+    
+    protected Exception getExceptionFromThrowable(Throwable t) {
+        Exception e = null;
+        if (t instanceof Exception) {
+            e = (Exception) t;
+        } else {
+            // Hystrix 1.x uses Exception, not Throwable so to prevent a breaking change Throwable will be wrapped in Exception
+            e = new Exception("Throwable caught while executing.", t);
+        }
+        return e;
+    }
 
 }

@@ -22,8 +22,12 @@ import java.util.concurrent.TimeUnit;
 
 import javax.annotation.concurrent.ThreadSafe;
 
+import rx.Scheduler;
+import rx.schedulers.Schedulers;
+
 import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
+import com.netflix.hystrix.strategy.concurrency.HystrixContextScheduler;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherFactory;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesFactory;
 
@@ -48,6 +52,8 @@ public interface HystrixThreadPool {
      * @return ThreadPoolExecutor
      */
     public ThreadPoolExecutor getExecutor();
+
+    public Scheduler getScheduler();
 
     /**
      * Mark when a thread begins executing a command.
@@ -77,7 +83,7 @@ public interface HystrixThreadPool {
          * Use the String from HystrixThreadPoolKey.name() instead of the HystrixThreadPoolKey instance as it's just an interface and we can't ensure the object
          * we receive implements hashcode/equals correctly and do not want the default hashcode/equals which would create a new threadpool for every object we get even if the name is the same
          */
-        /* package */ final static ConcurrentHashMap<String, HystrixThreadPool> threadPools = new ConcurrentHashMap<String, HystrixThreadPool>();
+        /* package */final static ConcurrentHashMap<String, HystrixThreadPool> threadPools = new ConcurrentHashMap<String, HystrixThreadPool>();
 
         /**
          * Get the {@link HystrixThreadPool} instance for a given {@link HystrixThreadPoolKey}.
@@ -121,7 +127,7 @@ public interface HystrixThreadPool {
          * and causing thread-pools to initialize while also trying to shutdown.
          * </p>
          */
-        /* package */ static synchronized void shutdown() {
+        /* package */static synchronized void shutdown() {
             for (HystrixThreadPool pool : threadPools.values()) {
                 pool.getExecutor().shutdown();
             }
@@ -135,7 +141,7 @@ public interface HystrixThreadPool {
          * and causing thread-pools to initialize while also trying to shutdown.
          * </p>
          */
-        /* package */ static synchronized void shutdown(long timeout, TimeUnit unit) {
+        /* package */static synchronized void shutdown(long timeout, TimeUnit unit) {
             for (HystrixThreadPool pool : threadPools.values()) {
                 pool.getExecutor().shutdown();
             }
@@ -154,11 +160,12 @@ public interface HystrixThreadPool {
      * @ExcludeFromJavadoc
      */
     @ThreadSafe
-    /* package */ static class HystrixThreadPoolDefault implements HystrixThreadPool {
+    /* package */static class HystrixThreadPoolDefault implements HystrixThreadPool {
         private final HystrixThreadPoolProperties properties;
         private final BlockingQueue<Runnable> queue;
         private final ThreadPoolExecutor threadPool;
         private final HystrixThreadPoolMetrics metrics;
+        private final Scheduler scheduler;
 
         public HystrixThreadPoolDefault(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolProperties.Setter propertiesDefaults) {
             this.properties = HystrixPropertiesFactory.getThreadPoolProperties(threadPoolKey, propertiesDefaults);
@@ -166,6 +173,7 @@ public interface HystrixThreadPool {
             this.queue = concurrencyStrategy.getBlockingQueue(properties.maxQueueSize().get());
             this.threadPool = concurrencyStrategy.getThreadPool(threadPoolKey, properties.coreSize(), properties.coreSize(), properties.keepAliveTimeMinutes(), TimeUnit.MINUTES, queue);
             this.metrics = HystrixThreadPoolMetrics.getInstance(threadPoolKey, threadPool, properties);
+            this.scheduler = new HystrixContextScheduler(concurrencyStrategy, this);
 
             /* strategy: HystrixMetricsPublisherThreadPool */
             HystrixMetricsPublisherFactory.createOrRetrievePublisherForThreadPool(threadPoolKey, this.metrics, this.properties);
@@ -173,12 +181,21 @@ public interface HystrixThreadPool {
 
         @Override
         public ThreadPoolExecutor getExecutor() {
-            // allow us to change things via fast-properties by setting it each time
+            touchConfig();
+            return threadPool;
+        }
+
+        @Override
+        public Scheduler getScheduler() {
+            touchConfig();
+            return scheduler;
+        }
+
+        // allow us to change things via fast-properties by setting it each time
+        private void touchConfig() {
             threadPool.setCorePoolSize(properties.coreSize().get());
             threadPool.setMaximumPoolSize(properties.coreSize().get()); // we always want maxSize the same as coreSize, we are not using a dynamically resizing pool
             threadPool.setKeepAliveTime(properties.keepAliveTimeMinutes().get(), TimeUnit.MINUTES); // this doesn't really matter since we're not resizing
-
-            return threadPool;
         }
 
         @Override
