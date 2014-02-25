@@ -1,5 +1,9 @@
 package com.netflix.hystrix.strategy.concurrency;
 
+import static org.junit.Assert.*;
+
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -10,6 +14,7 @@ import rx.functions.Func1;
 import com.netflix.config.ConfigurationManager;
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandGroupKey;
+import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.HystrixRequestLog;
 
 public class HystrixConcurrencyStrategyTest {
@@ -62,10 +67,45 @@ public class HystrixConcurrencyStrategyTest {
 
         @Override
         protected String run() throws Exception {
-            System.out.println("Executing => Commands: " + HystrixRequestLog.getCurrentRequest().getExecutedCommands());
+            System.out.println("Executing => Commands: " + HystrixRequestLog.getCurrentRequest().getAllExecutedCommands());
             return "Hello";
         }
 
+    }
+
+    @Test
+    public void testThreadContextOnTimeout() {
+        final AtomicBoolean isInitialized = new AtomicBoolean();
+        new TimeoutCommand().toObservable()
+                .doOnError(new Action1<Throwable>() {
+                    @Override
+                    public void call(Throwable throwable) {
+                        isInitialized.set(HystrixRequestContext.isCurrentThreadInitialized());
+                    }
+                })
+                .materialize()
+                .toBlockingObservable().single();
+
+        System.out.println("initialized = " + HystrixRequestContext.isCurrentThreadInitialized());
+        System.out.println("initialized inside onError = " + isInitialized.get());
+        assertEquals(true, isInitialized.get());
+    }
+
+    public static class TimeoutCommand extends HystrixCommand<Void> {
+        static final HystrixCommand.Setter properties = HystrixCommand.Setter
+                .withGroupKey(HystrixCommandGroupKey.Factory.asKey("TimeoutTest"))
+                .andCommandPropertiesDefaults(HystrixCommandProperties.Setter()
+                        .withExecutionIsolationThreadTimeoutInMilliseconds(50));
+
+        public TimeoutCommand() {
+            super(properties);
+        }
+
+        @Override
+        protected Void run() throws Exception {
+            Thread.sleep(500);
+            return null;
+        }
     }
 
 }

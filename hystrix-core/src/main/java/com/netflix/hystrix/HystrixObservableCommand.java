@@ -41,7 +41,9 @@ import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
 import com.netflix.hystrix.exception.HystrixBadRequestException;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
 import com.netflix.hystrix.exception.HystrixRuntimeException.FailureType;
+import com.netflix.hystrix.strategy.concurrency.HystrixContextRunnable;
 import com.netflix.hystrix.strategy.concurrency.HystrixContextScheduler;
+import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 import com.netflix.hystrix.util.HystrixTimer;
@@ -717,6 +719,28 @@ public abstract class HystrixObservableCommand<R> extends AbstractHystrixCommand
             // if the child unsubscribes we unsubscribe our parent as well
             child.add(s);
 
+            /*
+             * Define the action to perform on timeout outside of the TimerListener to it can capture the HystrixRequestContext
+             * of the calling thread which doesn't exist on the Timer thread.
+             */
+            final HystrixContextRunnable timeoutRunnable = new HystrixContextRunnable(new Runnable() {
+
+                @Override
+                public void run() {
+                    try {
+                        Observable<R> v = originalCommand.getFallbackOrThrowException(HystrixEventType.TIMEOUT, FailureType.TIMEOUT, "timed-out", new TimeoutException());
+                        /*
+                         * we subscribeOn the computation scheduler as we don't want to use the Timer thread, nor can we use the
+                         * THREAD isolation pool as it may be saturated and that's the reason we're in fallback. The fallback logic
+                         * should not perform IO and thus we run on the computation event loops.
+                         */
+                        v.subscribeOn(new HystrixContextScheduler(originalCommand.concurrencyStrategy, Schedulers.computation())).subscribe(child);
+                    } catch (HystrixRuntimeException re) {
+                        child.onError(re);
+                    }
+                }
+            });
+
             TimerListener listener = new TimerListener() {
 
                 @Override
@@ -731,12 +755,7 @@ public abstract class HystrixObservableCommand<R> extends AbstractHystrixCommand
                         // we record execution time because we are returning before 
                         originalCommand.recordTotalExecutionTime(originalCommand.invocationStartTime);
 
-                        try {
-                            Observable<R> v = originalCommand.getFallbackOrThrowException(HystrixEventType.TIMEOUT, FailureType.TIMEOUT, "timed-out", new TimeoutException());
-                            v.subscribe(child);
-                        } catch (HystrixRuntimeException re) {
-                            child.onError(re);
-                        }
+                        timeoutRunnable.run();
                     }
 
                     // shut down the original request

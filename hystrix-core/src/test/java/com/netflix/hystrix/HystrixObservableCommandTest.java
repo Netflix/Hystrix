@@ -26,6 +26,7 @@ import rx.Scheduler;
 import rx.Subscriber;
 import rx.functions.Action1;
 import rx.functions.Func1;
+import rx.observers.TestSubscriber;
 import rx.schedulers.Schedulers;
 
 import com.netflix.config.ConfigurationManager;
@@ -62,9 +63,9 @@ public class HystrixObservableCommandTest {
 
         // force properties to be clean as well
         ConfigurationManager.getConfigInstance().clear();
-        
+
         HystrixCommandKey key = Hystrix.getCurrentThreadExecutingCommand();
-        if(key != null) {
+        if (key != null) {
             throw new IllegalStateException("should be null but got: " + key);
         }
     }
@@ -4073,6 +4074,124 @@ public class HystrixObservableCommandTest {
         assertEquals("expected fallback value", "timed-out", value);
     }
 
+    /**
+     * See https://github.com/Netflix/Hystrix/issues/212
+     */
+    @Test
+    public void testObservableTimeoutNoFallbackThreadContext() {
+        TestSubscriber<Boolean> ts = new TestSubscriber<Boolean>();
+
+        final AtomicReference<Thread> onErrorThread = new AtomicReference<Thread>();
+        final AtomicBoolean isRequestContextInitialized = new AtomicBoolean();
+
+        TestHystrixCommand<Boolean> command = new TestCommandWithTimeout(50, TestCommandWithTimeout.FALLBACK_NOT_IMPLEMENTED);
+        command.toObservable().doOnError(new Action1<Throwable>() {
+
+            @Override
+            public void call(Throwable t1) {
+                System.out.println("onError: " + t1);
+                System.out.println("onError Thread: " + Thread.currentThread());
+                System.out.println("ThreadContext in onError: " + HystrixRequestContext.isCurrentThreadInitialized());
+                onErrorThread.set(Thread.currentThread());
+                isRequestContextInitialized.set(HystrixRequestContext.isCurrentThreadInitialized());
+            }
+
+        }).subscribe(ts);
+
+        ts.awaitTerminalEvent();
+
+        assertTrue(isRequestContextInitialized.get());
+        assertTrue(onErrorThread.get().getName().startsWith("RxComputationThreadPool"));
+
+        List<Throwable> errors = ts.getOnErrorEvents();
+        assertEquals(1, errors.size());
+        Throwable e = errors.get(0);
+        if (errors.get(0) instanceof HystrixRuntimeException) {
+            HystrixRuntimeException de = (HystrixRuntimeException) e;
+            assertNotNull(de.getFallbackException());
+            assertTrue(de.getFallbackException() instanceof UnsupportedOperationException);
+            assertNotNull(de.getImplementingClass());
+            assertNotNull(de.getCause());
+            assertTrue(de.getCause() instanceof TimeoutException);
+        } else {
+            fail("the exception should be ExecutionException with cause as HystrixRuntimeException");
+        }
+
+        assertTrue(command.getExecutionTimeInMilliseconds() > -1);
+        assertTrue(command.isResponseTimedOut());
+
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
+        assertEquals(1, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
+        assertEquals(1, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+
+        assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
+
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+    }
+
+    /**
+     * See https://github.com/Netflix/Hystrix/issues/212
+     */
+    @Test
+    public void testObservableTimeoutFallbackThreadContext() {
+        TestSubscriber<Boolean> ts = new TestSubscriber<Boolean>();
+
+        final AtomicReference<Thread> onErrorThread = new AtomicReference<Thread>();
+        final AtomicBoolean isRequestContextInitialized = new AtomicBoolean();
+
+        TestHystrixCommand<Boolean> command = new TestCommandWithTimeout(50, TestCommandWithTimeout.FALLBACK_SUCCESS);
+        command.toObservable().doOnNext(new Action1<Boolean>() {
+
+            @Override
+            public void call(Boolean t1) {
+                System.out.println("onNext: " + t1);
+                System.out.println("onNext Thread: " + Thread.currentThread());
+                System.out.println("ThreadContext in onNext: " + HystrixRequestContext.isCurrentThreadInitialized());
+                onErrorThread.set(Thread.currentThread());
+                isRequestContextInitialized.set(HystrixRequestContext.isCurrentThreadInitialized());
+            }
+
+        }).subscribe(ts);
+
+        ts.awaitTerminalEvent();
+
+        System.out.println("events: " + ts.getOnNextEvents());
+
+        assertTrue(isRequestContextInitialized.get());
+        assertTrue(onErrorThread.get().getName().startsWith("RxComputationThreadPool"));
+
+        List<Boolean> onNexts = ts.getOnNextEvents();
+        assertEquals(1, onNexts.size());
+        assertFalse(onNexts.get(0));
+
+        assertTrue(command.getExecutionTimeInMilliseconds() > -1);
+        assertTrue(command.isResponseTimedOut());
+
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
+        assertEquals(1, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
+        assertEquals(1, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+
+        assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
+
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+    }
+
     /* ******************************************************************************** */
     /* ******************************************************************************** */
     /* private HystrixCommand class implementations for unit testing */
@@ -4483,7 +4602,7 @@ public class HystrixObservableCommandTest {
         @Override
         protected Observable<Boolean> getFallback() {
             if (fallbackBehavior == FALLBACK_SUCCESS) {
-                return Observable.from(false).subscribeOn(Schedulers.computation());
+                return Observable.from(false);
             } else if (fallbackBehavior == FALLBACK_FAILURE) {
                 // TODO duplicate with error inside async Observable
                 throw new RuntimeException("failed on fallback");

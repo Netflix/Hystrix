@@ -43,10 +43,9 @@ import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
 import com.netflix.hystrix.exception.HystrixBadRequestException;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
 import com.netflix.hystrix.exception.HystrixRuntimeException.FailureType;
-import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategyDefault;
 import com.netflix.hystrix.strategy.concurrency.HystrixContextCallable;
+import com.netflix.hystrix.strategy.concurrency.HystrixContextRunnable;
 import com.netflix.hystrix.strategy.concurrency.HystrixContextScheduler;
-import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 import com.netflix.hystrix.util.ExceptionThreadingUtility;
@@ -446,6 +445,25 @@ public abstract class HystrixCommand<R> extends AbstractHystrixCommand<R> implem
             // onSubscribe setup the timer
             final CompositeSubscription s = new CompositeSubscription();
 
+            /*
+             * Define the action to perform on timeout outside of the TimerListener to it can capture the HystrixRequestContext
+             * of the calling thread which doesn't exist on the Timer thread.
+             */
+            final HystrixContextRunnable timeoutRunnable = new HystrixContextRunnable(new Runnable() {
+
+                @Override
+                public void run() {
+                    try {
+                        R v = originalCommand.getFallbackOrThrowException(HystrixEventType.TIMEOUT, FailureType.TIMEOUT, "timed-out", new TimeoutException());
+                        child.onNext(v);
+                        child.onCompleted();
+                    } catch (HystrixRuntimeException re) {
+                        child.onError(re);
+                    }
+                }
+            });
+            
+            
             TimerListener listener = new TimerListener() {
 
                 @Override
@@ -461,13 +479,7 @@ public abstract class HystrixCommand<R> extends AbstractHystrixCommand<R> implem
                         // we record execution time because we are returning before 
                         originalCommand.recordTotalExecutionTime(originalCommand.invocationStartTime);
 
-                        try {
-                            R v = originalCommand.getFallbackOrThrowException(HystrixEventType.TIMEOUT, FailureType.TIMEOUT, "timed-out", new TimeoutException());
-                            child.onNext(v);
-                            child.onCompleted();
-                        } catch (HystrixRuntimeException re) {
-                            child.onError(re);
-                        }
+                        timeoutRunnable.run();
                     }
 
                     s.unsubscribe();
