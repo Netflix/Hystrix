@@ -58,6 +58,11 @@ public class HystrixCommandTest {
 
         // force properties to be clean as well
         ConfigurationManager.getConfigInstance().clear();
+        
+        HystrixCommandKey key = Hystrix.getCurrentThreadExecutingCommand();
+        if(key != null) {
+            throw new IllegalStateException("should be null but got: " + key);
+        }
     }
 
     /**

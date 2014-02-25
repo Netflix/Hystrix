@@ -19,6 +19,7 @@ import java.lang.ref.Reference;
 import java.lang.ref.SoftReference;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.concurrent.NotThreadSafe;
 import javax.annotation.concurrent.ThreadSafe;
@@ -278,15 +279,13 @@ public abstract class HystrixObservableCommand<R> extends AbstractHystrixCommand
         }
 
         final HystrixObservableCommand<R> _this = this;
+        final AtomicReference<Action0> endCurrentThreadExecutingCommand = new AtomicReference<Action0>(); // don't like how this is being done
 
         // create an Observable that will lazily execute when subscribed to
         Observable<R> o = Observable.create(new OnSubscribe<R>() {
 
             @Override
             public void call(Subscriber<? super R> observer) {
-                /* used to track userThreadExecutionTime */
-                invocationStartTime = System.currentTimeMillis();
-
                 // async record keeping
                 recordExecutedCommand();
 
@@ -295,10 +294,36 @@ public abstract class HystrixObservableCommand<R> extends AbstractHystrixCommand
 
                 /* determine if we're allowed to execute */
                 if (circuitBreaker.allowRequest()) {
-                    try {
-                        getRunObservableDecoratedForMetricsAndErrorHandling(observeOn).subscribe(observer);
-                    } catch (RuntimeException e) {
-                        observer.onError(e);
+                    final TryableSemaphore executionSemaphore = getExecutionSemaphore();
+                    // acquire a permit
+                    if (executionSemaphore.tryAcquire()) {
+                        try {
+                            /* used to track userThreadExecutionTime */
+                            invocationStartTime = System.currentTimeMillis();
+
+                            // store the command that is being run
+                            endCurrentThreadExecutingCommand.set(Hystrix.startCurrentThreadExecutingCommand(getCommandKey()));
+
+                            getRunObservableDecoratedForMetricsAndErrorHandling(observeOn)
+                                    .doOnTerminate(new Action0() {
+
+                                        @Override
+                                        public void call() {
+                                            // release the semaphore
+                                            // this is done here instead of below so that the acquire/release happens where it is guaranteed
+                                            // and not affected by the conditional circuit-breaker checks, timeouts, etc
+                                            executionSemaphore.release();
+
+                                        }
+                                    }).subscribe(observer);
+                        } catch (RuntimeException e) {
+                            observer.onError(e);
+                        }
+                    } else {
+                        metrics.markSemaphoreRejection();
+                        logger.debug("HystrixCommand Execution Rejection by Semaphore."); // debug only since we're throwing the exception and someone higher will do something with it
+                        // retrieve a fallback or throw an exception if no fallback available
+                        getFallbackOrThrowException(HystrixEventType.SEMAPHORE_REJECTED, FailureType.REJECTED_SEMAPHORE_EXECUTION, "could not acquire a semaphore for execution").subscribe(observer);
                     }
                 } else {
                     // record that we are returning a short-circuited fallback
@@ -337,6 +362,23 @@ public abstract class HystrixObservableCommand<R> extends AbstractHystrixCommand
                 if (tl != null) {
                     tl.clear();
                 }
+
+                try {
+                    // if we executed we will record the execution time
+                    if (invocationStartTime > 0) {
+                        /* execution time (must occur before terminal state otherwise a race condition can occur if requested by client) */
+                        recordTotalExecutionTime(invocationStartTime);
+                    }
+
+                    // pop the command that is being run
+                    if (endCurrentThreadExecutingCommand.get() != null) {
+                        endCurrentThreadExecutingCommand.get().call();
+                    }
+                } finally {
+                    metrics.decrementConcurrentExecutionCount();
+                    // record that we're completed
+                    isExecutionComplete.set(true);
+                }
             }
 
         });
@@ -364,158 +406,124 @@ public abstract class HystrixObservableCommand<R> extends AbstractHystrixCommand
      * @return R
      */
     private Observable<R> getRunObservableDecoratedForMetricsAndErrorHandling(final Scheduler observeOn) {
-        final TryableSemaphore executionSemaphore = getExecutionSemaphore();
-        // acquire a permit
-        if (executionSemaphore.tryAcquire()) {
-            // store the command that is being run
-            Hystrix.startCurrentThreadExecutingCommand(getCommandKey());
-            final HystrixObservableCommand<R> _cmd = this;
+        final HystrixObservableCommand<R> _cmd = this;
 
-            /* capture start time for logging */
-            final long startTime = System.currentTimeMillis();
-            final HystrixObservableCommand<R> _self = this;
-            // allow tracking how many concurrent threads are executing
-            metrics.incrementConcurrentExecutionCount();
-            executionHook.onRunStart(this);
+        final HystrixObservableCommand<R> _self = this;
+        // allow tracking how many concurrent threads are executing
+        metrics.incrementConcurrentExecutionCount();
+        executionHook.onRunStart(this);
 
-            Observable<R> run = null;
-            try {
-                run = run();
-            } catch (Throwable t) {
-                // the run() method is a user provided implementation so can throw instead of using Observable.onError
-                // so we catch it here and turn it into Observable.error
-                run = Observable.error(t);
-            }
-
-            if (properties.executionIsolationStrategy().get().equals(ExecutionIsolationStrategy.THREAD)) {
-                run = run.subscribeOn(threadPool.getScheduler());
-            }
-
-            run = run.map(new Func1<R, R>() {
-
-                @Override
-                public R call(R t1) {
-                    return executionHook.onRunSuccess(_cmd, t1);
-                }
-
-            }).doOnCompleted(new Action0() {
-                // this must come before onErrorResumeNext as we only want successful onCompletes processed here
-                @Override
-                public void call() {
-                    if (isCommandTimedOut.get() == TimedOutStatus.TIMED_OUT) {
-                        // the command timed out in the wrapping thread so we will return immediately
-                        // and not increment any of the counters below or other such logic
-                    } else {
-                        long duration = System.currentTimeMillis() - startTime;
-                        metrics.addCommandExecutionTime(duration);
-                        // report success
-                        executionResult = executionResult.addEvents(HystrixEventType.SUCCESS);
-                        metrics.markSuccess(duration);
-                        circuitBreaker.markSuccess();
-                        eventNotifier.markCommandExecution(getCommandKey(), properties.executionIsolationStrategy().get(), (int) duration, executionResult.events);
-                    }
-                }
-
-            }).onErrorResumeNext(new Func1<Throwable, Observable<R>>() {
-
-                @Override
-                public Observable<R> call(Throwable t) {
-                    Exception e = getExceptionFromThrowable(t);
-                    if (e instanceof RejectedExecutionException) {
-                        // mark on counter
-                        metrics.markThreadPoolRejection();
-                        // use a fallback instead (or throw exception if not implemented)
-                        return getFallbackOrThrowException(HystrixEventType.THREAD_POOL_REJECTED, FailureType.REJECTED_THREAD_EXECUTION, "could not be queued for execution", e);
-                    } else if (t instanceof HystrixBadRequestException) {
-                        try {
-                            Exception decorated = executionHook.onRunError(_self, (Exception) t);
-
-                            if (decorated instanceof HystrixBadRequestException) {
-                                t = (HystrixBadRequestException) decorated;
-                            } else {
-                                logger.warn("ExecutionHook.onRunError returned an exception that was not an instance of HystrixBadRequestException so will be ignored.", decorated);
-                            }
-                        } catch (Exception hookException) {
-                            logger.warn("Error calling ExecutionHook.onRunError", hookException);
-                        }
-
-                        /*
-                         * HystrixBadRequestException is treated differently and allowed to propagate without any stats tracking or fallback logic
-                         */
-                        return Observable.error(t);
-                    } else {
-                        try {
-                            e = executionHook.onRunError(_self, e);
-                        } catch (Exception hookException) {
-                            logger.warn("Error calling ExecutionHook.endRunFailure", hookException);
-                        }
-
-                        if (isCommandTimedOut.get() == TimedOutStatus.TIMED_OUT) {
-                            // http://jira/browse/API-4905 HystrixCommand: Error/Timeout Double-count if both occur
-                            // this means we have already timed out then we don't count this error stat and we just return
-                            // as this means the user-thread has already returned, we've already done fallback logic
-                            // and we've already counted the timeout stat
-                            logger.debug("Error executing HystrixCommand.run() [TimedOut]. Proceeding to fallback logic ...", e);
-                            return Observable.empty();
-                        } else {
-                            logger.debug("Error executing HystrixCommand.run(). Proceeding to fallback logic ...", e);
-                        }
-
-                        // report failure
-                        metrics.markFailure(System.currentTimeMillis() - startTime);
-                        // record the exception
-                        executionResult = executionResult.setException(e);
-                        return getFallbackOrThrowException(HystrixEventType.FAILURE, FailureType.COMMAND_EXCEPTION, "failed", e);
-                    }
-                }
-            }).map(new Func1<R, R>() {
-
-                @Override
-                public R call(R t1) {
-                    // allow transforming the results via the executionHook whether it came from success or fallback
-                    return executionHook.onComplete(_cmd, t1);
-                }
-
-            }).doOnTerminate(new Action0() {
-
-                @Override
-                public void call() {
-                    metrics.decrementConcurrentExecutionCount();
-                    // record that we're completed
-                    isExecutionComplete.set(true);
-
-                    try {
-                        /* execution time (must occur before terminal state otherwise a race condition can occur if requested by client) */
-                        recordTotalExecutionTime(invocationStartTime);
-
-                        // pop the command that is being run
-                        Hystrix.endCurrentThreadExecutingCommand();
-                    } finally {
-                        // release the semaphore
-                        executionSemaphore.release();
-                    }
-                }
-
-            });
-
-            if (properties.executionIsolationStrategy().get().equals(ExecutionIsolationStrategy.THREAD)) {
-                // we want to hand off work to a different scheduler so we don't tie up the Hystrix thread
-                if (!Schedulers.immediate().equals(observeOn)) {
-                    // don't waste overhead if it's the 'immediate' scheduler
-                    // otherwise we'll 'observeOn' and wrap with the HystrixContextScheduler
-                    // to copy state across threads (if threads are involved)
-                    run = run.observeOn(new HystrixContextScheduler(concurrencyStrategy, observeOn));
-                }
-            }
-
-            return run;
-        } else {
-            metrics.markSemaphoreRejection();
-            logger.debug("HystrixCommand Execution Rejection by Semaphore."); // debug only since we're throwing the exception and someone higher will do something with it
-            // retrieve a fallback or throw an exception if no fallback available
-            return getFallbackOrThrowException(HystrixEventType.SEMAPHORE_REJECTED, FailureType.REJECTED_SEMAPHORE_EXECUTION, "could not acquire a semaphore for execution");
+        Observable<R> run = null;
+        try {
+            run = run();
+        } catch (Throwable t) {
+            // the run() method is a user provided implementation so can throw instead of using Observable.onError
+            // so we catch it here and turn it into Observable.error
+            run = Observable.error(t);
         }
 
+        if (properties.executionIsolationStrategy().get().equals(ExecutionIsolationStrategy.THREAD)) {
+            run = run.subscribeOn(threadPool.getScheduler());
+        }
+
+        run = run.map(new Func1<R, R>() {
+
+            @Override
+            public R call(R t1) {
+                return executionHook.onRunSuccess(_cmd, t1);
+            }
+
+        }).doOnCompleted(new Action0() {
+            // this must come before onErrorResumeNext as we only want successful onCompletes processed here
+            @Override
+            public void call() {
+                if (isCommandTimedOut.get() == TimedOutStatus.TIMED_OUT) {
+                    // the command timed out in the wrapping thread so we will return immediately
+                    // and not increment any of the counters below or other such logic
+                } else {
+                    long duration = System.currentTimeMillis() - invocationStartTime;
+                    metrics.addCommandExecutionTime(duration);
+                    // report success
+                    executionResult = executionResult.addEvents(HystrixEventType.SUCCESS);
+                    metrics.markSuccess(duration);
+                    circuitBreaker.markSuccess();
+                    eventNotifier.markCommandExecution(getCommandKey(), properties.executionIsolationStrategy().get(), (int) duration, executionResult.events);
+                }
+            }
+
+        }).onErrorResumeNext(new Func1<Throwable, Observable<R>>() {
+
+            @Override
+            public Observable<R> call(Throwable t) {
+                Exception e = getExceptionFromThrowable(t);
+                if (e instanceof RejectedExecutionException) {
+                    // mark on counter
+                    metrics.markThreadPoolRejection();
+                    // use a fallback instead (or throw exception if not implemented)
+                    return getFallbackOrThrowException(HystrixEventType.THREAD_POOL_REJECTED, FailureType.REJECTED_THREAD_EXECUTION, "could not be queued for execution", e);
+                } else if (t instanceof HystrixBadRequestException) {
+                    try {
+                        Exception decorated = executionHook.onRunError(_self, (Exception) t);
+
+                        if (decorated instanceof HystrixBadRequestException) {
+                            t = (HystrixBadRequestException) decorated;
+                        } else {
+                            logger.warn("ExecutionHook.onRunError returned an exception that was not an instance of HystrixBadRequestException so will be ignored.", decorated);
+                        }
+                    } catch (Exception hookException) {
+                        logger.warn("Error calling ExecutionHook.onRunError", hookException);
+                    }
+
+                    /*
+                     * HystrixBadRequestException is treated differently and allowed to propagate without any stats tracking or fallback logic
+                     */
+                    return Observable.error(t);
+                } else {
+                    try {
+                        e = executionHook.onRunError(_self, e);
+                    } catch (Exception hookException) {
+                        logger.warn("Error calling ExecutionHook.endRunFailure", hookException);
+                    }
+
+                    if (isCommandTimedOut.get() == TimedOutStatus.TIMED_OUT) {
+                        // http://jira/browse/API-4905 HystrixCommand: Error/Timeout Double-count if both occur
+                        // this means we have already timed out then we don't count this error stat and we just return
+                        // as this means the user-thread has already returned, we've already done fallback logic
+                        // and we've already counted the timeout stat
+                        logger.debug("Error executing HystrixCommand.run() [TimedOut]. Proceeding to fallback logic ...", e);
+                        return Observable.empty();
+                    } else {
+                        logger.debug("Error executing HystrixCommand.run(). Proceeding to fallback logic ...", e);
+                    }
+
+                    // report failure
+                    metrics.markFailure(System.currentTimeMillis() - invocationStartTime);
+                    // record the exception
+                    executionResult = executionResult.setException(e);
+                    return getFallbackOrThrowException(HystrixEventType.FAILURE, FailureType.COMMAND_EXCEPTION, "failed", e);
+                }
+            }
+        }).map(new Func1<R, R>() {
+
+            @Override
+            public R call(R t1) {
+                // allow transforming the results via the executionHook whether it came from success or fallback
+                return executionHook.onComplete(_cmd, t1);
+            }
+
+        });
+
+        if (properties.executionIsolationStrategy().get().equals(ExecutionIsolationStrategy.THREAD)) {
+            // we want to hand off work to a different scheduler so we don't tie up the Hystrix thread
+            if (!Schedulers.immediate().equals(observeOn)) {
+                // don't waste overhead if it's the 'immediate' scheduler
+                // otherwise we'll 'observeOn' and wrap with the HystrixContextScheduler
+                // to copy state across threads (if threads are involved)
+                run = run.observeOn(new HystrixContextScheduler(concurrencyStrategy, observeOn));
+            }
+        }
+
+        return run;
     }
 
     /**

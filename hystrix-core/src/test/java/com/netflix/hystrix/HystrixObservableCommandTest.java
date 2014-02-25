@@ -62,6 +62,11 @@ public class HystrixObservableCommandTest {
 
         // force properties to be clean as well
         ConfigurationManager.getConfigInstance().clear();
+        
+        HystrixCommandKey key = Hystrix.getCurrentThreadExecutingCommand();
+        if(key != null) {
+            throw new IllegalStateException("should be null but got: " + key);
+        }
     }
 
     /**
@@ -1601,7 +1606,7 @@ public class HystrixObservableCommandTest {
             assertEquals(2, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
 
             // will be -1 because it never attempted execution
-            assertTrue(command.getExecutionTimeInMilliseconds() == -1);
+            assertEquals(-1, command.getExecutionTimeInMilliseconds());
             assertTrue(command.isResponseShortCircuited());
             assertFalse(command.isResponseTimedOut());
 

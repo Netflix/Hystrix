@@ -7,6 +7,8 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import rx.functions.Action0;
+
 /**
  * Lifecycle management of Hystrix.
  */
@@ -79,18 +81,35 @@ public class Hystrix {
         return currentCommand.get().peek();
     }
 
-    /* package */static void startCurrentThreadExecutingCommand(HystrixCommandKey key) {
+    /**
+     * 
+     * @return Action0 to perform the same work as `endCurrentThreadExecutingCommand()` but can be done from any thread
+     */
+    /* package */static Action0 startCurrentThreadExecutingCommand(HystrixCommandKey key) {
+        final LinkedList<HystrixCommandKey> list = currentCommand.get();
         try {
-            currentCommand.get().push(key);
+            list.push(key);
         } catch (Exception e) {
             logger.warn("Unable to record command starting", e);
         }
+        return new Action0() {
+
+            @Override
+            public void call() {
+                endCurrentThreadExecutingCommand(list);
+            }
+
+        };
     }
 
     /* package */static void endCurrentThreadExecutingCommand() {
+        endCurrentThreadExecutingCommand(currentCommand.get());
+    }
+
+    private static void endCurrentThreadExecutingCommand(LinkedList<HystrixCommandKey> list) {
         try {
-            if (!currentCommand.get().isEmpty()) {
-                currentCommand.get().pop();
+            if (!list.isEmpty()) {
+                list.pop();
             }
         } catch (NoSuchElementException e) {
             // this shouldn't be possible since we check for empty above and this is thread-isolated
