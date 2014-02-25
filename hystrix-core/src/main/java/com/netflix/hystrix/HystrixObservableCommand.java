@@ -43,7 +43,6 @@ import com.netflix.hystrix.exception.HystrixRuntimeException;
 import com.netflix.hystrix.exception.HystrixRuntimeException.FailureType;
 import com.netflix.hystrix.strategy.concurrency.HystrixContextRunnable;
 import com.netflix.hystrix.strategy.concurrency.HystrixContextScheduler;
-import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 import com.netflix.hystrix.util.HystrixTimer;
@@ -425,6 +424,8 @@ public abstract class HystrixObservableCommand<R> extends AbstractHystrixCommand
         }
 
         if (properties.executionIsolationStrategy().get().equals(ExecutionIsolationStrategy.THREAD)) {
+            // mark that we are executing in a thread (even if we end up being rejected we still were a THREAD execution and not SEMAPHORE)
+            isExecutedInThread.set(true);
             run = run.subscribeOn(threadPool.getScheduler());
         }
 

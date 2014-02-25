@@ -103,6 +103,8 @@ public class HystrixObservableCommandTest {
 
             assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
 
+            // semaphore isolated
+            assertFalse(command.isExecutedInThread());
         } catch (Exception e) {
             e.printStackTrace();
             fail("We received an exception.");
@@ -140,6 +142,9 @@ public class HystrixObservableCommandTest {
             e.printStackTrace();
             // we want to get here
         }
+
+        // semaphore isolated
+        assertFalse(command.isExecutedInThread());
     }
 
     /**
@@ -182,6 +187,9 @@ public class HystrixObservableCommandTest {
         assertEquals(100, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+
+        // semaphore isolated
+        assertFalse(command.isExecutedInThread());
     }
 
     /**
@@ -221,6 +229,9 @@ public class HystrixObservableCommandTest {
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+
+        // semaphore isolated
+        assertFalse(command.isExecutedInThread());
     }
 
     /**
@@ -256,6 +267,9 @@ public class HystrixObservableCommandTest {
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+
+        // semaphore isolated
+        assertFalse(command.isExecutedInThread());
     }
 
     /**
@@ -292,6 +306,9 @@ public class HystrixObservableCommandTest {
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+
+        // semaphore isolated
+        assertFalse(command.isExecutedInThread());
     }
 
     /**
@@ -326,6 +343,9 @@ public class HystrixObservableCommandTest {
         assertEquals(0, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+
+        // semaphore isolated
+        assertFalse(command.isExecutedInThread());
     }
 
     /**
@@ -368,6 +388,9 @@ public class HystrixObservableCommandTest {
         assertEquals(100, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+
+        // semaphore isolated
+        assertFalse(command.isExecutedInThread());
     }
 
     /**
@@ -408,6 +431,9 @@ public class HystrixObservableCommandTest {
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+
+        // semaphore isolated
+        assertFalse(command.isExecutedInThread());
     }
 
     /**
@@ -442,6 +468,9 @@ public class HystrixObservableCommandTest {
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+
+        // semaphore isolated
+        assertFalse(command.isExecutedInThread());
     }
 
     /**
@@ -481,6 +510,9 @@ public class HystrixObservableCommandTest {
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+
+        // semaphore isolated
+        assertFalse(command.isExecutedInThread());
     }
 
     /**
@@ -517,6 +549,8 @@ public class HystrixObservableCommandTest {
 
             assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
 
+            // semaphore isolated
+            assertFalse(command.isExecutedInThread());
         } catch (Exception e) {
             e.printStackTrace();
             fail("We received an exception.");
@@ -722,6 +756,9 @@ public class HystrixObservableCommandTest {
         assertTrue(commandThread.get().getName().equals(mainThreadName));
         System.out.println("testObserveOnImmediateSchedulerByDefaultForSemaphoreIsolation: " + subscribeThread.get() + " => " + mainThreadName);
         assertTrue(subscribeThread.get().getName().equals(mainThreadName));
+
+        // semaphore isolated
+        assertFalse(command.isExecutedInThread());
     }
 
     /**
@@ -1058,6 +1095,9 @@ public class HystrixObservableCommandTest {
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+
+        // semaphore isolated
+        assertFalse(command.isExecutedInThread());
     }
 
     /**
@@ -1092,6 +1132,9 @@ public class HystrixObservableCommandTest {
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+
+        // semaphore isolated
+        assertFalse(command.isExecutedInThread());
     }
 
     /**
@@ -1132,6 +1175,9 @@ public class HystrixObservableCommandTest {
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+
+        // semaphore isolated
+        assertFalse(command.isExecutedInThread());
     }
 
     /**
@@ -1178,6 +1224,9 @@ public class HystrixObservableCommandTest {
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+
+        // thread isolated
+        assertTrue(command.isExecutedInThread());
     }
 
     /**
@@ -1212,6 +1261,9 @@ public class HystrixObservableCommandTest {
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+
+        // thread isolated
+        assertTrue(command.isExecutedInThread());
     }
 
     /**
@@ -1252,6 +1304,9 @@ public class HystrixObservableCommandTest {
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+
+        // thread isolated
+        assertTrue(command.isExecutedInThread());
     }
 
     /**
@@ -1297,6 +1352,9 @@ public class HystrixObservableCommandTest {
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+
+        // semaphore isolated
+        assertFalse(command.isExecutedInThread());
     }
 
     /**
@@ -1347,6 +1405,9 @@ public class HystrixObservableCommandTest {
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+
+        // semaphore isolated
+        assertFalse(command.isExecutedInThread());
     }
 
     /**
@@ -1393,6 +1454,9 @@ public class HystrixObservableCommandTest {
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+
+        // semaphore isolated
+        assertFalse(command.isExecutedInThread());
     }
 
     /**
@@ -1426,6 +1490,9 @@ public class HystrixObservableCommandTest {
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+
+        // semaphore isolated
+        assertFalse(command.isExecutedInThread());
     }
 
     /**
@@ -1468,6 +1535,9 @@ public class HystrixObservableCommandTest {
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+
+        // semaphore isolated
+        assertFalse(command.isExecutedInThread());
     }
 
     /**
@@ -1514,6 +1584,9 @@ public class HystrixObservableCommandTest {
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+
+        // semaphore isolated
+        assertFalse(command.isExecutedInThread());
     }
 
     /**
@@ -1547,6 +1620,9 @@ public class HystrixObservableCommandTest {
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+
+        // semaphore isolated
+        assertFalse(command.isExecutedInThread());
     }
 
     /**
@@ -1589,6 +1665,9 @@ public class HystrixObservableCommandTest {
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+
+        // semaphore isolated
+        assertFalse(command.isExecutedInThread());
     }
 
     /**
@@ -1616,6 +1695,8 @@ public class HystrixObservableCommandTest {
             assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
             assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
 
+            // semaphore isolated
+            assertFalse(command.isExecutedInThread());
         } catch (Exception e) {
             e.printStackTrace();
             fail("We should have received a response from the fallback.");
@@ -1961,6 +2042,9 @@ public class HystrixObservableCommandTest {
             assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
             assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
             assertEquals(1, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
+
+            // semaphore isolated
+            assertFalse(command.isExecutedInThread());
         } catch (Exception e) {
             e.printStackTrace();
             fail("We received an exception.");
@@ -1979,6 +2063,9 @@ public class HystrixObservableCommandTest {
             assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
             assertEquals(true, command.execute());
             fail("we should have thrown an exception as we need an owner");
+
+            // semaphore isolated
+            assertFalse(command.isExecutedInThread());
         } catch (Exception e) {
             // success if we get here
         }
@@ -1997,6 +2084,9 @@ public class HystrixObservableCommandTest {
 
             // 2 different circuit breakers should be created
             assertNotSame(command1.getCircuitBreaker(), command2.getCircuitBreaker());
+
+            // semaphore isolated
+            assertFalse(command1.isExecutedInThread());
         } catch (Exception e) {
             e.printStackTrace();
             fail("We received an exception.");
@@ -2240,6 +2330,12 @@ public class HystrixObservableCommandTest {
         assertEquals(4, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
 
         System.out.println("HystrixRequestLog: " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
+
+        // semaphore isolated
+        assertFalse(command1.isExecutedInThread());
+        assertFalse(command2.isExecutedInThread());
+        assertFalse(command3.isExecutedInThread());
+        assertFalse(command4.isExecutedInThread());
     }
 
     /**
@@ -2299,6 +2395,11 @@ public class HystrixObservableCommandTest {
         assertEquals(0, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
 
         assertEquals(3, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+
+        // thread isolated
+        assertTrue(command1.isExecutedInThread());
+        assertTrue(command2.isExecutedInThread());
+        assertTrue(command3.isExecutedInThread());
     }
 
     /**
@@ -2362,6 +2463,11 @@ public class HystrixObservableCommandTest {
         assertEquals(0, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
 
         assertEquals(3, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+
+        // semaphore isolated
+        assertFalse(command1.isExecutedInThread());
+        assertFalse(command2.isExecutedInThread());
+        assertFalse(command3.isExecutedInThread());
     }
 
     /**
@@ -2421,6 +2527,11 @@ public class HystrixObservableCommandTest {
         assertEquals(0, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
 
         assertEquals(3, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+
+        // semaphore isolated
+        assertFalse(command1.isExecutedInThread());
+        assertFalse(command2.isExecutedInThread());
+        assertFalse(command3.isExecutedInThread());
     }
 
     /**
@@ -2476,6 +2587,11 @@ public class HystrixObservableCommandTest {
         assertEquals(0, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
 
         assertEquals(3, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+
+        // semaphore isolated
+        assertFalse(command1.isExecutedInThread());
+        assertFalse(command2.isExecutedInThread());
+        assertFalse(command3.isExecutedInThread());
     }
 
     /**
@@ -2531,6 +2647,11 @@ public class HystrixObservableCommandTest {
         assertEquals(0, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
 
         assertEquals(3, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+
+        // semaphore isolated
+        assertFalse(command1.isExecutedInThread());
+        assertFalse(command2.isExecutedInThread());
+        assertFalse(command3.isExecutedInThread());
     }
 
     @Test
@@ -2810,6 +2931,8 @@ public class HystrixObservableCommandTest {
             // 2) We don't ask for the RequestLog
             // 3) We don't do collapsing
 
+            // semaphore isolated
+            assertFalse(command.isExecutedInThread());
         } catch (Exception e) {
             e.printStackTrace();
             fail("We received an exception => " + e.getMessage());
@@ -2835,6 +2958,8 @@ public class HystrixObservableCommandTest {
 
             fail("We expect an exception because cacheKey requires RequestVariable.");
 
+            // semaphore isolated
+            assertFalse(command.isExecutedInThread());
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -3044,6 +3169,9 @@ public class HystrixObservableCommandTest {
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
+
+        // semaphore isolated
+        assertFalse(command.isExecutedInThread());
     }
 
     /**
@@ -3071,6 +3199,9 @@ public class HystrixObservableCommandTest {
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
+
+        // semaphore isolated
+        assertFalse(command.isExecutedInThread());
     }
 
     /**
@@ -3099,6 +3230,9 @@ public class HystrixObservableCommandTest {
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
+
+        // semaphore isolated
+        assertFalse(command.isExecutedInThread());
     }
 
     /**
@@ -3153,6 +3287,9 @@ public class HystrixObservableCommandTest {
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
+
+        // semaphore isolated
+        assertFalse(command.isExecutedInThread());
     }
 
     /**
@@ -3221,6 +3358,9 @@ public class HystrixObservableCommandTest {
         // thread execution
         //    assertEquals(1, command.builder.executionHook.threadStart.get());
         //   assertEquals(1, command.builder.executionHook.threadComplete.get());
+
+        // semaphore isolated
+        assertFalse(command.isExecutedInThread());
     }
 
     /**
@@ -3271,6 +3411,9 @@ public class HystrixObservableCommandTest {
         // thread execution
         //        assertEquals(1, command.builder.executionHook.threadStart.get());
         //        assertEquals(1, command.builder.executionHook.threadComplete.get());
+
+        // semaphore isolated
+        assertFalse(command.isExecutedInThread());
     }
 
     /**
@@ -3315,6 +3458,9 @@ public class HystrixObservableCommandTest {
         // thread execution
         //        assertEquals(1, command.builder.executionHook.threadStart.get());
         //        assertEquals(1, command.builder.executionHook.threadComplete.get());
+
+        // semaphore isolated
+        assertFalse(command.isExecutedInThread());
     }
 
     /**
@@ -3394,6 +3540,9 @@ public class HystrixObservableCommandTest {
         //        assertEquals(1, command.builder.executionHook.threadStart.get());
         //        assertEquals(1, command.builder.executionHook.threadComplete.get());
 
+        // semaphore isolated
+        assertFalse(command.isExecutedInThread());
+
     }
 
     /**
@@ -3462,6 +3611,9 @@ public class HystrixObservableCommandTest {
         // thread execution
         //        assertEquals(1, command.builder.executionHook.threadStart.get());
         //        assertEquals(1, command.builder.executionHook.threadComplete.get());
+
+        // semaphore isolated
+        assertFalse(command.isExecutedInThread());
     }
 
     /**
@@ -3540,6 +3692,9 @@ public class HystrixObservableCommandTest {
         // thread execution
         //        assertEquals(1, command.builder.executionHook.threadStart.get());
         //        assertEquals(1, command.builder.executionHook.threadComplete.get());
+
+        // semaphore isolated
+        assertFalse(command.isExecutedInThread());
     }
 
     /**
@@ -3589,6 +3744,9 @@ public class HystrixObservableCommandTest {
         //            // ignore
         //        }
         //    assertEquals(1, command.builder.executionHook.threadComplete.get());
+
+        // semaphore isolated
+        assertFalse(command.isExecutedInThread());
     }
 
     /**
@@ -3634,6 +3792,9 @@ public class HystrixObservableCommandTest {
         //            // ignore
         //        }
         //        assertEquals(1, command.builder.executionHook.threadComplete.get());
+
+        // semaphore isolated
+        assertFalse(command.isExecutedInThread());
     }
 
     /**
@@ -3732,6 +3893,9 @@ public class HystrixObservableCommandTest {
         // thread execution
         //        assertEquals(0, command.builder.executionHook.threadStart.get());
         //        assertEquals(0, command.builder.executionHook.threadComplete.get());
+
+        // semaphore isolated
+        assertFalse(command.isExecutedInThread());
     }
 
     /**
@@ -3777,6 +3941,9 @@ public class HystrixObservableCommandTest {
         // thread execution
         //        assertEquals(0, command.builder.executionHook.threadStart.get());
         //        assertEquals(0, command.builder.executionHook.threadComplete.get());
+
+        // semaphore isolated
+        assertFalse(command.isExecutedInThread());
     }
 
     /**
@@ -3849,6 +4016,9 @@ public class HystrixObservableCommandTest {
         // thread execution
         assertEquals(0, command.builder.executionHook.threadStart.get());
         assertEquals(0, command.builder.executionHook.threadComplete.get());
+
+        // semaphore isolated
+        assertFalse(command.isExecutedInThread());
     }
 
     /**
@@ -3897,6 +4067,9 @@ public class HystrixObservableCommandTest {
         // thread execution
         assertEquals(0, command.builder.executionHook.threadStart.get());
         assertEquals(0, command.builder.executionHook.threadComplete.get());
+
+        // semaphore isolated
+        assertFalse(command.isExecutedInThread());
     }
 
     /**
@@ -3988,6 +4161,9 @@ public class HystrixObservableCommandTest {
         System.out.println(">>>>> End: " + System.currentTimeMillis());
         assertTrue(command.isResponseTimedOut());
         assertEquals("expected fallback value", "timed-out", value);
+
+        // Thread isolated
+        assertTrue(command.isExecutedInThread());
     }
 
     @Test(timeout = 500)
@@ -4030,6 +4206,9 @@ public class HystrixObservableCommandTest {
         String value = command.observe().toBlockingObservable().last();
         assertTrue(command.isResponseTimedOut());
         assertEquals("expected fallback value", "timed-out", value);
+
+        // Thread isolated
+        assertTrue(command.isExecutedInThread());
     }
 
     @Test(timeout = 500)
@@ -4072,6 +4251,9 @@ public class HystrixObservableCommandTest {
         String value = command.observe().toBlockingObservable().last();
         assertTrue(command.isResponseTimedOut());
         assertEquals("expected fallback value", "timed-out", value);
+
+        // semaphore isolated
+        assertFalse(command.isExecutedInThread());
     }
 
     /**
@@ -4135,6 +4317,9 @@ public class HystrixObservableCommandTest {
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+
+        // semaphore isolated
+        assertFalse(command.isExecutedInThread());
     }
 
     /**
@@ -4190,6 +4375,9 @@ public class HystrixObservableCommandTest {
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+
+        // semaphore isolated
+        assertFalse(command.isExecutedInThread());
     }
 
     /* ******************************************************************************** */
