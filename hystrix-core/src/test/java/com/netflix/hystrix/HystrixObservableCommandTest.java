@@ -19,6 +19,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import rx.Notification;
 import rx.Observable;
 import rx.Observable.OnSubscribe;
 import rx.Observer;
@@ -4378,6 +4379,1508 @@ public class HystrixObservableCommandTest {
 
         // semaphore isolated
         assertFalse(command.isExecutedInThread());
+    }
+
+    private RequestContextTestResults testRequestContextOnSuccess(ExecutionIsolationStrategy isolation, final Scheduler userScheduler) {
+        final RequestContextTestResults results = new RequestContextTestResults();
+        TestHystrixCommand<Boolean> command = new TestHystrixCommand<Boolean>(TestHystrixCommand.testPropsBuilder()
+                .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionIsolationStrategy(isolation))) {
+
+            @Override
+            protected Observable<Boolean> run() {
+                return Observable.create(new OnSubscribe<Boolean>() {
+
+                    @Override
+                    public void call(Subscriber<? super Boolean> s) {
+                        results.isContextInitialized.set(HystrixRequestContext.isCurrentThreadInitialized());
+                        results.originThread.set(Thread.currentThread());
+                        s.onNext(true);
+                        s.onCompleted();
+                    }
+
+                }).subscribeOn(userScheduler);
+            }
+
+        };
+
+        results.command = command;
+
+        command.toObservable().doOnEach(new Action1<Notification<? super Boolean>>() {
+
+            @Override
+            public void call(Notification<? super Boolean> n) {
+                results.isContextInitializedObserveOn.set(HystrixRequestContext.isCurrentThreadInitialized());
+                results.observeOnThread.set(Thread.currentThread());
+            }
+
+        }).subscribe(results.ts);
+        results.ts.awaitTerminalEvent();
+
+        System.out.println("Run => Initialized: " + results.isContextInitialized.get() + "  Thread: " + results.originThread.get());
+        System.out.println("Observed => Initialized: " + results.isContextInitializedObserveOn.get() + "  Thread: " + results.observeOnThread.get());
+
+        assertEquals(1, results.ts.getOnNextEvents().size());
+        assertTrue(results.ts.getOnNextEvents().get(0));
+
+        assertTrue(command.getExecutionTimeInMilliseconds() > -1);
+        assertTrue(command.isSuccessfulExecution());
+
+        assertEquals(1, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+
+        assertEquals(0, command.builder.metrics.getHealthCounts().getErrorPercentage());
+
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+
+        return results;
+    }
+
+    private RequestContextTestResults testRequestContextOnGracefulFailure(ExecutionIsolationStrategy isolation, final Scheduler userScheduler) {
+        final RequestContextTestResults results = new RequestContextTestResults();
+        TestHystrixCommand<Boolean> command = new TestHystrixCommand<Boolean>(TestHystrixCommand.testPropsBuilder()
+                .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionIsolationStrategy(isolation))) {
+
+            @Override
+            protected Observable<Boolean> run() {
+                return Observable.create(new OnSubscribe<Boolean>() {
+
+                    @Override
+                    public void call(Subscriber<? super Boolean> s) {
+                        results.isContextInitialized.set(HystrixRequestContext.isCurrentThreadInitialized());
+                        results.originThread.set(Thread.currentThread());
+                        s.onError(new RuntimeException("graceful onError"));
+                    }
+
+                }).subscribeOn(userScheduler);
+            }
+
+        };
+
+        results.command = command;
+
+        command.toObservable().doOnEach(new Action1<Notification<? super Boolean>>() {
+
+            @Override
+            public void call(Notification<? super Boolean> n) {
+                results.isContextInitializedObserveOn.set(HystrixRequestContext.isCurrentThreadInitialized());
+                results.observeOnThread.set(Thread.currentThread());
+            }
+
+        }).subscribe(results.ts);
+        results.ts.awaitTerminalEvent();
+
+        System.out.println("Run => Initialized: " + results.isContextInitialized.get() + "  Thread: " + results.originThread.get());
+        System.out.println("Observed => Initialized: " + results.isContextInitializedObserveOn.get() + "  Thread: " + results.observeOnThread.get());
+
+        assertEquals(1, results.ts.getOnErrorEvents().size());
+
+        assertTrue(command.getExecutionTimeInMilliseconds() > -1);
+        assertFalse(command.isSuccessfulExecution());
+        assertTrue(command.isFailedExecution());
+
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
+        assertEquals(1, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
+        assertEquals(1, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+
+        assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
+
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+
+        return results;
+    }
+
+    private RequestContextTestResults testRequestContextOnBadFailure(ExecutionIsolationStrategy isolation, final Scheduler userScheduler) {
+        final RequestContextTestResults results = new RequestContextTestResults();
+        TestHystrixCommand<Boolean> command = new TestHystrixCommand<Boolean>(TestHystrixCommand.testPropsBuilder()
+                .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionIsolationStrategy(isolation))) {
+
+            @Override
+            protected Observable<Boolean> run() {
+                return Observable.create(new OnSubscribe<Boolean>() {
+
+                    @Override
+                    public void call(Subscriber<? super Boolean> s) {
+                        results.isContextInitialized.set(HystrixRequestContext.isCurrentThreadInitialized());
+                        results.originThread.set(Thread.currentThread());
+                        throw new RuntimeException("bad onError");
+                    }
+
+                }).subscribeOn(userScheduler);
+            }
+
+        };
+
+        results.command = command;
+
+        command.toObservable().doOnEach(new Action1<Notification<? super Boolean>>() {
+
+            @Override
+            public void call(Notification<? super Boolean> n) {
+                results.isContextInitializedObserveOn.set(HystrixRequestContext.isCurrentThreadInitialized());
+                results.observeOnThread.set(Thread.currentThread());
+            }
+
+        }).subscribe(results.ts);
+        results.ts.awaitTerminalEvent();
+
+        System.out.println("Run => Initialized: " + results.isContextInitialized.get() + "  Thread: " + results.originThread.get());
+        System.out.println("Observed => Initialized: " + results.isContextInitializedObserveOn.get() + "  Thread: " + results.observeOnThread.get());
+
+        assertEquals(1, results.ts.getOnErrorEvents().size());
+
+        assertTrue(command.getExecutionTimeInMilliseconds() > -1);
+        assertFalse(command.isSuccessfulExecution());
+        assertTrue(command.isFailedExecution());
+
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
+        assertEquals(1, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
+        assertEquals(1, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+
+        assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
+
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+
+        return results;
+    }
+
+    private RequestContextTestResults testRequestContextOnFailureWithFallback(ExecutionIsolationStrategy isolation, final Scheduler userScheduler) {
+        final RequestContextTestResults results = new RequestContextTestResults();
+        TestHystrixCommand<Boolean> command = new TestHystrixCommand<Boolean>(TestHystrixCommand.testPropsBuilder()
+                .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionIsolationStrategy(isolation))) {
+
+            @Override
+            protected Observable<Boolean> run() {
+                return Observable.create(new OnSubscribe<Boolean>() {
+
+                    @Override
+                    public void call(Subscriber<? super Boolean> s) {
+                        s.onError(new RuntimeException("onError"));
+                    }
+
+                }).subscribeOn(userScheduler);
+            }
+
+            @Override
+            protected Observable<Boolean> getFallback() {
+                return Observable.create(new OnSubscribe<Boolean>() {
+
+                    @Override
+                    public void call(Subscriber<? super Boolean> s) {
+                        results.isContextInitialized.set(HystrixRequestContext.isCurrentThreadInitialized());
+                        results.originThread.set(Thread.currentThread());
+                        s.onNext(false);
+                        s.onCompleted();
+                    }
+
+                }).subscribeOn(userScheduler);
+            }
+
+        };
+
+        results.command = command;
+
+        command.toObservable().doOnEach(new Action1<Notification<? super Boolean>>() {
+
+            @Override
+            public void call(Notification<? super Boolean> n) {
+                results.isContextInitializedObserveOn.set(HystrixRequestContext.isCurrentThreadInitialized());
+                results.observeOnThread.set(Thread.currentThread());
+            }
+
+        }).subscribe(results.ts);
+        results.ts.awaitTerminalEvent();
+
+        System.out.println("Run => Initialized: " + results.isContextInitialized.get() + "  Thread: " + results.originThread.get());
+        System.out.println("Observed => Initialized: " + results.isContextInitializedObserveOn.get() + "  Thread: " + results.observeOnThread.get());
+
+        assertEquals(0, results.ts.getOnErrorEvents().size());
+        assertEquals(1, results.ts.getOnNextEvents().size());
+        assertEquals(false, results.ts.getOnNextEvents().get(0));
+
+        assertTrue(command.getExecutionTimeInMilliseconds() > -1);
+        assertFalse(command.isSuccessfulExecution());
+        assertTrue(command.isFailedExecution());
+
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
+        assertEquals(1, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
+        assertEquals(1, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+
+        assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
+
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+
+        return results;
+    }
+
+    private RequestContextTestResults testRequestContextOnRejectionWithFallback(ExecutionIsolationStrategy isolation, final Scheduler userScheduler) {
+        final RequestContextTestResults results = new RequestContextTestResults();
+        TestHystrixCommand<Boolean> command = new TestHystrixCommand<Boolean>(TestHystrixCommand.testPropsBuilder()
+                .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionIsolationSemaphoreMaxConcurrentRequests(0))) {
+
+            @Override
+            protected Observable<Boolean> run() {
+                return Observable.create(new OnSubscribe<Boolean>() {
+
+                    @Override
+                    public void call(Subscriber<? super Boolean> s) {
+                        s.onError(new RuntimeException("onError"));
+                    }
+
+                }).subscribeOn(userScheduler);
+            }
+
+            @Override
+            protected Observable<Boolean> getFallback() {
+                return Observable.create(new OnSubscribe<Boolean>() {
+
+                    @Override
+                    public void call(Subscriber<? super Boolean> s) {
+                        results.isContextInitialized.set(HystrixRequestContext.isCurrentThreadInitialized());
+                        results.originThread.set(Thread.currentThread());
+                        s.onNext(false);
+                        s.onCompleted();
+                    }
+
+                }).subscribeOn(userScheduler);
+            }
+
+        };
+
+        results.command = command;
+
+        command.toObservable().doOnEach(new Action1<Notification<? super Boolean>>() {
+
+            @Override
+            public void call(Notification<? super Boolean> n) {
+                results.isContextInitializedObserveOn.set(HystrixRequestContext.isCurrentThreadInitialized());
+                results.observeOnThread.set(Thread.currentThread());
+            }
+
+        }).subscribe(results.ts);
+        results.ts.awaitTerminalEvent();
+
+        System.out.println("Run => Initialized: " + results.isContextInitialized.get() + "  Thread: " + results.originThread.get());
+        System.out.println("Observed => Initialized: " + results.isContextInitializedObserveOn.get() + "  Thread: " + results.observeOnThread.get());
+
+        assertEquals(0, results.ts.getOnErrorEvents().size());
+        assertEquals(1, results.ts.getOnNextEvents().size());
+        assertEquals(false, results.ts.getOnNextEvents().get(0));
+
+        assertTrue(command.getExecutionTimeInMilliseconds() == -1);
+        assertFalse(command.isSuccessfulExecution());
+        assertTrue(command.isResponseRejected());
+
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
+        assertEquals(1, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(1, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+
+        assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
+
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+
+        return results;
+    }
+
+    private RequestContextTestResults testRequestContextOnShortCircuitedWithFallback(ExecutionIsolationStrategy isolation, final Scheduler userScheduler) {
+        final RequestContextTestResults results = new RequestContextTestResults();
+        TestHystrixCommand<Boolean> command = new TestHystrixCommand<Boolean>(TestHystrixCommand.testPropsBuilder().setCircuitBreaker(new TestCircuitBreaker().setForceShortCircuit(true))) {
+
+            @Override
+            protected Observable<Boolean> run() {
+                return Observable.create(new OnSubscribe<Boolean>() {
+
+                    @Override
+                    public void call(Subscriber<? super Boolean> s) {
+                        s.onError(new RuntimeException("onError"));
+                    }
+
+                }).subscribeOn(userScheduler);
+            }
+
+            @Override
+            protected Observable<Boolean> getFallback() {
+                return Observable.create(new OnSubscribe<Boolean>() {
+
+                    @Override
+                    public void call(Subscriber<? super Boolean> s) {
+                        results.isContextInitialized.set(HystrixRequestContext.isCurrentThreadInitialized());
+                        results.originThread.set(Thread.currentThread());
+                        s.onNext(false);
+                        s.onCompleted();
+                    }
+
+                }).subscribeOn(userScheduler);
+            }
+
+        };
+
+        results.command = command;
+
+        command.toObservable().doOnEach(new Action1<Notification<? super Boolean>>() {
+
+            @Override
+            public void call(Notification<? super Boolean> n) {
+                results.isContextInitializedObserveOn.set(HystrixRequestContext.isCurrentThreadInitialized());
+                results.observeOnThread.set(Thread.currentThread());
+            }
+
+        }).subscribe(results.ts);
+        results.ts.awaitTerminalEvent();
+
+        System.out.println("Run => Initialized: " + results.isContextInitialized.get() + "  Thread: " + results.originThread.get());
+        System.out.println("Observed => Initialized: " + results.isContextInitializedObserveOn.get() + "  Thread: " + results.observeOnThread.get());
+
+        assertEquals(0, results.ts.getOnErrorEvents().size());
+        assertEquals(1, results.ts.getOnNextEvents().size());
+        assertEquals(false, results.ts.getOnNextEvents().get(0));
+
+        assertTrue(command.getExecutionTimeInMilliseconds() == -1);
+        assertFalse(command.isSuccessfulExecution());
+        assertTrue(command.isResponseShortCircuited());
+
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
+        assertEquals(1, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
+        assertEquals(1, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+
+        assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
+
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+
+        return results;
+    }
+
+    private RequestContextTestResults testRequestContextOnTimeout(ExecutionIsolationStrategy isolation, final Scheduler userScheduler) {
+        final RequestContextTestResults results = new RequestContextTestResults();
+        TestHystrixCommand<Boolean> command = new TestHystrixCommand<Boolean>(TestHystrixCommand.testPropsBuilder()
+                .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionIsolationStrategy(isolation).withExecutionIsolationThreadTimeoutInMilliseconds(50))) {
+
+            @Override
+            protected Observable<Boolean> run() {
+                return Observable.create(new OnSubscribe<Boolean>() {
+
+                    @Override
+                    public void call(Subscriber<? super Boolean> s) {
+                        results.isContextInitialized.set(HystrixRequestContext.isCurrentThreadInitialized());
+                        results.originThread.set(Thread.currentThread());
+                        try {
+                            Thread.sleep(500);
+                        } catch (InterruptedException e) {
+                            // ignore the interrupted exception
+                        }
+                    }
+
+                }).subscribeOn(userScheduler);
+            }
+
+        };
+
+        results.command = command;
+
+        command.toObservable().doOnEach(new Action1<Notification<? super Boolean>>() {
+
+            @Override
+            public void call(Notification<? super Boolean> n) {
+                results.isContextInitializedObserveOn.set(HystrixRequestContext.isCurrentThreadInitialized());
+                results.observeOnThread.set(Thread.currentThread());
+            }
+
+        }).subscribe(results.ts);
+        results.ts.awaitTerminalEvent();
+
+        System.out.println("Run => Initialized: " + results.isContextInitialized.get() + "  Thread: " + results.originThread.get());
+        System.out.println("Observed => Initialized: " + results.isContextInitializedObserveOn.get() + "  Thread: " + results.observeOnThread.get());
+
+        assertEquals(1, results.ts.getOnErrorEvents().size());
+
+        assertTrue(command.getExecutionTimeInMilliseconds() > -1);
+        assertFalse(command.isSuccessfulExecution());
+        assertTrue(command.isResponseTimedOut());
+
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
+        assertEquals(1, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
+        assertEquals(1, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+
+        assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
+
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+
+        return results;
+    }
+
+    private RequestContextTestResults testRequestContextOnTimeoutWithFallback(ExecutionIsolationStrategy isolation, final Scheduler userScheduler) {
+        final RequestContextTestResults results = new RequestContextTestResults();
+        TestHystrixCommand<Boolean> command = new TestHystrixCommand<Boolean>(TestHystrixCommand.testPropsBuilder()
+                .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionIsolationStrategy(isolation).withExecutionIsolationThreadTimeoutInMilliseconds(50))) {
+
+            @Override
+            protected Observable<Boolean> run() {
+                return Observable.create(new OnSubscribe<Boolean>() {
+
+                    @Override
+                    public void call(Subscriber<? super Boolean> s) {
+                        try {
+                            Thread.sleep(500);
+                        } catch (InterruptedException e) {
+                            // ignore the interrupted exception
+                        }
+                    }
+
+                }).subscribeOn(userScheduler);
+            }
+
+            @Override
+            protected Observable<Boolean> getFallback() {
+                return Observable.create(new OnSubscribe<Boolean>() {
+
+                    @Override
+                    public void call(Subscriber<? super Boolean> s) {
+                        results.isContextInitialized.set(HystrixRequestContext.isCurrentThreadInitialized());
+                        results.originThread.set(Thread.currentThread());
+                        s.onNext(false);
+                        s.onCompleted();
+                    }
+
+                }).subscribeOn(userScheduler);
+            }
+
+        };
+
+        results.command = command;
+
+        command.toObservable().doOnEach(new Action1<Notification<? super Boolean>>() {
+
+            @Override
+            public void call(Notification<? super Boolean> n) {
+                System.out.println("timeoutWithFallback notification: " + n + "   " + Thread.currentThread());
+                results.isContextInitializedObserveOn.set(HystrixRequestContext.isCurrentThreadInitialized());
+                results.observeOnThread.set(Thread.currentThread());
+            }
+
+        }).subscribe(results.ts);
+        results.ts.awaitTerminalEvent();
+
+        System.out.println("Fallback => Initialized: " + results.isContextInitialized.get() + "  Thread: " + results.originThread.get());
+        System.out.println("Observed => Initialized: " + results.isContextInitializedObserveOn.get() + "  Thread: " + results.observeOnThread.get());
+
+        assertEquals(1, results.ts.getOnNextEvents().size());
+        assertEquals(false, results.ts.getOnNextEvents().get(0));
+
+        assertTrue(command.getExecutionTimeInMilliseconds() > -1);
+        assertFalse(command.isSuccessfulExecution());
+        assertTrue(command.isResponseTimedOut());
+
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
+        assertEquals(1, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
+        assertEquals(1, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
+        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+
+        assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
+
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+
+        return results;
+    }
+
+    private final class RequestContextTestResults {
+        volatile TestHystrixCommand<Boolean> command;
+        final AtomicReference<Thread> originThread = new AtomicReference<Thread>();
+        final AtomicBoolean isContextInitialized = new AtomicBoolean();
+        TestSubscriber<Boolean> ts = new TestSubscriber<Boolean>();
+        final AtomicBoolean isContextInitializedObserveOn = new AtomicBoolean();
+        final AtomicReference<Thread> observeOnThread = new AtomicReference<Thread>();
+    }
+
+    /* *************************************** testSuccessfuleRequestContext *********************************** */
+
+    /**
+     * Synchronous Observable and semaphore isolation. Only [Main] thread is involved in this.
+     */
+    @Test
+    public void testSuccessfulRequestContextWithSemaphoreIsolatedSynchronousObservable() {
+        RequestContextTestResults results = testRequestContextOnSuccess(ExecutionIsolationStrategy.SEMAPHORE, Schedulers.immediate());
+
+        assertTrue(results.isContextInitialized.get());
+        assertTrue(results.originThread.get().equals(Thread.currentThread())); // all synchronous
+
+        assertTrue(results.isContextInitializedObserveOn.get());
+        assertTrue(results.observeOnThread.get().equals(Thread.currentThread())); // all synchronous
+
+        // semaphore isolated
+        assertFalse(results.command.isExecutedInThread());
+    }
+
+    /**
+     * Async Observable and semaphore isolation. User provided thread [RxNewThread] does everything.
+     * 
+     * NOTE: RequestContext will NOT exist on that thread.
+     * 
+     * An async Observable running on its own thread will not have access to the request context unless the user manages the context.
+     */
+    @Test
+    public void testSuccessfulRequestContextWithSemaphoreIsolatedAsynchronousObservable() {
+        RequestContextTestResults results = testRequestContextOnSuccess(ExecutionIsolationStrategy.SEMAPHORE, Schedulers.newThread());
+
+        assertFalse(results.isContextInitialized.get()); // it won't have request context as it's on a user provided thread/scheduler
+        assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        assertTrue(results.isContextInitializedObserveOn.get()); // we capture and set the context once the user provided Observable emits
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        // semaphore isolated
+        assertFalse(results.command.isExecutedInThread());
+    }
+
+    /**
+     * Async Observable and semaphore isolation WITH functioning RequestContext
+     * 
+     * Use HystrixContextScheduler to make the user provided scheduler capture context.
+     */
+    @Test
+    public void testSuccessfulRequestContextWithSemaphoreIsolatedAsynchronousObservableAndCapturedContextScheduler() {
+        RequestContextTestResults results = testRequestContextOnSuccess(ExecutionIsolationStrategy.SEMAPHORE, new HystrixContextScheduler(Schedulers.newThread()));
+
+        assertTrue(results.isContextInitialized.get()); // the user scheduler captures context
+        assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        assertTrue(results.isContextInitializedObserveOn.get()); // the user scheduler captures context
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        // semaphore isolated
+        assertFalse(results.command.isExecutedInThread());
+    }
+
+    /**
+     * Synchronous Observable and thread isolation. Work done on [hystrix-OWNER_ONE] thread and then observed on [RxComputation]
+     */
+    @Test
+    public void testSuccessfulRequestContextWithThreadIsolatedSynchronousObservable() {
+        RequestContextTestResults results = testRequestContextOnSuccess(ExecutionIsolationStrategy.THREAD, Schedulers.immediate());
+
+        assertTrue(results.isContextInitialized.get());
+        assertTrue(results.originThread.get().getName().startsWith("hystrix-OWNER_ONE")); // thread isolated on a HystrixThreadPool
+
+        assertTrue(results.isContextInitializedObserveOn.get());
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix thread
+
+        // thread isolated
+        assertTrue(results.command.isExecutedInThread());
+    }
+
+    /**
+     * Async Observable and thread isolation. User provided thread [RxNetThread] executes Observable and then [RxComputation] observes the onNext calls.
+     * 
+     * NOTE: RequestContext will NOT exist on that thread.
+     * 
+     * An async Observable running on its own thread will not have access to the request context unless the user manages the context.
+     */
+    @Test
+    public void testSuccessfulRequestContextWithThreadIsolatedAsynchronousObservable() {
+        RequestContextTestResults results = testRequestContextOnSuccess(ExecutionIsolationStrategy.THREAD, Schedulers.newThread());
+
+        assertFalse(results.isContextInitialized.get()); // it won't have request context as it's on a user provided thread/scheduler
+        assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        assertTrue(results.isContextInitializedObserveOn.get()); // we capture and set the context once the user provided Observable emits
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix or user thread because of thread isolation choice
+
+        // thread isolated
+        assertTrue(results.command.isExecutedInThread());
+    }
+
+    /**
+     * Async Observable and semaphore isolation WITH functioning RequestContext
+     * 
+     * Use HystrixContextScheduler to make the user provided scheduler capture context.
+     */
+    @Test
+    public void testSuccessfulRequestContextWithThreadIsolatedAsynchronousObservableAndCapturedContextScheduler() {
+        RequestContextTestResults results = testRequestContextOnSuccess(ExecutionIsolationStrategy.THREAD, new HystrixContextScheduler(Schedulers.newThread()));
+
+        assertTrue(results.isContextInitialized.get()); // the user scheduler captures context
+        assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        assertTrue(results.isContextInitializedObserveOn.get()); // the user scheduler captures context
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix or user thread because of thread isolation choice
+
+        // thread isolated
+        assertTrue(results.command.isExecutedInThread());
+    }
+
+    /* *************************************** testGracefulFailureRequestContext *********************************** */
+
+    /**
+     * Synchronous Observable and semaphore isolation. Only [Main] thread is involved in this.
+     */
+    @Test
+    public void testGracefulFailureRequestContextWithSemaphoreIsolatedSynchronousObservable() {
+        RequestContextTestResults results = testRequestContextOnGracefulFailure(ExecutionIsolationStrategy.SEMAPHORE, Schedulers.immediate());
+
+        assertTrue(results.isContextInitialized.get());
+        assertTrue(results.originThread.get().equals(Thread.currentThread())); // all synchronous
+
+        assertTrue(results.isContextInitializedObserveOn.get());
+        assertTrue(results.observeOnThread.get().equals(Thread.currentThread())); // all synchronous
+
+        // semaphore isolated
+        assertFalse(results.command.isExecutedInThread());
+    }
+
+    /**
+     * Async Observable and semaphore isolation. User provided thread [RxNewThread] does everything.
+     * 
+     * NOTE: RequestContext will NOT exist on that thread.
+     * 
+     * An async Observable running on its own thread will not have access to the request context unless the user manages the context.
+     */
+    @Test
+    public void testGracefulFailureRequestContextWithSemaphoreIsolatedAsynchronousObservable() {
+        RequestContextTestResults results = testRequestContextOnGracefulFailure(ExecutionIsolationStrategy.SEMAPHORE, Schedulers.newThread());
+
+        assertFalse(results.isContextInitialized.get()); // it won't have request context as it's on a user provided thread/scheduler
+        assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        assertTrue(results.isContextInitializedObserveOn.get()); // we capture and set the context once the user provided Observable emits
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        // semaphore isolated
+        assertFalse(results.command.isExecutedInThread());
+    }
+
+    /**
+     * Async Observable and semaphore isolation WITH functioning RequestContext
+     * 
+     * Use HystrixContextScheduler to make the user provided scheduler capture context.
+     */
+    @Test
+    public void testGracefulFailureRequestContextWithSemaphoreIsolatedAsynchronousObservableAndCapturedContextScheduler() {
+        RequestContextTestResults results = testRequestContextOnGracefulFailure(ExecutionIsolationStrategy.SEMAPHORE, new HystrixContextScheduler(Schedulers.newThread()));
+
+        assertTrue(results.isContextInitialized.get()); // the user scheduler captures context
+        assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        assertTrue(results.isContextInitializedObserveOn.get()); // the user scheduler captures context
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        // semaphore isolated
+        assertFalse(results.command.isExecutedInThread());
+    }
+
+    /**
+     * Synchronous Observable and thread isolation. Work done on [hystrix-OWNER_ONE] thread and then observed on [RxComputation]
+     */
+    @Test
+    public void testGracefulFailureRequestContextWithThreadIsolatedSynchronousObservable() {
+        RequestContextTestResults results = testRequestContextOnGracefulFailure(ExecutionIsolationStrategy.THREAD, Schedulers.immediate());
+
+        assertTrue(results.isContextInitialized.get());
+        assertTrue(results.originThread.get().getName().startsWith("hystrix-OWNER_ONE")); // thread isolated on a HystrixThreadPool
+
+        assertTrue(results.isContextInitializedObserveOn.get());
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix thread
+
+        // thread isolated
+        assertTrue(results.command.isExecutedInThread());
+    }
+
+    /**
+     * Async Observable and thread isolation. User provided thread [RxNetThread] executes Observable and then [RxComputation] observes the onNext calls.
+     * 
+     * NOTE: RequestContext will NOT exist on that thread.
+     * 
+     * An async Observable running on its own thread will not have access to the request context unless the user manages the context.
+     */
+    @Test
+    public void testGracefulFailureRequestContextWithThreadIsolatedAsynchronousObservable() {
+        RequestContextTestResults results = testRequestContextOnGracefulFailure(ExecutionIsolationStrategy.THREAD, Schedulers.newThread());
+
+        assertFalse(results.isContextInitialized.get()); // it won't have request context as it's on a user provided thread/scheduler
+        assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        assertTrue(results.isContextInitializedObserveOn.get()); // we capture and set the context once the user provided Observable emits
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix or user thread because of thread isolation choice
+
+        // thread isolated
+        assertTrue(results.command.isExecutedInThread());
+    }
+
+    /**
+     * Async Observable and semaphore isolation WITH functioning RequestContext
+     * 
+     * Use HystrixContextScheduler to make the user provided scheduler capture context.
+     */
+    @Test
+    public void testGracefulFailureRequestContextWithThreadIsolatedAsynchronousObservableAndCapturedContextScheduler() {
+        RequestContextTestResults results = testRequestContextOnGracefulFailure(ExecutionIsolationStrategy.THREAD, new HystrixContextScheduler(Schedulers.newThread()));
+
+        assertTrue(results.isContextInitialized.get()); // the user scheduler captures context
+        assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        assertTrue(results.isContextInitializedObserveOn.get()); // the user scheduler captures context
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix or user thread because of thread isolation choice
+
+        // thread isolated
+        assertTrue(results.command.isExecutedInThread());
+    }
+
+    /* *************************************** testBadFailureRequestContext *********************************** */
+
+    /**
+     * Synchronous Observable and semaphore isolation. Only [Main] thread is involved in this.
+     */
+    @Test
+    public void testBadFailureRequestContextWithSemaphoreIsolatedSynchronousObservable() {
+        RequestContextTestResults results = testRequestContextOnBadFailure(ExecutionIsolationStrategy.SEMAPHORE, Schedulers.immediate());
+
+        assertTrue(results.isContextInitialized.get());
+        assertTrue(results.originThread.get().equals(Thread.currentThread())); // all synchronous
+
+        assertTrue(results.isContextInitializedObserveOn.get());
+        assertTrue(results.observeOnThread.get().equals(Thread.currentThread())); // all synchronous
+
+        // semaphore isolated
+        assertFalse(results.command.isExecutedInThread());
+    }
+
+    /**
+     * Async Observable and semaphore isolation. User provided thread [RxNewThread] does everything.
+     * 
+     * NOTE: RequestContext will NOT exist on that thread.
+     * 
+     * An async Observable running on its own thread will not have access to the request context unless the user manages the context.
+     */
+    @Test
+    public void testBadFailureRequestContextWithSemaphoreIsolatedAsynchronousObservable() {
+        RequestContextTestResults results = testRequestContextOnBadFailure(ExecutionIsolationStrategy.SEMAPHORE, Schedulers.newThread());
+
+        assertFalse(results.isContextInitialized.get()); // it won't have request context as it's on a user provided thread/scheduler
+        assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        assertTrue(results.isContextInitializedObserveOn.get()); // we capture and set the context once the user provided Observable emits
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        // semaphore isolated
+        assertFalse(results.command.isExecutedInThread());
+    }
+
+    /**
+     * Async Observable and semaphore isolation WITH functioning RequestContext
+     * 
+     * Use HystrixContextScheduler to make the user provided scheduler capture context.
+     */
+    @Test
+    public void testBadFailureRequestContextWithSemaphoreIsolatedAsynchronousObservableAndCapturedContextScheduler() {
+        RequestContextTestResults results = testRequestContextOnBadFailure(ExecutionIsolationStrategy.SEMAPHORE, new HystrixContextScheduler(Schedulers.newThread()));
+
+        assertTrue(results.isContextInitialized.get()); // the user scheduler captures context
+        assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        assertTrue(results.isContextInitializedObserveOn.get()); // the user scheduler captures context
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        // semaphore isolated
+        assertFalse(results.command.isExecutedInThread());
+    }
+
+    /**
+     * Synchronous Observable and thread isolation. Work done on [hystrix-OWNER_ONE] thread and then observed on [RxComputation]
+     */
+    @Test
+    public void testBadFailureRequestContextWithThreadIsolatedSynchronousObservable() {
+        RequestContextTestResults results = testRequestContextOnBadFailure(ExecutionIsolationStrategy.THREAD, Schedulers.immediate());
+
+        assertTrue(results.isContextInitialized.get());
+        assertTrue(results.originThread.get().getName().startsWith("hystrix-OWNER_ONE")); // thread isolated on a HystrixThreadPool
+
+        assertTrue(results.isContextInitializedObserveOn.get());
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix thread
+
+        // thread isolated
+        assertTrue(results.command.isExecutedInThread());
+    }
+
+    /**
+     * Async Observable and thread isolation. User provided thread [RxNetThread] executes Observable and then [RxComputation] observes the onNext calls.
+     * 
+     * NOTE: RequestContext will NOT exist on that thread.
+     * 
+     * An async Observable running on its own thread will not have access to the request context unless the user manages the context.
+     */
+    @Test
+    public void testBadFailureRequestContextWithThreadIsolatedAsynchronousObservable() {
+        RequestContextTestResults results = testRequestContextOnBadFailure(ExecutionIsolationStrategy.THREAD, Schedulers.newThread());
+
+        assertFalse(results.isContextInitialized.get()); // it won't have request context as it's on a user provided thread/scheduler
+        assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        assertTrue(results.isContextInitializedObserveOn.get()); // we capture and set the context once the user provided Observable emits
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix or user thread because of thread isolation choice
+
+        // thread isolated
+        assertTrue(results.command.isExecutedInThread());
+    }
+
+    /**
+     * Async Observable and semaphore isolation WITH functioning RequestContext
+     * 
+     * Use HystrixContextScheduler to make the user provided scheduler capture context.
+     */
+    @Test
+    public void testBadFailureRequestContextWithThreadIsolatedAsynchronousObservableAndCapturedContextScheduler() {
+        RequestContextTestResults results = testRequestContextOnBadFailure(ExecutionIsolationStrategy.THREAD, new HystrixContextScheduler(Schedulers.newThread()));
+
+        assertTrue(results.isContextInitialized.get()); // the user scheduler captures context
+        assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        assertTrue(results.isContextInitializedObserveOn.get()); // the user scheduler captures context
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix or user thread because of thread isolation choice
+
+        // thread isolated
+        assertTrue(results.command.isExecutedInThread());
+    }
+
+    /* *************************************** testFailureWithFallbackRequestContext *********************************** */
+
+    /**
+     * Synchronous Observable and semaphore isolation. Only [Main] thread is involved in this.
+     */
+    @Test
+    public void testFailureWithFallbackRequestContextWithSemaphoreIsolatedSynchronousObservable() {
+        RequestContextTestResults results = testRequestContextOnFailureWithFallback(ExecutionIsolationStrategy.SEMAPHORE, Schedulers.immediate());
+
+        assertTrue(results.isContextInitialized.get());
+        assertTrue(results.originThread.get().equals(Thread.currentThread())); // all synchronous
+
+        assertTrue(results.isContextInitializedObserveOn.get());
+        assertTrue(results.observeOnThread.get().equals(Thread.currentThread())); // all synchronous
+
+        // semaphore isolated
+        assertFalse(results.command.isExecutedInThread());
+    }
+
+    /**
+     * Async Observable and semaphore isolation. User provided thread [RxNewThread] does everything.
+     * 
+     * NOTE: RequestContext will NOT exist on that thread.
+     * 
+     * An async Observable running on its own thread will not have access to the request context unless the user manages the context.
+     */
+    @Test
+    public void testFailureWithFallbackRequestContextWithSemaphoreIsolatedAsynchronousObservable() {
+        RequestContextTestResults results = testRequestContextOnFailureWithFallback(ExecutionIsolationStrategy.SEMAPHORE, Schedulers.newThread());
+
+        assertFalse(results.isContextInitialized.get()); // it won't have request context as it's on a user provided thread/scheduler
+        assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        assertTrue(results.isContextInitializedObserveOn.get()); // we capture and set the context once the user provided Observable emits
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        // semaphore isolated
+        assertFalse(results.command.isExecutedInThread());
+    }
+
+    /**
+     * Async Observable and semaphore isolation WITH functioning RequestContext
+     * 
+     * Use HystrixContextScheduler to make the user provided scheduler capture context.
+     */
+    @Test
+    public void testFailureWithFallbackRequestContextWithSemaphoreIsolatedAsynchronousObservableAndCapturedContextScheduler() {
+        RequestContextTestResults results = testRequestContextOnFailureWithFallback(ExecutionIsolationStrategy.SEMAPHORE, new HystrixContextScheduler(Schedulers.newThread()));
+
+        assertTrue(results.isContextInitialized.get()); // the user scheduler captures context
+        assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        assertTrue(results.isContextInitializedObserveOn.get()); // the user scheduler captures context
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        // semaphore isolated
+        assertFalse(results.command.isExecutedInThread());
+    }
+
+    /**
+     * Synchronous Observable and thread isolation. Work done on [hystrix-OWNER_ONE] thread and then observed on [RxComputation]
+     */
+    @Test
+    public void testFailureWithFallbackRequestContextWithThreadIsolatedSynchronousObservable() {
+        RequestContextTestResults results = testRequestContextOnFailureWithFallback(ExecutionIsolationStrategy.THREAD, Schedulers.immediate());
+
+        assertTrue(results.isContextInitialized.get());
+        assertTrue(results.originThread.get().getName().startsWith("hystrix-OWNER_ONE")); // thread isolated on a HystrixThreadPool
+
+        assertTrue(results.isContextInitializedObserveOn.get());
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix thread
+
+        // thread isolated
+        assertTrue(results.command.isExecutedInThread());
+    }
+
+    /**
+     * Async Observable and thread isolation. User provided thread [RxNetThread] executes Observable and then [RxComputation] observes the onNext calls.
+     * 
+     * NOTE: RequestContext will NOT exist on that thread.
+     * 
+     * An async Observable running on its own thread will not have access to the request context unless the user manages the context.
+     */
+    @Test
+    public void testFailureWithFallbackRequestContextWithThreadIsolatedAsynchronousObservable() {
+        RequestContextTestResults results = testRequestContextOnFailureWithFallback(ExecutionIsolationStrategy.THREAD, Schedulers.newThread());
+
+        assertFalse(results.isContextInitialized.get()); // it won't have request context as it's on a user provided thread/scheduler
+        assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        assertTrue(results.isContextInitializedObserveOn.get()); // we capture and set the context once the user provided Observable emits
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix or user thread because of thread isolation choice
+
+        // thread isolated
+        assertTrue(results.command.isExecutedInThread());
+    }
+
+    /**
+     * Async Observable and semaphore isolation WITH functioning RequestContext
+     * 
+     * Use HystrixContextScheduler to make the user provided scheduler capture context.
+     */
+    @Test
+    public void testFailureWithFallbackRequestContextWithThreadIsolatedAsynchronousObservableAndCapturedContextScheduler() {
+        RequestContextTestResults results = testRequestContextOnFailureWithFallback(ExecutionIsolationStrategy.THREAD, new HystrixContextScheduler(Schedulers.newThread()));
+
+        assertTrue(results.isContextInitialized.get()); // the user scheduler captures context
+        assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        assertTrue(results.isContextInitializedObserveOn.get()); // the user scheduler captures context
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix or user thread because of thread isolation choice
+
+        // thread isolated
+        assertTrue(results.command.isExecutedInThread());
+    }
+
+    /* *************************************** testRejectionWithFallbackRequestContext *********************************** */
+
+    /**
+     * Synchronous Observable and semaphore isolation. Only [Main] thread is involved in this.
+     */
+    @Test
+    public void testRejectionWithFallbackRequestContextWithSemaphoreIsolatedSynchronousObservable() {
+        RequestContextTestResults results = testRequestContextOnRejectionWithFallback(ExecutionIsolationStrategy.SEMAPHORE, Schedulers.immediate());
+
+        assertTrue(results.isContextInitialized.get());
+        assertTrue(results.originThread.get().equals(Thread.currentThread())); // all synchronous
+
+        assertTrue(results.isContextInitializedObserveOn.get());
+        assertTrue(results.observeOnThread.get().equals(Thread.currentThread())); // all synchronous
+
+        // semaphore isolated
+        assertFalse(results.command.isExecutedInThread());
+    }
+
+    /**
+     * Async Observable and semaphore isolation. User provided thread [RxNewThread] does everything.
+     * 
+     * NOTE: RequestContext will NOT exist on that thread.
+     * 
+     * An async Observable running on its own thread will not have access to the request context unless the user manages the context.
+     */
+    @Test
+    public void testRejectionWithFallbackRequestContextWithSemaphoreIsolatedAsynchronousObservable() {
+        RequestContextTestResults results = testRequestContextOnRejectionWithFallback(ExecutionIsolationStrategy.SEMAPHORE, Schedulers.newThread());
+
+        assertFalse(results.isContextInitialized.get()); // it won't have request context as it's on a user provided thread/scheduler
+        assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        assertTrue(results.isContextInitializedObserveOn.get()); // we capture and set the context once the user provided Observable emits
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        // semaphore isolated
+        assertFalse(results.command.isExecutedInThread());
+    }
+
+    /**
+     * Async Observable and semaphore isolation WITH functioning RequestContext
+     * 
+     * Use HystrixContextScheduler to make the user provided scheduler capture context.
+     */
+    @Test
+    public void testRejectionWithFallbackRequestContextWithSemaphoreIsolatedAsynchronousObservableAndCapturedContextScheduler() {
+        RequestContextTestResults results = testRequestContextOnRejectionWithFallback(ExecutionIsolationStrategy.SEMAPHORE, new HystrixContextScheduler(Schedulers.newThread()));
+
+        assertTrue(results.isContextInitialized.get()); // the user scheduler captures context
+        assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        assertTrue(results.isContextInitializedObserveOn.get()); // the user scheduler captures context
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        // semaphore isolated
+        assertFalse(results.command.isExecutedInThread());
+    }
+
+    /**
+     * Synchronous Observable and thread isolation. Work done on [hystrix-OWNER_ONE] thread and then observed on [RxComputation]
+     */
+    @Test
+    public void testRejectionWithFallbackRequestContextWithThreadIsolatedSynchronousObservable() {
+        RequestContextTestResults results = testRequestContextOnRejectionWithFallback(ExecutionIsolationStrategy.THREAD, Schedulers.immediate());
+
+        assertTrue(results.isContextInitialized.get());
+        assertTrue(results.originThread.get().equals(Thread.currentThread())); // fallback is performed by the calling thread
+
+        assertTrue(results.isContextInitializedObserveOn.get());
+        assertTrue(results.observeOnThread.get().equals(Thread.currentThread())); // rejected so we stay on calling thread
+
+        // thread isolated ... but rejected so not executed in a thread
+        assertFalse(results.command.isExecutedInThread());
+    }
+
+    /**
+     * Async Observable and thread isolation. User provided thread [RxNetThread] executes Observable and then [RxComputation] observes the onNext calls.
+     * 
+     * NOTE: RequestContext will NOT exist on that thread.
+     * 
+     * An async Observable running on its own thread will not have access to the request context unless the user manages the context.
+     */
+    @Test
+    public void testRejectionWithFallbackRequestContextWithThreadIsolatedAsynchronousObservable() {
+        RequestContextTestResults results = testRequestContextOnRejectionWithFallback(ExecutionIsolationStrategy.THREAD, Schedulers.newThread());
+
+        assertFalse(results.isContextInitialized.get()); // it won't have request context as it's on a user provided thread/scheduler
+        assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        assertTrue(results.isContextInitializedObserveOn.get()); // we capture and set the context once the user provided Observable emits
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxNewThread"));
+
+        // thread isolated ... but rejected so not executed in a thread
+        assertFalse(results.command.isExecutedInThread());
+    }
+
+    /**
+     * Async Observable and semaphore isolation WITH functioning RequestContext
+     * 
+     * Use HystrixContextScheduler to make the user provided scheduler capture context.
+     */
+    @Test
+    public void testRejectionWithFallbackRequestContextWithThreadIsolatedAsynchronousObservableAndCapturedContextScheduler() {
+        RequestContextTestResults results = testRequestContextOnRejectionWithFallback(ExecutionIsolationStrategy.THREAD, new HystrixContextScheduler(Schedulers.newThread()));
+
+        assertTrue(results.isContextInitialized.get()); // the user scheduler captures context
+        assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        assertTrue(results.isContextInitializedObserveOn.get()); // the user scheduler captures context
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler for getFallback
+
+        // thread isolated ... but rejected so not executed in a thread
+        assertFalse(results.command.isExecutedInThread());
+    }
+
+    /* *************************************** testShortCircuitedWithFallbackRequestContext *********************************** */
+
+    /**
+     * Synchronous Observable and semaphore isolation. Only [Main] thread is involved in this.
+     */
+    @Test
+    public void testShortCircuitedWithFallbackRequestContextWithSemaphoreIsolatedSynchronousObservable() {
+        RequestContextTestResults results = testRequestContextOnShortCircuitedWithFallback(ExecutionIsolationStrategy.SEMAPHORE, Schedulers.immediate());
+
+        assertTrue(results.isContextInitialized.get());
+        assertTrue(results.originThread.get().equals(Thread.currentThread())); // all synchronous
+
+        assertTrue(results.isContextInitializedObserveOn.get());
+        assertTrue(results.observeOnThread.get().equals(Thread.currentThread())); // all synchronous
+
+        // semaphore isolated
+        assertFalse(results.command.isExecutedInThread());
+    }
+
+    /**
+     * Async Observable and semaphore isolation. User provided thread [RxNewThread] does everything.
+     * 
+     * NOTE: RequestContext will NOT exist on that thread.
+     * 
+     * An async Observable running on its own thread will not have access to the request context unless the user manages the context.
+     */
+    @Test
+    public void testShortCircuitedWithFallbackRequestContextWithSemaphoreIsolatedAsynchronousObservable() {
+        RequestContextTestResults results = testRequestContextOnShortCircuitedWithFallback(ExecutionIsolationStrategy.SEMAPHORE, Schedulers.newThread());
+
+        assertFalse(results.isContextInitialized.get()); // it won't have request context as it's on a user provided thread/scheduler
+        assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        assertTrue(results.isContextInitializedObserveOn.get()); // we capture and set the context once the user provided Observable emits
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        // semaphore isolated
+        assertFalse(results.command.isExecutedInThread());
+    }
+
+    /**
+     * Async Observable and semaphore isolation WITH functioning RequestContext
+     * 
+     * Use HystrixContextScheduler to make the user provided scheduler capture context.
+     */
+    @Test
+    public void testShortCircuitedWithFallbackRequestContextWithSemaphoreIsolatedAsynchronousObservableAndCapturedContextScheduler() {
+        RequestContextTestResults results = testRequestContextOnShortCircuitedWithFallback(ExecutionIsolationStrategy.SEMAPHORE, new HystrixContextScheduler(Schedulers.newThread()));
+
+        assertTrue(results.isContextInitialized.get()); // the user scheduler captures context
+        assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        assertTrue(results.isContextInitializedObserveOn.get()); // the user scheduler captures context
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        // semaphore isolated
+        assertFalse(results.command.isExecutedInThread());
+    }
+
+    /**
+     * Synchronous Observable and thread isolation. Work done on [hystrix-OWNER_ONE] thread and then observed on [RxComputation]
+     */
+    @Test
+    public void testShortCircuitedWithFallbackRequestContextWithThreadIsolatedSynchronousObservable() {
+        RequestContextTestResults results = testRequestContextOnShortCircuitedWithFallback(ExecutionIsolationStrategy.THREAD, Schedulers.immediate());
+
+        assertTrue(results.isContextInitialized.get());
+        assertTrue(results.originThread.get().equals(Thread.currentThread())); // fallback is performed by the calling thread
+
+        assertTrue(results.isContextInitializedObserveOn.get());
+        assertTrue(results.observeOnThread.get().equals(Thread.currentThread())); // rejected so we stay on calling thread
+
+        // thread isolated ... but rejected so not executed in a thread
+        assertFalse(results.command.isExecutedInThread());
+    }
+
+    /**
+     * Async Observable and thread isolation. User provided thread [RxNetThread] executes Observable and then [RxComputation] observes the onNext calls.
+     * 
+     * NOTE: RequestContext will NOT exist on that thread.
+     * 
+     * An async Observable running on its own thread will not have access to the request context unless the user manages the context.
+     */
+    @Test
+    public void testShortCircuitedWithFallbackRequestContextWithThreadIsolatedAsynchronousObservable() {
+        RequestContextTestResults results = testRequestContextOnShortCircuitedWithFallback(ExecutionIsolationStrategy.THREAD, Schedulers.newThread());
+
+        assertFalse(results.isContextInitialized.get()); // it won't have request context as it's on a user provided thread/scheduler
+        assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        assertTrue(results.isContextInitializedObserveOn.get()); // we capture and set the context once the user provided Observable emits
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler from getFallback
+
+        // thread isolated ... but rejected so not executed in a thread
+        assertFalse(results.command.isExecutedInThread());
+    }
+
+    /**
+     * Async Observable and semaphore isolation WITH functioning RequestContext
+     * 
+     * Use HystrixContextScheduler to make the user provided scheduler capture context.
+     */
+    @Test
+    public void testShortCircuitedWithFallbackRequestContextWithThreadIsolatedAsynchronousObservableAndCapturedContextScheduler() {
+        RequestContextTestResults results = testRequestContextOnShortCircuitedWithFallback(ExecutionIsolationStrategy.THREAD, new HystrixContextScheduler(Schedulers.newThread()));
+
+        assertTrue(results.isContextInitialized.get()); // the user scheduler captures context
+        assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        assertTrue(results.isContextInitializedObserveOn.get()); // the user scheduler captures context
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler from getFallback
+
+        // thread isolated ... but rejected so not executed in a thread
+        assertFalse(results.command.isExecutedInThread());
+    }
+
+    /* *************************************** testTimeoutRequestContext *********************************** */
+
+    /**
+     * Synchronous Observable and semaphore isolation. Only [Main] thread is involved in this.
+     */
+    @Test
+    public void testTimeoutRequestContextWithSemaphoreIsolatedSynchronousObservable() {
+        RequestContextTestResults results = testRequestContextOnTimeout(ExecutionIsolationStrategy.SEMAPHORE, Schedulers.immediate());
+
+        assertTrue(results.isContextInitialized.get());
+        assertTrue(results.originThread.get().equals(Thread.currentThread())); // all synchronous
+
+        assertTrue(results.isContextInitializedObserveOn.get());
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // timeout schedules on RxComputation since the original thread was timed out
+
+        // semaphore isolated
+        assertFalse(results.command.isExecutedInThread());
+    }
+
+    /**
+     * Async Observable and semaphore isolation. User provided thread [RxNewThread] does everything.
+     * 
+     * NOTE: RequestContext will NOT exist on that thread.
+     * 
+     * An async Observable running on its own thread will not have access to the request context unless the user manages the context.
+     */
+    @Test
+    public void testTimeoutRequestContextWithSemaphoreIsolatedAsynchronousObservable() {
+        RequestContextTestResults results = testRequestContextOnTimeout(ExecutionIsolationStrategy.SEMAPHORE, Schedulers.newThread());
+
+        assertFalse(results.isContextInitialized.get()); // it won't have request context as it's on a user provided thread/scheduler
+        assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        assertTrue(results.isContextInitializedObserveOn.get()); // the timeout captures the context so it exists
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // timeout schedules on RxComputation since the original thread was timed out
+
+        // semaphore isolated
+        assertFalse(results.command.isExecutedInThread());
+    }
+
+    /**
+     * Async Observable and semaphore isolation WITH functioning RequestContext
+     * 
+     * Use HystrixContextScheduler to make the user provided scheduler capture context.
+     */
+    @Test
+    public void testTimeoutRequestContextWithSemaphoreIsolatedAsynchronousObservableAndCapturedContextScheduler() {
+        RequestContextTestResults results = testRequestContextOnTimeout(ExecutionIsolationStrategy.SEMAPHORE, new HystrixContextScheduler(Schedulers.newThread()));
+
+        assertTrue(results.isContextInitialized.get()); // the user scheduler captures context
+        assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        assertTrue(results.isContextInitializedObserveOn.get()); // the user scheduler captures context
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // timeout schedules on RxComputation since the original thread was timed out
+
+        // semaphore isolated
+        assertFalse(results.command.isExecutedInThread());
+    }
+
+    /**
+     * Synchronous Observable and thread isolation. Work done on [hystrix-OWNER_ONE] thread and then observed on [RxComputation]
+     */
+    @Test
+    public void testTimeoutRequestContextWithThreadIsolatedSynchronousObservable() {
+        RequestContextTestResults results = testRequestContextOnTimeout(ExecutionIsolationStrategy.THREAD, Schedulers.immediate());
+
+        assertTrue(results.isContextInitialized.get());
+        assertTrue(results.originThread.get().getName().startsWith("hystrix-OWNER_ONE")); // thread isolated on a HystrixThreadPool
+
+        assertTrue(results.isContextInitializedObserveOn.get());
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix thread
+
+        // thread isolated
+        assertTrue(results.command.isExecutedInThread());
+    }
+
+    /**
+     * Async Observable and thread isolation. User provided thread [RxNetThread] executes Observable and then [RxComputation] observes the onNext calls.
+     * 
+     * NOTE: RequestContext will NOT exist on that thread.
+     * 
+     * An async Observable running on its own thread will not have access to the request context unless the user manages the context.
+     */
+    @Test
+    public void testTimeoutRequestContextWithThreadIsolatedAsynchronousObservable() {
+        RequestContextTestResults results = testRequestContextOnTimeout(ExecutionIsolationStrategy.THREAD, Schedulers.newThread());
+
+        assertFalse(results.isContextInitialized.get()); // it won't have request context as it's on a user provided thread/scheduler
+        assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        assertTrue(results.isContextInitializedObserveOn.get()); // the timeout captures the context so it exists
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix or user thread because of thread isolation choice
+
+        // thread isolated
+        assertTrue(results.command.isExecutedInThread());
+    }
+
+    /**
+     * Async Observable and semaphore isolation WITH functioning RequestContext
+     * 
+     * Use HystrixContextScheduler to make the user provided scheduler capture context.
+     */
+    @Test
+    public void testTimeoutRequestContextWithThreadIsolatedAsynchronousObservableAndCapturedContextScheduler() {
+        RequestContextTestResults results = testRequestContextOnTimeout(ExecutionIsolationStrategy.THREAD, new HystrixContextScheduler(Schedulers.newThread()));
+
+        assertTrue(results.isContextInitialized.get()); // the user scheduler captures context
+        assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        assertTrue(results.isContextInitializedObserveOn.get()); // the user scheduler captures context
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix or user thread because of thread isolation choice
+
+        // thread isolated
+        assertTrue(results.command.isExecutedInThread());
+    }
+
+    /* *************************************** testTimeoutWithFallbackRequestContext *********************************** */
+
+    /**
+     * Synchronous Observable and semaphore isolation. Only [Main] thread is involved in this.
+     */
+    @Test
+    public void testTimeoutWithFallbackRequestContextWithSemaphoreIsolatedSynchronousObservable() {
+        RequestContextTestResults results = testRequestContextOnTimeoutWithFallback(ExecutionIsolationStrategy.SEMAPHORE, Schedulers.immediate());
+
+        assertTrue(results.isContextInitialized.get());
+        assertTrue(results.originThread.get().getName().startsWith("RxComputation")); // timeout uses RxComputation thread 
+        //(this use case is a little odd as it should generally not be the case that we are "timing out" a synchronous observable on semaphore isolation)
+
+        assertTrue(results.isContextInitializedObserveOn.get());
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // timeout uses RxComputation thread
+
+        // semaphore isolated
+        assertFalse(results.command.isExecutedInThread());
+    }
+
+    /**
+     * Async Observable and semaphore isolation. User provided thread [RxNewThread] does everything.
+     * 
+     * NOTE: RequestContext will NOT exist on that thread.
+     * 
+     * An async Observable running on its own thread will not have access to the request context unless the user manages the context.
+     */
+    @Test
+    public void testTimeoutWithFallbackRequestContextWithSemaphoreIsolatedAsynchronousObservable() {
+        RequestContextTestResults results = testRequestContextOnTimeoutWithFallback(ExecutionIsolationStrategy.SEMAPHORE, Schedulers.newThread());
+
+        assertFalse(results.isContextInitialized.get()); // it won't have request context as it's on a user provided thread/scheduler
+        assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        assertTrue(results.isContextInitializedObserveOn.get()); // the timeout captures the context so it exists
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        // semaphore isolated
+        assertFalse(results.command.isExecutedInThread());
+    }
+
+    /**
+     * Async Observable and semaphore isolation WITH functioning RequestContext
+     * 
+     * Use HystrixContextScheduler to make the user provided scheduler capture context.
+     */
+    @Test
+    public void testTimeoutWithFallbackRequestContextWithSemaphoreIsolatedAsynchronousObservableAndCapturedContextScheduler() {
+        RequestContextTestResults results = testRequestContextOnTimeoutWithFallback(ExecutionIsolationStrategy.SEMAPHORE, new HystrixContextScheduler(Schedulers.newThread()));
+
+        assertTrue(results.isContextInitialized.get()); // the user scheduler captures context
+        assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        assertTrue(results.isContextInitializedObserveOn.get()); // the user scheduler captures context
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        // semaphore isolated
+        assertFalse(results.command.isExecutedInThread());
+    }
+
+    /**
+     * Synchronous Observable and thread isolation. Work done on [hystrix-OWNER_ONE] thread and then observed on [RxComputation]
+     */
+    @Test
+    public void testTimeoutWithFallbackRequestContextWithThreadIsolatedSynchronousObservable() {
+        RequestContextTestResults results = testRequestContextOnTimeoutWithFallback(ExecutionIsolationStrategy.THREAD, Schedulers.immediate());
+
+        assertTrue(results.isContextInitialized.get());
+        assertTrue(results.originThread.get().getName().startsWith("RxComputation")); // timeout uses RxComputation thread for fallback
+
+        assertTrue(results.isContextInitializedObserveOn.get());
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix thread
+
+        // thread isolated
+        assertTrue(results.command.isExecutedInThread());
+    }
+
+    /**
+     * Async Observable and thread isolation. User provided thread [RxNetThread] executes Observable and then [RxComputation] observes the onNext calls.
+     * 
+     * NOTE: RequestContext will NOT exist on that thread.
+     * 
+     * An async Observable running on its own thread will not have access to the request context unless the user manages the context.
+     */
+    @Test
+    public void testTimeoutWithFallbackRequestContextWithThreadIsolatedAsynchronousObservable() {
+        RequestContextTestResults results = testRequestContextOnTimeoutWithFallback(ExecutionIsolationStrategy.THREAD, Schedulers.newThread());
+
+        assertFalse(results.isContextInitialized.get()); // it won't have request context as it's on a user provided thread/scheduler
+        assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        assertTrue(results.isContextInitializedObserveOn.get()); // the timeout captures the context so it exists
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        // thread isolated
+        assertTrue(results.command.isExecutedInThread());
+    }
+
+    /**
+     * Async Observable and semaphore isolation WITH functioning RequestContext
+     * 
+     * Use HystrixContextScheduler to make the user provided scheduler capture context.
+     */
+    @Test
+    public void testTimeoutWithFallbackRequestContextWithThreadIsolatedAsynchronousObservableAndCapturedContextScheduler() {
+        RequestContextTestResults results = testRequestContextOnTimeoutWithFallback(ExecutionIsolationStrategy.THREAD, new HystrixContextScheduler(Schedulers.newThread()));
+
+        assertTrue(results.isContextInitialized.get()); // the user scheduler captures context
+        assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        assertTrue(results.isContextInitializedObserveOn.get()); // the user scheduler captures context
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
+
+        // thread isolated
+        assertTrue(results.command.isExecutedInThread());
     }
 
     /* ******************************************************************************** */

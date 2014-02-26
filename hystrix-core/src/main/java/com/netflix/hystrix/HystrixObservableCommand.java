@@ -27,12 +27,14 @@ import javax.annotation.concurrent.ThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import rx.Notification;
 import rx.Observable;
 import rx.Observable.OnSubscribe;
 import rx.Observable.Operator;
 import rx.Scheduler;
 import rx.Subscriber;
 import rx.functions.Action0;
+import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 import rx.subscriptions.CompositeSubscription;
@@ -43,6 +45,7 @@ import com.netflix.hystrix.exception.HystrixRuntimeException;
 import com.netflix.hystrix.exception.HystrixRuntimeException.FailureType;
 import com.netflix.hystrix.strategy.concurrency.HystrixContextRunnable;
 import com.netflix.hystrix.strategy.concurrency.HystrixContextScheduler;
+import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 import com.netflix.hystrix.util.HystrixTimer;
@@ -414,6 +417,8 @@ public abstract class HystrixObservableCommand<R> extends AbstractHystrixCommand
         metrics.incrementConcurrentExecutionCount();
         executionHook.onRunStart(this);
 
+        final HystrixRequestContext currentRequestContext = HystrixRequestContext.getContextForCurrentThread();
+
         Observable<R> run = null;
         try {
             run = run();
@@ -429,7 +434,14 @@ public abstract class HystrixObservableCommand<R> extends AbstractHystrixCommand
             run = run.subscribeOn(threadPool.getScheduler());
         }
 
-        run = run.map(new Func1<R, R>() {
+        run = run.doOnEach(new Action1<Notification<? super R>>() {
+
+            @Override
+            public void call(Notification<? super R> n) {
+                setRequestContextIfNeeded(currentRequestContext);
+            }
+
+        }).map(new Func1<R, R>() {
 
             @Override
             public R call(R t1) {
@@ -506,6 +518,13 @@ public abstract class HystrixObservableCommand<R> extends AbstractHystrixCommand
                     return getFallbackOrThrowException(HystrixEventType.FAILURE, FailureType.COMMAND_EXCEPTION, "failed", e);
                 }
             }
+        }).doOnEach(new Action1<Notification<? super R>>() {
+            // setting again as the fallback could have lost the context
+            @Override
+            public void call(Notification<? super R> n) {
+                setRequestContextIfNeeded(currentRequestContext);
+            }
+
         }).map(new Func1<R, R>() {
 
             @Override
@@ -610,6 +629,8 @@ public abstract class HystrixObservableCommand<R> extends AbstractHystrixCommand
      * @throws HystrixRuntimeException
      */
     private Observable<R> getFallbackOrThrowException(final HystrixEventType eventType, final FailureType failureType, final String message, final Exception originalException) {
+        final HystrixRequestContext currentRequestContext = HystrixRequestContext.getContextForCurrentThread();
+
         if (properties.fallbackEnabled().get()) {
             /* fallback behavior is permitted so attempt */
             // record the executionResult
@@ -677,6 +698,13 @@ public abstract class HystrixObservableCommand<R> extends AbstractHystrixCommand
                     isExecutionComplete.set(true);
                 }
 
+            }).doOnEach(new Action1<Notification<? super R>>() {
+
+                @Override
+                public void call(Notification<? super R> n) {
+                    setRequestContextIfNeeded(currentRequestContext);
+                }
+
             });
         } else {
             /* fallback is disabled so throw HystrixRuntimeException */
@@ -698,6 +726,13 @@ public abstract class HystrixObservableCommand<R> extends AbstractHystrixCommand
                 public void call() {
                     // record that we're completed (to handle non-successful events we do it here as well as at the end of executeCommand
                     isExecutionComplete.set(true);
+                }
+
+            }).doOnEach(new Action1<Notification<? super R>>() {
+
+                @Override
+                public void call(Notification<? super R> n) {
+                    setRequestContextIfNeeded(currentRequestContext);
                 }
 
             });
@@ -820,4 +855,10 @@ public abstract class HystrixObservableCommand<R> extends AbstractHystrixCommand
 
     }
 
+    private static void setRequestContextIfNeeded(final HystrixRequestContext currentRequestContext) {
+        if (!HystrixRequestContext.isCurrentThreadInitialized()) {
+            // even if the user Observable doesn't have context we want it set for chained operators
+            HystrixRequestContext.setContextOnCurrentThread(currentRequestContext);
+        }
+    }
 }

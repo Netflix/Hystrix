@@ -1012,7 +1012,7 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
     }
 
     protected boolean isRequestCachingEnabled() {
-        return properties.requestCacheEnabled().get();
+        return properties.requestCacheEnabled().get() && getCacheKey() != null;
     }
 
     protected String getLogMessagePrefix() {

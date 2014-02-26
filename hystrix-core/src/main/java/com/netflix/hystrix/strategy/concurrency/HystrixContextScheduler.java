@@ -19,6 +19,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.hystrix.HystrixThreadPool;
+import com.netflix.hystrix.strategy.HystrixPlugins;
 
 import rx.Scheduler;
 import rx.Subscription;
@@ -36,6 +37,12 @@ public class HystrixContextScheduler extends Scheduler {
     private final Scheduler actualScheduler;
     private final HystrixThreadPool threadPool;
 
+    public HystrixContextScheduler(Scheduler scheduler) {
+        this.actualScheduler = scheduler;
+        this.concurrencyStrategy = HystrixPlugins.getInstance().getConcurrencyStrategy();
+        this.threadPool = null;
+    }
+    
     public HystrixContextScheduler(HystrixConcurrencyStrategy concurrencyStrategy, Scheduler scheduler) {
         this.actualScheduler = scheduler;
         this.concurrencyStrategy = concurrencyStrategy;
