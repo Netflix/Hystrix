@@ -61,10 +61,10 @@ public class HystrixCommandTest {
 
         // force properties to be clean as well
         ConfigurationManager.getConfigInstance().clear();
-        
+
         HystrixCommandKey key = Hystrix.getCurrentThreadExecutingCommand();
-        if(key != null) {
-            throw new IllegalStateException("should be null but got: " + key);
+        if (key != null) {
+            System.out.println("WARNING: Hystrix.getCurrentThreadExecutingCommand() should be null but got: " + key + ". Can occur when calling queue() and never retrieving.");
         }
     }
 
@@ -99,8 +99,6 @@ public class HystrixCommandTest {
 
             assertEquals(0, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
-            System.out.println("request log: " + HystrixRequestLog.getCurrentRequest());
-            
             assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
 
         } catch (Exception e) {
@@ -1519,7 +1517,7 @@ public class HystrixCommandTest {
             fail("we shouldn't get here");
         } catch (Exception e) {
             e.printStackTrace();
-
+            System.out.println("command.getExecutionTimeInMilliseconds(): " + command.getExecutionTimeInMilliseconds());
             // will be -1 because it never attempted execution
             assertTrue(command.getExecutionTimeInMilliseconds() == -1);
             assertTrue(command.isResponseRejected());
@@ -1757,6 +1755,9 @@ public class HystrixCommandTest {
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
     }
 
+    /**
+     * If it has been sitting in the queue, it should not execute if timed out by the time it hits the queue.
+     */
     @Test
     public void testTimedOutCommandDoesNotExecute() {
         SingleThreadedPool pool = new SingleThreadedPool(5);
@@ -1765,7 +1766,7 @@ public class HystrixCommandTest {
         TestCircuitBreaker s2 = new TestCircuitBreaker();
 
         // execution will take 100ms, thread pool has a 600ms timeout
-        CommandWithCustomThreadPool c1 = new CommandWithCustomThreadPool(s1, pool, 100, HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionIsolationThreadTimeoutInMilliseconds(600));
+        CommandWithCustomThreadPool c1 = new CommandWithCustomThreadPool(s1, pool, 500, HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionIsolationThreadTimeoutInMilliseconds(600));
         // execution will take 200ms, thread pool has a 20ms timeout
         CommandWithCustomThreadPool c2 = new CommandWithCustomThreadPool(s2, pool, 200, HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionIsolationThreadTimeoutInMilliseconds(20));
         // queue up c1 first
@@ -3414,6 +3415,8 @@ public class HystrixCommandTest {
         TestHystrixCommand<Boolean> command = new SuccessfulTestCommand();
         command.execute();
 
+        System.out.println("hook: " + command.builder.executionHook);
+
         // the run() method should run as we're not short-circuited or rejected
         assertEquals(1, command.builder.executionHook.startRun.get());
         // we expect a successful response from run()
@@ -3837,7 +3840,7 @@ public class HystrixCommandTest {
 
         // we need to wait for the thread to complete before the onThreadComplete hook will be called
         try {
-            Thread.sleep(400);
+            Thread.sleep(2000);
         } catch (InterruptedException e) {
             // ignore
         }
@@ -3882,7 +3885,7 @@ public class HystrixCommandTest {
 
         // we need to wait for the thread to complete before the onThreadComplete hook will be called
         try {
-            Thread.sleep(400);
+            Thread.sleep(2000);
         } catch (InterruptedException e) {
             // ignore
         }
@@ -4223,17 +4226,17 @@ public class HystrixCommandTest {
         assertEquals("expected fallback value", "timed-out", value);
 
     }
-    
+
     /**
      * See https://github.com/Netflix/Hystrix/issues/212
      */
     @Test
     public void testObservableTimeoutNoFallbackThreadContext() {
         TestSubscriber<Boolean> ts = new TestSubscriber<Boolean>();
-        
+
         final AtomicReference<Thread> onErrorThread = new AtomicReference<Thread>();
         final AtomicBoolean isRequestContextInitialized = new AtomicBoolean();
-        
+
         TestHystrixCommand<Boolean> command = new TestCommandWithTimeout(50, TestCommandWithTimeout.FALLBACK_NOT_IMPLEMENTED);
         command.toObservable().doOnError(new Action1<Throwable>() {
 
@@ -4249,10 +4252,10 @@ public class HystrixCommandTest {
         }).subscribe(ts);
 
         ts.awaitTerminalEvent();
-        
+
         assertTrue(isRequestContextInitialized.get());
         assertTrue(onErrorThread.get().getName().startsWith("RxComputationThreadPool"));
-        
+
         List<Throwable> errors = ts.getOnErrorEvents();
         assertEquals(1, errors.size());
         Throwable e = errors.get(0);
@@ -4462,7 +4465,7 @@ public class HystrixCommandTest {
 
         @Override
         protected Boolean run() {
-            System.out.println("*** simulated failed execution ***");
+            System.out.println("*** simulated failed execution *** ==> " + Thread.currentThread());
             throw new RuntimeException("we failed with a simulated issue");
         }
 
@@ -4711,7 +4714,7 @@ public class HystrixCommandTest {
         public ThreadPoolExecutor getExecutor() {
             return pool;
         }
-        
+
         @Override
         public Scheduler getScheduler() {
             return new HystrixContextScheduler(HystrixPlugins.getInstance().getConcurrencyStrategy(), this);
@@ -4731,7 +4734,6 @@ public class HystrixCommandTest {
         public boolean isQueueSpaceAvailable() {
             return queue.size() < rejectionQueueSizeThreshold;
         }
-
 
     }
 

@@ -58,12 +58,11 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 /**
  * Parent HystrixCommand class that holds the common functionality needed by extending classeses.
  * 
- * @author njoshi
- * 
  * @param <R>
  */
 
 public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> {
+    // TODO make this package private
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractHystrixCommand.class);
     protected final HystrixCircuitBreaker circuitBreaker;
@@ -111,6 +110,10 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
     protected final AtomicReference<TimedOutStatus> isCommandTimedOut = new AtomicReference<TimedOutStatus>(TimedOutStatus.NOT_EXECUTED);
     protected final AtomicBoolean isExecutionComplete = new AtomicBoolean(false);
     protected final AtomicBoolean isExecutedInThread = new AtomicBoolean(false);
+
+    protected final HystrixCommandProperties.Setter commandPropertiesDefaults;
+    protected final HystrixThreadPoolProperties.Setter threadPoolPropertiesDefaults;
+    protected final HystrixPropertiesStrategy propertiesStrategy;
 
     /**
      * Instance of RequestCache logic
@@ -166,6 +169,9 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
         /*
          * Properties initialization
          */
+        this.commandPropertiesDefaults = commandPropertiesDefaults;
+        this.threadPoolPropertiesDefaults = threadPoolPropertiesDefaults;
+        this.propertiesStrategy = propertiesStrategy;
         if (propertiesStrategy == null) {
             this.properties = HystrixPropertiesFactory.getCommandProperties(this.commandKey, commandPropertiesDefaults);
         } else {
@@ -229,10 +235,14 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
 
         /* strategy: HystrixCommandExecutionHook */
         if (executionHook == null) {
-            this.executionHook = HystrixPlugins.getInstance().getCommandExecutionHook();
+            this.executionHook = new ExecutionHookDeprecationWrapper(HystrixPlugins.getInstance().getCommandExecutionHook());
         } else {
             // used for unit testing
-            this.executionHook = executionHook;
+            if (executionHook instanceof ExecutionHookDeprecationWrapper) {
+                this.executionHook = executionHook;
+            } else {
+                this.executionHook = new ExecutionHookDeprecationWrapper(executionHook);
+            }
         }
 
         /*
@@ -1150,7 +1160,7 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
     public int getExecutionTimeInMilliseconds() {
         return executionResult.getExecutionTime();
     }
-    
+
     protected Exception getExceptionFromThrowable(Throwable t) {
         Exception e = null;
         if (t instanceof Exception) {
@@ -1162,4 +1172,186 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
         return e;
     }
 
+    private static class ExecutionHookDeprecationWrapper extends HystrixCommandExecutionHook {
+
+        private final HystrixCommandExecutionHook actual;
+
+        ExecutionHookDeprecationWrapper(HystrixCommandExecutionHook actual) {
+            this.actual = actual;
+        }
+
+        @Override
+        @Deprecated
+        public <T> void onRunStart(HystrixCommand<T> commandInstance) {
+            actual.onRunStart(commandInstance);
+        }
+
+        @Override
+        public <T> void onRunStart(AbstractHystrixCommand<T> commandInstance) {
+            HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
+            if (c != null) {
+                onRunStart(c);
+            }
+            actual.onRunStart(commandInstance);
+        }
+
+        @Override
+        @Deprecated
+        public <T> T onRunSuccess(HystrixCommand<T> commandInstance, T response) {
+            return actual.onRunSuccess(commandInstance, response);
+        }
+
+        @Override
+        public <T> T onRunSuccess(AbstractHystrixCommand<T> commandInstance, T response) {
+            HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
+            if (c != null) {
+                response = onRunSuccess(c, response);
+            }
+            return actual.onRunSuccess(commandInstance, response);
+        }
+
+        @Override
+        @Deprecated
+        public <T> Exception onRunError(HystrixCommand<T> commandInstance, Exception e) {
+            return actual.onRunError(commandInstance, e);
+        }
+
+        @Override
+        public <T> Exception onRunError(AbstractHystrixCommand<T> commandInstance, Exception e) {
+            HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
+            if (c != null) {
+                e = onRunError(c, e);
+            }
+            return actual.onRunError(commandInstance, e);
+        }
+
+        @Override
+        @Deprecated
+        public <T> void onFallbackStart(HystrixCommand<T> commandInstance) {
+            actual.onFallbackStart(commandInstance);
+        }
+
+        @Override
+        public <T> void onFallbackStart(AbstractHystrixCommand<T> commandInstance) {
+            HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
+            if (c != null) {
+                onFallbackStart(c);
+            }
+            actual.onFallbackStart(commandInstance);
+        }
+
+        @Override
+        @Deprecated
+        public <T> T onFallbackSuccess(HystrixCommand<T> commandInstance, T fallbackResponse) {
+            return actual.onFallbackSuccess(commandInstance, fallbackResponse);
+        }
+
+        @Override
+        public <T> T onFallbackSuccess(AbstractHystrixCommand<T> commandInstance, T fallbackResponse) {
+            HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
+            if (c != null) {
+                fallbackResponse = onFallbackSuccess(c, fallbackResponse);
+            }
+            return actual.onFallbackSuccess(commandInstance, fallbackResponse);
+        }
+
+        @Override
+        @Deprecated
+        public <T> Exception onFallbackError(HystrixCommand<T> commandInstance, Exception e) {
+            return actual.onFallbackError(commandInstance, e);
+        }
+
+        @Override
+        public <T> Exception onFallbackError(AbstractHystrixCommand<T> commandInstance, Exception e) {
+            HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
+            if (c != null) {
+                e = onFallbackError(c, e);
+            }
+            return actual.onFallbackError(commandInstance, e);
+        }
+
+        @Override
+        @Deprecated
+        public <T> void onStart(HystrixCommand<T> commandInstance) {
+            actual.onStart(commandInstance);
+        }
+
+        @Override
+        public <T> void onStart(AbstractHystrixCommand<T> commandInstance) {
+            HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
+            if (c != null) {
+                onStart(c);
+            }
+            actual.onStart(commandInstance);
+        }
+
+        @Override
+        @Deprecated
+        public <T> T onComplete(HystrixCommand<T> commandInstance, T response) {
+            return actual.onComplete(commandInstance, response);
+        }
+
+        @Override
+        public <T> T onComplete(AbstractHystrixCommand<T> commandInstance, T response) {
+            HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
+            if (c != null) {
+                response = onComplete(c, response);
+            }
+            return actual.onComplete(commandInstance, response);
+        }
+
+        @Override
+        @Deprecated
+        public <T> Exception onError(HystrixCommand<T> commandInstance, FailureType failureType, Exception e) {
+            return actual.onError(commandInstance, failureType, e);
+        }
+
+        @Override
+        public <T> Exception onError(AbstractHystrixCommand<T> commandInstance, FailureType failureType, Exception e) {
+            HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
+            if (c != null) {
+                e = onError(c, failureType, e);
+            }
+            return actual.onError(commandInstance, failureType, e);
+        }
+
+        @Override
+        @Deprecated
+        public <T> void onThreadStart(HystrixCommand<T> commandInstance) {
+            actual.onThreadStart(commandInstance);
+        }
+
+        @Override
+        public <T> void onThreadStart(AbstractHystrixCommand<T> commandInstance) {
+            HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
+            if (c != null) {
+                onThreadStart(c);
+            }
+            actual.onThreadStart(commandInstance);
+        }
+
+        @Override
+        @Deprecated
+        public <T> void onThreadComplete(HystrixCommand<T> commandInstance) {
+            actual.onThreadComplete(commandInstance);
+        }
+
+        @Override
+        public <T> void onThreadComplete(AbstractHystrixCommand<T> commandInstance) {
+            HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
+            if (c != null) {
+                onThreadComplete(c);
+            }
+            actual.onThreadComplete(commandInstance);
+        }
+
+        @SuppressWarnings({ "unchecked", "rawtypes" })
+        private <T> HystrixCommand<T> getHystrixCommandFromAbstractIfApplicable(AbstractHystrixCommand<T> commandInstance) {
+            if (commandInstance instanceof HystrixCommand.HystrixCommandFromObservableCommand) {
+                return ((HystrixCommand.HystrixCommandFromObservableCommand) commandInstance).getOriginal();
+            } else {
+                return null;
+            }
+        }
+    }
 }

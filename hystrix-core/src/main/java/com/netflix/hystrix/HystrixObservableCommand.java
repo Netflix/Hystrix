@@ -369,7 +369,7 @@ public abstract class HystrixObservableCommand<R> extends AbstractHystrixCommand
 
                 try {
                     // if we executed we will record the execution time
-                    if (invocationStartTime > 0) {
+                    if (invocationStartTime > 0 && !isResponseRejected()) {
                         /* execution time (must occur before terminal state otherwise a race condition can occur if requested by client) */
                         recordTotalExecutionTime(invocationStartTime);
                     }
@@ -415,23 +415,55 @@ public abstract class HystrixObservableCommand<R> extends AbstractHystrixCommand
         final HystrixObservableCommand<R> _self = this;
         // allow tracking how many concurrent threads are executing
         metrics.incrementConcurrentExecutionCount();
-        executionHook.onRunStart(this);
 
         final HystrixRequestContext currentRequestContext = HystrixRequestContext.getContextForCurrentThread();
 
         Observable<R> run = null;
-        try {
-            run = run();
-        } catch (Throwable t) {
-            // the run() method is a user provided implementation so can throw instead of using Observable.onError
-            // so we catch it here and turn it into Observable.error
-            run = Observable.error(t);
-        }
-
         if (properties.executionIsolationStrategy().get().equals(ExecutionIsolationStrategy.THREAD)) {
             // mark that we are executing in a thread (even if we end up being rejected we still were a THREAD execution and not SEMAPHORE)
             isExecutedInThread.set(true);
-            run = run.subscribeOn(threadPool.getScheduler());
+
+            run = Observable.create(new OnSubscribe<R>() {
+
+                @Override
+                public void call(Subscriber<? super R> s) {
+                    executionHook.onRunStart(_self);
+                    executionHook.onThreadStart(_self);
+                    if (isCommandTimedOut.get() == TimedOutStatus.TIMED_OUT) {
+                        // the command timed out in the wrapping thread so we will return immediately
+                        // and not increment any of the counters below or other such logic
+                        s.onError(new RuntimeException("timed out before executing run()"));
+                    } else {
+                        // not timed out so execute
+                        try {
+                            final Action0 endCurrentThread = Hystrix.startCurrentThreadExecutingCommand(getCommandKey());
+                            run().doOnTerminate(new Action0() {
+
+                                @Override
+                                public void call() {
+                                    // TODO is this actually the end of the thread?
+                                    executionHook.onThreadComplete(_self);
+                                    endCurrentThread.call();
+                                }
+                            }).subscribe(s);
+                        } catch (Throwable t) {
+                            // the run() method is a user provided implementation so can throw instead of using Observable.onError
+                            // so we catch it here and turn it into Observable.error
+                            Observable.<R> error(t).subscribe(s);
+                        }
+                    }
+                }
+            }).subscribeOn(threadPool.getScheduler());
+        } else {
+            // semaphore isolated
+            executionHook.onRunStart(_self);
+            try {
+                run = run();
+            } catch (Throwable t) {
+                // the run() method is a user provided implementation so can throw instead of using Observable.onError
+                // so we catch it here and turn it into Observable.error
+                run = Observable.error(t);
+            }
         }
 
         run = run.doOnEach(new Action1<Notification<? super R>>() {

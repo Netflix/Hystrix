@@ -130,8 +130,10 @@ public class HystrixRequestLog {
         }
 
         // TODO remove this when deprecation completed
-        if (command instanceof HystrixCommand) {
-            if (!executedCommands.offer((HystrixCommand<?>) command)) {
+        if (command instanceof HystrixCommand.HystrixCommandFromObservableCommand) {
+            @SuppressWarnings("rawtypes")
+            HystrixCommand<?> _c = ((HystrixCommand.HystrixCommandFromObservableCommand) command).getOriginal();
+            if (!executedCommands.offer(_c)) {
                 // see RequestLog: Reduce Chance of Memory Leak https://github.com/Netflix/Hystrix/issues/53
                 logger.warn("RequestLog ignoring command after reaching limit of " + MAX_STORAGE + ". See https://github.com/Netflix/Hystrix/issues/53 for more information.");
             }

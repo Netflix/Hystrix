@@ -437,6 +437,7 @@ public class HystrixCollapserTest {
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
 
         HystrixCommand<?> command = HystrixRequestLog.getCurrentRequest().getExecutedCommands().toArray(new HystrixCommand<?>[1])[0];
+        System.out.println("command.getExecutionEvents(): " + command.getExecutionEvents());
         assertEquals(2, command.getExecutionEvents().size());
         assertTrue(command.getExecutionEvents().contains(HystrixEventType.SUCCESS));
         assertTrue(command.getExecutionEvents().contains(HystrixEventType.COLLAPSED));
