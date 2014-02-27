@@ -60,7 +60,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
  *            the return type
  */
 @ThreadSafe
-public abstract class HystrixObservableCommand<R> extends AbstractHystrixCommand<R> implements HystrixExecutable<R> {
+public abstract class HystrixObservableCommand<R> extends HystrixExecutableBase<R> implements HystrixExecutable<R>, HystrixExecutableInfo<R> {
 
     private static final Logger logger = LoggerFactory.getLogger(HystrixObservableCommand.class);
 

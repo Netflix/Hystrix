@@ -69,9 +69,9 @@ public class HystrixRequestLog {
     private LinkedBlockingQueue<HystrixCommand<?>> executedCommands = new LinkedBlockingQueue<HystrixCommand<?>>(MAX_STORAGE);
 
     /**
-     * History of {@link AbstractHystrixCommand} executed in this request.
+     * History of {@link HystrixExecutableInfo} executed in this request.
      */
-    private LinkedBlockingQueue<AbstractHystrixCommand<?>> allExecutedCommands = new LinkedBlockingQueue<AbstractHystrixCommand<?>>(MAX_STORAGE);
+    private LinkedBlockingQueue<HystrixExecutableInfo<?>> allExecutedCommands = new LinkedBlockingQueue<HystrixExecutableInfo<?>>(MAX_STORAGE);
 
     // prevent public instantiation
     private HystrixRequestLog() {
@@ -113,7 +113,7 @@ public class HystrixRequestLog {
      * 
      * @return {@code Collection<HystrixCommand<?>>}
      */
-    public Collection<AbstractHystrixCommand<?>> getAllExecutedCommands() {
+    public Collection<HystrixExecutableInfo<?>> getAllExecutedCommands() {
         return Collections.unmodifiableCollection(allExecutedCommands);
     }
 
@@ -123,7 +123,7 @@ public class HystrixRequestLog {
      * @param command
      *            {@code HystrixCommand<?>}
      */
-    /* package */void addExecutedCommand(AbstractHystrixCommand<?> command) {
+    /* package */void addExecutedCommand(HystrixExecutableInfo<?> command) {
         if (!allExecutedCommands.offer(command)) {
             // see RequestLog: Reduce Chance of Memory Leak https://github.com/Netflix/Hystrix/issues/53
             logger.warn("RequestLog ignoring command after reaching limit of " + MAX_STORAGE + ". See https://github.com/Netflix/Hystrix/issues/53 for more information.");
@@ -168,7 +168,7 @@ public class HystrixRequestLog {
             LinkedHashMap<String, Integer> aggregatedCommandsExecuted = new LinkedHashMap<String, Integer>();
             Map<String, Integer> aggregatedCommandExecutionTime = new HashMap<String, Integer>();
 
-            for (AbstractHystrixCommand<?> command : allExecutedCommands) {
+            for (HystrixExecutableInfo<?> command : allExecutedCommands) {
                 StringBuilder displayString = new StringBuilder();
                 displayString.append(command.getCommandKey().name());
 

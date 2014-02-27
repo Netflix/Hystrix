@@ -21,9 +21,6 @@ import java.util.concurrent.Future;
 import javax.annotation.concurrent.NotThreadSafe;
 import javax.annotation.concurrent.ThreadSafe;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import rx.Observable;
 import rx.Observable.OnSubscribe;
 import rx.Scheduler;
@@ -31,6 +28,8 @@ import rx.Subscriber;
 import rx.schedulers.Schedulers;
 
 import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
+import com.netflix.hystrix.HystrixExecutableBase.ObservableCommand;
+import com.netflix.hystrix.HystrixExecutableBase.TryableSemaphore;
 import com.netflix.hystrix.exception.HystrixBadRequestException;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
 import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
@@ -45,9 +44,7 @@ import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
  *            the return type
  */
 @ThreadSafe
-public abstract class HystrixCommand<R> extends AbstractHystrixCommand<R> implements HystrixExecutable<R> {
-
-    private static final Logger logger = LoggerFactory.getLogger(HystrixCommand.class);
+public abstract class HystrixCommand<R> implements HystrixExecutable<R>, HystrixExecutableInfo<R> {
 
     private final HystrixCommandFromObservableCommand<R> observableCommand;
 
@@ -96,8 +93,20 @@ public abstract class HystrixCommand<R> extends AbstractHystrixCommand<R> implem
             HystrixCommandProperties.Setter commandPropertiesDefaults, HystrixThreadPoolProperties.Setter threadPoolPropertiesDefaults,
             HystrixCommandMetrics metrics, TryableSemaphore fallbackSemaphore, TryableSemaphore executionSemaphore,
             HystrixPropertiesStrategy propertiesStrategy, HystrixCommandExecutionHook executionHook) {
-        super(group, key, threadPoolKey, circuitBreaker, threadPool, commandPropertiesDefaults, threadPoolPropertiesDefaults, metrics, fallbackSemaphore, executionSemaphore, propertiesStrategy, executionHook);
-        this.observableCommand = new HystrixCommandFromObservableCommand<R>(this);
+
+        /*
+         * CommandKey initialization
+         */
+        HystrixCommandKey commandKey = null;
+        if (key == null || key.name().trim().equals("")) {
+            // use the HystrixCommand class rather than this ObservableCommand class if we have it
+            final String keyName = HystrixExecutableBase.getDefaultNameFromClass(getClass());
+            commandKey = HystrixCommandKey.Factory.asKey(keyName);
+        } else {
+            commandKey = key;
+        }
+
+        this.observableCommand = new HystrixCommandFromObservableCommand<R>(this, group, commandKey, threadPoolKey, circuitBreaker, threadPool, commandPropertiesDefaults, threadPoolPropertiesDefaults, metrics, fallbackSemaphore, executionSemaphore, propertiesStrategy, executionHook);
     }
 
     /**
@@ -243,6 +252,21 @@ public abstract class HystrixCommand<R> extends AbstractHystrixCommand<R> implem
     }
 
     /**
+     * Key to be used for request caching.
+     * <p>
+     * By default this returns null which means "do not cache".
+     * <p>
+     * To enable caching override this method and return a string key uniquely representing the state of a command instance.
+     * <p>
+     * If multiple command instances in the same request scope match keys then only the first will be executed and all others returned from cache.
+     * 
+     * @return cacheKey
+     */
+    protected String getCacheKey() {
+        return null;
+    }
+
+    /**
      * A lazy {@link Observable} that will execute the command when subscribed to.
      * <p>
      * <b>Callback Scheduling</b>
@@ -269,7 +293,7 @@ public abstract class HystrixCommand<R> extends AbstractHystrixCommand<R> implem
      *             if invoked more than once
      */
     public Observable<R> toObservable() {
-        if (properties.executionIsolationStrategy().get().equals(ExecutionIsolationStrategy.THREAD)) {
+        if (observableCommand.properties.executionIsolationStrategy().get().equals(ExecutionIsolationStrategy.THREAD)) {
             return toObservable(Schedulers.computation());
         } else {
             // semaphore isolation is all blocking, no new threads involved
@@ -302,17 +326,24 @@ public abstract class HystrixCommand<R> extends AbstractHystrixCommand<R> implem
         return toObservable(observeOn, true);
     }
 
-    protected ObservableCommand<R> toObservable(final Scheduler observeOn, boolean performAsyncTimeout) {
-        return new ObservableCommand<R>(observableCommand.toObservable(), this);
+    private ObservableCommand<R> toObservable(final Scheduler observeOn, boolean performAsyncTimeout) {
+        return observableCommand.toObservable(observeOn, performAsyncTimeout);
     }
 
     /* package */static class HystrixCommandFromObservableCommand<R> extends HystrixObservableCommand<R> {
 
         private final HystrixCommand<R> original;
 
-        protected HystrixCommandFromObservableCommand(HystrixCommand<R> o) {
-            super(o.commandGroup, o.commandKey, o.threadPoolKey, o.circuitBreaker, o.threadPool, o.commandPropertiesDefaults, o.threadPoolPropertiesDefaults, o.metrics, o.fallbackSemaphoreOverride, o.executionSemaphoreOverride, o.propertiesStrategy, o.executionHook);
+        protected HystrixCommandFromObservableCommand(HystrixCommand<R> o, HystrixCommandGroupKey group, HystrixCommandKey key, HystrixThreadPoolKey threadPoolKey, HystrixCircuitBreaker circuitBreaker, HystrixThreadPool threadPool,
+                HystrixCommandProperties.Setter commandPropertiesDefaults, HystrixThreadPoolProperties.Setter threadPoolPropertiesDefaults,
+                HystrixCommandMetrics metrics, TryableSemaphore fallbackSemaphore, TryableSemaphore executionSemaphore,
+                HystrixPropertiesStrategy propertiesStrategy, HystrixCommandExecutionHook executionHook) {
+            super(group, key, threadPoolKey, circuitBreaker, threadPool, commandPropertiesDefaults, threadPoolPropertiesDefaults, metrics, fallbackSemaphore, executionSemaphore, propertiesStrategy, executionHook);
             this.original = o;
+
+            if (commandPropertiesDefaults != null) {
+                System.out.println("timeout properties: " + commandPropertiesDefaults.getExecutionIsolationThreadTimeoutInMilliseconds());
+            }
         }
 
         /* package */HystrixCommand<R> getOriginal() {
@@ -359,74 +390,92 @@ public abstract class HystrixCommand<R> extends AbstractHystrixCommand<R> implem
         }
     }
 
+    @Override
     public HystrixCommandGroupKey getCommandGroup() {
         return observableCommand.getCommandGroup();
     }
 
+    @Override
     public HystrixCommandKey getCommandKey() {
         return observableCommand.getCommandKey();
     }
 
+    @Override
     public HystrixThreadPoolKey getThreadPoolKey() {
         return observableCommand.getThreadPoolKey();
     }
 
+    @Override
     public HystrixCommandMetrics getMetrics() {
         return observableCommand.getMetrics();
     }
 
+    @Override
     public HystrixCommandProperties getProperties() {
         return observableCommand.getProperties();
     }
 
+    @Override
     public boolean isCircuitBreakerOpen() {
         return observableCommand.isCircuitBreakerOpen();
     }
 
+    @Override
     public boolean isExecutionComplete() {
         return observableCommand.isExecutionComplete();
     }
 
+    @Override
     public boolean isExecutedInThread() {
         return observableCommand.isExecutedInThread();
     }
 
+    @Override
     public boolean isSuccessfulExecution() {
         return observableCommand.isSuccessfulExecution();
     }
 
+    @Override
     public boolean isFailedExecution() {
         return observableCommand.isFailedExecution();
     }
 
+    @Override
     public Throwable getFailedExecutionException() {
         return observableCommand.getFailedExecutionException();
     }
 
+    @Override
     public boolean isResponseFromFallback() {
         return observableCommand.isResponseFromFallback();
     }
 
+    @Override
     public boolean isResponseTimedOut() {
         return observableCommand.isResponseTimedOut();
     }
 
+    @Override
     public boolean isResponseShortCircuited() {
         return observableCommand.isResponseShortCircuited();
     }
 
+    @Override
     public boolean isResponseFromCache() {
         return observableCommand.isResponseFromCache();
     }
 
+    @Override
     public boolean isResponseRejected() {
         return observableCommand.isResponseRejected();
     }
 
+    @Override
     public List<HystrixEventType> getExecutionEvents() {
         return observableCommand.getExecutionEvents();
     }
 
+    @Override
     public int getExecutionTimeInMilliseconds() {
         return observableCommand.getExecutionTimeInMilliseconds();
     }
@@ -446,54 +495,12 @@ public abstract class HystrixCommand<R> extends AbstractHystrixCommand<R> implem
         return observableCommand.observe();
     }
 
-    @Override
-    void markAsCollapsedCommand(int sizeOfBatch) {
+    /* package */void markAsCollapsedCommand(int sizeOfBatch) {
         observableCommand.markAsCollapsedCommand(sizeOfBatch);
     }
 
-    @Override
-    HystrixCircuitBreaker getCircuitBreaker() {
+    /* package */HystrixCircuitBreaker getCircuitBreaker() {
         return observableCommand.getCircuitBreaker();
-    }
-
-    @Override
-    protected Exception getExceptionFromThrowable(Throwable t) {
-        return observableCommand.getExceptionFromThrowable(t);
-    }
-
-    @Override
-    protected RuntimeException decomposeException(Exception e) {
-        return observableCommand.decomposeException(e);
-    }
-
-    @Override
-    protected com.netflix.hystrix.AbstractHystrixCommand.TryableSemaphore getExecutionSemaphore() {
-        return observableCommand.getExecutionSemaphore();
-    }
-
-    @Override
-    protected com.netflix.hystrix.AbstractHystrixCommand.TryableSemaphore getFallbackSemaphore() {
-        return observableCommand.getFallbackSemaphore();
-    }
-
-    @Override
-    protected String getLogMessagePrefix() {
-        return observableCommand.getLogMessagePrefix();
-    }
-
-    @Override
-    protected boolean isRequestCachingEnabled() {
-        return observableCommand.isRequestCachingEnabled();
-    }
-
-    @Override
-    protected void recordExecutedCommand() {
-        observableCommand.recordExecutedCommand();
-    }
-
-    @Override
-    protected void recordTotalExecutionTime(long startTime) {
-        observableCommand.recordTotalExecutionTime(startTime);
     }
 
 }

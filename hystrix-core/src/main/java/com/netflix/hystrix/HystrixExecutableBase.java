@@ -55,16 +55,10 @@ import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 import com.netflix.hystrix.strategy.properties.HystrixProperty;
 import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 
-/**
- * Parent HystrixCommand class that holds the common functionality needed by extending classeses.
- * 
- * @param <R>
- */
-
-public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> {
+/* package */abstract class HystrixExecutableBase<R> implements HystrixExecutable<R>, HystrixExecutableInfo<R> {
     // TODO make this package private
 
-    private static final Logger logger = LoggerFactory.getLogger(AbstractHystrixCommand.class);
+    private static final Logger logger = LoggerFactory.getLogger(HystrixExecutableBase.class);
     protected final HystrixCircuitBreaker circuitBreaker;
     protected final HystrixThreadPool threadPool;
     protected final HystrixThreadPoolKey threadPoolKey;
@@ -111,10 +105,6 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
     protected final AtomicBoolean isExecutionComplete = new AtomicBoolean(false);
     protected final AtomicBoolean isExecutedInThread = new AtomicBoolean(false);
 
-    protected final HystrixCommandProperties.Setter commandPropertiesDefaults;
-    protected final HystrixThreadPoolProperties.Setter threadPoolPropertiesDefaults;
-    protected final HystrixPropertiesStrategy propertiesStrategy;
-
     /**
      * Instance of RequestCache logic
      */
@@ -123,10 +113,9 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
 
     // this is a micro-optimization but saves about 1-2microseconds (on 2011 MacBook Pro) 
     // on the repetitive string processing that will occur on the same classes over and over again
-    @SuppressWarnings("rawtypes")
-    private static ConcurrentHashMap<Class<? extends AbstractHystrixCommand>, String> defaultNameCache = new ConcurrentHashMap<Class<? extends AbstractHystrixCommand>, String>();
+    private static ConcurrentHashMap<Class<?>, String> defaultNameCache = new ConcurrentHashMap<Class<?>, String>();
 
-    private static String getDefaultNameFromClass(@SuppressWarnings("rawtypes") Class<? extends AbstractHystrixCommand> cls) {
+    /* package */static String getDefaultNameFromClass(Class<?> cls) {
         String fromCache = defaultNameCache.get(cls);
         if (fromCache != null) {
             return fromCache;
@@ -143,10 +132,11 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
         return name;
     }
 
-    protected AbstractHystrixCommand(HystrixCommandGroupKey group, HystrixCommandKey key, HystrixThreadPoolKey threadPoolKey, HystrixCircuitBreaker circuitBreaker, HystrixThreadPool threadPool,
+    protected HystrixExecutableBase(HystrixCommandGroupKey group, HystrixCommandKey key, HystrixThreadPoolKey threadPoolKey, HystrixCircuitBreaker circuitBreaker, HystrixThreadPool threadPool,
             HystrixCommandProperties.Setter commandPropertiesDefaults, HystrixThreadPoolProperties.Setter threadPoolPropertiesDefaults,
             HystrixCommandMetrics metrics, TryableSemaphore fallbackSemaphore, TryableSemaphore executionSemaphore,
             HystrixPropertiesStrategy propertiesStrategy, HystrixCommandExecutionHook executionHook) {
+
         /*
          * CommandGroup initialization
          */
@@ -169,9 +159,6 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
         /*
          * Properties initialization
          */
-        this.commandPropertiesDefaults = commandPropertiesDefaults;
-        this.threadPoolPropertiesDefaults = threadPoolPropertiesDefaults;
-        this.propertiesStrategy = propertiesStrategy;
         if (propertiesStrategy == null) {
             this.properties = HystrixPropertiesFactory.getCommandProperties(this.commandKey, commandPropertiesDefaults);
         } else {
@@ -448,7 +435,7 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
                 }
 
                 // it's still working so proceed with blocking/timeout logic
-                AbstractHystrixCommand<R> originalCommand = o.getCommand();
+                HystrixExecutableBase<R> originalCommand = o.getCommand();
                 /**
                  * One thread will get the timeoutTimer if it's set and clear it then do blocking timeout.
                  * <p>
@@ -641,18 +628,18 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
     }
 
     protected static class ObservableCommand<R> extends Observable<R> {
-        private final AbstractHystrixCommand<R> command;
+        private final HystrixExecutableBase<R> command;
 
-        ObservableCommand(OnSubscribe<R> func, final AbstractHystrixCommand<R> command) {
+        ObservableCommand(OnSubscribe<R> func, final HystrixExecutableBase<R> command) {
             super(func);
             this.command = command;
         }
 
-        public AbstractHystrixCommand<R> getCommand() {
+        public HystrixExecutableBase<R> getCommand() {
             return command;
         }
 
-        ObservableCommand(final Observable<R> originalObservable, final AbstractHystrixCommand<R> command) {
+        ObservableCommand(final Observable<R> originalObservable, final HystrixExecutableBase<R> command) {
             super(new OnSubscribe<R>() {
 
                 @Override
@@ -674,9 +661,9 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
      */
     protected static class CachedObservableOriginal<R> extends ObservableCommand<R> {
 
-        final AbstractHystrixCommand<R> originalCommand;
+        final HystrixExecutableBase<R> originalCommand;
 
-        CachedObservableOriginal(final Observable<R> actual, AbstractHystrixCommand<R> command) {
+        CachedObservableOriginal(final Observable<R> actual, HystrixExecutableBase<R> command) {
             super(new OnSubscribe<R>() {
 
                 @Override
@@ -699,7 +686,7 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
     protected static class CachedObservableResponse<R> extends ObservableCommand<R> {
         final CachedObservableOriginal<R> originalObservable;
 
-        CachedObservableResponse(final CachedObservableOriginal<R> originalObservable, final AbstractHystrixCommand<R> commandOfDuplicateCall) {
+        CachedObservableResponse(final CachedObservableOriginal<R> originalObservable, final HystrixExecutableBase<R> commandOfDuplicateCall) {
             super(new OnSubscribe<R>() {
 
                 @Override
@@ -743,7 +730,7 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
         /*
          * This is a cached response so we want the command of the observable we're wrapping.
          */
-        public AbstractHystrixCommand<R> getCommand() {
+        public HystrixExecutableBase<R> getCommand() {
             return originalObservable.originalCommand;
         }
     }
@@ -872,7 +859,7 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
      * Using AtomicInteger increment/decrement instead of java.util.concurrent.Semaphore since we don't need blocking and need a custom implementation to get the dynamic permit count and since
      * AtomicInteger achieves the same behavior and performance without the more complex implementation of the actual Semaphore class using AbstractQueueSynchronizer.
      */
-    protected static class TryableSemaphore {
+    /* package */static class TryableSemaphore {
         protected final HystrixProperty<Integer> numberOfPermits;
         private final AtomicInteger count = new AtomicInteger(0);
 
@@ -1187,7 +1174,7 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
         }
 
         @Override
-        public <T> void onRunStart(AbstractHystrixCommand<T> commandInstance) {
+        public <T> void onRunStart(HystrixExecutable<T> commandInstance) {
             HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
             if (c != null) {
                 onRunStart(c);
@@ -1202,7 +1189,7 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
         }
 
         @Override
-        public <T> T onRunSuccess(AbstractHystrixCommand<T> commandInstance, T response) {
+        public <T> T onRunSuccess(HystrixExecutable<T> commandInstance, T response) {
             HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
             if (c != null) {
                 response = onRunSuccess(c, response);
@@ -1217,7 +1204,7 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
         }
 
         @Override
-        public <T> Exception onRunError(AbstractHystrixCommand<T> commandInstance, Exception e) {
+        public <T> Exception onRunError(HystrixExecutable<T> commandInstance, Exception e) {
             HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
             if (c != null) {
                 e = onRunError(c, e);
@@ -1232,7 +1219,7 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
         }
 
         @Override
-        public <T> void onFallbackStart(AbstractHystrixCommand<T> commandInstance) {
+        public <T> void onFallbackStart(HystrixExecutable<T> commandInstance) {
             HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
             if (c != null) {
                 onFallbackStart(c);
@@ -1247,7 +1234,7 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
         }
 
         @Override
-        public <T> T onFallbackSuccess(AbstractHystrixCommand<T> commandInstance, T fallbackResponse) {
+        public <T> T onFallbackSuccess(HystrixExecutable<T> commandInstance, T fallbackResponse) {
             HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
             if (c != null) {
                 fallbackResponse = onFallbackSuccess(c, fallbackResponse);
@@ -1262,7 +1249,7 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
         }
 
         @Override
-        public <T> Exception onFallbackError(AbstractHystrixCommand<T> commandInstance, Exception e) {
+        public <T> Exception onFallbackError(HystrixExecutable<T> commandInstance, Exception e) {
             HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
             if (c != null) {
                 e = onFallbackError(c, e);
@@ -1277,7 +1264,7 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
         }
 
         @Override
-        public <T> void onStart(AbstractHystrixCommand<T> commandInstance) {
+        public <T> void onStart(HystrixExecutable<T> commandInstance) {
             HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
             if (c != null) {
                 onStart(c);
@@ -1292,7 +1279,7 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
         }
 
         @Override
-        public <T> T onComplete(AbstractHystrixCommand<T> commandInstance, T response) {
+        public <T> T onComplete(HystrixExecutable<T> commandInstance, T response) {
             HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
             if (c != null) {
                 response = onComplete(c, response);
@@ -1307,7 +1294,7 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
         }
 
         @Override
-        public <T> Exception onError(AbstractHystrixCommand<T> commandInstance, FailureType failureType, Exception e) {
+        public <T> Exception onError(HystrixExecutable<T> commandInstance, FailureType failureType, Exception e) {
             HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
             if (c != null) {
                 e = onError(c, failureType, e);
@@ -1322,7 +1309,7 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
         }
 
         @Override
-        public <T> void onThreadStart(AbstractHystrixCommand<T> commandInstance) {
+        public <T> void onThreadStart(HystrixExecutable<T> commandInstance) {
             HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
             if (c != null) {
                 onThreadStart(c);
@@ -1337,7 +1324,7 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
         }
 
         @Override
-        public <T> void onThreadComplete(AbstractHystrixCommand<T> commandInstance) {
+        public <T> void onThreadComplete(HystrixExecutable<T> commandInstance) {
             HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
             if (c != null) {
                 onThreadComplete(c);
@@ -1346,7 +1333,7 @@ public abstract class AbstractHystrixCommand<R> implements HystrixExecutable<R> 
         }
 
         @SuppressWarnings({ "unchecked", "rawtypes" })
-        private <T> HystrixCommand<T> getHystrixCommandFromAbstractIfApplicable(AbstractHystrixCommand<T> commandInstance) {
+        private <T> HystrixCommand<T> getHystrixCommandFromAbstractIfApplicable(HystrixExecutable<T> commandInstance) {
             if (commandInstance instanceof HystrixCommand.HystrixCommandFromObservableCommand) {
                 return ((HystrixCommand.HystrixCommandFromObservableCommand) commandInstance).getOriginal();
             } else {

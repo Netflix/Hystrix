@@ -31,7 +31,7 @@ import rx.observers.TestSubscriber;
 import rx.schedulers.Schedulers;
 
 import com.netflix.config.ConfigurationManager;
-import com.netflix.hystrix.AbstractHystrixCommand.TryableSemaphore;
+import com.netflix.hystrix.HystrixExecutableBase.TryableSemaphore;
 import com.netflix.hystrix.HystrixCircuitBreakerTest.TestCircuitBreaker;
 import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
 import com.netflix.hystrix.exception.HystrixBadRequestException;
@@ -6717,7 +6717,7 @@ public class HystrixObservableCommandTest {
         AtomicInteger startExecute = new AtomicInteger();
 
         @Override
-        public <T> void onStart(AbstractHystrixCommand<T> commandInstance) {
+        public <T> void onStart(HystrixExecutable<T> commandInstance) {
             super.onStart(commandInstance);
             startExecute.incrementAndGet();
         }
@@ -6725,7 +6725,7 @@ public class HystrixObservableCommandTest {
         Object endExecuteSuccessResponse = null;
 
         @Override
-        public <T> T onComplete(AbstractHystrixCommand<T> commandInstance, T response) {
+        public <T> T onComplete(HystrixExecutable<T> commandInstance, T response) {
             endExecuteSuccessResponse = response;
             return super.onComplete(commandInstance, response);
         }
@@ -6734,7 +6734,7 @@ public class HystrixObservableCommandTest {
         FailureType endExecuteFailureType = null;
 
         @Override
-        public <T> Exception onError(AbstractHystrixCommand<T> commandInstance, FailureType failureType, Exception e) {
+        public <T> Exception onError(HystrixExecutable<T> commandInstance, FailureType failureType, Exception e) {
             endExecuteFailureException = e;
             endExecuteFailureType = failureType;
             return super.onError(commandInstance, failureType, e);
@@ -6743,7 +6743,7 @@ public class HystrixObservableCommandTest {
         AtomicInteger startRun = new AtomicInteger();
 
         @Override
-        public <T> void onRunStart(AbstractHystrixCommand<T> commandInstance) {
+        public <T> void onRunStart(HystrixExecutable<T> commandInstance) {
             super.onRunStart(commandInstance);
             startRun.incrementAndGet();
         }
@@ -6751,7 +6751,7 @@ public class HystrixObservableCommandTest {
         Object runSuccessResponse = null;
 
         @Override
-        public <T> T onRunSuccess(AbstractHystrixCommand<T> commandInstance, T response) {
+        public <T> T onRunSuccess(HystrixExecutable<T> commandInstance, T response) {
             runSuccessResponse = response;
             return super.onRunSuccess(commandInstance, response);
         }
@@ -6759,7 +6759,7 @@ public class HystrixObservableCommandTest {
         Exception runFailureException = null;
 
         @Override
-        public <T> Exception onRunError(AbstractHystrixCommand<T> commandInstance, Exception e) {
+        public <T> Exception onRunError(HystrixExecutable<T> commandInstance, Exception e) {
             runFailureException = e;
             return super.onRunError(commandInstance, e);
         }
@@ -6767,7 +6767,7 @@ public class HystrixObservableCommandTest {
         AtomicInteger startFallback = new AtomicInteger();
 
         @Override
-        public <T> void onFallbackStart(AbstractHystrixCommand<T> commandInstance) {
+        public <T> void onFallbackStart(HystrixExecutable<T> commandInstance) {
             super.onFallbackStart(commandInstance);
             startFallback.incrementAndGet();
         }
@@ -6775,7 +6775,7 @@ public class HystrixObservableCommandTest {
         Object fallbackSuccessResponse = null;
 
         @Override
-        public <T> T onFallbackSuccess(AbstractHystrixCommand<T> commandInstance, T response) {
+        public <T> T onFallbackSuccess(HystrixExecutable<T> commandInstance, T response) {
             fallbackSuccessResponse = response;
             return super.onFallbackSuccess(commandInstance, response);
         }
@@ -6783,7 +6783,7 @@ public class HystrixObservableCommandTest {
         Exception fallbackFailureException = null;
 
         @Override
-        public <T> Exception onFallbackError(AbstractHystrixCommand<T> commandInstance, Exception e) {
+        public <T> Exception onFallbackError(HystrixExecutable<T> commandInstance, Exception e) {
             fallbackFailureException = e;
             return super.onFallbackError(commandInstance, e);
         }
@@ -6791,7 +6791,7 @@ public class HystrixObservableCommandTest {
         AtomicInteger threadStart = new AtomicInteger();
 
         @Override
-        public <T> void onThreadStart(AbstractHystrixCommand<T> commandInstance) {
+        public <T> void onThreadStart(HystrixExecutable<T> commandInstance) {
             super.onThreadStart(commandInstance);
             threadStart.incrementAndGet();
         }
@@ -6799,7 +6799,7 @@ public class HystrixObservableCommandTest {
         AtomicInteger threadComplete = new AtomicInteger();
 
         @Override
-        public <T> void onThreadComplete(AbstractHystrixCommand<T> commandInstance) {
+        public <T> void onThreadComplete(HystrixExecutable<T> commandInstance) {
             super.onThreadComplete(commandInstance);
             threadComplete.incrementAndGet();
         }

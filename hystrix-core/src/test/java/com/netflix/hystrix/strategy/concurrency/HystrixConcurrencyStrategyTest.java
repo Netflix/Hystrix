@@ -15,6 +15,7 @@ import com.netflix.config.ConfigurationManager;
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandGroupKey;
 import com.netflix.hystrix.HystrixCommandProperties;
+import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixRequestLog;
 
 public class HystrixConcurrencyStrategyTest {
