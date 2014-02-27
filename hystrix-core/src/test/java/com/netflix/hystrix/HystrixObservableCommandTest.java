@@ -31,9 +31,9 @@ import rx.observers.TestSubscriber;
 import rx.schedulers.Schedulers;
 
 import com.netflix.config.ConfigurationManager;
-import com.netflix.hystrix.HystrixExecutableBase.TryableSemaphore;
 import com.netflix.hystrix.HystrixCircuitBreakerTest.TestCircuitBreaker;
 import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
+import com.netflix.hystrix.HystrixExecutableBase.TryableSemaphore;
 import com.netflix.hystrix.exception.HystrixBadRequestException;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
 import com.netflix.hystrix.exception.HystrixRuntimeException.FailureType;

@@ -18,14 +18,14 @@ package com.netflix.hystrix.strategy.concurrency;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
-import com.netflix.hystrix.HystrixThreadPool;
-import com.netflix.hystrix.strategy.HystrixPlugins;
-
 import rx.Scheduler;
 import rx.Subscription;
 import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 import rx.subscriptions.BooleanSubscription;
+
+import com.netflix.hystrix.HystrixThreadPool;
+import com.netflix.hystrix.strategy.HystrixPlugins;
 
 /**
  * Wrap a {@link Scheduler} so that scheduled actions are wrapped with {@link HystrixContexSchedulerAction} so that
