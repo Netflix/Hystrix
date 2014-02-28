@@ -340,10 +340,6 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R>, Hystrix
                 HystrixPropertiesStrategy propertiesStrategy, HystrixCommandExecutionHook executionHook) {
             super(group, key, threadPoolKey, circuitBreaker, threadPool, commandPropertiesDefaults, threadPoolPropertiesDefaults, metrics, fallbackSemaphore, executionSemaphore, propertiesStrategy, executionHook);
             this.original = o;
-
-            if (commandPropertiesDefaults != null) {
-                System.out.println("timeout properties: " + commandPropertiesDefaults.getExecutionIsolationThreadTimeoutInMilliseconds());
-            }
         }
 
         /* package */HystrixCommand<R> getOriginal() {
