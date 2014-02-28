@@ -91,32 +91,4 @@ public interface HystrixExecutable<R> {
      */
     public Observable<R> observe();
 
-    /**
-     * A lazy {@link Observable} that will execute the command when subscribed to.
-     * <p>
-     * <b>Callback Scheduling</b>
-     * <p>
-     * <ul>
-     * <li>When using {@link ExecutionIsolationStrategy#THREAD} this defaults to using {@link Schedulers#threadPoolForComputation()} for callbacks.</li>
-     * <li>When using {@link ExecutionIsolationStrategy#SEMAPHORE} this defaults to using {@link Schedulers#immediate()} for callbacks.</li>
-     * </ul>
-     * <p>
-     * See https://github.com/Netflix/RxJava/wiki for more information.
-     * 
-     * @return {@code Observable<R>} that lazily executes and calls back with the result of {@link #run()} execution or a fallback from {@link #getFallback()} if the command fails for any reason.
-     * 
-     * @throws HystrixRuntimeException
-     *             if a fallback does not exist
-     *             <p>
-     *             <ul>
-     *             <li>via {@code Observer#onError} if a failure occurs</li>
-     *             <li>or immediately if the command can not be queued (such as short-circuited, thread-pool/semaphore rejected)</li>
-     *             </ul>
-     * @throws HystrixBadRequestException
-     *             via {@code Observer#onError} if invalid arguments or state were used representing a user failure, not a system failure
-     * @throws IllegalStateException
-     *             if invoked more than once
-     */
-    public Observable<R> toObservable();
-
 }
