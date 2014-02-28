@@ -1,19 +1,11 @@
 package com.netflix.hystrix.collapser;
 
-import static org.junit.Assert.*;
-
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.junit.Test;
-
-import rx.Observable;
-import rx.Observable.OnSubscribeFunc;
+import rx.Observable.OnSubscribe;
 import rx.Observer;
-import rx.Subscription;
+import rx.Subscriber;
 import rx.subscriptions.BooleanSubscription;
-import rx.util.functions.Func1;
 
 import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
 
@@ -28,7 +20,7 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
  * 
  * @param <R>
  */
-/* package */class CollapsedRequestObservableFunction<T, R> implements CollapsedRequest<T, R>, OnSubscribeFunc<T> {
+/* package */class CollapsedRequestObservableFunction<T, R> implements CollapsedRequest<T, R>, OnSubscribe<T> {
     private final R argument;
     private final AtomicReference<CollapsedRequestObservableFunction.ResponseHolder<T>> rh = new AtomicReference<CollapsedRequestObservableFunction.ResponseHolder<T>>(new CollapsedRequestObservableFunction.ResponseHolder<T>());
     private final BooleanSubscription subscription = new BooleanSubscription();
@@ -57,9 +49,6 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
     @Override
     public void setResponse(T response) {
         while (true) {
-            if (subscription.isUnsubscribed()) {
-                return;
-            }
             ResponseHolder<T> r = rh.get();
             if (r.isResponseSet()) {
                 throw new IllegalStateException("setResponse can only be called once");
@@ -68,6 +57,9 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
                 throw new IllegalStateException("Exception is already set so response can not be => Response: " + response + " subscription: " + subscription.isUnsubscribed() + "  observer: " + r.getObserver() + "  Exception: " + r.getException().getMessage(), r.getException());
             }
 
+            if (subscription.isUnsubscribed()) {
+                return;
+            }
             ResponseHolder<T> nr = r.setResponse(response);
             if (rh.compareAndSet(r, nr)) {
                 // success
@@ -117,9 +109,6 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
     @Override
     public void setException(Exception e) {
         while (true) {
-            if (subscription.isUnsubscribed()) {
-                return;
-            }
             CollapsedRequestObservableFunction.ResponseHolder<T> r = rh.get();
             if (r.getException() != null) {
                 throw new IllegalStateException("setException can only be called once");
@@ -128,6 +117,9 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
                 throw new IllegalStateException("Response is already set so exception can not be => Response: " + r.getResponse() + "  Exception: " + e.getMessage(), e);
             }
 
+            if (subscription.isUnsubscribed()) {
+                return;
+            }
             ResponseHolder<T> nr = r.setException(e);
             if (rh.compareAndSet(r, nr)) {
                 // success
@@ -140,7 +132,8 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
     }
 
     @Override
-    public Subscription onSubscribe(Observer<? super T> observer) {
+    public void call(Subscriber<? super T> observer) {
+        observer.add(subscription);
         while (true) {
             CollapsedRequestObservableFunction.ResponseHolder<T> r = rh.get();
             if (r.getObserver() != null) {
@@ -155,7 +148,6 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
                 // we'll retry
             }
         }
-        return subscription;
     }
 
     private static <T> void sendResponseIfRequired(BooleanSubscription subscription, CollapsedRequestObservableFunction.ResponseHolder<T> r) {
@@ -226,163 +218,6 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
 
         public Exception getException() {
             return e;
-        }
-
-    }
-
-    public static class UnitTest {
-
-        @Test
-        public void testSetResponseSuccess() throws InterruptedException, ExecutionException {
-            CollapsedRequestObservableFunction<String, String> cr = new CollapsedRequestObservableFunction<String, String>("hello");
-            Observable<String> o = Observable.create(cr);
-            Future<String> v = o.toBlockingObservable().toFuture();
-
-            cr.setResponse("theResponse");
-
-            // fetch value
-            assertEquals("theResponse", v.get());
-        }
-
-        @Test
-        public void testSetNullResponseSuccess() throws InterruptedException, ExecutionException {
-            CollapsedRequestObservableFunction<String, String> cr = new CollapsedRequestObservableFunction<String, String>("hello");
-            Observable<String> o = Observable.create(cr);
-            Future<String> v = o.toBlockingObservable().toFuture();
-
-            cr.setResponse(null);
-
-            // fetch value
-            assertEquals(null, v.get());
-        }
-
-        @Test
-        public void testSetException() throws InterruptedException, ExecutionException {
-            CollapsedRequestObservableFunction<String, String> cr = new CollapsedRequestObservableFunction<String, String>("hello");
-            Observable<String> o = Observable.create(cr);
-            Future<String> v = o.toBlockingObservable().toFuture();
-
-            cr.setException(new RuntimeException("anException"));
-
-            // fetch value
-            try {
-                v.get();
-                fail("expected exception");
-            } catch (ExecutionException e) {
-                assertEquals("anException", e.getCause().getMessage());
-            }
-        }
-
-        @Test
-        public void testSetExceptionAfterResponse() throws InterruptedException, ExecutionException {
-            CollapsedRequestObservableFunction<String, String> cr = new CollapsedRequestObservableFunction<String, String>("hello");
-            Observable<String> o = Observable.create(cr);
-            Future<String> v = o.toBlockingObservable().toFuture();
-
-            cr.setResponse("theResponse");
-
-            try {
-                cr.setException(new RuntimeException("anException"));
-                fail("expected IllegalState");
-            } catch (IllegalStateException e) {
-
-            }
-
-            assertEquals("theResponse", v.get());
-        }
-
-        @Test
-        public void testSetResponseAfterException() throws InterruptedException, ExecutionException {
-            CollapsedRequestObservableFunction<String, String> cr = new CollapsedRequestObservableFunction<String, String>("hello");
-            Observable<String> o = Observable.create(cr);
-            Future<String> v = o.toBlockingObservable().toFuture();
-
-            cr.setException(new RuntimeException("anException"));
-
-            try {
-                cr.setResponse("theResponse");
-                fail("expected IllegalState");
-            } catch (IllegalStateException e) {
-
-            }
-
-            try {
-                v.get();
-                fail("expected exception");
-            } catch (ExecutionException e) {
-                assertEquals("anException", e.getCause().getMessage());
-            }
-        }
-
-        @Test
-        public void testSetResponseDuplicate() throws InterruptedException, ExecutionException {
-            CollapsedRequestObservableFunction<String, String> cr = new CollapsedRequestObservableFunction<String, String>("hello");
-            Observable<String> o = Observable.create(cr);
-            Future<String> v = o.toBlockingObservable().toFuture();
-
-            cr.setResponse("theResponse");
-
-            try {
-                cr.setResponse("theResponse2");
-                fail("expected IllegalState");
-            } catch (IllegalStateException e) {
-
-            }
-
-            assertEquals("theResponse", v.get());
-        }
-
-        @Test
-        public void testSetResponseAfterUnsubscribe() throws InterruptedException, ExecutionException {
-            CollapsedRequestObservableFunction<String, String> cr = new CollapsedRequestObservableFunction<String, String>("hello");
-            Observable<String> o = Observable.create(cr);
-            Future<String> f = o.toBlockingObservable().toFuture();
-
-            // cancel/unsubscribe
-            f.cancel(true);
-
-            try {
-                cr.setResponse("theResponse");
-            } catch (IllegalStateException e) {
-                fail("this should have done nothing as it was unsubscribed already");
-            }
-
-            // if you fetch after canceling it should be null
-            assertEquals(null, f.get());
-        }
-
-        @Test
-        public void testSetExceptionAfterUnsubscribe() throws InterruptedException, ExecutionException {
-            CollapsedRequestObservableFunction<String, String> cr = new CollapsedRequestObservableFunction<String, String>("hello");
-            Observable<String> o = Observable.create(cr);
-            Future<String> f = o.toBlockingObservable().toFuture();
-
-            // cancel/unsubscribe
-            f.cancel(true);
-
-            try {
-                cr.setException(new RuntimeException("anException"));
-            } catch (IllegalStateException e) {
-                fail("this should have done nothing as it was unsubscribed already");
-            }
-
-            // if you fetch after canceling it should be null
-            assertEquals(null, f.get());
-        }
-
-        @Test
-        public void testUnsubscribeAfterSetResponse() throws InterruptedException, ExecutionException {
-            CollapsedRequestObservableFunction<String, String> cr = new CollapsedRequestObservableFunction<String, String>("hello");
-            Observable<String> o = Observable.create(cr);
-            Future<String> v = o.toBlockingObservable().toFuture();
-
-            cr.setResponse("theResponse");
-
-            // unsubscribe after the value is sent
-            v.cancel(true);
-
-            // still get value as it was set before canceling
-            assertEquals("theResponse", v.get());
         }
 
     }

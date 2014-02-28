@@ -15,8 +15,6 @@
  */
 package com.netflix.hystrix;
 
-import static org.junit.Assert.*;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -27,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +49,7 @@ public class HystrixRequestLog {
      * Intended to help prevent memory leaks when someone isn't aware of the
      * HystrixRequestContext lifecycle or enabling/disabling RequestLog.
      */
-    private static final int MAX_STORAGE = 1000;
+    /* package */static final int MAX_STORAGE = 1000;
 
     private static final HystrixRequestVariableHolder<HystrixRequestLog> currentRequestLog = new HystrixRequestVariableHolder<HystrixRequestLog>(new HystrixRequestVariableLifecycle<HystrixRequestLog>() {
         @Override
@@ -70,6 +67,11 @@ public class HystrixRequestLog {
      * History of {@link HystrixCommand} executed in this request.
      */
     private LinkedBlockingQueue<HystrixCommand<?>> executedCommands = new LinkedBlockingQueue<HystrixCommand<?>>(MAX_STORAGE);
+
+    /**
+     * History of {@link HystrixExecutableInfo} executed in this request.
+     */
+    private LinkedBlockingQueue<HystrixExecutableInfo<?>> allExecutedCommands = new LinkedBlockingQueue<HystrixExecutableInfo<?>>(MAX_STORAGE);
 
     // prevent public instantiation
     private HystrixRequestLog() {
@@ -101,8 +103,18 @@ public class HystrixRequestLog {
      * 
      * @return {@code Collection<HystrixCommand<?>>}
      */
+    @Deprecated
     public Collection<HystrixCommand<?>> getExecutedCommands() {
         return Collections.unmodifiableCollection(executedCommands);
+    }
+
+    /**
+     * Retrieve {@link HystrixCommand} instances that were executed during this {@link HystrixRequestContext}.
+     * 
+     * @return {@code Collection<HystrixCommand<?>>}
+     */
+    public Collection<HystrixExecutableInfo<?>> getAllExecutedCommands() {
+        return Collections.unmodifiableCollection(allExecutedCommands);
     }
 
     /**
@@ -111,10 +123,20 @@ public class HystrixRequestLog {
      * @param command
      *            {@code HystrixCommand<?>}
      */
-    /* package */void addExecutedCommand(HystrixCommand<?> command) {
-        if (!executedCommands.offer(command)) {
+    /* package */void addExecutedCommand(HystrixExecutableInfo<?> command) {
+        if (!allExecutedCommands.offer(command)) {
             // see RequestLog: Reduce Chance of Memory Leak https://github.com/Netflix/Hystrix/issues/53
             logger.warn("RequestLog ignoring command after reaching limit of " + MAX_STORAGE + ". See https://github.com/Netflix/Hystrix/issues/53 for more information.");
+        }
+
+        // TODO remove this when deprecation completed
+        if (command instanceof HystrixCommand.HystrixCommandFromObservableCommand) {
+            @SuppressWarnings("rawtypes")
+            HystrixCommand<?> _c = ((HystrixCommand.HystrixCommandFromObservableCommand) command).getOriginal();
+            if (!executedCommands.offer(_c)) {
+                // see RequestLog: Reduce Chance of Memory Leak https://github.com/Netflix/Hystrix/issues/53
+                logger.warn("RequestLog ignoring command after reaching limit of " + MAX_STORAGE + ". See https://github.com/Netflix/Hystrix/issues/53 for more information.");
+            }
         }
     }
 
@@ -146,7 +168,7 @@ public class HystrixRequestLog {
             LinkedHashMap<String, Integer> aggregatedCommandsExecuted = new LinkedHashMap<String, Integer>();
             Map<String, Integer> aggregatedCommandExecutionTime = new HashMap<String, Integer>();
 
-            for (HystrixCommand<?> command : executedCommands) {
+            for (HystrixExecutableInfo<?> command : allExecutedCommands) {
                 StringBuilder displayString = new StringBuilder();
                 displayString.append(command.getCommandKey().name());
 
@@ -205,185 +227,4 @@ public class HystrixRequestLog {
         }
     }
 
-    public static class UnitTest {
-
-        private static final String DIGITS_REGEX = "\\[\\d+";
-
-        @Test
-        public void testSuccess() {
-            HystrixRequestContext context = HystrixRequestContext.initializeContext();
-            try {
-                new TestCommand("A", false, true).execute();
-                String log = HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString();
-                // strip the actual count so we can compare reliably
-                log = log.replaceAll(DIGITS_REGEX, "[");
-                assertEquals("TestCommand[SUCCESS][ms]", log);
-            } finally {
-                context.shutdown();
-            }
-        }
-
-        @Test
-        public void testSuccessFromCache() {
-            HystrixRequestContext context = HystrixRequestContext.initializeContext();
-            try {
-                // 1 success
-                new TestCommand("A", false, true).execute();
-                // 4 success from cache
-                new TestCommand("A", false, true).execute();
-                new TestCommand("A", false, true).execute();
-                new TestCommand("A", false, true).execute();
-                new TestCommand("A", false, true).execute();
-                String log = HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString();
-                // strip the actual count so we can compare reliably
-                log = log.replaceAll(DIGITS_REGEX, "[");
-                assertEquals("TestCommand[SUCCESS][ms], TestCommand[SUCCESS, RESPONSE_FROM_CACHE][ms]x4", log);
-            } finally {
-                context.shutdown();
-            }
-        }
-
-        @Test
-        public void testFailWithFallbackSuccess() {
-            HystrixRequestContext context = HystrixRequestContext.initializeContext();
-            try {
-                // 1 failure
-                new TestCommand("A", true, false).execute();
-                // 4 failures from cache
-                new TestCommand("A", true, false).execute();
-                new TestCommand("A", true, false).execute();
-                new TestCommand("A", true, false).execute();
-                new TestCommand("A", true, false).execute();
-                String log = HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString();
-                // strip the actual count so we can compare reliably
-                log = log.replaceAll(DIGITS_REGEX, "[");
-                assertEquals("TestCommand[FAILURE, FALLBACK_SUCCESS][ms], TestCommand[FAILURE, FALLBACK_SUCCESS, RESPONSE_FROM_CACHE][ms]x4", log);
-            } finally {
-                context.shutdown();
-            }
-        }
-
-        @Test
-        public void testFailWithFallbackFailure() {
-            HystrixRequestContext context = HystrixRequestContext.initializeContext();
-            try {
-                // 1 failure
-                try {
-                    new TestCommand("A", true, true).execute();
-                } catch (Exception e) {
-                }
-                // 1 failure from cache
-                try {
-                    new TestCommand("A", true, true).execute();
-                } catch (Exception e) {
-                }
-                String log = HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString();
-                // strip the actual count so we can compare reliably
-                log = log.replaceAll(DIGITS_REGEX, "[");
-                assertEquals("TestCommand[FAILURE, FALLBACK_FAILURE][ms], TestCommand[FAILURE, FALLBACK_FAILURE, RESPONSE_FROM_CACHE][ms]", log);
-            } finally {
-                context.shutdown();
-            }
-        }
-
-        @Test
-        public void testMultipleCommands() {
-
-            HystrixRequestContext context = HystrixRequestContext.initializeContext();
-            try {
-
-                // 1 success
-                new TestCommand("GetData", "A", false, false).execute();
-
-                // 1 success
-                new TestCommand("PutData", "B", false, false).execute();
-
-                // 1 success
-                new TestCommand("GetValues", "C", false, false).execute();
-
-                // 1 success from cache
-                new TestCommand("GetValues", "C", false, false).execute();
-
-                // 1 failure
-                try {
-                    new TestCommand("A", true, true).execute();
-                } catch (Exception e) {
-                }
-                // 1 failure from cache
-                try {
-                    new TestCommand("A", true, true).execute();
-                } catch (Exception e) {
-                }
-                String log = HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString();
-                // strip the actual count so we can compare reliably
-                log = log.replaceAll(DIGITS_REGEX, "[");
-                assertEquals("GetData[SUCCESS][ms], PutData[SUCCESS][ms], GetValues[SUCCESS][ms], GetValues[SUCCESS, RESPONSE_FROM_CACHE][ms], TestCommand[FAILURE, FALLBACK_FAILURE][ms], TestCommand[FAILURE, FALLBACK_FAILURE, RESPONSE_FROM_CACHE][ms]", log);
-            } finally {
-                context.shutdown();
-            }
-
-        }
-
-        @Test
-        public void testMaxLimit() {
-            HystrixRequestContext context = HystrixRequestContext.initializeContext();
-            try {
-                for (int i = 0; i < MAX_STORAGE; i++) {
-                    new TestCommand("A", false, true).execute();
-                }
-                // then execute again some more
-                for (int i = 0; i < 10; i++) {
-                    new TestCommand("A", false, true).execute();
-                }
-
-                assertEquals(MAX_STORAGE, HystrixRequestLog.getCurrentRequest().executedCommands.size());
-            } finally {
-                context.shutdown();
-            }
-        }
-    }
-
-    private static class TestCommand extends HystrixCommand<String> {
-
-        private final String value;
-        private final boolean fail;
-        private final boolean failOnFallback;
-
-        public TestCommand(String commandName, String value, boolean fail, boolean failOnFallback) {
-            super(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("RequestLogTestCommand")).andCommandKey(HystrixCommandKey.Factory.asKey(commandName)));
-            this.value = value;
-            this.fail = fail;
-            this.failOnFallback = failOnFallback;
-        }
-
-        public TestCommand(String value, boolean fail, boolean failOnFallback) {
-            super(HystrixCommandGroupKey.Factory.asKey("RequestLogTestCommand"));
-            this.value = value;
-            this.fail = fail;
-            this.failOnFallback = failOnFallback;
-        }
-
-        @Override
-        protected String run() {
-            if (fail) {
-                throw new RuntimeException("forced failure");
-            } else {
-                return value;
-            }
-        }
-
-        @Override
-        protected String getFallback() {
-            if (failOnFallback) {
-                throw new RuntimeException("forced fallback failure");
-            } else {
-                return value + "-fallback";
-            }
-        }
-
-        @Override
-        protected String getCacheKey() {
-            return value;
-        }
-    }
 }
