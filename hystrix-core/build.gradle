@@ -4,7 +4,7 @@ apply plugin: 'idea'
 
 dependencies {
     compile 'com.netflix.archaius:archaius-core:0.4.1'
-    compile 'com.netflix.rxjava:rxjava-core:[0.14,0.15)'
+    compile 'com.netflix.rxjava:rxjava-core:0.16.1'
     compile 'org.slf4j:slf4j-api:1.7.0'
     compile 'com.google.code.findbugs:jsr305:2.0.0'
     provided 'junit:junit-dep:4.10'

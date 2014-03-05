@@ -22,6 +22,8 @@ import rx.Scheduler;
 import rx.Subscription;
 import rx.util.functions.Func2;
 
+import com.netflix.hystrix.strategy.HystrixPlugins;
+
 /**
  * Wrapper around {@link Func2} that manages the {@link HystrixRequestContext} initialization and cleanup for the execution of the {@link Func2}
  * 
@@ -51,6 +53,10 @@ public class HystrixContextFunc2<T> implements Func2<Scheduler, T, Subscription>
     private final AtomicReference<Scheduler> t1Holder = new AtomicReference<Scheduler>();
     private final AtomicReference<T> t2Holder = new AtomicReference<T>();
 
+    public HystrixContextFunc2(Func2<? super Scheduler, ? super T, ? extends Subscription> action) {
+        this(HystrixPlugins.getInstance().getConcurrencyStrategy(), action);
+    }
+    
     public HystrixContextFunc2(final HystrixConcurrencyStrategy concurrencyStrategy, Func2<? super Scheduler, ? super T, ? extends Subscription> action) {
         this.actual = action;
         this.parentThreadState = HystrixRequestContext.getContextForCurrentThread();
