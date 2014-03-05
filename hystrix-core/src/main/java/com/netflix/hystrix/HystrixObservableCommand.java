@@ -791,7 +791,7 @@ public abstract class HystrixObservableCommand<R> extends HystrixExecutableBase<
              * Define the action to perform on timeout outside of the TimerListener to it can capture the HystrixRequestContext
              * of the calling thread which doesn't exist on the Timer thread.
              */
-            final HystrixContextRunnable timeoutRunnable = new HystrixContextRunnable(new Runnable() {
+            final HystrixContextRunnable timeoutRunnable = new HystrixContextRunnable(originalCommand.concurrencyStrategy, new Runnable() {
 
                 @Override
                 public void run() {

@@ -22,6 +22,7 @@ import com.netflix.hystrix.collapser.CollapserTimer;
 import com.netflix.hystrix.collapser.RealCollapserTimer;
 import com.netflix.hystrix.collapser.RequestCollapser;
 import com.netflix.hystrix.collapser.RequestCollapserFactory;
+import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.concurrency.HystrixContextRunnable;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestVariableHolder;
@@ -329,7 +330,7 @@ public class HystrixCollapserTest {
 
         // kick off work (simulating a single request with multiple threads)
         for (int t = 0; t < 5; t++) {
-            Thread th = new Thread(new HystrixContextRunnable(new Runnable() {
+            Thread th = new Thread(new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), new Runnable() {
 
                 @Override
                 public void run() {

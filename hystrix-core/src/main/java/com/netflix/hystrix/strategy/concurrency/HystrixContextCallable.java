@@ -30,8 +30,8 @@ public class HystrixContextCallable<K> implements Callable<K> {
     private final Callable<K> actual;
     private final HystrixRequestContext parentThreadState;
 
-    public HystrixContextCallable(Callable<K> actual) {
-        this.actual = actual;
+    public HystrixContextCallable(HystrixConcurrencyStrategy concurrencyStrategy, Callable<K> actual) {
+        this.actual = concurrencyStrategy.wrapCallable(actual);
         this.parentThreadState = HystrixRequestContext.getContextForCurrentThread();
     }
 

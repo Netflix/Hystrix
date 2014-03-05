@@ -1737,7 +1737,7 @@ public class HystrixObservableCommandTest {
         final TryableSemaphore semaphore =
                 new TryableSemaphore(HystrixProperty.Factory.asProperty(1));
 
-        Runnable r = new HystrixContextRunnable(new Runnable() {
+        Runnable r = new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), new Runnable() {
 
             @Override
             public void run() {
@@ -1809,7 +1809,7 @@ public class HystrixObservableCommandTest {
         final TryableSemaphore semaphore =
                 new TryableSemaphore(HystrixProperty.Factory.asProperty(1));
 
-        Runnable r = new HystrixContextRunnable(new Runnable() {
+        Runnable r = new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), new Runnable() {
 
             @Override
             public void run() {
@@ -1872,7 +1872,7 @@ public class HystrixObservableCommandTest {
 
         final AtomicBoolean exceptionReceived = new AtomicBoolean();
 
-        Runnable r = new HystrixContextRunnable(new Runnable() {
+        Runnable r = new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), new Runnable() {
 
             @Override
             public void run() {
@@ -1945,7 +1945,7 @@ public class HystrixObservableCommandTest {
         // used to signal that all command can finish
         final CountDownLatch sharedLatch = new CountDownLatch(1);
 
-        final Runnable sharedSemaphoreRunnable = new HystrixContextRunnable(new Runnable() {
+        final Runnable sharedSemaphoreRunnable = new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), new Runnable() {
             public void run() {
                 try {
                     new LatchedSemaphoreCommand(circuitBreaker, sharedSemaphore, startLatch, sharedLatch).execute();
@@ -1973,7 +1973,7 @@ public class HystrixObservableCommandTest {
         // tracks failures to obtain semaphores
         final AtomicInteger failureCount = new AtomicInteger();
 
-        final Thread isolatedThread = new Thread(new HystrixContextRunnable(new Runnable() {
+        final Thread isolatedThread = new Thread(new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), new Runnable() {
             public void run() {
                 try {
                     new LatchedSemaphoreCommand(circuitBreaker, isolatedSemaphore, startLatch, isolatedLatch).execute();

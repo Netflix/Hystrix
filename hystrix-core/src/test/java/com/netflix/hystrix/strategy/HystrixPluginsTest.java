@@ -2,11 +2,20 @@ package com.netflix.hystrix.strategy;
 
 import static org.junit.Assert.*;
 
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.junit.After;
 import org.junit.Test;
 
+import rx.functions.Action1;
+
+import com.netflix.hystrix.Hystrix;
+import com.netflix.hystrix.HystrixCommand;
+import com.netflix.hystrix.HystrixCommandGroupKey;
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategyDefault;
+import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
 import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifierDefault;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisher;
@@ -142,6 +151,75 @@ public class HystrixPluginsTest {
     // inside UnitTest so it is stripped from Javadocs
     public static class HystrixPropertiesStrategyTestImpl extends HystrixPropertiesStrategy {
         // just use defaults
+    }
+    
+    @Test
+    public void testRequestContextViaPluginInTimeout() {
+        HystrixPlugins.getInstance().registerConcurrencyStrategy(new HystrixConcurrencyStrategy() {
+            @Override
+            public <T> Callable<T> wrapCallable(final Callable<T> callable) {
+                return new RequestIdCallable<T>(callable);
+            }
+        });
+
+        HystrixRequestContext context = HystrixRequestContext.initializeContext();
+
+        testRequestIdThreadLocal.set("foobar");
+        final AtomicReference<String> valueInTimeout = new AtomicReference<String>();
+
+        new DummyCommand().toObservable()
+                .doOnError(new Action1<Throwable>() {
+                    @Override
+                    public void call(Throwable throwable) {
+                        System.out.println("initialized = " + HystrixRequestContext.isCurrentThreadInitialized());
+                        System.out.println("requestId (timeout) = " + testRequestIdThreadLocal.get());
+                        valueInTimeout.set(testRequestIdThreadLocal.get());
+                    }
+                })
+                .materialize()
+                .toBlockingObservable().single();
+
+        context.shutdown();
+        Hystrix.reset();
+        
+        assertEquals("foobar", valueInTimeout.get());
+    }
+
+    private static class RequestIdCallable<T> implements Callable<T> {
+        private final Callable<T> callable;
+        private final String requestId;
+
+        public RequestIdCallable(Callable<T> callable) {
+            this.callable = callable;
+            this.requestId = testRequestIdThreadLocal.get();
+        }
+
+        @Override
+        public T call() throws Exception {
+            String original = testRequestIdThreadLocal.get();
+            testRequestIdThreadLocal.set(requestId);
+            try {
+                return callable.call();
+            } finally {
+                testRequestIdThreadLocal.set(original);
+            }
+        }
+    }
+    
+    private static final ThreadLocal<String> testRequestIdThreadLocal = new ThreadLocal<String>();
+
+    public static class DummyCommand extends HystrixCommand<Void> {
+
+        public DummyCommand() {
+            super(HystrixCommandGroupKey.Factory.asKey("Dummy"));
+        }
+
+        @Override
+        protected Void run() throws Exception {
+            System.out.println("requestId (run) = " + testRequestIdThreadLocal.get());
+            Thread.sleep(2000);
+            return null;
+        }
     }
 
 }
