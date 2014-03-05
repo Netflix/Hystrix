@@ -15,6 +15,8 @@
  */
 package com.netflix.hystrix.strategy.concurrency;
 
+import java.util.concurrent.Callable;
+
 /**
  * Wrapper around {@link Runnable} that manages the {@link HystrixRequestContext} initialization and cleanup for the execution of the {@link Runnable}
  * 
@@ -22,11 +24,19 @@ package com.netflix.hystrix.strategy.concurrency;
  */
 public class HystrixContextRunnable implements Runnable {
 
-    private final Runnable actual;
+    private final Callable<Void> actual;
     private final HystrixRequestContext parentThreadState;
 
-    public HystrixContextRunnable(Runnable actual) {
-        this.actual = actual;
+    public HystrixContextRunnable(HystrixConcurrencyStrategy concurrencyStrategy, final Runnable actual) {
+        this.actual = concurrencyStrategy.wrapCallable(new Callable<Void>() {
+
+            @Override
+            public Void call() throws Exception {
+                actual.run();
+                return null;
+            }
+
+        });
         this.parentThreadState = HystrixRequestContext.getContextForCurrentThread();
     }
 
@@ -37,7 +47,11 @@ public class HystrixContextRunnable implements Runnable {
             // set the state of this thread to that of its parent
             HystrixRequestContext.setContextOnCurrentThread(parentThreadState);
             // execute actual Callable with the state of the parent
-            actual.run();
+            try {
+                actual.call();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         } finally {
             // restore this thread back to its original state
             HystrixRequestContext.setContextOnCurrentThread(existingState);

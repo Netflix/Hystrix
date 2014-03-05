@@ -15,12 +15,10 @@
  */
 package com.netflix.hystrix.strategy.concurrency;
 
-import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 import rx.Scheduler;
 import rx.Subscription;
-import rx.subscriptions.MultipleAssignmentSubscription;
 import rx.util.functions.Func2;
 
 /**
