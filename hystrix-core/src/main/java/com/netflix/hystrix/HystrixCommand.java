@@ -58,6 +58,7 @@ import rx.operators.SafeObservableSubscription;
 import rx.subjects.ReplaySubject;
 import rx.subscriptions.Subscriptions;
 import rx.util.functions.Action0;
+import rx.util.functions.Action1;
 import rx.util.functions.Func1;
 import rx.util.functions.Func2;
 
@@ -1006,6 +1007,24 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                     // TODO better yet, get TimeoutObservable part of Rx
                     final SafeObservableSubscription s = new SafeObservableSubscription();
 
+                    /*
+                     * Define the action to perform on timeout outside of the TimerListener to it can capture the HystrixRequestContext
+                     * of the calling thread which doesn't exist on the Timer thread.
+                     */
+                    final HystrixContextRunnable timeoutRunnable = new HystrixContextRunnable(originalCommand.concurrencyStrategy, new Runnable() {
+
+                        @Override
+                        public void run() {
+                            try {
+                                R v = originalCommand.getFallbackOrThrowException(HystrixEventType.TIMEOUT, FailureType.TIMEOUT, "timed-out", new TimeoutException());
+                                observer.onNext(v);
+                                observer.onCompleted();
+                            } catch (HystrixRuntimeException re) {
+                                observer.onError(re);
+                            }
+                        }
+                    });
+                    
                     TimerListener listener = new TimerListener() {
 
                         @Override
@@ -1021,13 +1040,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                                 // we record execution time because we are returning before 
                                 originalCommand.recordTotalExecutionTime(originalCommand.invocationStartTime);
 
-                                try {
-                                    R v = originalCommand.getFallbackOrThrowException(HystrixEventType.TIMEOUT, FailureType.TIMEOUT, "timed-out", new TimeoutException());
-                                    observer.onNext(v);
-                                    observer.onCompleted();
-                                } catch (HystrixRuntimeException re) {
-                                    observer.onError(re);
-                                }
+                                timeoutRunnable.run();
                             }
 
                             s.unsubscribe();
@@ -1146,7 +1159,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             }
 
             // wrap the synchronous execute() method in a Callable and execute in the threadpool
-            final Future<R> f = threadPool.getExecutor().submit(concurrencyStrategy.wrapCallable(new HystrixContextCallable<R>(new Callable<R>() {
+            final Future<R> f = threadPool.getExecutor().submit(new HystrixContextCallable<R>(concurrencyStrategy, new Callable<R>() {
 
                 @Override
                 public R call() throws Exception {
@@ -1215,7 +1228,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                     }
                 }
 
-            })));
+            }));
 
             return new Subscription() {
 
@@ -3818,7 +3831,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             final TryableSemaphore semaphore =
                     new TryableSemaphore(HystrixProperty.Factory.asProperty(1));
 
-            Runnable r = new HystrixContextRunnable(new Runnable() {
+            Runnable r = new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), new Runnable() {
 
                 @Override
                 public void run() {
@@ -3890,7 +3903,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             final TryableSemaphore semaphore =
                     new TryableSemaphore(HystrixProperty.Factory.asProperty(1));
 
-            Runnable r = new HystrixContextRunnable(new Runnable() {
+            Runnable r = new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), new Runnable() {
 
                 @Override
                 public void run() {
@@ -3953,7 +3966,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
             final AtomicBoolean exceptionReceived = new AtomicBoolean();
 
-            Runnable r = new HystrixContextRunnable(new Runnable() {
+            Runnable r = new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), new Runnable() {
 
                 @Override
                 public void run() {
@@ -4026,7 +4039,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             // used to signal that all command can finish
             final CountDownLatch sharedLatch = new CountDownLatch(1);
 
-            final Runnable sharedSemaphoreRunnable = new HystrixContextRunnable(new Runnable() {
+            final Runnable sharedSemaphoreRunnable = new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), new Runnable() {
                 public void run() {
                     try {
                         new LatchedSemaphoreCommand(circuitBreaker, sharedSemaphore, startLatch, sharedLatch).execute();
@@ -4054,7 +4067,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             // tracks failures to obtain semaphores
             final AtomicInteger failureCount = new AtomicInteger();
 
-            final Thread isolatedThread = new Thread(new HystrixContextRunnable(new Runnable() {
+            final Thread isolatedThread = new Thread(new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), new Runnable() {
                 public void run() {
                     try {
                         new LatchedSemaphoreCommand(circuitBreaker, isolatedSemaphore, startLatch, isolatedLatch).execute();
@@ -6131,6 +6144,64 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             assertTrue(command.isResponseTimedOut());
             assertEquals("expected fallback value", "timed-out", value);
 
+        }
+
+        /**
+         * See https://github.com/Netflix/Hystrix/issues/212
+         */
+        @Test
+        public void testObservableTimeoutNoFallbackThreadContext() {
+            final AtomicReference<Thread> onErrorThread = new AtomicReference<Thread>();
+            final AtomicBoolean isRequestContextInitialized = new AtomicBoolean();
+            TestHystrixCommand<Boolean> command = new TestCommandWithTimeout(50, TestCommandWithTimeout.FALLBACK_NOT_IMPLEMENTED);
+            try {
+                command.toObservable().doOnError(new Action1<Throwable>() {
+
+                    @Override
+                    public void call(Throwable t1) {
+                        System.out.println("onError: " + t1);
+                        System.out.println("onError Thread: " + Thread.currentThread());
+                        System.out.println("ThreadContext in onError: " + HystrixRequestContext.isCurrentThreadInitialized());
+                        onErrorThread.set(Thread.currentThread());
+                        isRequestContextInitialized.set(HystrixRequestContext.isCurrentThreadInitialized());
+                    }
+
+                }).toBlockingObservable().single();
+                throw new RuntimeException("expected error to be thrown");
+            } catch (Throwable e) {
+                assertTrue(isRequestContextInitialized.get());
+                assertTrue(onErrorThread.get().getName().startsWith("RxComputationThreadPool"));
+
+                if (e instanceof HystrixRuntimeException) {
+                    HystrixRuntimeException de = (HystrixRuntimeException) e;
+                    assertNotNull(de.getFallbackException());
+                    assertTrue(de.getFallbackException() instanceof UnsupportedOperationException);
+                    assertNotNull(de.getImplementingClass());
+                    assertNotNull(de.getCause());
+                    assertTrue(de.getCause() instanceof TimeoutException);
+                } else {
+                    fail("the exception should be ExecutionException with cause as HystrixRuntimeException");
+                }
+            }
+
+            assertTrue(command.getExecutionTimeInMilliseconds() > -1);
+            assertTrue(command.isResponseTimedOut());
+
+            assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
+            assertEquals(1, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
+            assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
+            assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
+            assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
+            assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+            assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
+            assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
+            assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
+            assertEquals(1, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
+            assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+
+            assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
+
+            assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
         }
 
         /* ******************************************************************************** */

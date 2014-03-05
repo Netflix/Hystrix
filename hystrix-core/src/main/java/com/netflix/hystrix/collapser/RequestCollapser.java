@@ -121,7 +121,7 @@ public class RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType
         CollapsedTask() {
             // this gets executed from the context of a HystrixCommand parent thread (such as a Tomcat thread)
             // so we create the callable now where we can capture the thread context
-            callableWithContextOfParent = concurrencyStrategy.wrapCallable(new HystrixContextCallable<Void>(new Callable<Void>() {
+            callableWithContextOfParent = new HystrixContextCallable<Void>(concurrencyStrategy, new Callable<Void>() {
                 // the wrapCallable call allows a strategy to capture thread-context if desired
 
                 @Override
@@ -144,7 +144,7 @@ public class RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType
                     return null;
                 }
 
-            }));
+            });
         }
 
         @Override
