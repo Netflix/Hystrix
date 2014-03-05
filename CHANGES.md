@@ -1,5 +1,12 @@
 # Hystrix Releases #
 
+### Version 1.3.10 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.3.10%22)) ###
+
+* [Pull 211](https://github.com/Netflix/Hystrix/pull/211) Update Javassist version to 3.18.1-GA
+* [Pull 213](https://github.com/Netflix/Hystrix/pull/213) BugFix: Timeout does not propagate request context
+* [Pull 204](https://github.com/Netflix/Hystrix/pull/204) deploying hystrix dashboard on tomcat, SLF4J complains about a missing implementation
+* [Pull 199](https://github.com/Netflix/Hystrix/pull/199) Add new module for publishing metrics to Coda Hale Metrics version 3
+
 ### Version 1.3.9 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.3.9%22)) ###
 
 * [Pull 210](https://github.com/Netflix/Hystrix/pull/210) HystrixContextScheduler was not wrapping the Inner Scheduler
