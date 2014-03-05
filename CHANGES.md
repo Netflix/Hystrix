@@ -1,5 +1,13 @@
 # Hystrix Releases #
 
+### Version 1.3.12 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.3.12%22)) ###
+
+* [Pull 214](https://github.com/Netflix/Hystrix/pull/214) HystrixContextCallable/Runnable Constructors
+
+### Version 1.3.11 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.3.11%22)) ###
+
+* We'll ignore this release ever happened. Exact same binary as 1.3.10. (It helps to push code to Github before releasing.)
+
 ### Version 1.3.10 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.3.10%22)) ###
 
 * [Pull 211](https://github.com/Netflix/Hystrix/pull/211) Update Javassist version to 3.18.1-GA
