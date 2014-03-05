@@ -21,6 +21,8 @@ import rx.Scheduler;
 import rx.Subscription;
 import rx.util.functions.Func2;
 
+import com.netflix.hystrix.strategy.HystrixPlugins;
+
 /**
  * Wrap a {@link Scheduler} so that scheduled actions are wrapped with {@link HystrixContextFunc2} so that
  * the {@link HystrixRequestContext} is properly copied across threads (if they are used by the {@link Scheduler}).
@@ -30,6 +32,10 @@ public class HystrixContextScheduler extends Scheduler {
     private final HystrixConcurrencyStrategy concurrencyStrategy;
     private final Scheduler actualScheduler;
 
+    public HystrixContextScheduler(Scheduler scheduler) {
+        this(HystrixPlugins.getInstance().getConcurrencyStrategy(), scheduler);
+    }
+    
     public HystrixContextScheduler(HystrixConcurrencyStrategy concurrencyStrategy, Scheduler scheduler) {
         this.actualScheduler = scheduler;
         this.concurrencyStrategy = concurrencyStrategy;
