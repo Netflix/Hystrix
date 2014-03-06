@@ -1,0 +1,38 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+
+aspectjVersion = '1.7.4'
+
+dependencies {
+  compile project(':hystrix-core')
+
+  compile "org.aspectj:aspectjweaver:$aspectjVersion"
+  compile "org.aspectj:aspectjrt:$aspectjVersion"
+
+  compile 'com.google.guava:guava:15.0'
+  compile 'commons-collections:commons-collections:3.2.1'
+  compile 'org.apache.commons:commons-lang3:3.1'
+  testCompile 'junit:junit-dep:4.10'
+  testCompile 'org.springframework:spring-core:4.0.0.RELEASE'
+  testCompile 'org.springframework:spring-context:4.0.0.RELEASE'
+  testCompile 'org.springframework:spring-aop:4.0.0.RELEASE'
+  testCompile 'org.springframework:spring-test:4.0.0.RELEASE'
+  testCompile 'cglib:cglib:3.1'
+}
+
+eclipse {
+  classpath {
+    // include 'provided' dependencies on the classpath
+    plusConfigurations += configurations.provided
+    downloadSources = true
+    downloadJavadoc = true
+  }
+}
+
+idea {
+  module {
+    // include 'provided' dependencies on the classpath
+    scopes.COMPILE.plus += configurations.provided
+  }
+}
