@@ -16,10 +16,10 @@
 package com.netflix.hystrix.contrib.javanica.command;
 
 import com.netflix.hystrix.HystrixCollapser;
-import com.netflix.hystrix.contrib.javanica.exception.CommandActionExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.concurrent.ThreadSafe;
 import java.util.Collection;
 import java.util.Map;
 
@@ -28,19 +28,19 @@ import java.util.Map;
  * Basically any logic can be executed within {@link CommandAction}
  * such as method invocation and etc.
  */
+@ThreadSafe
 public class GenericCommand extends AbstractHystrixCommand<Object> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GenericCommand.class);
-
-    private static final String EXECUTION_ERROR_MSG = "failed to process command action";
 
     /**
      * {@inheritDoc}
      */
     protected GenericCommand(CommandSetterBuilder setterBuilder, CommandAction commandAction,
                              CommandAction fallbackAction, Map<String, Object> commandProperties,
-                             Collection<HystrixCollapser.CollapsedRequest<Object, Object>> collapsedRequests) {
-        super(setterBuilder, commandAction, fallbackAction, commandProperties, collapsedRequests);
+                             Collection<HystrixCollapser.CollapsedRequest<Object, Object>> collapsedRequests,
+                             Class<? extends Throwable>[] ignoreExceptions) {
+        super(setterBuilder, commandAction, fallbackAction, commandProperties, collapsedRequests, ignoreExceptions);
     }
 
     /**
@@ -63,23 +63,6 @@ public class GenericCommand extends AbstractHystrixCommand<Object> {
     @Override
     protected Object getFallback() {
         return getFallbackAction() != null ? process(getFallbackAction()) : super.getFallback();
-    }
-
-    /**
-     * Executes action and in the case of any exceptions propagates it as {@link CommandActionExecutionException}
-     * runtime exception.
-     *
-     * @param action the command action
-     * @return result of command action execution
-     */
-    private Object process(CommandAction action) {
-        Object result;
-        try {
-            result = action.execute();
-        } catch (Throwable throwable) {
-            throw new CommandActionExecutionException(EXECUTION_ERROR_MSG, throwable);
-        }
-        return result;
     }
 
 }

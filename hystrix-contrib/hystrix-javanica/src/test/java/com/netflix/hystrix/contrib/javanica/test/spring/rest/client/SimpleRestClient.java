@@ -7,6 +7,8 @@ import com.netflix.hystrix.contrib.javanica.collapser.CollapserResult;
 import com.netflix.hystrix.contrib.javanica.command.AsyncCommand;
 import com.netflix.hystrix.contrib.javanica.command.ObservableCommand;
 import com.netflix.hystrix.contrib.javanica.test.spring.rest.domain.User;
+import com.netflix.hystrix.contrib.javanica.test.spring.rest.exception.BadRequestException;
+import com.netflix.hystrix.contrib.javanica.test.spring.rest.exception.NotFoundException;
 import com.netflix.hystrix.contrib.javanica.test.spring.rest.resource.UserResource;
 import org.springframework.stereotype.Component;
 import rx.Observable;
@@ -73,6 +75,16 @@ public class SimpleRestClient implements RestClient {
         };
     }
 
+    @HystrixCommand()
+    private Future<List<User>> findAllFallbackAsync(int pageNum, int pageSize) {
+        return new AsyncCommand<List<User>>() {
+            @Override
+            public List<User> invoke() {
+                return Arrays.asList(DEF_USER);
+            }
+        };
+    }
+
     @HystrixCollapser(commandMethod = "getUserById",
             collapserProperties = {@HystrixProperty(name = "timerDelayInMilliseconds", value = "200")})
     @Override
@@ -105,6 +117,12 @@ public class SimpleRestClient implements RestClient {
             })
     @Override
     public User getUserByName(String name) {
+        return userResource.getUserByName(name);
+    }
+
+    @HystrixCommand(fallbackMethod = "getUserByIdSecondary",
+            ignoreExceptions = {BadRequestException.class})
+    public User getUserByNameIgnoreExc(String name) {
         return userResource.getUserByName(name);
     }
 

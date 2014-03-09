@@ -5,6 +5,7 @@ import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.HystrixRequestLog;
 import com.netflix.hystrix.contrib.javanica.test.spring.rest.client.RestClient;
 import com.netflix.hystrix.contrib.javanica.test.spring.rest.domain.User;
+import com.netflix.hystrix.exception.HystrixBadRequestException;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -115,6 +116,14 @@ public abstract class BaseRestClientTest {
         assertTrue(hystrixCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
         // and that fallback was successful
         assertTrue(hystrixCommand.getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
+    }
+
+    @Test(expected = HystrixBadRequestException.class)
+    public void testGetUserByNameIgnoreBadRequestException() {
+        restClient.getUserByNameIgnoreExc(" ");
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        HystrixCommand getUserByNameIgnoreExc = getHystrixCommandByKey("getUserByNameIgnoreExc");
+        assertTrue(getUserByNameIgnoreExc.getExecutionEvents().contains(HystrixEventType.FAILURE));
     }
 
     @Test

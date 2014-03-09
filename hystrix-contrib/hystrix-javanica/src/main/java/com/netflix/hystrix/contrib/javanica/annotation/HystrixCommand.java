@@ -89,5 +89,12 @@ public @interface HystrixCommand {
      * @return command properties
      */
     HystrixProperty[] commandProperties() default {};
+
+    /**
+     * Defines exceptions which should be ignored and wrapped to throw in HystrixBadRequestException.
+     *
+     * @return exceptions to ignore
+     */
+    Class<? extends Throwable>[] ignoreExceptions() default {};
 }
 

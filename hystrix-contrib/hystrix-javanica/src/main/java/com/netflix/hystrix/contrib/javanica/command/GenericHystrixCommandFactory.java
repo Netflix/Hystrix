@@ -35,9 +35,10 @@ public class GenericHystrixCommandFactory extends AbstractHystrixCommandFactory<
     @Override
     GenericCommand create(CommandSetterBuilder setterBuilder, Map<String, Object> commandProperties,
                           CommandAction action, CommandAction fallbackAction,
-                          Collection<HystrixCollapser.CollapsedRequest<Object, Object>> collapsedRequests) {
+                          Collection<HystrixCollapser.CollapsedRequest<Object, Object>> collapsedRequests,
+                          Class<? extends Throwable>[] ignoreExceptions) {
         GenericCommand genericCommand = new GenericCommand(setterBuilder, action, fallbackAction, commandProperties,
-            collapsedRequests);
+            collapsedRequests, ignoreExceptions);
         return genericCommand;
     }
 

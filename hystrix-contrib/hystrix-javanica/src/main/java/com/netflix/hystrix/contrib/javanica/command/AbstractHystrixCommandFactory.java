@@ -63,7 +63,8 @@ public abstract class AbstractHystrixCommandFactory<T extends AbstractHystrixCom
         }
         Map<String, Object> commandProperties = getCommandProperties(metaHolder.getHystrixCommand());
         CommandAction fallbackAction = createFallbackAction(metaHolder, collapsedRequests);
-        return create(setterBuilder, commandProperties, action, fallbackAction, collapsedRequests);
+        return create(setterBuilder, commandProperties, action, fallbackAction, collapsedRequests,
+                metaHolder.getHystrixCommand().ignoreExceptions());
     }
 
     CommandAction createFallbackAction(MetaHolder metaHolder,
@@ -98,7 +99,8 @@ public abstract class AbstractHystrixCommandFactory<T extends AbstractHystrixCom
 
     abstract T create(CommandSetterBuilder setterBuilder, Map<String, Object> commandProperties, CommandAction action,
                       CommandAction fallbackAction,
-                      Collection<HystrixCollapser.CollapsedRequest<Object, Object>> collapsedRequests);
+                      Collection<HystrixCollapser.CollapsedRequest<Object, Object>> collapsedRequests,
+                      Class<? extends Throwable>[] ignoreExceptions);
 
     private Map<String, Object> getCommandProperties(HystrixCommand hystrixCommand) {
         Map<String, Object> commandProperties = Maps.newHashMap();

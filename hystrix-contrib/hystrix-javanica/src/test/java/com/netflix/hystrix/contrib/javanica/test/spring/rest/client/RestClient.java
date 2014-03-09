@@ -17,6 +17,8 @@ public interface RestClient {
 
     User getUserByName(String name);
 
+    User getUserByNameIgnoreExc(String name);
+
     User getUserByIdSecondary(String id);
 
     List<User> findAll(int pageNum, int pageSize);

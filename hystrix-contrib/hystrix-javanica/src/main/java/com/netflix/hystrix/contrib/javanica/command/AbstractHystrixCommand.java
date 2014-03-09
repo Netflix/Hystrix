@@ -16,13 +16,15 @@
 package com.netflix.hystrix.contrib.javanica.command;
 
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 import com.netflix.hystrix.HystrixCollapser;
 import com.netflix.hystrix.contrib.javanica.conf.HystrixPropertiesManager;
+import com.netflix.hystrix.exception.HystrixBadRequestException;
 
+import javax.annotation.concurrent.ThreadSafe;
 import java.util.Collection;
 import java.util.Map;
-import javax.annotation.concurrent.ThreadSafe;
 
 /**
  * Base class for hystrix commands.
@@ -36,6 +38,7 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
     private CommandAction fallbackAction;
     private Map<String, Object> commandProperties = Maps.newHashMap();
     private Collection<HystrixCollapser.CollapsedRequest<Object, Object>> collapsedRequests;
+    private final Class<? extends Throwable>[] ignoreExceptions;
 
     /**
      * Constructor with parameters.
@@ -50,12 +53,14 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
                                      CommandAction commandAction,
                                      CommandAction fallbackAction,
                                      Map<String, Object> commandProperties,
-                                     Collection<HystrixCollapser.CollapsedRequest<Object, Object>> collapsedRequests) {
+                                     Collection<HystrixCollapser.CollapsedRequest<Object, Object>> collapsedRequests,
+                                     final Class<? extends Throwable>[] ignoreExceptions) {
         super(setterBuilder.build());
         this.commandProperties = commandProperties;
         this.collapsedRequests = collapsedRequests;
         this.commandAction = commandAction;
         this.fallbackAction = fallbackAction;
+        this.ignoreExceptions = ignoreExceptions;
         HystrixPropertiesManager.setCommandProperties(commandProperties, getCommandKey().name());
     }
 
@@ -93,6 +98,47 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
      */
     Collection<HystrixCollapser.CollapsedRequest<Object, Object>> getCollapsedRequests() {
         return collapsedRequests;
+    }
+
+    /**
+     * Gets exceptions types which should be ignored.
+     *
+     * @return exceptions types
+     */
+    Class<? extends Throwable>[] getIgnoreExceptions() {
+        return ignoreExceptions;
+    }
+
+    boolean isIgnorable(Throwable throwable) {
+        if (ignoreExceptions == null || ignoreExceptions.length == 0) {
+            return false;
+        }
+        for (Class<? extends Throwable> ignoreException : ignoreExceptions) {
+            if (throwable.getClass().isAssignableFrom(ignoreException)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Executes an action. If an action has failed and an exception is ignorable then propagate it as HystrixBadRequestException
+     * otherwise propagate it as RuntimeException.
+     *
+     * @param action the command action
+     * @return result of command action execution
+     */
+    Object process(CommandAction action) {
+        Object result;
+        try {
+            result = action.execute();
+        } catch (Throwable throwable) {
+            if (isIgnorable(throwable)) {
+                throw new HystrixBadRequestException(throwable.getMessage(), throwable);
+            }
+           throw Throwables.propagate(throwable);
+        }
+        return result;
     }
 
     /**
