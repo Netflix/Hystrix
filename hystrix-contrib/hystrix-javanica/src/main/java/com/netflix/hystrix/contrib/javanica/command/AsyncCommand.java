@@ -25,7 +25,7 @@ import java.util.concurrent.TimeoutException;
  *
  * @param <T> the type of result
  */
-public abstract class AsyncCommand<T> implements Future<T> {
+public abstract class AsyncCommand<T> implements Future<T>, ClosureCommand<T> {
 
     private static final String ERROR_MSG = "AsyncCommand is just a stab and cannot be used as complete implementation of Future";
 
@@ -54,6 +54,10 @@ public abstract class AsyncCommand<T> implements Future<T> {
         throw new UnsupportedOperationException(ERROR_MSG);
     }
 
+    /**
+     * {@inheritDoc}.
+     */
+    @Override
     public abstract T invoke();
 
 }

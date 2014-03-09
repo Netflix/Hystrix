@@ -5,9 +5,11 @@ import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
 import com.netflix.hystrix.contrib.javanica.collapser.CollapserResult;
 import com.netflix.hystrix.contrib.javanica.command.AsyncCommand;
+import com.netflix.hystrix.contrib.javanica.command.ObservableCommand;
 import com.netflix.hystrix.contrib.javanica.test.spring.rest.domain.User;
 import com.netflix.hystrix.contrib.javanica.test.spring.rest.resource.UserResource;
 import org.springframework.stereotype.Component;
+import rx.Observable;
 
 import java.util.Arrays;
 import java.util.List;
@@ -30,6 +32,17 @@ public class SimpleRestClient implements RestClient {
     @Override
     public Future<User> getUserByIdAsync(final String id) {
         return new AsyncCommand<User>() {
+            @Override
+            public User invoke() {
+                return userResource.getUserById(id);
+            }
+        };
+    }
+
+    @HystrixCommand(fallbackMethod = "getUserByIdSecondary")
+    @Override
+    public Observable<User> getUserByIdObservable(final String id) {
+        return new ObservableCommand<User>() {
             @Override
             public User invoke() {
                 return userResource.getUserById(id);

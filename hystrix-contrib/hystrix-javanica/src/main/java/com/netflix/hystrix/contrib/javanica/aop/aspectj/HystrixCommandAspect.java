@@ -16,11 +16,14 @@
 package com.netflix.hystrix.contrib.javanica.aop.aspectj;
 
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
-import com.netflix.hystrix.contrib.javanica.command.AsyncCommand;
+import com.netflix.hystrix.contrib.javanica.command.CommandExecutor;
+import com.netflix.hystrix.contrib.javanica.command.ExecutionType;
 import com.netflix.hystrix.contrib.javanica.command.GenericCommand;
 import com.netflix.hystrix.contrib.javanica.command.GenericHystrixCommandFactory;
 import com.netflix.hystrix.contrib.javanica.command.HystrixCommandFactory;
 import com.netflix.hystrix.contrib.javanica.command.MetaHolder;
+import com.netflix.hystrix.contrib.javanica.command.closure.Closure;
+import com.netflix.hystrix.contrib.javanica.command.closure.ClosureFactoryRegistry;
 import org.apache.commons.lang3.Validate;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -28,19 +31,14 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 
 import java.lang.reflect.Method;
-import java.util.concurrent.Future;
 
 import static com.netflix.hystrix.contrib.javanica.utils.AopUtils.getMethodFromTarget;
-import static org.slf4j.helpers.MessageFormatter.format;
 
 /**
  * AspectJ aspect to process methods which annotated with {@link HystrixCommand} annotation.
  */
 @Aspect
 public class HystrixCommandAspect {
-
-    private static final String ERROR_TYPE_MESSAGE = "return statement of '{}' method should returns instance of AsyncCommand class";
-    private static final String INVOKE_METHOD = "invoke";
 
     @Pointcut("@annotation(com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand)")
     public void hystrixCommandAnnotationPointcut() {
@@ -56,39 +54,21 @@ public class HystrixCommandAspect {
         Validate.notNull(method, "failed to get method from joinPoint: %s", joinPoint);
         hystrixCommand = method.getAnnotation(HystrixCommand.class);
 
-        Object asyncObj = null;
-        Method asyncMethod = null;
-        boolean async = false;
-        if (method.getReturnType().isAssignableFrom(Future.class)) {
-            asyncObj = method.invoke(obj, args); // creates instance
-            if (!isAsyncCommand(asyncObj)) {
-                throw new RuntimeException(format(ERROR_TYPE_MESSAGE, method.getName()).getMessage());
-            }
-            asyncMethod = asyncObj.getClass().getMethod(INVOKE_METHOD);
-            async = true;
-        }
+        ExecutionType executionType = ExecutionType.getExecutionType(method.getReturnType());
+        Closure closure = ClosureFactoryRegistry.getFactory(executionType).createClosure(method, obj, args);
 
         HystrixCommandFactory<GenericCommand> genericCommandHystrixCommandFactory = new GenericHystrixCommandFactory();
         MetaHolder metaHolder = MetaHolder.builder()
-                .async(async)
                 .args(args)
                 .method(method)
-                .asyncMethod(asyncMethod)
-                .asyncObj(asyncObj)
                 .obj(obj)
+                .executionType(executionType)
+                .closure(closure)
                 .hystrixCommand(hystrixCommand)
                 .defaultCommandKey(method.getName())
                 .defaultGroupKey(obj.getClass().getSimpleName()).build();
         GenericCommand genericCommand = genericCommandHystrixCommandFactory.create(metaHolder, null);
-        if (async) {
-            return genericCommand.queue();
-        } else {
-            return genericCommand.execute();
-        }
-    }
-
-    private boolean isAsyncCommand(Object instance) {
-        return instance instanceof AsyncCommand;
+        return CommandExecutor.execute(genericCommand, executionType);
     }
 
 }

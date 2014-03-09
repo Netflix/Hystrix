@@ -55,8 +55,9 @@ public abstract class AbstractHystrixCommandFactory<T extends AbstractHystrixCom
         setterBuilder.groupKey(groupKey);
         setterBuilder.threadPoolKey(metaHolder.getHystrixCommand().threadPoolKey());
         CommandAction action;
-        if (metaHolder.isAsync()) {
-            action = new CommandAction(metaHolder.getAsyncObj(), metaHolder.getAsyncMethod());
+        if (metaHolder.isAsync() || metaHolder.isObservable()) {
+            action = new CommandAction(metaHolder.getClosure().getClosureObj(),
+                    metaHolder.getClosure().getClosureMethod());
         } else {
             action = new CommandAction(metaHolder.getObj(), metaHolder.getMethod(), metaHolder.getArgs());
         }
