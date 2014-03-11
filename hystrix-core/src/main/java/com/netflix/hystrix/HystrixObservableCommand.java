@@ -877,6 +877,8 @@ public abstract class HystrixObservableCommand<R> extends HystrixExecutableBase<
 
                 @Override
                 public void onNext(R v) {
+                    // TODO does this need to compareAndSet(TimedOutStatus.NOT_EXECUTED, TimedOutStatus.NOT_EXECUTED)
+                    // to be thread-safe, and does that even work?
                     if (originalCommand.isCommandTimedOut.get().equals(TimedOutStatus.NOT_EXECUTED)) {
                         child.onNext(v);
                     }
