@@ -17,6 +17,8 @@ package com.netflix.hystrix.strategy.concurrency;
 
 import java.util.concurrent.Callable;
 
+import com.netflix.hystrix.strategy.HystrixPlugins;
+
 /**
  * Wrapper around {@link Callable} that manages the {@link HystrixRequestContext} initialization and cleanup for the execution of the {@link Callable}
  * 
@@ -29,6 +31,10 @@ public class HystrixContextCallable<K> implements Callable<K> {
 
     private final Callable<K> actual;
     private final HystrixRequestContext parentThreadState;
+
+    public HystrixContextCallable(Callable<K> actual) {
+        this(HystrixPlugins.getInstance().getConcurrencyStrategy(), actual);
+    }
 
     public HystrixContextCallable(HystrixConcurrencyStrategy concurrencyStrategy, Callable<K> actual) {
         this.actual = concurrencyStrategy.wrapCallable(actual);

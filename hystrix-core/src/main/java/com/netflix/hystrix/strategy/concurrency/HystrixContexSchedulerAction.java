@@ -22,6 +22,7 @@ import rx.Scheduler.Inner;
 import rx.functions.Action1;
 import rx.functions.Func2;
 
+import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.concurrency.HystrixContextScheduler.HystrixContextInnerScheduler;
 
 /**
@@ -50,6 +51,10 @@ public class HystrixContexSchedulerAction implements Action1<Inner> {
      * precede `call` being invoked once.
      */
     private final AtomicReference<Inner> t1Holder = new AtomicReference<Inner>();
+
+    public HystrixContexSchedulerAction(Action1<Inner> action) {
+        this(HystrixPlugins.getInstance().getConcurrencyStrategy(), action);
+    }
 
     public HystrixContexSchedulerAction(final HystrixConcurrencyStrategy concurrencyStrategy, Action1<Inner> action) {
         this.actual = action;
