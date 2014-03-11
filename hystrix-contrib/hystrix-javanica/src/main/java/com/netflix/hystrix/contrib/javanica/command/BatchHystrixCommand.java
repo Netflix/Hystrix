@@ -37,8 +37,9 @@ public class BatchHystrixCommand extends AbstractHystrixCommand<List<Object>> {
      */
     protected BatchHystrixCommand(CommandSetterBuilder setterBuilder, CommandAction commandAction,
                                   CommandAction fallbackAction, Map<String, Object> commandProperties,
-                                  Collection<HystrixCollapser.CollapsedRequest<Object, Object>> collapsedRequests) {
-        super(setterBuilder, commandAction, fallbackAction, commandProperties, collapsedRequests);
+                                  Collection<HystrixCollapser.CollapsedRequest<Object, Object>> collapsedRequests,
+                                  Class<? extends Throwable>[] ignoreExceptions) {
+        super(setterBuilder, commandAction, fallbackAction, commandProperties, collapsedRequests, ignoreExceptions);
     }
 
     /**
@@ -48,7 +49,9 @@ public class BatchHystrixCommand extends AbstractHystrixCommand<List<Object>> {
     protected List<Object> run() throws Exception {
         for (HystrixCollapser.CollapsedRequest<Object, Object> request : getCollapsedRequests()) {
             Object[] args = (Object[]) request.getArgument();
-            response.add(getCommandAction().execute(args));
+            CommandAction action = new CommandAction(getCommandAction().getObject(),
+                    getCommandAction().getMethod(), args);
+            response.add(process(action));
         }
         return response;
     }
@@ -59,7 +62,7 @@ public class BatchHystrixCommand extends AbstractHystrixCommand<List<Object>> {
     @Override
     protected List<Object> getFallback() {
         if (getFallbackAction() != null) {
-            response.add(getFallbackAction().execute());
+            response.add(process(getFallbackAction()));
             return response;
         } else {
             return super.getFallback();

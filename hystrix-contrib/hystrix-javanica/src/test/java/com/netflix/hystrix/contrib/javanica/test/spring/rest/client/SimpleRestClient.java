@@ -5,9 +5,13 @@ import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
 import com.netflix.hystrix.contrib.javanica.collapser.CollapserResult;
 import com.netflix.hystrix.contrib.javanica.command.AsyncCommand;
+import com.netflix.hystrix.contrib.javanica.command.ObservableCommand;
 import com.netflix.hystrix.contrib.javanica.test.spring.rest.domain.User;
+import com.netflix.hystrix.contrib.javanica.test.spring.rest.exception.BadRequestException;
+import com.netflix.hystrix.contrib.javanica.test.spring.rest.exception.NotFoundException;
 import com.netflix.hystrix.contrib.javanica.test.spring.rest.resource.UserResource;
 import org.springframework.stereotype.Component;
+import rx.Observable;
 
 import java.util.Arrays;
 import java.util.List;
@@ -37,6 +41,17 @@ public class SimpleRestClient implements RestClient {
         };
     }
 
+    @HystrixCommand(fallbackMethod = "getUserByIdSecondary")
+    @Override
+    public Observable<User> getUserByIdObservable(final String id) {
+        return new ObservableCommand<User>() {
+            @Override
+            public User invoke() {
+                return userResource.getUserById(id);
+            }
+        };
+    }
+
     @HystrixCommand(fallbackMethod = "defaultUser")
     @Override
     public User getUserByIdSecondary(String id) {
@@ -56,6 +71,16 @@ public class SimpleRestClient implements RestClient {
             @Override
             public List<User> invoke() {
                 return userResource.findAll(pageNum, pageSize);
+            }
+        };
+    }
+
+    @HystrixCommand()
+    private Future<List<User>> findAllFallbackAsync(int pageNum, int pageSize) {
+        return new AsyncCommand<List<User>>() {
+            @Override
+            public List<User> invoke() {
+                return Arrays.asList(DEF_USER);
             }
         };
     }
@@ -92,6 +117,12 @@ public class SimpleRestClient implements RestClient {
             })
     @Override
     public User getUserByName(String name) {
+        return userResource.getUserByName(name);
+    }
+
+    @HystrixCommand(fallbackMethod = "getUserByIdSecondary",
+            ignoreExceptions = {BadRequestException.class})
+    public User getUserByNameIgnoreExc(String name) {
         return userResource.getUserByName(name);
     }
 

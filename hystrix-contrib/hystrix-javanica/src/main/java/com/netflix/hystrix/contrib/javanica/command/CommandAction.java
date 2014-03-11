@@ -15,8 +15,6 @@
  */
 package com.netflix.hystrix.contrib.javanica.command;
 
-import com.netflix.hystrix.contrib.javanica.exception.CommandActionExecutionException;
-
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
@@ -45,7 +43,19 @@ public class CommandAction {
         this._args = args;
     }
 
-    public Object execute() {
+    public Object getObject() {
+        return object;
+    }
+
+    public Method getMethod() {
+        return method;
+    }
+
+    public Object[] getArgs() {
+        return _args;
+    }
+
+    public Object execute() throws Throwable {
         return execute(_args);
     }
 
@@ -54,17 +64,21 @@ public class CommandAction {
      *
      * @return result of execution
      */
-    public Object execute(Object[] args) {
+    public Object execute(Object[] args) throws Throwable {
         Object result = null;
         try {
             method.setAccessible(true); // suppress Java language access
             result = method.invoke(object, args);
         } catch (IllegalAccessException e) {
-            throw new CommandActionExecutionException(e);
+            propagateCause(e);
         } catch (InvocationTargetException e) {
-            throw new CommandActionExecutionException(e);
+            propagateCause(e);
         }
         return result;
+    }
+
+    private void propagateCause(Throwable throwable) throws Throwable {
+        throw throwable.getCause();
     }
 
 }

@@ -18,16 +18,18 @@ package com.netflix.hystrix.contrib.javanica.aop.aspectj;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCollapser;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.collapser.CommandCollapser;
+import com.netflix.hystrix.contrib.javanica.command.CommandExecutor;
+import com.netflix.hystrix.contrib.javanica.command.ExecutionType;
 import com.netflix.hystrix.contrib.javanica.command.MetaHolder;
-
-import java.lang.reflect.Method;
-import java.util.concurrent.Future;
-
+import com.netflix.hystrix.contrib.javanica.command.closure.Closure;
+import com.netflix.hystrix.contrib.javanica.command.closure.ClosureFactoryRegistry;
 import org.apache.commons.lang3.Validate;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
+
+import java.lang.reflect.Method;
 
 import static com.netflix.hystrix.contrib.javanica.utils.AopUtils.getMethodFromTarget;
 
@@ -54,24 +56,27 @@ public class HystrixCollapserAspect {
 
 
         Method commandMethod = getMethodFromTarget(joinPoint, hystrixCollapser.commandMethod());
+        ExecutionType collapserExecutionType = ExecutionType.getExecutionType(collapserMethod.getReturnType());
+        ExecutionType commandExecutionType = ExecutionType.getExecutionType(commandMethod.getReturnType());
+        Closure closure = ClosureFactoryRegistry.getFactory(commandExecutionType).createClosure(commandMethod, obj, args);
+
 
         HystrixCommand hystrixCommand = commandMethod.getAnnotation(HystrixCommand.class);
-        Validate.notNull(hystrixCommand, "collapser should refer to method which was annotated with @HystrixCommand");
+        Validate.notNull(hystrixCommand, "collapser cannot refer to the '' method which wasn't annotated with @HystrixCommand");
 
         MetaHolder metaHolder = MetaHolder.builder()
                 .args(args)
                 .method(commandMethod)
                 .obj(obj)
+                .closure(closure)
+                .executionType(commandExecutionType)
                 .hystrixCollapser(hystrixCollapser)
                 .hystrixCommand(hystrixCommand)
                 .defaultCommandKey(commandMethod.getName())
                 .defaultCollapserKey(collapserMethod.getName())
                 .defaultGroupKey(obj.getClass().getSimpleName()).build();
-        if (collapserMethod.getReturnType().isAssignableFrom(Future.class)) {
-            return new CommandCollapser(metaHolder).queue();
-        } else {
-            return new CommandCollapser(metaHolder).execute();
-        }
+        CommandCollapser commandCollapser = new CommandCollapser(metaHolder);
+        return CommandExecutor.execute(commandCollapser, collapserExecutionType);
     }
 
 }
