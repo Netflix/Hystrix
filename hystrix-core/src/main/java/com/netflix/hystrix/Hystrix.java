@@ -1,17 +1,13 @@
 package com.netflix.hystrix;
 
-import static org.junit.Assert.*;
-
 import java.util.LinkedList;
 import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.netflix.hystrix.HystrixCommand.Setter;
-import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
+import rx.functions.Action0;
 
 /**
  * Lifecycle management of Hystrix.
@@ -85,18 +81,35 @@ public class Hystrix {
         return currentCommand.get().peek();
     }
 
-    /* package */static void startCurrentThreadExecutingCommand(HystrixCommandKey key) {
+    /**
+     * 
+     * @return Action0 to perform the same work as `endCurrentThreadExecutingCommand()` but can be done from any thread
+     */
+    /* package */static Action0 startCurrentThreadExecutingCommand(HystrixCommandKey key) {
+        final LinkedList<HystrixCommandKey> list = currentCommand.get();
         try {
-            currentCommand.get().push(key);
+            list.push(key);
         } catch (Exception e) {
             logger.warn("Unable to record command starting", e);
         }
+        return new Action0() {
+
+            @Override
+            public void call() {
+                endCurrentThreadExecutingCommand(list);
+            }
+
+        };
     }
 
     /* package */static void endCurrentThreadExecutingCommand() {
+        endCurrentThreadExecutingCommand(currentCommand.get());
+    }
+
+    private static void endCurrentThreadExecutingCommand(LinkedList<HystrixCommandKey> list) {
         try {
-            if (!currentCommand.get().isEmpty()) {
-                currentCommand.get().pop();
+            if (!list.isEmpty()) {
+                list.pop();
             }
         } catch (NoSuchElementException e) {
             // this shouldn't be possible since we check for empty above and this is thread-isolated
@@ -106,163 +119,4 @@ public class Hystrix {
         }
     }
 
-    public static class UnitTest {
-        @Test
-        public void testNotInThread() {
-            assertNull(getCurrentThreadExecutingCommand());
-        }
-
-        @Test
-        public void testInsideHystrixThread() {
-
-            assertNull(getCurrentThreadExecutingCommand());
-
-            HystrixCommand<Boolean> command = new HystrixCommand<Boolean>(Setter
-                    .withGroupKey(HystrixCommandGroupKey.Factory.asKey("TestUtil"))
-                    .andCommandKey(HystrixCommandKey.Factory.asKey("CommandName"))) {
-
-                @Override
-                protected Boolean run() {
-                    assertEquals("CommandName", getCurrentThreadExecutingCommand().name());
-
-                    return getCurrentThreadExecutingCommand() != null;
-                }
-
-            };
-
-            assertTrue(command.execute());
-            assertNull(getCurrentThreadExecutingCommand());
-        }
-
-        @Test
-        public void testInsideNestedHystrixThread() {
-
-            HystrixCommand<Boolean> command = new HystrixCommand<Boolean>(Setter
-                    .withGroupKey(HystrixCommandGroupKey.Factory.asKey("TestUtil"))
-                    .andCommandKey(HystrixCommandKey.Factory.asKey("OuterCommand"))) {
-
-                @Override
-                protected Boolean run() {
-
-                    assertEquals("OuterCommand", getCurrentThreadExecutingCommand().name());
-
-                    if (getCurrentThreadExecutingCommand() == null) {
-                        throw new RuntimeException("BEFORE expected it to run inside a thread");
-                    }
-
-                    HystrixCommand<Boolean> command2 = new HystrixCommand<Boolean>(Setter
-                            .withGroupKey(HystrixCommandGroupKey.Factory.asKey("TestUtil"))
-                            .andCommandKey(HystrixCommandKey.Factory.asKey("InnerCommand"))) {
-
-                        @Override
-                        protected Boolean run() {
-                            assertEquals("InnerCommand", getCurrentThreadExecutingCommand().name());
-
-                            return getCurrentThreadExecutingCommand() != null;
-                        }
-
-                    };
-
-                    if (getCurrentThreadExecutingCommand() == null) {
-                        throw new RuntimeException("AFTER expected it to run inside a thread");
-                    }
-
-                    return command2.execute();
-                }
-
-            };
-
-            assertTrue(command.execute());
-
-            assertNull(getCurrentThreadExecutingCommand());
-        }
-
-        @Test
-        public void testInsideHystrixSemaphoreExecute() {
-
-            HystrixCommand<Boolean> command = new HystrixCommand<Boolean>(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("TestUtil"))
-                    .andCommandKey(HystrixCommandKey.Factory.asKey("SemaphoreIsolatedCommandName"))
-                    .andCommandPropertiesDefaults(HystrixCommandProperties.Setter().withExecutionIsolationStrategy(ExecutionIsolationStrategy.SEMAPHORE))) {
-
-                @Override
-                protected Boolean run() {
-                    assertEquals("SemaphoreIsolatedCommandName", getCurrentThreadExecutingCommand().name());
-
-                    return getCurrentThreadExecutingCommand() != null;
-                }
-
-            };
-
-            // it should be true for semaphore isolation as well
-            assertTrue(command.execute());
-            // and then be null again once done
-            assertNull(getCurrentThreadExecutingCommand());
-        }
-
-        @Test
-        public void testInsideHystrixSemaphoreQueue() throws Exception {
-
-            HystrixCommand<Boolean> command = new HystrixCommand<Boolean>(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("TestUtil"))
-                    .andCommandKey(HystrixCommandKey.Factory.asKey("SemaphoreIsolatedCommandName"))
-                    .andCommandPropertiesDefaults(HystrixCommandProperties.Setter().withExecutionIsolationStrategy(ExecutionIsolationStrategy.SEMAPHORE))) {
-
-                @Override
-                protected Boolean run() {
-                    assertEquals("SemaphoreIsolatedCommandName", getCurrentThreadExecutingCommand().name());
-
-                    return getCurrentThreadExecutingCommand() != null;
-                }
-
-            };
-
-            // it should be true for semaphore isolation as well
-            assertTrue(command.queue().get());
-            // and then be null again once done
-            assertNull(getCurrentThreadExecutingCommand());
-        }
-
-        @Test
-        public void testThreadNestedInsideHystrixSemaphore() {
-
-            HystrixCommand<Boolean> command = new HystrixCommand<Boolean>(Setter
-                    .withGroupKey(HystrixCommandGroupKey.Factory.asKey("TestUtil"))
-                    .andCommandKey(HystrixCommandKey.Factory.asKey("OuterSemaphoreCommand"))
-                    .andCommandPropertiesDefaults(HystrixCommandProperties.Setter().withExecutionIsolationStrategy(ExecutionIsolationStrategy.SEMAPHORE))) {
-
-                @Override
-                protected Boolean run() {
-
-                    assertEquals("OuterSemaphoreCommand", getCurrentThreadExecutingCommand().name());
-
-                    if (getCurrentThreadExecutingCommand() == null) {
-                        throw new RuntimeException("BEFORE expected it to run inside a semaphore");
-                    }
-
-                    HystrixCommand<Boolean> command2 = new HystrixCommand<Boolean>(Setter
-                            .withGroupKey(HystrixCommandGroupKey.Factory.asKey("TestUtil"))
-                            .andCommandKey(HystrixCommandKey.Factory.asKey("InnerCommand"))) {
-
-                        @Override
-                        protected Boolean run() {
-                            assertEquals("InnerCommand", getCurrentThreadExecutingCommand().name());
-
-                            return getCurrentThreadExecutingCommand() != null;
-                        }
-
-                    };
-
-                    if (getCurrentThreadExecutingCommand() == null) {
-                        throw new RuntimeException("AFTER expected it to run inside a semaphore");
-                    }
-
-                    return command2.execute();
-                }
-
-            };
-
-            assertTrue(command.execute());
-
-            assertNull(getCurrentThreadExecutingCommand());
-        }
-    }
 }

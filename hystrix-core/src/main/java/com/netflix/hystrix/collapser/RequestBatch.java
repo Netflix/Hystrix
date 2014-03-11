@@ -105,7 +105,8 @@ public class RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> {
                     try {
                         // create a new command to handle this batch of requests
                         Observable<BatchReturnType> o = commandCollapser.createObservableCommand(shardRequests);
-                        o.subscribe(new RequestBatch.BatchRequestObserver<ResponseType, RequestArgumentType, BatchReturnType>(commandCollapser, shardRequests));
+                        // if more than one item is emitted we fail
+                        o.single().subscribe(new RequestBatch.BatchRequestObserver<ResponseType, RequestArgumentType, BatchReturnType>(commandCollapser, shardRequests));
                     } catch (Exception e) {
                         logger.error("Exception while creating and queueing command with batch.", e);
                         // if a failure occurs we want to pass that exception to all of the Futures that we've returned
@@ -179,34 +180,17 @@ public class RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> {
             this.requests = requests;
         }
 
+        private boolean receivedResponse = false;
+        private BatchReturnType response;
+
         @Override
         public void onCompleted() {
-            // do nothing as we always expect onNext or onError to be called
-        }
-
-        @Override
-        public void onError(Throwable t) {
-            Exception e = null;
-            if (t instanceof Exception) {
-                e = (Exception) t;
-            } else {
-                // Hystrix 1.x uses Exception, not Throwable so to prevent a breaking change Throwable will be wrapped in Exception
-                e = new Exception("Throwable caught while executing command with batch.", t);
-            }
-            logger.error("Exception while executing command with batch.", e);
-            // if a failure occurs we want to pass that exception to all of the Futures that we've returned
-            for (CollapsedRequest<ResponseType, RequestArgumentType> request : requests) {
-                try {
-                    request.setException(e);
-                } catch (IllegalStateException e2) {
-                    logger.debug("Failed trying to setException on CollapsedRequest", e2);
-                }
-            }
-        }
-
-        @Override
-        public void onNext(BatchReturnType response) {
             try {
+                // use a boolean since null can be a real response
+                if (!receivedResponse) {
+                    onError(new IllegalStateException("Did not receive batch response."));
+                    return;
+                }
                 commandCollapser.mapResponseToRequests(response, requests);
             } catch (Throwable e) {
                 // handle Throwable in case anything is thrown so we don't block Observers waiting for onError/onCompleted
@@ -239,6 +223,34 @@ public class RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> {
                     logger.debug("Partial success of 'mapResponseToRequests' resulted in IllegalStateException while setting 'No response set' Exception. Continuing ... ", e2);
                 }
             }
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            Exception e = null;
+            if (t instanceof Exception) {
+                e = (Exception) t;
+            } else {
+                // Hystrix 1.x uses Exception, not Throwable so to prevent a breaking change Throwable will be wrapped in Exception
+                e = new Exception("Throwable caught while executing command with batch.", t);
+            }
+            logger.error("Exception while executing command with batch.", e);
+            // if a failure occurs we want to pass that exception to all of the Futures that we've returned
+            for (CollapsedRequest<ResponseType, RequestArgumentType> request : requests) {
+                try {
+                    request.setException(e);
+                } catch (IllegalStateException e2) {
+                    logger.debug("Failed trying to setException on CollapsedRequest", e2);
+                }
+            }
+        }
+
+        @Override
+        public void onNext(BatchReturnType response) {
+            receivedResponse = true;
+            this.response = response;
+            // we want to wait until onComplete to do the processing
+            // so we don't release the callers before metrics/logs/etc are available
         }
     }
 

@@ -15,24 +15,14 @@
  */
 package com.netflix.hystrix;
 
-import static org.junit.Assert.*;
-
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import rx.Observable;
-import rx.Observable.OnSubscribeFunc;
-import rx.Observer;
-import rx.Subscription;
-import rx.subscriptions.Subscriptions;
-import rx.util.functions.Func1;
 
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
-import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategyDefault;
-import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestVariableDefault;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestVariableHolder;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestVariableLifecycle;
@@ -273,79 +263,6 @@ public class HystrixRequestCache {
             } else if (!concurrencyStrategy.equals(other.concurrencyStrategy))
                 return false;
             return true;
-        }
-
-    }
-
-    public static class UnitTest {
-
-        @Test
-        public void testCache() {
-            HystrixConcurrencyStrategy strategy = HystrixConcurrencyStrategyDefault.getInstance();
-            HystrixRequestContext context = HystrixRequestContext.initializeContext();
-            try {
-                HystrixRequestCache cache1 = HystrixRequestCache.getInstance(HystrixCommandKey.Factory.asKey("command1"), strategy);
-                cache1.putIfAbsent("valueA", new TestObservable("a1"));
-                cache1.putIfAbsent("valueA", new TestObservable("a2"));
-                cache1.putIfAbsent("valueB", new TestObservable("b1"));
-
-                HystrixRequestCache cache2 = HystrixRequestCache.getInstance(HystrixCommandKey.Factory.asKey("command2"), strategy);
-                cache2.putIfAbsent("valueA", new TestObservable("a3"));
-
-                assertEquals("a1", cache1.get("valueA").toBlockingObservable().last());
-                assertEquals("b1", cache1.get("valueB").toBlockingObservable().last());
-
-                assertEquals("a3", cache2.get("valueA").toBlockingObservable().last());
-                assertNull(cache2.get("valueB"));
-            } catch (Exception e) {
-                fail("Exception: " + e.getMessage());
-                e.printStackTrace();
-            } finally {
-                context.shutdown();
-            }
-
-            context = HystrixRequestContext.initializeContext();
-            try {
-                // with a new context  the instance should have nothing in it
-                HystrixRequestCache cache = HystrixRequestCache.getInstance(HystrixCommandKey.Factory.asKey("command1"), strategy);
-                assertNull(cache.get("valueA"));
-                assertNull(cache.get("valueB"));
-            } finally {
-                context.shutdown();
-            }
-        }
-
-        @Test
-        public void testClearCache() {
-            HystrixConcurrencyStrategy strategy = HystrixConcurrencyStrategyDefault.getInstance();
-            HystrixRequestContext context = HystrixRequestContext.initializeContext();
-            try {
-                HystrixRequestCache cache1 = HystrixRequestCache.getInstance(HystrixCommandKey.Factory.asKey("command1"), strategy);
-                cache1.putIfAbsent("valueA", new TestObservable("a1"));
-                assertEquals("a1", cache1.get("valueA").toBlockingObservable().last());
-                cache1.clear("valueA");
-                assertNull(cache1.get("valueA"));
-            } catch (Exception e) {
-                fail("Exception: " + e.getMessage());
-                e.printStackTrace();
-            } finally {
-                context.shutdown();
-            }
-        }
-
-        private static class TestObservable extends Observable<String> {
-            public TestObservable(final String value) {
-                super(new OnSubscribeFunc<String>() {
-
-                    @Override
-                    public Subscription onSubscribe(Observer<? super String> observer) {
-                        observer.onNext(value);
-                        observer.onCompleted();
-                        return Subscriptions.empty();
-                    }
-
-                });
-            }
         }
 
     }
