@@ -7,6 +7,7 @@ import java.lang.ref.SoftReference;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -145,7 +146,12 @@ public class HystrixCollapserTest {
         timer.incrementTime(10); // let time pass that equals the default delay/period
 
         // the first is cancelled so should return null
-        assertEquals(null, response1.get());
+        try {
+            response1.get();
+            fail("expect CancellationException after cancelling");
+        } catch (CancellationException e) {
+            // expected
+        }
         // we should still get a response on the second
         assertEquals("2", response2.get());
 
