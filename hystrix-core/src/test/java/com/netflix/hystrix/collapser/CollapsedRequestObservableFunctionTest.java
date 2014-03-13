@@ -2,6 +2,7 @@ package com.netflix.hystrix.collapser;
 
 import static org.junit.Assert.*;
 
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -110,7 +111,7 @@ public class CollapsedRequestObservableFunctionTest {
         assertEquals("theResponse", v.get());
     }
 
-    @Test
+    @Test(expected = CancellationException.class)
     public void testSetResponseAfterUnsubscribe() throws InterruptedException, ExecutionException {
         CollapsedRequestObservableFunction<String, String> cr = new CollapsedRequestObservableFunction<String, String>("hello");
         Observable<String> o = Observable.create(cr);
@@ -125,11 +126,11 @@ public class CollapsedRequestObservableFunctionTest {
             fail("this should have done nothing as it was unsubscribed already");
         }
 
-        // if you fetch after canceling it should be null
-        assertEquals(null, f.get());
+        // expect CancellationException after cancelling
+        f.get();
     }
 
-    @Test
+    @Test(expected = CancellationException.class)
     public void testSetExceptionAfterUnsubscribe() throws InterruptedException, ExecutionException {
         CollapsedRequestObservableFunction<String, String> cr = new CollapsedRequestObservableFunction<String, String>("hello");
         Observable<String> o = Observable.create(cr);
@@ -144,8 +145,8 @@ public class CollapsedRequestObservableFunctionTest {
             fail("this should have done nothing as it was unsubscribed already");
         }
 
-        // if you fetch after canceling it should be null
-        assertEquals(null, f.get());
+        // expect CancellationException after cancelling
+        f.get();
     }
 
     @Test
