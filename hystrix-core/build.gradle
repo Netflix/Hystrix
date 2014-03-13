@@ -10,21 +10,21 @@ dependencies {
     testCompile 'junit:junit-dep:4.10'
 }
 
-// commenting out as build is having issues with this
-//javadoc {
-//    // the exclude isn't working, nor is there a subPackages options as docs suggest there should be
-//    // we do not want the com.netflix.hystrix.util package include
-//    exclude '**/util/**'
-//			
-//    options {
-//        doclet = "org.benjchristensen.doclet.DocletExclude"
-//        docletpath = [rootProject.file('./gradle/doclet-exclude.jar')]
-//        stylesheetFile = rootProject.file('./gradle/javadocStyleSheet.css')
-//        windowTitle = "Hystrix Javadoc ${project.version}"
-//    }
-//    options.addStringOption('top').value = '<a href="https://github.com/Netflix/Hystrix"><img width="92" height="79" border="0" align="left" src="http://netflix.github.com/Hystrix/images/hystrix-logo-small.png"></a><h2 class="title" style="padding-top:40px">Hystrix: Latency and Fault Tolerance for Distributed Systems</h2>'
-//}
-//
+
+javadoc {
+    // the exclude isn't working, nor is there a subPackages options as docs suggest there should be
+    // we do not want the com.netflix.hystrix.util package include
+    exclude '**/util/**'
+			
+    options {
+        doclet = "org.benjchristensen.doclet.DocletExclude"
+        docletpath = [rootProject.file('./gradle/doclet-exclude.jar')]
+        stylesheetFile = rootProject.file('./gradle/javadocStyleSheet.css')
+        windowTitle = "Hystrix Javadoc ${project.version}"
+    }
+    options.addStringOption('top').value = '<a href="https://github.com/Netflix/Hystrix"><img width="92" height="79" border="0" align="left" src="http://netflix.github.com/Hystrix/images/hystrix-logo-small.png"></a><h2 class="title" style="padding-top:40px">Hystrix: Latency and Fault Tolerance for Distributed Systems</h2>'
+}
+
 
 eclipse {
   classpath {
