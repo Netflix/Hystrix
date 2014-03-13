@@ -5,6 +5,7 @@ This is the core module of Hystrix.
 Key classes you're most likely to interact with are:
 
 - HystrixCommand [Source](https://github.com/Netflix/Hystrix/tree/master/hystrix-core/src/main/java/com/netflix/hystrix/HystrixCommand.java) [Javadoc](http://netflix.github.com/Hystrix/javadoc/com/netflix/hystrix/HystrixCommand.html)
+- HystrixObservableCommand [Source](https://github.com/Netflix/Hystrix/tree/master/hystrix-core/src/main/java/com/netflix/hystrix/HystrixObservableCommand.java) [Javadoc](http://netflix.github.com/Hystrix/javadoc/com/netflix/hystrix/HystrixCommand.html)
 - HystrixCollapser [Source](https://github.com/Netflix/Hystrix/tree/master/hystrix-core/src/main/java/com/netflix/hystrix/HystrixCollapser.java) [Javadoc](http://netflix.github.com/Hystrix/javadoc/com/netflix/hystrix/HystrixCollapser.html)
 - HystrixRequestLog [Source](https://github.com/Netflix/Hystrix/tree/master/hystrix-core/src/main/java/com/netflix/hystrix/HystrixRequestLog.java) [Javadoc](http://netflix.github.com/Hystrix/javadoc/com/netflix/hystrix/HystrixRequestLog.html)
 - HystrixPlugins [Source](https://github.com/Netflix/Hystrix/tree/master/hystrix-core/src/main/java/com/netflix/hystrix/strategy/HystrixPlugins.java) [Javadoc](http://netflix.github.com/Hystrix/javadoc/com/netflix/hystrix/strategy/HystrixPlugins.html)
