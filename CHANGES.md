@@ -2,9 +2,48 @@
 
 ### Version 1.4.0 Release Candidate 1 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.0-RC1%22)) ###
 
-This is the first release candidate of 1.4.0 that includes `HystrixObservableCommand` that supports bulkheading asynchronous, non-blocking sources.
+This is the first release candidate of 1.4.0 that includes `HystrixObservableCommand` ([Source](https://github.com/Netflix/Hystrix/blob/master/hystrix-core/src/main/java/com/netflix/hystrix/HystrixObservableCommand.java)) that supports bulkheading asynchronous, non-blocking sources.
 
-https://github.com/Netflix/Hystrix/blob/master/hystrix-core/src/main/java/com/netflix/hystrix/HystrixObservableCommand.java
+_NOTE: This code is NOT considered production worthy yet, hence the "Release Candidate" status._
+
+_It has run for 1 day on a single machine taking production traffic at Netflix. This is sufficient for us to proceed to a release candidate for official canary testing, but we intend to test for a week or two before doing a final release._
+
+Here is a very basic example using Java 8 to make an HTTP call via Netty and receives a stream of chunks back:
+
+```java
+
+    public static void main(String args[]) {
+        HystrixObservableCommand<String> command = bulkheadedNetworkRequest("www.google.com");
+        command.toObservable()
+                // using BlockingObservable.forEach for demo simplicity
+                .toBlockingObservable().forEach(d -> System.out.println(d));
+        System.out.println("Time: " + command.getExecutionTimeInMilliseconds() 
+                + "  Events: " + command.getExecutionEvents());
+    }
+
+    public static HystrixObservableCommand<String> bulkheadedNetworkRequest(final String host) {
+        return new HystrixObservableCommand<String>(HystrixCommandGroupKey.Factory.asKey("http")) {
+
+            @Override
+            protected Observable<String> run() {
+                return directNetworkRequest(host);
+            }
+
+            @Override
+            protected Observable<String> getFallback() {
+                return Observable.just("Error 500");
+            }
+
+        };
+    }
+
+    public static Observable<String> directNetworkRequest(String host) {
+        return RxNetty.createHttpClient(host, 80)
+                .submit(HttpClientRequest.createGet("/"))
+                .flatMap(response -> response.getContent())
+                .map(data -> data.toString(Charset.defaultCharset()));
+    }
+```
 
 * [Pull 218](https://github.com/Netflix/Hystrix/pull/218) Hystrix 1.4 - Async/Non-Blocking
 * [Pull 217](https://github.com/Netflix/Hystrix/pull/217) Javanica: Added support for "Reactive Execution" and "Error Propagation"
