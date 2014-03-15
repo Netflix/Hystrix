@@ -16,6 +16,7 @@
 package com.netflix.hystrix.contrib.javanica.command;
 
 import rx.Observable;
+import rx.Subscriber;
 
 /**
  * Fake implementation of Observable.
@@ -26,7 +27,12 @@ import rx.Observable;
 public abstract class ObservableCommand<T> extends Observable<T> implements ClosureCommand<T> {
 
     public ObservableCommand() {
-        super(null);
+        super(new OnSubscribe<T>() {
+            @Override
+            public void call(Subscriber<? super T> subscriber) {
+                // do nothing
+            }
+        });
     }
 
     /**
