@@ -56,12 +56,13 @@ public class HystrixCommandAspect {
 
         ExecutionType executionType = ExecutionType.getExecutionType(method.getReturnType());
         Closure closure = ClosureFactoryRegistry.getFactory(executionType).createClosure(method, obj, args);
-
+        Method cacheKeyMethod = getMethodFromTarget(joinPoint, hystrixCommand.cacheKeyMethod());
         HystrixCommandFactory<GenericCommand> genericCommandHystrixCommandFactory = GenericHystrixCommandFactory.getInstance();
         MetaHolder metaHolder = MetaHolder.builder()
                 .args(args)
                 .method(method)
                 .obj(obj)
+                .cacheKeyMethod(cacheKeyMethod)
                 .executionType(executionType)
                 .closure(closure)
                 .hystrixCommand(hystrixCommand)

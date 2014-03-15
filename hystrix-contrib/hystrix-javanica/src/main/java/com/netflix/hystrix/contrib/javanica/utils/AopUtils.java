@@ -37,10 +37,10 @@ public final class AopUtils {
     public static final String CGLIB_CLASS_SEPARATOR = "$$";
 
     /**
-     * Gets method from source object class (not proxy class).
+     * Gets method from source/target object class (not proxy class).
      *
      * @param joinPoint the {@link JoinPoint}
-     * @return a method
+     * @return a method or null if method doesn't exist
      */
     public static Method getMethodFromTarget(JoinPoint joinPoint) {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
@@ -48,9 +48,16 @@ public final class AopUtils {
             getParameterTypes(joinPoint));
     }
 
+    /**
+     * Gets {@link Method} from target class by method name.
+     *
+     * @param joinPoint  {@link JoinPoint}
+     * @param methodName the method name
+     * @return a {@link Method} or null if method doesn't exist
+     */
     public static Method getMethodFromTarget(JoinPoint joinPoint, String methodName) {
         return getDeclaredMethod(joinPoint.getTarget().getClass(), methodName,
-            getParameterTypes(joinPoint));
+                getParameterTypes(joinPoint));
     }
 
     public static Method getMethodFromThis(JoinPoint joinPoint) {

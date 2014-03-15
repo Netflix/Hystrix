@@ -36,10 +36,12 @@ public class BatchHystrixCommand extends AbstractHystrixCommand<List<Object>> {
      * {@inheritDoc}
      */
     protected BatchHystrixCommand(CommandSetterBuilder setterBuilder, CommandAction commandAction,
-                                  CommandAction fallbackAction, Map<String, Object> commandProperties,
+                                  CommandAction fallbackAction,
+                                  CommandAction cacheKeyAction,
+                                  Map<String, Object> commandProperties,
                                   Collection<HystrixCollapser.CollapsedRequest<Object, Object>> collapsedRequests,
                                   Class<? extends Throwable>[] ignoreExceptions) {
-        super(setterBuilder, commandAction, fallbackAction, commandProperties, collapsedRequests, ignoreExceptions);
+        super(setterBuilder, commandAction, fallbackAction, cacheKeyAction, commandProperties, collapsedRequests, ignoreExceptions);
     }
 
     /**

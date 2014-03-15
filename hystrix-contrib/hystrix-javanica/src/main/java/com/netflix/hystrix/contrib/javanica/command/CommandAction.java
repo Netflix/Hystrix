@@ -15,6 +15,8 @@
  */
 package com.netflix.hystrix.contrib.javanica.command;
 
+import com.google.common.base.Throwables;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
@@ -28,16 +30,16 @@ public class CommandAction {
     private Method method;
     private Object[] _args;
 
-    protected CommandAction() {
+    public CommandAction() {
     }
 
-    protected CommandAction(Object object, Method method) {
+    public CommandAction(Object object, Method method) {
         this.object = object;
         this.method = method;
         this._args = EMPTY_ARGS;
     }
 
-    protected CommandAction(Object object, Method method, Object[] args) {
+    public CommandAction(Object object, Method method, Object[] args) {
         this.object = object;
         this.method = method;
         this._args = args;
@@ -57,6 +59,16 @@ public class CommandAction {
 
     public Object execute() throws Throwable {
         return execute(_args);
+    }
+
+    public Object executeSilent() throws RuntimeException{
+        Object result;
+        try {
+            result = execute();
+        } catch (Throwable throwable) {
+            throw Throwables.propagate(throwable);
+        }
+        return result;
     }
 
     /**

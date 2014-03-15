@@ -8,7 +8,6 @@ import com.netflix.hystrix.contrib.javanica.command.AsyncCommand;
 import com.netflix.hystrix.contrib.javanica.command.ObservableCommand;
 import com.netflix.hystrix.contrib.javanica.test.spring.rest.domain.User;
 import com.netflix.hystrix.contrib.javanica.test.spring.rest.exception.BadRequestException;
-import com.netflix.hystrix.contrib.javanica.test.spring.rest.exception.NotFoundException;
 import com.netflix.hystrix.contrib.javanica.test.spring.rest.resource.UserResource;
 import org.springframework.stereotype.Component;
 import rx.Observable;
@@ -24,10 +23,15 @@ public class SimpleRestClient implements RestClient {
 
     private UserResource userResource = new UserResource();
 
-    @HystrixCommand(commandKey = "GetUserByIdCommand", fallbackMethod = "getUserByIdSecondary")
+    @HystrixCommand(commandKey = "GetUserByIdCommand", fallbackMethod = "getUserByIdSecondary",
+            cacheKeyMethod = "getUserIdCacheKey")
     @Override
     public User getUserById(String id) {
         return userResource.getUserById(id);
+    }
+
+    private String getUserIdCacheKey(String id){
+        return id;
     }
 
     @HystrixCommand(fallbackMethod = "getUserByIdSecondary")

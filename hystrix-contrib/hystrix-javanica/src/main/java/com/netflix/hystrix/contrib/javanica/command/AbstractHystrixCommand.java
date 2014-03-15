@@ -36,6 +36,7 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
 
     private CommandAction commandAction;
     private CommandAction fallbackAction;
+    private CommandAction cacheKeyAction;
     private Map<String, Object> commandProperties = Maps.newHashMap();
     private Collection<HystrixCollapser.CollapsedRequest<Object, Object>> collapsedRequests;
     private final Class<? extends Throwable>[] ignoreExceptions;
@@ -52,6 +53,7 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
     protected AbstractHystrixCommand(CommandSetterBuilder setterBuilder,
                                      CommandAction commandAction,
                                      CommandAction fallbackAction,
+                                     CommandAction cacheKeyAction,
                                      Map<String, Object> commandProperties,
                                      Collection<HystrixCollapser.CollapsedRequest<Object, Object>> collapsedRequests,
                                      final Class<? extends Throwable>[] ignoreExceptions) {
@@ -60,6 +62,7 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
         this.collapsedRequests = collapsedRequests;
         this.commandAction = commandAction;
         this.fallbackAction = fallbackAction;
+        this.cacheKeyAction = cacheKeyAction;
         this.ignoreExceptions = ignoreExceptions;
         HystrixPropertiesManager.setCommandProperties(commandProperties, getCommandKey().name());
     }
@@ -80,6 +83,15 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
      */
     CommandAction getFallbackAction() {
         return fallbackAction;
+    }
+
+    /**
+     * Gets key action.
+     *
+     * @return key action
+     */
+    CommandAction getCacheKeyAction() {
+        return cacheKeyAction;
     }
 
     /**
@@ -109,6 +121,20 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
         return ignoreExceptions;
     }
 
+    /**
+     * {@inheritDoc}.
+     */
+    @Override
+    protected String getCacheKey() {
+        String key;
+        if (cacheKeyAction != null) {
+            key = String.valueOf(cacheKeyAction.executeSilent());
+        } else {
+            key = super.getCacheKey();
+        }
+        return key;
+    }
+
     boolean isIgnorable(Throwable throwable) {
         if (ignoreExceptions == null || ignoreExceptions.length == 0) {
             return false;
@@ -136,7 +162,7 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
             if (isIgnorable(throwable)) {
                 throw new HystrixBadRequestException(throwable.getMessage(), throwable);
             }
-           throw Throwables.propagate(throwable);
+            throw Throwables.propagate(throwable);
         }
         return result;
     }
