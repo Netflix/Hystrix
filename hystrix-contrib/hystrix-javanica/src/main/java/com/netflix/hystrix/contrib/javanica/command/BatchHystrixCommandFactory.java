@@ -36,10 +36,11 @@ public class BatchHystrixCommandFactory extends AbstractHystrixCommandFactory<Ba
     BatchHystrixCommand create(CommandSetterBuilder setterBuilder,
                                Map<String, Object> commandProperties, CommandAction action,
                                CommandAction fallbackAction,
+                               CommandAction cacheKeyAction,
                                Collection<HystrixCollapser.CollapsedRequest<Object, Object>> collapsedRequests,
                                Class<? extends Throwable>[] ignoreExceptions) {
         BatchHystrixCommand batchHystrixCommand = new BatchHystrixCommand(setterBuilder, action, fallbackAction,
-            commandProperties, collapsedRequests, ignoreExceptions);
+                cacheKeyAction, commandProperties, collapsedRequests, ignoreExceptions);
         return batchHystrixCommand;
     }
 }

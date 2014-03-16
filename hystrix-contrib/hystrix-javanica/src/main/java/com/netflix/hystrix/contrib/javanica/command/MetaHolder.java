@@ -33,6 +33,7 @@ public class MetaHolder {
     private HystrixCommand hystrixCommand;
 
     private Method method;
+    private Method cacheKeyMethod;
     private Object obj;
     private Object[] args;
     private Closure closure;
@@ -44,6 +45,7 @@ public class MetaHolder {
     private MetaHolder(Builder builder) {
         this.hystrixCommand = builder.hystrixCommand;
         this.method = builder.method;
+        this.cacheKeyMethod = builder.cacheKeyMethod;
         this.obj = builder.obj;
         this.args = builder.args;
         this.closure = builder.closure;
@@ -68,6 +70,10 @@ public class MetaHolder {
 
     public Method getMethod() {
         return method;
+    }
+
+    public Method getCacheKeyMethod() {
+        return cacheKeyMethod;
     }
 
     public Object getObj() {
@@ -115,6 +121,7 @@ public class MetaHolder {
         private HystrixCollapser hystrixCollapser;
         private HystrixCommand hystrixCommand;
         private Method method;
+        private Method cacheKeyMethod;
         private Object obj;
         private Closure closure;
         private Object[] args;
@@ -135,6 +142,11 @@ public class MetaHolder {
 
         public Builder method(Method method) {
             this.method = method;
+            return this;
+        }
+
+        public Builder cacheKeyMethod(Method cacheKeyMethod) {
+            this.cacheKeyMethod = cacheKeyMethod;
             return this;
         }
 

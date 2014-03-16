@@ -63,7 +63,8 @@ public abstract class AbstractHystrixCommandFactory<T extends AbstractHystrixCom
         }
         Map<String, Object> commandProperties = getCommandProperties(metaHolder.getHystrixCommand());
         CommandAction fallbackAction = createFallbackAction(metaHolder, collapsedRequests);
-        return create(setterBuilder, commandProperties, action, fallbackAction, collapsedRequests,
+        CommandAction cacheKeyAction = createCacheKeyAction(metaHolder);
+        return create(setterBuilder, commandProperties, action, fallbackAction, cacheKeyAction, collapsedRequests,
                 metaHolder.getHystrixCommand().ignoreExceptions());
     }
 
@@ -99,8 +100,18 @@ public abstract class AbstractHystrixCommandFactory<T extends AbstractHystrixCom
 
     abstract T create(CommandSetterBuilder setterBuilder, Map<String, Object> commandProperties, CommandAction action,
                       CommandAction fallbackAction,
+                      CommandAction cacheKeyAction,
                       Collection<HystrixCollapser.CollapsedRequest<Object, Object>> collapsedRequests,
                       Class<? extends Throwable>[] ignoreExceptions);
+
+
+    private CommandAction createCacheKeyAction(MetaHolder metaHolder) {
+        CommandAction cacheKeyAction = null;
+        if (metaHolder.getCacheKeyMethod() != null) {
+            cacheKeyAction = new CommandAction(metaHolder.getObj(), metaHolder.getCacheKeyMethod(), metaHolder.getArgs());
+        }
+        return cacheKeyAction;
+    }
 
     private Map<String, Object> getCommandProperties(HystrixCommand hystrixCommand) {
         Map<String, Object> commandProperties = Maps.newHashMap();
