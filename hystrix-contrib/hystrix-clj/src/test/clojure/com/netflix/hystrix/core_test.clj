@@ -215,7 +215,7 @@
                (wait-for-observable o)))))
     (testing "observes command with a Scheduler"
       (let [o (observe-later-on (normalize base-def)
-                                (rx.concurrency.Schedulers/newThread)
+                                (rx.schedulers.Schedulers/newThread)
                                 75 19 23)]
         (is (instance? rx.Observable o))
         (is (= (+ 75 19 23)
@@ -317,7 +317,7 @@
       (is (= 103 (wait-for-observable (observe #'my-fn-command 90 13))))
       (is (= 105 (wait-for-observable (observe-later #'my-fn-command 91 14))))
       (is (= 107 (wait-for-observable (observe-later-on #'my-fn-command
-                                                        (rx.concurrency.Schedulers/newThread)
+                                                        (rx.schedulers.Schedulers/newThread)
                                                         92 15)))))))
 
 (defcollapser my-collapser
