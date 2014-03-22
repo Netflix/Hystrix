@@ -49,6 +49,13 @@ Here is a very basic example using Java 8 to make an HTTP call via Netty and rec
 * [Pull 217](https://github.com/Netflix/Hystrix/pull/217) Javanica: Added support for "Reactive Execution" and "Error Propagation"
 * [Pull 219](https://github.com/Netflix/Hystrix/pull/219) Restore HystrixContext* Constructors without ConcurrencyStrategy
 
+
+### Version 1.3.13 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.3.13%22)) ###
+
+
+* [Pull 216](https://github.com/Netflix/Hystrix/pull/216) hystrix-javanica contrib-module: [annotation support](https://github.com/Netflix/Hystrix/tree/master/hystrix-contrib/hystrix-javanica)
+
+
 ### Version 1.3.12 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.3.12%22)) ###
 
 * [Pull 214](https://github.com/Netflix/Hystrix/pull/214) HystrixContextCallable/Runnable Constructors
