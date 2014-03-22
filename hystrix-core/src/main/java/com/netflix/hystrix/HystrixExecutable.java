@@ -18,7 +18,7 @@ package com.netflix.hystrix;
 import java.util.concurrent.Future;
 
 import rx.Observable;
-import rx.concurrency.Schedulers;
+import rx.schedulers.Schedulers;
 
 import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
 import com.netflix.hystrix.exception.HystrixBadRequestException;

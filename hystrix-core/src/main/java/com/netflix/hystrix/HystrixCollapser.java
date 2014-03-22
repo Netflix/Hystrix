@@ -15,7 +15,12 @@
  */
 package com.netflix.hystrix;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.lang.ref.Reference;
 import java.lang.ref.SoftReference;
@@ -23,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
@@ -39,7 +45,7 @@ import org.slf4j.LoggerFactory;
 
 import rx.Observable;
 import rx.Scheduler;
-import rx.concurrency.Schedulers;
+import rx.schedulers.Schedulers;
 import rx.subjects.ReplaySubject;
 
 import com.netflix.hystrix.HystrixCommand.UnitTest.TestHystrixCommand;
@@ -695,7 +701,13 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
             timer.incrementTime(10); // let time pass that equals the default delay/period
 
             // the first is cancelled so should return null
-            assertEquals(null, response1.get());
+            try {
+                response1.get();
+                fail("expect CancellationException after cancelling");
+            } catch (CancellationException e) {
+                // expected
+            }
+
             // we should still get a response on the second
             assertEquals("2", response2.get());
 

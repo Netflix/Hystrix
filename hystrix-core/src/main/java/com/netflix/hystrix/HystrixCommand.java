@@ -15,7 +15,13 @@
  */
 package com.netflix.hystrix;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.lang.ref.Reference;
@@ -49,18 +55,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import rx.Observable;
-import rx.Observable.OnSubscribeFunc;
+import rx.Observable.OnSubscribe;
 import rx.Observer;
 import rx.Scheduler;
+import rx.Subscriber;
 import rx.Subscription;
-import rx.concurrency.Schedulers;
-import rx.operators.SafeObservableSubscription;
+import rx.functions.Action0;
+import rx.functions.Action1;
+import rx.functions.Func1;
+import rx.schedulers.Schedulers;
 import rx.subjects.ReplaySubject;
 import rx.subscriptions.Subscriptions;
-import rx.util.functions.Action0;
-import rx.util.functions.Action1;
-import rx.util.functions.Func1;
-import rx.util.functions.Func2;
 
 import com.netflix.config.ConfigurationManager;
 import com.netflix.hystrix.HystrixCircuitBreaker.NoOpCircuitBreaker;
@@ -793,10 +798,10 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         final HystrixCommand<R> _this = this;
 
         // create an Observable that will lazily execute when subscribed to
-        Observable<R> o = Observable.create(new OnSubscribeFunc<R>() {
+        Observable<R> o = Observable.create(new OnSubscribe<R>() {
 
             @Override
-            public Subscription onSubscribe(Observer<? super R> observer) {
+            public void call(Subscriber<? super R> observer) {
                 try {
                     /* used to track userThreadExecutionTime */
                     invocationStartTime = System.currentTimeMillis();
@@ -815,18 +820,16 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                         } catch (Exception e) {
                             observer.onError(e);
                         }
-                        return Subscriptions.empty();
                     } else {
                         /* not short-circuited so proceed with queuing the execution */
                         try {
                             if (properties.executionIsolationStrategy().get().equals(ExecutionIsolationStrategy.THREAD)) {
-                                return subscribeWithThreadIsolation(observer);
+                                subscribeWithThreadIsolation(observer);
                             } else {
-                                return subscribeWithSemaphoreIsolation(observer);
+                                subscribeWithSemaphoreIsolation(observer);
                             }
                         } catch (RuntimeException e) {
                             observer.onError(e);
-                            return Subscriptions.empty();
                         }
                     }
                 } finally {
@@ -900,11 +903,11 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         final HystrixCommand<R> originalCommand;
 
         CachedObservableOriginal(final Observable<R> actual, HystrixCommand<R> command) {
-            super(new OnSubscribeFunc<R>() {
+            super(new OnSubscribe<R>() {
 
                 @Override
-                public Subscription onSubscribe(final Observer<? super R> observer) {
-                    return actual.subscribe(observer);
+                public void call(final Subscriber<? super R> observer) {
+                    actual.subscribe(observer);
                 }
             }, command);
             this.originalCommand = command;
@@ -914,7 +917,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
     private static class ObservableCommand<R> extends Observable<R> {
         private final HystrixCommand<R> command;
 
-        ObservableCommand(OnSubscribeFunc<R> func, final HystrixCommand<R> command) {
+        ObservableCommand(OnSubscribe<R> func, final HystrixCommand<R> command) {
             super(func);
             this.command = command;
         }
@@ -924,11 +927,11 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         }
 
         ObservableCommand(final Observable<R> originalObservable, final HystrixCommand<R> command) {
-            super(new OnSubscribeFunc<R>() {
+            super(new OnSubscribe<R>() {
 
                 @Override
-                public Subscription onSubscribe(Observer<? super R> observer) {
-                    return originalObservable.subscribe(observer);
+                public void call(Subscriber<? super R> observer) {
+                    originalObservable.subscribe(observer);
                 }
             });
             this.command = command;
@@ -948,11 +951,11 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         final CachedObservableOriginal<R> originalObservable;
 
         CachedObservableResponse(final CachedObservableOriginal<R> originalObservable, final HystrixCommand<R> commandOfDuplicateCall) {
-            super(new OnSubscribeFunc<R>() {
+            super(new OnSubscribe<R>() {
 
                 @Override
-                public Subscription onSubscribe(final Observer<? super R> observer) {
-                    return originalObservable.subscribe(new Observer<R>() {
+                public void call(final Subscriber<? super R> observer) {
+                    originalObservable.subscribe(new Subscriber<R>(observer) {
 
                         @Override
                         public void onCompleted() {
@@ -999,13 +1002,12 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
     private static class TimeoutObservable<R> extends Observable<R> {
 
         public TimeoutObservable(final Observable<R> o, final HystrixCommand<R> originalCommand, final boolean isNonBlocking) {
-            super(new OnSubscribeFunc<R>() {
+            super(new OnSubscribe<R>() {
 
                 @Override
-                public Subscription onSubscribe(final Observer<? super R> observer) {
+                public void call(final Subscriber<? super R> observer) {
                     // TODO this is using a private API of Rx so either move off of it or get Rx to make it public
                     // TODO better yet, get TimeoutObservable part of Rx
-                    final SafeObservableSubscription s = new SafeObservableSubscription();
 
                     /*
                      * Define the action to perform on timeout outside of the TimerListener to it can capture the HystrixRequestContext
@@ -1043,7 +1045,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                                 timeoutRunnable.run();
                             }
 
-                            s.unsubscribe();
+                            observer.unsubscribe();
                         }
 
                         @Override
@@ -1073,7 +1075,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                     // set externally so execute/queue can see this
                     originalCommand.timeoutTimer.set(tl);
 
-                    return s.wrap(o.subscribe(new Observer<R>() {
+                    o.subscribe(new Subscriber<R>(observer) {
 
                         @Override
                         public void onCompleted() {
@@ -1092,7 +1094,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                             observer.onNext(v);
                         }
 
-                    }));
+                    });
                 }
             });
         }
@@ -1143,7 +1145,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         }
     }
 
-    private Subscription subscribeWithThreadIsolation(final Observer<? super R> observer) {
+    private void subscribeWithThreadIsolation(final Subscriber<? super R> observer) {
         // mark that we are executing in a thread (even if we end up being rejected we still were a THREAD execution and not SEMAPHORE)
         isExecutedInThread.set(true);
 
@@ -1230,14 +1232,14 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
             }));
 
-            return new Subscription() {
+            observer.add(Subscriptions.create(new Action0() {
 
                 @Override
-                public void unsubscribe() {
+                public void call() {
                     f.cancel(properties.executionIsolationThreadInterruptOnTimeout().get());
                 }
 
-            };
+            }));
 
         } catch (RejectedExecutionException e) {
             // mark on counter
@@ -1245,13 +1247,11 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             // use a fallback instead (or throw exception if not implemented)
             observer.onNext(getFallbackOrThrowException(HystrixEventType.THREAD_POOL_REJECTED, FailureType.REJECTED_THREAD_EXECUTION, "could not be queued for execution", e));
             observer.onCompleted();
-            return Subscriptions.empty();
         } catch (Exception e) {
             // unknown exception
             logger.error(getLogMessagePrefix() + ": Unexpected exception while submitting to queue.", e);
             observer.onNext(getFallbackOrThrowException(HystrixEventType.THREAD_POOL_REJECTED, FailureType.REJECTED_THREAD_EXECUTION, "had unexpected exception while attempting to queue for execution.", e));
             observer.onCompleted();
-            return Subscriptions.empty();
         }
     }
 
@@ -2430,78 +2430,56 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
          */
         @Test
         public void testObserveOnScheduler() throws Exception {
+            for (int i = 0; i < 5; i++) {
+                final AtomicReference<Thread> commandThread = new AtomicReference<Thread>();
+                final AtomicReference<Thread> subscribeThread = new AtomicReference<Thread>();
 
-            final AtomicReference<Thread> commandThread = new AtomicReference<Thread>();
-            final AtomicReference<Thread> subscribeThread = new AtomicReference<Thread>();
+                TestHystrixCommand<Boolean> command = new TestHystrixCommand<Boolean>(TestHystrixCommand.testPropsBuilder()) {
 
-            TestHystrixCommand<Boolean> command = new TestHystrixCommand<Boolean>(TestHystrixCommand.testPropsBuilder()) {
+                    @Override
+                    protected Boolean run() {
+                        commandThread.set(Thread.currentThread());
+                        return true;
+                    }
+                };
 
-                @Override
-                protected Boolean run() {
-                    commandThread.set(Thread.currentThread());
-                    return true;
-                }
-            };
+                final CountDownLatch latch = new CountDownLatch(1);
 
-            final CountDownLatch latch = new CountDownLatch(1);
+                command.toObservable(Schedulers.newThread()).subscribe(new Observer<Boolean>() {
 
-            Scheduler customScheduler = new Scheduler() {
+                    @Override
+                    public void onCompleted() {
+                        latch.countDown();
 
-                private final Scheduler self = this;
+                    }
 
-                @Override
-                public <T> Subscription schedule(T state, Func2<? super Scheduler, ? super T, ? extends Subscription> action) {
-                    return schedule(state, action, 0, TimeUnit.MILLISECONDS);
-                }
+                    @Override
+                    public void onError(Throwable e) {
+                        latch.countDown();
+                        e.printStackTrace();
 
-                @Override
-                public <T> Subscription schedule(final T state, final Func2<? super Scheduler, ? super T, ? extends Subscription> action, long delayTime, TimeUnit unit) {
-                    new Thread("RxScheduledThread") {
-                        @Override
-                        public void run() {
-                            action.call(self, state);
-                        }
-                    }.start();
+                    }
 
-                    // not testing unsubscribe behavior
-                    return Subscriptions.empty();
-                }
+                    @Override
+                    public void onNext(Boolean args) {
+                        subscribeThread.set(Thread.currentThread());
+                    }
+                });
 
-            };
-
-            command.toObservable(customScheduler).subscribe(new Observer<Boolean>() {
-
-                @Override
-                public void onCompleted() {
-                    latch.countDown();
-
+                if (!latch.await(2000, TimeUnit.MILLISECONDS)) {
+                    fail("timed out");
                 }
 
-                @Override
-                public void onError(Throwable e) {
-                    latch.countDown();
-                    e.printStackTrace();
+                assertNotNull(commandThread.get());
+                assertNotNull(subscribeThread.get());
 
-                }
+                System.out.println("Command Thread: " + commandThread.get());
+                System.out.println("Subscribe Thread: " + subscribeThread.get());
 
-                @Override
-                public void onNext(Boolean args) {
-                    subscribeThread.set(Thread.currentThread());
-                }
-            });
-
-            if (!latch.await(2000, TimeUnit.MILLISECONDS)) {
-                fail("timed out");
+                assertTrue(commandThread.get().getName().startsWith("hystrix-"));
+                assertFalse(subscribeThread.get().getName().startsWith("hystrix-"));
+                assertTrue(subscribeThread.get().getName().startsWith("Rx"));
             }
-
-            assertNotNull(commandThread.get());
-            assertNotNull(subscribeThread.get());
-
-            System.out.println("Command Thread: " + commandThread.get());
-            System.out.println("Subscribe Thread: " + subscribeThread.get());
-
-            assertTrue(commandThread.get().getName().startsWith("hystrix-"));
-            assertTrue(subscribeThread.get().getName().equals("RxScheduledThread"));
         }
 
         /**
