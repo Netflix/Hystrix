@@ -24,6 +24,7 @@ public class CommandExecutionAction extends CommandAction {
 
     /**
      * Constructor with parameters.
+     *
      * @param hystrixCommand the hystrix command to execute.
      */
     public CommandExecutionAction(AbstractHystrixCommand hystrixCommand) {
@@ -31,8 +32,13 @@ public class CommandExecutionAction extends CommandAction {
     }
 
     @Override
-    public Object execute() {
-        return hystrixCommand.execute();
+    public Object execute(ExecutionType executionType) {
+        return CommandExecutor.execute(hystrixCommand, executionType);
+    }
+
+    @Override
+    public Object executeWithArgs(ExecutionType executionType, Object[] args) {
+        return CommandExecutor.execute(hystrixCommand, executionType);
     }
 
 }

@@ -29,22 +29,26 @@ import javax.annotation.concurrent.Immutable;
 @Immutable
 public class MetaHolder {
 
-    private HystrixCollapser hystrixCollapser;
-    private HystrixCommand hystrixCommand;
+    private final HystrixCollapser hystrixCollapser;
+    private final HystrixCommand hystrixCommand;
 
-    private Method method;
-    private Object obj;
-    private Object[] args;
-    private Closure closure;
-    private String defaultGroupKey;
-    private String defaultCommandKey;
-    private String defaultCollapserKey;
-    private ExecutionType executionType;
+    private final Method method;
+    private final Method cacheKeyMethod;
+    private final Object obj;
+    private final Object proxyObj;
+    private final Object[] args;
+    private final Closure closure;
+    private final String defaultGroupKey;
+    private final String defaultCommandKey;
+    private final String defaultCollapserKey;
+    private final ExecutionType executionType;
 
     private MetaHolder(Builder builder) {
         this.hystrixCommand = builder.hystrixCommand;
         this.method = builder.method;
+        this.cacheKeyMethod = builder.cacheKeyMethod;
         this.obj = builder.obj;
+        this.proxyObj = builder.proxyObj;
         this.args = builder.args;
         this.closure = builder.closure;
         this.defaultGroupKey = builder.defaultGroupKey;
@@ -70,8 +74,16 @@ public class MetaHolder {
         return method;
     }
 
+    public Method getCacheKeyMethod() {
+        return cacheKeyMethod;
+    }
+
     public Object getObj() {
         return obj;
+    }
+
+    public Object getProxyObj() {
+        return proxyObj;
     }
 
     public Closure getClosure() {
@@ -80,14 +92,6 @@ public class MetaHolder {
 
     public ExecutionType getExecutionType() {
         return executionType;
-    }
-
-    public boolean isAsync() {
-        return ExecutionType.ASYNCHRONOUS.equals(executionType);
-    }
-
-    public boolean isObservable(){
-        return ExecutionType.OBSERVABLE.equals(executionType);
     }
 
     public Object[] getArgs() {
@@ -115,7 +119,9 @@ public class MetaHolder {
         private HystrixCollapser hystrixCollapser;
         private HystrixCommand hystrixCommand;
         private Method method;
+        private Method cacheKeyMethod;
         private Object obj;
+        private Object proxyObj;
         private Closure closure;
         private Object[] args;
         private String defaultGroupKey;
@@ -138,8 +144,18 @@ public class MetaHolder {
             return this;
         }
 
+        public Builder cacheKeyMethod(Method cacheKeyMethod) {
+            this.cacheKeyMethod = cacheKeyMethod;
+            return this;
+        }
+
         public Builder obj(Object obj) {
             this.obj = obj;
+            return this;
+        }
+
+        public Builder proxyObj(Object proxy) {
+            this.proxyObj = proxy;
             return this;
         }
 

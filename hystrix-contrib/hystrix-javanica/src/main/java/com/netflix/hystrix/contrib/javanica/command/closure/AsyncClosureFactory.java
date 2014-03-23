@@ -15,7 +15,7 @@
  */
 package com.netflix.hystrix.contrib.javanica.command.closure;
 
-import com.netflix.hystrix.contrib.javanica.command.AsyncCommand;
+import com.netflix.hystrix.contrib.javanica.command.AsyncResult;
 import com.netflix.hystrix.contrib.javanica.command.ClosureCommand;
 
 /**
@@ -28,7 +28,7 @@ public class AsyncClosureFactory extends AbstractClosureFactory {
      */
     @Override
     boolean isClosureCommand(Object closureObj) {
-        return closureObj instanceof AsyncCommand;
+        return closureObj instanceof AsyncResult;
     }
 
     /**
@@ -36,7 +36,7 @@ public class AsyncClosureFactory extends AbstractClosureFactory {
      */
     @Override
     Class<? extends ClosureCommand> getClosureCommandType() {
-        return AsyncCommand.class;
+        return AsyncResult.class;
     }
 
 }

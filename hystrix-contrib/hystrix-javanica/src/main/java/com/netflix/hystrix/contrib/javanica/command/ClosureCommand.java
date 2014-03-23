@@ -16,16 +16,16 @@
 package com.netflix.hystrix.contrib.javanica.command;
 
 /**
- * This interface is used to perform command logic within an anonymous class.
+ * This interface is used to perform command logic within an anonymous class and basically used as wrapper for some logic.
  *
  * @param <T> command result type
  */
 public interface ClosureCommand<T> {
 
     /**
-     * Process command logic.
+     * Process logic.
      *
-     * @return command result
+     * @return result
      */
     T invoke();
 }

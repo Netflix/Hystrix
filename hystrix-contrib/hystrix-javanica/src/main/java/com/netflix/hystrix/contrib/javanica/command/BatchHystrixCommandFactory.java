@@ -24,7 +24,7 @@ import java.util.Map;
  * Specific implementation of {@link HystrixCommandFactory} interface to create {@link BatchHystrixCommand} instances.
  */
 public class BatchHystrixCommandFactory extends AbstractHystrixCommandFactory<BatchHystrixCommand>
-    implements HystrixCommandFactory<BatchHystrixCommand> {
+        implements HystrixCommandFactory<BatchHystrixCommand> {
 
     private static final HystrixCommandFactory<BatchHystrixCommand> COMMAND_FACTORY = new BatchHystrixCommandFactory();
 
@@ -34,12 +34,13 @@ public class BatchHystrixCommandFactory extends AbstractHystrixCommandFactory<Ba
 
     @Override
     BatchHystrixCommand create(CommandSetterBuilder setterBuilder,
-                               Map<String, Object> commandProperties, CommandAction action,
-                               CommandAction fallbackAction,
+                               CommandActions commandActions,
+                               Map<String, Object> commandProperties,
                                Collection<HystrixCollapser.CollapsedRequest<Object, Object>> collapsedRequests,
-                               Class<? extends Throwable>[] ignoreExceptions) {
-        BatchHystrixCommand batchHystrixCommand = new BatchHystrixCommand(setterBuilder, action, fallbackAction,
-            commandProperties, collapsedRequests, ignoreExceptions);
+                               Class<? extends Throwable>[] ignoreExceptions,
+                               ExecutionType executionType) {
+        BatchHystrixCommand batchHystrixCommand = new BatchHystrixCommand(setterBuilder, commandActions,
+                commandProperties, collapsedRequests, ignoreExceptions, executionType);
         return batchHystrixCommand;
     }
 }

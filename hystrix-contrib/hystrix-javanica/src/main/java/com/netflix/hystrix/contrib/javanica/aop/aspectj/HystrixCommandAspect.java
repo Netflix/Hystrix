@@ -15,15 +15,10 @@
  */
 package com.netflix.hystrix.contrib.javanica.aop.aspectj;
 
+import com.netflix.hystrix.contrib.javanica.annotation.HystrixCollapser;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
-import com.netflix.hystrix.contrib.javanica.command.CommandExecutor;
-import com.netflix.hystrix.contrib.javanica.command.ExecutionType;
-import com.netflix.hystrix.contrib.javanica.command.GenericCommand;
-import com.netflix.hystrix.contrib.javanica.command.GenericHystrixCommandFactory;
-import com.netflix.hystrix.contrib.javanica.command.HystrixCommandFactory;
-import com.netflix.hystrix.contrib.javanica.command.MetaHolder;
-import com.netflix.hystrix.contrib.javanica.command.closure.Closure;
-import com.netflix.hystrix.contrib.javanica.command.closure.ClosureFactoryRegistry;
+import com.netflix.hystrix.contrib.javanica.collapser.CommandCollapser;
+import com.netflix.hystrix.contrib.javanica.command.*;
 import org.apache.commons.lang3.Validate;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -47,28 +42,28 @@ public class HystrixCommandAspect {
     @Around("hystrixCommandAnnotationPointcut()")
     public Object methodsAnnotatedWithHystrixCommand(final ProceedingJoinPoint joinPoint) throws Throwable {
 
-        HystrixCommand hystrixCommand;
         Method method = getMethodFromTarget(joinPoint);
         Object obj = joinPoint.getTarget();
         Object[] args = joinPoint.getArgs();
         Validate.notNull(method, "failed to get method from joinPoint: %s", joinPoint);
-        hystrixCommand = method.getAnnotation(HystrixCommand.class);
-
+        HystrixCommand hystrixCommand = method.getAnnotation(HystrixCommand.class);
+        HystrixCollapser hystrixCollapser = method.getAnnotation(HystrixCollapser.class);
         ExecutionType executionType = ExecutionType.getExecutionType(method.getReturnType());
-        Closure closure = ClosureFactoryRegistry.getFactory(executionType).createClosure(method, obj, args);
-
-        HystrixCommandFactory<GenericCommand> genericCommandHystrixCommandFactory = GenericHystrixCommandFactory.getInstance();
+        Method cacheKeyMethod = getMethodFromTarget(joinPoint, hystrixCommand.cacheKeyMethod());
         MetaHolder metaHolder = MetaHolder.builder()
-                .args(args)
-                .method(method)
-                .obj(obj)
-                .executionType(executionType)
-                .closure(closure)
-                .hystrixCommand(hystrixCommand)
+                .args(args).method(method).obj(obj).proxyObj(joinPoint.getThis())
+                .cacheKeyMethod(cacheKeyMethod).executionType(executionType)
+                .hystrixCommand(hystrixCommand).hystrixCollapser(hystrixCollapser)
                 .defaultCommandKey(method.getName())
+                .defaultCollapserKey(method.getName())
                 .defaultGroupKey(obj.getClass().getSimpleName()).build();
-        GenericCommand genericCommand = genericCommandHystrixCommandFactory.create(metaHolder, null);
-        return CommandExecutor.execute(genericCommand, executionType);
+        if (hystrixCollapser != null) {
+            CommandCollapser commandCollapser = new CommandCollapser(metaHolder);
+            return CommandExecutor.execute(commandCollapser, executionType);
+        } else {
+            GenericCommand genericCommand = GenericHystrixCommandFactory.getInstance().create(metaHolder, null);
+            return CommandExecutor.execute(genericCommand, executionType);
+        }
     }
 
 }

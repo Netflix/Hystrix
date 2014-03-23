@@ -17,7 +17,6 @@ package com.netflix.hystrix.contrib.javanica.command;
 
 
 import com.google.common.base.Throwables;
-import com.google.common.collect.Maps;
 import com.netflix.hystrix.HystrixCollapser;
 import com.netflix.hystrix.contrib.javanica.conf.HystrixPropertiesManager;
 import com.netflix.hystrix.exception.HystrixBadRequestException;
@@ -34,33 +33,34 @@ import java.util.Map;
 @ThreadSafe
 public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.HystrixCommand<T> {
 
-    private CommandAction commandAction;
-    private CommandAction fallbackAction;
-    private Map<String, Object> commandProperties = Maps.newHashMap();
-    private Collection<HystrixCollapser.CollapsedRequest<Object, Object>> collapsedRequests;
+    private CommandActions commandActions;
+    private final Map<String, Object> commandProperties;
+    private final Collection<HystrixCollapser.CollapsedRequest<Object, Object>> collapsedRequests;
     private final Class<? extends Throwable>[] ignoreExceptions;
+    private final ExecutionType executionType;
 
     /**
      * Constructor with parameters.
      *
      * @param setterBuilder     the builder to build {@link com.netflix.hystrix.HystrixCommand.Setter}
-     * @param commandAction     the command action
-     * @param fallbackAction    the fallback action
+     * @param commandActions    the command actions {@link CommandActions}
      * @param commandProperties the command properties
      * @param collapsedRequests the collapsed requests
+     * @param ignoreExceptions  the exceptions which should be ignored and wrapped to throw in {@link HystrixBadRequestException}
+     * @param executionType     the execution type {@link ExecutionType}
      */
     protected AbstractHystrixCommand(CommandSetterBuilder setterBuilder,
-                                     CommandAction commandAction,
-                                     CommandAction fallbackAction,
+                                     CommandActions commandActions,
                                      Map<String, Object> commandProperties,
                                      Collection<HystrixCollapser.CollapsedRequest<Object, Object>> collapsedRequests,
-                                     final Class<? extends Throwable>[] ignoreExceptions) {
+                                     final Class<? extends Throwable>[] ignoreExceptions,
+                                     ExecutionType executionType) {
         super(setterBuilder.build());
+        this.commandActions = commandActions;
         this.commandProperties = commandProperties;
         this.collapsedRequests = collapsedRequests;
-        this.commandAction = commandAction;
-        this.fallbackAction = fallbackAction;
         this.ignoreExceptions = ignoreExceptions;
+        this.executionType = executionType;
         HystrixPropertiesManager.setCommandProperties(commandProperties, getCommandKey().name());
     }
 
@@ -70,7 +70,7 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
      * @return command action
      */
     CommandAction getCommandAction() {
-        return commandAction;
+        return commandActions.getCommandAction();
     }
 
     /**
@@ -79,7 +79,16 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
      * @return fallback action
      */
     CommandAction getFallbackAction() {
-        return fallbackAction;
+        return commandActions.getFallbackAction();
+    }
+
+    /**
+     * Gets key action.
+     *
+     * @return key action
+     */
+    CommandAction getCacheKeyAction() {
+        return commandActions.getCacheKeyAction();
     }
 
     /**
@@ -109,6 +118,24 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
         return ignoreExceptions;
     }
 
+    public ExecutionType getExecutionType() {
+        return executionType;
+    }
+
+    /**
+     * {@inheritDoc}.
+     */
+    @Override
+    protected String getCacheKey() {
+        String key;
+        if (commandActions.getCacheKeyAction() != null) {
+            key = String.valueOf(commandActions.getCacheKeyAction().execute(executionType));
+        } else {
+            key = super.getCacheKey();
+        }
+        return key;
+    }
+
     boolean isIgnorable(Throwable throwable) {
         if (ignoreExceptions == null || ignoreExceptions.length == 0) {
             return false;
@@ -123,12 +150,12 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
 
     /**
      * Executes an action. If an action has failed and an exception is ignorable then propagate it as HystrixBadRequestException
-     * otherwise propagate it as RuntimeException.
+     * otherwise propagate it as RuntimeException to trigger fallback method.
      *
-     * @param action the command action
+     * @param action the action
      * @return result of command action execution
      */
-    Object process(CommandAction action) {
+    Object process(Action action) throws RuntimeException {
         Object result;
         try {
             result = action.execute();
@@ -136,7 +163,7 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
             if (isIgnorable(throwable)) {
                 throw new HystrixBadRequestException(throwable.getMessage(), throwable);
             }
-           throw Throwables.propagate(throwable);
+            throw Throwables.propagate(throwable);
         }
         return result;
     }
@@ -153,6 +180,13 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
     @Override
     protected T getFallback() {
         throw new RuntimeException("No fallback available.", getFailedExecutionException());
+    }
+
+    /**
+     * Common action.
+     */
+    abstract class Action {
+        abstract Object execute();
     }
 
 }

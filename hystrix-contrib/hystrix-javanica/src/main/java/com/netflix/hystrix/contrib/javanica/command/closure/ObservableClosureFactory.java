@@ -16,7 +16,7 @@
 package com.netflix.hystrix.contrib.javanica.command.closure;
 
 import com.netflix.hystrix.contrib.javanica.command.ClosureCommand;
-import com.netflix.hystrix.contrib.javanica.command.ObservableCommand;
+import com.netflix.hystrix.contrib.javanica.command.ObservableResult;
 
 /**
  * Specific implementation of {@link ClosureFactory}.
@@ -28,7 +28,7 @@ public class ObservableClosureFactory extends AbstractClosureFactory {
      */
     @Override
     boolean isClosureCommand(Object closureObj) {
-        return closureObj instanceof ObservableCommand;
+        return closureObj instanceof ObservableResult;
     }
 
     /**
@@ -36,7 +36,7 @@ public class ObservableClosureFactory extends AbstractClosureFactory {
      */
     @Override
     Class<? extends ClosureCommand> getClosureCommandType() {
-        return ObservableCommand.class;
+        return ObservableResult.class;
     }
 
 }

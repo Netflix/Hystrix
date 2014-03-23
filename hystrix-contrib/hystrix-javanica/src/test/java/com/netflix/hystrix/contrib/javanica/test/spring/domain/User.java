@@ -1,6 +1,8 @@
-package com.netflix.hystrix.contrib.javanica.test.spring.rest.domain;
+package com.netflix.hystrix.contrib.javanica.test.spring.domain;
 
-
+/**
+ * Simple domain object for tests.
+ */
 public class User {
 
     private String id;

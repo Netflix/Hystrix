@@ -64,7 +64,7 @@ public class CommandSetterBuilder {
         HystrixCommand.Setter setter = HystrixCommand.Setter
                 .withGroupKey(HystrixCommandGroupKey.Factory.asKey(groupKey))
                 .andCommandKey(HystrixCommandKey.Factory.asKey(commandKey));
-        if (StringUtils.isNotEmpty(threadPoolKey)) {
+        if (StringUtils.isNotBlank(threadPoolKey)) {
             setter.andThreadPoolKey(HystrixThreadPoolKey.Factory.asKey(threadPoolKey));
         }
         return setter;

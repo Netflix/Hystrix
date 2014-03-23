@@ -15,8 +15,10 @@
  */
 package com.netflix.hystrix.contrib.javanica.command.closure;
 
+import com.google.common.base.Throwables;
 import com.netflix.hystrix.contrib.javanica.command.ClosureCommand;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import static org.slf4j.helpers.MessageFormatter.format;
@@ -37,8 +39,10 @@ public abstract class AbstractClosureFactory implements ClosureFactory {
         try {
             Object closureObj = method.invoke(o, args); // creates instance of an anonymous class
             return createClosure(method.getName(), closureObj);
+        } catch (InvocationTargetException e) {
+            throw Throwables.propagate(e.getCause());
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw Throwables.propagate(e);
         }
     }
 

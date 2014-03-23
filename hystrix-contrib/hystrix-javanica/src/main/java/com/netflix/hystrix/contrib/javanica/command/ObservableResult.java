@@ -16,17 +16,25 @@
 package com.netflix.hystrix.contrib.javanica.command;
 
 import rx.Observable;
+import rx.Subscriber;
 
 /**
  * Fake implementation of Observable.
  * Provides abstract invoke method to process reactive execution (asynchronous callback).
+ * Can be used for method signatures
+ * which are declared with a Observable return type for reactive execution.
  *
  * @param <T> command result type
  */
-public abstract class ObservableCommand<T> extends Observable<T> implements ClosureCommand<T> {
+public abstract class ObservableResult<T> extends Observable<T> implements ClosureCommand<T> {
 
-    public ObservableCommand() {
-        super(null);
+    public ObservableResult() {
+        super(new OnSubscribe<T>() {
+            @Override
+            public void call(Subscriber<? super T> subscriber) {
+                // do nothing
+            }
+        });
     }
 
     /**
@@ -34,4 +42,5 @@ public abstract class ObservableCommand<T> extends Observable<T> implements Clos
      */
     @Override
     public abstract T invoke();
+
 }

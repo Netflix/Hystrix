@@ -15,42 +15,42 @@
  */
 package com.netflix.hystrix.contrib.javanica.command;
 
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 /**
- * Fake implementation of Future. Provides abstract invoke method to process an asynchronous call.
+ * Fake implementation of {@link Future}. Can be used for method signatures
+ * which are declared with a Future return type for asynchronous execution.
+ * Provides abstract {@link #invoke()} method to wrap some logic for an asynchronous call.
  *
  * @param <T> the type of result
  */
-public abstract class AsyncCommand<T> implements Future<T>, ClosureCommand<T> {
+public abstract class AsyncResult<T> implements Future<T>, ClosureCommand<T> {
 
-    private static final String ERROR_MSG = "AsyncCommand is just a stab and cannot be used as complete implementation of Future";
+    private static final String ERROR_MSG = "AsyncResult is just a stab and cannot be used as complete implementation of Future";
 
     @Override
-    public boolean cancel(boolean mayInterruptIfRunning) {
+    public boolean cancel(boolean mayInterruptIfRunning) throws UnsupportedOperationException {
         throw new UnsupportedOperationException(ERROR_MSG);
     }
 
     @Override
-    public boolean isCancelled() {
+    public boolean isCancelled() throws UnsupportedOperationException {
         throw new UnsupportedOperationException(ERROR_MSG);
     }
 
     @Override
-    public boolean isDone() {
+    public boolean isDone() throws UnsupportedOperationException {
         throw new UnsupportedOperationException(ERROR_MSG);
     }
 
     @Override
-    public T get() throws InterruptedException, ExecutionException {
+    public T get() throws UnsupportedOperationException {
         throw new UnsupportedOperationException(ERROR_MSG);
     }
 
     @Override
-    public T get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+    public T get(long timeout, TimeUnit unit) throws UnsupportedOperationException {
         throw new UnsupportedOperationException(ERROR_MSG);
     }
 
