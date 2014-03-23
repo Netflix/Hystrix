@@ -18,14 +18,16 @@ package com.netflix.hystrix.contrib.javanica.collapser;
 import com.netflix.hystrix.HystrixCollapser;
 import com.netflix.hystrix.HystrixCollapserKey;
 import com.netflix.hystrix.HystrixCommand;
+import com.netflix.hystrix.contrib.javanica.command.BatchHystrixCommand;
 import com.netflix.hystrix.contrib.javanica.command.BatchHystrixCommandFactory;
 import com.netflix.hystrix.contrib.javanica.command.MetaHolder;
 import com.netflix.hystrix.contrib.javanica.conf.HystrixPropertiesManager;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.Validate;
 
 import java.util.Collection;
 import java.util.List;
+
+import static org.slf4j.helpers.MessageFormatter.arrayFormat;
 
 /**
  * Collapses multiple requests into a single {@link HystrixCommand} execution based
@@ -34,6 +36,11 @@ import java.util.List;
 public class CommandCollapser extends HystrixCollapser<List<Object>, Object, Object> {
 
     private MetaHolder metaHolder;
+
+    private static final String ERROR_MSG = "Failed to map all collapsed requests to response. " +
+            "The expected contract has not been respected. ";
+
+    private static final String ERROR_MSF_TEMPLATE = "Collapser key: '{}', requests size: '{}', response size: '{}'";
 
     /**
      * Constructor with parameters.
@@ -64,7 +71,9 @@ public class CommandCollapser extends HystrixCollapser<List<Object>, Object, Obj
     @Override
     protected HystrixCommand<List<Object>> createCommand(
             Collection<CollapsedRequest<Object, Object>> collapsedRequests) {
-        return BatchHystrixCommandFactory.getInstance().create(metaHolder, collapsedRequests);
+        BatchHystrixCommand command = BatchHystrixCommandFactory.getInstance().create(metaHolder, collapsedRequests);
+        command.setFallbackEnabled(metaHolder.getHystrixCollapser().fallbackEnabled());
+        return command;
     }
 
     /**
@@ -73,9 +82,9 @@ public class CommandCollapser extends HystrixCollapser<List<Object>, Object, Obj
     @Override
     protected void mapResponseToRequests(List<Object> batchResponse,
                                          Collection<CollapsedRequest<Object, Object>> collapsedRequests) {
-        Validate.notNull(batchResponse, "batchResponse cannot be null");
-        Validate.isTrue(batchResponse.size() >= collapsedRequests.size(),
-                "size of batch response size should be gth or eq collapsed requests size");
+        if (batchResponse.size() < collapsedRequests.size()) {
+            throw new RuntimeException(createMessage(collapsedRequests, batchResponse));
+        }
         int count = 0;
         for (CollapsedRequest<Object, Object> request : collapsedRequests) {
             request.setResponse(batchResponse.get(count++));
@@ -104,6 +113,11 @@ public class CommandCollapser extends HystrixCollapser<List<Object>, Object, Obj
         public Setter build() {
             return Setter.withCollapserKey(HystrixCollapserKey.Factory.asKey(collapserKey)).andScope(scope);
         }
+    }
+
+    private String createMessage(Collection<CollapsedRequest<Object, Object>> requests,
+                                 List<Object> response) {
+        return ERROR_MSG + arrayFormat(ERROR_MSF_TEMPLATE, new Object[]{getCollapserKey().name(), requests.size(), response.size()}).getMessage();
     }
 
 }

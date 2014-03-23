@@ -15,30 +15,32 @@
  */
 package com.netflix.hystrix.contrib.javanica.command;
 
-/**
- * Action to execute a Hystrix command.
- */
-public class CommandExecutionAction extends CommandAction {
+import rx.Observable;
+import rx.Subscriber;
 
-    private AbstractHystrixCommand hystrixCommand;
+/**
+ * Fake implementation of Observable.
+ * Provides abstract invoke method to process reactive execution (asynchronous callback).
+ * Can be used for method signatures
+ * which are declared with a Observable return type for reactive execution.
+ *
+ * @param <T> command result type
+ */
+public abstract class ObservableResult<T> extends Observable<T> implements ClosureCommand<T> {
+
+    public ObservableResult() {
+        super(new OnSubscribe<T>() {
+            @Override
+            public void call(Subscriber<? super T> subscriber) {
+                // do nothing
+            }
+        });
+    }
 
     /**
-     * Constructor with parameters.
-     *
-     * @param hystrixCommand the hystrix command to execute.
+     * {@inheritDoc}.
      */
-    public CommandExecutionAction(AbstractHystrixCommand hystrixCommand) {
-        this.hystrixCommand = hystrixCommand;
-    }
-
     @Override
-    public Object execute(ExecutionType executionType) {
-        return CommandExecutor.execute(hystrixCommand, executionType);
-    }
-
-    @Override
-    public Object executeWithArgs(ExecutionType executionType, Object[] args) {
-        return CommandExecutor.execute(hystrixCommand, executionType);
-    }
+    public abstract T invoke();
 
 }

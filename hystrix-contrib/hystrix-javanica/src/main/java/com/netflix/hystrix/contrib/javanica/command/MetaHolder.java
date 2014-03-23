@@ -17,42 +17,45 @@ package com.netflix.hystrix.contrib.javanica.command;
 
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCollapser;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
+import com.netflix.hystrix.contrib.javanica.command.closure.Closure;
+
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import javax.annotation.concurrent.Immutable;
 
 /**
- * Simple holder to keep necessary information.
+ * Simple immutable holder to keep all necessary information to build Hystrix command.
  */
 @Immutable
 public class MetaHolder {
 
-    private HystrixCollapser hystrixCollapser;
-    private HystrixCommand hystrixCommand;
+    private final HystrixCollapser hystrixCollapser;
+    private final HystrixCommand hystrixCommand;
 
-    private Method method;
-    private Method asyncMethod;
-    private Object obj;
-    private Object asyncObj;
-    private Object[] args;
-
-    private String defaultGroupKey;
-    private String defaultCommandKey;
-    private String defaultCollapserKey;
-    private boolean async;
+    private final Method method;
+    private final Method cacheKeyMethod;
+    private final Object obj;
+    private final Object proxyObj;
+    private final Object[] args;
+    private final Closure closure;
+    private final String defaultGroupKey;
+    private final String defaultCommandKey;
+    private final String defaultCollapserKey;
+    private final ExecutionType executionType;
 
     private MetaHolder(Builder builder) {
         this.hystrixCommand = builder.hystrixCommand;
         this.method = builder.method;
-        this.asyncMethod = builder.asyncMethod;
+        this.cacheKeyMethod = builder.cacheKeyMethod;
         this.obj = builder.obj;
-        this.asyncObj = builder.asyncObj;
+        this.proxyObj = builder.proxyObj;
         this.args = builder.args;
+        this.closure = builder.closure;
         this.defaultGroupKey = builder.defaultGroupKey;
         this.defaultCommandKey = builder.defaultCommandKey;
         this.defaultCollapserKey = builder.defaultCollapserKey;
         this.hystrixCollapser = builder.hystrixCollapser;
-        this.async = builder.async;
+        this.executionType = builder.executionType;
     }
 
     public static Builder builder() {
@@ -68,27 +71,31 @@ public class MetaHolder {
     }
 
     public Method getMethod() {
-        return method; //todo return a copy
+        return method;
+    }
+
+    public Method getCacheKeyMethod() {
+        return cacheKeyMethod;
     }
 
     public Object getObj() {
         return obj;
     }
 
-    public Method getAsyncMethod() {
-        return asyncMethod;
+    public Object getProxyObj() {
+        return proxyObj;
     }
 
-    public Object getAsyncObj() {
-        return asyncObj;
+    public Closure getClosure() {
+        return closure;
     }
 
-    public boolean isAsync() {
-        return async;
+    public ExecutionType getExecutionType() {
+        return executionType;
     }
 
     public Object[] getArgs() {
-        return Arrays.copyOf(args, args.length);
+        return args != null ? Arrays.copyOf(args, args.length) : new Object[]{};
     }
 
     public String getDefaultGroupKey() {
@@ -112,14 +119,15 @@ public class MetaHolder {
         private HystrixCollapser hystrixCollapser;
         private HystrixCommand hystrixCommand;
         private Method method;
-        private Method asyncMethod;
+        private Method cacheKeyMethod;
         private Object obj;
-        private Object asyncObj;
+        private Object proxyObj;
+        private Closure closure;
         private Object[] args;
         private String defaultGroupKey;
         private String defaultCommandKey;
         private String defaultCollapserKey;
-        private boolean async;
+        private ExecutionType executionType;
 
         public Builder hystrixCollapser(HystrixCollapser hystrixCollapser) {
             this.hystrixCollapser = hystrixCollapser;
@@ -136,8 +144,8 @@ public class MetaHolder {
             return this;
         }
 
-        public Builder asyncMethod(Method asyncMethod) {
-            this.asyncMethod = asyncMethod;
+        public Builder cacheKeyMethod(Method cacheKeyMethod) {
+            this.cacheKeyMethod = cacheKeyMethod;
             return this;
         }
 
@@ -146,8 +154,8 @@ public class MetaHolder {
             return this;
         }
 
-        public Builder asyncObj(Object asyncObj) {
-            this.asyncObj = asyncObj;
+        public Builder proxyObj(Object proxy) {
+            this.proxyObj = proxy;
             return this;
         }
 
@@ -156,8 +164,13 @@ public class MetaHolder {
             return this;
         }
 
-        public Builder async(boolean async) {
-            this.async = async;
+        public Builder closure(Closure closure) {
+            this.closure = closure;
+            return this;
+        }
+
+        public Builder executionType(ExecutionType executionType) {
+            this.executionType = executionType;
             return this;
         }
 
