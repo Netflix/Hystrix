@@ -239,11 +239,7 @@ public abstract class HystrixObservableCommand<R> extends HystrixExecutableBase<
     /**
      * A lazy {@link Observable} that will execute the command when subscribed to.
      * <p>
-     * <b>Callback Scheduling</b>
-     * <p>
-     * <ul>
-     * <li>When using {@link ExecutionIsolationStrategy#THREAD} this defaults to using {@link Schedulers#threadPoolForComputation()} for callbacks.</li>
-     * <li>When using {@link ExecutionIsolationStrategy#SEMAPHORE} this defaults to using {@link Schedulers#immediate()} for callbacks.</li>
+     * <b>This defaults to using {@link Schedulers#immediate()} for callbacks.</li>
      * </ul>
      * <p>
      * See https://github.com/Netflix/RxJava/wiki for more information.
@@ -263,7 +259,7 @@ public abstract class HystrixObservableCommand<R> extends HystrixExecutableBase<
      *             if invoked more than once
      */
     public Observable<R> toObservable() {
-        return toObservable(Schedulers.computation());
+        return toObservable(Schedulers.immediate());
     }
 
     protected ObservableCommand<R> toObservable(final Scheduler observeOn, boolean performAsyncTimeout) {

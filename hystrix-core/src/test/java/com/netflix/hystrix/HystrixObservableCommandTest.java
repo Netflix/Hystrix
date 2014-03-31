@@ -5025,7 +5025,7 @@ public class HystrixObservableCommandTest {
         assertTrue(results.originThread.get().getName().startsWith("hystrix-OWNER_ONE")); // thread isolated on a HystrixThreadPool
 
         assertTrue(results.isContextInitializedObserveOn.get());
-        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix thread
+        assertTrue(results.observeOnThread.get().getName().startsWith("hystrix-OWNER_ONE")); 
 
         // thread isolated
         assertTrue(results.command.isExecutedInThread());
@@ -5046,7 +5046,7 @@ public class HystrixObservableCommandTest {
         assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
 
         assertTrue(results.isContextInitializedObserveOn.get()); // we capture and set the context once the user provided Observable emits
-        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix or user thread because of thread isolation choice
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxNewThread")); 
 
         // thread isolated
         assertTrue(results.command.isExecutedInThread());
@@ -5065,7 +5065,7 @@ public class HystrixObservableCommandTest {
         assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
 
         assertTrue(results.isContextInitializedObserveOn.get()); // the user scheduler captures context
-        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix or user thread because of thread isolation choice
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxNewThread")); 
 
         // thread isolated
         assertTrue(results.command.isExecutedInThread());
@@ -5141,7 +5141,7 @@ public class HystrixObservableCommandTest {
         assertTrue(results.originThread.get().getName().startsWith("hystrix-OWNER_ONE")); // thread isolated on a HystrixThreadPool
 
         assertTrue(results.isContextInitializedObserveOn.get());
-        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix thread
+        assertTrue(results.observeOnThread.get().getName().startsWith("hystrix-OWNER_ONE")); 
 
         // thread isolated
         assertTrue(results.command.isExecutedInThread());
@@ -5162,7 +5162,7 @@ public class HystrixObservableCommandTest {
         assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
 
         assertTrue(results.isContextInitializedObserveOn.get()); // we capture and set the context once the user provided Observable emits
-        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix or user thread because of thread isolation choice
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxNewThread")); 
 
         // thread isolated
         assertTrue(results.command.isExecutedInThread());
@@ -5181,7 +5181,7 @@ public class HystrixObservableCommandTest {
         assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
 
         assertTrue(results.isContextInitializedObserveOn.get()); // the user scheduler captures context
-        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix or user thread because of thread isolation choice
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxNewThread")); 
 
         // thread isolated
         assertTrue(results.command.isExecutedInThread());
@@ -5257,7 +5257,7 @@ public class HystrixObservableCommandTest {
         assertTrue(results.originThread.get().getName().startsWith("hystrix-OWNER_ONE")); // thread isolated on a HystrixThreadPool
 
         assertTrue(results.isContextInitializedObserveOn.get());
-        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix thread
+        assertTrue(results.observeOnThread.get().getName().startsWith("hystrix-OWNER_ONE")); 
 
         // thread isolated
         assertTrue(results.command.isExecutedInThread());
@@ -5278,7 +5278,7 @@ public class HystrixObservableCommandTest {
         assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
 
         assertTrue(results.isContextInitializedObserveOn.get()); // we capture and set the context once the user provided Observable emits
-        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix or user thread because of thread isolation choice
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxNewThread")); 
 
         // thread isolated
         assertTrue(results.command.isExecutedInThread());
@@ -5297,7 +5297,7 @@ public class HystrixObservableCommandTest {
         assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
 
         assertTrue(results.isContextInitializedObserveOn.get()); // the user scheduler captures context
-        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix or user thread because of thread isolation choice
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxNewThread")); 
 
         // thread isolated
         assertTrue(results.command.isExecutedInThread());
@@ -5373,7 +5373,7 @@ public class HystrixObservableCommandTest {
         assertTrue(results.originThread.get().getName().startsWith("hystrix-OWNER_ONE")); // thread isolated on a HystrixThreadPool
 
         assertTrue(results.isContextInitializedObserveOn.get());
-        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix thread
+        assertTrue(results.observeOnThread.get().getName().startsWith("hystrix-OWNER_ONE")); 
 
         // thread isolated
         assertTrue(results.command.isExecutedInThread());
@@ -5394,7 +5394,7 @@ public class HystrixObservableCommandTest {
         assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
 
         assertTrue(results.isContextInitializedObserveOn.get()); // we capture and set the context once the user provided Observable emits
-        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix or user thread because of thread isolation choice
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxNewThread")); 
 
         // thread isolated
         assertTrue(results.command.isExecutedInThread());
@@ -5413,7 +5413,7 @@ public class HystrixObservableCommandTest {
         assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
 
         assertTrue(results.isContextInitializedObserveOn.get()); // the user scheduler captures context
-        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix or user thread because of thread isolation choice
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxNewThread")); 
 
         // thread isolated
         assertTrue(results.command.isExecutedInThread());
@@ -5721,7 +5721,7 @@ public class HystrixObservableCommandTest {
         assertTrue(results.originThread.get().getName().startsWith("hystrix-OWNER_ONE")); // thread isolated on a HystrixThreadPool
 
         assertTrue(results.isContextInitializedObserveOn.get());
-        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix thread
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // timeout schedules on RxComputation since the original thread was timed out
 
         // thread isolated
         assertTrue(results.command.isExecutedInThread());
@@ -5742,7 +5742,7 @@ public class HystrixObservableCommandTest {
         assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
 
         assertTrue(results.isContextInitializedObserveOn.get()); // the timeout captures the context so it exists
-        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix or user thread because of thread isolation choice
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // timeout schedules on RxComputation since the original thread was timed out
 
         // thread isolated
         assertTrue(results.command.isExecutedInThread());
@@ -5761,7 +5761,7 @@ public class HystrixObservableCommandTest {
         assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
 
         assertTrue(results.isContextInitializedObserveOn.get()); // the user scheduler captures context
-        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix or user thread because of thread isolation choice
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // timeout schedules on RxComputation since the original thread was timed out
 
         // thread isolated
         assertTrue(results.command.isExecutedInThread());
@@ -5838,7 +5838,7 @@ public class HystrixObservableCommandTest {
         assertTrue(results.originThread.get().getName().startsWith("RxComputation")); // timeout uses RxComputation thread for fallback
 
         assertTrue(results.isContextInitializedObserveOn.get());
-        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix thread
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // fallback uses the timeout thread
 
         // thread isolated
         assertTrue(results.command.isExecutedInThread());
