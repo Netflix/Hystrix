@@ -1,6 +1,12 @@
 package com.netflix.hystrix;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.util.List;
@@ -31,6 +37,7 @@ import com.netflix.config.ConfigurationManager;
 import com.netflix.hystrix.HystrixCircuitBreakerTest.TestCircuitBreaker;
 import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
 import com.netflix.hystrix.HystrixExecutableBase.TryableSemaphore;
+import com.netflix.hystrix.HystrixExecutableBase.TryableSemaphoreActual;
 import com.netflix.hystrix.exception.HystrixBadRequestException;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
 import com.netflix.hystrix.exception.HystrixRuntimeException.FailureType;
@@ -1908,7 +1915,7 @@ public class HystrixCommandTest {
         final AtomicBoolean exceptionReceived = new AtomicBoolean();
 
         final TryableSemaphore semaphore =
-                new TryableSemaphore(HystrixProperty.Factory.asProperty(1));
+                new TryableSemaphoreActual(HystrixProperty.Factory.asProperty(1));
 
         Runnable r = new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), new Runnable() {
 
@@ -1980,7 +1987,7 @@ public class HystrixCommandTest {
         final AtomicBoolean exceptionReceived = new AtomicBoolean();
 
         final TryableSemaphore semaphore =
-                new TryableSemaphore(HystrixProperty.Factory.asProperty(1));
+                new TryableSemaphoreActual(HystrixProperty.Factory.asProperty(1));
 
         Runnable r = new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), new Runnable() {
 
@@ -2109,8 +2116,8 @@ public class HystrixCommandTest {
         final TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
 
         // this semaphore will be shared across multiple command instances
-        final TryableSemaphore sharedSemaphore =
-                new TryableSemaphore(HystrixProperty.Factory.asProperty(3));
+        final TryableSemaphoreActual sharedSemaphore =
+                new TryableSemaphoreActual(HystrixProperty.Factory.asProperty(3));
 
         // used to wait until all commands have started
         final CountDownLatch startLatch = new CountDownLatch(sharedSemaphore.numberOfPermits.get() + 1);
@@ -2138,8 +2145,8 @@ public class HystrixCommandTest {
         }
 
         // creates thread using isolated semaphore
-        final TryableSemaphore isolatedSemaphore =
-                new TryableSemaphore(HystrixProperty.Factory.asProperty(1));
+        final TryableSemaphoreActual isolatedSemaphore =
+                new TryableSemaphoreActual(HystrixProperty.Factory.asProperty(1));
 
         final CountDownLatch isolatedLatch = new CountDownLatch(1);
 
@@ -4112,8 +4119,8 @@ public class HystrixCommandTest {
     @Test
     public void testExecutionHookFailureWithSemaphoreIsolation() {
         /* test with execute() */
-        final TryableSemaphore semaphore =
-                new TryableSemaphore(HystrixProperty.Factory.asProperty(0));
+        final TryableSemaphoreActual semaphore =
+                new TryableSemaphoreActual(HystrixProperty.Factory.asProperty(0));
 
         TestSemaphoreCommand command = new TestSemaphoreCommand(new TestCircuitBreaker(), semaphore, 200);
         try {
