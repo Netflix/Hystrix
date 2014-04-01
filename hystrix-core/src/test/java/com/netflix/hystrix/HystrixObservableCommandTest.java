@@ -1,8 +1,16 @@
 package com.netflix.hystrix;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -25,6 +33,7 @@ import rx.Observable.OnSubscribe;
 import rx.Observer;
 import rx.Scheduler;
 import rx.Subscriber;
+import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.observers.TestSubscriber;
@@ -33,7 +42,7 @@ import rx.schedulers.Schedulers;
 import com.netflix.config.ConfigurationManager;
 import com.netflix.hystrix.HystrixCircuitBreakerTest.TestCircuitBreaker;
 import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
-import com.netflix.hystrix.HystrixExecutableBase.TryableSemaphore;
+import com.netflix.hystrix.HystrixExecutableBase.TryableSemaphoreActual;
 import com.netflix.hystrix.exception.HystrixBadRequestException;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
 import com.netflix.hystrix.exception.HystrixRuntimeException.FailureType;
@@ -1735,8 +1744,8 @@ public class HystrixObservableCommandTest {
 
         final AtomicBoolean exceptionReceived = new AtomicBoolean();
 
-        final TryableSemaphore semaphore =
-                new TryableSemaphore(HystrixProperty.Factory.asProperty(1));
+        final TryableSemaphoreActual semaphore =
+                new TryableSemaphoreActual(HystrixProperty.Factory.asProperty(1));
 
         Runnable r = new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), new Runnable() {
 
@@ -1807,8 +1816,8 @@ public class HystrixObservableCommandTest {
 
         final AtomicBoolean exceptionReceived = new AtomicBoolean();
 
-        final TryableSemaphore semaphore =
-                new TryableSemaphore(HystrixProperty.Factory.asProperty(1));
+        final TryableSemaphoreActual semaphore =
+                new TryableSemaphoreActual(HystrixProperty.Factory.asProperty(1));
 
         Runnable r = new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), new Runnable() {
 
@@ -1937,8 +1946,8 @@ public class HystrixObservableCommandTest {
         final TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
 
         // this semaphore will be shared across multiple command instances
-        final TryableSemaphore sharedSemaphore =
-                new TryableSemaphore(HystrixProperty.Factory.asProperty(3));
+        final TryableSemaphoreActual sharedSemaphore =
+                new TryableSemaphoreActual(HystrixProperty.Factory.asProperty(3));
 
         // used to wait until all commands have started
         final CountDownLatch startLatch = new CountDownLatch(sharedSemaphore.numberOfPermits.get() + 1);
@@ -1966,8 +1975,8 @@ public class HystrixObservableCommandTest {
         }
 
         // creates thread using isolated semaphore
-        final TryableSemaphore isolatedSemaphore =
-                new TryableSemaphore(HystrixProperty.Factory.asProperty(1));
+        final TryableSemaphoreActual isolatedSemaphore =
+                new TryableSemaphoreActual(HystrixProperty.Factory.asProperty(1));
 
         final CountDownLatch isolatedLatch = new CountDownLatch(1);
 
@@ -4029,8 +4038,8 @@ public class HystrixObservableCommandTest {
     @Test
     public void testExecutionHookFailureWithSemaphoreIsolation() {
         // test with execute() 
-        final TryableSemaphore semaphore =
-                new TryableSemaphore(HystrixProperty.Factory.asProperty(0));
+        final TryableSemaphoreActual semaphore =
+                new TryableSemaphoreActual(HystrixProperty.Factory.asProperty(0));
 
         TestSemaphoreCommand command = new TestSemaphoreCommand(new TestCircuitBreaker(), semaphore, 200);
         try {
@@ -4382,6 +4391,182 @@ public class HystrixObservableCommandTest {
         assertFalse(command.isExecutedInThread());
     }
 
+    @Test
+    public void testRejectedViaSemaphoreIsolation() {
+        final TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
+        final ArrayBlockingQueue<Boolean> results = new ArrayBlockingQueue<Boolean>(2);
+        final List<Thread> executionThreads = Collections.synchronizedList(new ArrayList<Thread>(2));
+        final List<Thread> responseThreads = Collections.synchronizedList(new ArrayList<Thread>(2));
+
+        final AtomicBoolean exceptionReceived = new AtomicBoolean();
+
+        Runnable r = new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), new Runnable() {
+
+            @Override
+            public void run() {
+                try {
+                    executionThreads.add(Thread.currentThread());
+                    results.add(new TestSemaphoreCommand(circuitBreaker, 1, 200).toObservable().map(new Func1<Boolean, Boolean>() {
+
+                        @Override
+                        public Boolean call(Boolean b) {
+                            responseThreads.add(Thread.currentThread());
+                            return b;
+                        }
+
+                    }).toBlockingObservable().single());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    exceptionReceived.set(true);
+                }
+            }
+
+        });
+
+        // 2 threads, the second should be rejected by the semaphore and return fallback
+        Thread t1 = new Thread(r);
+        Thread t2 = new Thread(r);
+
+        t1.start();
+        t2.start();
+        try {
+            t1.join();
+            t2.join();
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail("failed waiting on threads");
+        }
+
+        // one thread should have returned values
+        assertEquals(1, results.size());
+        assertTrue(results.contains(Boolean.TRUE));
+        // the other thread should have thrown an Exception
+        assertTrue(exceptionReceived.get());
+
+        assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
+        assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
+        // the rest should not be involved in this test
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+
+        System.out.println("**** DONE");
+
+        assertEquals(2, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+    }
+
+    @Test
+    public void testRejectedViaThreadIsolation() throws InterruptedException {
+        final TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
+        final ArrayBlockingQueue<Boolean> results = new ArrayBlockingQueue<Boolean>(10);
+        final List<Thread> executionThreads = Collections.synchronizedList(new ArrayList<Thread>(20));
+        final List<Thread> responseThreads = Collections.synchronizedList(new ArrayList<Thread>(10));
+
+        final AtomicBoolean exceptionReceived = new AtomicBoolean();
+        final CountDownLatch scheduleLatch = new CountDownLatch(2);
+        final CountDownLatch successLatch = new CountDownLatch(1);
+        final AtomicInteger count = new AtomicInteger();
+
+        Runnable r = new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), new Runnable() {
+
+            @Override
+            public void run() {
+                final boolean shouldExecute = count.incrementAndGet() < 3;
+                try {
+                    executionThreads.add(Thread.currentThread());
+                    results.add(new TestThreadIsolationWithSemaphoreSetSmallCommand(circuitBreaker, 2, new Action0() {
+
+                        @Override
+                        public void call() {
+                            // make sure it's deterministic and we put 2 threads into the pool before the 3rd is submitted
+                            if (shouldExecute) {
+                                try {
+                                    scheduleLatch.countDown();
+                                    successLatch.await();
+                                } catch (InterruptedException e) {
+                                }
+                            }
+                        }
+
+                    }).toObservable().map(new Func1<Boolean, Boolean>() {
+
+                        @Override
+                        public Boolean call(Boolean b) {
+                            responseThreads.add(Thread.currentThread());
+                            return b;
+                        }
+
+                    }).finallyDo(new Action0() {
+
+                        @Override
+                        public void call() {
+                            if (!shouldExecute) {
+                                // the final thread that shouldn't execute releases the latch once it has run
+                                // so it is deterministic that the other two fill the thread pool until this one rejects
+                                successLatch.countDown();
+                            }
+                        }
+
+                    }).toBlockingObservable().single());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    exceptionReceived.set(true);
+                }
+            }
+
+        });
+
+        // 2 threads, the second should be rejected by the semaphore and return fallback
+        Thread t1 = new Thread(r);
+        Thread t2 = new Thread(r);
+        Thread t3 = new Thread(r);
+
+        t1.start();
+        t2.start();
+        // wait for the previous 2 thread to be running before starting otherwise it can race
+        scheduleLatch.await(500, TimeUnit.MILLISECONDS);
+        t3.start();
+        try {
+            t1.join();
+            t2.join();
+            t3.join();
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail("failed waiting on threads");
+        }
+
+        // we should have 2 of the 3 return results
+        assertEquals(2, results.size());
+        // the other thread should have thrown an Exception
+        assertTrue(exceptionReceived.get());
+
+        assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
+        assertEquals(2, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
+        assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
+        // the rest should not be involved in this test
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+
+        assertEquals(3, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+    }
+
+    /* ******************************************************************************************************** */
+    /* *************************************** Request Context Testing Below ********************************** */
+    /* ******************************************************************************************************** */
+
     private RequestContextTestResults testRequestContextOnSuccess(ExecutionIsolationStrategy isolation, final Scheduler userScheduler) {
         final RequestContextTestResults results = new RequestContextTestResults();
         TestHystrixCommand<Boolean> command = new TestHystrixCommand<Boolean>(TestHystrixCommand.testPropsBuilder()
@@ -4649,7 +4834,38 @@ public class HystrixObservableCommandTest {
     private RequestContextTestResults testRequestContextOnRejectionWithFallback(ExecutionIsolationStrategy isolation, final Scheduler userScheduler) {
         final RequestContextTestResults results = new RequestContextTestResults();
         TestHystrixCommand<Boolean> command = new TestHystrixCommand<Boolean>(TestHystrixCommand.testPropsBuilder()
-                .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionIsolationSemaphoreMaxConcurrentRequests(0))) {
+                .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter()
+                        .withExecutionIsolationStrategy(isolation)
+                        .withExecutionIsolationSemaphoreMaxConcurrentRequests(0))
+                .setThreadPool(new HystrixThreadPool() {
+
+                    @Override
+                    public ThreadPoolExecutor getExecutor() {
+                        return null;
+                    }
+
+                    @Override
+                    public void markThreadExecution() {
+
+                    }
+
+                    @Override
+                    public void markThreadCompletion() {
+
+                    }
+
+                    @Override
+                    public boolean isQueueSpaceAvailable() {
+                        // always return false so we reject everything
+                        return false;
+                    }
+
+                    @Override
+                    public Scheduler getScheduler() {
+                        return new HystrixContextScheduler(HystrixPlugins.getInstance().getConcurrencyStrategy(), this);
+                    }
+
+                })) {
 
             @Override
             protected Observable<Boolean> run() {
@@ -4710,9 +4926,15 @@ public class HystrixObservableCommandTest {
         assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(1, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
-        assertEquals(1, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
+        if (isolation == ExecutionIsolationStrategy.SEMAPHORE) {
+            assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
+            assertEquals(1, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
+        } else {
+            assertEquals(1, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
+            assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
+        }
         assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
-        assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
+
         assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
         assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
@@ -4725,7 +4947,10 @@ public class HystrixObservableCommandTest {
 
     private RequestContextTestResults testRequestContextOnShortCircuitedWithFallback(ExecutionIsolationStrategy isolation, final Scheduler userScheduler) {
         final RequestContextTestResults results = new RequestContextTestResults();
-        TestHystrixCommand<Boolean> command = new TestHystrixCommand<Boolean>(TestHystrixCommand.testPropsBuilder().setCircuitBreaker(new TestCircuitBreaker().setForceShortCircuit(true))) {
+        TestHystrixCommand<Boolean> command = new TestHystrixCommand<Boolean>(TestHystrixCommand.testPropsBuilder()
+                .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter()
+                        .withExecutionIsolationStrategy(isolation))
+                .setCircuitBreaker(new TestCircuitBreaker().setForceShortCircuit(true))) {
 
             @Override
             protected Observable<Boolean> run() {
@@ -5025,7 +5250,7 @@ public class HystrixObservableCommandTest {
         assertTrue(results.originThread.get().getName().startsWith("hystrix-OWNER_ONE")); // thread isolated on a HystrixThreadPool
 
         assertTrue(results.isContextInitializedObserveOn.get());
-        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix thread
+        assertTrue(results.observeOnThread.get().getName().startsWith("hystrix-OWNER_ONE"));
 
         // thread isolated
         assertTrue(results.command.isExecutedInThread());
@@ -5046,7 +5271,7 @@ public class HystrixObservableCommandTest {
         assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
 
         assertTrue(results.isContextInitializedObserveOn.get()); // we capture and set the context once the user provided Observable emits
-        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix or user thread because of thread isolation choice
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxNewThread"));
 
         // thread isolated
         assertTrue(results.command.isExecutedInThread());
@@ -5065,7 +5290,7 @@ public class HystrixObservableCommandTest {
         assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
 
         assertTrue(results.isContextInitializedObserveOn.get()); // the user scheduler captures context
-        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix or user thread because of thread isolation choice
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxNewThread"));
 
         // thread isolated
         assertTrue(results.command.isExecutedInThread());
@@ -5141,7 +5366,7 @@ public class HystrixObservableCommandTest {
         assertTrue(results.originThread.get().getName().startsWith("hystrix-OWNER_ONE")); // thread isolated on a HystrixThreadPool
 
         assertTrue(results.isContextInitializedObserveOn.get());
-        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix thread
+        assertTrue(results.observeOnThread.get().getName().startsWith("hystrix-OWNER_ONE"));
 
         // thread isolated
         assertTrue(results.command.isExecutedInThread());
@@ -5162,7 +5387,7 @@ public class HystrixObservableCommandTest {
         assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
 
         assertTrue(results.isContextInitializedObserveOn.get()); // we capture and set the context once the user provided Observable emits
-        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix or user thread because of thread isolation choice
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxNewThread"));
 
         // thread isolated
         assertTrue(results.command.isExecutedInThread());
@@ -5181,7 +5406,7 @@ public class HystrixObservableCommandTest {
         assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
 
         assertTrue(results.isContextInitializedObserveOn.get()); // the user scheduler captures context
-        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix or user thread because of thread isolation choice
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxNewThread"));
 
         // thread isolated
         assertTrue(results.command.isExecutedInThread());
@@ -5257,7 +5482,7 @@ public class HystrixObservableCommandTest {
         assertTrue(results.originThread.get().getName().startsWith("hystrix-OWNER_ONE")); // thread isolated on a HystrixThreadPool
 
         assertTrue(results.isContextInitializedObserveOn.get());
-        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix thread
+        assertTrue(results.observeOnThread.get().getName().startsWith("hystrix-OWNER_ONE"));
 
         // thread isolated
         assertTrue(results.command.isExecutedInThread());
@@ -5278,7 +5503,7 @@ public class HystrixObservableCommandTest {
         assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
 
         assertTrue(results.isContextInitializedObserveOn.get()); // we capture and set the context once the user provided Observable emits
-        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix or user thread because of thread isolation choice
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxNewThread"));
 
         // thread isolated
         assertTrue(results.command.isExecutedInThread());
@@ -5297,7 +5522,7 @@ public class HystrixObservableCommandTest {
         assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
 
         assertTrue(results.isContextInitializedObserveOn.get()); // the user scheduler captures context
-        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix or user thread because of thread isolation choice
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxNewThread"));
 
         // thread isolated
         assertTrue(results.command.isExecutedInThread());
@@ -5373,7 +5598,7 @@ public class HystrixObservableCommandTest {
         assertTrue(results.originThread.get().getName().startsWith("hystrix-OWNER_ONE")); // thread isolated on a HystrixThreadPool
 
         assertTrue(results.isContextInitializedObserveOn.get());
-        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix thread
+        assertTrue(results.observeOnThread.get().getName().startsWith("hystrix-OWNER_ONE"));
 
         // thread isolated
         assertTrue(results.command.isExecutedInThread());
@@ -5394,7 +5619,7 @@ public class HystrixObservableCommandTest {
         assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
 
         assertTrue(results.isContextInitializedObserveOn.get()); // we capture and set the context once the user provided Observable emits
-        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix or user thread because of thread isolation choice
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxNewThread"));
 
         // thread isolated
         assertTrue(results.command.isExecutedInThread());
@@ -5413,7 +5638,7 @@ public class HystrixObservableCommandTest {
         assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
 
         assertTrue(results.isContextInitializedObserveOn.get()); // the user scheduler captures context
-        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix or user thread because of thread isolation choice
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxNewThread"));
 
         // thread isolated
         assertTrue(results.command.isExecutedInThread());
@@ -5489,10 +5714,11 @@ public class HystrixObservableCommandTest {
         assertTrue(results.originThread.get().equals(Thread.currentThread())); // fallback is performed by the calling thread
 
         assertTrue(results.isContextInitializedObserveOn.get());
+        System.out.println("results.observeOnThread.get(): " + results.observeOnThread.get() + "  " + Thread.currentThread());
         assertTrue(results.observeOnThread.get().equals(Thread.currentThread())); // rejected so we stay on calling thread
 
-        // thread isolated ... but rejected so not executed in a thread
-        assertFalse(results.command.isExecutedInThread());
+        // thread isolated so even though we're rejected we mark that it attempted execution in a thread
+        assertTrue(results.command.isExecutedInThread());
     }
 
     /**
@@ -5512,8 +5738,8 @@ public class HystrixObservableCommandTest {
         assertTrue(results.isContextInitializedObserveOn.get()); // we capture and set the context once the user provided Observable emits
         assertTrue(results.observeOnThread.get().getName().startsWith("RxNewThread"));
 
-        // thread isolated ... but rejected so not executed in a thread
-        assertFalse(results.command.isExecutedInThread());
+        // thread isolated so even though we're rejected we mark that it attempted execution in a thread
+        assertTrue(results.command.isExecutedInThread());
     }
 
     /**
@@ -5531,8 +5757,8 @@ public class HystrixObservableCommandTest {
         assertTrue(results.isContextInitializedObserveOn.get()); // the user scheduler captures context
         assertTrue(results.observeOnThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler for getFallback
 
-        // thread isolated ... but rejected so not executed in a thread
-        assertFalse(results.command.isExecutedInThread());
+        // thread isolated so even though we're rejected we mark that it attempted execution in a thread
+        assertTrue(results.command.isExecutedInThread());
     }
 
     /* *************************************** testShortCircuitedWithFallbackRequestContext *********************************** */
@@ -5721,7 +5947,7 @@ public class HystrixObservableCommandTest {
         assertTrue(results.originThread.get().getName().startsWith("hystrix-OWNER_ONE")); // thread isolated on a HystrixThreadPool
 
         assertTrue(results.isContextInitializedObserveOn.get());
-        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix thread
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // timeout schedules on RxComputation since the original thread was timed out
 
         // thread isolated
         assertTrue(results.command.isExecutedInThread());
@@ -5742,7 +5968,7 @@ public class HystrixObservableCommandTest {
         assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
 
         assertTrue(results.isContextInitializedObserveOn.get()); // the timeout captures the context so it exists
-        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix or user thread because of thread isolation choice
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // timeout schedules on RxComputation since the original thread was timed out
 
         // thread isolated
         assertTrue(results.command.isExecutedInThread());
@@ -5761,7 +5987,7 @@ public class HystrixObservableCommandTest {
         assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
 
         assertTrue(results.isContextInitializedObserveOn.get()); // the user scheduler captures context
-        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix or user thread because of thread isolation choice
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // timeout schedules on RxComputation since the original thread was timed out
 
         // thread isolated
         assertTrue(results.command.isExecutedInThread());
@@ -5838,7 +6064,7 @@ public class HystrixObservableCommandTest {
         assertTrue(results.originThread.get().getName().startsWith("RxComputation")); // timeout uses RxComputation thread for fallback
 
         assertTrue(results.isContextInitializedObserveOn.get());
-        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // we observeOn Schedulers.computation() instead of using the hystrix thread
+        assertTrue(results.observeOnThread.get().getName().startsWith("RxComputation")); // fallback uses the timeout thread
 
         // thread isolated
         assertTrue(results.command.isExecutedInThread());
@@ -5918,8 +6144,8 @@ public class HystrixObservableCommandTest {
             HystrixCommandProperties.Setter commandPropertiesDefaults = HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionIsolationStrategy(ExecutionIsolationStrategy.SEMAPHORE);
             HystrixThreadPoolProperties.Setter threadPoolPropertiesDefaults = HystrixThreadPoolProperties.Setter.getUnitTestPropertiesBuilder();
             HystrixCommandMetrics metrics = _cb.metrics;
-            TryableSemaphore fallbackSemaphore = null;
-            TryableSemaphore executionSemaphore = null;
+            TryableSemaphoreActual fallbackSemaphore = null;
+            TryableSemaphoreActual executionSemaphore = null;
             TestExecutionHook executionHook = new TestExecutionHook();
 
             TestCommandBuilder setOwner(HystrixCommandGroupKey owner) {
@@ -5962,12 +6188,12 @@ public class HystrixObservableCommandTest {
                 return this;
             }
 
-            TestCommandBuilder setFallbackSemaphore(TryableSemaphore fallbackSemaphore) {
+            TestCommandBuilder setFallbackSemaphore(TryableSemaphoreActual fallbackSemaphore) {
                 this.fallbackSemaphore = fallbackSemaphore;
                 return this;
             }
 
-            TestCommandBuilder setExecutionSemaphore(TryableSemaphore executionSemaphore) {
+            TestCommandBuilder setExecutionSemaphore(TryableSemaphoreActual executionSemaphore) {
                 this.executionSemaphore = executionSemaphore;
                 return this;
             }
@@ -6353,7 +6579,7 @@ public class HystrixObservableCommandTest {
             this.executionSleep = executionSleep;
         }
 
-        private TestSemaphoreCommand(TestCircuitBreaker circuitBreaker, TryableSemaphore semaphore, long executionSleep) {
+        private TestSemaphoreCommand(TestCircuitBreaker circuitBreaker, TryableSemaphoreActual semaphore, long executionSleep) {
             super(testPropsBuilder().setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics)
                     .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter()
                             .withExecutionIsolationStrategy(ExecutionIsolationStrategy.SEMAPHORE))
@@ -6381,6 +6607,41 @@ public class HystrixObservableCommandTest {
     }
 
     /**
+     * The run() will take time. No fallback implementation.
+     * 
+     * Used for making sure Thread and Semaphore isolation are separated from each other.
+     */
+    private static class TestThreadIsolationWithSemaphoreSetSmallCommand extends TestHystrixCommand<Boolean> {
+
+        private final Action0 action;
+
+        private TestThreadIsolationWithSemaphoreSetSmallCommand(TestCircuitBreaker circuitBreaker, int poolSize, Action0 action) {
+            super(testPropsBuilder().setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics)
+                    .setThreadPoolKey(HystrixThreadPoolKey.Factory.asKey(TestThreadIsolationWithSemaphoreSetSmallCommand.class.getSimpleName()))
+                    .setThreadPoolPropertiesDefaults(HystrixThreadPoolProperties.Setter.getUnitTestPropertiesBuilder()
+                            .withCoreSize(poolSize).withMaxQueueSize(0))
+                    .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter()
+                            .withExecutionIsolationStrategy(ExecutionIsolationStrategy.THREAD)
+                            .withExecutionIsolationSemaphoreMaxConcurrentRequests(1)));
+            this.action = action;
+        }
+
+        @Override
+        protected Observable<Boolean> run() {
+            return Observable.create(new OnSubscribe<Boolean>() {
+
+                @Override
+                public void call(Subscriber<? super Boolean> s) {
+                    action.call();
+                    s.onNext(true);
+                    s.onCompleted();
+                }
+
+            });
+        }
+    }
+
+    /**
      * Semaphore based command that allows caller to use latches to know when it has started and signal when it
      * would like the command to finish
      */
@@ -6399,7 +6660,7 @@ public class HystrixObservableCommandTest {
          *            this command calls {@link java.util.concurrent.CountDownLatch#await()} once it starts
          *            to run. The caller can use the latch to signal the command to finish
          */
-        private LatchedSemaphoreCommand(TestCircuitBreaker circuitBreaker, TryableSemaphore semaphore,
+        private LatchedSemaphoreCommand(TestCircuitBreaker circuitBreaker, TryableSemaphoreActual semaphore,
                 CountDownLatch startLatch, CountDownLatch waitLatch) {
             super(testPropsBuilder().setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics)
                     .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionIsolationStrategy(ExecutionIsolationStrategy.SEMAPHORE))

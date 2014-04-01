@@ -593,7 +593,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
             TryableSemaphore _s = fallbackSemaphorePerCircuit.get(commandKey.name());
             if (_s == null) {
                 // we didn't find one cache so setup
-                fallbackSemaphorePerCircuit.putIfAbsent(commandKey.name(), new TryableSemaphore(properties.fallbackIsolationSemaphoreMaxConcurrentRequests()));
+                fallbackSemaphorePerCircuit.putIfAbsent(commandKey.name(), new TryableSemaphoreActual(properties.fallbackIsolationSemaphoreMaxConcurrentRequests()));
                 // assign whatever got set (this or another thread)
                 return fallbackSemaphorePerCircuit.get(commandKey.name());
             } else {
@@ -612,18 +612,23 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
      * @return TryableSemaphore
      */
     protected TryableSemaphore getExecutionSemaphore() {
-        if (executionSemaphoreOverride == null) {
-            TryableSemaphore _s = executionSemaphorePerCircuit.get(commandKey.name());
-            if (_s == null) {
-                // we didn't find one cache so setup
-                executionSemaphorePerCircuit.putIfAbsent(commandKey.name(), new TryableSemaphore(properties.executionIsolationSemaphoreMaxConcurrentRequests()));
-                // assign whatever got set (this or another thread)
-                return executionSemaphorePerCircuit.get(commandKey.name());
+        if (properties.executionIsolationStrategy().get().equals(ExecutionIsolationStrategy.SEMAPHORE)) {
+            if (executionSemaphoreOverride == null) {
+                TryableSemaphore _s = executionSemaphorePerCircuit.get(commandKey.name());
+                if (_s == null) {
+                    // we didn't find one cache so setup
+                    executionSemaphorePerCircuit.putIfAbsent(commandKey.name(), new TryableSemaphoreActual(properties.executionIsolationSemaphoreMaxConcurrentRequests()));
+                    // assign whatever got set (this or another thread)
+                    return executionSemaphorePerCircuit.get(commandKey.name());
+                } else {
+                    return _s;
+                }
             } else {
-                return _s;
+                return executionSemaphoreOverride;
             }
         } else {
-            return executionSemaphoreOverride;
+            // return NoOp implementation since we're not using SEMAPHORE isolation
+            return TryableSemaphoreNoOp.DEFAULT;
         }
     }
 
@@ -859,13 +864,59 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
      * Using AtomicInteger increment/decrement instead of java.util.concurrent.Semaphore since we don't need blocking and need a custom implementation to get the dynamic permit count and since
      * AtomicInteger achieves the same behavior and performance without the more complex implementation of the actual Semaphore class using AbstractQueueSynchronizer.
      */
-    /* package */static class TryableSemaphore {
+    /* package */static class TryableSemaphoreActual implements TryableSemaphore {
         protected final HystrixProperty<Integer> numberOfPermits;
         private final AtomicInteger count = new AtomicInteger(0);
 
-        public TryableSemaphore(HystrixProperty<Integer> numberOfPermits) {
+        public TryableSemaphoreActual(HystrixProperty<Integer> numberOfPermits) {
             this.numberOfPermits = numberOfPermits;
         }
+
+        @Override
+        public boolean tryAcquire() {
+            int currentCount = count.incrementAndGet();
+            if (currentCount > numberOfPermits.get()) {
+                count.decrementAndGet();
+                return false;
+            } else {
+                return true;
+            }
+        }
+
+        @Override
+        public void release() {
+            count.decrementAndGet();
+        }
+
+        @Override
+        public int getNumberOfPermitsUsed() {
+            return count.get();
+        }
+
+    }
+
+    /* package */static class TryableSemaphoreNoOp implements TryableSemaphore {
+
+        public static final TryableSemaphore DEFAULT = new TryableSemaphoreNoOp();
+
+        @Override
+        public boolean tryAcquire() {
+            return true;
+        }
+
+        @Override
+        public void release() {
+
+        }
+
+        @Override
+        public int getNumberOfPermitsUsed() {
+            return 0;
+        }
+
+    }
+
+    /* package */static interface TryableSemaphore {
 
         /**
          * Use like this:
@@ -883,15 +934,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
          * 
          * @return boolean
          */
-        public boolean tryAcquire() {
-            int currentCount = count.incrementAndGet();
-            if (currentCount > numberOfPermits.get()) {
-                count.decrementAndGet();
-                return false;
-            } else {
-                return true;
-            }
-        }
+        public abstract boolean tryAcquire();
 
         /**
          * ONLY call release if tryAcquire returned true.
@@ -907,13 +950,9 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
          * }
          * </pre>
          */
-        public void release() {
-            count.decrementAndGet();
-        }
+        public abstract void release();
 
-        public int getNumberOfPermitsUsed() {
-            return count.get();
-        }
+        public abstract int getNumberOfPermitsUsed();
 
     }
 
