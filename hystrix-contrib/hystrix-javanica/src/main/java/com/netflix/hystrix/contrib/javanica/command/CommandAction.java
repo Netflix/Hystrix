@@ -15,56 +15,13 @@
  */
 package com.netflix.hystrix.contrib.javanica.command;
 
-import com.netflix.hystrix.contrib.javanica.exception.CommandActionExecutionException;
-
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-
 /**
- * Simple wrapper to invoke a method using Java reflection API.
+ * Simple action to encapsulate some logic to process it in a Hystrix command.
  */
-public class CommandAction {
+public abstract class CommandAction {
 
-    private static final Object[] EMPTY_ARGS = new Object[]{};
-    private Object object;
-    private Method method;
-    private Object[] _args;
+    public abstract Object execute(ExecutionType executionType);
 
-    protected CommandAction() {
-    }
-
-    protected CommandAction(Object object, Method method) {
-        this.object = object;
-        this.method = method;
-        this._args = EMPTY_ARGS;
-    }
-
-    protected CommandAction(Object object, Method method, Object[] args) {
-        this.object = object;
-        this.method = method;
-        this._args = args;
-    }
-
-    public Object execute() {
-        return execute(_args);
-    }
-
-    /**
-     * Invokes the method. Also private method also can be invoked.
-     *
-     * @return result of execution
-     */
-    public Object execute(Object[] args) {
-        Object result = null;
-        try {
-            method.setAccessible(true); // suppress Java language access
-            result = method.invoke(object, args);
-        } catch (IllegalAccessException e) {
-            throw new CommandActionExecutionException(e);
-        } catch (InvocationTargetException e) {
-            throw new CommandActionExecutionException(e);
-        }
-        return result;
-    }
+    public abstract Object executeWithArgs(ExecutionType executionType, Object[] args);
 
 }

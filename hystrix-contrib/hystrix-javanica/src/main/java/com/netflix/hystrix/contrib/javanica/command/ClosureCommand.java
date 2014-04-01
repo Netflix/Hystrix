@@ -13,16 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.hystrix.contrib.javanica.aop;
+package com.netflix.hystrix.contrib.javanica.command;
 
 /**
- * Represents enumeration of proxies types.
+ * This interface is used to perform command logic within an anonymous class and basically used as wrapper for some logic.
+ *
+ * @param <T> command result type
  */
-public enum ProxyType {
+public interface ClosureCommand<T> {
 
-    JDK,
-
-    CGLIB,
-
-    UNKNOWN
+    /**
+     * Process logic.
+     *
+     * @return result
+     */
+    T invoke();
 }
