@@ -39,6 +39,7 @@ public enum ExecutionType {
      */
     OBSERVABLE;
 
+
     /**
      * Gets execution type for specified class type.
      * @param type the type

@@ -24,9 +24,7 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * This command used to execute {@link CommandAction} as hystrix command.
- * Basically any logic can be executed within {@link CommandAction}
- * such as method invocation and etc.
+ * Implementation of AbstractHystrixCommand which returns an Object as result.
  */
 @ThreadSafe
 public class GenericCommand extends AbstractHystrixCommand<Object> {
@@ -36,11 +34,14 @@ public class GenericCommand extends AbstractHystrixCommand<Object> {
     /**
      * {@inheritDoc}
      */
-    protected GenericCommand(CommandSetterBuilder setterBuilder, CommandAction commandAction,
-                             CommandAction fallbackAction, Map<String, Object> commandProperties,
+    protected GenericCommand(CommandSetterBuilder setterBuilder,
+                             CommandActions commandActions,
+                             Map<String, Object> commandProperties,
                              Collection<HystrixCollapser.CollapsedRequest<Object, Object>> collapsedRequests,
-                             Class<? extends Throwable>[] ignoreExceptions) {
-        super(setterBuilder, commandAction, fallbackAction, commandProperties, collapsedRequests, ignoreExceptions);
+                             Class<? extends Throwable>[] ignoreExceptions,
+                             ExecutionType executionType) {
+        super(setterBuilder, commandActions, commandProperties, collapsedRequests,
+                ignoreExceptions, executionType);
     }
 
     /**
@@ -49,7 +50,12 @@ public class GenericCommand extends AbstractHystrixCommand<Object> {
     @Override
     protected Object run() throws Exception {
         LOGGER.debug("execute command: {}", getCommandKey().name());
-        return process(getCommandAction());
+        return process(new Action() {
+            @Override
+            Object execute() {
+                return getCommandAction().execute(getExecutionType());
+            }
+        });
     }
 
     /**
@@ -57,12 +63,23 @@ public class GenericCommand extends AbstractHystrixCommand<Object> {
      * Also a fallback method will be invoked within separate command in the case if fallback method was annotated with
      * HystrixCommand annotation, otherwise current implementation throws RuntimeException and leaves the caller to deal with it
      * (see {@link super#getFallback()}).
+     * The getFallback() is always processed synchronously.
      *
      * @return result of invocation of fallback method or RuntimeException
      */
     @Override
     protected Object getFallback() {
-        return getFallbackAction() != null ? process(getFallbackAction()) : super.getFallback();
+        if (getFallbackAction() != null) {
+            return process(new Action() {
+                @Override
+                Object execute() {
+                    return getFallbackAction().execute(ExecutionType.SYNCHRONOUS);
+                }
+            });
+
+        } else {
+            return super.getFallback();
+        }
     }
 
 }

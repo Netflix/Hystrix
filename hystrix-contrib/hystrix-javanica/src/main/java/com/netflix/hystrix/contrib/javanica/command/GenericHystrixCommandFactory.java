@@ -24,7 +24,7 @@ import java.util.Map;
  * Specific implementation of {@link HystrixCommandFactory} interface to create {@link GenericCommand} instances.
  */
 public class GenericHystrixCommandFactory extends AbstractHystrixCommandFactory<GenericCommand>
-    implements HystrixCommandFactory<GenericCommand> {
+        implements HystrixCommandFactory<GenericCommand> {
 
     private static final HystrixCommandFactory<GenericCommand> COMMAND_FACTORY = new GenericHystrixCommandFactory();
 
@@ -33,12 +33,14 @@ public class GenericHystrixCommandFactory extends AbstractHystrixCommandFactory<
     }
 
     @Override
-    GenericCommand create(CommandSetterBuilder setterBuilder, Map<String, Object> commandProperties,
-                          CommandAction action, CommandAction fallbackAction,
+    GenericCommand create(CommandSetterBuilder setterBuilder,
+                          CommandActions commandActions,
+                          Map<String, Object> commandProperties,
                           Collection<HystrixCollapser.CollapsedRequest<Object, Object>> collapsedRequests,
-                          Class<? extends Throwable>[] ignoreExceptions) {
-        GenericCommand genericCommand = new GenericCommand(setterBuilder, action, fallbackAction, commandProperties,
-            collapsedRequests, ignoreExceptions);
+                          Class<? extends Throwable>[] ignoreExceptions,
+                          ExecutionType executionType) {
+        GenericCommand genericCommand = new GenericCommand(setterBuilder, commandActions, commandProperties,
+                collapsedRequests, ignoreExceptions, executionType);
         return genericCommand;
     }
 

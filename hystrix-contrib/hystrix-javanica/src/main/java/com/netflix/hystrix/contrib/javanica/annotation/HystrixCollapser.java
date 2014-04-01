@@ -24,7 +24,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * This annotation is used to mark some methods to collapse some commands into a single backend dependency call.
+ * This annotation is used to collapse some commands into a single backend dependency call.
+ * This annotation should be used together with {@link HystrixCommand} annotation.
  */
 @Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
@@ -50,17 +51,19 @@ public @interface HystrixCollapser {
     Scope scope() default Scope.REQUEST;
 
     /**
-     * Specifies name of a method which has @HystrixCommand annotation and should be collapsed.
-     *
-     * @return method name.
-     */
-    String commandMethod();
-
-    /**
      * Specifies collapser properties.
      *
      * @return collapser properties
      */
     HystrixProperty[] collapserProperties() default {};
+
+    /**
+     * Used to enabled fallback logic for a batch hystrix command.
+     * <p/>
+     * default => the false
+     *
+     * @return true if processing of a fallback is allowed
+     */
+    boolean fallbackEnabled() default false;
 
 }
