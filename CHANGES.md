@@ -1,5 +1,17 @@
 # Hystrix Releases #
 
+### Version 1.4.0 Release Candidate 2 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.0-RC2%22)) ###
+
+_NOTE: This code is NOT considered production worthy yet, hence the "Release Candidate" status._
+
+This fixes a bug found in Release Candidate 1 that caused the semaphore limits to be applied when thread isolation was chosen.
+
+It also stops scheduling callbacks onto new threads and lets the Hystrix threads perform the callbacks.
+
+* [Pull 238](https://github.com/Netflix/Hystrix/pull/238) Fix for Semaphore vs Thread Isolation Bug
+* [Pull 230](https://github.com/Netflix/Hystrix/pull/230) Javanica Module: Added support for Request Cache and Reactive Execution
+
+
 ### Version 1.4.0 Release Candidate 1 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.0-RC1%22)) ###
 
 This is the first release candidate of 1.4.0 that includes `HystrixObservableCommand` ([Source](https://github.com/Netflix/Hystrix/blob/master/hystrix-core/src/main/java/com/netflix/hystrix/HystrixObservableCommand.java)) that supports bulkheading asynchronous, non-blocking sources.
