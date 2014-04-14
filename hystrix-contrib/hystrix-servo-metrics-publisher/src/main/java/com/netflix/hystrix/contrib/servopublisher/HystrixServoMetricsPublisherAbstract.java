@@ -39,12 +39,28 @@ import com.netflix.servo.tag.Tag;
         public InformationalMetric(MonitorConfig config) {
             super(config.withAdditionalTag(DataSourceType.INFORMATIONAL).withAdditionalTag(getServoTypeTag()).withAdditionalTag(getServoInstanceTag()));
         }
+
+        @Override
+        public K getValue(int n) { 
+            return getValue();
+        }
+
+        @Override
+        public abstract K getValue();
     }
 
-    protected abstract class CounterMetric extends AbstractMonitor<Long> implements Counter {
+    protected abstract class CounterMetric extends AbstractMonitor<Number> implements Counter {
         public CounterMetric(MonitorConfig config) {
             super(config.withAdditionalTag(DataSourceType.COUNTER).withAdditionalTag(getServoTypeTag()).withAdditionalTag(getServoInstanceTag()));
         }
+
+        @Override
+        public Number getValue(int n) { 
+            return getValue();
+        }
+
+        @Override
+        public abstract Number getValue();
 
         @Override
         public void increment() {
@@ -61,6 +77,14 @@ import com.netflix.servo.tag.Tag;
         public GaugeMetric(MonitorConfig config) {
             super(config.withAdditionalTag(DataSourceType.GAUGE).withAdditionalTag(getServoTypeTag()).withAdditionalTag(getServoInstanceTag()));
         }
+
+        @Override
+        public Number getValue(int n) { 
+            return getValue();
+        }
+
+        @Override
+        public abstract Number getValue();
     }
 
     protected Monitor<?> getCumulativeCountForEvent(String name, final HystrixCommandMetrics metrics, final HystrixRollingNumberEvent event) {
