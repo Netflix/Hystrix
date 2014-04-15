@@ -15,10 +15,15 @@
  */
 package com.netflix.hystrix.contrib.javanica.aop.aspectj;
 
+import com.netflix.hystrix.HystrixExecutable;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCollapser;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.collapser.CommandCollapser;
-import com.netflix.hystrix.contrib.javanica.command.*;
+import com.netflix.hystrix.contrib.javanica.command.CommandExecutor;
+import com.netflix.hystrix.contrib.javanica.command.ExecutionType;
+import com.netflix.hystrix.contrib.javanica.command.GenericHystrixCommandFactory;
+import com.netflix.hystrix.contrib.javanica.command.MetaHolder;
+import com.netflix.hystrix.exception.HystrixBadRequestException;
 import org.apache.commons.lang3.Validate;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -57,13 +62,21 @@ public class HystrixCommandAspect {
                 .defaultCommandKey(method.getName())
                 .defaultCollapserKey(method.getName())
                 .defaultGroupKey(obj.getClass().getSimpleName()).build();
+        HystrixExecutable executable;
         if (hystrixCollapser != null) {
-            CommandCollapser commandCollapser = new CommandCollapser(metaHolder);
-            return CommandExecutor.execute(commandCollapser, executionType);
+            executable = new CommandCollapser(metaHolder);
         } else {
-            GenericCommand genericCommand = GenericHystrixCommandFactory.getInstance().create(metaHolder, null);
-            return CommandExecutor.execute(genericCommand, executionType);
+            executable = GenericHystrixCommandFactory.getInstance().create(metaHolder, null);
         }
+        Object result;
+        try {
+            result = CommandExecutor.execute(executable, executionType);
+        } catch (HystrixBadRequestException e) {
+            throw e.getCause();
+        } catch (Throwable throwable){
+            throw throwable;
+        }
+        return result;
     }
 
 }
