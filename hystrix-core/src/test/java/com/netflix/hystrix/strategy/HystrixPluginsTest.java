@@ -5,6 +5,8 @@ import static org.junit.Assert.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
+import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHookDefault;
 import org.junit.After;
 import org.junit.Test;
 
@@ -31,6 +33,23 @@ public class HystrixPluginsTest {
         HystrixPlugins.getInstance().metricsPublisher.set(null);
         HystrixPlugins.getInstance().notifier.set(null);
         HystrixPlugins.getInstance().propertiesFactory.set(null);
+        HystrixPlugins.getInstance().commandExecutionHook.set(null);
+    }
+
+    @Test
+    public void testCommandExecutionHookDefaultImpl() {
+        HystrixCommandExecutionHook impl = HystrixPlugins.getInstance().getCommandExecutionHook();
+        assertTrue(impl instanceof HystrixCommandExecutionHookDefault);
+    }
+
+    @Test
+    public void testCommandExecutionHookViaRegisterMethod() {
+        HystrixPlugins.getInstance().registerCommandExecutionHook(new HystrixCommandExecutionHookTestImpl());
+        HystrixCommandExecutionHook impl = HystrixPlugins.getInstance().getCommandExecutionHook();
+        assertTrue(impl instanceof HystrixCommandExecutionHookTestImpl);
+    }
+
+    public static class HystrixCommandExecutionHookTestImpl extends HystrixCommandExecutionHook {
     }
 
     @Test
