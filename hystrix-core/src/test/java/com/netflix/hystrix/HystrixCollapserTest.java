@@ -1100,7 +1100,7 @@ public class HystrixCollapserTest {
 
     }
 
-    private static class TestCollapserTimer implements CollapserTimer {
+    /* package */ static class TestCollapserTimer implements CollapserTimer {
 
         private final ConcurrentLinkedQueue<ATask> tasks = new ConcurrentLinkedQueue<ATask>();
 

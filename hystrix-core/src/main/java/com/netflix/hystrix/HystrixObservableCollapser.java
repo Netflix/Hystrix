@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 Netflix, Inc.
+ * Copyright 2014 Netflix, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import rx.Scheduler;
 import rx.schedulers.Schedulers;
 import rx.subjects.ReplaySubject;
 
+import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
 import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
 import com.netflix.hystrix.collapser.CollapserTimer;
 import com.netflix.hystrix.collapser.HystrixCollapserBridge;
@@ -60,9 +61,9 @@ import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
  * @param <RequestArgumentType>
  *            The type of the request argument. If multiple arguments are needed, wrap them in another object or a Tuple.
  */
-public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArgumentType> implements HystrixExecutable<ResponseType> {
+public abstract class HystrixObservableCollapser<BatchReturnType, ResponseType, RequestArgumentType> implements HystrixExecutable<ResponseType> {
 
-    static final Logger logger = LoggerFactory.getLogger(HystrixCollapser.class);
+    static final Logger logger = LoggerFactory.getLogger(HystrixObservableCollapser.class);
 
     private final RequestCollapserFactory<BatchReturnType, ResponseType, RequestArgumentType> collapserFactory;
     private final HystrixRequestCache requestCache;
@@ -85,7 +86,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
     /**
      * Collapser with default {@link HystrixCollapserKey} derived from the implementing class name and scoped to {@link Scope#REQUEST} and default configuration.
      */
-    protected HystrixCollapser() {
+    protected HystrixObservableCollapser() {
         this(Setter.withCollapserKey(null).andScope(Scope.REQUEST));
     }
 
@@ -95,12 +96,12 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
      * @param collapserKey
      *            {@link HystrixCollapserKey} that identifies this collapser and provides the key used for retrieving properties, request caches, publishing metrics etc.
      */
-    protected HystrixCollapser(HystrixCollapserKey collapserKey) {
+    protected HystrixObservableCollapser(HystrixCollapserKey collapserKey) {
         this(Setter.withCollapserKey(collapserKey).andScope(Scope.REQUEST));
     }
 
     /**
-     * Construct a {@link HystrixCollapser} with defined {@link Setter} that allows
+     * Construct a {@link HystrixObservableCollapser} with defined {@link Setter} that allows
      * injecting property and strategy overrides and other optional arguments.
      * <p>
      * Null values will result in the default being used.
@@ -108,11 +109,11 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
      * @param setter
      *            Fluent interface for constructor arguments
      */
-    protected HystrixCollapser(Setter setter) {
+    protected HystrixObservableCollapser(Setter setter) {
         this(setter.collapserKey, setter.scope, new RealCollapserTimer(), setter.propertiesSetter);
     }
 
-    /* package for tests */ HystrixCollapser(HystrixCollapserKey collapserKey, Scope scope, CollapserTimer timer, HystrixCollapserProperties.Setter propertiesBuilder) {
+    /* package for tests */HystrixObservableCollapser(HystrixCollapserKey collapserKey, Scope scope, CollapserTimer timer, HystrixCollapserProperties.Setter propertiesBuilder) {
         if (collapserKey == null || collapserKey.name().trim().equals("")) {
             String defaultKeyName = getDefaultNameFromClass(getClass());
             collapserKey = HystrixCollapserKey.Factory.asKey(defaultKeyName);
@@ -121,7 +122,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
         this.collapserFactory = new RequestCollapserFactory<BatchReturnType, ResponseType, RequestArgumentType>(collapserKey, scope, timer, propertiesBuilder);
         this.requestCache = HystrixRequestCache.getInstance(collapserKey, HystrixPlugins.getInstance().getConcurrencyStrategy());
 
-        final HystrixCollapser<BatchReturnType, ResponseType, RequestArgumentType> self = this;
+        final HystrixObservableCollapser<BatchReturnType, ResponseType, RequestArgumentType> self = this;
 
         /**
          * Used to pass public method invocation to the underlying implementation in a separate package while leaving the methods 'protected' in this class.
@@ -135,7 +136,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
 
             @Override
             public Observable<BatchReturnType> createObservableCommand(Collection<CollapsedRequest<ResponseType, RequestArgumentType>> requests) {
-                HystrixCommand<BatchReturnType> command = self.createCommand(requests);
+                HystrixObservableCommand<BatchReturnType> command = self.createCommand(requests);
 
                 // mark the number of requests being collapsed together
                 command.markAsCollapsedCommand(requests.size());
@@ -161,9 +162,9 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
     }
 
     /**
-     * Key of the {@link HystrixCollapser} used for properties, metrics, caches, reporting etc.
+     * Key of the {@link HystrixObservableCollapser} used for properties, metrics, caches, reporting etc.
      * 
-     * @return {@link HystrixCollapserKey} identifying this {@link HystrixCollapser} instance
+     * @return {@link HystrixCollapserKey} identifying this {@link HystrixObservableCollapser} instance
      */
     public HystrixCollapserKey getCollapserKey() {
         return collapserFactory.getCollapserKey();
@@ -200,7 +201,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
     public abstract RequestArgumentType getRequestArgument();
 
     /**
-     * Factory method to create a new {@link HystrixCommand}{@code <BatchReturnType>} command object each time a batch needs to be executed.
+     * Factory method to create a new {@link HystrixObservableCommand}{@code <BatchReturnType>} command object each time a batch needs to be executed.
      * <p>
      * Do not return the same instance each time. Return a new instance on each invocation.
      * <p>
@@ -212,9 +213,9 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
      * 
      * @param requests
      *            {@code Collection<CollapsedRequest<ResponseType, RequestArgumentType>>} containing {@link CollapsedRequest} objects containing the arguments of each request collapsed in this batch.
-     * @return {@link HystrixCommand}{@code <BatchReturnType>} which when executed will retrieve results for the batch of arguments as found in the Collection of {@link CollapsedRequest} objects
+     * @return {@link HystrixObservableCommand}{@code <BatchReturnType>} which when executed will retrieve results for the batch of arguments as found in the Collection of {@link CollapsedRequest} objects
      */
-    protected abstract HystrixCommand<BatchReturnType> createCommand(Collection<CollapsedRequest<ResponseType, RequestArgumentType>> requests);
+    protected abstract HystrixObservableCommand<BatchReturnType> createCommand(Collection<CollapsedRequest<ResponseType, RequestArgumentType>> requests);
 
     /**
      * Override to split (shard) a batch of requests into multiple batches that will each call <code>createCommand</code> separately.
@@ -446,7 +447,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
         RequestCollapserFactory.reset();
     }
 
-    private static String getDefaultNameFromClass(@SuppressWarnings("rawtypes") Class<? extends HystrixCollapser> cls) {
+    private static String getDefaultNameFromClass(@SuppressWarnings("rawtypes") Class<? extends HystrixObservableCollapser> cls) {
         String fromCache = defaultNameCache.get(cls);
         if (fromCache != null) {
             return fromCache;
@@ -464,38 +465,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
     }
 
     /**
-     * A request argument RequestArgumentType that was collapsed for batch processing and needs a response ResponseType set on it by the <code>executeBatch</code> implementation.
-     */
-    public interface CollapsedRequest<ResponseType, RequestArgumentType> {
-        /**
-         * The request argument passed into the {@link HystrixCollapser} instance constructor which was then collapsed.
-         * 
-         * @return RequestArgumentType
-         */
-        public RequestArgumentType getArgument();
-
-        /**
-         * When set any client thread blocking on get() will immediately be unblocked and receive the response.
-         * 
-         * @throws IllegalStateException
-         *             if called more than once or after setException.
-         * @param response
-         *            ResponseType
-         */
-        public void setResponse(ResponseType response);
-
-        /**
-         * When set any client thread blocking on get() will immediately be unblocked and receive the exception.
-         * 
-         * @param exception
-         * @throws IllegalStateException
-         *             if called more than once or after setResponse.
-         */
-        public void setException(Exception exception);
-    }
-
-    /**
-     * Fluent interface for arguments to the {@link HystrixCollapser} constructor.
+     * Fluent interface for arguments to the {@link HystrixObservableCollapser} constructor.
      * <p>
      * The required arguments are set via the 'with' factory method and optional arguments via the 'and' chained methods.
      * <p>
@@ -559,6 +529,6 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
     // this is a micro-optimization but saves about 1-2microseconds (on 2011 MacBook Pro) 
     // on the repetitive string processing that will occur on the same classes over and over again
     @SuppressWarnings("rawtypes")
-    private static ConcurrentHashMap<Class<? extends HystrixCollapser>, String> defaultNameCache = new ConcurrentHashMap<Class<? extends HystrixCollapser>, String>();
+    private static ConcurrentHashMap<Class<? extends HystrixObservableCollapser>, String> defaultNameCache = new ConcurrentHashMap<Class<? extends HystrixObservableCollapser>, String>();
 
 }

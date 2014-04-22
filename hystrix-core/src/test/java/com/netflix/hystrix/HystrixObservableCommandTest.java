@@ -6119,7 +6119,7 @@ public class HystrixObservableCommandTest {
     /**
      * Used by UnitTest command implementations to provide base defaults for constructor and a builder pattern for the arguments being passed in.
      */
-    private static abstract class TestHystrixCommand<K> extends HystrixObservableCommand<K> {
+    /* package */ static abstract class TestHystrixCommand<K> extends HystrixObservableCommand<K> {
 
         final TestCommandBuilder builder;
 
