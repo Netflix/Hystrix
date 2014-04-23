@@ -36,6 +36,15 @@ public class RequestCollapserFactory<BatchReturnType, ResponseType, RequestArgum
     private final HystrixConcurrencyStrategy concurrencyStrategy;
     private final Scope scope;
 
+    public static interface Scope {
+        String name();
+    }
+    
+    // internally expected scopes, dealing with the not-so-fun inheritance issues of enum when shared between classes
+    private static enum Scopes implements Scope {
+        REQUEST, GLOBAL
+    }
+    
     public RequestCollapserFactory(HystrixCollapserKey collapserKey, Scope scope, CollapserTimer timer, HystrixCollapserProperties.Setter propertiesBuilder) {
         /* strategy: ConcurrencyStrategy */
         this.concurrencyStrategy = HystrixPlugins.getInstance().getConcurrencyStrategy();
@@ -59,9 +68,9 @@ public class RequestCollapserFactory<BatchReturnType, ResponseType, RequestArgum
     }
 
     public RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType> getRequestCollapser(HystrixCollapserBridge<BatchReturnType, ResponseType, RequestArgumentType> commandCollapser) {
-        if (Scope.REQUEST == getScope()) {
+        if (Scopes.REQUEST == Scopes.valueOf(getScope().name())) {
             return getCollapserForUserRequest(commandCollapser);
-        } else if (Scope.GLOBAL == getScope()) {
+        } else if (Scopes.GLOBAL == Scopes.valueOf(getScope().name())) {
             return getCollapserForGlobalScope(commandCollapser);
         } else {
             logger.warn("Invalid Scope: " + getScope() + "  Defaulting to REQUEST scope.");
@@ -210,7 +219,7 @@ public class RequestCollapserFactory<BatchReturnType, ResponseType, RequestArgum
     @NotThreadSafe
     public static class Setter {
         private final HystrixCollapserKey collapserKey;
-        private Scope scope = Scope.REQUEST; // default if nothing is set
+        private Scope scope = Scopes.REQUEST; // default if nothing is set
         private HystrixCollapserProperties.Setter propertiesSetter;
 
         private Setter(HystrixCollapserKey collapserKey) {
