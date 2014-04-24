@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import rx.Observable;
 import rx.Observer;
-import rx.util.functions.Action1;
+import rx.functions.Action1;
 
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandGroupKey;

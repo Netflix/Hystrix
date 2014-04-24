@@ -16,14 +16,11 @@
 package com.netflix.hystrix.strategy.concurrency;
 
 import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicReference;
 
-import rx.Scheduler.Inner;
-import rx.functions.Action1;
+import rx.functions.Action0;
 import rx.functions.Func2;
 
 import com.netflix.hystrix.strategy.HystrixPlugins;
-import com.netflix.hystrix.strategy.concurrency.HystrixContextScheduler.HystrixContextInnerScheduler;
 
 /**
  * Wrapper around {@link Func2} that manages the {@link HystrixRequestContext} initialization and cleanup for the execution of the {@link Func2}
@@ -33,30 +30,17 @@ import com.netflix.hystrix.strategy.concurrency.HystrixContextScheduler.HystrixC
  * 
  * @ExcludeFromJavadoc
  */
-public class HystrixContexSchedulerAction implements Action1<Inner> {
+public class HystrixContexSchedulerAction implements Action0 {
 
-    private final Action1<Inner> actual;
+    private final Action0 actual;
     private final HystrixRequestContext parentThreadState;
     private final Callable<Void> c;
 
-    /*
-     * This is a workaround to needing to use Callable<Void> but
-     * needing to pass `Inner t1` into it after construction.
-     * 
-     * Think of it like sticking t1 on the stack and then calling the function
-     * that uses them.
-     * 
-     * This should all be thread-safe without issues despite multi-step execution
-     * because this Action0 is only ever executed once by Hystrix and construction will always
-     * precede `call` being invoked once.
-     */
-    private final AtomicReference<Inner> t1Holder = new AtomicReference<Inner>();
-
-    public HystrixContexSchedulerAction(Action1<Inner> action) {
+    public HystrixContexSchedulerAction(Action0 action) {
         this(HystrixPlugins.getInstance().getConcurrencyStrategy(), action);
     }
 
-    public HystrixContexSchedulerAction(final HystrixConcurrencyStrategy concurrencyStrategy, Action1<Inner> action) {
+    public HystrixContexSchedulerAction(final HystrixConcurrencyStrategy concurrencyStrategy, Action0 action) {
         this.actual = action;
         this.parentThreadState = HystrixRequestContext.getContextForCurrentThread();
 
@@ -68,8 +52,8 @@ public class HystrixContexSchedulerAction implements Action1<Inner> {
                 try {
                     // set the state of this thread to that of its parent
                     HystrixRequestContext.setContextOnCurrentThread(parentThreadState);
-                    // execute actual Action1<Inner> with the state of the parent
-                    actual.call(new HystrixContextInnerScheduler(concurrencyStrategy, t1Holder.get()));
+                    // execute actual Action0 with the state of the parent
+                    actual.call();
                     return null;
                 } finally {
                     // restore this thread back to its original state
@@ -80,12 +64,11 @@ public class HystrixContexSchedulerAction implements Action1<Inner> {
     }
 
     @Override
-    public void call(Inner inner) {
+    public void call() {
         try {
-            this.t1Holder.set(inner);
             c.call();
         } catch (Exception e) {
-            throw new RuntimeException("Failed executing wrapped Func2", e);
+            throw new RuntimeException("Failed executing wrapped Action0", e);
         }
     }
 
