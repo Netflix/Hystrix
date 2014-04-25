@@ -15,18 +15,24 @@
  */
 package com.netflix.hystrix;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
+import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.annotation.concurrent.ThreadSafe;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.netflix.hystrix.HystrixCommandMetrics.HealthCounts;
+import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifierDefault;
+import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 
 /**
@@ -145,10 +151,10 @@ public interface HystrixCircuitBreaker {
 
         public void markSuccess() {
             if (circuitOpen.get()) {
-                // If we have been 'open' and have a success then we want to close the circuit. This handles the 'singleTest' logic
-                circuitOpen.set(false);
                 // TODO how can we can do this without resetting the counts so we don't lose metrics of short-circuits etc?
                 metrics.resetCounter();
+                // If we have been 'open' and have a success then we want to close the circuit. This handles the 'singleTest' logic
+                circuitOpen.set(false);
             }
         }
 
@@ -208,8 +214,10 @@ public interface HystrixCircuitBreaker {
                     // How could previousValue be true? If another thread was going through this code at the same time a race-condition could have
                     // caused another thread to set it to true already even though we were in the process of doing the same
                     circuitOpenedOrLastTestedTime.set(System.currentTimeMillis());
+                    return true;
+                } else {
+                    return false;
                 }
-                return true;
             }
         }
 
@@ -729,5 +737,101 @@ public interface HystrixCircuitBreaker {
         private static enum CommandKeyForUnitTest implements HystrixCommandKey {
             KEY_ONE, KEY_TWO;
         }
+
+        // ignoring since this never ends ... useful for testing https://github.com/Netflix/Hystrix/issues/236
+        @Ignore
+        @Test
+        public void testSuccessClosesCircuitWhenBusy() throws InterruptedException {
+            HystrixPlugins.getInstance().registerCommandExecutionHook(new MyHystrixCommandExecutionHook());
+            try {
+                performLoad(200, 0, 40);
+                performLoad(250, 100, 40);
+                performLoad(600, 0, 40);
+            } finally {
+                Hystrix.reset();
+            }
+
+        }
+
+        void performLoad(int totalNumCalls, int errPerc, int waitMillis) {
+
+            Random rnd = new Random();
+
+            for (int i = 0; i < totalNumCalls; i++) {
+                //System.out.println(i);
+
+                try {
+                    boolean err = rnd.nextFloat() * 100 < errPerc;
+
+                    TestCommand cmd = new TestCommand(err);
+                    cmd.execute();
+
+                } catch (Exception e) {
+                    //System.err.println(e.getMessage());
+                }
+
+                try {
+                    Thread.sleep(waitMillis);
+                } catch (InterruptedException e) {
+                }
+            }
+        }
+
+        public class TestCommand extends HystrixCommand<String> {
+
+            boolean error;
+
+            public TestCommand(final boolean error) {
+                super(HystrixCommandGroupKey.Factory.asKey("group"));
+
+                this.error = error;
+            }
+
+            @Override
+            protected String run() throws Exception {
+
+                if (error) {
+                    throw new Exception("forced failure");
+                } else {
+                    return "success";
+                }
+            }
+
+            @Override
+            protected String getFallback() {
+                if (isFailedExecution()) {
+                    return getFailedExecutionException().getMessage();
+                } else {
+                    return "other fail reason";
+                }
+            }
+
+        }
+
+        public class MyHystrixCommandExecutionHook extends HystrixCommandExecutionHook {
+
+            @Override
+            public <T> T onComplete(final HystrixCommand<T> command, final T response) {
+
+                logHC(command, response);
+
+                return super.onComplete(command, response);
+            }
+
+            private int counter = 0;
+
+            private <T> void logHC(HystrixCommand<T> command, T response) {
+
+                //if ((counter++ % 20) == 0) {
+                HystrixCommandMetrics metrics = command.getMetrics();
+                System.out.println("cb/error-count/%/total: "
+                        + command.isCircuitBreakerOpen() + " "
+                        + metrics.getHealthCounts().getErrorCount() + " "
+                        + metrics.getHealthCounts().getErrorPercentage() + " "
+                        + metrics.getHealthCounts().getTotalRequests() + "  => " + response + "  " + command.getExecutionEvents());
+                //}
+            }
+        }
+
     }
 }
