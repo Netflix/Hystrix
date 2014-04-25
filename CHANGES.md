@@ -1,5 +1,19 @@
 # Hystrix Releases #
 
+### Version 1.4.0 Release Candidate 3 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.0-RC3%22)) ###
+
+_NOTE: This code is NOT considered production worthy yet, hence the "Release Candidate" status._
+
+This adds non-blocking support to the collapser via the `HystrixObservableCollapser` type, fixes some bugs and upgrades to RxJava 0.18.
+
+* [Pull 245](https://github.com/Netflix/Hystrix/pull/245) HystrixObservableCollapser
+* [Pull 246](https://github.com/Netflix/Hystrix/pull/246) RxJava 0.18
+* [Pull 250](https://github.com/Netflix/Hystrix/pull/250) Tripped CircuitBreaker Wouldn't Close Under Contention
+* [Pull 243](https://github.com/Netflix/Hystrix/pull/243) Update servo to 0.6
+* [Pull 240](https://github.com/Netflix/Hystrix/pull/240) Add missing reset for CommandExecutionHook in HystrixPlugins.UnitTest
+* [Pull 244](https://github.com/Netflix/Hystrix/pull/244) Javanica: Cleaner error propagation 
+
+
 ### Version 1.4.0 Release Candidate 2 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.0-RC2%22)) ###
 
 _NOTE: This code is NOT considered production worthy yet, hence the "Release Candidate" status._
