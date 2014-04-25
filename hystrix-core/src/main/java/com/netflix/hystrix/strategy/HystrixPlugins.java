@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.After;
 import org.junit.Test;
 
-import rx.util.functions.Action1;
+import rx.functions.Action1;
 
 import com.netflix.hystrix.Hystrix;
 import com.netflix.hystrix.HystrixCommand;
