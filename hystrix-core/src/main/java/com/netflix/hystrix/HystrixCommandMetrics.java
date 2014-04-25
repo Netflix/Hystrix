@@ -232,8 +232,10 @@ public class HystrixCommandMetrics {
     }
 
     /* package */void resetCounter() {
-        counter.reset();
         // TODO can we do without this somehow?
+        counter.reset();
+        lastHealthCountsSnapshot.set(System.currentTimeMillis());
+        healthCountsSnapshot = new HealthCounts(0, 0, 0);
     }
 
     /**

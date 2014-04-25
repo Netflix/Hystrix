@@ -139,10 +139,10 @@ public interface HystrixCircuitBreaker {
 
         public void markSuccess() {
             if (circuitOpen.get()) {
-                // If we have been 'open' and have a success then we want to close the circuit. This handles the 'singleTest' logic
-                circuitOpen.set(false);
                 // TODO how can we can do this without resetting the counts so we don't lose metrics of short-circuits etc?
                 metrics.resetCounter();
+                // If we have been 'open' and have a success then we want to close the circuit. This handles the 'singleTest' logic
+                circuitOpen.set(false);
             }
         }
 
@@ -202,8 +202,10 @@ public interface HystrixCircuitBreaker {
                     // How could previousValue be true? If another thread was going through this code at the same time a race-condition could have
                     // caused another thread to set it to true already even though we were in the process of doing the same
                     circuitOpenedOrLastTestedTime.set(System.currentTimeMillis());
+                    return true;
+                } else {
+                    return false;
                 }
-                return true;
             }
         }
 
