@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import rx.Scheduler;
 import rx.Subscription;
-import rx.util.functions.Func2;
+import rx.functions.Func2;
 
 import com.netflix.hystrix.strategy.HystrixPlugins;
 
