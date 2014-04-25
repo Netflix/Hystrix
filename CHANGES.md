@@ -1,5 +1,12 @@
 # Hystrix Releases #
 
+### Version 1.3.15 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.3.15%22)) ###
+
+* [Pull 248](https://github.com/Netflix/Hystrix/pull/248) RxJava 0.18 for Hystrix
+* [Pull 249](https://github.com/Netflix/Hystrix/pull/249) Tripped CircuitBreaker Wouldn't Close Under Contention
+* [Pull 229](https://github.com/Netflix/Hystrix/pull/229) Javanica: Added support for Request Cache and Reactive Execution
+* [Pull 242](https://github.com/Netflix/Hystrix/pull/242) Javanica: Cleaner error propagation
+
 ### Version 1.3.14 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.3.14%22)) ###
 
 * [Pull 228](https://github.com/Netflix/Hystrix/pull/228) Upgrade 1.3.x to RxJava 0.17.1
