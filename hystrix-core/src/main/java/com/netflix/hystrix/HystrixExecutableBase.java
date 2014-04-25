@@ -649,7 +649,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 
                 @Override
                 public void call(Subscriber<? super R> observer) {
-                    originalObservable.subscribe(observer);
+                    originalObservable.unsafeSubscribe(observer);
                 }
             });
             this.command = command;
@@ -673,7 +673,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 
                 @Override
                 public void call(final Subscriber<? super R> observer) {
-                    actual.subscribe(observer);
+                    actual.unsafeSubscribe(observer);
                 }
             }, command);
             this.originalCommand = command;

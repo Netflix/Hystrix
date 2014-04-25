@@ -315,7 +315,7 @@ public abstract class HystrixObservableCommand<R> extends HystrixExecutableBase<
                                             executionSemaphore.release();
 
                                         }
-                                    }).subscribe(observer);
+                                    }).unsafeSubscribe(observer);
                         } catch (RuntimeException e) {
                             observer.onError(e);
                         }
@@ -323,14 +323,14 @@ public abstract class HystrixObservableCommand<R> extends HystrixExecutableBase<
                         metrics.markSemaphoreRejection();
                         logger.debug("HystrixCommand Execution Rejection by Semaphore."); // debug only since we're throwing the exception and someone higher will do something with it
                         // retrieve a fallback or throw an exception if no fallback available
-                        getFallbackOrThrowException(HystrixEventType.SEMAPHORE_REJECTED, FailureType.REJECTED_SEMAPHORE_EXECUTION, "could not acquire a semaphore for execution").subscribe(observer);
+                        getFallbackOrThrowException(HystrixEventType.SEMAPHORE_REJECTED, FailureType.REJECTED_SEMAPHORE_EXECUTION, "could not acquire a semaphore for execution").unsafeSubscribe(observer);
                     }
                 } else {
                     // record that we are returning a short-circuited fallback
                     metrics.markShortCircuited();
                     // short-circuit and go directly to fallback (or throw an exception if no fallback implemented)
                     try {
-                        getFallbackOrThrowException(HystrixEventType.SHORT_CIRCUITED, FailureType.SHORTCIRCUIT, "short-circuited").subscribe(observer);
+                        getFallbackOrThrowException(HystrixEventType.SHORT_CIRCUITED, FailureType.SHORTCIRCUIT, "short-circuited").unsafeSubscribe(observer);
                     } catch (Exception e) {
                         observer.onError(e);
                     }
@@ -441,11 +441,11 @@ public abstract class HystrixObservableCommand<R> extends HystrixExecutableBase<
                                     executionHook.onThreadComplete(_self);
                                     endCurrentThread.call();
                                 }
-                            }).subscribe(s);
+                            }).unsafeSubscribe(s);
                         } catch (Throwable t) {
                             // the run() method is a user provided implementation so can throw instead of using Observable.onError
                             // so we catch it here and turn it into Observable.error
-                            Observable.<R> error(t).subscribe(s);
+                            Observable.<R> error(t).unsafeSubscribe(s);
                         }
                     }
                 }
@@ -798,7 +798,7 @@ public abstract class HystrixObservableCommand<R> extends HystrixExecutableBase<
                          * THREAD isolation pool as it may be saturated and that's the reason we're in fallback. The fallback logic
                          * should not perform IO and thus we run on the computation event loops.
                          */
-                        v.subscribeOn(new HystrixContextScheduler(originalCommand.concurrencyStrategy, Schedulers.computation())).subscribe(child);
+                        v.subscribeOn(new HystrixContextScheduler(originalCommand.concurrencyStrategy, Schedulers.computation())).unsafeSubscribe(child);
                     } catch (HystrixRuntimeException re) {
                         child.onError(re);
                     }

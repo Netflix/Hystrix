@@ -18,7 +18,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import rx.Observable;
 import rx.Observer;
-import rx.util.functions.Action1;
+import rx.functions.Action1;
 
 import static com.netflix.hystrix.contrib.javanica.CommonUtils.getHystrixCommandByKey;
 import static org.junit.Assert.assertEquals;

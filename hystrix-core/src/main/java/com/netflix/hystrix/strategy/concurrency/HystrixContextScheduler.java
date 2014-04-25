@@ -17,12 +17,14 @@ package com.netflix.hystrix.strategy.concurrency;
 
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import rx.Scheduler;
 import rx.Subscription;
-import rx.functions.Action1;
-import rx.schedulers.Schedulers;
+import rx.functions.Action0;
 import rx.subscriptions.BooleanSubscription;
+import rx.subscriptions.CompositeSubscription;
+import rx.subscriptions.Subscriptions;
 
 import com.netflix.hystrix.HystrixThreadPool;
 import com.netflix.hystrix.strategy.HystrixPlugins;
@@ -42,7 +44,7 @@ public class HystrixContextScheduler extends Scheduler {
         this.concurrencyStrategy = HystrixPlugins.getInstance().getConcurrencyStrategy();
         this.threadPool = null;
     }
-    
+
     public HystrixContextScheduler(HystrixConcurrencyStrategy concurrencyStrategy, Scheduler scheduler) {
         this.actualScheduler = scheduler;
         this.concurrencyStrategy = concurrencyStrategy;
@@ -52,26 +54,22 @@ public class HystrixContextScheduler extends Scheduler {
     public HystrixContextScheduler(HystrixConcurrencyStrategy concurrencyStrategy, HystrixThreadPool threadPool) {
         this.concurrencyStrategy = concurrencyStrategy;
         this.threadPool = threadPool;
-        this.actualScheduler = Schedulers.executor(threadPool.getExecutor());
+        this.actualScheduler = new ThreadPoolScheduler(threadPool);
     }
 
     @Override
-    public Subscription schedule(Action1<Inner> action) {
-        InnerHystrixContextScheduler inner = new InnerHystrixContextScheduler();
-        inner.schedule(action);
-        return inner;
+    public Worker createWorker() {
+        return new HystrixContextSchedulerWorker(actualScheduler.createWorker());
     }
 
-    @Override
-    public Subscription schedule(Action1<Inner> action, long delayTime, TimeUnit unit) {
-        InnerHystrixContextScheduler inner = new InnerHystrixContextScheduler();
-        inner.schedule(action, delayTime, unit);
-        return inner;
-    }
-
-    private class InnerHystrixContextScheduler extends Inner {
+    private class HystrixContextSchedulerWorker extends Worker {
 
         private BooleanSubscription s = new BooleanSubscription();
+        private final Worker worker;
+
+        private HystrixContextSchedulerWorker(Worker actualWorker) {
+            this.worker = actualWorker;
+        }
 
         @Override
         public void unsubscribe() {
@@ -84,56 +82,108 @@ public class HystrixContextScheduler extends Scheduler {
         }
 
         @Override
-        public void schedule(Action1<Inner> action, long delayTime, TimeUnit unit) {
+        public Subscription schedule(Action0 action, long delayTime, TimeUnit unit) {
             if (threadPool != null) {
                 if (!threadPool.isQueueSpaceAvailable()) {
                     throw new RejectedExecutionException("Rejected command because thread-pool queueSize is at rejection threshold.");
                 }
             }
-            actualScheduler.schedule(new HystrixContexSchedulerAction(concurrencyStrategy, action), delayTime, unit);
+            return worker.schedule(new HystrixContexSchedulerAction(concurrencyStrategy, action), delayTime, unit);
         }
 
         @Override
-        public void schedule(Action1<Inner> action) {
+        public Subscription schedule(Action0 action) {
             if (threadPool != null) {
                 if (!threadPool.isQueueSpaceAvailable()) {
                     throw new RejectedExecutionException("Rejected command because thread-pool queueSize is at rejection threshold.");
                 }
             }
-            actualScheduler.schedule(new HystrixContexSchedulerAction(concurrencyStrategy, action));
+            return worker.schedule(new HystrixContexSchedulerAction(concurrencyStrategy, action));
         }
 
     }
 
-    public static class HystrixContextInnerScheduler extends Inner {
+    private static class ThreadPoolScheduler extends Scheduler {
 
-        private final HystrixConcurrencyStrategy concurrencyStrategy;
-        private final Inner actual;
+        private final HystrixThreadPool threadPool;
 
-        HystrixContextInnerScheduler(HystrixConcurrencyStrategy concurrencyStrategy, Inner actual) {
-            this.concurrencyStrategy = concurrencyStrategy;
-            this.actual = actual;
+        public ThreadPoolScheduler(HystrixThreadPool threadPool) {
+            this.threadPool = threadPool;
+        }
+
+        @Override
+        public Worker createWorker() {
+            return new ThreadPoolWorker(threadPool);
+        }
+
+    }
+
+    /**
+     * Purely for scheduling work on a thread-pool.
+     * <p>
+     * This is not natively supported by RxJava as of 0.18.0 because thread-pools
+     * are contrary to sequential execution.
+     * <p>
+     * For the Hystrix case, each Command invocation has a single action so the concurrency
+     * issue is not a problem.
+     */
+    private static class ThreadPoolWorker extends Worker {
+
+        private final HystrixThreadPool threadPool;
+        private final CompositeSubscription subscription = new CompositeSubscription();
+
+        public ThreadPoolWorker(HystrixThreadPool threadPool) {
+            this.threadPool = threadPool;
         }
 
         @Override
         public void unsubscribe() {
-            actual.unsubscribe();
+            subscription.unsubscribe();
         }
 
         @Override
         public boolean isUnsubscribed() {
-            return actual.isUnsubscribed();
+            return subscription.isUnsubscribed();
         }
 
         @Override
-        public void schedule(Action1<Inner> action, long delayTime, TimeUnit unit) {
-            actual.schedule(new HystrixContexSchedulerAction(concurrencyStrategy, action), delayTime, unit);
+        public Subscription schedule(final Action0 action) {
+            if (subscription.isUnsubscribed()) {
+                // don't schedule, we are unsubscribed
+                return Subscriptions.empty();
+            }
+
+            final AtomicReference<Subscription> sf = new AtomicReference<Subscription>();
+            Subscription s = Subscriptions.from(threadPool.getExecutor().submit(new Runnable() {
+
+                @Override
+                public void run() {
+                    try {
+                        if (subscription.isUnsubscribed()) {
+                            return;
+                        }
+                        action.call();
+                    } finally {
+                        // remove the subscription now that we're completed
+                        Subscription s = sf.get();
+                        if (s != null) {
+                            subscription.remove(s);
+                        }
+                    }
+                }
+            }));
+
+            sf.set(s);
+            subscription.add(s);
+            return s;
         }
 
         @Override
-        public void schedule(Action1<Inner> action) {
-            actual.schedule(new HystrixContexSchedulerAction(concurrencyStrategy, action));
+        public Subscription schedule(Action0 action, long delayTime, TimeUnit unit) {
+            System.out.println("delayed scheduling");
+            throw new IllegalStateException("Hystrix does not support delayed scheduling");
         }
 
     }
+
 }
