@@ -2,8 +2,6 @@ package com.netflix.hystrix.collapser;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.annotation.concurrent.NotThreadSafe;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -215,8 +213,9 @@ public class RequestCollapserFactory<BatchReturnType, ResponseType, RequestArgum
      *  Setter.withCollapserKey(HystrixCollapserKey.Factory.asKey("CollapserName"))
                 .andScope(Scope.REQUEST);
      * } </pre>
+     * 
+     * @NotThreadSafe
      */
-    @NotThreadSafe
     public static class Setter {
         private final HystrixCollapserKey collapserKey;
         private Scope scope = Scopes.REQUEST; // default if nothing is set

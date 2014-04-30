@@ -20,8 +20,6 @@ import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 
-import javax.annotation.concurrent.NotThreadSafe;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -474,8 +472,9 @@ public abstract class HystrixObservableCollapser<BatchReturnType, ResponseType, 
      *  Setter.withCollapserKey(HystrixCollapserKey.Factory.asKey("CollapserName"))
                 .andScope(Scope.REQUEST);
      * } </pre>
+     * 
+     * @NotThreadSafe
      */
-    @NotThreadSafe
     public static class Setter {
         private final HystrixCollapserKey collapserKey;
         private Scope scope = Scope.REQUEST; // default if nothing is set

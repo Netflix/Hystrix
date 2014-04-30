@@ -21,9 +21,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
-import javax.annotation.concurrent.NotThreadSafe;
-import javax.annotation.concurrent.ThreadSafe;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,8 +55,9 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
  * 
  * @param <R>
  *            the return type
+ *            
+ * @ThreadSafe
  */
-@ThreadSafe
 public abstract class HystrixObservableCommand<R> extends HystrixExecutableBase<R> implements HystrixExecutable<R>, HystrixExecutableInfo<R> {
 
     private static final Logger logger = LoggerFactory.getLogger(HystrixObservableCommand.class);
@@ -123,8 +121,9 @@ public abstract class HystrixObservableCommand<R> extends HystrixExecutableBase<
                 .andCommandKey(HystrixCommandKey.Factory.asKey("CommandName"))
                 .andEventNotifier(notifier);
      * } </pre>
+     * 
+     * @NotThreadSafe
      */
-    @NotThreadSafe
     public static class Setter {
 
         protected final HystrixCommandGroupKey groupKey;

@@ -19,8 +19,6 @@ import static com.netflix.hystrix.strategy.properties.HystrixProperty.Factory.*;
 
 import java.util.concurrent.Future;
 
-import javax.annotation.concurrent.NotThreadSafe;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -469,8 +467,9 @@ public abstract class HystrixCommandProperties {
      *           .setExecutionTimeoutInMilliseconds(100)
      *           .setExecuteCommandOnSeparateThread(true);
      * } </pre>
+     * 
+     * @NotThreadSafe
      */
-    @NotThreadSafe
     public static class Setter {
 
         private Boolean circuitBreakerEnabled = null;

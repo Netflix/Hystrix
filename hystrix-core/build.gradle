@@ -6,7 +6,6 @@ dependencies {
     compile 'com.netflix.archaius:archaius-core:0.4.1'
     compile 'com.netflix.rxjava:rxjava-core:0.18.1'
     compile 'org.slf4j:slf4j-api:1.7.0'
-    compile 'com.google.code.findbugs:jsr305:2.0.0'
     testCompile 'junit:junit-dep:4.10'
 }
 
@@ -25,6 +24,8 @@ javadoc {
     options.addStringOption('top').value = '<a href="https://github.com/Netflix/Hystrix"><img width="92" height="79" border="0" align="left" src="http://netflix.github.com/Hystrix/images/hystrix-logo-small.png"></a><h2 class="title" style="padding-top:40px">Hystrix: Latency and Fault Tolerance for Distributed Systems</h2>'
 }
 
+// skip if not on Java 6 (every JDK changes Javadoc behavior)
+javadoc.onlyIf { JavaVersion.current().java6 }
 
 eclipse {
   classpath {
