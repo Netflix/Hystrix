@@ -20,8 +20,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import javax.annotation.concurrent.ThreadSafe;
-
 import rx.Scheduler;
 
 import com.netflix.hystrix.strategy.HystrixPlugins;
@@ -157,8 +155,8 @@ public interface HystrixThreadPool {
 
     /**
      * @ExcludeFromJavadoc
+     * @ThreadSafe
      */
-    @ThreadSafe
     /* package */static class HystrixThreadPoolDefault implements HystrixThreadPool {
         private final HystrixThreadPoolProperties properties;
         private final BlockingQueue<Runnable> queue;

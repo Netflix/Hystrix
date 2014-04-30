@@ -23,8 +23,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.locks.ReentrantLock;
 
-import javax.annotation.concurrent.ThreadSafe;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,8 +43,9 @@ import com.netflix.hystrix.strategy.properties.HystrixProperty;
  * ensure the sum is up-to-date when the read can easily iterate each bucket to get the sum when it needs it.
  * <p>
  * See UnitTest for usage and expected behavior examples.
+ * 
+ * @ThreadSafe
  */
-@ThreadSafe
 public class HystrixRollingNumber {
     @SuppressWarnings("unused")
     private static final Logger logger = LoggerFactory.getLogger(HystrixRollingNumber.class);

@@ -25,8 +25,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.locks.ReentrantLock;
 
-import javax.annotation.concurrent.NotThreadSafe;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -313,7 +311,9 @@ public class HystrixRollingPercentile {
 
     }
 
-    @NotThreadSafe
+    /**
+     * @NotThreadSafe
+     */
     /* package for testing */ static class PercentileSnapshot {
         private final int[] data;
         private final int length;

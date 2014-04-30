@@ -5,8 +5,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import javax.annotation.concurrent.ThreadSafe;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,8 +22,9 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
  * Instances of this are retrieved from the RequestCollapserFactory.
  * 
  * Must be thread-safe since it exists within a RequestVariable which is request-scoped and can be accessed from multiple threads.
+ * 
+ * @ThreadSafe
  */
-@ThreadSafe
 public class RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType> {
     static final Logger logger = LoggerFactory.getLogger(HystrixCollapser.class);
 

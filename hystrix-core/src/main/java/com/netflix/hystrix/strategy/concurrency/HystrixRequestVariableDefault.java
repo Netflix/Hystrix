@@ -17,9 +17,6 @@ package com.netflix.hystrix.strategy.concurrency;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.annotation.concurrent.GuardedBy;
-import javax.annotation.concurrent.ThreadSafe;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,8 +52,8 @@ import org.slf4j.LoggerFactory;
  *            Example 2: {@code HystrixRequestVariable<PojoThatIsThreadSafe>}
  * 
  * @ExcludeFromJavadoc
+ * @ThreadSafe
  */
-@ThreadSafe
 public class HystrixRequestVariableDefault<T> implements HystrixRequestVariable<T> {
     static final Logger logger = LoggerFactory.getLogger(HystrixRequestVariableDefault.class);
 
@@ -188,14 +185,14 @@ public class HystrixRequestVariableDefault<T> implements HystrixRequestVariable<
      * @param <T>
      */
     /* package */static final class LazyInitializer<T> {
-        @GuardedBy("synchronization on get() or construction")
+        // @GuardedBy("synchronization on get() or construction")
         private T value;
 
         /*
          * Boolean to ensure only-once initialValue() execution instead of using
          * a null check in case initialValue() returns null
          */
-        @GuardedBy("synchronization on get() or construction")
+        // @GuardedBy("synchronization on get() or construction")
         private boolean initialized = false;
 
         private final HystrixRequestVariableDefault<T> rv;

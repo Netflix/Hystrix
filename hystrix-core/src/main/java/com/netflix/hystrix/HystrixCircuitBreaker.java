@@ -19,8 +19,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-import javax.annotation.concurrent.ThreadSafe;
-
 import com.netflix.hystrix.HystrixCommandMetrics.HealthCounts;
 
 /**
@@ -53,8 +51,8 @@ public interface HystrixCircuitBreaker {
 
     /**
      * @ExcludeFromJavadoc
+     * @ThreadSafe
      */
-    @ThreadSafe
     public static class Factory {
         // String is HystrixCommandKey.name() (we can't use HystrixCommandKey directly as we can't guarantee it implements hashcode/equals correctly)
         private static ConcurrentHashMap<String, HystrixCircuitBreaker> circuitBreakersByCommand = new ConcurrentHashMap<String, HystrixCircuitBreaker>();
@@ -120,8 +118,8 @@ public interface HystrixCircuitBreaker {
      * The default production implementation of {@link HystrixCircuitBreaker}.
      * 
      * @ExcludeFromJavadoc
+     * @ThreadSafe
      */
-    @ThreadSafe
     /* package */static class HystrixCircuitBreakerImpl implements HystrixCircuitBreaker {
         private final HystrixCommandProperties properties;
         private final HystrixCommandMetrics metrics;

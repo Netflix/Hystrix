@@ -18,9 +18,6 @@ package com.netflix.hystrix;
 import java.util.List;
 import java.util.concurrent.Future;
 
-import javax.annotation.concurrent.NotThreadSafe;
-import javax.annotation.concurrent.ThreadSafe;
-
 import rx.Observable;
 import rx.Observable.OnSubscribe;
 import rx.Scheduler;
@@ -42,8 +39,9 @@ import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
  * 
  * @param <R>
  *            the return type
+ *            
+ * @ThreadSafe
  */
-@ThreadSafe
 public abstract class HystrixCommand<R> implements HystrixExecutable<R>, HystrixExecutableInfo<R> {
 
     private final HystrixCommandFromObservableCommand<R> observableCommand;
@@ -120,8 +118,9 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R>, Hystrix
                 .andCommandKey(HystrixCommandKey.Factory.asKey("CommandName"))
                 .andEventNotifier(notifier);
      * } </pre>
+     * 
+     * @NotThreadSafe
      */
-    @NotThreadSafe
     public static class Setter {
 
         protected final HystrixCommandGroupKey groupKey;

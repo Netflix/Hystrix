@@ -21,8 +21,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import javax.annotation.concurrent.NotThreadSafe;
-
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesChainedArchaiusProperty;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
@@ -166,8 +164,9 @@ public abstract class HystrixThreadPoolProperties {
      *           .setCoreSize(10)
      *           .setQueueSizeRejectionThreshold(10);
      * } </pre>
+     * 
+     * @NotThreadSafe
      */
-    @NotThreadSafe
     public static class Setter {
         private Integer coreSize = null;
         private Integer keepAliveTimeMinutes = null;

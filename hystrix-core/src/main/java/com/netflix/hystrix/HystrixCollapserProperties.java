@@ -17,8 +17,6 @@ package com.netflix.hystrix;
 
 import static com.netflix.hystrix.strategy.properties.HystrixProperty.Factory.*;
 
-import javax.annotation.concurrent.NotThreadSafe;
-
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesChainedArchaiusProperty;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 import com.netflix.hystrix.strategy.properties.HystrixProperty;
@@ -118,8 +116,9 @@ public abstract class HystrixCollapserProperties {
      *           .setMaxRequestsInBatch(100)
      *           .setTimerDelayInMilliseconds(10);
      * } </pre>
+     * 
+     * @NotThreadSafe
      */
-    @NotThreadSafe
     public static class Setter {
         private Boolean collapsingEnabled = null;
         private Integer maxRequestsInBatch = null;
