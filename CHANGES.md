@@ -75,6 +75,12 @@ Here is a very basic example using Java 8 to make an HTTP call via Netty and rec
 * [Pull 217](https://github.com/Netflix/Hystrix/pull/217) Javanica: Added support for "Reactive Execution" and "Error Propagation"
 * [Pull 219](https://github.com/Netflix/Hystrix/pull/219) Restore HystrixContext* Constructors without ConcurrencyStrategy
 
+### Version 1.3.16 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.3.16%22)) ###
+
+* [Pull 258](https://github.com/Netflix/Hystrix/pull/258) Skip CachedObservableOriginal when no getCacheKey()
+* [Pull 259](https://github.com/Netflix/Hystrix/pull/259) Fix #257 with RxJava 0.18.2
+
+
 ### Version 1.3.15 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.3.15%22)) ###
 
 * [Pull 248](https://github.com/Netflix/Hystrix/pull/248) RxJava 0.18 for Hystrix
