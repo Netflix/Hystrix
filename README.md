@@ -1,4 +1,4 @@
-<img src="http://netflix.github.com/Hystrix/images/hystrix-logo-tagline-850.png">
+<img src="https://netflix.github.com/Hystrix/images/hystrix-logo-tagline-850.png">
 
 # Hystrix: Latency and Fault Tolerance for Distributed Systems
 
