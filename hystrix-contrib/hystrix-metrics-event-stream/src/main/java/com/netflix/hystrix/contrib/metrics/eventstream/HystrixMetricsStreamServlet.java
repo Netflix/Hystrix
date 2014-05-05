@@ -150,6 +150,10 @@ public class HystrixMetricsStreamServlet extends HttpServlet {
                         // now wait the 'delay' time
                         Thread.sleep(delay);
                     }
+                } catch (InterruptedException e) {
+                    poller.shutdown();
+                    logger.debug("InterruptedException. Will stop polling.");	
+                    Thread.currentThread().interrupt();
                 } catch (IOException e) {
                     poller.shutdown();
                     // debug instead of error as we expect to get these whenever a client disconnects or network issue occurs
