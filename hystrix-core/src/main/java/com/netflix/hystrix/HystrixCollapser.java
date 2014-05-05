@@ -23,8 +23,9 @@ import java.util.concurrent.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import rx.Observable;
-import rx.Scheduler;
+import rx.*;
+import rx.Observable.OnSubscribe;
+import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 import rx.subjects.ReplaySubject;
 
@@ -142,8 +143,17 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
             }
 
             @Override
-            public void mapResponseToRequests(BatchReturnType batchResponse, Collection<CollapsedRequest<ResponseType, RequestArgumentType>> requests) {
-                self.mapResponseToRequests(batchResponse, requests);
+            public Observable<Void> mapResponseToRequests(Observable<BatchReturnType> batchResponse, final Collection<CollapsedRequest<ResponseType, RequestArgumentType>> requests) {
+                return batchResponse.single().flatMap(new Func1<BatchReturnType, Observable<Void>>() {
+
+                    @Override
+                    public Observable<Void> call(BatchReturnType response) {
+                        // this is a blocking call in HystrixCollapser
+                        self.mapResponseToRequests(response, requests);
+                        return Observable.empty();
+                    }
+
+                });
             }
 
             @Override

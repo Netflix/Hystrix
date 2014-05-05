@@ -31,6 +31,7 @@ import org.junit.Test;
 import rx.Observable;
 import rx.Observable.OnSubscribe;
 import rx.Subscriber;
+import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 
 import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
@@ -74,11 +75,11 @@ public class HystrixObservableCollapserTest {
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
-    private static class TestRequestCollapser extends HystrixObservableCollapser<List<String>, String, String> {
+    private static class TestRequestCollapser extends HystrixObservableCollapser<String, String, String, String> {
 
         private final AtomicInteger count;
         private final String value;
-        private ConcurrentLinkedQueue<HystrixObservableCommand<List<String>>> commandsExecuted;
+        private ConcurrentLinkedQueue<HystrixObservableCommand<String>> commandsExecuted;
 
         public TestRequestCollapser(TestCollapserTimer timer, AtomicInteger counter, int value) {
             this(timer, counter, String.valueOf(value));
@@ -88,7 +89,7 @@ public class HystrixObservableCollapserTest {
             this(timer, counter, value, 10000, 10);
         }
 
-        public TestRequestCollapser(TestCollapserTimer timer, AtomicInteger counter, String value, ConcurrentLinkedQueue<HystrixObservableCommand<List<String>>> executionLog) {
+        public TestRequestCollapser(TestCollapserTimer timer, AtomicInteger counter, String value, ConcurrentLinkedQueue<HystrixObservableCommand<String>> executionLog) {
             this(timer, counter, value, 10000, 10, executionLog);
         }
 
@@ -104,11 +105,11 @@ public class HystrixObservableCollapserTest {
             this(scope, timer, counter, value, defaultMaxRequestsInBatch, defaultTimerDelayInMilliseconds, null);
         }
 
-        public TestRequestCollapser(TestCollapserTimer timer, AtomicInteger counter, String value, int defaultMaxRequestsInBatch, int defaultTimerDelayInMilliseconds, ConcurrentLinkedQueue<HystrixObservableCommand<List<String>>> executionLog) {
+        public TestRequestCollapser(TestCollapserTimer timer, AtomicInteger counter, String value, int defaultMaxRequestsInBatch, int defaultTimerDelayInMilliseconds, ConcurrentLinkedQueue<HystrixObservableCommand<String>> executionLog) {
             this(Scope.REQUEST, timer, counter, value, defaultMaxRequestsInBatch, defaultTimerDelayInMilliseconds, executionLog);
         }
 
-        public TestRequestCollapser(Scope scope, TestCollapserTimer timer, AtomicInteger counter, String value, int defaultMaxRequestsInBatch, int defaultTimerDelayInMilliseconds, ConcurrentLinkedQueue<HystrixObservableCommand<List<String>>> executionLog) {
+        public TestRequestCollapser(Scope scope, TestCollapserTimer timer, AtomicInteger counter, String value, int defaultMaxRequestsInBatch, int defaultTimerDelayInMilliseconds, ConcurrentLinkedQueue<HystrixObservableCommand<String>> executionLog) {
             // use a CollapserKey based on the CollapserTimer object reference so it's unique for each timer as we don't want caching
             // of properties to occur and we're using the default HystrixProperty which typically does caching
             super(collapserKeyFromString(timer), scope, timer, HystrixCollapserProperties.Setter().withMaxRequestsInBatch(defaultMaxRequestsInBatch).withTimerDelayInMilliseconds(defaultTimerDelayInMilliseconds));
@@ -123,9 +124,9 @@ public class HystrixObservableCollapserTest {
         }
 
         @Override
-        public HystrixObservableCommand<List<String>> createCommand(final Collection<CollapsedRequest<String, String>> requests) {
+        public HystrixObservableCommand<String> createCommand(final Collection<CollapsedRequest<String, String>> requests) {
             /* return a mocked command */
-            HystrixObservableCommand<List<String>> command = new TestCollapserCommand(requests);
+            HystrixObservableCommand<String> command = new TestCollapserCommand(requests);
             if (commandsExecuted != null) {
                 commandsExecuted.add(command);
             }
@@ -133,20 +134,47 @@ public class HystrixObservableCollapserTest {
         }
 
         @Override
-        public void mapResponseToRequests(List<String> batchResponse, Collection<CollapsedRequest<String, String>> requests) {
+        protected Func1<String, String> getBatchReturnTypeToResponseTypeMapper() {
             // count how many times a batch is executed (this method is executed once per batch)
             System.out.println("increment count: " + count.incrementAndGet());
 
-            // for simplicity I'll assume it's a 1:1 mapping between lists ... in real implementations they often need to index to maps
-            // to allow random access as the response size does not match the request size
-            if (batchResponse.size() != requests.size()) {
-                throw new RuntimeException("lists don't match in size => " + batchResponse.size() + " : " + requests.size());
-            }
-            int i = 0;
-            for (CollapsedRequest<String, String> request : requests) {
-                request.setResponse(batchResponse.get(i++));
-            }
+            return new Func1<String, String>() {
 
+                @Override
+                public String call(String s) {
+                    return s;
+                }
+
+            };
+        }
+
+        @Override
+        protected Func1<String, String> getBatchReturnTypeKeySelector() {
+            return new Func1<String, String>() {
+
+                @Override
+                public String call(String s) {
+                    return s;
+                }
+
+            };
+        }
+
+        @Override
+        protected Func1<String, String> getRequestArgumentKeySelector() {
+            return new Func1<String, String>() {
+
+                @Override
+                public String call(String s) {
+                    return s;
+                }
+
+            };
+        }
+
+        @Override
+        protected void onMissingResponse(CollapsedRequest<String, String> r) {
+            r.setException(new RuntimeException("missing value!"));
         }
 
     }
@@ -162,7 +190,7 @@ public class HystrixObservableCollapserTest {
         };
     }
 
-    private static class TestCollapserCommand extends TestHystrixCommand<List<String>> {
+    private static class TestCollapserCommand extends TestHystrixCommand<String> {
 
         private final Collection<CollapsedRequest<String, String>> requests;
 
@@ -172,14 +200,13 @@ public class HystrixObservableCollapserTest {
         }
 
         @Override
-        protected Observable<List<String>> run() {
-            return Observable.create(new OnSubscribe<List<String>>() {
+        protected Observable<String> run() {
+            return Observable.create(new OnSubscribe<String>() {
 
                 @Override
-                public void call(Subscriber<? super List<String>> s) {
+                public void call(Subscriber<? super String> s) {
                     System.out.println(">>> TestCollapserCommand run() ... batch size: " + requests.size());
                     // simulate a batch request
-                    ArrayList<String> response = new ArrayList<String>();
                     for (CollapsedRequest<String, String> request : requests) {
                         if (request.getArgument() == null) {
                             throw new NullPointerException("Simulated Error");
@@ -191,9 +218,9 @@ public class HystrixObservableCollapserTest {
                                 e.printStackTrace();
                             }
                         }
-                        response.add(request.getArgument());
+                        s.onNext(request.getArgument());
                     }
-                    s.onNext(response);
+                    
                     s.onCompleted();
                 }
 
