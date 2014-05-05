@@ -785,9 +785,11 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             throw new IllegalStateException("This instance can only be executed once. Please instantiate a new instance.");
         }
 
+        final String _cacheKey = getCacheKey();
+        
         /* try from cache first */
-        if (isRequestCachingEnabled()) {
-            Observable<R> fromCache = requestCache.get(getCacheKey());
+        if (isRequestCachingEnabled() && _cacheKey != null) {
+            Observable<R> fromCache = requestCache.get(_cacheKey);
             if (fromCache != null) {
                 /* mark that we received this response from cache */
                 metrics.markResponseFromCache();
@@ -875,10 +877,10 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         });
 
         // put in cache
-        if (isRequestCachingEnabled()) {
+        if (isRequestCachingEnabled() && _cacheKey != null) {
             // wrap it for caching
             o = new CachedObservableOriginal<R>(o.cache(), this);
-            Observable<R> fromCache = requestCache.putIfAbsent(getCacheKey(), o);
+            Observable<R> fromCache = requestCache.putIfAbsent(_cacheKey, o);
             if (fromCache != null) {
                 // another thread beat us so we'll use the cached value instead
                 o = new CachedObservableResponse<R>((CachedObservableOriginal<R>) fromCache, this);
