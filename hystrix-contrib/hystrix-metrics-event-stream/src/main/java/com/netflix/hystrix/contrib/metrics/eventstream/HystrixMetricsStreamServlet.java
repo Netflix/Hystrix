@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.annotation.concurrent.ThreadSafe;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -176,8 +175,8 @@ public class HystrixMetricsStreamServlet extends HttpServlet {
 
     /**
      * This will be called from another thread so needs to be thread-safe.
+     * @ThreadSafe
      */
-    @ThreadSafe
     private static class MetricJsonListener implements HystrixMetricsPoller.MetricsAsJsonPollerListener {
 
         /**
