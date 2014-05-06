@@ -46,6 +46,8 @@ import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
  * It must be stateless or else it will be non-deterministic because most instances are discarded while some are retained and become the
  * "collapsers" for all the ones that are discarded.
  * 
+ * @param <K>
+ *            The key used to match BatchReturnType and RequestArgumentType
  * @param <BatchReturnType>
  *            The type returned from the {@link HystrixCommand} that will be invoked on batch executions.
  * @param <ResponseType>
@@ -181,8 +183,6 @@ public abstract class HystrixObservableCollapser<K, BatchReturnType, ResponseTyp
         };
     }
 
-    protected abstract Func1<BatchReturnType, ResponseType> getBatchReturnTypeToResponseTypeMapper();
-
     private HystrixCollapserProperties getProperties() {
         return collapserFactory.getProperties();
     }
@@ -263,11 +263,42 @@ public abstract class HystrixObservableCollapser<K, BatchReturnType, ResponseTyp
         return Collections.singletonList(requests);
     }
 
+    /**
+     * Function that returns the key used for matching returned objects against request argument types.
+     * <p>
+     * The key returned from this function should match up with the key returned from {@link #getRequestArgumentKeySelector()};
+     * 
+     * @return key selector function
+     */
     protected abstract Func1<BatchReturnType, K> getBatchReturnTypeKeySelector();
 
+    /**
+     * Function that returns the key used for matching request arguments against returned objects.
+     * <p>
+     * The key returned from this function should match up with the key returned from {@link #getBatchReturnTypeKeySelector()};
+     * 
+     * @return key selector function
+     */
     protected abstract Func1<RequestArgumentType, K> getRequestArgumentKeySelector();
 
+    /**
+     * Invoked if a {@link CollapsedRequest} in the batch does not have a response set on it.
+     * <p>
+     * This allows setting an exception (via {@link CollapsedRequest#setException(Exception)}) or a fallback response (via {@link CollapsedRequest#setResponse(Object)}).
+     * 
+     * @param CollapsedRequest
+     *            that needs a response or exception set on it.
+     */
     protected abstract void onMissingResponse(CollapsedRequest<ResponseType, RequestArgumentType> r);
+
+    /**
+     * Function for mapping from BatchReturnType to ResponseType.
+     * <p>
+     * Often these two types are exactly the same so it's just a pass-thru.
+     * 
+     * @return function for mapping from BatchReturnType to ResponseType
+     */
+    protected abstract Func1<BatchReturnType, ResponseType> getBatchReturnTypeToResponseTypeMapper();
 
     /**
      * Used for asynchronous execution with a callback by subscribing to the {@link Observable}.
