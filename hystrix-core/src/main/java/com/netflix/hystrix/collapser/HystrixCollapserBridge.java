@@ -20,7 +20,7 @@ public interface HystrixCollapserBridge<BatchReturnType, ResponseType, RequestAr
 
     public Observable<BatchReturnType> createObservableCommand(Collection<CollapsedRequest<ResponseType, RequestArgumentType>> requests);
 
-    public void mapResponseToRequests(BatchReturnType batchResponse, Collection<CollapsedRequest<ResponseType, RequestArgumentType>> requests);
+    public Observable<Void> mapResponseToRequests(Observable<BatchReturnType> batchResponse, Collection<CollapsedRequest<ResponseType, RequestArgumentType>> requests);
 
     public HystrixCollapserKey getCollapserKey();
 

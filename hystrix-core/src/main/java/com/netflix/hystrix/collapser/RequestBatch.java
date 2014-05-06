@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import rx.Observable;
 import rx.Observer;
+import rx.functions.*;
 
 import com.netflix.hystrix.HystrixCollapser;
 import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
@@ -105,8 +106,55 @@ public class RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> {
                     try {
                         // create a new command to handle this batch of requests
                         Observable<BatchReturnType> o = commandCollapser.createObservableCommand(shardRequests);
-                        // if more than one item is emitted we fail
-                        o.single().subscribe(new RequestBatch.BatchRequestObserver<ResponseType, RequestArgumentType, BatchReturnType>(commandCollapser, shardRequests));
+
+                        commandCollapser.mapResponseToRequests(o, shardRequests).doOnError(new Action1<Throwable>() {
+
+                            /**
+                             * This handles failed completions
+                             */
+                            @Override
+                            public void call(Throwable e) {
+                                // handle Throwable in case anything is thrown so we don't block Observers waiting for onError/onCompleted
+                                Exception ee = null;
+                                if (e instanceof Exception) {
+                                    ee = (Exception) e;
+                                } else {
+                                    ee = new RuntimeException("Throwable caught while executing batch and mapping responses.", e);
+                                }
+                                logger.error("Exception mapping responses to requests.", e);
+                                // if a failure occurs we want to pass that exception to all of the Futures that we've returned
+                                for (CollapsedRequest<ResponseType, RequestArgumentType> request : requests) {
+                                    try {
+                                        ((CollapsedRequestObservableFunction<ResponseType, RequestArgumentType>) request).setExceptionIfResponseNotReceived(ee);
+                                    } catch (IllegalStateException e2) {
+                                        // if we have partial responses set in mapResponseToRequests
+                                        // then we may get IllegalStateException as we loop over them
+                                        // so we'll log but continue to the rest
+                                        logger.error("Partial success of 'mapResponseToRequests' resulted in IllegalStateException while setting Exception. Continuing ... ", e2);
+                                    }
+                                }
+                            }
+
+                        }).doOnCompleted(new Action0() {
+
+                            /**
+                             * This handles successful completions
+                             */
+                            @Override
+                            public void call() {
+                                // check that all requests had setResponse or setException invoked in case 'mapResponseToRequests' was implemented poorly
+                                IllegalStateException ie = new IllegalStateException("No response set by " + commandCollapser.getCollapserKey().name() + " 'mapResponseToRequests' implementation.");
+                                for (CollapsedRequest<ResponseType, RequestArgumentType> request : shardRequests) {
+                                    try {
+                                        ((CollapsedRequestObservableFunction<ResponseType, RequestArgumentType>) request).setExceptionIfResponseNotReceived(ie);
+                                    } catch (IllegalStateException e2) {
+                                        logger.debug("Partial success of 'mapResponseToRequests' resulted in IllegalStateException while setting 'No response set' Exception. Continuing ... ", e2);
+                                    }
+                                }
+                            }
+
+                        }).subscribe();
+                        
                     } catch (Exception e) {
                         logger.error("Exception while creating and queueing command with batch.", e);
                         // if a failure occurs we want to pass that exception to all of the Futures that we've returned
@@ -168,89 +216,6 @@ public class RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> {
             } finally {
                 batchLock.writeLock().unlock();
             }
-        }
-    }
-
-    private static final class BatchRequestObserver<ResponseType, RequestArgumentType, BatchReturnType> implements Observer<BatchReturnType> {
-        private final Collection<CollapsedRequest<ResponseType, RequestArgumentType>> requests;
-        private final HystrixCollapserBridge<BatchReturnType, ResponseType, RequestArgumentType> commandCollapser;
-
-        private BatchRequestObserver(HystrixCollapserBridge<BatchReturnType, ResponseType, RequestArgumentType> commandCollapser, Collection<CollapsedRequest<ResponseType, RequestArgumentType>> requests) {
-            this.commandCollapser = commandCollapser;
-            this.requests = requests;
-        }
-
-        private boolean receivedResponse = false;
-        private BatchReturnType response;
-
-        @Override
-        public void onCompleted() {
-            try {
-                // use a boolean since null can be a real response
-                if (!receivedResponse) {
-                    onError(new IllegalStateException("Did not receive batch response."));
-                    return;
-                }
-                commandCollapser.mapResponseToRequests(response, requests);
-            } catch (Throwable e) {
-                // handle Throwable in case anything is thrown so we don't block Observers waiting for onError/onCompleted
-                Exception ee = null;
-                if (e instanceof Exception) {
-                    ee = (Exception) e;
-                } else {
-                    ee = new RuntimeException("Throwable caught while invoking 'mapResponseToRequests'", e);
-                }
-                logger.error("Exception mapping responses to requests.", e);
-                // if a failure occurs we want to pass that exception to all of the Futures that we've returned
-                for (CollapsedRequest<ResponseType, RequestArgumentType> request : requests) {
-                    try {
-                        ((CollapsedRequestObservableFunction<ResponseType, RequestArgumentType>) request).setExceptionIfResponseNotReceived(ee);
-                    } catch (IllegalStateException e2) {
-                        // if we have partial responses set in mapResponseToRequests
-                        // then we may get IllegalStateException as we loop over them
-                        // so we'll log but continue to the rest
-                        logger.error("Partial success of 'mapResponseToRequests' resulted in IllegalStateException while setting Exception. Continuing ... ", e2);
-                    }
-                }
-            }
-
-            // check that all requests had setResponse or setException invoked in case 'mapResponseToRequests' was implemented poorly
-            IllegalStateException ie = new IllegalStateException("No response set by " + commandCollapser.getCollapserKey().name() + " 'mapResponseToRequests' implementation.");
-            for (CollapsedRequest<ResponseType, RequestArgumentType> request : requests) {
-                try {
-                    ((CollapsedRequestObservableFunction<ResponseType, RequestArgumentType>) request).setExceptionIfResponseNotReceived(ie);
-                } catch (IllegalStateException e2) {
-                    logger.debug("Partial success of 'mapResponseToRequests' resulted in IllegalStateException while setting 'No response set' Exception. Continuing ... ", e2);
-                }
-            }
-        }
-
-        @Override
-        public void onError(Throwable t) {
-            Exception e = null;
-            if (t instanceof Exception) {
-                e = (Exception) t;
-            } else {
-                // Hystrix 1.x uses Exception, not Throwable so to prevent a breaking change Throwable will be wrapped in Exception
-                e = new Exception("Throwable caught while executing command with batch.", t);
-            }
-            logger.error("Exception while executing command with batch.", e);
-            // if a failure occurs we want to pass that exception to all of the Futures that we've returned
-            for (CollapsedRequest<ResponseType, RequestArgumentType> request : requests) {
-                try {
-                    request.setException(e);
-                } catch (IllegalStateException e2) {
-                    logger.debug("Failed trying to setException on CollapsedRequest", e2);
-                }
-            }
-        }
-
-        @Override
-        public void onNext(BatchReturnType response) {
-            receivedResponse = true;
-            this.response = response;
-            // we want to wait until onComplete to do the processing
-            // so we don't release the callers before metrics/logs/etc are available
         }
     }
 
