@@ -143,9 +143,10 @@ public class RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> {
                             @Override
                             public void call() {
                                 // check that all requests had setResponse or setException invoked in case 'mapResponseToRequests' was implemented poorly
+                                Exception e = null;
                                 for (CollapsedRequest<ResponseType, RequestArgumentType> request : shardRequests) {
                                     try {
-                                        ((CollapsedRequestObservableFunction<ResponseType, RequestArgumentType>) request).setIllegalStateExceptionIfResponseNotReceived("No response set by " + commandCollapser.getCollapserKey().name() + " 'mapResponseToRequests' implementation.");
+                                       e = ((CollapsedRequestObservableFunction<ResponseType, RequestArgumentType>) request).setExceptionIfResponseNotReceived(e,"No response set by " + commandCollapser.getCollapserKey().name() + " 'mapResponseToRequests' implementation.");
                                     } catch (IllegalStateException e2) {
                                         logger.debug("Partial success of 'mapResponseToRequests' resulted in IllegalStateException while setting 'No response set' Exception. Continuing ... ", e2);
                                     }
