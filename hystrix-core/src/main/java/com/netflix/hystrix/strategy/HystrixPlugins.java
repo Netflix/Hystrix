@@ -94,6 +94,13 @@ public class HystrixPlugins {
     }
 
     /**
+     * Unregister any globally registered {@link HystrixEventNotifier}.
+     */
+    public void unregisterEventNotifier() {
+        notifier.set(null);
+    }
+
+    /**
      * Retrieve instance of {@link HystrixConcurrencyStrategy} to use based on order of precedence as defined in {@link HystrixPlugins} class header.
      * <p>
      * Override default by using {@link #registerConcurrencyStrategy(HystrixConcurrencyStrategy)} or setting property: <code>hystrix.plugin.HystrixConcurrencyStrategy.implementation</code> with the
@@ -129,6 +136,13 @@ public class HystrixPlugins {
         if (!concurrencyStrategy.compareAndSet(null, impl)) {
             throw new IllegalStateException("Another strategy was already registered.");
         }
+    }
+
+    /**
+     * Unregister any globally registered {@link HystrixConcurrencyStrategy}.
+     */
+    public void unregisterConcurrencyStrategy() {
+        concurrencyStrategy.set(null);
     }
 
     /**
@@ -170,6 +184,13 @@ public class HystrixPlugins {
     }
 
     /**
+     * Unregister any globally registered {@link HystrixMetricsPublisher}.
+     */
+    public void unregisterMetricsPublisher() {
+        metricsPublisher.set(null);
+    }
+
+    /**
      * Retrieve instance of {@link HystrixPropertiesStrategy} to use based on order of precedence as defined in {@link HystrixPlugins} class header.
      * <p>
      * Override default by using {@link #registerPropertiesStrategy(HystrixPropertiesStrategy)} or setting property: <code>hystrix.plugin.HystrixPropertiesStrategy.implementation</code> with the full
@@ -205,6 +226,13 @@ public class HystrixPlugins {
         if (!propertiesFactory.compareAndSet(null, impl)) {
             throw new IllegalStateException("Another strategy was already registered.");
         }
+    }
+
+    /**
+     * Unregister any globally registered {@link HystrixPropertiesStrategy}.
+     */
+    public void unregisterPropertiesStrategy() {
+        propertiesFactory.set(null);
     }
 
     /**
@@ -248,6 +276,13 @@ public class HystrixPlugins {
         if (!commandExecutionHook.compareAndSet(null, impl)) {
             throw new IllegalStateException("Another strategy was already registered.");
         }
+    }
+
+    /**
+     * Unregister any globally registered {@link HystrixCommandExecutionHook}.
+     */
+    public void unregisterCommandExecutionHook() {
+        commandExecutionHook.set(null);
     }
 
     private static Object getPluginImplementationViaProperty(Class<?> pluginClass) {
