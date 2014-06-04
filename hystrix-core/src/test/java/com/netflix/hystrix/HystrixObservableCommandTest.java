@@ -6258,6 +6258,22 @@ public class HystrixObservableCommandTest {
     }
 
     /**
+     * On subscribe, this observable will call onError with a RuntimeException
+     */
+    private static class ErroringAsyncObservable extends Observable<Boolean> {
+        protected ErroringAsyncObservable(final String errorMessage) {
+            super(new OnSubscribe<Boolean>() {
+                @Override
+                public void call(Subscriber<? super Boolean> subscriber) {
+                    // as soon as we get a subscriber signal an error
+                    System.out.println("*** simulated failed execution ***");
+                    subscriber.onError(new RuntimeException(errorMessage));
+                }
+            });
+        }
+    }
+
+    /**
      * Failed execution with unknown exception (not HystrixException) - no fallback implementation.
      */
     private static class UnknownFailureTestCommandWithoutFallback extends TestHystrixCommand<Boolean> {
@@ -6268,9 +6284,7 @@ public class HystrixObservableCommandTest {
 
         @Override
         protected Observable<Boolean> run() {
-            // TODO duplicate with error inside async Observable
-            System.out.println("*** simulated failed execution ***");
-            throw new RuntimeException("we failed with an unknown issue");
+            return new ErroringAsyncObservable("we failed with an unknown issue");
         }
 
     }
@@ -6286,9 +6300,8 @@ public class HystrixObservableCommandTest {
 
         @Override
         protected Observable<Boolean> run() {
-            // TODO duplicate with error inside async Observable
-            System.out.println("*** simulated failed execution ***");
-            throw new RuntimeException("we failed with a simulated issue");
+            return new ErroringAsyncObservable("we failed with a simulated issue");
+
         }
 
     }
@@ -6309,9 +6322,7 @@ public class HystrixObservableCommandTest {
 
         @Override
         protected Observable<Boolean> run() {
-            // TODO duplicate with error inside async Observable
-            System.out.println("*** simulated failed execution ***");
-            throw new RuntimeException("we failed with a simulated issue");
+            return new ErroringAsyncObservable("we failed with a simulated issue");
         }
 
         @Override
@@ -6337,8 +6348,7 @@ public class HystrixObservableCommandTest {
 
         @Override
         protected Observable<Boolean> getFallback() {
-            // TODO duplicate with error inside async Observable
-            throw new RuntimeException("failed while getting fallback");
+            return new ErroringAsyncObservable("failed while getting fallback");
         }
     }
 
@@ -6522,8 +6532,7 @@ public class HystrixObservableCommandTest {
             if (fallbackBehavior == FALLBACK_SUCCESS) {
                 return Observable.from(false);
             } else if (fallbackBehavior == FALLBACK_FAILURE) {
-                // TODO duplicate with error inside async Observable
-                throw new RuntimeException("failed on fallback");
+                return new ErroringAsyncObservable("failed on fallback");
             } else {
                 // FALLBACK_NOT_IMPLEMENTED
                 return super.getFallback();
@@ -6900,8 +6909,12 @@ public class HystrixObservableCommandTest {
 
         @Override
         protected Observable<Boolean> run() {
-            // TODO duplicate with error inside async Observable
-            throw new Error("simulated java.lang.Error message");
+            return Observable.create(new OnSubscribe<Boolean>() {
+                @Override
+                public void call(Subscriber<? super Boolean> subscriber) {
+                    throw new Error("simulated java.lang.Error message");
+                }
+            });
         }
 
     }
