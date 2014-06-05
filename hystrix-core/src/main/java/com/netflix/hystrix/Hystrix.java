@@ -51,6 +51,7 @@ public class Hystrix {
     private static void _reset() {
         // clear metrics
         HystrixCommandMetrics.reset();
+        HystrixThreadPoolMetrics.reset();
         // clear collapsers
         HystrixCollapser.reset();
         // clear circuit breakers
