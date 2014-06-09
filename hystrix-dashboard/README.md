@@ -7,7 +7,7 @@ View the [Dashboard Wiki](https://github.com/Netflix/Hystrix/wiki/Dashboard) for
 # Run via Gradle
 
 ```
-$ git clone git@github.com:Netflix/Hystrix.git
+$ git clone https://github.com/Netflix/Hystrix.git
 $ cd Hystrix/hystrix-dashboard
 $ ../gradlew jettyRun
 > Building > :hystrix-dashboard:jettyRun > Running at http://localhost:7979/hystrix-dashboard
