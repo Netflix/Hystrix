@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 /**
  * An implementation of @MetricFilter based upon an Archaius DynamicPropertyFactory
  *
- * To enable this filter, the property 'filter.graphite,metrics' must be set to TRUE
+ * To enable this filter, the property 'filter.graphite.metrics' must be set to TRUE
  *
  * If this is the case, metrics will be filtered unless METRIC_NAME = true is set in
  * the properties
@@ -59,7 +59,7 @@ public class ConfigurableCodaHaleMetricFilter implements MetricFilter{
 
     protected boolean isFilterEnabled() {
 
-        boolean filterEnabled = archaiusPropertyFactory.getBooleanProperty("filter.graphite,metrics", false).get();
+        boolean filterEnabled = archaiusPropertyFactory.getBooleanProperty("filter.graphite.metrics", false).get();
 
         LOGGER.debug("Is filter enabled? [{}]", filterEnabled);
 

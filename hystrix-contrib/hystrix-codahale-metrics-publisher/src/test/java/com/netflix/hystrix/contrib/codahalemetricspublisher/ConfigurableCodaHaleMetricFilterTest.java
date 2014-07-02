@@ -45,7 +45,7 @@ public class ConfigurableCodaHaleMetricFilterTest {
     @Test
     public void testMetricConfiguredInFilterWithFilterEnabled()
     {
-        when(archiausPropertyFactory.getBooleanProperty(eq("filter.graphite,metrics"), any(Boolean.class))).thenReturn(DYNAMIC_BOOLEAN_TRUE);
+        when(archiausPropertyFactory.getBooleanProperty(eq("filter.graphite.metrics"), any(Boolean.class))).thenReturn(DYNAMIC_BOOLEAN_TRUE);
         ConfigurableCodaHaleMetricFilter filter = new ConfigurableCodaHaleMetricFilter(archiausPropertyFactory);
         assertTrue(filter.matches("this.metric.is.allowed", metric));
     }
@@ -53,7 +53,7 @@ public class ConfigurableCodaHaleMetricFilterTest {
     @Test
     public void testMetricConfiguredInFilterWithFilterDisabled()
     {
-        when(archiausPropertyFactory.getBooleanProperty(eq("filter.graphite,metrics"), any(Boolean.class))).thenReturn(DYNAMIC_BOOLEAN_FALSE);
+        when(archiausPropertyFactory.getBooleanProperty(eq("filter.graphite.metrics"), any(Boolean.class))).thenReturn(DYNAMIC_BOOLEAN_FALSE);
         ConfigurableCodaHaleMetricFilter filter = new ConfigurableCodaHaleMetricFilter(archiausPropertyFactory);
         assertTrue(filter.matches("this.metric.is.allowed", metric));
     }
@@ -61,7 +61,7 @@ public class ConfigurableCodaHaleMetricFilterTest {
     @Test
     public void testMetricNotConfiguredInFilterWithFilterEnabled()
     {
-        when(archiausPropertyFactory.getBooleanProperty(eq("filter.graphite,metrics"), any(Boolean.class))).thenReturn(DYNAMIC_BOOLEAN_TRUE);
+        when(archiausPropertyFactory.getBooleanProperty(eq("filter.graphite.metrics"), any(Boolean.class))).thenReturn(DYNAMIC_BOOLEAN_TRUE);
         ConfigurableCodaHaleMetricFilter filter = new ConfigurableCodaHaleMetricFilter(archiausPropertyFactory);
         assertFalse(filter.matches("this.metric.is.not.allowed", metric));
     }
@@ -69,7 +69,7 @@ public class ConfigurableCodaHaleMetricFilterTest {
     @Test
     public void testMetricNotConfiguredInFilterWithFilterDisabled()
     {
-        when(archiausPropertyFactory.getBooleanProperty(eq("filter.graphite,metrics"), any(Boolean.class))).thenReturn(DYNAMIC_BOOLEAN_FALSE);
+        when(archiausPropertyFactory.getBooleanProperty(eq("filter.graphite.metrics"), any(Boolean.class))).thenReturn(DYNAMIC_BOOLEAN_FALSE);
         ConfigurableCodaHaleMetricFilter filter = new ConfigurableCodaHaleMetricFilter(archiausPropertyFactory);
         assertTrue(filter.matches("this.metric.is.not.allowed", metric));
     }
