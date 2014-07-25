@@ -16,7 +16,6 @@
 package com.netflix.hystrix;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -168,33 +167,43 @@ public class HystrixRequestLog {
             LinkedHashMap<String, Integer> aggregatedCommandsExecuted = new LinkedHashMap<String, Integer>();
             Map<String, Integer> aggregatedCommandExecutionTime = new HashMap<String, Integer>();
 
+            StringBuilder builder = new StringBuilder();
+            int estimatedLength = 0;
             for (HystrixExecutableInfo<?> command : allExecutedCommands) {
-                StringBuilder displayString = new StringBuilder();
-                displayString.append(command.getCommandKey().name());
+                builder.setLength(0);
+                builder.append(command.getCommandKey().name());
 
                 List<HystrixEventType> events = new ArrayList<HystrixEventType>(command.getExecutionEvents());
                 if (events.size() > 0) {
                     Collections.sort(events);
-                    displayString.append(Arrays.toString(events.toArray()));
+                    //replicate functionality of Arrays.toString(events.toArray()) to append directly to existing StringBuilder
+                    builder.append("[");
+                    for (HystrixEventType event : events) {
+                        builder.append(event).append(", ");
+                    }
+                    builder.setCharAt(builder.length() - 2, ']');
+                    builder.setLength(builder.length() - 1);
                 } else {
-                    displayString.append("[Executed]");
+                    builder.append("[Executed]");
                 }
 
-                String display = displayString.toString();
-                if (aggregatedCommandsExecuted.containsKey(display)) {
-                    // increment the count
-                    aggregatedCommandsExecuted.put(display, aggregatedCommandsExecuted.get(display) + 1);
+                String display = builder.toString();
+                estimatedLength += display.length() + 12; //add 12 chars to display length for appending totalExecutionTime and count below
+                Integer counter = aggregatedCommandsExecuted.get(display);
+                if( counter != null){
+                    aggregatedCommandsExecuted.put(display, counter + 1);
                 } else {
                     // add it
                     aggregatedCommandsExecuted.put(display, 1);
-                }
+                }                
 
                 int executionTime = command.getExecutionTimeInMilliseconds();
                 if (executionTime < 0) {
                     // do this so we don't create negative values or subtract values
                     executionTime = 0;
                 }
-                if (aggregatedCommandExecutionTime.containsKey(display)) {
+                counter = aggregatedCommandExecutionTime.get(display);
+                if( counter != null && executionTime > 0){
                     // add to the existing executionTime (sum of executionTimes for duplicate command displayNames)
                     aggregatedCommandExecutionTime.put(display, aggregatedCommandExecutionTime.get(display) + executionTime);
                 } else {
@@ -204,22 +213,23 @@ public class HystrixRequestLog {
 
             }
 
-            StringBuilder header = new StringBuilder();
+            builder.setLength(0);
+            builder.ensureCapacity(estimatedLength);
             for (String displayString : aggregatedCommandsExecuted.keySet()) {
-                if (header.length() > 0) {
-                    header.append(", ");
+                if (builder.length() > 0) {
+                    builder.append(", ");
                 }
-                header.append(displayString);
+                builder.append(displayString);
 
                 int totalExecutionTime = aggregatedCommandExecutionTime.get(displayString);
-                header.append("[").append(totalExecutionTime).append("ms]");
+                builder.append("[").append(totalExecutionTime).append("ms]");
 
                 int count = aggregatedCommandsExecuted.get(displayString);
                 if (count > 1) {
-                    header.append("x").append(count);
+                    builder.append("x").append(count);
                 }
             }
-            return header.toString();
+            return builder.toString();
         } catch (Exception e) {
             logger.error("Failed to create HystrixRequestLog response header string.", e);
             // don't let this cause the entire app to fail so just return "Unknown"
