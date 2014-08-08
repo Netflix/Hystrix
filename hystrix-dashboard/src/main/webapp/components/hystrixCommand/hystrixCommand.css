@@ -32,26 +32,26 @@
 .dependencies div.monitor p.name {
 	font-weight:bold;
 	font-size: 10pt;
-	text-align: right;	
+	text-align: right;
 	padding-bottom: 5px;
 }
 
 .dependencies div.monitor_data {
-	margin: 0 auto;	
+	margin: 0 auto;
 }
 
 /* override the HREF when we have specified it as a tooltip to not act like a link */
 .dependencies div.monitor_data a.tooltip {
 	text-decoration: none;
-	cursor: default;	
+	cursor: default;
 }
 
 .dependencies div.monitor_data div.counters {
-	text-align: right;	
+	text-align: right;
 	padding-bottom: 10px;
 	font-size: 10pt;
 	clear: both;
-	
+
 }
 
 .dependencies div.monitor_data div.counters div.cell {
@@ -71,13 +71,13 @@
 
 .dependencies div.monitor_data a,
 .dependencies span.rate_value {
-	font-weight:bold;	
+	font-weight:bold;
 }
 
 
 .dependencies span.smaller {
 	font-size: 8pt;
-	color: grey;	
+	color: grey;
 }
 
 
@@ -85,7 +85,7 @@
 .dependencies div.tableRow {
 	width:100%;
 	white-space: nowrap;
-	font-size: 8pt;	
+	font-size: 8pt;
 	margin: 0 auto;
 	clear:both;
 	padding-left:26%;
@@ -114,28 +114,28 @@
 }
 
 .dependencies .success {
-	color: green;	
+	color: green;
 }
 .dependencies .shortCircuited {
-	color: blue;	
+	color: blue;
 }
 .dependencies .timeout {
 	color: #FF9900;	 /* shade of orange */
 }
 .dependencies .failure {
-	color: red;	
+	color: red;
 }
 
 .dependencies .rejected {
 	color: purple;
 }
-	
+
 .dependencies .exceptionsThrown {
 	color: brown;
 }
 
 .dependencies div.monitor_data a.rate {
-	color: black;	
+	color: black;
 	font-size: 11pt;
 }
 
@@ -146,7 +146,7 @@
 }
 
 .dependencies .errorPercentage {
-	color: grey;	
+	color: grey;
 }
 
 .dependencies div.cell .errorPercentage {
@@ -169,7 +169,7 @@
 .dependencies div.circuitStatus {
 	width:100%;
 	white-space: nowrap;
-	font-size: 9pt;	
+	font-size: 9pt;
 	margin: 0 auto;
 	clear:both;
 	text-align:right;
@@ -190,7 +190,4 @@
 	stroke: steelblue;
 	stroke-width: 1;
 	fill: none;
-}
-
-
 }
