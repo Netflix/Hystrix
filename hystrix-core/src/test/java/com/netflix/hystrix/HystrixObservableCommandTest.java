@@ -74,6 +74,40 @@ public class HystrixObservableCommandTest {
         // force properties to be clean as well
         ConfigurationManager.getConfigInstance().clear();
 
+        /*
+         * RxJava will create one worker for each processor when we schedule Observables in the
+         * Schedulers.computation(). Any leftovers here might lead to a congestion in a following
+         * thread. To ensure all existing threads have completed we now schedule some observables
+         * that will execute in distinct threads due to the latch..
+         */
+        int count = Runtime.getRuntime().availableProcessors();
+        final CountDownLatch latch = new CountDownLatch(count);
+        ArrayList<Future<Boolean>> futures = new ArrayList<Future<Boolean>>();
+        for (int i = 0; i < count; ++i) {
+            futures.add(Observable.create(new OnSubscribe<Boolean>() {
+                @Override
+                public void call(Subscriber<? super Boolean> sub) {
+                    latch.countDown();
+                    try {
+                        latch.await();
+                        sub.onNext(true);
+                        sub.onCompleted();
+                    } catch (InterruptedException e) {
+                        sub.onError(e);
+                    }
+                }
+            }).subscribeOn(Schedulers.computation()).toBlockingObservable().toFuture());
+        }
+        for (Future<Boolean> future : futures) {
+            try {
+                future.get();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            } catch (ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
         //TODO commented out as it has issues when built from command-line even though it works from IDE
         //        HystrixCommandKey key = Hystrix.getCurrentThreadExecutingCommand();
         //        if (key != null) {
