@@ -14,7 +14,7 @@ img {
 
 
 #header {
-	background: #FFFFFF url(http://raw.github.com/wiki/Netflix/Hystrix/images/hystrix-logo-tagline-tiny.png) no-repeat scroll 99% 0%;
+	background: #FFFFFF url(../images/hystrix-logo-tagline-tiny.png) no-repeat scroll 99% 0%;
 	height: 65px;
 	margin-bottom: 5px;
 }
@@ -58,14 +58,14 @@ img {
 
 
 @media screen and (min-width: 1500px) {
-	
+
 	#header .header_nav {
 		top:13px;
 		right:130px;
 	}
-	
+
 	#header {
-		background: #FFFFFF url(http://raw.github.com/wiki/Netflix/Hystrix/images/hystrix-logo-tagline-tiny.png) no-repeat scroll 99% 50%;
+		background: #FFFFFF url(../images/hystrix-logo-tagline-tiny.png) no-repeat scroll 99% 50%;
 		height: 65px;
 	}
 }
