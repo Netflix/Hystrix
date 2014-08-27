@@ -1,5 +1,11 @@
 # Hystrix Releases #
 
+### Version 1.3.17 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.3.17%22)) ###
+
+* [Pull 291](https://github.com/Netflix/Hystrix/pull/291) String optimization for HystrixRequestLog
+* [Pull 296](https://github.com/Netflix/Hystrix/pull/296) Fix Premature Unsubscribe Bug
+* [Commit 47122e](https://github.com/Netflix/Hystrix/commit/1268454ec4381b6ae121cac1675205484847122e) RxJava 0.20.1
+
 ### Version 1.4.0 Release Candidate 4 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.0-RC4%22)) ###
 
 _NOTE: This code is NOT considered production worthy yet, hence the "Release Candidate" status._
