@@ -933,7 +933,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
                 @Override
                 public void call(Subscriber<? super R> observer) {
-                    originalObservable.subscribe(observer);
+                    originalObservable.unsafeSubscribe(observer);
                 }
             });
             this.command = command;
@@ -1077,7 +1077,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                     // set externally so execute/queue can see this
                     originalCommand.timeoutTimer.set(tl);
 
-                    o.subscribe(new Subscriber<R>(observer) {
+                    o.unsafeSubscribe(new Subscriber<R>(observer) {
 
                         @Override
                         public void onCompleted() {
@@ -6184,6 +6184,20 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
         }
 
+        @Test(timeout=1000)
+        public void testResponseFlatMappable() {
+            Observable<Boolean> result = new SuccessfulTestCommand().toObservable()
+                    .flatMap(new Func1<Boolean, Observable<Boolean>>() {
+
+                        @Override
+                        public Observable<Boolean> call(Boolean t1) {
+                            return new SuccessfulTestCommand().toObservable();
+                        }
+
+                    });
+            System.out.println("result (toObservable) = " + result.toBlockingObservable().single());
+        }
+        
         /* ******************************************************************************** */
         /* ******************************************************************************** */
         /* private HystrixCommand class implementations for unit testing */
