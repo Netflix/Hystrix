@@ -196,7 +196,7 @@ public abstract class HystrixConcurrencyStrategy {
                     System.out.println("Map => Commands: " + HystrixRequestLog.getCurrentRequest().getExecutedCommands());
                     return s;
                 }
-            }).toBlockingObservable().forEach(new Action1<String>() {
+            }).toBlocking().forEach(new Action1<String>() {
 
                 @Override
                 public void call(String s) {

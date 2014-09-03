@@ -443,7 +443,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
      */
     public Future<ResponseType> queue() {
         final Observable<ResponseType> o = toObservable();
-        return o.toBlockingObservable().toFuture();
+        return o.toBlocking().toFuture();
     }
 
     /**
