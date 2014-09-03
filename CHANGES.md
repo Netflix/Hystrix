@@ -1,5 +1,10 @@
 # Hystrix Releases #
 
+### Version 1.3.18 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.3.18%22)) ###
+
+* [Pull 305](https://github.com/Netflix/Hystrix/pull/305) Removing deprecated RxJava usage
+
+
 ### Version 1.3.17 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.3.17%22)) ###
 
 * [Pull 291](https://github.com/Netflix/Hystrix/pull/291) String optimization for HystrixRequestLog
