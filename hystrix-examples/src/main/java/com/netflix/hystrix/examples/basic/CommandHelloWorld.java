@@ -76,8 +76,8 @@ public class CommandHelloWorld extends HystrixCommand<String> {
             Observable<String> fBob = new CommandHelloWorld("Bob").observe();
 
             // blocking
-            assertEquals("Hello World!", fWorld.toBlockingObservable().single());
-            assertEquals("Hello Bob!", fBob.toBlockingObservable().single());
+            assertEquals("Hello World!", fWorld.toBlocking().single());
+            assertEquals("Hello Bob!", fBob.toBlocking().single());
 
             // non-blocking 
             // - this is a verbose anonymous inner-class approach and doesn't do assertions
