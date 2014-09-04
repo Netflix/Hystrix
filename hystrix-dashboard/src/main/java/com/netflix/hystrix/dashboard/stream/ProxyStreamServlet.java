@@ -42,6 +42,7 @@ public class ProxyStreamServlet extends HttpServlet {
         if (origin == null) {
             response.setStatus(500);
             response.getWriter().println("Required parameter 'origin' missing. Example: 107.20.175.135:7001");
+            return;
         }
         origin = origin.trim();
         
