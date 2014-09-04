@@ -162,7 +162,7 @@ public abstract class HystrixThreadPoolProperties {
      * <pre> {@code
      * HystrixThreadPoolProperties.Setter()
      *           .setCoreSize(10)
-     *           .setQueueSizeRejectionThreshold(10);
+     *           .withQueueSizeRejectionThreshold(10);
      * } </pre>
      * 
      * @NotThreadSafe
