@@ -1,6 +1,7 @@
 apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'idea'
+apply plugin: 'osgi'
 
 dependencies {
     compile 'com.netflix.archaius:archaius-core:0.4.1'
@@ -43,4 +44,15 @@ idea {
 		scopes.COMPILE.plus += configurations.provided
 
 	}
+}
+
+jar {
+    manifest {
+        name = 'hystrix-core'
+        instruction 'Bundle-Vendor', 'Netflix'
+        instruction 'Bundle-DocURL', 'https://github.com/Netflix/Hystrix'
+        instruction 'Import-Package', '!org.junit,!junit.framework,!org.mockito.*,*'
+        instruction 'Eclipse-ExtensibleAPI', 'true'
+        instruction 'Embed-Dependency', '*;scope=compile'
+    }
 }

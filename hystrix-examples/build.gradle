@@ -1,6 +1,7 @@
 apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'idea'
+apply plugin: 'osgi'
 
 dependencies {
     compile project(':hystrix-core')
@@ -25,5 +26,15 @@ idea {
     module {
         // include 'provided' dependencies on the classpath
         scopes.COMPILE.plus += configurations.provided
+    }
+}
+
+jar {
+    manifest {
+        name = 'hystrix-examples'
+        instruction 'Bundle-Vendor', 'Netflix'
+        instruction 'Bundle-DocURL', 'https://github.com/Netflix/Hystrix'
+        instruction 'Import-Package', '!org.junit,!junit.framework,!org.mockito.*,*'
+        instruction 'Eclipse-ExtensibleAPI', 'true'
     }
 }

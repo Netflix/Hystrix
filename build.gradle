@@ -1,3 +1,4 @@
+apply plugin:  'osgi'
 ext.githubProjectName = rootProject.name
 
 buildscript {
