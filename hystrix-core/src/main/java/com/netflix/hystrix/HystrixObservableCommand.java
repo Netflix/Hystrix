@@ -246,10 +246,12 @@ public abstract class HystrixObservableCommand<R> extends HystrixExecutableBase<
      * @throws IllegalStateException
      *             if invoked more than once
      */
+    @Override
     public Observable<R> toObservable() {
         return toObservable(Schedulers.immediate());
     }
 
+    @Override
     protected ObservableCommand<R> toObservable(final Scheduler observeOn, final boolean performAsyncTimeout) {
         /* this is a stateful object so can only be used once */
         if (!started.compareAndSet(false, true)) {

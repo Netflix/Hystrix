@@ -291,6 +291,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R>, Hystrix
      * @throws IllegalStateException
      *             if invoked more than once
      */
+    @Override
     public Observable<R> toObservable() {
         if (observableCommand.properties.executionIsolationStrategy().get().equals(ExecutionIsolationStrategy.THREAD)) {
             return toObservable(Schedulers.computation());
@@ -301,26 +302,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R>, Hystrix
         }
     }
 
-    /**
-     * A lazy {@link Observable} that will execute the command when subscribed to.
-     * <p>
-     * See https://github.com/Netflix/RxJava/wiki for more information.
-     * 
-     * @param observeOn
-     *            The {@link Scheduler} to execute callbacks on.
-     * @return {@code Observable<R>} that lazily executes and calls back with the result of {@link #run()} execution or a fallback from {@link #getFallback()} if the command fails for any reason.
-     * @throws HystrixRuntimeException
-     *             if a fallback does not exist
-     *             <p>
-     *             <ul>
-     *             <li>via {@code Observer#onError} if a failure occurs</li>
-     *             <li>or immediately if the command can not be queued (such as short-circuited, thread-pool/semaphore rejected)</li>
-     *             </ul>
-     * @throws HystrixBadRequestException
-     *             via {@code Observer#onError} if invalid arguments or state were used representing a user failure, not a system failure
-     * @throws IllegalStateException
-     *             if invoked more than once
-     */
+    @Override
     public Observable<R> toObservable(Scheduler observeOn) {
         return toObservable(observeOn, true);
     }

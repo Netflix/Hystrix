@@ -291,6 +291,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
      * @throws IllegalStateException
      *             if invoked more than once
      */
+    @Override
     public R execute() {
         try {
             return queue().get();
@@ -321,6 +322,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
      * @throws IllegalStateException
      *             if invoked more than once
      */
+    @Override
     public Future<R> queue() {
         /*
          * --- Schedulers.immediate()
@@ -544,6 +546,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
      * @throws IllegalStateException
      *             if invoked more than once
      */
+    @Override
     public Observable<R> observe() {
         // us a ReplaySubject to buffer the eagerly subscribed-to Observable
         ReplaySubject<R> subject = ReplaySubject.create();
@@ -573,11 +576,10 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
      * @throws IllegalStateException
      *             if invoked more than once
      */
+    @Override
     public Observable<R> toObservable(Scheduler observeOn) {
         return toObservable(observeOn, true);
     }
-
-    public abstract Observable<R> toObservable();
 
     protected abstract ObservableCommand<R> toObservable(final Scheduler observeOn, boolean performAsyncTimeout);
 
