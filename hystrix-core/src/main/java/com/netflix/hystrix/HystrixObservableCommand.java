@@ -839,7 +839,7 @@ public abstract class HystrixObservableCommand<R> extends HystrixExecutableBase<
             /**
              * If this subscriber receives values it means the parent succeeded/completed
              */
-            return new Subscriber<R>(s) {
+            Subscriber<R> parent = new Subscriber<R>() {
 
                 @Override
                 public void onCompleted() {
@@ -873,6 +873,11 @@ public abstract class HystrixObservableCommand<R> extends HystrixExecutableBase<
                 }
 
             };
+            
+            // if s is unsubscribed we want to unsubscribe the parent
+            s.add(parent);
+            
+            return parent;
         }
 
     }

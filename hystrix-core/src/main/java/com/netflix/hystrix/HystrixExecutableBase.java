@@ -339,7 +339,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
          * is going to sit waiting on it.
          */
         final ObservableCommand<R> o = toObservable(Schedulers.immediate(), false);
-        final Future<R> f = o.toBlockingObservable().toFuture();
+        final Future<R> f = o.toBlocking().toFuture();
 
         /* special handling of error states that throw immediately */
         if (f.isDone()) {

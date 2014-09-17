@@ -47,14 +47,14 @@ public class HystrixConcurrencyStrategyTest {
 
             @Override
             public String call(String s) {
-                System.out.println("Map => Commands: " + HystrixRequestLog.getCurrentRequest().getExecutedCommands());
+                System.out.println("Map => Commands: " + HystrixRequestLog.getCurrentRequest().getAllExecutedCommands());
                 return s;
             }
-        }).toBlockingObservable().forEach(new Action1<String>() {
+        }).toBlocking().forEach(new Action1<String>() {
 
             @Override
             public void call(String s) {
-                System.out.println("Result [" + s + "] => Commands: " + HystrixRequestLog.getCurrentRequest().getExecutedCommands());
+                System.out.println("Result [" + s + "] => Commands: " + HystrixRequestLog.getCurrentRequest().getAllExecutedCommands());
             }
         });
     }
@@ -84,7 +84,7 @@ public class HystrixConcurrencyStrategyTest {
                     }
                 })
                 .materialize()
-                .toBlockingObservable().single();
+                .toBlocking().single();
 
         System.out.println("initialized = " + HystrixRequestContext.isCurrentThreadInitialized());
         System.out.println("initialized inside onError = " + isInitialized.get());

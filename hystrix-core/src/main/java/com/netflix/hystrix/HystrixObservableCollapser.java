@@ -440,7 +440,7 @@ public abstract class HystrixObservableCollapser<K, BatchReturnType, ResponseTyp
      */
     public Future<ResponseType> queue() {
         final Observable<ResponseType> o = toObservable();
-        return o.toBlockingObservable().toFuture();
+        return o.toBlocking().toFuture();
     }
 
     /**

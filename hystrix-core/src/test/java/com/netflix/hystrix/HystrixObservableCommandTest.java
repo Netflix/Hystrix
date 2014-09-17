@@ -96,7 +96,7 @@ public class HystrixObservableCommandTest {
                         sub.onError(e);
                     }
                 }
-            }).subscribeOn(Schedulers.computation()).toBlockingObservable().toFuture());
+            }).subscribeOn(Schedulers.computation()).toBlocking().toFuture());
         }
         for (Future<Boolean> future : futures) {
             try {
@@ -571,7 +571,7 @@ public class HystrixObservableCommandTest {
             assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
             assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
 
-            assertEquals(true, command.observe().toBlockingObservable().single());
+            assertEquals(true, command.observe().toBlocking().single());
             assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
             assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
             assertEquals(1, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
@@ -746,18 +746,6 @@ public class HystrixObservableCommandTest {
             @Override
             protected Observable<Boolean> run() {
                 commandThread.set(Thread.currentThread());
-
-                Func1<Integer, List<Boolean>> f1 = new Func1<Integer, List<Boolean>>() {
-
-                    @Override
-                    public List<Boolean> call(Integer t1) {
-
-                        return null;
-                    }
-
-                };
-                Observable.from(f1);
-
                 return Observable.just(true);
             }
         };
@@ -1595,7 +1583,7 @@ public class HystrixObservableCommandTest {
     public void testObservedExecutionTimeoutWithNoFallback() {
         TestHystrixCommand<Boolean> command = new TestCommandWithTimeout(50, TestCommandWithTimeout.FALLBACK_NOT_IMPLEMENTED);
         try {
-            command.observe().toBlockingObservable().single();
+            command.observe().toBlocking().single();
             fail("we shouldn't get here");
         } catch (Exception e) {
             e.printStackTrace();
@@ -1644,7 +1632,7 @@ public class HystrixObservableCommandTest {
     public void testObservedExecutionTimeoutWithFallback() {
         TestHystrixCommand<Boolean> command = new TestCommandWithTimeout(50, TestCommandWithTimeout.FALLBACK_SUCCESS);
         try {
-            assertEquals(false, command.observe().toBlockingObservable().single());
+            assertEquals(false, command.observe().toBlocking().single());
         } catch (Exception e) {
             e.printStackTrace();
             fail("We should have received a response from the fallback.");
@@ -1680,7 +1668,7 @@ public class HystrixObservableCommandTest {
     public void testObservedExecutionTimeoutFallbackFailure() {
         TestHystrixCommand<Boolean> command = new TestCommandWithTimeout(50, TestCommandWithTimeout.FALLBACK_FAILURE);
         try {
-            command.observe().toBlockingObservable().single();
+            command.observe().toBlocking().single();
             fail("we shouldn't get here");
         } catch (Exception e) {
             if (e instanceof HystrixRuntimeException) {
@@ -4194,9 +4182,9 @@ public class HystrixObservableCommandTest {
             @Override
             protected Observable<String> getFallback() {
                 if (isResponseTimedOut()) {
-                    return Observable.from("timed-out");
+                    return Observable.just("timed-out");
                 } else {
-                    return Observable.from("abc");
+                    return Observable.just("abc");
                 }
             }
         };
@@ -4241,14 +4229,14 @@ public class HystrixObservableCommandTest {
             @Override
             protected Observable<String> getFallback() {
                 if (isResponseTimedOut()) {
-                    return Observable.from("timed-out");
+                    return Observable.just("timed-out");
                 } else {
-                    return Observable.from("abc");
+                    return Observable.just("abc");
                 }
             }
         };
 
-        String value = command.observe().toBlockingObservable().last();
+        String value = command.observe().toBlocking().last();
         assertTrue(command.isResponseTimedOut());
         assertEquals("expected fallback value", "timed-out", value);
 
@@ -4286,14 +4274,14 @@ public class HystrixObservableCommandTest {
             @Override
             protected Observable<String> getFallback() {
                 if (isResponseTimedOut()) {
-                    return Observable.from("timed-out");
+                    return Observable.just("timed-out");
                 } else {
-                    return Observable.from("abc");
+                    return Observable.just("abc");
                 }
             }
         };
 
-        String value = command.observe().toBlockingObservable().last();
+        String value = command.observe().toBlocking().last();
         assertTrue(command.isResponseTimedOut());
         assertEquals("expected fallback value", "timed-out", value);
 
@@ -4448,7 +4436,7 @@ public class HystrixObservableCommandTest {
                             return b;
                         }
 
-                    }).toBlockingObservable().single());
+                    }).toBlocking().single());
                 } catch (Exception e) {
                     e.printStackTrace();
                     exceptionReceived.set(true);
@@ -4547,7 +4535,7 @@ public class HystrixObservableCommandTest {
                             }
                         }
 
-                    }).toBlockingObservable().single());
+                    }).toBlocking().single());
                 } catch (Exception e) {
                     e.printStackTrace();
                     exceptionReceived.set(true);
@@ -6350,7 +6338,7 @@ public class HystrixObservableCommandTest {
 
         @Override
         protected Observable<Boolean> getFallback() {
-            return Observable.from(false).subscribeOn(Schedulers.computation());
+            return Observable.just(false).subscribeOn(Schedulers.computation());
         }
     }
 
@@ -6396,7 +6384,7 @@ public class HystrixObservableCommandTest {
         protected Observable<String> run() {
             executed = true;
             System.out.println("successfully executed");
-            return Observable.from(value).subscribeOn(Schedulers.computation());
+            return Observable.just(value).subscribeOn(Schedulers.computation());
         }
 
         public boolean isCommandRunningInThread() {
@@ -6432,7 +6420,7 @@ public class HystrixObservableCommandTest {
         protected Observable<String> run() {
             executed = true;
             System.out.println("successfully executed");
-            return Observable.from(value).subscribeOn(Schedulers.computation());
+            return Observable.just(value).subscribeOn(Schedulers.computation());
         }
 
         public boolean isCommandRunningInThread() {
@@ -6468,7 +6456,7 @@ public class HystrixObservableCommandTest {
         @Override
         protected Observable<String> run() {
             executed = true;
-            return Observable.from(value).delay(duration, TimeUnit.MILLISECONDS).subscribeOn(Schedulers.computation())
+            return Observable.just(value).delay(duration, TimeUnit.MILLISECONDS).subscribeOn(Schedulers.computation())
                     .doOnNext(new Action1<String>() {
 
                         @Override
@@ -6497,7 +6485,7 @@ public class HystrixObservableCommandTest {
         @Override
         protected Observable<Boolean> run() {
             System.out.println("successfully executed");
-            return Observable.from(true).subscribeOn(Schedulers.computation());
+            return Observable.just(true).subscribeOn(Schedulers.computation());
         }
 
     }
@@ -6554,7 +6542,7 @@ public class HystrixObservableCommandTest {
         @Override
         protected Observable<Boolean> getFallback() {
             if (fallbackBehavior == FALLBACK_SUCCESS) {
-                return Observable.from(false);
+                return Observable.just(false);
             } else if (fallbackBehavior == FALLBACK_FAILURE) {
                 // TODO duplicate with error inside async Observable
                 throw new RuntimeException("failed on fallback");
@@ -6742,7 +6730,7 @@ public class HystrixObservableCommandTest {
             super(testPropsBuilder().setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics)
                     .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionIsolationStrategy(ExecutionIsolationStrategy.SEMAPHORE).withExecutionIsolationSemaphoreMaxConcurrentRequests(executionSemaphoreCount)));
             this.executionSleep = executionSleep;
-            this.fallback = Observable.from(fallback);
+            this.fallback = Observable.just(fallback);
         }
 
         @Override
@@ -6799,7 +6787,7 @@ public class HystrixObservableCommandTest {
 
         @Override
         protected Observable<Boolean> getFallback() {
-            return Observable.from(false).subscribeOn(Schedulers.computation());
+            return Observable.just(false).subscribeOn(Schedulers.computation());
         }
 
         @Override
@@ -6891,7 +6879,7 @@ public class HystrixObservableCommandTest {
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
-            return Observable.from(true);
+            return Observable.just(true);
         }
 
         @Override
@@ -6915,7 +6903,7 @@ public class HystrixObservableCommandTest {
 
         @Override
         protected Observable<Boolean> getFallback() {
-            return Observable.from(false).subscribeOn(Schedulers.computation());
+            return Observable.just(false).subscribeOn(Schedulers.computation());
         }
 
         @Override

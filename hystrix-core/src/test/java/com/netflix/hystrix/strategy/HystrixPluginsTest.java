@@ -196,7 +196,7 @@ public class HystrixPluginsTest {
                     }
                 })
                 .materialize()
-                .toBlockingObservable().single();
+                .toBlocking().single();
 
         context.shutdown();
         Hystrix.reset();

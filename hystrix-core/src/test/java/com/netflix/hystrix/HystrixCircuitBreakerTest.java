@@ -574,7 +574,7 @@ public class HystrixCircuitBreakerTest {
     public class MyHystrixCommandExecutionHook extends HystrixCommandExecutionHook {
 
         @Override
-        public <T> T onComplete(final HystrixCommand<T> command, final T response) {
+        public <T> T onComplete(final HystrixExecutable<T> command, final T response) {
 
             logHC(command, response);
 
@@ -583,16 +583,17 @@ public class HystrixCircuitBreakerTest {
 
         private int counter = 0;
 
-        private <T> void logHC(HystrixCommand<T> command, T response) {
+        private <T> void logHC(HystrixExecutable<T> command, T response) {
 
-            //if ((counter++ % 20) == 0) {
-            HystrixCommandMetrics metrics = command.getMetrics();
+            if(command instanceof HystrixExecutableInfo) {
+                HystrixExecutableInfo<T> commandInfo = (HystrixExecutableInfo<T>)command;
+            HystrixCommandMetrics metrics = commandInfo.getMetrics();
             System.out.println("cb/error-count/%/total: "
-                    + command.isCircuitBreakerOpen() + " "
+                    + commandInfo.isCircuitBreakerOpen() + " "
                     + metrics.getHealthCounts().getErrorCount() + " "
                     + metrics.getHealthCounts().getErrorPercentage() + " "
-                    + metrics.getHealthCounts().getTotalRequests() + "  => " + response + "  " + command.getExecutionEvents());
-            //}
+                    + metrics.getHealthCounts().getTotalRequests() + "  => " + response + "  " + commandInfo.getExecutionEvents());
+            }
         }
     }
 }

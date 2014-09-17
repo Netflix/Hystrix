@@ -106,7 +106,7 @@ public class HystrixCommandTest {
 
             assertEquals(0, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
-            assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+            assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -185,7 +185,7 @@ public class HystrixCommandTest {
 
         assertEquals(100, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     /**
@@ -224,7 +224,7 @@ public class HystrixCommandTest {
 
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     /**
@@ -259,7 +259,7 @@ public class HystrixCommandTest {
 
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     /**
@@ -295,7 +295,7 @@ public class HystrixCommandTest {
 
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     /**
@@ -329,7 +329,7 @@ public class HystrixCommandTest {
 
         assertEquals(0, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     /**
@@ -371,7 +371,7 @@ public class HystrixCommandTest {
 
         assertEquals(100, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     /**
@@ -411,7 +411,7 @@ public class HystrixCommandTest {
 
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     /**
@@ -445,7 +445,7 @@ public class HystrixCommandTest {
 
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     /**
@@ -484,7 +484,7 @@ public class HystrixCommandTest {
 
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     /**
@@ -497,7 +497,7 @@ public class HystrixCommandTest {
             assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
             assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
             assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
-            assertEquals(true, command.observe().toBlockingObservable().single());
+            assertEquals(true, command.observe().toBlocking().single());
             assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
             assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
             assertEquals(1, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
@@ -518,7 +518,7 @@ public class HystrixCommandTest {
 
             assertEquals(0, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
-            assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+            assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -749,7 +749,7 @@ public class HystrixCommandTest {
 
         assertEquals(100, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(4, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(4, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     /**
@@ -805,7 +805,7 @@ public class HystrixCommandTest {
 
             assertEquals(100, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
 
-            assertEquals(4, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+            assertEquals(4, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
         } catch (Exception e) {
             e.printStackTrace();
             fail("We should have received fallbacks.");
@@ -876,7 +876,7 @@ public class HystrixCommandTest {
 
         assertEquals(100, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(4, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(4, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     /**
@@ -953,7 +953,7 @@ public class HystrixCommandTest {
 
         assertEquals(100, circuitBreaker_two.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(4, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(4, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     /**
@@ -984,7 +984,7 @@ public class HystrixCommandTest {
 
         assertEquals(0, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     /**
@@ -1030,7 +1030,7 @@ public class HystrixCommandTest {
 
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     /**
@@ -1064,7 +1064,7 @@ public class HystrixCommandTest {
 
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     /**
@@ -1104,7 +1104,7 @@ public class HystrixCommandTest {
 
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     /**
@@ -1149,7 +1149,7 @@ public class HystrixCommandTest {
 
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     /**
@@ -1199,7 +1199,7 @@ public class HystrixCommandTest {
 
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     /**
@@ -1245,7 +1245,7 @@ public class HystrixCommandTest {
 
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     /**
@@ -1278,7 +1278,7 @@ public class HystrixCommandTest {
 
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     /**
@@ -1320,7 +1320,7 @@ public class HystrixCommandTest {
 
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     /**
@@ -1333,7 +1333,7 @@ public class HystrixCommandTest {
     public void testObservedExecutionTimeoutWithNoFallback() {
         TestHystrixCommand<Boolean> command = new TestCommandWithTimeout(50, TestCommandWithTimeout.FALLBACK_NOT_IMPLEMENTED);
         try {
-            command.observe().toBlockingObservable().single();
+            command.observe().toBlocking().single();
             fail("we shouldn't get here");
         } catch (Exception e) {
             e.printStackTrace();
@@ -1366,7 +1366,7 @@ public class HystrixCommandTest {
 
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     /**
@@ -1379,7 +1379,7 @@ public class HystrixCommandTest {
     public void testObservedExecutionTimeoutWithFallback() {
         TestHystrixCommand<Boolean> command = new TestCommandWithTimeout(50, TestCommandWithTimeout.FALLBACK_SUCCESS);
         try {
-            assertEquals(false, command.observe().toBlockingObservable().single());
+            assertEquals(false, command.observe().toBlocking().single());
         } catch (Exception e) {
             e.printStackTrace();
             fail("We should have received a response from the fallback.");
@@ -1399,7 +1399,7 @@ public class HystrixCommandTest {
 
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     /**
@@ -1412,7 +1412,7 @@ public class HystrixCommandTest {
     public void testObservedExecutionTimeoutFallbackFailure() {
         TestHystrixCommand<Boolean> command = new TestCommandWithTimeout(50, TestCommandWithTimeout.FALLBACK_FAILURE);
         try {
-            command.observe().toBlockingObservable().single();
+            command.observe().toBlocking().single();
             fail("we shouldn't get here");
         } catch (Exception e) {
             if (e instanceof HystrixRuntimeException) {
@@ -1441,7 +1441,7 @@ public class HystrixCommandTest {
 
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     /**
@@ -1488,7 +1488,7 @@ public class HystrixCommandTest {
 
         assertEquals(100, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(2, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(2, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     /**
@@ -1568,7 +1568,7 @@ public class HystrixCommandTest {
 
         assertEquals(50, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(2, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(2, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     /**
@@ -1627,7 +1627,7 @@ public class HystrixCommandTest {
 
         assertEquals(100, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(2, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(2, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     /**
@@ -1687,7 +1687,7 @@ public class HystrixCommandTest {
 
         assertEquals(100, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(2, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(2, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     /**
@@ -1759,7 +1759,7 @@ public class HystrixCommandTest {
 
         assertEquals(100, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     /**
@@ -1837,7 +1837,7 @@ public class HystrixCommandTest {
 
         assertEquals(100, s2.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(2, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(2, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     @Test
@@ -1897,7 +1897,7 @@ public class HystrixCommandTest {
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
-        assertEquals(3, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(3, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     @Test
@@ -1965,7 +1965,7 @@ public class HystrixCommandTest {
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
-        assertEquals(3, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(3, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     @Test
@@ -2042,7 +2042,7 @@ public class HystrixCommandTest {
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
-        assertEquals(3, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(3, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     @Test
@@ -2105,7 +2105,7 @@ public class HystrixCommandTest {
 
         System.out.println("**** DONE");
 
-        assertEquals(2, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(2, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     /**
@@ -2317,7 +2317,7 @@ public class HystrixCommandTest {
 
         assertEquals(0, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(2, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(2, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     /**
@@ -2369,7 +2369,7 @@ public class HystrixCommandTest {
 
         assertEquals(0, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(2, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(2, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     /**
@@ -2430,7 +2430,7 @@ public class HystrixCommandTest {
 
         assertEquals(0, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(3, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(3, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     /**
@@ -2497,7 +2497,7 @@ public class HystrixCommandTest {
 
         assertEquals(0, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(4, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(4, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
 
         System.out.println("HystrixRequestLog: " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
     }
@@ -2558,7 +2558,7 @@ public class HystrixCommandTest {
 
         assertEquals(0, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(3, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(3, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     /**
@@ -2621,7 +2621,7 @@ public class HystrixCommandTest {
 
         assertEquals(0, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(3, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(3, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     /**
@@ -2680,7 +2680,7 @@ public class HystrixCommandTest {
 
         assertEquals(0, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(3, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(3, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     /**
@@ -2735,7 +2735,7 @@ public class HystrixCommandTest {
 
         assertEquals(0, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(3, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(3, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     /**
@@ -2790,7 +2790,7 @@ public class HystrixCommandTest {
 
         assertEquals(0, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(3, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(3, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     @Test
@@ -2855,7 +2855,7 @@ public class HystrixCommandTest {
 
         assertEquals(100, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(4, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(4, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     @Test
@@ -2893,9 +2893,9 @@ public class HystrixCommandTest {
 
         assertEquals(100, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(5, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(5, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
 
-        HystrixCommand<?>[] executeCommands = HystrixRequestLog.getCurrentRequest().getExecutedCommands().toArray(new HystrixCommand<?>[] {});
+        HystrixExecutableInfo<?>[] executeCommands = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().toArray(new HystrixExecutableInfo<?>[] {});
 
         System.out.println(":executeCommands[0].getExecutionEvents()" + executeCommands[0].getExecutionEvents());
         assertEquals(2, executeCommands[0].getExecutionEvents().size());
@@ -2976,7 +2976,7 @@ public class HystrixCommandTest {
 
         assertEquals(100, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(4, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(4, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     @Test
@@ -3045,7 +3045,7 @@ public class HystrixCommandTest {
 
         assertEquals(100, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(4, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(4, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     /**
@@ -4200,7 +4200,7 @@ public class HystrixCommandTest {
 
         assertEquals(100, commandDisabled.builder.metrics.getHealthCounts().getErrorPercentage());
 
-        assertEquals(2, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(2, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     @Test
@@ -5201,7 +5201,7 @@ public class HystrixCommandTest {
         AtomicInteger startExecute = new AtomicInteger();
 
         @Override
-        public <T> void onStart(HystrixCommand<T> commandInstance) {
+        public <T> void onStart(HystrixExecutable<T> commandInstance) {
             super.onStart(commandInstance);
             startExecute.incrementAndGet();
         }
@@ -5209,7 +5209,7 @@ public class HystrixCommandTest {
         Object endExecuteSuccessResponse = null;
 
         @Override
-        public <T> T onComplete(HystrixCommand<T> commandInstance, T response) {
+        public <T> T onComplete(HystrixExecutable<T> commandInstance, T response) {
             endExecuteSuccessResponse = response;
             return super.onComplete(commandInstance, response);
         }
@@ -5218,7 +5218,7 @@ public class HystrixCommandTest {
         FailureType endExecuteFailureType = null;
 
         @Override
-        public <T> Exception onError(HystrixCommand<T> commandInstance, FailureType failureType, Exception e) {
+        public <T> Exception onError(HystrixExecutable<T> commandInstance, FailureType failureType, Exception e) {
             endExecuteFailureException = e;
             endExecuteFailureType = failureType;
             return super.onError(commandInstance, failureType, e);
@@ -5227,7 +5227,7 @@ public class HystrixCommandTest {
         AtomicInteger startRun = new AtomicInteger();
 
         @Override
-        public <T> void onRunStart(HystrixCommand<T> commandInstance) {
+        public <T> void onRunStart(HystrixExecutable<T> commandInstance) {
             super.onRunStart(commandInstance);
             startRun.incrementAndGet();
         }
@@ -5235,7 +5235,7 @@ public class HystrixCommandTest {
         Object runSuccessResponse = null;
 
         @Override
-        public <T> T onRunSuccess(HystrixCommand<T> commandInstance, T response) {
+        public <T> T onRunSuccess(HystrixExecutable<T> commandInstance, T response) {
             runSuccessResponse = response;
             return super.onRunSuccess(commandInstance, response);
         }
@@ -5243,7 +5243,7 @@ public class HystrixCommandTest {
         Exception runFailureException = null;
 
         @Override
-        public <T> Exception onRunError(HystrixCommand<T> commandInstance, Exception e) {
+        public <T> Exception onRunError(HystrixExecutable<T> commandInstance, Exception e) {
             runFailureException = e;
             return super.onRunError(commandInstance, e);
         }
@@ -5251,7 +5251,7 @@ public class HystrixCommandTest {
         AtomicInteger startFallback = new AtomicInteger();
 
         @Override
-        public <T> void onFallbackStart(HystrixCommand<T> commandInstance) {
+        public <T> void onFallbackStart(HystrixExecutable<T> commandInstance) {
             super.onFallbackStart(commandInstance);
             startFallback.incrementAndGet();
         }
@@ -5259,7 +5259,7 @@ public class HystrixCommandTest {
         Object fallbackSuccessResponse = null;
 
         @Override
-        public <T> T onFallbackSuccess(HystrixCommand<T> commandInstance, T response) {
+        public <T> T onFallbackSuccess(HystrixExecutable<T> commandInstance, T response) {
             fallbackSuccessResponse = response;
             return super.onFallbackSuccess(commandInstance, response);
         }
@@ -5267,7 +5267,7 @@ public class HystrixCommandTest {
         Exception fallbackFailureException = null;
 
         @Override
-        public <T> Exception onFallbackError(HystrixCommand<T> commandInstance, Exception e) {
+        public <T> Exception onFallbackError(HystrixExecutable<T> commandInstance, Exception e) {
             fallbackFailureException = e;
             return super.onFallbackError(commandInstance, e);
         }
@@ -5275,7 +5275,7 @@ public class HystrixCommandTest {
         AtomicInteger threadStart = new AtomicInteger();
 
         @Override
-        public <T> void onThreadStart(HystrixCommand<T> commandInstance) {
+        public <T> void onThreadStart(HystrixExecutable<T> commandInstance) {
             super.onThreadStart(commandInstance);
             threadStart.incrementAndGet();
         }
@@ -5283,7 +5283,7 @@ public class HystrixCommandTest {
         AtomicInteger threadComplete = new AtomicInteger();
 
         @Override
-        public <T> void onThreadComplete(HystrixCommand<T> commandInstance) {
+        public <T> void onThreadComplete(HystrixExecutable<T> commandInstance) {
             super.onThreadComplete(commandInstance);
             threadComplete.incrementAndGet();
         }
