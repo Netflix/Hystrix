@@ -137,7 +137,7 @@ public class HystrixRequestLogTest {
                 new TestCommand("A", false, true).execute();
             }
 
-            assertEquals(HystrixRequestLog.MAX_STORAGE, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+            assertEquals(HystrixRequestLog.MAX_STORAGE, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
         } finally {
             context.shutdown();
         }
