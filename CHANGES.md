@@ -1,5 +1,12 @@
 # Hystrix Releases #
 
+### Version 1.4.0 Release Candidate 5 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.0-RC5%22)) ###
+
+_NOTE: This code is believed to be production worthy but is still a "Release Candidate" until [these possible functional or design issues are resolved](https://github.com/Netflix/Hystrix/issues?q=is%3Aopen+is%3Aissue+milestone%3A1.4)._
+
+* [Pull 314](https://github.com/Netflix/Hystrix/pull/314) RxJava 0.20 and Remove Deprecated Usage
+* [Pull 307](https://github.com/Netflix/Hystrix/pull/307) Dashboard: Avoid NPE when 'origin' parameter not present
+
 ### Version 1.3.18 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.3.18%22)) ###
 
 * [Pull 305](https://github.com/Netflix/Hystrix/pull/305) Removing deprecated RxJava usage
