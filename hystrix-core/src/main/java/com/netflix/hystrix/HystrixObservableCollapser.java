@@ -15,21 +15,29 @@
  */
 package com.netflix.hystrix;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
-import org.slf4j.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import rx.*;
 import rx.Observable;
-import rx.functions.*;
+import rx.Scheduler;
+import rx.functions.Action0;
+import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 import rx.subjects.ReplaySubject;
 
 import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
 import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
-import com.netflix.hystrix.collapser.*;
-import com.netflix.hystrix.exception.HystrixRuntimeException;
+import com.netflix.hystrix.collapser.CollapserTimer;
+import com.netflix.hystrix.collapser.HystrixCollapserBridge;
+import com.netflix.hystrix.collapser.RealCollapserTimer;
+import com.netflix.hystrix.collapser.RequestCollapser;
+import com.netflix.hystrix.collapser.RequestCollapserFactory;
 import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
@@ -55,7 +63,7 @@ import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
  * @param <RequestArgumentType>
  *            The type of the request argument. If multiple arguments are needed, wrap them in another object or a Tuple.
  */
-public abstract class HystrixObservableCollapser<K, BatchReturnType, ResponseType, RequestArgumentType> implements HystrixExecutable<ResponseType> {
+public abstract class HystrixObservableCollapser<K, BatchReturnType, ResponseType, RequestArgumentType> implements HystrixObservable<ResponseType> {
 
     static final Logger logger = LoggerFactory.getLogger(HystrixObservableCollapser.class);
 
@@ -395,52 +403,6 @@ public abstract class HystrixObservableCollapser<K, BatchReturnType, ResponseTyp
             }
         }
         return response;
-    }
-
-    /**
-     * Used for synchronous execution.
-     * <p>
-     * If {@link Scope#REQUEST} is being used then synchronous execution will only result in collapsing if other threads are running within the same scope.
-     * 
-     * @return ResponseType
-     *         Result of {@link HystrixCommand}{@code <BatchReturnType>} execution after passing through {@link #mapResponseToRequests} to transform the {@code <BatchReturnType>} into
-     *         {@code <ResponseType>}
-     * @throws HystrixRuntimeException
-     *             if an error occurs and a fallback cannot be retrieved
-     */
-    public ResponseType execute() {
-        try {
-            return queue().get();
-        } catch (Throwable e) {
-            if (e instanceof HystrixRuntimeException) {
-                throw (HystrixRuntimeException) e;
-            }
-            // if we have an exception we know about we'll throw it directly without the threading wrapper exception
-            if (e.getCause() instanceof HystrixRuntimeException) {
-                throw (HystrixRuntimeException) e.getCause();
-            }
-            // we don't know what kind of exception this is so create a generic message and throw a new HystrixRuntimeException
-            String message = getClass().getSimpleName() + " HystrixCollapser failed while executing.";
-            logger.debug(message, e); // debug only since we're throwing the exception and someone higher will do something with it
-            //TODO should this be made a HystrixRuntimeException?
-            throw new RuntimeException(message, e);
-        }
-    }
-
-    /**
-     * Used for asynchronous execution.
-     * <p>
-     * This will queue up the command and return a Future to get the result once it completes.
-     * 
-     * @return ResponseType
-     *         Result of {@link HystrixCommand}{@code <BatchReturnType>} execution after passing through {@link #mapResponseToRequests} to transform the {@code <BatchReturnType>} into
-     *         {@code <ResponseType>}
-     * @throws HystrixRuntimeException
-     *             within an <code>ExecutionException.getCause()</code> (thrown by {@link Future#get}) if an error occurs and a fallback cannot be retrieved
-     */
-    public Future<ResponseType> queue() {
-        final Observable<ResponseType> o = toObservable();
-        return o.toBlocking().toFuture();
     }
 
     /**

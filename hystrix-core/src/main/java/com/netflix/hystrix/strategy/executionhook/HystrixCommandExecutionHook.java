@@ -17,7 +17,7 @@ package com.netflix.hystrix.strategy.executionhook;
 
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
-import com.netflix.hystrix.HystrixExecutable;
+import com.netflix.hystrix.HystrixInvokable;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
 import com.netflix.hystrix.exception.HystrixRuntimeException.FailureType;
 import com.netflix.hystrix.strategy.HystrixPlugins;
@@ -52,7 +52,7 @@ public abstract class HystrixCommandExecutionHook {
         // do nothing by default
     }
 
-    public <T> void onRunStart(HystrixExecutable<T> commandInstance) {
+    public <T> void onRunStart(HystrixInvokable<T> commandInstance) {
         // do nothing by default
     }
 
@@ -73,7 +73,7 @@ public abstract class HystrixCommandExecutionHook {
         return response;
     }
 
-    public <T> T onRunSuccess(HystrixExecutable<T> commandInstance, T response) {
+    public <T> T onRunSuccess(HystrixInvokable<T> commandInstance, T response) {
         // pass-thru by default
         return response;
     }
@@ -95,7 +95,7 @@ public abstract class HystrixCommandExecutionHook {
         return e;
     }
 
-    public <T> Exception onRunError(HystrixExecutable<T> commandInstance, Exception e) {
+    public <T> Exception onRunError(HystrixInvokable<T> commandInstance, Exception e) {
         // pass-thru by default
         return e;
     }
@@ -113,7 +113,7 @@ public abstract class HystrixCommandExecutionHook {
         // do nothing by default
     }
 
-    public <T> void onFallbackStart(HystrixExecutable<T> commandInstance) {
+    public <T> void onFallbackStart(HystrixInvokable<T> commandInstance) {
         // do nothing by default
     }
 
@@ -134,7 +134,7 @@ public abstract class HystrixCommandExecutionHook {
         return fallbackResponse;
     }
 
-    public <T> T onFallbackSuccess(HystrixExecutable<T> commandInstance, T fallbackResponse) {
+    public <T> T onFallbackSuccess(HystrixInvokable<T> commandInstance, T fallbackResponse) {
         // pass-thru by default
         return fallbackResponse;
     }
@@ -156,7 +156,7 @@ public abstract class HystrixCommandExecutionHook {
         return e;
     }
 
-    public <T> Exception onFallbackError(HystrixExecutable<T> commandInstance, Exception e) {
+    public <T> Exception onFallbackError(HystrixInvokable<T> commandInstance, Exception e) {
         // pass-thru by default
         return e;
     }
@@ -174,7 +174,7 @@ public abstract class HystrixCommandExecutionHook {
         // do nothing by default
     }
 
-    public <T> void onStart(HystrixExecutable<T> commandInstance) {
+    public <T> void onStart(HystrixInvokable<T> commandInstance) {
         // do nothing by default
     }
 
@@ -197,7 +197,7 @@ public abstract class HystrixCommandExecutionHook {
         return response;
     }
 
-    public <T> T onComplete(HystrixExecutable<T> commandInstance, T response) {
+    public <T> T onComplete(HystrixInvokable<T> commandInstance, T response) {
         // pass-thru by default
         return response;
     }
@@ -223,7 +223,7 @@ public abstract class HystrixCommandExecutionHook {
         return e;
     }
 
-    public <T> Exception onError(HystrixExecutable<T> commandInstance, FailureType failureType, Exception e) {
+    public <T> Exception onError(HystrixInvokable<T> commandInstance, FailureType failureType, Exception e) {
         // pass-thru by default
         return e;
     }
@@ -241,7 +241,7 @@ public abstract class HystrixCommandExecutionHook {
         // do nothing by default
     }
 
-    public <T> void onThreadStart(HystrixExecutable<T> commandInstance) {
+    public <T> void onThreadStart(HystrixInvokable<T> commandInstance) {
         // do nothing by default
     }
 
@@ -258,7 +258,7 @@ public abstract class HystrixCommandExecutionHook {
         // do nothing by default
     }
 
-    public <T> void onThreadComplete(HystrixExecutable<T> commandInstance) {
+    public <T> void onThreadComplete(HystrixInvokable<T> commandInstance) {
         // do nothing by default
     }
 

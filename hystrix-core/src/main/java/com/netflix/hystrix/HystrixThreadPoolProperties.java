@@ -15,7 +15,7 @@
  */
 package com.netflix.hystrix;
 
-import static com.netflix.hystrix.strategy.properties.HystrixProperty.Factory.*;
+import static com.netflix.hystrix.strategy.properties.HystrixProperty.Factory.asProperty;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;

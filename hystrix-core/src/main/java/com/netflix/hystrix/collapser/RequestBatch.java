@@ -10,8 +10,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import rx.Observable;
-import rx.Observer;
-import rx.functions.*;
+import rx.functions.Action0;
+import rx.functions.Action1;
 
 import com.netflix.hystrix.HystrixCollapser;
 import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;

@@ -23,8 +23,8 @@ import java.util.concurrent.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import rx.*;
-import rx.Observable.OnSubscribe;
+import rx.Observable;
+import rx.Scheduler;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 import rx.subjects.ReplaySubject;
@@ -59,7 +59,7 @@ import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
  * @param <RequestArgumentType>
  *            The type of the request argument. If multiple arguments are needed, wrap them in another object or a Tuple.
  */
-public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArgumentType> implements HystrixExecutable<ResponseType> {
+public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArgumentType> implements HystrixExecutable<ResponseType>, HystrixObservable<ResponseType> {
 
     static final Logger logger = LoggerFactory.getLogger(HystrixCollapser.class);
 

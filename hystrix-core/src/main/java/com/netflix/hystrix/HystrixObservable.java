@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 Netflix, Inc.
+ * Copyright 2014 Netflix, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
  */
 package com.netflix.hystrix;
 
-import java.util.concurrent.Future;
-
 import rx.Observable;
 import rx.schedulers.Schedulers;
 
@@ -25,46 +23,18 @@ import com.netflix.hystrix.exception.HystrixBadRequestException;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
 
 /**
- * Common interface for executables ({@link HystrixCommand} and {@link HystrixCollapser}) so client code can treat them the same and combine in typed collections if desired.
+ * Common interface for executables that implement the Observable methods {@link #observe()} and {@link #toObservable()} so client code can treat them the same and combine in typed collections if desired.
  * 
  * @param <R>
  */
-public interface HystrixExecutable<R> extends HystrixInvokable<R> {
-
-    /**
-     * Used for synchronous execution of command.
-     * 
-     * @return R
-     *         Result of {@link HystrixCommand} execution
-     * @throws HystrixRuntimeException
-     *             if an error occurs and a fallback cannot be retrieved
-     * @throws HystrixBadRequestException
-     *             if the {@link HystrixCommand} instance considers request arguments to be invalid and needs to throw an error that does not represent a system failure
-     */
-    public R execute();
-
-    /**
-     * Used for asynchronous execution of command.
-     * <p>
-     * This will queue up the command on the thread pool and return an {@link Future} to get the result once it completes.
-     * <p>
-     * NOTE: If configured to not run in a separate thread, this will have the same effect as {@link #execute()} and will block.
-     * <p>
-     * We don't throw an exception in that case but just flip to synchronous execution so code doesn't need to change in order to switch a circuit from running a separate thread to the calling thread.
-     * 
-     * @return {@code Future<R>} Result of {@link HystrixCommand} execution
-     * @throws HystrixRuntimeException
-     *             if an error occurs and a fallback cannot be retrieved
-     * @throws HystrixBadRequestException
-     *             if the {@link HystrixCommand} instance considers request arguments to be invalid and needs to throw an error that does not represent a system failure
-     */
-    public Future<R> queue();
+public interface HystrixObservable<R> extends HystrixInvokable<R> {
 
     /**
      * Used for asynchronous execution of command with a callback by subscribing to the {@link Observable}.
      * <p>
      * This eagerly starts execution of the command the same as {@link #queue()} and {@link #execute()}.
-     * A lazy {@link Observable} can be obtained from {@link HystrixCommand#toObservable()} or {@link HystrixCollapser#toObservable()}.
+     * <p>
+     * A lazy {@link Observable} can be obtained from {@link #toObservable()}.
      * <p>
      * <b>Callback Scheduling</b>
      * <p>
@@ -74,7 +44,7 @@ public interface HystrixExecutable<R> extends HystrixInvokable<R> {
      * </ul>
      * Use {@link HystrixCommand#toObservable(rx.Scheduler)} or {@link HystrixCollapser#toObservable(rx.Scheduler)} to schedule the callback differently.
      * <p>
-     * See https://github.com/Netflix/RxJava/wiki for more information.
+     * See https://github.com/ReactiveX/RxJava/wiki for more information.
      * 
      * @return {@code Observable<R>} that executes and calls back with the result of {@link #run()} execution or a fallback from {@link #getFallback()} if the command fails for any reason.
      * @throws HystrixRuntimeException
@@ -90,5 +60,37 @@ public interface HystrixExecutable<R> extends HystrixInvokable<R> {
      *             if invoked more than once
      */
     public Observable<R> observe();
-
+    
+    /**
+     * Used for asynchronous execution of command with a callback by subscribing to the {@link Observable}.
+     * <p>
+     * This lazily starts execution of the command only once the {@link Observable} is subscribed to.
+     * <p>
+     * An eager {@link Observable} can be obtained from {@link #observe()}
+     * <p>
+     * <b>Callback Scheduling</b>
+     * <p>
+     * <ul>
+     * <li>When using {@link ExecutionIsolationStrategy#THREAD} this defaults to using {@link Schedulers#threadPoolForComputation()} for callbacks.</li>
+     * <li>When using {@link ExecutionIsolationStrategy#SEMAPHORE} this defaults to using {@link Schedulers#immediate()} for callbacks.</li>
+     * </ul>
+     * Use {@link HystrixCommand#toObservable(rx.Scheduler)} or {@link HystrixCollapser#toObservable(rx.Scheduler)} to schedule the callback differently.
+     * <p>
+     * See https://github.com/ReactiveX/RxJava/wiki for more information.
+     * 
+     * @return {@code Observable<R>} that executes and calls back with the result of {@link #run()} execution or a fallback from {@link #getFallback()} if the command fails for any reason.
+     * @throws HystrixRuntimeException
+     *             if a fallback does not exist
+     *             <p>
+     *             <ul>
+     *             <li>via {@code Observer#onError} if a failure occurs</li>
+     *             <li>or immediately if the command can not be queued (such as short-circuited, thread-pool/semaphore rejected)</li>
+     *             </ul>
+     * @throws HystrixBadRequestException
+     *             via {@code Observer#onError} if invalid arguments or state were used representing a user failure, not a system failure
+     * @throws IllegalStateException
+     *             if invoked more than once
+     */
+    public Observable<R> toObservable();
+    
 }
