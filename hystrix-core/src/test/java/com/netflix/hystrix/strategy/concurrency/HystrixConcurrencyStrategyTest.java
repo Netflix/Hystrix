@@ -1,6 +1,6 @@
 package com.netflix.hystrix.strategy.concurrency;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 

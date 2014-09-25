@@ -1,12 +1,11 @@
 package com.netflix.hystrix.strategy;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
-import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHookDefault;
 import org.junit.After;
 import org.junit.Test;
 
@@ -20,6 +19,8 @@ import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategyDefaul
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
 import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifierDefault;
+import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
+import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHookDefault;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisher;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherDefault;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;

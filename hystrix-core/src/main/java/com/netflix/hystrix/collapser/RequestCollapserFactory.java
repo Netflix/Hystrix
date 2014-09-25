@@ -6,7 +6,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.netflix.hystrix.HystrixCollapser;
-import com.netflix.hystrix.HystrixCollapser.Scope;
 import com.netflix.hystrix.HystrixCollapserKey;
 import com.netflix.hystrix.HystrixCollapserProperties;
 import com.netflix.hystrix.strategy.HystrixPlugins;

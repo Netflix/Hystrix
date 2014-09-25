@@ -34,10 +34,10 @@ import rx.observers.TestSubscriber;
 import rx.schedulers.Schedulers;
 
 import com.netflix.config.ConfigurationManager;
+import com.netflix.hystrix.AbstractCommand.TryableSemaphore;
+import com.netflix.hystrix.AbstractCommand.TryableSemaphoreActual;
 import com.netflix.hystrix.HystrixCircuitBreakerTest.TestCircuitBreaker;
 import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
-import com.netflix.hystrix.HystrixExecutableBase.TryableSemaphore;
-import com.netflix.hystrix.HystrixExecutableBase.TryableSemaphoreActual;
 import com.netflix.hystrix.exception.HystrixBadRequestException;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
 import com.netflix.hystrix.exception.HystrixRuntimeException.FailureType;
@@ -530,64 +530,7 @@ public class HystrixCommandTest {
      * Test a successful command execution.
      */
     @Test
-    public void testObserveOnScheduler() throws Exception {
-        for (int i = 0; i < 5; i++) {
-            final AtomicReference<Thread> commandThread = new AtomicReference<Thread>();
-            final AtomicReference<Thread> subscribeThread = new AtomicReference<Thread>();
-
-            TestHystrixCommand<Boolean> command = new TestHystrixCommand<Boolean>(TestHystrixCommand.testPropsBuilder()) {
-
-                @Override
-                protected Boolean run() {
-                    commandThread.set(Thread.currentThread());
-                    return true;
-                }
-            };
-
-            final CountDownLatch latch = new CountDownLatch(1);
-
-            command.toObservable(Schedulers.newThread()).subscribe(new Observer<Boolean>() {
-
-                @Override
-                public void onCompleted() {
-                    latch.countDown();
-
-                }
-
-                @Override
-                public void onError(Throwable e) {
-                    latch.countDown();
-                    e.printStackTrace();
-
-                }
-
-                @Override
-                public void onNext(Boolean args) {
-                    subscribeThread.set(Thread.currentThread());
-                }
-            });
-
-            if (!latch.await(2000, TimeUnit.MILLISECONDS)) {
-                fail("timed out");
-            }
-
-            assertNotNull(commandThread.get());
-            assertNotNull(subscribeThread.get());
-
-            System.out.println("Command Thread: " + commandThread.get());
-            System.out.println("Subscribe Thread: " + subscribeThread.get());
-
-            assertTrue(commandThread.get().getName().startsWith("hystrix-"));
-            assertFalse(subscribeThread.get().getName().startsWith("hystrix-"));
-            assertTrue(subscribeThread.get().getName().startsWith("Rx"));
-        }
-    }
-
-    /**
-     * Test a successful command execution.
-     */
-    @Test
-    public void testObserveOnComputationSchedulerByDefaultForThreadIsolation() throws Exception {
+    public void testCallbackThreadForThreadIsolation() throws Exception {
 
         final AtomicReference<Thread> commandThread = new AtomicReference<Thread>();
         final AtomicReference<Thread> subscribeThread = new AtomicReference<Thread>();
@@ -635,14 +578,14 @@ public class HystrixCommandTest {
         System.out.println("Subscribe Thread: " + subscribeThread.get());
 
         assertTrue(commandThread.get().getName().startsWith("hystrix-"));
-        assertTrue(subscribeThread.get().getName().startsWith("RxComputationThreadPool"));
+        assertTrue(subscribeThread.get().getName().startsWith("hystrix-"));
     }
 
     /**
      * Test a successful command execution.
      */
     @Test
-    public void testObserveOnImmediateSchedulerByDefaultForSemaphoreIsolation() throws Exception {
+    public void testCallbackThreadForSemaphoreIsolation() throws Exception {
 
         final AtomicReference<Thread> commandThread = new AtomicReference<Thread>();
         final AtomicReference<Thread> subscribeThread = new AtomicReference<Thread>();
@@ -4261,7 +4204,7 @@ public class HystrixCommandTest {
         ts.awaitTerminalEvent();
 
         assertTrue(isRequestContextInitialized.get());
-        assertTrue(onErrorThread.get().getName().startsWith("RxComputationThreadPool"));
+        assertTrue(onErrorThread.get().getName().startsWith("HystrixTimer"));
 
         List<Throwable> errors = ts.getOnErrorEvents();
         assertEquals(1, errors.size());
@@ -5201,7 +5144,7 @@ public class HystrixCommandTest {
         AtomicInteger startExecute = new AtomicInteger();
 
         @Override
-        public <T> void onStart(HystrixExecutable<T> commandInstance) {
+        public <T> void onStart(HystrixInvokable<T> commandInstance) {
             super.onStart(commandInstance);
             startExecute.incrementAndGet();
         }
@@ -5209,7 +5152,7 @@ public class HystrixCommandTest {
         Object endExecuteSuccessResponse = null;
 
         @Override
-        public <T> T onComplete(HystrixExecutable<T> commandInstance, T response) {
+        public <T> T onComplete(HystrixInvokable<T> commandInstance, T response) {
             endExecuteSuccessResponse = response;
             return super.onComplete(commandInstance, response);
         }
@@ -5218,7 +5161,7 @@ public class HystrixCommandTest {
         FailureType endExecuteFailureType = null;
 
         @Override
-        public <T> Exception onError(HystrixExecutable<T> commandInstance, FailureType failureType, Exception e) {
+        public <T> Exception onError(HystrixInvokable<T> commandInstance, FailureType failureType, Exception e) {
             endExecuteFailureException = e;
             endExecuteFailureType = failureType;
             return super.onError(commandInstance, failureType, e);
@@ -5227,7 +5170,7 @@ public class HystrixCommandTest {
         AtomicInteger startRun = new AtomicInteger();
 
         @Override
-        public <T> void onRunStart(HystrixExecutable<T> commandInstance) {
+        public <T> void onRunStart(HystrixInvokable<T> commandInstance) {
             super.onRunStart(commandInstance);
             startRun.incrementAndGet();
         }
@@ -5235,7 +5178,7 @@ public class HystrixCommandTest {
         Object runSuccessResponse = null;
 
         @Override
-        public <T> T onRunSuccess(HystrixExecutable<T> commandInstance, T response) {
+        public <T> T onRunSuccess(HystrixInvokable<T> commandInstance, T response) {
             runSuccessResponse = response;
             return super.onRunSuccess(commandInstance, response);
         }
@@ -5243,7 +5186,7 @@ public class HystrixCommandTest {
         Exception runFailureException = null;
 
         @Override
-        public <T> Exception onRunError(HystrixExecutable<T> commandInstance, Exception e) {
+        public <T> Exception onRunError(HystrixInvokable<T> commandInstance, Exception e) {
             runFailureException = e;
             return super.onRunError(commandInstance, e);
         }
@@ -5251,7 +5194,7 @@ public class HystrixCommandTest {
         AtomicInteger startFallback = new AtomicInteger();
 
         @Override
-        public <T> void onFallbackStart(HystrixExecutable<T> commandInstance) {
+        public <T> void onFallbackStart(HystrixInvokable<T> commandInstance) {
             super.onFallbackStart(commandInstance);
             startFallback.incrementAndGet();
         }
@@ -5259,7 +5202,7 @@ public class HystrixCommandTest {
         Object fallbackSuccessResponse = null;
 
         @Override
-        public <T> T onFallbackSuccess(HystrixExecutable<T> commandInstance, T response) {
+        public <T> T onFallbackSuccess(HystrixInvokable<T> commandInstance, T response) {
             fallbackSuccessResponse = response;
             return super.onFallbackSuccess(commandInstance, response);
         }
@@ -5267,7 +5210,7 @@ public class HystrixCommandTest {
         Exception fallbackFailureException = null;
 
         @Override
-        public <T> Exception onFallbackError(HystrixExecutable<T> commandInstance, Exception e) {
+        public <T> Exception onFallbackError(HystrixInvokable<T> commandInstance, Exception e) {
             fallbackFailureException = e;
             return super.onFallbackError(commandInstance, e);
         }
@@ -5275,7 +5218,7 @@ public class HystrixCommandTest {
         AtomicInteger threadStart = new AtomicInteger();
 
         @Override
-        public <T> void onThreadStart(HystrixExecutable<T> commandInstance) {
+        public <T> void onThreadStart(HystrixInvokable<T> commandInstance) {
             super.onThreadStart(commandInstance);
             threadStart.incrementAndGet();
         }
@@ -5283,7 +5226,7 @@ public class HystrixCommandTest {
         AtomicInteger threadComplete = new AtomicInteger();
 
         @Override
-        public <T> void onThreadComplete(HystrixExecutable<T> commandInstance) {
+        public <T> void onThreadComplete(HystrixInvokable<T> commandInstance) {
             super.onThreadComplete(commandInstance);
             threadComplete.incrementAndGet();
         }

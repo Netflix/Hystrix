@@ -15,7 +15,7 @@
  */
 package com.netflix.hystrix;
 
-import static com.netflix.hystrix.strategy.properties.HystrixProperty.Factory.*;
+import static com.netflix.hystrix.strategy.properties.HystrixProperty.Factory.asProperty;
 
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesChainedArchaiusProperty;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;

@@ -16,7 +16,7 @@
 package com.netflix.hystrix.exception;
 
 import com.netflix.hystrix.HystrixCommand;
-import com.netflix.hystrix.HystrixExecutable;
+import com.netflix.hystrix.HystrixInvokable;
 import com.netflix.hystrix.util.ExceptionThreadingUtility;
 
 /**
@@ -27,7 +27,7 @@ public class HystrixRuntimeException extends RuntimeException {
 
     private static final long serialVersionUID = 5219160375476046229L;
 
-    private final Class<? extends HystrixExecutable> commandClass;
+    private final Class<? extends HystrixInvokable> commandClass;
     private final Throwable fallbackException;
     private final FailureType failureCause;
 
@@ -35,7 +35,7 @@ public class HystrixRuntimeException extends RuntimeException {
         COMMAND_EXCEPTION, TIMEOUT, SHORTCIRCUIT, REJECTED_THREAD_EXECUTION, REJECTED_SEMAPHORE_EXECUTION, REJECTED_SEMAPHORE_FALLBACK
     }
 
-    public HystrixRuntimeException(FailureType failureCause, Class<? extends HystrixExecutable> commandClass, String message, Exception cause, Throwable fallbackException) {
+    public HystrixRuntimeException(FailureType failureCause, Class<? extends HystrixInvokable> commandClass, String message, Exception cause, Throwable fallbackException) {
         super(message, cause);
         this.failureCause = failureCause;
         this.commandClass = commandClass;
@@ -43,7 +43,7 @@ public class HystrixRuntimeException extends RuntimeException {
         ExceptionThreadingUtility.attachCallingThreadStack(this);
     }
 
-    public HystrixRuntimeException(FailureType failureCause, Class<? extends HystrixExecutable> commandClass, String message, Throwable cause, Throwable fallbackException) {
+    public HystrixRuntimeException(FailureType failureCause, Class<? extends HystrixInvokable> commandClass, String message, Throwable cause, Throwable fallbackException) {
         super(message, cause);
         this.failureCause = failureCause;
         this.commandClass = commandClass;
@@ -65,7 +65,7 @@ public class HystrixRuntimeException extends RuntimeException {
      * 
      * @return {@code Class<? extends HystrixCommand> }
      */
-    public Class<? extends HystrixExecutable> getImplementingClass() {
+    public Class<? extends HystrixInvokable> getImplementingClass() {
         return commandClass;
     }
 

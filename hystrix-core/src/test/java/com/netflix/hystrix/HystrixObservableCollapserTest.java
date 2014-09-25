@@ -17,9 +17,7 @@ package com.netflix.hystrix;
 
 import static org.junit.Assert.assertEquals;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -63,8 +61,8 @@ public class HystrixObservableCollapserTest {
     @Test
     public void testTwoRequests() throws Exception {
         TestCollapserTimer timer = new TestCollapserTimer();
-        Future<String> response1 = new TestRequestCollapser(timer, counter, 1).queue();
-        Future<String> response2 = new TestRequestCollapser(timer, counter, 2).queue();
+        Future<String> response1 = new TestRequestCollapser(timer, counter, 1).observe().toBlocking().toFuture();
+        Future<String> response2 = new TestRequestCollapser(timer, counter, 2).observe().toBlocking().toFuture();
         timer.incrementTime(10); // let time pass that equals the default delay/period
 
         assertEquals("1", response1.get());
@@ -200,7 +198,7 @@ public class HystrixObservableCollapserTest {
         }
 
         @Override
-        protected Observable<String> run() {
+        protected Observable<String> construct() {
             return Observable.create(new OnSubscribe<String>() {
 
                 @Override
