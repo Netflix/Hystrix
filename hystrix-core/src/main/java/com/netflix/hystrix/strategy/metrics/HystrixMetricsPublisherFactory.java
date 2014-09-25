@@ -47,11 +47,7 @@ public class HystrixMetricsPublisherFactory {
 
     /**
      * Get an instance of {@link HystrixMetricsPublisherThreadPool} with the given factory {@link HystrixMetricsPublisher} implementation for each {@link HystrixThreadPool} instance.
-     * 
-     * @param metricsPublisher
-     *            Implementation of {@link HystrixMetricsPublisher} to use.
-     *            <p>
-     *            See {@link HystrixMetricsPublisher} class header JavaDocs for precedence of how this is retrieved.
+     *
      * @param threadPoolKey
      *            Pass-thru to {@link HystrixMetricsPublisher#getMetricsPublisherForThreadPool} implementation
      * @param metrics
@@ -81,6 +77,23 @@ public class HystrixMetricsPublisherFactory {
      */
     public static HystrixMetricsPublisherCommand createOrRetrievePublisherForCommand(HystrixCommandKey commandKey, HystrixCommandGroupKey commandOwner, HystrixCommandMetrics metrics, HystrixCircuitBreaker circuitBreaker, HystrixCommandProperties properties) {
         return SINGLETON.getPublisherForCommand(commandKey, commandOwner, metrics, circuitBreaker, properties);
+    }
+
+    /**
+     * Resets the SINGLETON object.
+     *
+     */
+    /* package */ static void reset() {
+        SINGLETON = new HystrixMetricsPublisherFactory();
+    }
+
+    /**
+     * Clears all state from publishers. If new requests come in instances will be recreated.
+     *
+     */
+    /* package */ void _reset() {
+        commandPublishers.clear();
+        threadPoolPublishers.clear();
     }
 
     private final HystrixMetricsPublisher strategy;
