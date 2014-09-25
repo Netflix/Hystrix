@@ -308,6 +308,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
      * @return {@code Observable<R>} that executes and calls back with the result of of {@link HystrixCommand}{@code <BatchReturnType>} execution after passing through {@link #mapResponseToRequests}
      *         to transform the {@code <BatchReturnType>} into {@code <ResponseType>}
      */
+    @Override
     public Observable<ResponseType> observe() {
         // us a ReplaySubject to buffer the eagerly subscribed-to Observable
         ReplaySubject<ResponseType> subject = ReplaySubject.create();
@@ -332,6 +333,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
      * @return {@code Observable<R>} that lazily executes and calls back with the result of of {@link HystrixCommand}{@code <BatchReturnType>} execution after passing through
      *         {@link #mapResponseToRequests} to transform the {@code <BatchReturnType>} into {@code <ResponseType>}
      */
+    @Override
     public Observable<ResponseType> toObservable() {
         // when we callback with the data we want to do the work
         // on a separate thread than the one giving us the callback
@@ -348,6 +350,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
      * @return {@code Observable<R>} that lazily executes and calls back with the result of of {@link HystrixCommand}{@code <BatchReturnType>} execution after passing through
      *         {@link #mapResponseToRequests} to transform the {@code <BatchReturnType>} into {@code <ResponseType>}
      */
+    @Override
     public Observable<ResponseType> toObservable(Scheduler observeOn) {
 
         /* try from cache first */
@@ -397,6 +400,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
      * @throws HystrixRuntimeException
      *             if an error occurs and a fallback cannot be retrieved
      */
+    @Override
     public ResponseType execute() {
         try {
             return queue().get();
@@ -427,6 +431,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
      * @throws HystrixRuntimeException
      *             within an <code>ExecutionException.getCause()</code> (thrown by {@link Future#get}) if an error occurs and a fallback cannot be retrieved
      */
+    @Override
     public Future<ResponseType> queue() {
         final Observable<ResponseType> o = toObservable();
         return o.toBlocking().toFuture();
