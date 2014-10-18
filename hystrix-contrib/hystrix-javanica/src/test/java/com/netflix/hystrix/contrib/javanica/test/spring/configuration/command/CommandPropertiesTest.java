@@ -4,6 +4,7 @@ import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.HystrixRequestLog;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
+import com.netflix.hystrix.contrib.javanica.command.AbstractHystrixCommand;
 import com.netflix.hystrix.contrib.javanica.test.spring.conf.AopCglibConfig;
 import com.netflix.hystrix.contrib.javanica.test.spring.domain.User;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
@@ -70,6 +71,14 @@ public class CommandPropertiesTest {
                 commandProperties = {
                         @HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "110"),
                         @HystrixProperty(name = "execution.isolation.thread.interruptOnTimeout", value = "false")
+                },
+                threadPoolProperties = {
+                        @HystrixProperty(name = "coreSize", value = "30"),
+                        @HystrixProperty(name = "maxQueueSize", value = "101"),
+                        @HystrixProperty(name = "keepAliveTimeMinutes", value = "2"),
+                        @HystrixProperty(name = "metricsRollingStatisticalWindowBuckets", value = "12"),
+                        @HystrixProperty(name = "queueSizeRejectionThreshold", value = "15"),
+                        @HystrixProperty(name = "metricsRollingStatisticalWindowInMilliseconds", value = "1440")
                 })
         public User getUser(String id, String name) {
             return new User(id, name + id); // it should be network call
