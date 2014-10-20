@@ -1976,6 +1976,10 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             ConfigurationManager.getConfigInstance().clear();
         }
 
+        private static void recordHookCall(StringBuilder sequenceRecorder, String methodName) {
+            sequenceRecorder.append(methodName).append(" - ");
+        }
+
         /**
          * Test a successful command execution.
          */
