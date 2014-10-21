@@ -18,6 +18,7 @@ package com.netflix.hystrix.contrib.javanica.command;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
+import com.netflix.config.ConfigurationManager;
 import com.netflix.hystrix.HystrixCollapser;
 import com.netflix.hystrix.HystrixThreadPoolProperties;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
@@ -52,15 +53,12 @@ public abstract class AbstractHystrixCommandFactory<T extends AbstractHystrixCom
                 metaHolder.getHystrixCommand().commandKey()
                 : metaHolder.getDefaultCommandKey();
 
-        HystrixThreadPoolProperties.Setter threadPoolProperties = getThreadPoolProperties(metaHolder.getHystrixCommand());
+        initializeThreadPoolProperties(metaHolder.getHystrixCommand());
 
         CommandSetterBuilder setterBuilder = new CommandSetterBuilder();
         setterBuilder.commandKey(commandKey);
         setterBuilder.groupKey(groupKey);
         setterBuilder.threadPoolKey(metaHolder.getHystrixCommand().threadPoolKey());
-        if(threadPoolProperties != null) {
-            setterBuilder.threadPoolProperties(threadPoolProperties);
-        }
         Map<String, Object> commandProperties = getCommandProperties(metaHolder.getHystrixCommand());
         CommandAction commandAction = new MethodExecutionAction(metaHolder.getObj(), metaHolder.getMethod(), metaHolder.getArgs());
         CommandAction fallbackAction = createFallbackAction(metaHolder, collapsedRequests);
@@ -128,34 +126,25 @@ public abstract class AbstractHystrixCommandFactory<T extends AbstractHystrixCom
         return commandProperties;
     }
 
-    public HystrixThreadPoolProperties.Setter getThreadPoolProperties(HystrixCommand hystrixCommand) {
+    public void initializeThreadPoolProperties(HystrixCommand hystrixCommand) {
         if(hystrixCommand.threadPoolProperties() == null || hystrixCommand.threadPoolProperties().length == 0) {
-            return null;
+            return;
         }
 
         HystrixThreadPoolProperties.Setter setter = HystrixThreadPoolProperties.Setter();
+        String threadPoolKey = hystrixCommand.threadPoolKey();
+        if(threadPoolKey == null || "".equals(threadPoolKey)) {
+            threadPoolKey = "default";
+        }
+
         HystrixProperty[] properties = hystrixCommand.threadPoolProperties();
         for(HystrixProperty property : properties) {
             Integer value = Integer.parseInt(property.value());
             String name = property.name();
-            if("coreSize".equals(name)) {
-                setter.withCoreSize(value);
-            } else if("maxQueueSize".equals(name)) {
-                setter.withMaxQueueSize(value);
-            } else if("keepAliveTimeMinutes".equals(name)) {
-                setter.withKeepAliveTimeMinutes(value);
-            } else if("metricsRollingStatisticalWindowBuckets".equals(name)) {
-                setter.withMetricsRollingStatisticalWindowBuckets(value);
-            } else if("queueSizeRejectionThreshold".equals(name)) {
-                setter.withQueueSizeRejectionThreshold(value);
-            } else if("metricsRollingStatisticalWindowInMilliseconds".equals(name)) {
-                setter.withMetricsRollingStatisticalWindowInMilliseconds(value);
-            } else {
-                throw new IllegalArgumentException("unsupported threadPoolPropery: " + name);
-            }
-        }
+            name = name.replace("{}", threadPoolKey);
 
-        return setter;
+            ConfigurationManager.getConfigInstance().setProperty(name, property.value());
+        }
     }
 
 }

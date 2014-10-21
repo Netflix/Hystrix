@@ -73,12 +73,12 @@ public class CommandPropertiesTest {
                         @HystrixProperty(name = "execution.isolation.thread.interruptOnTimeout", value = "false")
                 },
                 threadPoolProperties = {
-                        @HystrixProperty(name = "coreSize", value = "30"),
-                        @HystrixProperty(name = "maxQueueSize", value = "101"),
-                        @HystrixProperty(name = "keepAliveTimeMinutes", value = "2"),
-                        @HystrixProperty(name = "metricsRollingStatisticalWindowBuckets", value = "12"),
-                        @HystrixProperty(name = "queueSizeRejectionThreshold", value = "15"),
-                        @HystrixProperty(name = "metricsRollingStatisticalWindowInMilliseconds", value = "1440")
+                        @HystrixProperty(name = "hystrix.threadpool.{}.coreSize", value = "30"),
+                        @HystrixProperty(name = "hystrix.threadpool.{}.maxQueueSize", value = "101"),
+                        @HystrixProperty(name = "hystrix.threadpool.{}.keepAliveTimeMinutes", value = "2"),
+                        @HystrixProperty(name = "hystrix.threadpool.{}.metricsRollingStatisticalWindowBuckets", value = "12"),
+                        @HystrixProperty(name = "hystrix.threadpool.{}.queueSizeRejectionThreshold", value = "15"),
+                        @HystrixProperty(name = "hystrix.threadpool.{}.metricsRollingStatisticalWindowInMilliseconds", value = "1440")
                 })
         public User getUser(String id, String name) {
             return new User(id, name + id); // it should be network call
