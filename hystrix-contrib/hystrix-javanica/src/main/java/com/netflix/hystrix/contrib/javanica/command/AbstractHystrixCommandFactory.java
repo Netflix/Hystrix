@@ -23,6 +23,7 @@ import com.netflix.hystrix.HystrixCollapser;
 import com.netflix.hystrix.HystrixThreadPoolProperties;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
+import com.netflix.hystrix.contrib.javanica.conf.HystrixPropertiesManager;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 
@@ -53,7 +54,7 @@ public abstract class AbstractHystrixCommandFactory<T extends AbstractHystrixCom
                 metaHolder.getHystrixCommand().commandKey()
                 : metaHolder.getDefaultCommandKey();
 
-        initializeThreadPoolProperties(metaHolder.getHystrixCommand());
+        HystrixPropertiesManager.initializeThreadPoolProperties(metaHolder.getHystrixCommand());
 
         CommandSetterBuilder setterBuilder = new CommandSetterBuilder();
         setterBuilder.commandKey(commandKey);
@@ -124,27 +125,6 @@ public abstract class AbstractHystrixCommandFactory<T extends AbstractHystrixCom
             commandProperties.put(commandProperty.name(), commandProperty.value());
         }
         return commandProperties;
-    }
-
-    public void initializeThreadPoolProperties(HystrixCommand hystrixCommand) {
-        if(hystrixCommand.threadPoolProperties() == null || hystrixCommand.threadPoolProperties().length == 0) {
-            return;
-        }
-
-        HystrixThreadPoolProperties.Setter setter = HystrixThreadPoolProperties.Setter();
-        String threadPoolKey = hystrixCommand.threadPoolKey();
-        if(threadPoolKey == null || "".equals(threadPoolKey)) {
-            threadPoolKey = "default";
-        }
-
-        HystrixProperty[] properties = hystrixCommand.threadPoolProperties();
-        for(HystrixProperty property : properties) {
-            Integer value = Integer.parseInt(property.value());
-            String name = property.name();
-            name = name.replace("{}", threadPoolKey);
-
-            ConfigurationManager.getConfigInstance().setProperty(name, property.value());
-        }
     }
 
 }
