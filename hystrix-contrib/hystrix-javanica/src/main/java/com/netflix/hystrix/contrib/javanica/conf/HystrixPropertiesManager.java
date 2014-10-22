@@ -110,7 +110,6 @@ public final class HystrixPropertiesManager {
 
         HystrixProperty[] properties = hystrixCommand.threadPoolProperties();
         for(HystrixProperty property : properties) {
-            Integer value = Integer.parseInt(property.value());
             String name = String.format("hystrix.threadpool.%s.%s", threadPoolKey, property.name());
             ConfigurationManager.getConfigInstance().setProperty(name, property.value());
         }

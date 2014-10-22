@@ -6,11 +6,10 @@ import com.netflix.hystrix.HystrixThreadPool;
 import com.netflix.hystrix.HystrixThreadPoolProperties;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
-import com.netflix.hystrix.contrib.javanica.command.AbstractHystrixCommand;
 import com.netflix.hystrix.contrib.javanica.test.spring.conf.AopCglibConfig;
 import com.netflix.hystrix.contrib.javanica.test.spring.domain.User;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
-import com.netflix.hystrix.strategy.properties.HystrixPropertiesThreadPoolDefault;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,8 +60,8 @@ public class CommandPropertiesTest {
             assertEquals(101, (int) properties.maxQueueSize().get());
             assertEquals(2, (int) properties.keepAliveTimeMinutes().get());
             assertEquals(15, (int) properties.queueSizeRejectionThreshold().get());
-            //assertEquals(1440, (int) properties.metricsRollingStatisticalWindowInMilliseconds().get());   // TODO: won't be set. make this work.
-            //assertEquals(12, (int) properties.metricsRollingStatisticalWindowBuckets().get());
+            assertEquals(1440, (int) properties.metricsRollingStatisticalWindowInMilliseconds().get());
+            assertEquals(12, (int) properties.metricsRollingStatisticalWindowBuckets().get());
         } finally {
             context.shutdown();
         }
@@ -97,9 +96,9 @@ public class CommandPropertiesTest {
                         @HystrixProperty(name = "coreSize", value = "30"),
                         @HystrixProperty(name = "maxQueueSize", value = "101"),
                         @HystrixProperty(name = "keepAliveTimeMinutes", value = "2"),
-                        @HystrixProperty(name = "metricsRollingStatisticalWindowBuckets", value = "12"),
+                        @HystrixProperty(name = "metrics.rollingStats.numBuckets", value = "12"),
                         @HystrixProperty(name = "queueSizeRejectionThreshold", value = "15"),
-                        @HystrixProperty(name = "metricsRollingStatisticalWindowInMilliseconds", value = "1440")
+                        @HystrixProperty(name = "metrics.rollingStats.timeInMilliseconds", value = "1440")
                 })
         public User getUser(String id, String name) {
             return new User(id, name + id); // it should be network call

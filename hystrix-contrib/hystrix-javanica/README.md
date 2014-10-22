@@ -208,9 +208,9 @@ ThreadPoolProperties can be set using @HystrixCommand's 'threadPoolProperties' l
                         @HystrixProperty(name = "coreSize", value = "30"),
                         @HystrixProperty(name = "maxQueueSize", value = "101"),
                         @HystrixProperty(name = "keepAliveTimeMinutes", value = "2"),
-                        @HystrixProperty(name = "metricsRollingStatisticalWindowBuckets", value = "12"),
                         @HystrixProperty(name = "queueSizeRejectionThreshold", value = "15"),
-                        @HystrixProperty(name = "metricsRollingStatisticalWindowInMilliseconds", value = "1440")
+                        @HystrixProperty(name = "metrics.rollingStats.numBuckets", value = "12"),
+                        @HystrixProperty(name = "metrics.rollingStats.timeInMilliseconds", value = "1440")
         })
     public User getUserById(String id) {
         return userResource.getUserById(id);
