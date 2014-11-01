@@ -19,7 +19,9 @@ package com.netflix.hystrix.contrib.javanica.command;
 import com.google.common.base.Throwables;
 import com.netflix.hystrix.HystrixCollapser;
 import com.netflix.hystrix.contrib.javanica.conf.HystrixPropertiesManager;
+import com.netflix.hystrix.contrib.javanica.exception.CommandActionExecutionException;
 import com.netflix.hystrix.exception.HystrixBadRequestException;
+import com.netflix.hystrix.exception.HystrixRuntimeException;
 
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.Collection;
@@ -136,12 +138,18 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
         return key;
     }
 
+    /**
+     * Check whether triggered exception is ignorable.
+     *
+     * @param throwable the exception occurred during a command execution
+     * @return true if exception is ignorable, otherwise - false
+     */
     boolean isIgnorable(Throwable throwable) {
         if (ignoreExceptions == null || ignoreExceptions.length == 0) {
             return false;
         }
         for (Class<? extends Throwable> ignoreException : ignoreExceptions) {
-            if (throwable.getClass().isAssignableFrom(ignoreException)) {
+            if (ignoreException.isAssignableFrom(throwable.getClass())) {
                 return true;
             }
         }
@@ -150,20 +158,28 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
 
     /**
      * Executes an action. If an action has failed and an exception is ignorable then propagate it as HystrixBadRequestException
-     * otherwise propagate it as RuntimeException to trigger fallback method.
+     * otherwise propagate original exception to trigger fallback method.
+     * Note: If an exception occurred in a command directly extends {@link java.lang.Throwable} then this exception cannot be re-thrown
+     * as original exception because HystrixCommand.run() allows throw subclasses of {@link java.lang.Exception}.
+     * Thus we need to wrap cause in RuntimeException, anyway in this case the fallback logic will be triggered.
      *
      * @param action the action
      * @return result of command action execution
      */
-    Object process(Action action) throws RuntimeException {
+    Object process(Action action) throws Exception {
         Object result;
         try {
             result = action.execute();
-        } catch (Throwable throwable) {
-            if (isIgnorable(throwable)) {
-                throw new HystrixBadRequestException(throwable.getMessage(), throwable);
+        } catch (CommandActionExecutionException throwable) {
+            Throwable cause = throwable.getCause();
+            if (isIgnorable(cause)) {
+                throw new HystrixBadRequestException(cause.getMessage(), cause);
             }
-            throw Throwables.propagate(throwable);
+            if (cause instanceof Exception) {
+                throw (Exception) cause;
+            } else {
+                throw Throwables.propagate(cause);
+            }
         }
         return result;
     }
@@ -186,7 +202,54 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
      * Common action.
      */
     abstract class Action {
-        abstract Object execute();
+        /**
+         * Each implementation of this method should wrap any exceptions in CommandActionExecutionException.
+         *
+         * @return execution result
+         * @throws CommandActionExecutionException
+         */
+        abstract Object execute() throws CommandActionExecutionException;
+    }
+
+
+    /**
+     * Builder to create error message for failed fallback operation.
+     */
+    static class FallbackErrorMessageBuilder {
+        private StringBuilder builder = new StringBuilder("failed to processed fallback");
+
+        static FallbackErrorMessageBuilder create() {
+            return new FallbackErrorMessageBuilder();
+        }
+
+        public FallbackErrorMessageBuilder append(CommandAction action, Throwable throwable) {
+            return commandAction(action).exception(throwable);
+        }
+
+        private FallbackErrorMessageBuilder commandAction(CommandAction action) {
+            if (action instanceof CommandExecutionAction || action instanceof LazyCommandExecutionAction) {
+                builder.append(": '").append(action.getActionName()).append("'. ")
+                        .append(action.getActionName()).append(" fallback is a hystrix command. ");
+            } else if (action instanceof MethodExecutionAction) {
+                builder.append(" is the method: '").append(action.getActionName()).append("'. ");
+            }
+            return this;
+        }
+
+        private FallbackErrorMessageBuilder exception(Throwable throwable) {
+            if (throwable instanceof HystrixBadRequestException) {
+                builder.append("exception: '").append(throwable.getCause().getClass())
+                        .append("' occurred in fallback was ignored and wrapped to HystrixBadRequestException.\n");
+            } else if (throwable instanceof HystrixRuntimeException) {
+                builder.append("exception: '").append(throwable.getCause().getClass())
+                        .append("' occurred in fallback wasn't ignored.\n");
+            }
+            return this;
+        }
+
+        public String build() {
+            return builder.toString();
+        }
     }
 
 }

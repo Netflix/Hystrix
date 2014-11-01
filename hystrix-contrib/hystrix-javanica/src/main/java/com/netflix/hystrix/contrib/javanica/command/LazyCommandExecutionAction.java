@@ -17,9 +17,14 @@ package com.netflix.hystrix.contrib.javanica.command;
 
 
 import com.netflix.hystrix.HystrixCollapser;
+import com.netflix.hystrix.contrib.javanica.exception.CommandActionExecutionException;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.Collection;
 
+/**
+ * This action creates related hystrix commands on demand when command creation can be postponed.
+ */
 public class LazyCommandExecutionAction extends CommandAction {
 
     private MetaHolder metaHolder;
@@ -36,16 +41,32 @@ public class LazyCommandExecutionAction extends CommandAction {
         this.collapsedRequests = collapsedRequests;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public Object execute(ExecutionType executionType) {
+    public Object execute(ExecutionType executionType) throws CommandActionExecutionException {
         AbstractHystrixCommand abstractHystrixCommand = commandFactory.create(createHolder(executionType), collapsedRequests);
         return new CommandExecutionAction(abstractHystrixCommand).execute(executionType);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public Object executeWithArgs(ExecutionType executionType, Object[] args) {
+    public Object executeWithArgs(ExecutionType executionType, Object[] args) throws CommandActionExecutionException {
         AbstractHystrixCommand abstractHystrixCommand = commandFactory.create(createHolder(executionType, args), collapsedRequests);
         return new CommandExecutionAction(abstractHystrixCommand).execute(executionType);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String getActionName() {
+        return StringUtils.isNotEmpty(metaHolder.getHystrixCommand().commandKey()) ?
+                metaHolder.getHystrixCommand().commandKey()
+                : metaHolder.getDefaultCommandKey();
     }
 
     private MetaHolder createHolder(ExecutionType executionType) {

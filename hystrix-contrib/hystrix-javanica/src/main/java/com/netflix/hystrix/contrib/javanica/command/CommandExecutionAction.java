@@ -15,6 +15,8 @@
  */
 package com.netflix.hystrix.contrib.javanica.command;
 
+import com.netflix.hystrix.contrib.javanica.exception.CommandActionExecutionException;
+
 /**
  * Action to execute a Hystrix command.
  */
@@ -31,14 +33,29 @@ public class CommandExecutionAction extends CommandAction {
         this.hystrixCommand = hystrixCommand;
     }
 
+    public AbstractHystrixCommand getHystrixCommand() {
+        return hystrixCommand;
+    }
+
     @Override
-    public Object execute(ExecutionType executionType) {
+    public Object execute(ExecutionType executionType) throws CommandActionExecutionException {
         return CommandExecutor.execute(hystrixCommand, executionType);
     }
 
     @Override
-    public Object executeWithArgs(ExecutionType executionType, Object[] args) {
+    public Object executeWithArgs(ExecutionType executionType, Object[] args) throws CommandActionExecutionException {
         return CommandExecutor.execute(hystrixCommand, executionType);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String getActionName() {
+        if (hystrixCommand != null) {
+            return hystrixCommand.getCommandKey().name();
+        }
+        return "";
     }
 
 }
