@@ -18,6 +18,9 @@
 				if($('#title').val().length > 0) {	
 					url += "&title=" + encodeURIComponent($('#title').val());
 				}
+                if($('#authorization').val().length > 0) {
+                    url += "&authorization=" + encodeURIComponent($('#authorization').val());
+                }
 				location.href= url;
 			} else {
 				$('#message').html("The 'stream' value is required.");
@@ -44,7 +47,8 @@
 	<br><br>
 	Delay: <input id="delay" type="textfield" size="10" placeholder="2000"></input>ms 
 	&nbsp;&nbsp;&nbsp;&nbsp; 
-	Title: <input id="title" type="textfield" size="60" placeholder="Example Hystrix App"></input><br>
+	Title: <input id="title" type="textfield" size="60" placeholder="Example Hystrix App"></input><br><br>
+    Authorization: <input id="authorization" type="textfield" size="60" placeholder="Basic Zm9vOmJhcg=="></input><br>
 	<br>
 	<button onclick="sendToMonitor()">Monitor Stream</button>
 	<br><br>
