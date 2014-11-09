@@ -101,6 +101,13 @@ public @interface HystrixCommand {
     HystrixProperty[] commandProperties() default {};
 
     /**
+     * Specifies thread pool properties.
+     *
+     * @return thread pool properties
+     */
+    HystrixProperty[] threadPoolProperties() default {};
+
+    /**
      * Defines exceptions which should be ignored and wrapped to throw in HystrixBadRequestException.
      *
      * @return exceptions to ignore

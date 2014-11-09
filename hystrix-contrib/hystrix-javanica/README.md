@@ -198,6 +198,25 @@ ConfigurationManager.getConfigInstance().setProperty("hystrix.command.getUserByI
 ```
 More about Hystrix command properties [command](https://github.com/Netflix/Hystrix/wiki/Configuration#wiki-CommandExecution) and [fallback](https://github.com/Netflix/Hystrix/wiki/Configuration#wiki-CommandFallback)
 
+ThreadPoolProperties can be set using @HystrixCommand's 'threadPoolProperties' like below:
+
+```java
+    @HystrixCommand(commandProperties = {
+            @HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "500")
+        },
+                threadPoolProperties = {
+                        @HystrixProperty(name = "coreSize", value = "30"),
+                        @HystrixProperty(name = "maxQueueSize", value = "101"),
+                        @HystrixProperty(name = "keepAliveTimeMinutes", value = "2"),
+                        @HystrixProperty(name = "queueSizeRejectionThreshold", value = "15"),
+                        @HystrixProperty(name = "metrics.rollingStats.numBuckets", value = "12"),
+                        @HystrixProperty(name = "metrics.rollingStats.timeInMilliseconds", value = "1440")
+        })
+    public User getUserById(String id) {
+        return userResource.getUserById(id);
+    }
+```
+
 ## Hystrix collapser
 
 Suppose you have some command which calls should be collapsed in one backend call. For this goal you can use ```@HystrixCollapser``` annotation.

@@ -19,6 +19,7 @@ import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandGroupKey;
 import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixThreadPoolKey;
+import com.netflix.hystrix.HystrixThreadPoolProperties;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -29,6 +30,7 @@ public class CommandSetterBuilder {
     private String groupKey;
     private String commandKey;
     private String threadPoolKey;
+    private HystrixThreadPoolProperties.Setter threadPoolProperties = null;
 
     public CommandSetterBuilder groupKey(String pGroupKey) {
         this.groupKey = pGroupKey;
@@ -50,11 +52,15 @@ public class CommandSetterBuilder {
         return this;
     }
 
+    public CommandSetterBuilder threadPoolProperties(HystrixThreadPoolProperties.Setter threadPoolProperties) {
+        this.threadPoolProperties = threadPoolProperties;
+        return this;
+    }
+
     public CommandSetterBuilder threadPoolKey(String pThreadPoolKey) {
         this.threadPoolKey = pThreadPoolKey;
         return this;
     }
-
     /**
      * Creates instance of {@link HystrixCommand.Setter}.
      *
@@ -66,6 +72,9 @@ public class CommandSetterBuilder {
                 .andCommandKey(HystrixCommandKey.Factory.asKey(commandKey));
         if (StringUtils.isNotBlank(threadPoolKey)) {
             setter.andThreadPoolKey(HystrixThreadPoolKey.Factory.asKey(threadPoolKey));
+        }
+        if (threadPoolProperties != null) {
+            setter.andThreadPoolPropertiesDefaults(threadPoolProperties);
         }
         return setter;
     }

@@ -17,6 +17,7 @@ package com.netflix.hystrix.contrib.javanica.conf;
 
 import com.google.common.collect.Maps;
 import com.netflix.config.ConfigurationManager;
+import com.netflix.hystrix.HystrixThreadPoolProperties;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCollapser;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
@@ -94,6 +95,24 @@ public final class HystrixPropertiesManager {
 
     private static void validate(HystrixProperty hystrixProperty) throws IllegalArgumentException {
         Validate.notBlank(hystrixProperty.name(), "hystrix property name cannot be null");
+    }
+
+    public static void initializeThreadPoolProperties(HystrixCommand hystrixCommand) {
+        if(hystrixCommand.threadPoolProperties() == null || hystrixCommand.threadPoolProperties().length == 0) {
+            return;
+        }
+
+        HystrixThreadPoolProperties.Setter setter = HystrixThreadPoolProperties.Setter();
+        String threadPoolKey = hystrixCommand.threadPoolKey();
+        if(threadPoolKey == null || "".equals(threadPoolKey)) {
+            threadPoolKey = "default";
+        }
+
+        HystrixProperty[] properties = hystrixCommand.threadPoolProperties();
+        for(HystrixProperty property : properties) {
+            String name = String.format("hystrix.threadpool.%s.%s", threadPoolKey, property.name());
+            ConfigurationManager.getConfigInstance().setProperty(name, property.value());
+        }
     }
 
 }
