@@ -1028,14 +1028,19 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                             }
                         }
                     });
-                    
+
+                    final Reference<HystrixCommand> commandRef = new SoftReference<HystrixCommand>(originalCommand);
+
                     TimerListener listener = new TimerListener() {
 
                         @Override
                         public void tick() {
+                            HystrixCommand originalCommand = commandRef.get();
+
                             // if we can go from NOT_EXECUTED to TIMED_OUT then we do the timeout codepath
                             // otherwise it means we lost a race and the run() execution completed
-                            if (originalCommand.isCommandTimedOut.compareAndSet(TimedOutStatus.NOT_EXECUTED, TimedOutStatus.TIMED_OUT)) {
+                            if (originalCommand != null
+                                    && originalCommand.isCommandTimedOut.compareAndSet(TimedOutStatus.NOT_EXECUTED, TimedOutStatus.TIMED_OUT)) {
                                 // do fallback logic
 
                                 // report timeout failure
