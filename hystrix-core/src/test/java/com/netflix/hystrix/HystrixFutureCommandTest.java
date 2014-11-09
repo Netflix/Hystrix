@@ -55,7 +55,7 @@ import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 import com.netflix.hystrix.strategy.properties.HystrixProperty;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 
-public class HystrixAsyncCommandTest {
+public class HystrixFutureCommandTest {
 
     @Before
     public void prepareForTest() {
@@ -2795,7 +2795,7 @@ public class HystrixAsyncCommandTest {
 
         assertEquals(5, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
 
-        HystrixExecutableInfo<?>[] executeCommands = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().toArray(new HystrixAsyncCommand<?>[] {});
+        HystrixExecutableInfo<?>[] executeCommands = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().toArray(new HystrixFutureCommand<?>[] {});
 
         System.out.println(":executeCommands[0].getExecutionEvents()" + executeCommands[0].getExecutionEvents());
         assertEquals(2, executeCommands[0].getExecutionEvents().size());
@@ -4157,7 +4157,7 @@ public class HystrixAsyncCommandTest {
      */
     @Test(timeout = 500)
     public void testSynchronousExecutionTimeoutValueViaExecute() {
-        HystrixAsyncCommand.Setter properties = HystrixAsyncCommand.Setter
+        HystrixFutureCommand.Setter properties = HystrixFutureCommand.Setter
                 .withGroupKey(HystrixCommandGroupKey.Factory.asKey("TestKey"))
                 .andCommandPropertiesDefaults(HystrixCommandProperties.Setter()
                         .withExecutionIsolationStrategy(ExecutionIsolationStrategy.THREAD)
@@ -4165,13 +4165,13 @@ public class HystrixAsyncCommandTest {
 
         System.out.println(">>>>> Begin: " + System.currentTimeMillis());
 
-        HystrixAsyncCommand<String> command = new HystrixAsyncCommand<String>(properties) {
+        HystrixFutureCommand<String> command = new HystrixFutureCommand<String>(properties) {
             @Override
             protected HystrixFuture<String> run() {
-                return HystrixFutureUtil.from(new Action1<Promise<String>>() {
+                return HystrixFutureUtil.from(new Action1<HystrixPromise<String>>() {
 
                     @Override
-                    public void call(Promise<String> p) {
+                    public void call(HystrixPromise<String> p) {
                         try {
                             Thread.sleep(2000);
                         } catch (InterruptedException e) {
@@ -4205,19 +4205,19 @@ public class HystrixAsyncCommandTest {
 
     @Test(timeout = 500)
     public void testSynchronousExecutionUsingThreadIsolationTimeoutValueViaObserve() {
-        HystrixAsyncCommand.Setter properties = HystrixAsyncCommand.Setter
+        HystrixFutureCommand.Setter properties = HystrixFutureCommand.Setter
                 .withGroupKey(HystrixCommandGroupKey.Factory.asKey("TestKey"))
                 .andCommandPropertiesDefaults(HystrixCommandProperties.Setter()
                         .withExecutionIsolationStrategy(ExecutionIsolationStrategy.THREAD)
                         .withExecutionIsolationThreadTimeoutInMilliseconds(50));
 
-        HystrixAsyncCommand<String> command = new HystrixAsyncCommand<String>(properties) {
+        HystrixFutureCommand<String> command = new HystrixFutureCommand<String>(properties) {
             @Override
             protected HystrixFuture<String> run() {
-                return HystrixFutureUtil.from(new Action1<Promise<String>>() {
+                return HystrixFutureUtil.from(new Action1<HystrixPromise<String>>() {
 
                     @Override
-                    public void call(Promise<String> p) {
+                    public void call(HystrixPromise<String> p) {
                         try {
                             Thread.sleep(2000);
                         } catch (InterruptedException e) {
@@ -4249,18 +4249,18 @@ public class HystrixAsyncCommandTest {
 
     @Test(timeout = 500)
     public void testAsyncExecutionTimeoutValueViaObserve() {
-        HystrixAsyncCommand.Setter properties = HystrixAsyncCommand.Setter
+        HystrixFutureCommand.Setter properties = HystrixFutureCommand.Setter
                 .withGroupKey(HystrixCommandGroupKey.Factory.asKey("TestKey"))
                 .andCommandPropertiesDefaults(HystrixCommandProperties.Setter()
                         .withExecutionIsolationThreadTimeoutInMilliseconds(50));
 
-        HystrixAsyncCommand<String> command = new HystrixAsyncCommand<String>(properties) {
+        HystrixFutureCommand<String> command = new HystrixFutureCommand<String>(properties) {
             @Override
             protected HystrixFuture<String> run() {
-                return HystrixFutureUtil.from(new Action1<Promise<String>>() {
+                return HystrixFutureUtil.from(new Action1<HystrixPromise<String>>() {
 
                     @Override
-                    public void call(Promise<String> p) {
+                    public void call(HystrixPromise<String> p) {
                         try {
                             Thread.sleep(2000);
                         } catch (InterruptedException e) {
@@ -4599,10 +4599,10 @@ public class HystrixAsyncCommandTest {
 
             @Override
             protected HystrixFuture<Boolean> run() {
-                return HystrixFutureUtil.from(new Action1<Promise<Boolean>>() {
+                return HystrixFutureUtil.from(new Action1<HystrixPromise<Boolean>>() {
 
                     @Override
-                    public void call(Promise<Boolean> p) {
+                    public void call(HystrixPromise<Boolean> p) {
                         results.isContextInitialized.set(HystrixRequestContext.isCurrentThreadInitialized());
                         results.originThread.set(Thread.currentThread());
                         p.onSuccess(true);
@@ -4661,10 +4661,10 @@ public class HystrixAsyncCommandTest {
 
             @Override
             protected HystrixFuture<Boolean> run() {
-                return HystrixFutureUtil.from(new Action1<Promise<Boolean>>() {
+                return HystrixFutureUtil.from(new Action1<HystrixPromise<Boolean>>() {
 
                     @Override
-                    public void call(Promise<Boolean> p) {
+                    public void call(HystrixPromise<Boolean> p) {
                         results.isContextInitialized.set(HystrixRequestContext.isCurrentThreadInitialized());
                         results.originThread.set(Thread.currentThread());
                         p.onError(new RuntimeException("graceful onError"));
@@ -4723,10 +4723,10 @@ public class HystrixAsyncCommandTest {
 
             @Override
             protected HystrixFuture<Boolean> run() {
-                return HystrixFutureUtil.from(new Action1<Promise<Boolean>>() {
+                return HystrixFutureUtil.from(new Action1<HystrixPromise<Boolean>>() {
 
                     @Override
-                    public void call(Promise<Boolean> p) {
+                    public void call(HystrixPromise<Boolean> p) {
                         results.isContextInitialized.set(HystrixRequestContext.isCurrentThreadInitialized());
                         results.originThread.set(Thread.currentThread());
                         throw new RuntimeException("bad onError");
@@ -4785,10 +4785,10 @@ public class HystrixAsyncCommandTest {
 
             @Override
             protected HystrixFuture<Boolean> run() {
-                return HystrixFutureUtil.from(new Action1<Promise<Boolean>>() {
+                return HystrixFutureUtil.from(new Action1<HystrixPromise<Boolean>>() {
 
                     @Override
-                    public void call(Promise<Boolean> s) {
+                    public void call(HystrixPromise<Boolean> s) {
                         s.onError(new RuntimeException("onError"));
                     }
 
@@ -4797,10 +4797,10 @@ public class HystrixAsyncCommandTest {
 
             @Override
             protected HystrixFuture<Boolean> getFallback() {
-                return HystrixFutureUtil.from(new Action1<Promise<Boolean>>() {
+                return HystrixFutureUtil.from(new Action1<HystrixPromise<Boolean>>() {
 
                     @Override
-                    public void call(Promise<Boolean> s) {
+                    public void call(HystrixPromise<Boolean> s) {
                         results.isContextInitialized.set(HystrixRequestContext.isCurrentThreadInitialized());
                         results.originThread.set(Thread.currentThread());
                         s.onSuccess(false);
@@ -4892,10 +4892,10 @@ public class HystrixAsyncCommandTest {
 
             @Override
             protected HystrixFuture<Boolean> run() {
-                return HystrixFutureUtil.from(new Action1<Promise<Boolean>>() {
+                return HystrixFutureUtil.from(new Action1<HystrixPromise<Boolean>>() {
 
                     @Override
-                    public void call(Promise<Boolean> s) {
+                    public void call(HystrixPromise<Boolean> s) {
                         s.onError(new RuntimeException("onError"));
                     }
 
@@ -4904,10 +4904,10 @@ public class HystrixAsyncCommandTest {
 
             @Override
             protected HystrixFuture<Boolean> getFallback() {
-                return HystrixFutureUtil.from(new Action1<Promise<Boolean>>() {
+                return HystrixFutureUtil.from(new Action1<HystrixPromise<Boolean>>() {
 
                     @Override
-                    public void call(Promise<Boolean> s) {
+                    public void call(HystrixPromise<Boolean> s) {
                         results.isContextInitialized.set(HystrixRequestContext.isCurrentThreadInitialized());
                         results.originThread.set(Thread.currentThread());
                         s.onSuccess(false);
@@ -4976,10 +4976,10 @@ public class HystrixAsyncCommandTest {
 
             @Override
             protected HystrixFuture<Boolean> run() {
-                return HystrixFutureUtil.from(new Action1<Promise<Boolean>>() {
+                return HystrixFutureUtil.from(new Action1<HystrixPromise<Boolean>>() {
 
                     @Override
-                    public void call(Promise<Boolean> s) {
+                    public void call(HystrixPromise<Boolean> s) {
                         s.onError(new RuntimeException("onError"));
                     }
 
@@ -4988,10 +4988,10 @@ public class HystrixAsyncCommandTest {
 
             @Override
             protected HystrixFuture<Boolean> getFallback() {
-                return HystrixFutureUtil.from(new Action1<Promise<Boolean>>() {
+                return HystrixFutureUtil.from(new Action1<HystrixPromise<Boolean>>() {
 
                     @Override
-                    public void call(Promise<Boolean> s) {
+                    public void call(HystrixPromise<Boolean> s) {
                         results.isContextInitialized.set(HystrixRequestContext.isCurrentThreadInitialized());
                         results.originThread.set(Thread.currentThread());
                         s.onSuccess(false);
@@ -5052,10 +5052,10 @@ public class HystrixAsyncCommandTest {
 
             @Override
             protected HystrixFuture<Boolean> run() {
-                return HystrixFutureUtil.from(new Action1<Promise<Boolean>>() {
+                return HystrixFutureUtil.from(new Action1<HystrixPromise<Boolean>>() {
 
                     @Override
-                    public void call(Promise<Boolean> s) {
+                    public void call(HystrixPromise<Boolean> s) {
                         results.isContextInitialized.set(HystrixRequestContext.isCurrentThreadInitialized());
                         results.originThread.set(Thread.currentThread());
                         try {
@@ -5118,10 +5118,10 @@ public class HystrixAsyncCommandTest {
 
             @Override
             protected HystrixFuture<Boolean> run() {
-                return HystrixFutureUtil.from(new Action1<Promise<Boolean>>() {
+                return HystrixFutureUtil.from(new Action1<HystrixPromise<Boolean>>() {
 
                     @Override
-                    public void call(Promise<Boolean> s) {
+                    public void call(HystrixPromise<Boolean> s) {
                         try {
                             Thread.sleep(500);
                         } catch (InterruptedException e) {
@@ -5134,10 +5134,10 @@ public class HystrixAsyncCommandTest {
 
             @Override
             protected HystrixFuture<Boolean> getFallback() {
-                return HystrixFutureUtil.from(new Action1<Promise<Boolean>>() {
+                return HystrixFutureUtil.from(new Action1<HystrixPromise<Boolean>>() {
 
                     @Override
-                    public void call(Promise<Boolean> s) {
+                    public void call(HystrixPromise<Boolean> s) {
                         results.isContextInitialized.set(HystrixRequestContext.isCurrentThreadInitialized());
                         results.originThread.set(Thread.currentThread());
                         s.onSuccess(false);
@@ -6139,7 +6139,7 @@ public class HystrixAsyncCommandTest {
     /**
      * Used by UnitTest command implementations to provide base defaults for constructor and a builder pattern for the arguments being passed in.
      */
-    /* package */static abstract class TestHystrixCommand<K> extends HystrixAsyncCommand<K> {
+    /* package */static abstract class TestHystrixCommand<K> extends HystrixFutureCommand<K> {
 
         final TestCommandBuilder builder;
 
@@ -6454,7 +6454,7 @@ public class HystrixAsyncCommandTest {
         @Override
         protected HystrixFuture<String> run() {
             executed = true;
-            final Promise<String> p = Promise.create();
+            final HystrixPromise<String> p = HystrixPromise.create();
             Observable.just(value).delay(duration, TimeUnit.MILLISECONDS).subscribeOn(Schedulers.computation())
                     .doOnNext(new Action1<String>() {
 
@@ -6517,10 +6517,10 @@ public class HystrixAsyncCommandTest {
 
         @Override
         protected HystrixFuture<Boolean> run() {
-            return HystrixFutureUtil.from(new Action1<Promise<Boolean>>() {
+            return HystrixFutureUtil.from(new Action1<HystrixPromise<Boolean>>() {
 
                 @Override
-                public void call(Promise<Boolean> p) {
+                public void call(HystrixPromise<Boolean> p) {
                     System.out.println("***** running");
                     try {
                         Thread.sleep(timeout * 10);
@@ -6564,10 +6564,10 @@ public class HystrixAsyncCommandTest {
 
         @Override
         protected HystrixFuture<Boolean> run() {
-            return HystrixFutureUtil.from(new Action1<Promise<Boolean>>() {
+            return HystrixFutureUtil.from(new Action1<HystrixPromise<Boolean>>() {
 
                 @Override
-                public void call(Promise<Boolean> p) {
+                public void call(HystrixPromise<Boolean> p) {
                     try {
                         Thread.sleep(500);
                     } catch (InterruptedException e) {
@@ -6611,10 +6611,10 @@ public class HystrixAsyncCommandTest {
 
         @Override
         protected HystrixFuture<Boolean> run() {
-            return HystrixFutureUtil.from(new Action1<Promise<Boolean>>() {
+            return HystrixFutureUtil.from(new Action1<HystrixPromise<Boolean>>() {
 
                 @Override
-                public void call(Promise<Boolean> p) {
+                public void call(HystrixPromise<Boolean> p) {
                     try {
                         Thread.sleep(executionSleep);
                     } catch (InterruptedException e) {
@@ -6649,10 +6649,10 @@ public class HystrixAsyncCommandTest {
 
         @Override
         protected HystrixFuture<Boolean> run() {
-            return HystrixFutureUtil.from(new Action1<Promise<Boolean>>() {
+            return HystrixFutureUtil.from(new Action1<HystrixPromise<Boolean>>() {
 
                 @Override
-                public void call(Promise<Boolean> p) {
+                public void call(HystrixPromise<Boolean> p) {
                     action.call();
                     p.onSuccess(true);
                 }
@@ -6691,10 +6691,10 @@ public class HystrixAsyncCommandTest {
 
         @Override
         protected HystrixFuture<Boolean> run() {
-            return HystrixFutureUtil.from(new Action1<Promise<Boolean>>() {
+            return HystrixFutureUtil.from(new Action1<HystrixPromise<Boolean>>() {
 
                 @Override
-                public void call(Promise<Boolean> p) {
+                public void call(HystrixPromise<Boolean> p) {
                     // signals caller that run has started
                     startLatch.countDown();
 
@@ -6731,10 +6731,10 @@ public class HystrixAsyncCommandTest {
 
         @Override
         protected HystrixFuture<Boolean> run() {
-            return HystrixFutureUtil.from(new Action1<Promise<Boolean>>() {
+            return HystrixFutureUtil.from(new Action1<HystrixPromise<Boolean>>() {
 
                 @Override
-                public void call(Promise<Boolean> p) {
+                public void call(HystrixPromise<Boolean> p) {
                     try {
                         Thread.sleep(executionSleep);
                     } catch (InterruptedException e) {
@@ -6763,10 +6763,10 @@ public class HystrixAsyncCommandTest {
 
         @Override
         protected HystrixFuture<Boolean> run() {
-            return HystrixFutureUtil.from(new Action1<Promise<Boolean>>() {
+            return HystrixFutureUtil.from(new Action1<HystrixPromise<Boolean>>() {
 
                 @Override
-                public void call(Promise<Boolean> p) {
+                public void call(HystrixPromise<Boolean> p) {
                     try {
                         Thread.sleep(500);
                     } catch (InterruptedException e) {
@@ -6798,10 +6798,10 @@ public class HystrixAsyncCommandTest {
 
         @Override
         protected HystrixFuture<Boolean> run() {
-            return HystrixFutureUtil.from(new Action1<Promise<Boolean>>() {
+            return HystrixFutureUtil.from(new Action1<HystrixPromise<Boolean>>() {
 
                 @Override
-                public void call(Promise<Boolean> p) {
+                public void call(HystrixPromise<Boolean> p) {
                     try {
                         Thread.sleep(500);
                     } catch (InterruptedException e) {

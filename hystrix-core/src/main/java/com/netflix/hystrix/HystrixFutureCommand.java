@@ -44,30 +44,30 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
  * 
  * @ThreadSafe
  */
-public abstract class HystrixAsyncCommand<R> extends AbstractCommand<R> implements HystrixExecutable<R>, HystrixExecutableInfo<R>, HystrixObservable<R> {
+public abstract class HystrixFutureCommand<R> extends AbstractCommand<R> implements HystrixExecutable<R>, HystrixExecutableInfo<R>, HystrixObservable<R> {
 
     /**
-     * Construct a {@link HystrixAsyncCommand} with defined {@link HystrixCommandGroupKey}.
+     * Construct a {@link HystrixFutureCommand} with defined {@link HystrixCommandGroupKey}.
      * <p>
      * The {@link HystrixCommandKey} will be derived from the implementing class name.
      * 
      * @param group
-     *            {@link HystrixCommandGroupKey} used to group together multiple {@link HystrixAsyncCommand} objects.
+     *            {@link HystrixCommandGroupKey} used to group together multiple {@link HystrixFutureCommand} objects.
      *            <p>
      *            The {@link HystrixCommandGroupKey} is used to represent a common relationship between commands. For example, a library or team name, the system all related commands interace with,
      *            common business purpose etc.
      */
-    protected HystrixAsyncCommand(HystrixCommandGroupKey group) {
+    protected HystrixFutureCommand(HystrixCommandGroupKey group) {
         // use 'null' to specify use the default
         this(new Setter(group));
     }
 
     /**
-     * Construct a {@link HystrixAsyncCommand} with defined {@link Setter} that allows injecting property and strategy overrides and other optional arguments.
+     * Construct a {@link HystrixFutureCommand} with defined {@link Setter} that allows injecting property and strategy overrides and other optional arguments.
      * <p>
-     * NOTE: The {@link HystrixCommandKey} is used to associate a {@link HystrixAsyncCommand} with {@link HystrixCircuitBreaker}, {@link HystrixCommandMetrics} and other objects.
+     * NOTE: The {@link HystrixCommandKey} is used to associate a {@link HystrixFutureCommand} with {@link HystrixCircuitBreaker}, {@link HystrixCommandMetrics} and other objects.
      * <p>
-     * Do not create multiple {@link HystrixAsyncCommand} implementations with the same {@link HystrixCommandKey} but different injected default properties as the first instantiated will win.
+     * Do not create multiple {@link HystrixFutureCommand} implementations with the same {@link HystrixCommandKey} but different injected default properties as the first instantiated will win.
      * <p>
      * Properties passed in via {@link Setter#andCommandPropertiesDefaults} or {@link Setter#andThreadPoolPropertiesDefaults} are cached for the given {@link HystrixCommandKey} for the life of the JVM
      * or until {@link Hystrix#reset()} is called. Dynamic properties allow runtime changes. Read more on the <a href="https://github.com/Netflix/Hystrix/wiki/Configuration">Hystrix Wiki</a>.
@@ -75,19 +75,19 @@ public abstract class HystrixAsyncCommand<R> extends AbstractCommand<R> implemen
      * @param setter
      *            Fluent interface for constructor arguments
      */
-    protected HystrixAsyncCommand(Setter setter) {
+    protected HystrixFutureCommand(Setter setter) {
         // use 'null' to specify use the default
         this(setter.groupKey, setter.commandKey, setter.threadPoolKey, null, null, setter.commandPropertiesDefaults, setter.threadPoolPropertiesDefaults, null, null, null, null, null);
     }
 
     /**
-     * Allow constructing a {@link HystrixAsyncCommand} with injection of most aspects of its functionality.
+     * Allow constructing a {@link HystrixFutureCommand} with injection of most aspects of its functionality.
      * <p>
      * Some of these never have a legitimate reason for injection except in unit testing.
      * <p>
      * Most of the args will revert to a valid default if 'null' is passed in.
      */
-    /* package for testing */HystrixAsyncCommand(HystrixCommandGroupKey group, HystrixCommandKey key, HystrixThreadPoolKey threadPoolKey, HystrixCircuitBreaker circuitBreaker, HystrixThreadPool threadPool,
+    HystrixFutureCommand(HystrixCommandGroupKey group, HystrixCommandKey key, HystrixThreadPoolKey threadPoolKey, HystrixCircuitBreaker circuitBreaker, HystrixThreadPool threadPool,
             HystrixCommandProperties.Setter commandPropertiesDefaults, HystrixThreadPoolProperties.Setter threadPoolPropertiesDefaults,
             HystrixCommandMetrics metrics, TryableSemaphore fallbackSemaphore, TryableSemaphore executionSemaphore,
             HystrixPropertiesStrategy propertiesStrategy, HystrixCommandExecutionHook executionHook) {
@@ -95,7 +95,7 @@ public abstract class HystrixAsyncCommand<R> extends AbstractCommand<R> implemen
     }
 
     /**
-     * Fluent interface for arguments to the {@link HystrixAsyncCommand} constructor.
+     * Fluent interface for arguments to the {@link HystrixFutureCommand} constructor.
      * <p>
      * The required arguments are set via the 'with' factory method and optional arguments via the 'and' chained methods.
      * <p>
@@ -122,7 +122,7 @@ public abstract class HystrixAsyncCommand<R> extends AbstractCommand<R> implemen
          * All optional arguments can be set via the chained methods.
          * 
          * @param groupKey
-         *            {@link HystrixCommandGroupKey} used to group together multiple {@link HystrixAsyncCommand} objects.
+         *            {@link HystrixCommandGroupKey} used to group together multiple {@link HystrixFutureCommand} objects.
          *            <p>
          *            The {@link HystrixCommandGroupKey} is used to represent a common relationship between commands. For example, a library or team name, the system all related commands interace
          *            with,
@@ -141,7 +141,7 @@ public abstract class HystrixAsyncCommand<R> extends AbstractCommand<R> implemen
          * All optional arguments can be set via the chained methods.
          * 
          * @param groupKey
-         *            {@link HystrixCommandGroupKey} used to group together multiple {@link HystrixAsyncCommand} objects.
+         *            {@link HystrixCommandGroupKey} used to group together multiple {@link HystrixFutureCommand} objects.
          *            <p>
          *            The {@link HystrixCommandGroupKey} is used to represent a common relationship between commands. For example, a library or team name, the system all related commands interace
          *            with,
@@ -153,7 +153,7 @@ public abstract class HystrixAsyncCommand<R> extends AbstractCommand<R> implemen
 
         /**
          * @param commandKey
-         *            {@link HystrixCommandKey} used to identify a {@link HystrixAsyncCommand} instance for statistics, circuit-breaker, properties, etc.
+         *            {@link HystrixCommandKey} used to identify a {@link HystrixFutureCommand} instance for statistics, circuit-breaker, properties, etc.
          *            <p>
          *            By default this will be derived from the instance class name.
          *            <p>
@@ -173,7 +173,7 @@ public abstract class HystrixAsyncCommand<R> extends AbstractCommand<R> implemen
          * Optional
          * 
          * @param commandPropertiesDefaults
-         *            {@link HystrixCommandProperties.Setter} with property overrides for this specific instance of {@link HystrixAsyncCommand}.
+         *            {@link HystrixCommandProperties.Setter} with property overrides for this specific instance of {@link HystrixFutureCommand}.
          *            <p>
          *            See the {@link HystrixPropertiesStrategy} JavaDocs for more information on properties and order of precedence.
          * @return Setter for fluent interface via method chaining
@@ -196,18 +196,18 @@ public abstract class HystrixAsyncCommand<R> extends AbstractCommand<R> implemen
 
     public static final class HystrixFuture<R> {
         final Action0 cancel;
-        private final Promise<R> promise;
+        private final HystrixPromise<R> promise;
 
-        private HystrixFuture(Promise<R> promise, Action0 cancel) {
+        private HystrixFuture(HystrixPromise<R> promise, Action0 cancel) {
             this.promise = promise;
             this.cancel = cancel;
         }
 
-        public static <R> HystrixFuture<R> create(Promise<R> promise, Action0 cancel) {
+        public static <R> HystrixFuture<R> create(HystrixPromise<R> promise, Action0 cancel) {
             return new HystrixFuture<R>(promise, cancel);
         }
 
-        public static <R> HystrixFuture<R> create(Promise<R> promise) {
+        public static <R> HystrixFuture<R> create(HystrixPromise<R> promise) {
             return new HystrixFuture<R>(promise, null);
         }
 
@@ -229,14 +229,14 @@ public abstract class HystrixAsyncCommand<R> extends AbstractCommand<R> implemen
         }
     }
 
-    public static final class Promise<R> {
+    public static final class HystrixPromise<R> {
         private final ReplaySubject<R> replay = ReplaySubject.createWithSize(1);
 
-        private Promise() {
+        private HystrixPromise() {
         }
 
-        public static <R> Promise<R> create() {
-            return new Promise<R>();
+        public static <R> HystrixPromise<R> create() {
+            return new HystrixPromise<R>();
         }
 
         public final synchronized void onError(Throwable e) {
@@ -267,7 +267,7 @@ public abstract class HystrixAsyncCommand<R> extends AbstractCommand<R> implemen
      * <p>
      * In other words, this should be a static or cached result that can immediately be returned upon failure.
      * <p>
-     * If network traffic is wanted for fallback (such as going to MemCache) then the fallback implementation should invoke another {@link HystrixAsyncCommand} instance that protects against that
+     * If network traffic is wanted for fallback (such as going to MemCache) then the fallback implementation should invoke another {@link HystrixFutureCommand} instance that protects against that
      * network
      * access and possibly has another level of fallback that does not involve network access.
      * <p>
