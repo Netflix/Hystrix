@@ -205,7 +205,7 @@ public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> imp
      * 
      * @return R or UnsupportedOperationException if not implemented
      */
-    protected Observable<R> onFailureResumeWithFallback() {
+    protected Observable<R> resumeWithFallback() {
         return Observable.error(new UnsupportedOperationException("No fallback available."));
     }
 
@@ -216,6 +216,6 @@ public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> imp
     
     @Override
     final protected Observable<R> getFallbackObservable() {
-        return onFailureResumeWithFallback();
+        return resumeWithFallback();
     }
 }

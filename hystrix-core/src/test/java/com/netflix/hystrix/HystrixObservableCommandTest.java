@@ -4186,7 +4186,7 @@ public class HystrixObservableCommandTest {
             }
 
             @Override
-            protected Observable<String> onFailureResumeWithFallback() {
+            protected Observable<String> resumeWithFallback() {
                 if (isResponseTimedOut()) {
                     return Observable.just("timed-out");
                 } else {
@@ -4233,7 +4233,7 @@ public class HystrixObservableCommandTest {
             }
 
             @Override
-            protected Observable<String> onFailureResumeWithFallback() {
+            protected Observable<String> resumeWithFallback() {
                 if (isResponseTimedOut()) {
                     return Observable.just("timed-out");
                 } else {
@@ -4278,7 +4278,7 @@ public class HystrixObservableCommandTest {
             }
 
             @Override
-            protected Observable<String> onFailureResumeWithFallback() {
+            protected Observable<String> resumeWithFallback() {
                 if (isResponseTimedOut()) {
                     return Observable.just("timed-out");
                 } else {
@@ -4800,7 +4800,7 @@ public class HystrixObservableCommandTest {
             }
 
             @Override
-            protected Observable<Boolean> onFailureResumeWithFallback() {
+            protected Observable<Boolean> resumeWithFallback() {
                 return Observable.create(new OnSubscribe<Boolean>() {
 
                     @Override
@@ -4908,7 +4908,7 @@ public class HystrixObservableCommandTest {
             }
 
             @Override
-            protected Observable<Boolean> onFailureResumeWithFallback() {
+            protected Observable<Boolean> resumeWithFallback() {
                 return Observable.create(new OnSubscribe<Boolean>() {
 
                     @Override
@@ -4993,7 +4993,7 @@ public class HystrixObservableCommandTest {
             }
 
             @Override
-            protected Observable<Boolean> onFailureResumeWithFallback() {
+            protected Observable<Boolean> resumeWithFallback() {
                 return Observable.create(new OnSubscribe<Boolean>() {
 
                     @Override
@@ -5140,7 +5140,7 @@ public class HystrixObservableCommandTest {
             }
 
             @Override
-            protected Observable<Boolean> onFailureResumeWithFallback() {
+            protected Observable<Boolean> resumeWithFallback() {
                 return Observable.create(new OnSubscribe<Boolean>() {
 
                     @Override
@@ -6491,7 +6491,7 @@ public class HystrixObservableCommandTest {
         }
         
         @Override
-        protected Observable<Integer> onFailureResumeWithFallback() {
+        protected Observable<Integer> resumeWithFallback() {
             return Observable.just(1, 2, 3, 4);
         }
 
@@ -6525,7 +6525,7 @@ public class HystrixObservableCommandTest {
         }
         
         @Override
-        protected Observable<Integer> onFailureResumeWithFallback() {
+        protected Observable<Integer> resumeWithFallback() {
             if (lastSeen < 4) {
                 return Observable.range(lastSeen + 1, 4 - lastSeen);
             } else {
@@ -6628,7 +6628,7 @@ public class HystrixObservableCommandTest {
         }
 
         @Override
-        protected Observable<Boolean> onFailureResumeWithFallback() {
+        protected Observable<Boolean> resumeWithFallback() {
             return Observable.just(false).subscribeOn(Schedulers.computation());
         }
     }
@@ -6649,7 +6649,7 @@ public class HystrixObservableCommandTest {
         }
 
         @Override
-        protected Observable<Boolean> onFailureResumeWithFallback() {
+        protected Observable<Boolean> resumeWithFallback() {
             // TODO duplicate with error inside async Observable
             throw new RuntimeException("failed while getting fallback");
         }
@@ -6831,7 +6831,7 @@ public class HystrixObservableCommandTest {
         }
 
         @Override
-        protected Observable<Boolean> onFailureResumeWithFallback() {
+        protected Observable<Boolean> resumeWithFallback() {
             if (fallbackBehavior == FALLBACK_SUCCESS) {
                 return Observable.just(false);
             } else if (fallbackBehavior == FALLBACK_FAILURE) {
@@ -6839,7 +6839,7 @@ public class HystrixObservableCommandTest {
                 throw new RuntimeException("failed on fallback");
             } else {
                 // FALLBACK_NOT_IMPLEMENTED
-                return super.onFailureResumeWithFallback();
+                return super.resumeWithFallback();
             }
         }
     }
@@ -7044,7 +7044,7 @@ public class HystrixObservableCommandTest {
         }
 
         @Override
-        protected Observable<Boolean> onFailureResumeWithFallback() {
+        protected Observable<Boolean> resumeWithFallback() {
             return fallback;
         }
 
@@ -7077,7 +7077,7 @@ public class HystrixObservableCommandTest {
         }
 
         @Override
-        protected Observable<Boolean> onFailureResumeWithFallback() {
+        protected Observable<Boolean> resumeWithFallback() {
             return Observable.just(false).subscribeOn(Schedulers.computation());
         }
 
@@ -7193,7 +7193,7 @@ public class HystrixObservableCommandTest {
         }
 
         @Override
-        protected Observable<Boolean> onFailureResumeWithFallback() {
+        protected Observable<Boolean> resumeWithFallback() {
             return Observable.just(false).subscribeOn(Schedulers.computation());
         }
 
