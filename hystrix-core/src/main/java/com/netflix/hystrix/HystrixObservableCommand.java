@@ -34,7 +34,7 @@ import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
  * 
  * @ThreadSafe
  */
-public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> implements HystrixObservable<R>, HystrixExecutableInfo<R> {
+public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> implements HystrixObservable<R>, HystrixInvokableInfo<R> {
 
     /**
      * Construct a {@link HystrixObservableCommand} with defined {@link HystrixCommandGroupKey}.

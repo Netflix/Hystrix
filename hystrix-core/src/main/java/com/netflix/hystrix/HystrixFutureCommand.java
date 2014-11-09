@@ -44,7 +44,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
  * 
  * @ThreadSafe
  */
-public abstract class HystrixFutureCommand<R> extends AbstractCommand<R> implements HystrixExecutable<R>, HystrixExecutableInfo<R>, HystrixObservable<R> {
+public abstract class HystrixFutureCommand<R> extends AbstractCommand<R> implements HystrixExecutable<R>, HystrixInvokableInfo<R>, HystrixObservable<R> {
 
     /**
      * Construct a {@link HystrixFutureCommand} with defined {@link HystrixCommandGroupKey}.

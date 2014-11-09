@@ -68,9 +68,9 @@ public class HystrixRequestLog {
     private LinkedBlockingQueue<HystrixCommand<?>> executedCommands = new LinkedBlockingQueue<HystrixCommand<?>>(MAX_STORAGE);
 
     /**
-     * History of {@link HystrixExecutableInfo} executed in this request.
+     * History of {@link HystrixInvokableInfo} executed in this request.
      */
-    private LinkedBlockingQueue<HystrixExecutableInfo<?>> allExecutedCommands = new LinkedBlockingQueue<HystrixExecutableInfo<?>>(MAX_STORAGE);
+    private LinkedBlockingQueue<HystrixInvokableInfo<?>> allExecutedCommands = new LinkedBlockingQueue<HystrixInvokableInfo<?>>(MAX_STORAGE);
 
     // prevent public instantiation
     private HystrixRequestLog() {
@@ -112,7 +112,7 @@ public class HystrixRequestLog {
      * 
      * @return {@code Collection<HystrixCommand<?>>}
      */
-    public Collection<HystrixExecutableInfo<?>> getAllExecutedCommands() {
+    public Collection<HystrixInvokableInfo<?>> getAllExecutedCommands() {
         return Collections.unmodifiableCollection(allExecutedCommands);
     }
 
@@ -122,7 +122,7 @@ public class HystrixRequestLog {
      * @param command
      *            {@code HystrixCommand<?>}
      */
-    /* package */void addExecutedCommand(HystrixExecutableInfo<?> command) {
+    /* package */void addExecutedCommand(HystrixInvokableInfo<?> command) {
         if (!allExecutedCommands.offer(command)) {
             // see RequestLog: Reduce Chance of Memory Leak https://github.com/Netflix/Hystrix/issues/53
             logger.warn("RequestLog ignoring command after reaching limit of " + MAX_STORAGE + ". See https://github.com/Netflix/Hystrix/issues/53 for more information.");
@@ -169,7 +169,7 @@ public class HystrixRequestLog {
 
             StringBuilder builder = new StringBuilder();
             int estimatedLength = 0;
-            for (HystrixExecutableInfo<?> command : allExecutedCommands) {
+            for (HystrixInvokableInfo<?> command : allExecutedCommands) {
                 builder.setLength(0);
                 builder.append(command.getCommandKey().name());
 

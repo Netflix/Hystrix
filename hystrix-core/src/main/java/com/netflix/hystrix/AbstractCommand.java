@@ -65,7 +65,7 @@ import com.netflix.hystrix.strategy.properties.HystrixProperty;
 import com.netflix.hystrix.util.HystrixTimer;
 import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 
-/* package */abstract class AbstractCommand<R> implements HystrixExecutableInfo<R>, HystrixObservable<R> {
+/* package */abstract class AbstractCommand<R> implements HystrixInvokableInfo<R>, HystrixObservable<R> {
     // TODO make this package private
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractCommand.class);

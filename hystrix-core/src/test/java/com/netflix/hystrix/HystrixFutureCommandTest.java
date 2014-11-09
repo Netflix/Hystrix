@@ -2795,7 +2795,7 @@ public class HystrixFutureCommandTest {
 
         assertEquals(5, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
 
-        HystrixExecutableInfo<?>[] executeCommands = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().toArray(new HystrixFutureCommand<?>[] {});
+        HystrixInvokableInfo<?>[] executeCommands = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().toArray(new HystrixFutureCommand<?>[] {});
 
         System.out.println(":executeCommands[0].getExecutionEvents()" + executeCommands[0].getExecutionEvents());
         assertEquals(2, executeCommands[0].getExecutionEvents().size());

@@ -19,7 +19,7 @@ public class HystrixCommandTimeoutConcurrencyTesting {
                     throw new RuntimeException("Received NULL");
                 }
 
-                for (HystrixExecutableInfo<?> hi : HystrixRequestLog.getCurrentRequest().getAllExecutedCommands()) {
+                for (HystrixInvokableInfo<?> hi : HystrixRequestLog.getCurrentRequest().getAllExecutedCommands()) {
                     if (hi.isResponseTimedOut() && hi.getExecutionEvents().size() == 1) {
                         System.err.println("Missing fallback status!");
                         throw new RuntimeException("Missing fallback status on timeout.");
