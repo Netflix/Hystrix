@@ -258,7 +258,7 @@ public abstract class HystrixFutureCommand<R> extends AbstractCommand<R> impleme
      * 
      * @return R response type
      */
-    protected abstract HystrixFuture<R> run();
+    protected abstract HystrixFuture<R> start();
 
     /**
      * If {@link #execute()} or {@link #queue()} fails in any way then this method will be invoked to provide an opportunity to return a fallback response.
@@ -275,14 +275,14 @@ public abstract class HystrixFutureCommand<R> extends AbstractCommand<R> impleme
      * 
      * @return R or throw UnsupportedOperationException if not implemented
      */
-    protected HystrixFuture<R> getFallback() {
+    protected HystrixFuture<R> startFallback() {
         throw new UnsupportedOperationException("No fallback available.");
     }
 
     @Override
     final protected Observable<R> getExecutionObservable() {
         try {
-            return run().asObservable();
+            return start().asObservable();
         } catch (Throwable e) {
             return Observable.error(e);
         }
@@ -291,7 +291,7 @@ public abstract class HystrixFutureCommand<R> extends AbstractCommand<R> impleme
     @Override
     final protected Observable<R> getFallbackObservable() {
         try {
-            return getFallback().asObservable();
+            return startFallback().asObservable();
         } catch (Throwable e) {
             e.printStackTrace();
             return Observable.error(e);

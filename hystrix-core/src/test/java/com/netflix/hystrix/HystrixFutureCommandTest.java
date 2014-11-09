@@ -614,7 +614,7 @@ public class HystrixFutureCommandTest {
      * 
      *       TestHystrixCommand<Boolean> command = new TestHystrixCommand<Boolean>(TestHystrixCommand.testPropsBuilder()) {
      * @Override
-     *           protected Observable<Boolean> run() {
+     *           protected Observable<Boolean> start() {
      *           commandThread.set(Thread.currentThread());
      *           return Observable.just(true);
      *           }
@@ -687,7 +687,7 @@ public class HystrixFutureCommandTest {
      * 
      *       TestHystrixCommand<Boolean> command = new TestHystrixCommand<Boolean>(TestHystrixCommand.testPropsBuilder()) {
      * @Override
-     *           protected Observable<Boolean> run() {
+     *           protected Observable<Boolean> start() {
      *           commandThread.set(Thread.currentThread());
      *           return Observable.just(true);
      *           }
@@ -744,7 +744,7 @@ public class HystrixFutureCommandTest {
                 .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionIsolationStrategy(ExecutionIsolationStrategy.SEMAPHORE))) {
 
             @Override
-            protected HystrixFuture<Boolean> run() {
+            protected HystrixFuture<Boolean> start() {
                 commandThread.set(Thread.currentThread());
                 return HystrixFutureUtil.just(true);
             }
@@ -4167,7 +4167,7 @@ public class HystrixFutureCommandTest {
 
         HystrixFutureCommand<String> command = new HystrixFutureCommand<String>(properties) {
             @Override
-            protected HystrixFuture<String> run() {
+            protected HystrixFuture<String> start() {
                 return HystrixFutureUtil.from(new Action1<HystrixPromise<String>>() {
 
                     @Override
@@ -4184,7 +4184,7 @@ public class HystrixFutureCommandTest {
             }
 
             @Override
-            protected HystrixFuture<String> getFallback() {
+            protected HystrixFuture<String> startFallback() {
                 if (isResponseTimedOut()) {
                     return HystrixFutureUtil.just("timed-out");
                 } else {
@@ -4213,7 +4213,7 @@ public class HystrixFutureCommandTest {
 
         HystrixFutureCommand<String> command = new HystrixFutureCommand<String>(properties) {
             @Override
-            protected HystrixFuture<String> run() {
+            protected HystrixFuture<String> start() {
                 return HystrixFutureUtil.from(new Action1<HystrixPromise<String>>() {
 
                     @Override
@@ -4230,7 +4230,7 @@ public class HystrixFutureCommandTest {
             }
 
             @Override
-            protected HystrixFuture<String> getFallback() {
+            protected HystrixFuture<String> startFallback() {
                 if (isResponseTimedOut()) {
                     return HystrixFutureUtil.just("timed-out");
                 } else {
@@ -4256,7 +4256,7 @@ public class HystrixFutureCommandTest {
 
         HystrixFutureCommand<String> command = new HystrixFutureCommand<String>(properties) {
             @Override
-            protected HystrixFuture<String> run() {
+            protected HystrixFuture<String> start() {
                 return HystrixFutureUtil.from(new Action1<HystrixPromise<String>>() {
 
                     @Override
@@ -4275,7 +4275,7 @@ public class HystrixFutureCommandTest {
             }
 
             @Override
-            protected HystrixFuture<String> getFallback() {
+            protected HystrixFuture<String> startFallback() {
                 if (isResponseTimedOut()) {
                     return HystrixFutureUtil.just("timed-out");
                 } else {
@@ -4598,7 +4598,7 @@ public class HystrixFutureCommandTest {
                 .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionIsolationStrategy(isolation))) {
 
             @Override
-            protected HystrixFuture<Boolean> run() {
+            protected HystrixFuture<Boolean> start() {
                 return HystrixFutureUtil.from(new Action1<HystrixPromise<Boolean>>() {
 
                     @Override
@@ -4660,7 +4660,7 @@ public class HystrixFutureCommandTest {
                 .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionIsolationStrategy(isolation))) {
 
             @Override
-            protected HystrixFuture<Boolean> run() {
+            protected HystrixFuture<Boolean> start() {
                 return HystrixFutureUtil.from(new Action1<HystrixPromise<Boolean>>() {
 
                     @Override
@@ -4722,7 +4722,7 @@ public class HystrixFutureCommandTest {
                 .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionIsolationStrategy(isolation))) {
 
             @Override
-            protected HystrixFuture<Boolean> run() {
+            protected HystrixFuture<Boolean> start() {
                 return HystrixFutureUtil.from(new Action1<HystrixPromise<Boolean>>() {
 
                     @Override
@@ -4784,7 +4784,7 @@ public class HystrixFutureCommandTest {
                 .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionIsolationStrategy(isolation))) {
 
             @Override
-            protected HystrixFuture<Boolean> run() {
+            protected HystrixFuture<Boolean> start() {
                 return HystrixFutureUtil.from(new Action1<HystrixPromise<Boolean>>() {
 
                     @Override
@@ -4796,7 +4796,7 @@ public class HystrixFutureCommandTest {
             }
 
             @Override
-            protected HystrixFuture<Boolean> getFallback() {
+            protected HystrixFuture<Boolean> startFallback() {
                 return HystrixFutureUtil.from(new Action1<HystrixPromise<Boolean>>() {
 
                     @Override
@@ -4891,7 +4891,7 @@ public class HystrixFutureCommandTest {
                 })) {
 
             @Override
-            protected HystrixFuture<Boolean> run() {
+            protected HystrixFuture<Boolean> start() {
                 return HystrixFutureUtil.from(new Action1<HystrixPromise<Boolean>>() {
 
                     @Override
@@ -4903,7 +4903,7 @@ public class HystrixFutureCommandTest {
             }
 
             @Override
-            protected HystrixFuture<Boolean> getFallback() {
+            protected HystrixFuture<Boolean> startFallback() {
                 return HystrixFutureUtil.from(new Action1<HystrixPromise<Boolean>>() {
 
                     @Override
@@ -4975,7 +4975,7 @@ public class HystrixFutureCommandTest {
                 .setCircuitBreaker(new TestCircuitBreaker().setForceShortCircuit(true))) {
 
             @Override
-            protected HystrixFuture<Boolean> run() {
+            protected HystrixFuture<Boolean> start() {
                 return HystrixFutureUtil.from(new Action1<HystrixPromise<Boolean>>() {
 
                     @Override
@@ -4987,7 +4987,7 @@ public class HystrixFutureCommandTest {
             }
 
             @Override
-            protected HystrixFuture<Boolean> getFallback() {
+            protected HystrixFuture<Boolean> startFallback() {
                 return HystrixFutureUtil.from(new Action1<HystrixPromise<Boolean>>() {
 
                     @Override
@@ -5051,7 +5051,7 @@ public class HystrixFutureCommandTest {
                 .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionIsolationStrategy(isolation).withExecutionIsolationThreadTimeoutInMilliseconds(50))) {
 
             @Override
-            protected HystrixFuture<Boolean> run() {
+            protected HystrixFuture<Boolean> start() {
                 return HystrixFutureUtil.from(new Action1<HystrixPromise<Boolean>>() {
 
                     @Override
@@ -5117,7 +5117,7 @@ public class HystrixFutureCommandTest {
                 .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionIsolationStrategy(isolation).withExecutionIsolationThreadTimeoutInMilliseconds(50))) {
 
             @Override
-            protected HystrixFuture<Boolean> run() {
+            protected HystrixFuture<Boolean> start() {
                 return HystrixFutureUtil.from(new Action1<HystrixPromise<Boolean>>() {
 
                     @Override
@@ -5133,7 +5133,7 @@ public class HystrixFutureCommandTest {
             }
 
             @Override
-            protected HystrixFuture<Boolean> getFallback() {
+            protected HystrixFuture<Boolean> startFallback() {
                 return HystrixFutureUtil.from(new Action1<HystrixPromise<Boolean>>() {
 
                     @Override
@@ -6236,7 +6236,7 @@ public class HystrixFutureCommandTest {
         }
 
         @Override
-        protected HystrixFuture<Boolean> run() {
+        protected HystrixFuture<Boolean> start() {
             return HystrixFutureUtil.just(true, Schedulers.computation());
         }
 
@@ -6252,7 +6252,7 @@ public class HystrixFutureCommandTest {
         }
 
         @Override
-        protected HystrixFuture<Boolean> run() {
+        protected HystrixFuture<Boolean> start() {
             System.out.println("successfully executed");
             return HystrixFutureUtil.just(true, Schedulers.computation());
         }
@@ -6270,7 +6270,7 @@ public class HystrixFutureCommandTest {
         }
 
         @Override
-        protected HystrixFuture<Boolean> run() {
+        protected HystrixFuture<Boolean> start() {
             System.out.println("successfully executed");
             return HystrixFutureUtil.just(true, Schedulers.computation());
         }
@@ -6287,7 +6287,7 @@ public class HystrixFutureCommandTest {
         }
 
         @Override
-        protected HystrixFuture<Boolean> run() {
+        protected HystrixFuture<Boolean> start() {
             // TODO duplicate with error inside async Observable
             System.out.println("*** simulated failed execution ***");
             throw new RuntimeException("we failed with an unknown issue");
@@ -6305,7 +6305,7 @@ public class HystrixFutureCommandTest {
         }
 
         @Override
-        protected HystrixFuture<Boolean> run() {
+        protected HystrixFuture<Boolean> start() {
             // TODO duplicate with error inside async Observable
             System.out.println("*** simulated failed execution ***");
             throw new RuntimeException("we failed with a simulated issue");
@@ -6328,14 +6328,14 @@ public class HystrixFutureCommandTest {
         }
 
         @Override
-        protected HystrixFuture<Boolean> run() {
+        protected HystrixFuture<Boolean> start() {
             // TODO duplicate with error inside async Observable
             System.out.println("*** simulated failed execution ***");
             throw new RuntimeException("we failed with a simulated issue");
         }
 
         @Override
-        protected HystrixFuture<Boolean> getFallback() {
+        protected HystrixFuture<Boolean> startFallback() {
             return HystrixFutureUtil.just(false, Schedulers.computation());
         }
     }
@@ -6350,13 +6350,13 @@ public class HystrixFutureCommandTest {
         }
 
         @Override
-        protected HystrixFuture<Boolean> run() {
+        protected HystrixFuture<Boolean> start() {
             System.out.println("*** simulated failed execution ***");
             throw new RuntimeException("we failed with a simulated issue");
         }
 
         @Override
-        protected HystrixFuture<Boolean> getFallback() {
+        protected HystrixFuture<Boolean> startFallback() {
             // TODO duplicate with error inside async Observable
             throw new RuntimeException("failed while getting fallback");
         }
@@ -6379,7 +6379,7 @@ public class HystrixFutureCommandTest {
         }
 
         @Override
-        protected HystrixFuture<String> run() {
+        protected HystrixFuture<String> start() {
             executed = true;
             System.out.println("successfully executed");
             return HystrixFutureUtil.just(value, Schedulers.computation());
@@ -6415,7 +6415,7 @@ public class HystrixFutureCommandTest {
         }
 
         @Override
-        protected HystrixFuture<String> run() {
+        protected HystrixFuture<String> start() {
             executed = true;
             System.out.println("successfully executed");
             return HystrixFutureUtil.just(value, Schedulers.computation());
@@ -6452,7 +6452,7 @@ public class HystrixFutureCommandTest {
         }
 
         @Override
-        protected HystrixFuture<String> run() {
+        protected HystrixFuture<String> start() {
             executed = true;
             final HystrixPromise<String> p = HystrixPromise.create();
             Observable.just(value).delay(duration, TimeUnit.MILLISECONDS).subscribeOn(Schedulers.computation())
@@ -6485,7 +6485,7 @@ public class HystrixFutureCommandTest {
         }
 
         @Override
-        protected HystrixFuture<Boolean> run() {
+        protected HystrixFuture<Boolean> start() {
             System.out.println("successfully executed");
             return HystrixFutureUtil.just(true, Schedulers.computation());
         }
@@ -6516,7 +6516,7 @@ public class HystrixFutureCommandTest {
         }
 
         @Override
-        protected HystrixFuture<Boolean> run() {
+        protected HystrixFuture<Boolean> start() {
             return HystrixFutureUtil.from(new Action1<HystrixPromise<Boolean>>() {
 
                 @Override
@@ -6541,7 +6541,7 @@ public class HystrixFutureCommandTest {
         }
 
         @Override
-        protected HystrixFuture<Boolean> getFallback() {
+        protected HystrixFuture<Boolean> startFallback() {
             if (fallbackBehavior == FALLBACK_SUCCESS) {
                 return HystrixFutureUtil.just(false);
             } else if (fallbackBehavior == FALLBACK_FAILURE) {
@@ -6549,7 +6549,7 @@ public class HystrixFutureCommandTest {
                 throw new RuntimeException("failed on fallback");
             } else {
                 // FALLBACK_NOT_IMPLEMENTED
-                return super.getFallback();
+                return super.startFallback();
             }
         }
     }
@@ -6563,7 +6563,7 @@ public class HystrixFutureCommandTest {
         }
 
         @Override
-        protected HystrixFuture<Boolean> run() {
+        protected HystrixFuture<Boolean> start() {
             return HystrixFutureUtil.from(new Action1<HystrixPromise<Boolean>>() {
 
                 @Override
@@ -6610,7 +6610,7 @@ public class HystrixFutureCommandTest {
         }
 
         @Override
-        protected HystrixFuture<Boolean> run() {
+        protected HystrixFuture<Boolean> start() {
             return HystrixFutureUtil.from(new Action1<HystrixPromise<Boolean>>() {
 
                 @Override
@@ -6648,7 +6648,7 @@ public class HystrixFutureCommandTest {
         }
 
         @Override
-        protected HystrixFuture<Boolean> run() {
+        protected HystrixFuture<Boolean> start() {
             return HystrixFutureUtil.from(new Action1<HystrixPromise<Boolean>>() {
 
                 @Override
@@ -6690,7 +6690,7 @@ public class HystrixFutureCommandTest {
         }
 
         @Override
-        protected HystrixFuture<Boolean> run() {
+        protected HystrixFuture<Boolean> start() {
             return HystrixFutureUtil.from(new Action1<HystrixPromise<Boolean>>() {
 
                 @Override
@@ -6730,7 +6730,7 @@ public class HystrixFutureCommandTest {
         }
 
         @Override
-        protected HystrixFuture<Boolean> run() {
+        protected HystrixFuture<Boolean> start() {
             return HystrixFutureUtil.from(new Action1<HystrixPromise<Boolean>>() {
 
                 @Override
@@ -6748,7 +6748,7 @@ public class HystrixFutureCommandTest {
         }
 
         @Override
-        protected HystrixFuture<Boolean> getFallback() {
+        protected HystrixFuture<Boolean> startFallback() {
             return fallback;
         }
 
@@ -6762,7 +6762,7 @@ public class HystrixFutureCommandTest {
         }
 
         @Override
-        protected HystrixFuture<Boolean> run() {
+        protected HystrixFuture<Boolean> start() {
             return HystrixFutureUtil.from(new Action1<HystrixPromise<Boolean>>() {
 
                 @Override
@@ -6779,7 +6779,7 @@ public class HystrixFutureCommandTest {
         }
 
         @Override
-        protected HystrixFuture<Boolean> getFallback() {
+        protected HystrixFuture<Boolean> startFallback() {
             return HystrixFutureUtil.just(false, Schedulers.computation());
         }
 
@@ -6797,7 +6797,7 @@ public class HystrixFutureCommandTest {
         }
 
         @Override
-        protected HystrixFuture<Boolean> run() {
+        protected HystrixFuture<Boolean> start() {
             return HystrixFutureUtil.from(new Action1<HystrixPromise<Boolean>>() {
 
                 @Override
@@ -6862,7 +6862,7 @@ public class HystrixFutureCommandTest {
         }
 
         @Override
-        protected HystrixFuture<Boolean> run() {
+        protected HystrixFuture<Boolean> start() {
             try {
                 if (completionLatch.await(1000, TimeUnit.MILLISECONDS)) {
                     throw new RuntimeException("timed out waiting on completionLatch");
@@ -6888,12 +6888,12 @@ public class HystrixFutureCommandTest {
         }
 
         @Override
-        protected HystrixFuture<Boolean> run() {
+        protected HystrixFuture<Boolean> start() {
             throw new HystrixBadRequestException("Message to developer that they passed in bad data or something like that.");
         }
 
         @Override
-        protected HystrixFuture<Boolean> getFallback() {
+        protected HystrixFuture<Boolean> startFallback() {
             return HystrixFutureUtil.just(false, Schedulers.computation());
         }
 
@@ -6912,7 +6912,7 @@ public class HystrixFutureCommandTest {
         }
 
         @Override
-        protected HystrixFuture<Boolean> run() {
+        protected HystrixFuture<Boolean> start() {
             // TODO duplicate with error inside async Observable
             throw new Error("simulated java.lang.Error message");
         }
@@ -6927,7 +6927,7 @@ public class HystrixFutureCommandTest {
         }
 
         @Override
-        protected HystrixFuture<Boolean> run() {
+        protected HystrixFuture<Boolean> start() {
             return HystrixFutureUtil.error(new IOException("simulated checked exception message"));
         }
 
