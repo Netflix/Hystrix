@@ -90,6 +90,10 @@ public class HystrixThreadPoolMetrics {
         return Collections.unmodifiableCollection(metrics.values());
     }
 
+    public static void resetAll() {
+        metrics.clear();
+    }
+
     private final HystrixThreadPoolKey threadPoolKey;
     private final HystrixRollingNumber counter;
     private final ThreadPoolExecutor threadPool;
