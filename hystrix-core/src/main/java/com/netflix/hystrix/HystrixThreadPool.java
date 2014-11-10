@@ -100,21 +100,12 @@ public interface HystrixThreadPool {
             }
 
             // if we get here this is the first time so we need to initialize
-
-            // Create and add to the map ... use putIfAbsent to atomically handle the possible race-condition of
-            // 2 threads hitting this point at the same time and let ConcurrentHashMap provide us our thread-safety
-            // If 2 threads hit here only one will get added and the other will get a non-null response instead.
-            HystrixThreadPool poolForKey = threadPools.putIfAbsent(key, new HystrixThreadPoolDefault(threadPoolKey, propertiesBuilder));
-            if (poolForKey == null) {
-                // this means the putIfAbsent step just created a new one so let's retrieve and return it
-                HystrixThreadPool threadPoolJustCreated = threadPools.get(key);
-                // return it
-                return threadPoolJustCreated;
-            } else {
-                // this means a race occurred and while attempting to 'put' another one got there before
-                // and we instead retrieved it and will now return it
-                return poolForKey;
+            synchronized (HystrixThreadPool.class) {
+                if (!threadPools.containsKey(key)) {
+                    threadPools.put(key, new HystrixThreadPoolDefault(threadPoolKey, propertiesBuilder));
+                }
             }
+            return threadPools.get(key);
         }
 
         /**
