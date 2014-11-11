@@ -16,9 +16,13 @@
 package com.netflix.hystrix.contrib.javanica.command;
 
 
+import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.netflix.hystrix.HystrixCollapser;
+import com.netflix.hystrix.contrib.javanica.exception.FallbackInvocationException;
 import com.netflix.hystrix.exception.HystrixBadRequestException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.Collection;
@@ -29,7 +33,9 @@ import java.util.Map;
  * This command is used in collapser.
  */
 @ThreadSafe
-public class BatchHystrixCommand extends AbstractHystrixCommand<List<Object>> {
+public class BatchHystrixCommand extends AbstractHystrixCommand<List<Optional<Object>>> {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(GenericCommand.class);
 
     /**
      * If some error occurs during the processing in run() then if {@link #fallbackEnabled} is true then the {@link #processWithFallback}
@@ -63,22 +69,21 @@ public class BatchHystrixCommand extends AbstractHystrixCommand<List<Object>> {
      * {@inheritDoc}
      */
     @Override
-    protected List<Object> run() throws Exception {
-        List<Object> response = Lists.newArrayList();
+    protected List<Optional<Object>> run() throws Exception {
+        List<Optional<Object>> response = Lists.newArrayList();
         for (HystrixCollapser.CollapsedRequest<Object, Object> request : getCollapsedRequests()) {
             final Object[] args = (Object[]) request.getArgument();
             try {
-                response.add(fallbackEnabled ? processWithFallback(args) : process(args));
-            } catch (RuntimeException ex) {
+                response.add(Optional.of(fallbackEnabled ? processWithFallback(args) : process(args)));
+            } catch (Exception ex) {
                 request.setException(ex);
-                response.add(null);
+                response.add(Optional.absent());
             }
-
         }
         return response;
     }
 
-    private Object process(final Object[] args) {
+    private Object process(final Object[] args) throws Exception {
         return process(new Action() {
             @Override
             Object execute() {
@@ -87,16 +92,20 @@ public class BatchHystrixCommand extends AbstractHystrixCommand<List<Object>> {
         });
     }
 
-    private Object processWithFallback(final Object[] args) {
-        Object result = null;
+    private Object processWithFallback(final Object[] args) throws Exception {
+        Object result;
         try {
             result = process(args);
-        } catch (RuntimeException ex) {
-            if (ex instanceof HystrixBadRequestException || getFallbackAction() == null) {
+        } catch (Exception ex) {
+            if (ex instanceof HystrixBadRequestException) {
                 throw ex;
             } else {
                 if (getFallbackAction() != null) {
                     result = processFallback(args);
+                } else {
+                    // if command doesn't have fallback then
+                    // call super.getFallback() that throws exception by default.
+                    result = super.getFallback();
                 }
             }
         }
@@ -104,12 +113,23 @@ public class BatchHystrixCommand extends AbstractHystrixCommand<List<Object>> {
     }
 
     private Object processFallback(final Object[] args) {
-        return process(new Action() {
-            @Override
-            Object execute() {
-                return getFallbackAction().executeWithArgs(ExecutionType.SYNCHRONOUS, args);
+        if (getFallbackAction() != null) {
+            final CommandAction commandAction = getFallbackAction();
+            try {
+                return process(new Action() {
+                    @Override
+                    Object execute() {
+                        return commandAction.executeWithArgs(ExecutionType.SYNCHRONOUS, args);
+                    }
+                });
+            } catch (Throwable e) {
+                LOGGER.error(FallbackErrorMessageBuilder.create()
+                        .append(commandAction, e).build());
+                throw new FallbackInvocationException(e.getCause());
             }
-        });
+        } else {
+            return super.getFallback();
+        }
     }
 
 

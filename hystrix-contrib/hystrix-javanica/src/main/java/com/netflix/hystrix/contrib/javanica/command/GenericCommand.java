@@ -16,6 +16,9 @@
 package com.netflix.hystrix.contrib.javanica.command;
 
 import com.netflix.hystrix.HystrixCollapser;
+import com.netflix.hystrix.contrib.javanica.exception.FallbackInvocationException;
+import com.netflix.hystrix.exception.HystrixBadRequestException;
+import com.netflix.hystrix.exception.HystrixRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,19 +67,29 @@ public class GenericCommand extends AbstractHystrixCommand<Object> {
      * HystrixCommand annotation, otherwise current implementation throws RuntimeException and leaves the caller to deal with it
      * (see {@link super#getFallback()}).
      * The getFallback() is always processed synchronously.
+     * Since getFallback() can throw only runtime exceptions thus any exceptions are thrown within getFallback() method
+     * are wrapped in {@link FallbackInvocationException}.
+     * A caller gets {@link com.netflix.hystrix.exception.HystrixRuntimeException}
+     * and should call getCause to get original exception that was thrown in getFallback().
      *
      * @return result of invocation of fallback method or RuntimeException
      */
     @Override
     protected Object getFallback() {
         if (getFallbackAction() != null) {
-            return process(new Action() {
-                @Override
-                Object execute() {
-                    return getFallbackAction().execute(ExecutionType.SYNCHRONOUS);
-                }
-            });
-
+            final CommandAction commandAction = getFallbackAction();
+            try {
+                return process(new Action() {
+                    @Override
+                    Object execute() {
+                        return commandAction.execute(ExecutionType.SYNCHRONOUS);
+                    }
+                });
+            } catch (Throwable e) {
+                LOGGER.error(FallbackErrorMessageBuilder.create()
+                        .append(commandAction, e).build());
+                throw new FallbackInvocationException(e.getCause());
+            }
         } else {
             return super.getFallback();
         }

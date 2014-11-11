@@ -15,13 +15,37 @@
  */
 package com.netflix.hystrix.contrib.javanica.command;
 
+import com.netflix.hystrix.contrib.javanica.exception.CommandActionExecutionException;
+
 /**
  * Simple action to encapsulate some logic to process it in a Hystrix command.
  */
 public abstract class CommandAction {
 
-    public abstract Object execute(ExecutionType executionType);
+    /**
+     * Executes action in accordance with the given execution type.
+     *
+     * @param executionType the execution type
+     * @return result of execution
+     * @throws com.netflix.hystrix.contrib.javanica.exception.CommandActionExecutionException
+     */
+    public abstract Object execute(ExecutionType executionType) throws CommandActionExecutionException;
 
-    public abstract Object executeWithArgs(ExecutionType executionType, Object[] args);
+    /**
+     * Executes action with parameters in accordance with the given execution ty
+     *
+     * @param executionType the execution type
+     * @param args          the parameters of the action
+     * @return result of execution
+     * @throws com.netflix.hystrix.contrib.javanica.exception.CommandActionExecutionException
+     */
+    public abstract Object executeWithArgs(ExecutionType executionType, Object[] args) throws CommandActionExecutionException;
+
+    /**
+     * Gets action name. Useful for debugging.
+     *
+     * @return the action name
+     */
+    public abstract String getActionName();
 
 }

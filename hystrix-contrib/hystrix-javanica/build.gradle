@@ -5,22 +5,24 @@ apply plugin: 'idea'
 aspectjVersion = '1.7.4'
 
 dependencies {
-  compile project(':hystrix-core')
+    compile project(':hystrix-core')
 
-  compile "org.aspectj:aspectjweaver:$aspectjVersion"
-  compile "org.aspectj:aspectjrt:$aspectjVersion"
+    compile "org.aspectj:aspectjweaver:$aspectjVersion"
+    compile "org.aspectj:aspectjrt:$aspectjVersion"
 
-  compile 'com.google.guava:guava:15.0'
-  compile 'commons-collections:commons-collections:3.2.1'
-  compile 'org.apache.commons:commons-lang3:3.1'
-  compile 'com.google.code.findbugs:jsr305:2.0.0'
-  testCompile 'junit:junit-dep:4.10'
-  testCompile 'org.springframework:spring-core:4.0.0.RELEASE'
-  testCompile 'org.springframework:spring-context:4.0.0.RELEASE'
-  testCompile 'org.springframework:spring-aop:4.0.0.RELEASE'
-  testCompile 'org.springframework:spring-test:4.0.0.RELEASE'
-  testCompile 'cglib:cglib:3.1'
-  testCompile 'org.mockito:mockito-all:1.9.5'
+    compile 'com.google.guava:guava:15.0'
+    compile 'commons-collections:commons-collections:3.2.1'
+    compile 'org.apache.commons:commons-lang3:3.1'
+    compile 'com.google.code.findbugs:jsr305:2.0.0'
+    testCompile 'junit:junit-dep:4.10'
+    testCompile 'org.springframework:spring-core:4.0.0.RELEASE'
+    testCompile 'org.springframework:spring-context:4.0.0.RELEASE'
+    testCompile 'org.springframework:spring-aop:4.0.0.RELEASE'
+    testCompile 'org.springframework:spring-test:4.0.0.RELEASE'
+    testCompile 'cglib:cglib:3.1'
+    testCompile 'org.mockito:mockito-all:1.9.5'
+    testCompile 'log4j:log4j:1.2.17'
+    testCompile 'org.slf4j:slf4j-log4j12:1.7.7'
 }
 
 eclipse {
