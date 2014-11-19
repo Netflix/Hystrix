@@ -18,9 +18,12 @@ package com.netflix.hystrix.contrib.javanica.command;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
+import com.netflix.config.ConfigurationManager;
 import com.netflix.hystrix.HystrixCollapser;
+import com.netflix.hystrix.HystrixThreadPoolProperties;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
+import com.netflix.hystrix.contrib.javanica.conf.HystrixPropertiesManager;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 
@@ -50,6 +53,8 @@ public abstract class AbstractHystrixCommandFactory<T extends AbstractHystrixCom
         String commandKey = StringUtils.isNotEmpty(metaHolder.getHystrixCommand().commandKey()) ?
                 metaHolder.getHystrixCommand().commandKey()
                 : metaHolder.getDefaultCommandKey();
+
+        HystrixPropertiesManager.initializeThreadPoolProperties(metaHolder.getHystrixCommand());
 
         CommandSetterBuilder setterBuilder = new CommandSetterBuilder();
         setterBuilder.commandKey(commandKey);
