@@ -77,6 +77,14 @@ public class CommandTest {
         assertTrue(command.getExecutionEvents().contains(HystrixEventType.SUCCESS));
     }
 
+    @Test
+    public void should_work_with_parameterized_method() throws Exception {
+        assertEquals(Integer.valueOf(1), userService.echo(1));
+
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertTrue(getCommand().getExecutionEvents().contains(HystrixEventType.SUCCESS));
+    }
+
     private com.netflix.hystrix.HystrixCommand<?> getCommand() {
         return HystrixRequestLog.getCurrentRequest().getExecutedCommands().iterator().next();
     }
@@ -96,6 +104,11 @@ public class CommandTest {
         @HystrixCommand(groupKey = "UserGroup")
         public User getUserSync(String id, String name) {
             return new User(id, name + id); // it should be network call
+        }
+
+        @HystrixCommand
+        public <T> T echo(T value) {
+            return value;
         }
 
     }
