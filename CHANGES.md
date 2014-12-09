@@ -1,5 +1,14 @@
 # Hystrix Releases #
 
+### Version 1.3.19 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.3.19%22)) ###
+
+* [Pull 348](https://github.com/Netflix/Hystrix/pull/348) Javanica: Allow for @HystrixCommand to be used on parameterized return type
+* [Pull 329](https://github.com/Netflix/Hystrix/pull/329) Javanica: allowing configuration of threadPoolProperties through @HystrixCommand annotation
+
+### Version 1.3.18 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.3.18%22)) ###
+
+* [Pull 305](https://github.com/Netflix/Hystrix/pull/305) Removing deprecated RxJava usage
+
 ### Version 1.3.17 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.3.17%22)) ###
 
 * [Pull 291](https://github.com/Netflix/Hystrix/pull/291) String optimization for HystrixRequestLog
