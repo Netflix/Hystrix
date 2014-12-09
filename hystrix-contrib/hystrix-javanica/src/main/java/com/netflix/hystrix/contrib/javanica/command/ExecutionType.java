@@ -39,16 +39,15 @@ public enum ExecutionType {
      */
     OBSERVABLE;
 
-
     /**
      * Gets execution type for specified class type.
      * @param type the type
      * @return the execution type {@link ExecutionType}
      */
     public static ExecutionType getExecutionType(Class<?> type) {
-        if (type.isAssignableFrom(Future.class)) {
+        if (Future.class.isAssignableFrom(type)) {
             return ExecutionType.ASYNCHRONOUS;
-        } else if (type.isAssignableFrom(Observable.class)) {
+        } else if (Observable.class.isAssignableFrom(type)) {
             return ExecutionType.OBSERVABLE;
         } else {
             return ExecutionType.SYNCHRONOUS;
