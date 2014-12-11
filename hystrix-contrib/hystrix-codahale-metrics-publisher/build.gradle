@@ -4,7 +4,7 @@ apply plugin: 'idea'
 
 dependencies {
     compile project(':hystrix-core')
-    compile 'com.codahale.metrics:metrics-core:3.0.1'
+    compile 'com.codahale.metrics:metrics-core:3.0.2'
     testCompile 'junit:junit-dep:4.10'
     testCompile 'org.mockito:mockito-all:1.9.5'
 }
