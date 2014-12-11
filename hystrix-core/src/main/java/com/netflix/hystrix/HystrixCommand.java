@@ -54,12 +54,66 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
      * @param group
      *            {@link HystrixCommandGroupKey} used to group together multiple {@link HystrixCommand} objects.
      *            <p>
-     *            The {@link HystrixCommandGroupKey} is used to represent a common relationship between commands. For example, a library or team name, the system all related commands interace with,
+     *            The {@link HystrixCommandGroupKey} is used to represent a common relationship between commands. For example, a library or team name, the system all related commands interact with,
      *            common business purpose etc.
      */
     protected HystrixCommand(HystrixCommandGroupKey group) {
         // use 'null' to specify use the default
         this(new Setter(group));
+    }
+
+
+    /**
+     * Construct a {@link HystrixCommand} with defined {@link HystrixCommandGroupKey} and {@link HystrixThreadPoolKey}.
+     * <p>
+     * The {@link HystrixCommandKey} will be derived from the implementing class name.
+     *
+     * @param group
+     *            {@link HystrixCommandGroupKey} used to group together multiple {@link HystrixCommand} objects.
+     *            <p>
+     *            The {@link HystrixCommandGroupKey} is used to represent a common relationship between commands. For example, a library or team name, the system all related commands interact with,
+     *            common business purpose etc.
+     * @param threadPool
+     *            {@link HystrixThreadPoolKey} used to identify the thread pool in which a {@link HystrixCommand} executes.
+     */
+    protected HystrixCommand(HystrixCommandGroupKey group, HystrixThreadPoolKey threadPool) {
+        this(new Setter(group).andThreadPoolKey(threadPool));
+    }
+
+    /**
+     * Construct a {@link HystrixCommand} with defined {@link HystrixCommandGroupKey} and thread timeout
+     * <p>
+     * The {@link HystrixCommandKey} will be derived from the implementing class name.
+     *
+     * @param group
+     *            {@link HystrixCommandGroupKey} used to group together multiple {@link HystrixCommand} objects.
+     *            <p>
+     *            The {@link HystrixCommandGroupKey} is used to represent a common relationship between commands. For example, a library or team name, the system all related commands interact with,
+     *            common business purpose etc.
+     * @param executionIsolationThreadTimeoutInMilliseconds
+     *            Time in milliseconds at which point the calling thread will timeout (using {@link Future#get}) and walk away from the executing thread.
+     */
+    protected HystrixCommand(HystrixCommandGroupKey group, int executionIsolationThreadTimeoutInMilliseconds) {
+        this(new Setter(group).andCommandPropertiesDefaults(HystrixCommandProperties.Setter().withExecutionIsolationThreadTimeoutInMilliseconds(executionIsolationThreadTimeoutInMilliseconds)));
+    }
+
+    /**
+     * Construct a {@link HystrixCommand} with defined {@link HystrixCommandGroupKey}, {@link HystrixThreadPoolKey}, and thread timeout.
+     * <p>
+     * The {@link HystrixCommandKey} will be derived from the implementing class name.
+     *
+     * @param group
+     *            {@link HystrixCommandGroupKey} used to group together multiple {@link HystrixCommand} objects.
+     *            <p>
+     *            The {@link HystrixCommandGroupKey} is used to represent a common relationship between commands. For example, a library or team name, the system all related commands interact with,
+     *            common business purpose etc.
+     * @param threadPool
+     *            {@link HystrixThreadPoolKey} used to identify the thread pool in which a {@link HystrixCommand} executes.
+     * @param executionIsolationThreadTimeoutInMilliseconds
+     *            Time in milliseconds at which point the calling thread will timeout (using {@link Future#get}) and walk away from the executing thread.
+     */
+    protected HystrixCommand(HystrixCommandGroupKey group, HystrixThreadPoolKey threadPool, int executionIsolationThreadTimeoutInMilliseconds) {
+        this(new Setter(group).andThreadPoolKey(threadPool).andCommandPropertiesDefaults(HystrixCommandProperties.Setter().withExecutionIsolationThreadTimeoutInMilliseconds(executionIsolationThreadTimeoutInMilliseconds)));
     }
 
     /**
