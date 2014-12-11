@@ -2838,7 +2838,7 @@ public class HystrixCommandTest {
 
         assertEquals(5, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
 
-        HystrixExecutableInfo<?>[] executeCommands = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().toArray(new HystrixExecutableInfo<?>[] {});
+        HystrixInvokableInfo<?>[] executeCommands = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().toArray(new HystrixInvokableInfo<?>[] {});
 
         System.out.println(":executeCommands[0].getExecutionEvents()" + executeCommands[0].getExecutionEvents());
         assertEquals(2, executeCommands[0].getExecutionEvents().size());

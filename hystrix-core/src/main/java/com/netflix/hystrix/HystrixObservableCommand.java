@@ -34,7 +34,7 @@ import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
  * 
  * @ThreadSafe
  */
-public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> implements HystrixObservable<R>, HystrixExecutableInfo<R> {
+public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> implements HystrixObservable<R>, HystrixInvokableInfo<R> {
 
     /**
      * Construct a {@link HystrixObservableCommand} with defined {@link HystrixCommandGroupKey}.
@@ -205,7 +205,7 @@ public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> imp
      * 
      * @return R or UnsupportedOperationException if not implemented
      */
-    protected Observable<R> onFailureResumeWithFallback() {
+    protected Observable<R> resumeWithFallback() {
         return Observable.error(new UnsupportedOperationException("No fallback available."));
     }
 
@@ -216,6 +216,6 @@ public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> imp
     
     @Override
     final protected Observable<R> getFallbackObservable() {
-        return onFailureResumeWithFallback();
+        return resumeWithFallback();
     }
 }

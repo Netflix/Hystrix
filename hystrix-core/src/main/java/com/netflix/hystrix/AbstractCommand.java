@@ -65,7 +65,7 @@ import com.netflix.hystrix.strategy.properties.HystrixProperty;
 import com.netflix.hystrix.util.HystrixTimer;
 import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 
-/* package */abstract class AbstractCommand<R> implements HystrixExecutableInfo<R>, HystrixObservable<R> {
+/* package */abstract class AbstractCommand<R> implements HystrixInvokableInfo<R>, HystrixObservable<R> {
     // TODO make this package private
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractCommand.class);
@@ -1146,7 +1146,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
     }
 
     /**
-     * @return {@link HystrixCommandGroupKey} used to group together multiple {@link HystrixAsyncCommand} objects.
+     * @return {@link HystrixCommandGroupKey} used to group together multiple {@link HystrixFutureCommand} objects.
      *         <p>
      *         The {@link HystrixCommandGroupKey} is used to represent a common relationship between commands. For example, a library or team name, the system all related commands interace with,
      *         common business purpose etc.
@@ -1175,7 +1175,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
     }
 
     /**
-     * The {@link HystrixCommandMetrics} associated with this {@link HystrixAsyncCommand} instance.
+     * The {@link HystrixCommandMetrics} associated with this {@link HystrixFutureCommand} instance.
      * 
      * @return HystrixCommandMetrics
      */
@@ -1184,7 +1184,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
     }
 
     /**
-     * The {@link HystrixCommandProperties} associated with this {@link HystrixAsyncCommand} instance.
+     * The {@link HystrixCommandProperties} associated with this {@link HystrixFutureCommand} instance.
      * 
      * @return HystrixCommandProperties
      */

@@ -448,7 +448,7 @@ public class HystrixCollapserTest {
         assertEquals(1, counter.get());
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
 
-        HystrixExecutableInfo<?> command = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().toArray(new HystrixExecutableInfo<?>[1])[0];
+        HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().toArray(new HystrixInvokableInfo<?>[1])[0];
         System.out.println("command.getExecutionEvents(): " + command.getExecutionEvents());
         assertEquals(2, command.getExecutionEvents().size());
         assertTrue(command.getExecutionEvents().contains(HystrixEventType.SUCCESS));
@@ -500,7 +500,7 @@ public class HystrixCollapserTest {
         assertEquals(1, counter.get());
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
 
-        HystrixExecutableInfo<?> command = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().toArray(new HystrixExecutableInfo<?>[1])[0];
+        HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().toArray(new HystrixInvokableInfo<?>[1])[0];
         assertEquals(2, command.getExecutionEvents().size());
         assertTrue(command.getExecutionEvents().contains(HystrixEventType.SUCCESS));
         assertTrue(command.getExecutionEvents().contains(HystrixEventType.COLLAPSED));
@@ -556,7 +556,7 @@ public class HystrixCollapserTest {
         assertEquals(1, counter.get());
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
 
-        HystrixExecutableInfo<?> command = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().toArray(new HystrixExecutableInfo<?>[1])[0];
+        HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().toArray(new HystrixInvokableInfo<?>[1])[0];
         assertEquals(2, command.getExecutionEvents().size());
         assertTrue(command.getExecutionEvents().contains(HystrixEventType.SUCCESS));
         assertTrue(command.getExecutionEvents().contains(HystrixEventType.COLLAPSED));
@@ -613,13 +613,13 @@ public class HystrixCollapserTest {
         assertEquals(2, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
 
         // we expect to see it with SUCCESS and COLLAPSED and both
-        HystrixExecutableInfo<?> commandA = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().toArray(new HystrixExecutableInfo<?>[2])[0];
+        HystrixInvokableInfo<?> commandA = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().toArray(new HystrixInvokableInfo<?>[2])[0];
         assertEquals(2, commandA.getExecutionEvents().size());
         assertTrue(commandA.getExecutionEvents().contains(HystrixEventType.SUCCESS));
         assertTrue(commandA.getExecutionEvents().contains(HystrixEventType.COLLAPSED));
 
         // we expect to see it with SUCCESS and COLLAPSED and both
-        HystrixExecutableInfo<?> commandB = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().toArray(new HystrixExecutableInfo<?>[2])[1];
+        HystrixInvokableInfo<?> commandB = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().toArray(new HystrixInvokableInfo<?>[2])[1];
         assertEquals(2, commandB.getExecutionEvents().size());
         assertTrue(commandB.getExecutionEvents().contains(HystrixEventType.SUCCESS));
         assertTrue(commandB.getExecutionEvents().contains(HystrixEventType.COLLAPSED));
@@ -682,7 +682,7 @@ public class HystrixCollapserTest {
         assertEquals(1, commands.size());
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
 
-        HystrixExecutableInfo<?> command = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().toArray(new HystrixExecutableInfo<?>[1])[0];
+        HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().toArray(new HystrixInvokableInfo<?>[1])[0];
         assertEquals(2, command.getExecutionEvents().size());
         assertTrue(command.getExecutionEvents().contains(HystrixEventType.FAILURE));
         assertTrue(command.getExecutionEvents().contains(HystrixEventType.COLLAPSED));

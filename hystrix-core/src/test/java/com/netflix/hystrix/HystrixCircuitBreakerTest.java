@@ -585,8 +585,8 @@ public class HystrixCircuitBreakerTest {
 
         private <T> void logHC(HystrixInvokable<T> command, T response) {
 
-            if(command instanceof HystrixExecutableInfo) {
-                HystrixExecutableInfo<T> commandInfo = (HystrixExecutableInfo<T>)command;
+            if(command instanceof HystrixInvokableInfo) {
+                HystrixInvokableInfo<T> commandInfo = (HystrixInvokableInfo<T>)command;
             HystrixCommandMetrics metrics = commandInfo.getMetrics();
             System.out.println("cb/error-count/%/total: "
                     + commandInfo.isCircuitBreakerOpen() + " "
