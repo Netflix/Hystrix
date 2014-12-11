@@ -179,7 +179,7 @@ public class HystrixRequestLog {
                     //replicate functionality of Arrays.toString(events.toArray()) to append directly to existing StringBuilder
                     builder.append("[");
                     for (HystrixEventType event : events) {
-                        builder.append(event).append(", ");
+                        builder.append(event).append("; ");
                     }
                     builder.setCharAt(builder.length() - 2, ']');
                     builder.setLength(builder.length() - 1);
