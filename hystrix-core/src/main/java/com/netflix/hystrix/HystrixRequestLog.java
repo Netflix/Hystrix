@@ -15,13 +15,7 @@
  */
 package com.netflix.hystrix;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.slf4j.Logger;
@@ -235,6 +229,165 @@ public class HystrixRequestLog {
             // don't let this cause the entire app to fail so just return "Unknown"
             return "Unknown";
         }
+    }
+
+
+    /**
+     * Returns the total "wall-clock" time in ms to execute all commands
+     * It accounts for over-laps in execution of commands if they are executed asynchronously
+     * The objective of this method to provide accurate information on the "wall-clock" time taken by
+     * all dependencies and hence answer accurately what was the time taken by the calling service.
+     * e.g., If 3 commands are executed once say A, B & C where B & C are executed in parallel after A then
+     * totaWallClockTime =  A.getExecutionTimeInMilliseconds() +
+     *                      MAX(B.getExecutionTimeInMilliseconds(), C.getExecutionTimeInMilliseconds())
+     *  This is incredibly useful when we want to expose the overhead of a service not accounting for all
+     *  the dependent calls it makes.
+     *  .e.,g If SvcX calls a set of external services, it is important to not only know how much time the SvcX took
+     *  to serve a request, but also understand what was the over-head added by SvcX if all external services executed
+     *  in "0" (Zero) time!! To answer this question it wouldn't be sufficient to just add the execution times of the commands
+     *
+     *  Call this at the end once all the work is done to make use of the information.
+     *  Some  scenarios illustrated below
+     *
+     *
+     *  ===Scenario1===
+     *  |-----Command1-20ms-----|------------doSomeWork-40ms-------------|-----Command2-20ms-----|
+     *  Total Wall clock Execution time for commands = ~40ms
+     *
+     *
+     *  ===Scenario2===
+     *  |------Command1-40ms-------|
+     *     |Command2-10ms|
+     * Total Wall clock Execution time for commands = ~40ms
+     *
+     *
+     * ===Scenario3===
+     * |------Command1-20ms-------|
+     * |----10ms----|------Command2-20ms-------|
+     * Total Wall clock Execution time for commands = ~30ms
+     *
+     *
+     * ===Scenario4===
+     * |-----Command1-20ms-----|-----Command2-20ms-----|
+     *                                                 |-----Command3-20ms----|
+     *                                                 |doSomeWork10ms|------Command4-20ms----|
+     * Total Wall clock Execution time for commands = ~70ms
+     *
+     *
+     * @return long
+     */
+    public long getWallClockExecutionTime()
+    {
+        return getWallClockExecutionTime(null);
+    }
+
+    /**
+     * Returns the total "wall-clock" time in ms to execute all commands
+     * Call this at the end once all the work is done to make use of the information.
+     *
+     *  ===Scenario5===
+     *  |-----Command1-20ms-----|---doSomeWork-40ms----|---IgnoreCommand2-20ms---|
+     *  Total Wall clock Execution time for commands = ~20ms
+     *
+     *
+     *
+     * @param commandsToIgnore
+     * @return long
+     */
+    public long getWallClockExecutionTime(List<String> commandsToIgnore)
+    {
+        List<HystrixExecutableInfo<?>> commands = getCommandsToConsider(commandsToIgnore);
+        commands = getSortedCommandsList(commands);
+
+        long wallClockExecutionTime = 0;
+        long prevExecutionStartTime = 0;
+        int prevExecutionTimeInMillis = 0;
+        for (HystrixExecutableInfo<?> command : commands) {
+            // non-overlapping exection times
+            final long currentCommandExecutionStartTime = command.getCommandRunStartTime();
+            final int currentCommandExecutionTime = command.getExecutionTimeInMilliseconds();
+            if ( currentCommandExecutionStartTime > prevExecutionStartTime + prevExecutionTimeInMillis )
+            {
+                prevExecutionStartTime = currentCommandExecutionStartTime;
+                wallClockExecutionTime = wallClockExecutionTime + currentCommandExecutionTime;
+                prevExecutionTimeInMillis = currentCommandExecutionTime;
+                continue;
+            }
+
+            //Overlapping: Case1 ::  command execution completed earlier than all previous commands that it overlaps with
+            if (currentCommandExecutionStartTime+currentCommandExecutionTime < prevExecutionStartTime+prevExecutionTimeInMillis )
+            {
+                continue;
+            }
+
+            //Overlapping: Case2 :: command execution completed after all previous overlapping commands
+            wallClockExecutionTime = wallClockExecutionTime + Math.abs(prevExecutionTimeInMillis - currentCommandExecutionTime);
+            prevExecutionStartTime = currentCommandExecutionStartTime;
+            prevExecutionTimeInMillis = currentCommandExecutionTime;
+        }
+        return wallClockExecutionTime;
+    }
+
+    private List<HystrixExecutableInfo<?>> getSortedCommandsList (List<HystrixExecutableInfo<?>> commands)
+    {
+        boolean needToSort = false;
+        long commandRunStartTime = 0;
+        for (HystrixExecutableInfo<?> command : commands) {
+            if (command.getCommandRunStartTime() >= commandRunStartTime)
+            {
+                commandRunStartTime = command.getCommandRunStartTime();
+            }
+            else {
+                needToSort = true;
+                break;
+            }
+        }
+        if (needToSort == false) {
+            return commands;
+        }
+       Collections.sort(commands, new Comparator<HystrixExecutableInfo<?>>() {
+
+            @Override
+            public int compare(HystrixExecutableInfo<?> o1, HystrixExecutableInfo<?> o2) {
+
+                if ( o1.getCommandRunStartTime() == o2.getCommandRunStartTime())
+                {
+                    return 0;
+                }
+                if ( o1.getCommandRunStartTime() > o2.getCommandRunStartTime())
+                {
+                    return 1;
+                }
+                return -1;
+            }
+        });
+        return commands;
+    }
+
+    // Ignore commands that were not executed or is in the ignore list
+    private List<HystrixExecutableInfo<?>> getCommandsToConsider(List<String> commandsToIgnore)
+    {
+        ArrayList <HystrixExecutableInfo<?>> list = new ArrayList<>();
+
+        HashMap<String, String> tmp = null;
+
+        if ( commandsToIgnore != null ) {
+            tmp = new HashMap<>();
+            for (String cmdName : commandsToIgnore) {
+                tmp.put(cmdName, cmdName);
+            }
+        }
+
+        for (HystrixExecutableInfo<?> command : allExecutedCommands) {
+
+            if ( (tmp != null && tmp.containsKey(command.getCommandKey().name() ) ) ||
+                   command.getExecutionTimeInMilliseconds() < 0 )
+            {
+                continue;
+            }
+            list.add(command);
+        }
+        return list;
     }
 
 }

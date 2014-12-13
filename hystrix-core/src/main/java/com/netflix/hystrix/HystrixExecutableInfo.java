@@ -55,4 +55,6 @@ public interface HystrixExecutableInfo<R> {
 
     public int getExecutionTimeInMilliseconds();
 
+    public long getCommandRunStartTime();
+
 }

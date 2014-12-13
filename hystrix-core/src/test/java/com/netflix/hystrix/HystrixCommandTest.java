@@ -9,6 +9,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -4238,6 +4239,323 @@ public class HystrixCommandTest {
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+    }
+
+
+    /**
+     * Successful execution - Introduces a Fixed delay of 20 ms.
+     * This class is used to test Wallclock time taken by commands that can overlap with each other
+     */
+    private static class TestCommandFixedDelay extends TestHystrixCommand<Boolean> {
+        long executionTime = 20;
+
+        public TestCommandFixedDelay() {
+            this(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter());
+        }
+
+        public TestCommandFixedDelay(HystrixCommandProperties.Setter properties) {
+            super(testPropsBuilder().setCommandPropertiesDefaults(properties));
+        }
+
+        public void setExecutionTime(long executionTime)
+        {
+            this.executionTime = executionTime;
+        }
+        @Override
+        protected Boolean run() {
+            try {
+                Thread.sleep(executionTime);
+            } catch (InterruptedException e) {
+                return false;
+            }
+            return true;
+        }
+
+    }
+
+    private static class TestIgnoredCommandFixedDelay extends TestCommandFixedDelay {}
+
+
+    /**
+     * Invoke a single command that has fixed 20ms overhead and verify the wall clock times match
+     * Do not try to reduce the command execution time to anything less than 10 ms, mainly due to variances in OS'es granularity of interrupts
+     * On linux it is usually at 1ms (again not guarenteed) but on other systems it could be much larger
+     * e.g., if you try to sleep for exactly 1ms then Thread.sleep(1) does not always sleep for 1ms it could be more it could be less
+     * more often than not it would be more
+     *
+     * |-----Command1-20ms-----|
+     * Total Wall clock Execution time for commands = ~20ms
+     *
+     */
+    @Test
+    public void testSingleCommandForWallClockTime()
+    {
+        TestCommandFixedDelay command;
+        command = new TestCommandFixedDelay();
+
+
+        boolean b = command.execute();
+
+        long testMethodWallClockTime = 20;
+
+        HystrixRequestLog log = HystrixRequestLog.getCurrentRequest();
+        long wallClocktime = log.getWallClockExecutionTime(null);
+
+        assertTrue("command returned false", b);
+
+        assertTrue("Couldn't correctly calculate the wall clock time taken by execute command" +
+                        " duration computed in test program = " + testMethodWallClockTime +
+                        " wall clock reported by HystrixRequestLog = " + wallClocktime +
+                        " actuall esecution vs expected diff = " + Math.abs(testMethodWallClockTime  - wallClocktime) +
+                        " tolerance = " + (long)(testMethodWallClockTime * 0.3),
+                (Math.abs(testMethodWallClockTime  - wallClocktime) <= (long)(testMethodWallClockTime * 0.3)) );
+
+    }
+
+    /**
+     * |-----Command1-20ms-----|------------sleep-40ms-------------|-----Command2-20ms-----|
+     * Total Wall clock Execution time for commands = ~40ms
+     *
+     */
+    @Test
+    public void testTwoSequentialCommandForWallClockTime()
+    {
+        TestCommandFixedDelay cmd1;
+        cmd1 = new TestCommandFixedDelay();
+        boolean b1 = cmd1.execute();
+
+
+        long testMethodWallClockTime = 40;
+        // sleep for 40ms before executing cmd2.
+        try {
+            Thread.sleep(40);
+        } catch (InterruptedException e) {
+            assertTrue(e.getMessage(), false);
+        }
+
+        TestCommandFixedDelay cmd2;
+        cmd2 = new TestCommandFixedDelay();
+        boolean b2 = cmd2.execute();
+
+        HystrixRequestLog log = HystrixRequestLog.getCurrentRequest();
+        long wallClocktime = log.getWallClockExecutionTime(null);
+
+        assertTrue("command returned false", b1);
+        assertTrue("command returned false", b2);
+
+        assertTrue("Couldn't correctly calculate the wall clock time taken by execute command" +
+                        " duration computed in test program = " + testMethodWallClockTime +
+                        " wall clock reported by HystrixRequestLog = " + wallClocktime +
+                        " actuall esecution vs expected diff = " + Math.abs(testMethodWallClockTime - wallClocktime) +
+                " tolerance = " + (long) (testMethodWallClockTime * 0.3),
+                (Math.abs(testMethodWallClockTime - wallClocktime) <= (long) (testMethodWallClockTime * 0.3)) );
+
+    }
+
+
+    /**
+     * |------Command1-40ms-------|
+     *     |Command2-10ms|
+     * Total Wall clock Execution time for commands = ~40ms
+     */
+    @Test
+    public void testTwoCompletelyOverlappingCommandsForWallClockTime()
+    {
+
+        TestCommandFixedDelay cmd1;
+        cmd1 = new TestCommandFixedDelay();
+        cmd1.setExecutionTime(40);
+        Future<Boolean> f = cmd1.queue();
+
+
+
+        long testMethodWallClockTime = 40;
+        // sleep for 40ms before executing cmd2.
+        try {
+            Thread.sleep(10);
+        } catch (InterruptedException e) {
+            assertTrue(e.getMessage(), false);
+        }
+
+        TestCommandFixedDelay cmd2;
+        cmd2 = new TestCommandFixedDelay();
+        cmd2.setExecutionTime(10);
+        boolean b2 = cmd2.execute();
+
+        boolean b1 = false;
+        try {
+            Thread.sleep(30);
+            b1 = f.get();
+        } catch (InterruptedException | ExecutionException e) {
+            assertTrue(e.getMessage(), false);
+        }
+
+
+
+        HystrixRequestLog log = HystrixRequestLog.getCurrentRequest();
+        long wallClocktime = log.getWallClockExecutionTime(null);
+
+        assertTrue("command returned false", b1);
+        assertTrue("command returned false", b2);
+
+        assertTrue("Couldn't correctly calculate the wall clock time taken by execute command" +
+                        " duration computed in test program = " + testMethodWallClockTime +
+                        " wall clock reported by HystrixRequestLog = " + wallClocktime +
+                        " actuall esecution vs expected diff = " + Math.abs(testMethodWallClockTime - wallClocktime) +
+                        " tolerance = " + (long) (testMethodWallClockTime * 0.3),
+                (Math.abs(testMethodWallClockTime - wallClocktime) <= (long) (testMethodWallClockTime * 0.3)) );
+
+    }
+
+    /**
+     * |------Command1-20ms-------|
+     * |----10ms----|------Command2-20ms-------|
+     * Total Wall clock Execution time for commands = ~30ms
+     */
+    @Test
+    public void testTwoPartiallyOverlappingCommandsForWallClockTime()
+    {
+
+        TestCommandFixedDelay cmd1;
+        cmd1 = new TestCommandFixedDelay();
+        Future<Boolean> f = cmd1.queue();
+
+
+
+        long testMethodWallClockTime = 30;
+        // sleep for 40ms before executing cmd2.
+        try {
+            Thread.sleep(10);
+        } catch (InterruptedException e) {
+            assertTrue(e.getMessage(), false);
+        }
+
+        TestCommandFixedDelay cmd2;
+        cmd2 = new TestCommandFixedDelay();
+        boolean b2 = cmd2.execute();
+
+        boolean b1 = false;
+        try {
+
+            b1 = f.get();
+        } catch (InterruptedException | ExecutionException e) {
+            assertTrue(e.getMessage(), false);
+        }
+
+        HystrixRequestLog log = HystrixRequestLog.getCurrentRequest();
+        long wallClocktime = log.getWallClockExecutionTime(null);
+
+        assertTrue("command returned false", b1);
+        assertTrue("command returned false", b2);
+
+        assertTrue("Couldn't correctly calculate the wall clock time taken by execute command" +
+                        " duration computed in test program = " + testMethodWallClockTime +
+                        " wall clock reported by HystrixRequestLog = " + wallClocktime +
+                        " actuall esecution vs expected diff = " + Math.abs(testMethodWallClockTime - wallClocktime) +
+                        " tolerance = " + (long) (testMethodWallClockTime * 0.3),
+                (Math.abs(testMethodWallClockTime - wallClocktime) <= (long) (testMethodWallClockTime * 0.3)) );
+    }
+
+    /**
+     *  |-----Command1-20ms-----|---Sleep-40ms----|---IgnoreCommand2-20ms---|
+     *  Total Wall clock Execution time for commands = ~20ms
+     */
+    @Test
+    public void testTimeWithIgnoredCommandsForWallClockTime()
+    {
+        TestCommandFixedDelay cmd1;
+        cmd1 = new TestCommandFixedDelay();
+        boolean b1 = cmd1.execute();
+
+
+        long testMethodWallClockTime = 20;
+        // sleep for 40ms before executing cmd2.
+        try {
+            Thread.sleep(40);
+        } catch (InterruptedException e) {
+            assertTrue(e.getMessage(), false);
+        }
+
+        TestIgnoredCommandFixedDelay cmd2;
+        cmd2 = new TestIgnoredCommandFixedDelay();
+        boolean b2 = cmd2.execute();
+
+        HystrixRequestLog log = HystrixRequestLog.getCurrentRequest();
+        List<String> list = new ArrayList<>();
+        list.add(cmd2.getCommandKey().name());
+        long wallClocktime = log.getWallClockExecutionTime(list);
+
+        assertTrue("command returned false", b1);
+        assertTrue("command returned false", b2);
+
+        assertTrue("Error in calculating the wall clock time taken by execute command" +
+                        " duration computed in test program = " + testMethodWallClockTime +
+                        " wall clock reported by HystrixRequestLog = " + wallClocktime +
+                        " actuall esecution vs expected diff = " + Math.abs(testMethodWallClockTime - wallClocktime) +
+                        " tolerance = " + (long) (testMethodWallClockTime * 0.3) +
+                        " Ignored command = " + list.get(0),
+                (Math.abs(testMethodWallClockTime - wallClocktime) <= (long) (testMethodWallClockTime * 0.3)) );
+
+
+
+    }
+
+    /**
+     * |-----Command1-20ms-----|-----Command2-20ms-----|
+     *                                                 |-----Command3-20ms----|
+     *                                                 |----10ms----| ------Command4-20ms----|
+     *Total Wall clock Execution time for commands = ~70ms
+     *
+     */
+    @Test
+    public void testTwoSequentialAndTwoOverlappingCommandsForWallClockTime()
+    {
+        TestCommandFixedDelay cmd1;
+        cmd1 = new TestCommandFixedDelay();
+        boolean b1 = cmd1.execute();
+
+
+        long testMethodWallClockTime = 70;
+        // sleep for 40ms before executing cmd2.
+        TestCommandFixedDelay cmd2;
+        cmd2 = new TestCommandFixedDelay();
+        boolean b2 = cmd2.execute();
+        assertTrue("command returned false", b1);
+        assertTrue("command returned false", b2);
+
+        TestCommandFixedDelay cmd3;
+        cmd3 = new TestCommandFixedDelay();
+        Future<Boolean> f3 = cmd3.queue();
+        try {
+            Thread.sleep(10);
+        } catch (InterruptedException e) {
+            assertTrue(e.getMessage(), false);
+        }
+
+        TestCommandFixedDelay cmd4;
+        cmd4 = new TestCommandFixedDelay();
+        boolean b4 = cmd4.execute();
+
+        boolean b3 = false;
+        try {
+
+            b3 = f3.get();
+        } catch (InterruptedException | ExecutionException e) {
+            assertTrue(e.getMessage(), false);
+        }
+
+        HystrixRequestLog log = HystrixRequestLog.getCurrentRequest();
+        long wallClocktime = log.getWallClockExecutionTime(null);
+
+        assertTrue("command returned false", b3);
+        assertTrue("command returned false", b4);
+
+        assertTrue("Couldn't correctly calculate the wall clock time taken by execute command" +
+                        " duration computed in test program = " + testMethodWallClockTime +
+                        " wall clock reported by HystrixRequestLog = " + wallClocktime +
+                        " actuall esecution vs expected diff = " + Math.abs(testMethodWallClockTime - wallClocktime) +
+                        " tolerance = " + (long) (testMethodWallClockTime * 0.3),
+                (Math.abs(testMethodWallClockTime - wallClocktime) <= (long) (testMethodWallClockTime * 0.3)) );
     }
 
     /* ******************************************************************************** */

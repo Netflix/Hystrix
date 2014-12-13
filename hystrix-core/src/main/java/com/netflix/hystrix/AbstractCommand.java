@@ -1382,6 +1382,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
     protected static class ExecutionResult {
         protected final List<HystrixEventType> events;
         private final int executionTime;
+        private final long commandRunStartTime;
         private final Exception exception;
 
         private ExecutionResult(HystrixEventType... events) {
@@ -1401,6 +1402,12 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
             // because we control the original list in 'newEvent'
             this.events = events;
             this.executionTime = executionTime;
+            if (executionTime >= 0 ) {
+                this.commandRunStartTime = System.currentTimeMillis() - this.executionTime;
+            }
+            else {
+                this.commandRunStartTime = -1;
+            }
             this.exception = e;
         }
 
@@ -1425,6 +1432,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         public int getExecutionTime() {
             return executionTime;
         }
+        public long getCommandRunStartTime() {return commandRunStartTime;}
 
         public Exception getException() {
             return exception;
@@ -1590,6 +1598,16 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
      */
     public int getExecutionTimeInMilliseconds() {
         return executionResult.getExecutionTime();
+    }
+
+    /**
+     * The epoch time in milliseconds when this command instance's run method was called, or -1 if not executed
+     * for e.g., command threw an exception
+     *
+     * @return long
+     */
+    public long getCommandRunStartTime() {
+        return executionResult.getCommandRunStartTime();
     }
 
     protected Exception getExceptionFromThrowable(Throwable t) {
