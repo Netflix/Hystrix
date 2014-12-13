@@ -237,7 +237,7 @@ public class HystrixRequestLog {
      * It accounts for over-laps in execution of commands if they are executed asynchronously
      * The objective of this method to provide accurate information on the "wall-clock" time taken by
      * all dependencies and hence answer accurately what was the time taken by the calling service.
-     * e.g., If 3 commands are executed once say A, B & C where B & C are executed in parallel after A then
+     * e.g., If 3 commands are executed once say A, B &amp; C where B &amp; C are executed in parallel after A then
      * totaWallClockTime =  A.getExecutionTimeInMilliseconds() +
      *                      MAX(B.getExecutionTimeInMilliseconds(), C.getExecutionTimeInMilliseconds())
      *  This is incredibly useful when we want to expose the overhead of a service not accounting for all
