@@ -174,7 +174,7 @@
 
 (defn ^:private wait-for-observable
   [^rx.Observable o]
-  (-> o .toBlockingObservable .single))
+  (-> o .toBlocking .single))
 
 (deftest test-observe
   (let [base-def {:type :command
@@ -210,13 +210,6 @@
                    (observe-later (instantiate (normalize base-def)) 10 23))))
     (testing "instantiates and observes a command"
       (let [o (observe-later (normalize base-def) 75 19 23)]
-        (is (instance? rx.Observable o))
-        (is (= (+ 75 19 23)
-               (wait-for-observable o)))))
-    (testing "observes command with a Scheduler"
-      (let [o (observe-later-on (normalize base-def)
-                                (rx.schedulers.Schedulers/newThread)
-                                75 19 23)]
         (is (instance? rx.Observable o))
         (is (= (+ 75 19 23)
                (wait-for-observable o)))))))
@@ -315,10 +308,7 @@
       (is (= 100 (execute #'my-fn-command 89 11)))
       (is (= 101 (deref (queue #'my-fn-command 89 12))))
       (is (= 103 (wait-for-observable (observe #'my-fn-command 90 13))))
-      (is (= 105 (wait-for-observable (observe-later #'my-fn-command 91 14))))
-      (is (= 107 (wait-for-observable (observe-later-on #'my-fn-command
-                                                        (rx.schedulers.Schedulers/newThread)
-                                                        92 15)))))))
+      (is (= 105 (wait-for-observable (observe-later #'my-fn-command 91 14)))))))
 
 (defcollapser my-collapser
   "a doc string"
