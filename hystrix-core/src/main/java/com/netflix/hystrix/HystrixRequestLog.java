@@ -237,7 +237,7 @@ public class HystrixRequestLog {
      * It accounts for over-laps in execution of commands if they are executed asynchronously
      * The objective of this method to provide accurate information on the "wall-clock" time taken by
      * all dependencies and hence answer accurately what was the time taken by the calling service.
-     * e.g., If 3 commands are executed once say A, B &amp; C where B &amp; C are executed in parallel after A then
+     * e.g., If 3 commands are executed once say A, B and C where B and C are executed in parallel after A then
      * totaWallClockTime =  A.getExecutionTimeInMilliseconds() +
      *                      MAX(B.getExecutionTimeInMilliseconds(), C.getExecutionTimeInMilliseconds())
      *  This is incredibly useful when we want to expose the overhead of a service not accounting for all
@@ -273,6 +273,14 @@ public class HystrixRequestLog {
      *                                                 |doSomeWork10ms|------Command4-20ms----|
      * Total Wall clock Execution time for commands = ~70ms
      *
+     * ===Scenario5===
+     * |-----Command1-50ms-----|-----Command2-50ms-----|
+     *                                                 |------Command3-100ms-------|
+     *                                                 |---50ms--|--Command4-50ms--|
+     *                                                 |--------------Command5-200ms-------------|
+     *Total Wall clock Execution time for commands = ~300ms
+     *
+     *
      *
      * @return long
      */
@@ -285,7 +293,7 @@ public class HystrixRequestLog {
      * Returns the total "wall-clock" time in ms to execute all commands
      * Call this at the end once all the work is done to make use of the information.
      *
-     *  ===Scenario5===
+     *  ===Scenario6===
      *  |-----Command1-20ms-----|---doSomeWork-40ms----|---IgnoreCommand2-20ms---|
      *  Total Wall clock Execution time for commands = ~20ms
      *
@@ -304,8 +312,9 @@ public class HystrixRequestLog {
         int prevExecutionTimeInMillis = 0;
         for (HystrixExecutableInfo<?> command : commands) {
             // non-overlapping exection times
-            final long currentCommandExecutionStartTime = command.getCommandRunStartTime();
-            final int currentCommandExecutionTime = command.getExecutionTimeInMilliseconds();
+            long currentCommandExecutionStartTime = command.getCommandRunStartTime();
+            int currentCommandExecutionTime = command.getExecutionTimeInMilliseconds();
+
             if ( currentCommandExecutionStartTime > prevExecutionStartTime + prevExecutionTimeInMillis )
             {
                 prevExecutionStartTime = currentCommandExecutionStartTime;
@@ -321,7 +330,9 @@ public class HystrixRequestLog {
             }
 
             //Overlapping: Case2 :: command execution completed after all previous overlapping commands
-            wallClockExecutionTime = wallClockExecutionTime + Math.abs(prevExecutionTimeInMillis - currentCommandExecutionTime);
+            wallClockExecutionTime = wallClockExecutionTime +
+                            (currentCommandExecutionStartTime + currentCommandExecutionTime) -
+                                     ( prevExecutionStartTime+prevExecutionTimeInMillis) ;
             prevExecutionStartTime = currentCommandExecutionStartTime;
             prevExecutionTimeInMillis = currentCommandExecutionTime;
         }
@@ -386,7 +397,9 @@ public class HystrixRequestLog {
                 continue;
             }
             list.add(command);
+
         }
+
         return list;
     }
 
