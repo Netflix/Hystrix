@@ -628,16 +628,13 @@
   "A protocol solely to eliminate reflection warnings because .toObservable
   can be found on both HystrixCommand and HystrixCollapser, but not in their
   common base class HystrixExecutable."
-  (^:private observe-later* [this])
-  (^:private observe-later-on* [this scheduler]))
+  (^:private observe-later* [this]))
 
 (extend-protocol ObserveLater
   HystrixCommand
     (observe-later* [this] (.toObservable this))
-    (observe-later-on* [this scheduler] (.toObservable this scheduler))
   HystrixCollapser
-    (observe-later* [this] (.toObservable this))
-    (observe-later-on* [this scheduler] (.toObservable this scheduler)))
+    (observe-later* [this] (.toObservable this)))
 
 (defn observe-later
   "Same as #'com.netflix.hystrix.core/observe, but command execution does not begin until the
@@ -649,19 +646,6 @@
   "
   [definition & args]
   (observe-later* (apply instantiate definition args)))
-
-(defn observe-later-on
-  "Same as #'com.netflix.hystrix.core/observe-later but an explicit scheduler can be provided
-  for the callback.
-
-  See:
-    com.netflix.hystrix.core/observe-later
-    com.netflix.hystrix.core/observe
-    http://netflix.github.io/Hystrix/javadoc/com/netflix/hystrix/HystrixCommand.html#toObservable(Scheduler)
-    http://netflix.github.io/RxJava/javadoc/rx/Observable.html
-  "
-  [definition scheduler & args]
-  (observe-later-on* (apply instantiate definition args) scheduler))
 
 ;################################################################################
 ; :command impl
