@@ -378,12 +378,12 @@ public class HystrixRequestLog {
     // Ignore commands that were not executed or is in the ignore list
     private List<HystrixExecutableInfo<?>> getCommandsToConsider(List<String> commandsToIgnore)
     {
-        ArrayList <HystrixExecutableInfo<?>> list = new ArrayList<>();
+        List <HystrixExecutableInfo<?>> list = new ArrayList<HystrixExecutableInfo<?>>();
 
-        HashMap<String, String> tmp = null;
+        Map<String, String> tmp = null;
 
         if ( commandsToIgnore != null ) {
-            tmp = new HashMap<>();
+            tmp = new HashMap<String, String>();
             for (String cmdName : commandsToIgnore) {
                 tmp.put(cmdName, cmdName);
             }
