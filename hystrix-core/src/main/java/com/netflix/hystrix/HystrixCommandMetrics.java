@@ -414,12 +414,12 @@ public class HystrixCommandMetrics {
     }
 
     /**
-     * Touches metrics change with current timestamp. Calls expires before to ensure that
-     * outdated metrics are removed instantly
+     * Touches metrics change with current timestamp. Calls {@link com.netflix.hystrix.HystrixCommandMetrics#expire()} afterwards so
+     * outdated metrics are removed instantly.
      */
     private void touch() {
-        expire();
         lastTouch.set(System.currentTimeMillis());
+        expire();
     }
 
     private volatile HealthCounts healthCountsSnapshot = new HealthCounts(0, 0, 0);
