@@ -300,53 +300,54 @@ public class HystrixRequestLog {
      *
      *
      * @param commandsToIgnore
-     * @return long
+     * @return long wallClockExecutionTime in millis
      */
     public long getWallClockExecutionTime(List<String> commandsToIgnore)
     {
         List<HystrixExecutableInfo<?>> commands = getCommandsToConsider(commandsToIgnore);
         commands = getSortedCommandsList(commands);
 
-        long wallClockExecutionTime = 0;
-        long prevExecutionStartTime = 0;
-        int prevExecutionTimeInMillis = 0;
+        long wallClockExecutionTimeNanos = 0;
+        long prevExecutionStartTimeNano = 0;
+        long prevExecutionTimeInNanos = 0;
         for (HystrixExecutableInfo<?> command : commands) {
             // non-overlapping exection times
-            long currentCommandExecutionStartTime = command.getCommandRunStartTime();
-            int currentCommandExecutionTime = command.getExecutionTimeInMilliseconds();
+            long currentCommandExecutionStartTimeNano = command.getCommandRunStartTimeNano();
+            long currentCommandExecutionTimeNanos = command.getExecutionTimeInMilliseconds()*1000*1000;
 
-            if ( currentCommandExecutionStartTime > prevExecutionStartTime + prevExecutionTimeInMillis )
+            if ( currentCommandExecutionStartTimeNano > prevExecutionStartTimeNano + prevExecutionTimeInNanos )
             {
-                prevExecutionStartTime = currentCommandExecutionStartTime;
-                wallClockExecutionTime = wallClockExecutionTime + currentCommandExecutionTime;
-                prevExecutionTimeInMillis = currentCommandExecutionTime;
+                prevExecutionStartTimeNano = currentCommandExecutionStartTimeNano;
+                wallClockExecutionTimeNanos = wallClockExecutionTimeNanos + currentCommandExecutionTimeNanos;
+                prevExecutionTimeInNanos = currentCommandExecutionTimeNanos;
                 continue;
             }
 
             //Overlapping: Case1 ::  command execution completed earlier than all previous commands that it overlaps with
-            if (currentCommandExecutionStartTime+currentCommandExecutionTime < prevExecutionStartTime+prevExecutionTimeInMillis )
+            if (currentCommandExecutionStartTimeNano+currentCommandExecutionTimeNanos <
+                    prevExecutionStartTimeNano+prevExecutionTimeInNanos )
             {
                 continue;
             }
 
             //Overlapping: Case2 :: command execution completed after all previous overlapping commands
-            wallClockExecutionTime = wallClockExecutionTime +
-                            (currentCommandExecutionStartTime + currentCommandExecutionTime) -
-                                     ( prevExecutionStartTime+prevExecutionTimeInMillis) ;
-            prevExecutionStartTime = currentCommandExecutionStartTime;
-            prevExecutionTimeInMillis = currentCommandExecutionTime;
+            wallClockExecutionTimeNanos = wallClockExecutionTimeNanos +
+                            (currentCommandExecutionStartTimeNano + currentCommandExecutionTimeNanos) -
+                                     ( prevExecutionStartTimeNano+prevExecutionTimeInNanos) ;
+            prevExecutionStartTimeNano = currentCommandExecutionStartTimeNano;
+            prevExecutionTimeInNanos = currentCommandExecutionTimeNanos;
         }
-        return wallClockExecutionTime;
+        return (long)(wallClockExecutionTimeNanos/(1000*1000));
     }
 
     private List<HystrixExecutableInfo<?>> getSortedCommandsList (List<HystrixExecutableInfo<?>> commands)
     {
         boolean needToSort = false;
-        long commandRunStartTime = 0;
+        long commandRunStartTimeNano = 0;
         for (HystrixExecutableInfo<?> command : commands) {
-            if (command.getCommandRunStartTime() >= commandRunStartTime)
+            if (command.getCommandRunStartTimeNano() >= commandRunStartTimeNano)
             {
-                commandRunStartTime = command.getCommandRunStartTime();
+                commandRunStartTimeNano = command.getCommandRunStartTimeNano();
             }
             else {
                 needToSort = true;
@@ -361,11 +362,11 @@ public class HystrixRequestLog {
             @Override
             public int compare(HystrixExecutableInfo<?> o1, HystrixExecutableInfo<?> o2) {
 
-                if ( o1.getCommandRunStartTime() == o2.getCommandRunStartTime())
+                if ( o1.getCommandRunStartTimeNano() == o2.getCommandRunStartTimeNano())
                 {
                     return 0;
                 }
-                if ( o1.getCommandRunStartTime() > o2.getCommandRunStartTime())
+                if ( o1.getCommandRunStartTimeNano() > o2.getCommandRunStartTimeNano())
                 {
                     return 1;
                 }

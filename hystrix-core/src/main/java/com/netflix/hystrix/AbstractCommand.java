@@ -33,15 +33,12 @@ import org.slf4j.LoggerFactory;
 
 import rx.Notification;
 import rx.Observable;
-import rx.Observer;
 import rx.Observable.OnSubscribe;
 import rx.Observable.Operator;
-import rx.Scheduler;
 import rx.Subscriber;
 import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func1;
-import rx.schedulers.Schedulers;
 import rx.subjects.ReplaySubject;
 import rx.subscriptions.CompositeSubscription;
 
@@ -54,7 +51,6 @@ import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategyDefault;
 import com.netflix.hystrix.strategy.concurrency.HystrixContextRunnable;
-import com.netflix.hystrix.strategy.concurrency.HystrixContextScheduler;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
 import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
@@ -1382,7 +1378,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
     protected static class ExecutionResult {
         protected final List<HystrixEventType> events;
         private final int executionTime;
-        private final long commandRunStartTime;
+        private final long commandRunStartTimeNano;
         private final Exception exception;
 
         private ExecutionResult(HystrixEventType... events) {
@@ -1403,10 +1399,10 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
             this.events = events;
             this.executionTime = executionTime;
             if (executionTime >= 0 ) {
-                this.commandRunStartTime = System.currentTimeMillis() - this.executionTime;
+                this.commandRunStartTimeNano = System.nanoTime() - this.executionTime*1000*1000; // 1000*1000 will conver the milliseconds to nanoseconds
             }
             else {
-                this.commandRunStartTime = -1;
+                this.commandRunStartTimeNano = -1;
             }
             this.exception = e;
         }
@@ -1432,7 +1428,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         public int getExecutionTime() {
             return executionTime;
         }
-        public long getCommandRunStartTime() {return commandRunStartTime;}
+        public long getCommandRunStartTimeNano() {return commandRunStartTimeNano;}
 
         public Exception getException() {
             return exception;
@@ -1606,8 +1602,9 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
      *
      * @return long
      */
-    public long getCommandRunStartTime() {
-        return executionResult.getCommandRunStartTime();
+    @Override
+    public long getCommandRunStartTimeNano() {
+        return executionResult.getCommandRunStartTimeNano();
     }
 
     protected Exception getExceptionFromThrowable(Throwable t) {
