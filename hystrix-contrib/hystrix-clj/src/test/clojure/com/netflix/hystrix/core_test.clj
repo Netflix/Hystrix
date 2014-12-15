@@ -174,7 +174,7 @@
 
 (defn ^:private wait-for-observable
   [^rx.Observable o]
-  (-> o .toBlockingObservable .single))
+  (-> o .toBlocking .single))
 
 (deftest test-observe
   (let [base-def {:type :command
