@@ -634,10 +634,10 @@
 (extend-protocol ObserveLater
   HystrixCommand
     (observe-later* [this] (.toObservable this))
-    (observe-later-on* [this scheduler] (.toObservable this scheduler))
+    (observe-later-on* [this scheduler] (.observeOn (.toObservable this) scheduler))
   HystrixCollapser
     (observe-later* [this] (.toObservable this))
-    (observe-later-on* [this scheduler] (.toObservable this scheduler)))
+    (observe-later-on* [this scheduler] (.observeOne (.toObservable this) scheduler)))
 
 (defn observe-later
   "Same as #'com.netflix.hystrix.core/observe, but command execution does not begin until the
