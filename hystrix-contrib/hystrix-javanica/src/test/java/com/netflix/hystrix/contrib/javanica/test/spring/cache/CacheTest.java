@@ -1,7 +1,7 @@
 package com.netflix.hystrix.contrib.javanica.test.spring.cache;
 
 import com.google.common.collect.Iterables;
-import com.netflix.hystrix.HystrixExecutableInfo;
+import com.netflix.hystrix.HystrixInvokableInfo;
 import com.netflix.hystrix.HystrixRequestLog;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.test.spring.conf.AopCglibConfig;
@@ -38,7 +38,7 @@ public class CacheTest {
         try {
 
             User user = userService.getUser("1", "name");
-            HystrixExecutableInfo getUserByIdCommand = getLastExecutedCommand();
+            HystrixInvokableInfo<?> getUserByIdCommand = getLastExecutedCommand();
             assertEquals("1", user.getId());
 
             // this is the first time we've executed this command with
@@ -59,7 +59,7 @@ public class CacheTest {
         context = HystrixRequestContext.initializeContext();
         try {
             User user = userService.getUser("1", "name");
-            HystrixExecutableInfo getUserByIdCommand = getLastExecutedCommand();
+            HystrixInvokableInfo<?> getUserByIdCommand = getLastExecutedCommand();
             assertEquals("1", user.getId());
             // this is a new request context so this
             // should not come from cache
@@ -69,8 +69,8 @@ public class CacheTest {
         }
     }
 
-    private HystrixExecutableInfo getLastExecutedCommand() {
-        Collection<HystrixExecutableInfo<?>> executedCommands =
+    private HystrixInvokableInfo<?> getLastExecutedCommand() {
+        Collection<HystrixInvokableInfo<?>> executedCommands =
                 HystrixRequestLog.getCurrentRequest().getAllExecutedCommands();
         return Iterables.getLast(executedCommands);
     }

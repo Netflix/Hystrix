@@ -1,6 +1,7 @@
 package com.netflix.hystrix.contrib.javanica.test.spring.collapser;
 
 import com.netflix.hystrix.HystrixEventType;
+import com.netflix.hystrix.HystrixInvokableInfo;
 import com.netflix.hystrix.HystrixRequestLog;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCollapser;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
@@ -53,7 +54,7 @@ public class CollapserTest {
             // assert that the batch command 'GetUserCommand' was in fact
             // executed and that it executed only once
             assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-            com.netflix.hystrix.HystrixExecutableInfo<?> command = HystrixRequestLog.getCurrentRequest()
+            HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest()
                     .getAllExecutedCommands().iterator().next();
             // assert the command is the one we're expecting
             assertEquals("GetUserCommand", command.getCommandKey().name());
@@ -169,7 +170,7 @@ public class CollapserTest {
             assertEquals("name: 3", u3.getName());
             assertEquals("name: 4", u4.getName());
 
-            com.netflix.hystrix.HystrixExecutableInfo<?> command = HystrixRequestLog.getCurrentRequest()
+            HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest()
                     .getAllExecutedCommands().iterator().next();
             assertEquals("GetUserCommand", command.getCommandKey().name());
             // confirm that it was a COLLAPSED command execution
@@ -187,7 +188,7 @@ public class CollapserTest {
         try {
             User u1 = userService.getUserSync("5", "name: ");
             assertEquals("name: 5", u1.getName());
-            com.netflix.hystrix.HystrixExecutableInfo<?> command = HystrixRequestLog.getCurrentRequest()
+            HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest()
                     .getAllExecutedCommands().iterator().next();
             assertEquals("GetUserCommand", command.getCommandKey().name());
             // confirm that it was a COLLAPSED command execution

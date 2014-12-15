@@ -41,7 +41,7 @@ public class ObservableTest {
         try {
 
             // blocking
-            assertEquals("name: 1", userService.getUser("1", "name: ").toBlockingObservable().single().getName());
+            assertEquals("name: 1", userService.getUser("1", "name: ").toBlocking().single().getName());
 
             // non-blocking
             // - this is a verbose anonymous inner-class approach and doesn't do assertions
@@ -88,7 +88,7 @@ public class ObservableTest {
             final User exUser = new User("def", "def");
 
             // blocking
-            assertEquals(exUser, userService.getUser(" ", "").toBlockingObservable().single());
+            assertEquals(exUser, userService.getUser(" ", "").toBlocking().single());
             assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
             com.netflix.hystrix.HystrixCommand getUserCommand = getHystrixCommandByKey("getUser");
             // confirm that command has failed
