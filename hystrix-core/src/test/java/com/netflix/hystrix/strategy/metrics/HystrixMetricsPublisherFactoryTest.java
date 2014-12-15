@@ -5,6 +5,7 @@ import static org.junit.Assert.assertEquals;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import com.netflix.hystrix.HystrixCircuitBreaker;
@@ -17,6 +18,11 @@ import com.netflix.hystrix.HystrixThreadPoolMetrics;
 import com.netflix.hystrix.HystrixThreadPoolProperties;
 
 public class HystrixMetricsPublisherFactoryTest {
+    @Before
+    public void reset() {
+        HystrixMetricsPublisherFactory.reset();
+    }
+
     /**
      * Assert that we only call a publisher once for a given Command or ThreadPool key.
      */
