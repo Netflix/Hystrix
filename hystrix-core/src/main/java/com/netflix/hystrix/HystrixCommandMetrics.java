@@ -15,21 +15,20 @@
  */
 package com.netflix.hystrix;
 
+import com.netflix.hystrix.strategy.HystrixPlugins;
+import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
+import com.netflix.hystrix.util.HystrixRollingNumber;
+import com.netflix.hystrix.util.HystrixRollingNumberEvent;
+import com.netflix.hystrix.util.HystrixRollingPercentile;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.netflix.hystrix.strategy.HystrixPlugins;
-import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
-import com.netflix.hystrix.util.HystrixRollingNumber;
-import com.netflix.hystrix.util.HystrixRollingNumberEvent;
-import com.netflix.hystrix.util.HystrixRollingPercentile;
 
 /**
  * Used by {@link HystrixCommand} to record metrics.
@@ -99,6 +98,19 @@ public class HystrixCommandMetrics {
      */
     /* package */ static void reset() {
         metrics.clear();
+    }
+
+    /**
+     * Expire metrics that have not been updated within the allowed time-frame
+     */
+    /* package */ static void expire() {
+        long now = System.currentTimeMillis();
+        for (HystrixCommandMetrics instance : getInstances()) {
+            int expireAfterInactivityInMilliseconds = instance.properties.metricsExpireAfterInactivityInMilliseconds().get();
+            if (expireAfterInactivityInMilliseconds > 0
+                    && now - instance.lastTouch.get() > expireAfterInactivityInMilliseconds)
+                metrics.remove(instance.key.name());
+        }
     }
 
     private final HystrixCommandProperties properties;
@@ -255,6 +267,7 @@ public class HystrixCommandMetrics {
     /* package */void markSuccess(long duration) {
         eventNotifier.markEvent(HystrixEventType.SUCCESS, key);
         counter.increment(HystrixRollingNumberEvent.SUCCESS);
+        touch();
     }
 
     /**
@@ -265,6 +278,7 @@ public class HystrixCommandMetrics {
     /* package */void markFailure(long duration) {
         eventNotifier.markEvent(HystrixEventType.FAILURE, key);
         counter.increment(HystrixRollingNumberEvent.FAILURE);
+        touch();
     }
 
     /**
@@ -276,6 +290,7 @@ public class HystrixCommandMetrics {
     /* package */void markTimeout(long duration) {
         eventNotifier.markEvent(HystrixEventType.TIMEOUT, key);
         counter.increment(HystrixRollingNumberEvent.TIMEOUT);
+        touch();
     }
 
     /**
@@ -284,6 +299,7 @@ public class HystrixCommandMetrics {
     /* package */void markShortCircuited() {
         eventNotifier.markEvent(HystrixEventType.SHORT_CIRCUITED, key);
         counter.increment(HystrixRollingNumberEvent.SHORT_CIRCUITED);
+        touch();
     }
 
     /**
@@ -292,6 +308,7 @@ public class HystrixCommandMetrics {
     /* package */void markThreadPoolRejection() {
         eventNotifier.markEvent(HystrixEventType.THREAD_POOL_REJECTED, key);
         counter.increment(HystrixRollingNumberEvent.THREAD_POOL_REJECTED);
+        touch();
     }
 
     /**
@@ -300,24 +317,23 @@ public class HystrixCommandMetrics {
     /* package */void markSemaphoreRejection() {
         eventNotifier.markEvent(HystrixEventType.SEMAPHORE_REJECTED, key);
         counter.increment(HystrixRollingNumberEvent.SEMAPHORE_REJECTED);
+        touch();
     }
 
     /**
      * Increment concurrent requests counter.
-     * 
-     * @param numberOfPermitsUsed
      */
     /* package */void incrementConcurrentExecutionCount() {
         concurrentExecutionCount.incrementAndGet();
+        touch();
     }
     
     /**
      * Increment concurrent requests counter.
-     * 
-     * @param numberOfPermitsUsed
-     */
+     *
     /* package */void decrementConcurrentExecutionCount() {
         concurrentExecutionCount.decrementAndGet();
+        touch();
     }
 
     /**
@@ -326,6 +342,7 @@ public class HystrixCommandMetrics {
     /* package */void markFallbackSuccess() {
         eventNotifier.markEvent(HystrixEventType.FALLBACK_SUCCESS, key);
         counter.increment(HystrixRollingNumberEvent.FALLBACK_SUCCESS);
+        touch();
     }
 
     /**
@@ -334,6 +351,7 @@ public class HystrixCommandMetrics {
     /* package */void markFallbackFailure() {
         eventNotifier.markEvent(HystrixEventType.FALLBACK_FAILURE, key);
         counter.increment(HystrixRollingNumberEvent.FALLBACK_FAILURE);
+        touch();
     }
 
     /**
@@ -342,6 +360,7 @@ public class HystrixCommandMetrics {
     /* package */void markFallbackRejection() {
         eventNotifier.markEvent(HystrixEventType.FALLBACK_REJECTION, key);
         counter.increment(HystrixRollingNumberEvent.FALLBACK_REJECTION);
+        touch();
     }
 
     /**
@@ -350,6 +369,7 @@ public class HystrixCommandMetrics {
     /* package */void markExceptionThrown() {
         eventNotifier.markEvent(HystrixEventType.EXCEPTION_THROWN, key);
         counter.increment(HystrixRollingNumberEvent.EXCEPTION_THROWN);
+        touch();
     }
 
     /**
@@ -360,6 +380,7 @@ public class HystrixCommandMetrics {
     /* package */void markCollapsed(int numRequestsCollapsedToBatch) {
         eventNotifier.markEvent(HystrixEventType.COLLAPSED, key);
         counter.add(HystrixRollingNumberEvent.COLLAPSED, numRequestsCollapsedToBatch);
+        touch();
     }
 
     /**
@@ -370,6 +391,7 @@ public class HystrixCommandMetrics {
     /* package */void markResponseFromCache() {
         eventNotifier.markEvent(HystrixEventType.RESPONSE_FROM_CACHE, key);
         counter.increment(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE);
+        touch();
     }
 
     /**
@@ -377,6 +399,7 @@ public class HystrixCommandMetrics {
      */
     /* package */void addCommandExecutionTime(long duration) {
         percentileExecution.addValue((int) duration);
+        touch();
     }
 
     /**
@@ -387,10 +410,21 @@ public class HystrixCommandMetrics {
      */
     /* package */void addUserThreadExecutionTime(long duration) {
         percentileTotal.addValue((int) duration);
+        touch();
+    }
+
+    /**
+     * Touches metrics change with current timestamp. Calls expires before to ensure that
+     * outdated metrics are removed instantly
+     */
+    private void touch() {
+        expire();
+        lastTouch.set(System.currentTimeMillis());
     }
 
     private volatile HealthCounts healthCountsSnapshot = new HealthCounts(0, 0, 0);
     private volatile AtomicLong lastHealthCountsSnapshot = new AtomicLong(System.currentTimeMillis());
+    private volatile AtomicLong lastTouch = new AtomicLong(System.currentTimeMillis());
 
     /**
      * Retrieve a snapshot of total requests, error count and error percentage.

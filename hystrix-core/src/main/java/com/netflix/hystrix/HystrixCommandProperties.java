@@ -60,6 +60,7 @@ public abstract class HystrixCommandProperties {
     private static final Integer default_metricsRollingPercentileWindowBuckets = 6; // default to 6 buckets (10 seconds each in 60 second window)
     private static final Integer default_metricsRollingPercentileBucketSize = 100; // default to 100 values max per bucket
     private static final Integer default_metricsHealthSnapshotIntervalInMilliseconds = 500; // default to 500ms as max frequency between allowing snapshots of health (error percentage etc)
+    private static final Integer default_metricsExpireAfterInactivityInMilliseconds = -1; // defaults to never expire any command metrics
 
     @SuppressWarnings("unused") private final HystrixCommandKey key;
     private final HystrixProperty<Integer> circuitBreakerRequestVolumeThreshold; // number of requests that must be made within a statisticalWindow before open/close decisions are made using stats
@@ -83,6 +84,7 @@ public abstract class HystrixCommandProperties {
     private final HystrixProperty<Integer> metricsRollingPercentileWindowBuckets; // number of buckets percentileWindow will be divided into
     private final HystrixProperty<Integer> metricsRollingPercentileBucketSize; // how many values will be stored in each percentileWindowBucket
     private final HystrixProperty<Integer> metricsHealthSnapshotIntervalInMilliseconds; // time between health snapshots
+    private final HystrixProperty<Integer> metricsExpireAfterInactivityInMilliseconds; // expire a command metric after inactivity timeout has been reached
     private final HystrixProperty<Boolean> requestLogEnabled; // whether command request logging is enabled.
     private final HystrixProperty<Boolean> requestCacheEnabled; // Whether request caching is enabled.
 
@@ -129,6 +131,7 @@ public abstract class HystrixCommandProperties {
         this.metricsRollingPercentileWindowBuckets = getProperty(propertyPrefix, key, "metrics.rollingPercentile.numBuckets", builder.getMetricsRollingPercentileWindowBuckets(), default_metricsRollingPercentileWindowBuckets);
         this.metricsRollingPercentileBucketSize = getProperty(propertyPrefix, key, "metrics.rollingPercentile.bucketSize", builder.getMetricsRollingPercentileBucketSize(), default_metricsRollingPercentileBucketSize);
         this.metricsHealthSnapshotIntervalInMilliseconds = getProperty(propertyPrefix, key, "metrics.healthSnapshot.intervalInMilliseconds", builder.getMetricsHealthSnapshotIntervalInMilliseconds(), default_metricsHealthSnapshotIntervalInMilliseconds);
+        this.metricsExpireAfterInactivityInMilliseconds = getProperty(propertyPrefix, key, "metrics.expireAfterInactivityInMilliseconds", builder.getMetricsExpireAfterInactivityInMilliseconds(), default_metricsExpireAfterInactivityInMilliseconds);
         this.requestCacheEnabled = getProperty(propertyPrefix, key, "requestCache.enabled", builder.getRequestCacheEnabled(), default_requestCacheEnabled);
         this.requestLogEnabled = getProperty(propertyPrefix, key, "requestLog.enabled", builder.getRequestLogEnabled(), default_requestLogEnabled);
 
@@ -373,6 +376,16 @@ public abstract class HystrixCommandProperties {
     }
 
     /**
+     * Number of milliseconds after a {@link com.netflix.hystrix.HystrixCommandMetrics} instance shall expire after last update has occured.
+     *
+     * @return {@code HystrixProperty<Integer>}
+     */
+    public HystrixProperty<Integer> metricsExpireAfterInactivityInMilliseconds() {
+        return metricsExpireAfterInactivityInMilliseconds;
+    }
+
+
+    /**
      * Whether {@link HystrixCommand#getCacheKey()} should be used with {@link HystrixRequestCache} to provide de-duplication functionality via request-scoped caching.
      * 
      * @return {@code HystrixProperty<Boolean>}
@@ -508,6 +521,7 @@ public abstract class HystrixCommandProperties {
         /* null means it hasn't been overridden */
         private Integer metricsRollingStatisticalWindowInMilliseconds = null;
         private Integer metricsRollingStatisticalWindowBuckets = null;
+        private Integer metricsExpireAfterInactivityInMilliseconds = null;
         private Boolean requestCacheEnabled = null;
         private Boolean requestLogEnabled = null;
 
@@ -592,6 +606,10 @@ public abstract class HystrixCommandProperties {
 
         public Integer getMetricsRollingStatisticalWindowBuckets() {
             return metricsRollingStatisticalWindowBuckets;
+        }
+
+        public Integer getMetricsExpireAfterInactivityInMilliseconds() {
+            return metricsExpireAfterInactivityInMilliseconds;
         }
 
         public Boolean getRequestCacheEnabled() {
@@ -707,6 +725,11 @@ public abstract class HystrixCommandProperties {
 
         public Setter withMetricsRollingStatisticalWindowBuckets(int value) {
             this.metricsRollingStatisticalWindowBuckets = value;
+            return this;
+        }
+
+        public Setter withMetricsExpireAfterInactivityInMilliseconds(int value) {
+            this.metricsExpireAfterInactivityInMilliseconds = value;
             return this;
         }
 

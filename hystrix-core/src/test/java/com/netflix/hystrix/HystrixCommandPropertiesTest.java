@@ -1,14 +1,13 @@
 package com.netflix.hystrix;
 
-import static org.junit.Assert.assertEquals;
-
-import org.junit.After;
-import org.junit.Test;
-
 import com.netflix.config.ConfigurationManager;
 import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
 import com.netflix.hystrix.HystrixCommandProperties.Setter;
 import com.netflix.hystrix.strategy.properties.HystrixProperty;
+import org.junit.After;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 public class HystrixCommandPropertiesTest {
 
@@ -24,6 +23,7 @@ public class HystrixCommandPropertiesTest {
                 .withCircuitBreakerErrorThresholdPercentage(40) // % of 'marks' that must be failed to trip the circuit
                 .withMetricsRollingStatisticalWindowInMilliseconds(5000)// milliseconds back that will be tracked
                 .withMetricsRollingStatisticalWindowBuckets(5) // buckets
+                .withMetricsExpireAfterInactivityInMilliseconds(86400) // expire after 1 day
                 .withCircuitBreakerRequestVolumeThreshold(0) // in testing we will not have a threshold unless we're specifically testing that feature
                 .withCircuitBreakerSleepWindowInMilliseconds(5000000) // milliseconds after tripping circuit before allowing retry (by default set VERY long as we want it to effectively never allow a singleTest for most unit tests)
                 .withCircuitBreakerEnabled(true)
@@ -148,6 +148,12 @@ public class HystrixCommandPropertiesTest {
             @Override
             public HystrixProperty<Integer> metricsRollingStatisticalWindowBuckets() {
                 return HystrixProperty.Factory.asProperty(builder.getMetricsRollingStatisticalWindowBuckets());
+            }
+
+
+            @Override
+            public HystrixProperty<Integer> metricsExpireAfterInactivityInMilliseconds() {
+                return HystrixProperty.Factory.asProperty(builder.getMetricsExpireAfterInactivityInMilliseconds());
             }
 
             @Override
