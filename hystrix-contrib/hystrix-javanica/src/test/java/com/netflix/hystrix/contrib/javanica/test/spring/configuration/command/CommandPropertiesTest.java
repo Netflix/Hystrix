@@ -1,6 +1,7 @@
 package com.netflix.hystrix.contrib.javanica.test.spring.configuration.command;
 
 import com.netflix.hystrix.HystrixEventType;
+import com.netflix.hystrix.HystrixInvokableInfo;
 import com.netflix.hystrix.HystrixRequestLog;
 import com.netflix.hystrix.HystrixThreadPool;
 import com.netflix.hystrix.HystrixThreadPoolProperties;
@@ -38,7 +39,7 @@ public class CommandPropertiesTest {
             User u1 = userService.getUser("1", "name: ");
             assertEquals("name: 1", u1.getName());
             assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-            com.netflix.hystrix.HystrixExecutableInfo<?> command = HystrixRequestLog.getCurrentRequest()
+            HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest()
                     .getAllExecutedCommands().iterator().next();
             assertEquals("GetUserCommand", command.getCommandKey().name());
             assertEquals("UserGroupKey", command.getCommandGroup().name());
@@ -74,7 +75,7 @@ public class CommandPropertiesTest {
             User u1 = userService.getUserDefProperties("1", "name: ");
             assertEquals("name: 1", u1.getName());
             assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-            com.netflix.hystrix.HystrixExecutableInfo<?> command = HystrixRequestLog.getCurrentRequest()
+            HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest()
                     .getAllExecutedCommands().iterator().next();
             assertEquals("getUserDefProperties", command.getCommandKey().name());
             assertEquals("UserService", command.getCommandGroup().name());
