@@ -156,8 +156,7 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
      * Example:
      * <pre> {@code
      *  Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("GroupName"))
-                .andCommandKey(HystrixCommandKey.Factory.asKey("CommandName"))
-                .andEventNotifier(notifier);
+                .andCommandKey(HystrixCommandKey.Factory.asKey("CommandName"));
      * } </pre>
      * 
      * @NotThreadSafe
