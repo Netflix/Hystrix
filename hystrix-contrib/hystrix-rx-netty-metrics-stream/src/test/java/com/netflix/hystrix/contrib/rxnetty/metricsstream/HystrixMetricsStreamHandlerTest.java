@@ -85,7 +85,7 @@ public class HystrixMetricsStreamHandlerTest {
                     }
                 });
 
-        Object first = Observable.amb(objectObservable, Observable.timer(1000, TimeUnit.MILLISECONDS)).toBlockingObservable().first();
+        Object first = Observable.amb(objectObservable, Observable.timer(1000, TimeUnit.MILLISECONDS)).toBlocking().first();
 
         assertTrue("Expected SSE message", first instanceof ServerSentEvent);
         ServerSentEvent sse = (ServerSentEvent) first;
