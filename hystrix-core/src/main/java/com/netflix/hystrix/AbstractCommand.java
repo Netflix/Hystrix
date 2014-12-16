@@ -1383,6 +1383,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         protected final List<HystrixEventType> events;
         private final int executionTime;
         private final Exception exception;
+        private final long commandRunStartTimeInNanos;
 
         private ExecutionResult(HystrixEventType... events) {
             this(Arrays.asList(events), -1, null);
@@ -1401,7 +1402,14 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
             // because we control the original list in 'newEvent'
             this.events = events;
             this.executionTime = executionTime;
+            if (executionTime >= 0 ) {
+                this.commandRunStartTimeInNanos = System.nanoTime() - this.executionTime*1000*1000; // 1000*1000 will conver the milliseconds to nanoseconds
+            }
+            else {
+                this.commandRunStartTimeInNanos = -1;
+            }
             this.exception = e;
+
         }
 
         // we can return a static version since it's immutable
@@ -1425,6 +1433,9 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         public int getExecutionTime() {
             return executionTime;
         }
+        public long getCommandRunStartTimeInNanos() {return commandRunStartTimeInNanos; }
+
+
 
         public Exception getException() {
             return exception;
@@ -1590,6 +1601,16 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
      */
     public int getExecutionTimeInMilliseconds() {
         return executionResult.getExecutionTime();
+    }
+
+    /**
+     * Time in Nanos when this command instance's run method was called, or -1 if not executed 
+     * for e.g., command threw an exception
+      *
+      * @return long
+     */
+    public long getCommandRunStartTimeInNanos() {
+        return executionResult.getCommandRunStartTimeInNanos();
     }
 
     protected Exception getExceptionFromThrowable(Throwable t) {
