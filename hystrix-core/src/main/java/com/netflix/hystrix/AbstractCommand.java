@@ -515,12 +515,14 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                     } else {
                         // not timed out so execute
                         try {
+                            threadPool.markThreadExecution();
                             final Action0 endCurrentThread = Hystrix.startCurrentThreadExecutingCommand(getCommandKey());
                             getExecutionObservable().doOnTerminate(new Action0() {
 
                                 @Override
                                 public void call() {
                                     // TODO is this actually the end of the thread?
+                                    threadPool.markThreadCompletion();
                                     executionHook.onThreadComplete(_self);
                                     endCurrentThread.call();
                                 }
