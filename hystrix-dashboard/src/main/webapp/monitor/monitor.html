@@ -93,15 +93,20 @@
 			if(getUrlVars()["delay"] != undefined) {
 				stream = stream + "&delay=" + getUrlVars()["delay"];
 			}
-			
-			var commandStream = "../proxy.stream?origin=" + stream;
-			var poolStream = "../proxy.stream?origin=" + stream;
-			
+
 			if(getUrlVars()["title"] != undefined) {
 				$('#title_name').html("Hystrix Stream: " + decodeURIComponent(getUrlVars()["title"]))
 			} else {
 				$('#title_name').html("Hystrix Stream: " + decodeURIComponent(stream))
 			}
+
+            //do not show authorization in stream title
+            if(getUrlVars()["authorization"] != undefined) {
+                stream = stream + "&authorization=" + getUrlVars()["authorization"];
+            }
+
+            var commandStream = "../proxy.stream?origin=" + stream;
+            var poolStream = "../proxy.stream?origin=" + stream;
 		}
 				
 		$(window).load(function() { // within load with a setTimeout to prevent the infinite spinner
