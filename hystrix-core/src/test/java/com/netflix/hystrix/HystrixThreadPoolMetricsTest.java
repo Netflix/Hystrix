@@ -27,7 +27,7 @@ public class HystrixThreadPoolMetricsTest {
 
 	@Before
 	public void resetAll() {
-		HystrixThreadPoolMetrics.resetAll();
+		HystrixThreadPoolMetrics.reset();
 	}
 
 	@Test
