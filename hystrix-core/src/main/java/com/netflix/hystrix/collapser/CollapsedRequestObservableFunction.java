@@ -110,7 +110,7 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
         CollapsedRequestObservableFunction.ResponseHolder<T> r = rh.get();
         // only proceed if neither response is set
         if (!r.isResponseSet() && r.getException() == null) {
-            if(e==null) {
+            if(e == null) {
                 exception = new IllegalStateException(exceptionMessage);
             }
             setExceptionIfResponseNotReceived(exception);
