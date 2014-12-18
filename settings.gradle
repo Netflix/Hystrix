@@ -10,5 +10,5 @@ include 'hystrix-core', \
 'hystrix-contrib:hystrix-codahale-metrics-publisher', \
 'hystrix-contrib:hystrix-yammer-metrics-publisher', \
 'hystrix-contrib:hystrix-network-auditor-agent', \
-//'hystrix-contrib:hystrix-javanica', \
+'hystrix-contrib:hystrix-javanica', \
 'hystrix-dashboard'
