@@ -3396,7 +3396,7 @@ public class HystrixCommandTest {
         assertEquals(1, command.builder.executionHook.threadComplete.get());
 
         // expected hook execution sequence
-        assertEquals("onStart - onThreadStart - onRunStart - onRunSuccess - onThreadComplete - onComplete - ", command.builder.executionHook.executionSequence.toString());
+        assertEquals("onStart - onThreadStart - onRunStart - onRunSuccess - onComplete - onThreadComplete - ", command.builder.executionHook.executionSequence.toString());
 
         /* test with queue() */
         command = new SuccessfulTestCommand();
@@ -3432,7 +3432,7 @@ public class HystrixCommandTest {
         assertEquals(1, command.builder.executionHook.threadComplete.get());
 
         // expected hook execution sequence
-        assertEquals("onStart - onThreadStart - onRunStart - onRunSuccess - onThreadComplete - onComplete - ", command.builder.executionHook.executionSequence.toString());
+        assertEquals("onStart - onThreadStart - onRunStart - onRunSuccess - onComplete - onThreadComplete - ", command.builder.executionHook.executionSequence.toString());
 
     }
 
@@ -3488,7 +3488,7 @@ public class HystrixCommandTest {
         assertEquals(1, command.builder.executionHook.threadComplete.get());
 
         // expected hook execution sequence
-        assertEquals("onStart - onThreadStart - onRunStart - onRunSuccess - onThreadComplete - onComplete - ", command.builder.executionHook.executionSequence.toString());
+        assertEquals("onStart - onThreadStart - onRunStart - onRunSuccess - onComplete - onThreadComplete - ", command.builder.executionHook.executionSequence.toString());
     }
 
     /**
@@ -3537,7 +3537,7 @@ public class HystrixCommandTest {
         assertEquals(1, command.builder.executionHook.threadComplete.get());
 
         // expected hook execution sequence
-        assertEquals("onStart - onThreadStart - onRunStart - onRunSuccess - onThreadComplete - onComplete - ", command.builder.executionHook.executionSequence.toString());
+        assertEquals("onStart - onThreadStart - onRunStart - onRunSuccess - onComplete - onThreadComplete - ", command.builder.executionHook.executionSequence.toString());
 
     }
 
@@ -3583,7 +3583,7 @@ public class HystrixCommandTest {
         assertEquals(1, command.builder.executionHook.threadComplete.get());
 
         // expected hook execution sequence
-        assertEquals("onStart - onThreadStart - onRunStart - onRunError - onFallbackStart - onFallbackError - onError - onThreadComplete - onComplete - ", command.builder.executionHook.executionSequence.toString());
+        assertEquals("onStart - onThreadStart - onRunStart - onRunError - onFallbackStart - onFallbackError - onError - onComplete - onThreadComplete - ", command.builder.executionHook.executionSequence.toString());
 
 
         /* test with queue() */
@@ -3623,7 +3623,7 @@ public class HystrixCommandTest {
         assertEquals(1, command.builder.executionHook.threadComplete.get());
 
         // expected hook execution sequence
-        assertEquals("onStart - onThreadStart - onRunStart - onRunError - onFallbackStart - onFallbackError - onError - onThreadComplete - onComplete - ", command.builder.executionHook.executionSequence.toString());
+        assertEquals("onStart - onThreadStart - onRunStart - onRunError - onFallbackStart - onFallbackError - onError - onThreadComplete - ", command.builder.executionHook.executionSequence.toString());
     }
 
     /**
@@ -3661,7 +3661,7 @@ public class HystrixCommandTest {
         assertEquals(1, command.builder.executionHook.threadComplete.get());
 
         // expected hook execution sequence
-        assertEquals("onStart - onThreadStart - onRunStart - onRunError - onFallbackStart - onFallbackSuccess - onThreadComplete - onComplete - ", command.builder.executionHook.executionSequence.toString());
+        assertEquals("onStart - onThreadStart - onRunStart - onRunError - onFallbackStart - onFallbackSuccess - onComplete - onThreadComplete - ", command.builder.executionHook.executionSequence.toString());
 
 
         /* test with queue() */
@@ -3698,7 +3698,7 @@ public class HystrixCommandTest {
         assertEquals(1, command.builder.executionHook.threadComplete.get());
 
         // expected hook execution sequence
-        assertEquals("onStart - onThreadStart - onRunStart - onRunError - onFallbackStart - onFallbackSuccess - onThreadComplete - onComplete - ", command.builder.executionHook.executionSequence.toString());
+        assertEquals("onStart - onThreadStart - onRunStart - onRunError - onFallbackStart - onFallbackSuccess - onComplete - onThreadComplete - ", command.builder.executionHook.executionSequence.toString());
     }
 
     /**
@@ -3743,7 +3743,7 @@ public class HystrixCommandTest {
         assertEquals(1, command.builder.executionHook.threadComplete.get());
 
         // expected hook execution sequence
-        assertEquals("onStart - onThreadStart - onRunStart - onRunError - onFallbackStart - onFallbackError - onError - onThreadComplete - onComplete - ", command.builder.executionHook.executionSequence.toString());
+        assertEquals("onStart - onThreadStart - onRunStart - onRunError - onFallbackStart - onFallbackError - onError - onThreadComplete - ", command.builder.executionHook.executionSequence.toString());
 
         /* test with queue() */
         command = new KnownFailureTestCommandWithFallbackFailure();
@@ -3782,7 +3782,7 @@ public class HystrixCommandTest {
         assertEquals(1, command.builder.executionHook.threadComplete.get());
 
         // expected hook execution sequence
-        assertEquals("onStart - onThreadStart - onRunStart - onRunError - onFallbackStart - onFallbackError - onError - onThreadComplete - onComplete - ", command.builder.executionHook.executionSequence.toString());
+        assertEquals("onStart - onThreadStart - onRunStart - onRunError - onFallbackStart - onFallbackError - onError - onThreadComplete - ", command.builder.executionHook.executionSequence.toString());
     }
 
     /**
@@ -3833,7 +3833,7 @@ public class HystrixCommandTest {
         assertEquals(1, command.builder.executionHook.threadComplete.get());
 
         // expected hook execution sequence
-        assertEquals("onStart - onThreadStart - onRunStart - onFallbackStart - onFallbackError - onError - onRunSuccess - onThreadComplete - onComplete - ", command.builder.executionHook.executionSequence.toString());
+        assertEquals("onStart - onThreadStart - onRunStart - onFallbackStart - onFallbackError - onError - onRunSuccess - onThreadComplete - ", command.builder.executionHook.executionSequence.toString());
 
     }
 
@@ -3882,7 +3882,7 @@ public class HystrixCommandTest {
         assertEquals(1, command.builder.executionHook.threadComplete.get());
 
         // expected hook execution sequence
-        assertEquals("onStart - onThreadStart - onRunStart - onFallbackStart - onFallbackSuccess - onRunSuccess - onThreadComplete - onComplete - ", command.builder.executionHook.executionSequence.toString());
+        assertEquals("onStart - onThreadStart - onRunStart - onFallbackStart - onFallbackSuccess - onComplete - onRunSuccess - onThreadComplete - ", command.builder.executionHook.executionSequence.toString());
     }
 
     /**
@@ -3986,7 +3986,7 @@ public class HystrixCommandTest {
         assertEquals(0, command.builder.executionHook.threadComplete.get());
 
         // expected hook execution sequence
-        assertEquals("onStart - onFallbackStart - onFallbackError - onError - onComplete - ", command.builder.executionHook.executionSequence.toString());
+        assertEquals("onStart - onFallbackStart - onFallbackError - onError - ", command.builder.executionHook.executionSequence.toString());
     }
 
     /**
@@ -4034,7 +4034,7 @@ public class HystrixCommandTest {
         assertEquals(0, command.builder.executionHook.threadComplete.get());
 
         // expected hook execution sequence
-        assertEquals("onStart - onFallbackStart - onFallbackError - onError - onComplete - ", command.builder.executionHook.executionSequence.toString());
+        assertEquals("onStart - onFallbackStart - onFallbackError - onError - ", command.builder.executionHook.executionSequence.toString());
     }
 
     /**
@@ -4163,7 +4163,7 @@ public class HystrixCommandTest {
         assertEquals(0, command.builder.executionHook.threadComplete.get());
 
         // expected hook execution sequence
-        assertEquals("onStart - onFallbackStart - onFallbackError - onError - onComplete - ", command.builder.executionHook.executionSequence.toString());
+        assertEquals("onStart - onFallbackStart - onFallbackError - onError - ", command.builder.executionHook.executionSequence.toString());
     }
 
     /**
