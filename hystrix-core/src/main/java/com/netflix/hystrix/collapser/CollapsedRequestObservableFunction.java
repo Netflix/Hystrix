@@ -100,6 +100,26 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
     }
 
     /**
+     * Set an ISE if a response is not yet received otherwise skip it
+     *
+     * @param e A pre-generated exception.  If this is null an ISE will be created and returned
+     * @param exceptionMessage The message for the ISE
+     */
+    public Exception setExceptionIfResponseNotReceived(Exception e, String exceptionMessage) {
+        Exception exception = e;
+        CollapsedRequestObservableFunction.ResponseHolder<T> r = rh.get();
+        // only proceed if neither response is set
+        if (!r.isResponseSet() && r.getException() == null) {
+            if(e == null) {
+                exception = new IllegalStateException(exceptionMessage);
+            }
+            setExceptionIfResponseNotReceived(exception);
+        }
+        // return any exception that was generated
+        return exception;
+    }
+
+    /**
      * When set any client thread blocking on get() will immediately be unblocked and receive the exception.
      * 
      * @throws IllegalStateException
