@@ -31,7 +31,6 @@ import rx.Observer;
 import rx.Scheduler;
 import rx.functions.Action1;
 import rx.observers.TestSubscriber;
-import rx.schedulers.Schedulers;
 
 import com.netflix.config.ConfigurationManager;
 import com.netflix.hystrix.AbstractCommand.TryableSemaphore;
@@ -4165,7 +4164,51 @@ public class HystrixCommandTest {
 
         // expected hook execution sequence
         assertEquals("onStart - onFallbackStart - onFallbackError - onError - onComplete - ", command.builder.executionHook.executionSequence.toString());
+    }
 
+    /**
+     * Execution hook on fail with HystrixBadRequest exception
+     */
+    @Test
+    public void testExecutionHookFailedOnHystrixBadRequestWithSemaphoreIsolation() {
+
+        TestSemaphoreCommandFailWithHystrixBadRequestException command = new TestSemaphoreCommandFailWithHystrixBadRequestException(new TestCircuitBreaker(), 1, 10);
+        try {
+            command.execute();
+            fail("we expect a failure");
+        } catch (Exception e) {
+            // expected
+        }
+
+        assertFalse(command.isExecutedInThread());
+
+        // the run() method should run as we're not short-circuited or rejected
+        assertEquals(1, command.builder.executionHook.startRun.get());
+        // we expect a successful response from run()
+        assertNull(command.builder.executionHook.runSuccessResponse);
+        // we expect an exception
+        assertNotNull(command.builder.executionHook.runFailureException);
+
+        // the fallback() method should not be run as we were successful
+        assertEquals(0, command.builder.executionHook.startFallback.get());
+        // null since it didn't run
+        assertNull(command.builder.executionHook.fallbackSuccessResponse);
+        // null since it didn't run
+        assertNull(command.builder.executionHook.fallbackFailureException);
+
+        // the execute() method was used
+        assertEquals(1, command.builder.executionHook.startExecute.get());
+        // we should not have a response from execute()
+        assertNull(command.builder.executionHook.endExecuteSuccessResponse);
+        // we should not have an exception since run() succeeded
+        assertNull(command.builder.executionHook.endExecuteFailureException);
+
+        // thread execution
+        assertEquals(0, command.builder.executionHook.threadStart.get());
+        assertEquals(0, command.builder.executionHook.threadComplete.get());
+
+        // expected hook execution sequence
+        assertEquals("onStart - onRunStart - onRunError - onError - ", command.builder.executionHook.executionSequence.toString());
     }
 
     /**
@@ -4483,6 +4526,29 @@ public class HystrixCommandTest {
             throw new RuntimeException("we failed with a simulated issue");
         }
 
+    }
+
+    private static class KnownHystrixBadRequestFailureTestCommandWithoutFallback extends TestHystrixCommand<Boolean> {
+
+        public KnownHystrixBadRequestFailureTestCommandWithoutFallback(TestCircuitBreaker circuitBreaker) {
+            super(testPropsBuilder().setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics));
+        }
+
+        public KnownHystrixBadRequestFailureTestCommandWithoutFallback(TestCircuitBreaker circuitBreaker, boolean fallbackEnabled) {
+            super(testPropsBuilder().setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics)
+                    .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withFallbackEnabled(fallbackEnabled)));
+        }
+
+        @Override
+        protected Boolean run() {
+            System.out.println("*** simulated failed with HystrixBadRequestException  ***");
+            throw new HystrixBadRequestException("we failed with a simulated issue");
+        }
+
+        @Override
+        protected Boolean getFallback() {
+            return false;
+        }
     }
 
     /**
@@ -4907,6 +4973,36 @@ public class HystrixCommandTest {
                 e.printStackTrace();
             }
             return true;
+        }
+    }
+
+    /**
+     * The run() will take time. No fallback implementation.
+     */
+    private static class TestSemaphoreCommandFailWithHystrixBadRequestException extends TestHystrixCommand<Boolean> {
+
+        private final long executionSleep;
+
+        private TestSemaphoreCommandFailWithHystrixBadRequestException(TestCircuitBreaker circuitBreaker, int executionSemaphoreCount, long executionSleep) {
+            super(testPropsBuilder().setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics)
+                    .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter()
+                            .withExecutionIsolationStrategy(ExecutionIsolationStrategy.SEMAPHORE)
+                            .withExecutionIsolationSemaphoreMaxConcurrentRequests(executionSemaphoreCount)));
+            this.executionSleep = executionSleep;
+        }
+
+        private TestSemaphoreCommandFailWithHystrixBadRequestException(TestCircuitBreaker circuitBreaker, TryableSemaphore semaphore, long executionSleep) {
+            super(testPropsBuilder().setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics)
+                    .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter()
+                            .withExecutionIsolationStrategy(ExecutionIsolationStrategy.SEMAPHORE))
+                    .setExecutionSemaphore(semaphore));
+            this.executionSleep = executionSleep;
+        }
+
+        @Override
+        protected Boolean run() {
+            System.out.print("*** simulated failed execution ***");
+            throw new HystrixBadRequestException("we failed with a simulated issue");
         }
     }
 
