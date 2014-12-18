@@ -75,6 +75,10 @@ public class HystrixCommandTest {
         }
     }
 
+    private static void recordHookCall(StringBuilder sequenceRecorder, String methodName) {
+        sequenceRecorder.append(methodName).append(" - ");
+    }
+
     /**
      * Test a successful command execution.
      */
