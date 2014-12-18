@@ -3583,7 +3583,7 @@ public class HystrixCommandTest {
         assertEquals(1, command.builder.executionHook.threadComplete.get());
 
         // expected hook execution sequence
-        assertEquals("onStart - onThreadStart - onRunStart - onRunError - onFallbackStart - onFallbackError - onError - onComplete - onThreadComplete - ", command.builder.executionHook.executionSequence.toString());
+        assertEquals("onStart - onThreadStart - onRunStart - onRunError - onFallbackStart - onFallbackError - onError - onThreadComplete - ", command.builder.executionHook.executionSequence.toString());
 
 
         /* test with queue() */

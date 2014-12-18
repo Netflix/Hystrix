@@ -506,8 +506,8 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 
                 @Override
                 public void call(Subscriber<? super R> s) {
-                    executionHook.onRunStart(_self);
                     executionHook.onThreadStart(_self);
+                    executionHook.onRunStart(_self);
                     if (isCommandTimedOut.get() == TimedOutStatus.TIMED_OUT) {
                         // the command timed out in the wrapping thread so we will return immediately
                         // and not increment any of the counters below or other such logic
