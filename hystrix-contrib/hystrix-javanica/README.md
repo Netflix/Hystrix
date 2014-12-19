@@ -19,23 +19,37 @@ To implement AOP functionality in the project was used AspectJ library. If in yo
 ```xml
 <aspects>
         ...
-        <aspect name="com.netflix.hystrix.contrib.javanica.aop.aspectj.HystrixAspect"/>
+        <aspect name="com.netflix.hystrix.contrib.javanica.aop.aspectj.HystrixCommandAspect"/>
         ...
 </aspects>
 ```
 More about AspectJ configuration read [here] (http://www.eclipse.org/aspectj/doc/next/devguide/ltw-configuration.html)
 
 
-If you use Spring AOP in your project then you need to add specific configuration using Spring aop namespace in order to make Spring capable to manage aspects which were written using AspectJ and declare HystrixAspect as Spring bean like below:
+If you use Spring AOP in your project then you need to add specific configuration using Spring AOP namespace in order to make Spring capable to manage aspects which were written using AspectJ and declare `HystrixCommandAspect` as Spring bean like below:
 
 ```xml
     <aop:aspectj-autoproxy/>
-    <bean id="hystrixAspect" class="com.netflix.hystrix.contrib.javanica.aop.aspectj.HystrixAspect"></bean>
+    <bean id="hystrixAspect" class="com.netflix.hystrix.contrib.javanica.aop.aspectj.HystrixCommandAspect"></bean>
+```
+
+Or if you are using Spring code configuration:
+
+```java
+@Configuration
+public class HystrixConfiguration {
+
+  @Bean
+  public HystrixCommandAspect hystrixAspect() {
+    return new HystrixCommandAspect();
+  }
+
+}
 ```
 
 It doesn't matter which approach you use to create proxies in Spring, javanica works fine with JDK and CGLIB proxies. If you use another framework for aop which supports AspectJ and uses other libs (Javassist for instance) to create proxies then let us know what lib you use to create proxies and we'll try to add support for this library in near future.
 
-More about Spring AOP + AspectJ read [here] (http://docs.spring.io/spring/docs/3.2.x/spring-framework-reference/html/aop.html)
+More about Spring AOP + AspectJ read [here] (http://docs.spring.io/spring/docs/current/spring-framework-reference/html/aop.html)
 
 # How to use
 
