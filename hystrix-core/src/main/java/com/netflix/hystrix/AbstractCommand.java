@@ -750,15 +750,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
             executionResult = executionResult.addEvents(eventType);
             final AbstractCommand<R> _cmd = this;
 
-            return getFallbackWithProtection().map(new Func1<R, R>() {
-
-                @Override
-                public R call(R t1) {
-                    System.out.println(">>>>>>>>>>>> fallback on thread: " + Thread.currentThread());
-                    return executionHook.onComplete(_cmd, t1);
-                }
-
-            }).doOnCompleted(new Action0() {
+            return getFallbackWithProtection().doOnCompleted(new Action0() {
 
                 @Override
                 public void call() {
