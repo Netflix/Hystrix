@@ -506,8 +506,8 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 
                 @Override
                 public void call(Subscriber<? super R> s) {
-                    executionHook.onRunStart(_self);
                     executionHook.onThreadStart(_self);
+                    executionHook.onRunStart(_self);
                     if (isCommandTimedOut.get() == TimedOutStatus.TIMED_OUT) {
                         // the command timed out in the wrapping thread so we will return immediately
                         // and not increment any of the counters below or other such logic
@@ -561,7 +561,6 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 
             @Override
             public R call(R t1) {
-                System.out.println("map " + t1);
                 if (!once) {
                     // report success
                     executionResult = executionResult.addEvents(HystrixEventType.SUCCESS);
@@ -617,6 +616,17 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                         logger.warn("Error calling ExecutionHook.onRunError", hookException);
                     }
 
+                    try {
+                        Exception decorated = executionHook.onError(_self, FailureType.BAD_REQUEST_EXCEPTION, (Exception) t);
+
+                        if (decorated instanceof HystrixBadRequestException) {
+                            t = (HystrixBadRequestException) decorated;
+                        } else {
+                            logger.warn("ExecutionHook.onError returned an exception that was not an instance of HystrixBadRequestException so will be ignored.", decorated);
+                        }
+                    } catch (Exception hookException) {
+                        logger.warn("Error calling ExecutionHook.onError", hookException);
+                    }
                     /*
                      * HystrixBadRequestException is treated differently and allowed to propagate without any stats tracking or fallback logic
                      */
@@ -750,15 +760,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
             executionResult = executionResult.addEvents(eventType);
             final AbstractCommand<R> _cmd = this;
 
-            return getFallbackWithProtection().map(new Func1<R, R>() {
-
-                @Override
-                public R call(R t1) {
-                    System.out.println(">>>>>>>>>>>> fallback on thread: " + Thread.currentThread());
-                    return executionHook.onComplete(_cmd, t1);
-                }
-
-            }).doOnCompleted(new Action0() {
+            return getFallbackWithProtection().doOnCompleted(new Action0() {
 
                 @Override
                 public void call() {
