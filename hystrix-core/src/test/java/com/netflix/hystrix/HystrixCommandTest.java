@@ -4184,12 +4184,12 @@ public class HystrixCommandTest {
 
         // the run() method should run as we're not short-circuited or rejected
         assertEquals(1, command.builder.executionHook.startRun.get());
-        // we expect a successful response from run()
+        // we expect no response from run()
         assertNull(command.builder.executionHook.runSuccessResponse);
         // we expect an exception
         assertNotNull(command.builder.executionHook.runFailureException);
 
-        // the fallback() method should not be run as we were successful
+        // the fallback() method should not be run as BadRequestException is handled by immediate propagation
         assertEquals(0, command.builder.executionHook.startFallback.get());
         // null since it didn't run
         assertNull(command.builder.executionHook.fallbackSuccessResponse);
@@ -4200,8 +4200,8 @@ public class HystrixCommandTest {
         assertEquals(1, command.builder.executionHook.startExecute.get());
         // we should not have a response from execute()
         assertNull(command.builder.executionHook.endExecuteSuccessResponse);
-        // we should not have an exception since run() succeeded
-        assertNull(command.builder.executionHook.endExecuteFailureException);
+        // we should have a HystrixBadRequest exception since run() succeeded
+        assertNotNull(command.builder.executionHook.endExecuteFailureException);
 
         // thread execution
         assertEquals(0, command.builder.executionHook.threadStart.get());

@@ -561,7 +561,6 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 
             @Override
             public R call(R t1) {
-                System.out.println("map " + t1);
                 if (!once) {
                     // report success
                     executionResult = executionResult.addEvents(HystrixEventType.SUCCESS);
@@ -617,6 +616,17 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                         logger.warn("Error calling ExecutionHook.onRunError", hookException);
                     }
 
+                    try {
+                        Exception decorated = executionHook.onError(_self, FailureType.BAD_REQUEST_EXCEPTION, (Exception) t);
+
+                        if (decorated instanceof HystrixBadRequestException) {
+                            t = (HystrixBadRequestException) decorated;
+                        } else {
+                            logger.warn("ExecutionHook.onError returned an exception that was not an instance of HystrixBadRequestException so will be ignored.", decorated);
+                        }
+                    } catch (Exception hookException) {
+                        logger.warn("Error calling ExecutionHook.onError", hookException);
+                    }
                     /*
                      * HystrixBadRequestException is treated differently and allowed to propagate without any stats tracking or fallback logic
                      */
