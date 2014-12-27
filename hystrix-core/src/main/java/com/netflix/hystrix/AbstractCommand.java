@@ -937,7 +937,6 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 
                         timeoutRunnable.run();
                     }
-
                 }
 
                 @Override
