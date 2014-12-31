@@ -91,6 +91,7 @@ public @interface HystrixCommand {
      *
      * @return method name or empty string
      */
+    @Deprecated
     String cacheKeyMethod() default "";
 
     /**
