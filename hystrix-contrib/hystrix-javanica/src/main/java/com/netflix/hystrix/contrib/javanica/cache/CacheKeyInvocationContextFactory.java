@@ -26,9 +26,9 @@ import java.lang.reflect.Method;
  */
 public class CacheKeyInvocationContextFactory {
 
-	public CacheKeyInvocationContext create(Method method) {
+	public CacheKeyInvocationContext create(String cacheName, Object target, Method method, Object ...args) {
 		if (method.isAnnotationPresent(CacheResult.class)) {
-			return new CacheResultInvocationContext();
+			return new CacheResultInvocationContext(cacheName, target, method, args);
 		}
 		return null;
 	}
