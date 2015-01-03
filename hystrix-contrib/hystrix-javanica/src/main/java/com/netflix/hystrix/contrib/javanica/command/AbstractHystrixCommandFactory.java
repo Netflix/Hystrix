@@ -18,9 +18,7 @@ package com.netflix.hystrix.contrib.javanica.command;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
-import com.netflix.config.ConfigurationManager;
 import com.netflix.hystrix.HystrixCollapser;
-import com.netflix.hystrix.HystrixThreadPoolProperties;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
 import com.netflix.hystrix.contrib.javanica.conf.HystrixPropertiesManager;
@@ -31,6 +29,9 @@ import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+
+import static com.netflix.hystrix.contrib.javanica.cache.CacheKeyInvocationContextFactory.createCacheRemoveInvocationContext;
+import static com.netflix.hystrix.contrib.javanica.cache.CacheKeyInvocationContextFactory.createCacheResultInvocationContext;
 
 /**
  * Base implementation of {@link HystrixCommandFactory} interface.
@@ -66,8 +67,16 @@ public abstract class AbstractHystrixCommandFactory<T extends AbstractHystrixCom
         CommandAction cacheKeyAction = createCacheKeyAction(metaHolder);
         CommandActions commandActions = CommandActions.builder().commandAction(commandAction)
                 .fallbackAction(fallbackAction).cacheKeyAction(cacheKeyAction).build();
-        return create(setterBuilder, commandActions, commandProperties, collapsedRequests,
-                metaHolder.getHystrixCommand().ignoreExceptions(), metaHolder.getExecutionType());
+
+        HystrixCommandBuilder hystrixCommandBuilder = new HystrixCommandBuilder().setterBuilder(setterBuilder)
+                .commandActions(commandActions)
+                .commandProperties(commandProperties)
+                .collapsedRequests(collapsedRequests)
+                .cacheResultInvocationContext(createCacheResultInvocationContext(metaHolder))
+                .cacheRemoveInvocationContext(createCacheRemoveInvocationContext(metaHolder))
+                .ignoreExceptions(metaHolder.getHystrixCommand().ignoreExceptions())
+                .executionType(metaHolder.getExecutionType());
+        return create(hystrixCommandBuilder);
     }
 
     CommandAction createFallbackAction(MetaHolder metaHolder,
@@ -100,12 +109,7 @@ public abstract class AbstractHystrixCommandFactory<T extends AbstractHystrixCom
         return fallbackAction;
     }
 
-    abstract T create(CommandSetterBuilder setterBuilder,
-                      CommandActions commandActions,
-                      Map<String, Object> commandProperties,
-                      Collection<HystrixCollapser.CollapsedRequest<Object, Object>> collapsedRequests,
-                      Class<? extends Throwable>[] ignoreExceptions,
-                      ExecutionType executionType);
+    abstract T create(HystrixCommandBuilder hystrixCommandBuilder);
 
 
     private CommandAction createCacheKeyAction(MetaHolder metaHolder) {

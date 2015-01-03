@@ -15,21 +15,56 @@
  */
 package com.netflix.hystrix.contrib.javanica.cache;
 
+import com.netflix.hystrix.contrib.javanica.command.MetaHolder;
+
 import javax.cache.annotation.CacheKeyInvocationContext;
+import javax.cache.annotation.CacheRemove;
 import javax.cache.annotation.CacheResult;
-import java.lang.reflect.Method;
 
 /**
- * // todo
+ * Factory to create specific {@link CacheKeyInvocationContext} instances.
  *
  * @author dmgcodevil
  */
-public class CacheKeyInvocationContextFactory {
+public final class CacheKeyInvocationContextFactory {
 
-	public CacheKeyInvocationContext create(String cacheName, Object target, Method method, Object ...args) {
-		if (method.isAnnotationPresent(CacheResult.class)) {
-			return new CacheResultInvocationContext(cacheName, target, method, args);
-		}
-		return null;
-	}
+    private CacheKeyInvocationContextFactory() {
+        throw new UnsupportedOperationException("it's prohibited to create instances of this class");
+    }
+
+    /**
+     * Creates new instance of {@link CacheResultInvocationContext} if {@link CacheResult} annotation
+     * is present for the specified method, see {@link MetaHolder#getMethod()}.
+     *
+     * @param metaHolder the meta holder contains information about current executable method, see {@link MetaHolder#getMethod()}
+     * @return new instance of {@link CacheResultInvocationContext} or <code>null</code> if the given method doesn't have {@link CacheResult} annotation
+     */
+    public static CacheKeyInvocationContext<CacheResult> createCacheResultInvocationContext(MetaHolder metaHolder) {
+        if (metaHolder.getMethod().isAnnotationPresent(CacheResult.class)) {
+            return new CacheResultInvocationContext(
+                    metaHolder.getMethod().getAnnotation(CacheResult.class),
+                    metaHolder.getObj(),
+                    metaHolder.getMethod(),
+                    metaHolder.getArgs());
+        }
+        return null;
+    }
+
+    /**
+     * Creates new instance of {@link CacheRemoveCacheKeyInvocationContext} if {@link CacheRemove} annotation
+     * is present for the specified method, see {@link MetaHolder#getMethod()}.
+     *
+     * @param metaHolder the meta holder contains information about current executable method, see {@link MetaHolder#getMethod()}.
+     * @return {@link CacheRemoveCacheKeyInvocationContext} or <code>null</code> if the given method doesn't have {@link CacheRemove} annotation
+     */
+    public static CacheKeyInvocationContext<CacheRemove> createCacheRemoveInvocationContext(MetaHolder metaHolder) {
+        if (metaHolder.getMethod().isAnnotationPresent(CacheRemove.class)) {
+            return new CacheRemoveCacheKeyInvocationContext(
+                    metaHolder.getMethod().getAnnotation(CacheRemove.class),
+                    metaHolder.getObj(),
+                    metaHolder.getMethod(),
+                    metaHolder.getArgs());
+        }
+        return null;
+    }
 }

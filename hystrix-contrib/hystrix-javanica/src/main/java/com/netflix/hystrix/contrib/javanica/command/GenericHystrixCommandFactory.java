@@ -15,11 +15,6 @@
  */
 package com.netflix.hystrix.contrib.javanica.command;
 
-import com.netflix.hystrix.HystrixCollapser;
-
-import java.util.Collection;
-import java.util.Map;
-
 /**
  * Specific implementation of {@link HystrixCommandFactory} interface to create {@link GenericCommand} instances.
  */
@@ -33,15 +28,8 @@ public class GenericHystrixCommandFactory extends AbstractHystrixCommandFactory<
     }
 
     @Override
-    GenericCommand create(CommandSetterBuilder setterBuilder,
-                          CommandActions commandActions,
-                          Map<String, Object> commandProperties,
-                          Collection<HystrixCollapser.CollapsedRequest<Object, Object>> collapsedRequests,
-                          Class<? extends Throwable>[] ignoreExceptions,
-                          ExecutionType executionType) {
-        GenericCommand genericCommand = new GenericCommand(setterBuilder, commandActions, commandProperties,
-                collapsedRequests, ignoreExceptions, executionType);
-        return genericCommand;
+    GenericCommand create(HystrixCommandBuilder hystrixCommandBuilder) {
+        return new GenericCommand(hystrixCommandBuilder);
     }
 
 }

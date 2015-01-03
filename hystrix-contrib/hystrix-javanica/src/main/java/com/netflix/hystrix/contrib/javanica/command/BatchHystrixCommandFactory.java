@@ -15,11 +15,6 @@
  */
 package com.netflix.hystrix.contrib.javanica.command;
 
-import com.netflix.hystrix.HystrixCollapser;
-
-import java.util.Collection;
-import java.util.Map;
-
 /**
  * Specific implementation of {@link HystrixCommandFactory} interface to create {@link BatchHystrixCommand} instances.
  */
@@ -32,15 +27,9 @@ public class BatchHystrixCommandFactory extends AbstractHystrixCommandFactory<Ba
         return COMMAND_FACTORY;
     }
 
+
     @Override
-    BatchHystrixCommand create(CommandSetterBuilder setterBuilder,
-                               CommandActions commandActions,
-                               Map<String, Object> commandProperties,
-                               Collection<HystrixCollapser.CollapsedRequest<Object, Object>> collapsedRequests,
-                               Class<? extends Throwable>[] ignoreExceptions,
-                               ExecutionType executionType) {
-        BatchHystrixCommand batchHystrixCommand = new BatchHystrixCommand(setterBuilder, commandActions,
-                commandProperties, collapsedRequests, ignoreExceptions, executionType);
-        return batchHystrixCommand;
+    BatchHystrixCommand create(HystrixCommandBuilder hystrixCommandBuilder) {
+        return new BatchHystrixCommand(hystrixCommandBuilder);
     }
 }

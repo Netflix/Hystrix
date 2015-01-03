@@ -15,23 +15,17 @@
  */
 package com.netflix.hystrix.contrib.javanica.cache;
 
-import javax.cache.annotation.CacheResult;
-import java.lang.reflect.Method;
+import javax.cache.annotation.CacheKeyGenerator;
+import javax.cache.annotation.CacheKeyInvocationContext;
+import java.lang.annotation.Annotation;
 
 /**
- * Concrete implementation of {@link AbstractCacheKeyInvocationContext} provides information of invocation
- * context for {@link CacheResult} annotation.
+ * Specific interface to adopt {@link CacheKeyGenerator} for Hystrix environment.
  *
  * @author dmgcodevil
  */
-public class CacheResultInvocationContext extends AbstractCacheKeyInvocationContext<CacheResult> {
-
-    public CacheResultInvocationContext(CacheResult cacheAnnotation, Object target, Method method, Object... args) {
-        super(cacheAnnotation, target, method, args);
-    }
+public interface HystrixCacheKeyGenerator extends CacheKeyGenerator {
 
     @Override
-    public String getCacheName() {
-        return null;
-    }
+    HystrixGeneratedCacheKey generateCacheKey(CacheKeyInvocationContext<? extends Annotation> cacheKeyInvocationContext);
 }

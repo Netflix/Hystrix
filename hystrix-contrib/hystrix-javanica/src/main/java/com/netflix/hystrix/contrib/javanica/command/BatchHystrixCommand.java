@@ -45,16 +45,8 @@ public class BatchHystrixCommand extends AbstractHystrixCommand<List<Optional<Ob
      */
     private boolean fallbackEnabled;
 
-    /**
-     * {@inheritDoc}.
-     */
-    protected BatchHystrixCommand(CommandSetterBuilder setterBuilder, CommandActions commandActions,
-                                  Map<String, Object> commandProperties,
-                                  Collection<HystrixCollapser.CollapsedRequest<Object, Object>> collapsedRequests,
-                                  Class<? extends Throwable>[] ignoreExceptions,
-                                  ExecutionType executionType) {
-        super(setterBuilder, commandActions, commandProperties, collapsedRequests,
-                ignoreExceptions, executionType);
+    protected BatchHystrixCommand(HystrixCommandBuilder builder) {
+        super(builder);
     }
 
     public boolean isFallbackEnabled() {

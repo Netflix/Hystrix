@@ -17,40 +17,23 @@ package com.netflix.hystrix.contrib.javanica.cache;
 
 import javax.cache.annotation.GeneratedCacheKey;
 
-import com.google.common.base.Objects;
-
 /**
- * // todo
+ * Specific interface to adopt {@link GeneratedCacheKey} for Hystrix environment.
  *
  * @author dmgcodevil
  */
-public class DefaultGeneratedCacheKey implements GeneratedCacheKey, HystrixCacheKey {
+public interface HystrixGeneratedCacheKey extends GeneratedCacheKey {
 
-	private String cacheKey;
-
-	public DefaultGeneratedCacheKey(String cacheKey) {
-		this.cacheKey = cacheKey;
-	}
-
-	@Override
-	public String getKey() {
-		return cacheKey;
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hashCode(cacheKey);
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o)
-			return true;
-		if (o == null || getClass() != o.getClass())
-			return false;
-
-		DefaultGeneratedCacheKey that = (DefaultGeneratedCacheKey) o;
-
-		return Objects.equal(this.cacheKey, that.cacheKey);
-	}
+    /**
+     * Key to be used for request caching.
+     * <p/>
+     * By default this returns null which means "do not cache".
+     * <p/>
+     * To enable caching override this method and return a string key uniquely representing the state of a command instance.
+     * <p/>
+     * If multiple command instances in the same request scope match keys then only the first will be executed and all others returned from cache.
+     *
+     * @return cacheKey
+     */
+    String getCacheKey();
 }

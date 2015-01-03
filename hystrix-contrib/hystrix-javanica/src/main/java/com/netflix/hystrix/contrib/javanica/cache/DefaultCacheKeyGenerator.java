@@ -16,25 +16,34 @@
 package com.netflix.hystrix.contrib.javanica.cache;
 
 import javax.cache.annotation.CacheInvocationParameter;
-import javax.cache.annotation.CacheKeyGenerator;
 import javax.cache.annotation.CacheKeyInvocationContext;
-import javax.cache.annotation.GeneratedCacheKey;
 import java.lang.annotation.Annotation;
 
 /**
- * // todo
+ * Default implementation of {@link HystrixCacheKeyGenerator} creates cache keys with {@link DefaultHystrixGeneratedCacheKey} type.
  *
  * @author dmgcodevil
  */
-public class DefaultCacheKeyGenerator implements CacheKeyGenerator {
+public class DefaultCacheKeyGenerator implements HystrixCacheKeyGenerator {
 
-	@Override
-	public GeneratedCacheKey generateCacheKey(CacheKeyInvocationContext<? extends Annotation> cacheKeyInvocationContext) {
-		StringBuilder cacheKeyBuilder = new StringBuilder();
-		for (CacheInvocationParameter parameter : cacheKeyInvocationContext.getKeyParameters()) {
-			cacheKeyBuilder.append(parameter.getValue());
-		}
-		return new DefaultGeneratedCacheKey(cacheKeyBuilder.toString());
-	}
+    /**
+     * Calls <code>toString()</code> method for each parameter annotated with {@link javax.cache.annotation.CacheKey} annotation and
+     * gathers results together into single string which subsequently is used as hystrix cache key.
+     *
+     * @param cacheKeyInvocationContext runtime information about an intercepted method invocation for a method
+     *                                  annotated with {@link javax.cache.annotation.CacheResult} or {@link javax.cache.annotation.CacheRemove}
+     * @return see {@link DefaultHystrixGeneratedCacheKey}
+     */
+    @Override
+    public HystrixGeneratedCacheKey generateCacheKey(CacheKeyInvocationContext<? extends Annotation> cacheKeyInvocationContext) {
+        if (cacheKeyInvocationContext.getKeyParameters() == null || cacheKeyInvocationContext.getKeyParameters().length == 0) {
+            return DefaultHystrixGeneratedCacheKey.EMPTY;
+        }
+        StringBuilder cacheKeyBuilder = new StringBuilder();
+        for (CacheInvocationParameter parameter : cacheKeyInvocationContext.getKeyParameters()) {
+            cacheKeyBuilder.append(parameter.getValue());
+        }
+        return new DefaultHystrixGeneratedCacheKey(cacheKeyBuilder.toString());
+    }
 
 }

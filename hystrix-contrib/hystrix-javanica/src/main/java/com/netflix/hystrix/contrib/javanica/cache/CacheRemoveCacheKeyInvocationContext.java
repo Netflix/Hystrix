@@ -15,13 +15,23 @@
  */
 package com.netflix.hystrix.contrib.javanica.cache;
 
+import javax.cache.annotation.CacheRemove;
+import java.lang.reflect.Method;
+
 /**
- * // todo
+ * Concrete implementation of {@link AbstractCacheKeyInvocationContext} provides information of invocation
+ * context for {@link CacheRemove} annotation.
  *
  * @author dmgcodevil
  */
-public interface HystrixCacheKey {
+public class CacheRemoveCacheKeyInvocationContext extends AbstractCacheKeyInvocationContext<CacheRemove> {
 
-	String getKey();
+    public CacheRemoveCacheKeyInvocationContext(CacheRemove cacheAnnotation, Object target, Method method, Object... args) {
+        super(cacheAnnotation, target, method, args);
+    }
 
+    @Override
+    public String getCacheName() {
+        return getCacheAnnotation().cacheName();
+    }
 }

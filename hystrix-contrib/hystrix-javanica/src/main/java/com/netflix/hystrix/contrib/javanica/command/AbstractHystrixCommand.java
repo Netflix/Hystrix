@@ -18,12 +18,18 @@ package com.netflix.hystrix.contrib.javanica.command;
 
 import com.google.common.base.Throwables;
 import com.netflix.hystrix.HystrixCollapser;
+import com.netflix.hystrix.contrib.javanica.cache.CacheKeyGeneratorFactory;
+import com.netflix.hystrix.contrib.javanica.cache.HystrixRequestCacheManager;
+import com.netflix.hystrix.contrib.javanica.cache.HystrixCacheKeyGenerator;
 import com.netflix.hystrix.contrib.javanica.conf.HystrixPropertiesManager;
 import com.netflix.hystrix.contrib.javanica.exception.CommandActionExecutionException;
 import com.netflix.hystrix.exception.HystrixBadRequestException;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
 
 import javax.annotation.concurrent.ThreadSafe;
+import javax.cache.annotation.CacheKeyInvocationContext;
+import javax.cache.annotation.CacheRemove;
+import javax.cache.annotation.CacheResult;
 import java.util.Collection;
 import java.util.Map;
 
@@ -37,32 +43,22 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
 
     private CommandActions commandActions;
     private final Map<String, Object> commandProperties;
+    private CacheKeyInvocationContext<CacheResult> cacheResultInvocationContext;
+    private CacheKeyInvocationContext<CacheRemove> cacheRemoveInvocationContext;
     private final Collection<HystrixCollapser.CollapsedRequest<Object, Object>> collapsedRequests;
     private final Class<? extends Throwable>[] ignoreExceptions;
     private final ExecutionType executionType;
+    private final CacheKeyGeneratorFactory cacheKeyGeneratorFactory = CacheKeyGeneratorFactory.getInstance();
 
-    /**
-     * Constructor with parameters.
-     *
-     * @param setterBuilder     the builder to build {@link com.netflix.hystrix.HystrixCommand.Setter}
-     * @param commandActions    the command actions {@link CommandActions}
-     * @param commandProperties the command properties
-     * @param collapsedRequests the collapsed requests
-     * @param ignoreExceptions  the exceptions which should be ignored and wrapped to throw in {@link HystrixBadRequestException}
-     * @param executionType     the execution type {@link ExecutionType}
-     */
-    protected AbstractHystrixCommand(CommandSetterBuilder setterBuilder,
-                                     CommandActions commandActions,
-                                     Map<String, Object> commandProperties,
-                                     Collection<HystrixCollapser.CollapsedRequest<Object, Object>> collapsedRequests,
-                                     final Class<? extends Throwable>[] ignoreExceptions,
-                                     ExecutionType executionType) {
-        super(setterBuilder.build());
-        this.commandActions = commandActions;
-        this.commandProperties = commandProperties;
-        this.collapsedRequests = collapsedRequests;
-        this.ignoreExceptions = ignoreExceptions;
-        this.executionType = executionType;
+    protected AbstractHystrixCommand(HystrixCommandBuilder builder) {
+        super(builder.getSetterBuilder().build());
+        this.commandActions = builder.getCommandActions();
+        this.commandProperties = builder.getCommandProperties();
+        this.collapsedRequests = builder.getCollapsedRequests();
+        this.cacheResultInvocationContext = builder.getCacheResultInvocationContext();
+        this.cacheRemoveInvocationContext = builder.getCacheRemoveInvocationContext();
+        this.ignoreExceptions = builder.getIgnoreExceptions();
+        this.executionType = builder.getExecutionType();
         HystrixPropertiesManager.setCommandProperties(commandProperties, getCommandKey().name());
     }
 
@@ -130,6 +126,12 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
     @Override
     protected String getCacheKey() {
         String key;
+        if (cacheResultInvocationContext != null) {
+            HystrixCacheKeyGenerator keyGenerator = cacheKeyGeneratorFactory
+                    .create(cacheResultInvocationContext.getCacheAnnotation().cacheKeyGenerator());
+            return keyGenerator.generateCacheKey(cacheResultInvocationContext).getCacheKey();
+        }
+        // deprecated approach
         if (commandActions.getCacheKeyAction() != null) {
             key = String.valueOf(commandActions.getCacheKeyAction().execute(executionType));
         } else {
@@ -170,6 +172,7 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
         Object result;
         try {
             result = action.execute();
+            flushCache();
         } catch (CommandActionExecutionException throwable) {
             Throwable cause = throwable.getCause();
             if (isIgnorable(cause)) {
@@ -196,6 +199,15 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
     @Override
     protected T getFallback() {
         throw new RuntimeException("No fallback available.", getFailedExecutionException());
+    }
+
+    /**
+     * Clears cache for the specified hystrix command.
+     */
+    protected void flushCache() {
+        if (cacheRemoveInvocationContext != null) {
+            HystrixRequestCacheManager.getInstance().clearCache(cacheRemoveInvocationContext);
+        }
     }
 
     /**

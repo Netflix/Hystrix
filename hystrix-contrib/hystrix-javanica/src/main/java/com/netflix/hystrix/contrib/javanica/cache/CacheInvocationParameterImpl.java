@@ -19,47 +19,58 @@ import com.google.common.collect.Sets;
 
 import javax.cache.annotation.CacheInvocationParameter;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Parameter;
 import java.util.Set;
 
 /**
- * Created by dmgcodevil on 1/2/2015.
+ * Implementation of {@link CacheInvocationParameter}.
+ *
+ * @author dmgcodevil
  */
 public class CacheInvocationParameterImpl implements CacheInvocationParameter {
 
-    private Parameter parameter;
+    private Class<?> rawType;
     private Object value;
     private Set<Annotation> annotations;
     private Set<Class<? extends Annotation>> annotationTypes;
     private int parameterPosition;
 
-    public CacheInvocationParameterImpl(Parameter parameter, Object value, int pos) {
+    public CacheInvocationParameterImpl(Class<?> paramType, Object value, Annotation[] annotations, int pos) {
         this.value = value;
-        this.annotations = Sets.newHashSet(parameter.getAnnotations());
+        this.rawType = paramType;
+        this.annotations = Sets.newHashSet(annotations);
         this.parameterPosition = pos;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Class<?> getRawType() {
-        return parameter.getType();
+        return rawType;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Object getValue() {
         return value;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Set<Annotation> getAnnotations() {
         return annotations;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public int getParameterPosition() {
         return parameterPosition;
     }
 
-    public Parameter getParameter() {
-        return parameter;
-    }
 }
