@@ -68,6 +68,7 @@ public abstract class AbstractCacheKeyInvocationContext<A extends Annotation> im
             cacheInvocationParameters.add(new CacheInvocationParameterImpl(paramType, val, parametersAnnotations[pos], pos));
         }
         // get key parameters
+        // todo: If no parameters are annotated with {@link CacheKey} or {@link CacheValue} then all parameters are included
         keyParameters = Lists.newArrayList(Iterables.filter(cacheInvocationParameters, new Predicate<CacheInvocationParameter>() {
             @Override
             public boolean apply(CacheInvocationParameter input) {

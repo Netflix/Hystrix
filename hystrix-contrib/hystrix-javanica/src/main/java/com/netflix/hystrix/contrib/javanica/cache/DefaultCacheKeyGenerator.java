@@ -40,6 +40,7 @@ public class DefaultCacheKeyGenerator implements HystrixCacheKeyGenerator {
             return DefaultHystrixGeneratedCacheKey.EMPTY;
         }
         StringBuilder cacheKeyBuilder = new StringBuilder();
+        // todo: If no parameters are annotated with {@link CacheKey} or {@link CacheValue} then all parameters are included
         for (CacheInvocationParameter parameter : cacheKeyInvocationContext.getKeyParameters()) {
             cacheKeyBuilder.append(parameter.getValue());
         }
