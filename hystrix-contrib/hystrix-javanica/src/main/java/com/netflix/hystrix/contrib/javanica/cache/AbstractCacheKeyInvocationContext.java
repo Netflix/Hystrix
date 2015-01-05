@@ -24,7 +24,6 @@ import org.apache.commons.collections.CollectionUtils;
 import javax.cache.annotation.CacheInvocationParameter;
 import javax.cache.annotation.CacheKey;
 import javax.cache.annotation.CacheKeyInvocationContext;
-import javax.cache.annotation.CacheValue;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -43,7 +42,6 @@ public abstract class AbstractCacheKeyInvocationContext<A extends Annotation> im
     private A cacheAnnotation;
     private List<CacheInvocationParameter> keyParameters;
     private List<CacheInvocationParameter> cacheInvocationParameters;
-    private CacheInvocationParameter valueParameter;
 
     /**
      * Creates CacheKeyInvocationContext.
@@ -68,27 +66,12 @@ public abstract class AbstractCacheKeyInvocationContext<A extends Annotation> im
             cacheInvocationParameters.add(new CacheInvocationParameterImpl(paramType, val, parametersAnnotations[pos], pos));
         }
         // get key parameters
-        // todo: If no parameters are annotated with {@link CacheKey} or {@link CacheValue} then all parameters are included
         keyParameters = Lists.newArrayList(Iterables.filter(cacheInvocationParameters, new Predicate<CacheInvocationParameter>() {
             @Override
             public boolean apply(CacheInvocationParameter input) {
                 return isAnnotationPresent(input, CacheKey.class);
             }
         }));
-        List<CacheInvocationParameter> valueParameters = Lists.newArrayList(Iterables.filter(cacheInvocationParameters,
-                new Predicate<CacheInvocationParameter>() {
-                    @Override
-                    public boolean apply(CacheInvocationParameter input) {
-                        return isAnnotationPresent(input, CacheValue.class);
-                    }
-                }));
-        if (valueParameters.size() > 1) {
-            throw new RuntimeException("only one method parameter can be annotated with CacheValue annotation");
-        }
-        if (CollectionUtils.isNotEmpty(valueParameters)) {
-            valueParameter = valueParameters.get(0);
-        }
-
     }
 
     /**
@@ -96,7 +79,11 @@ public abstract class AbstractCacheKeyInvocationContext<A extends Annotation> im
      */
     @Override
     public CacheInvocationParameter[] getKeyParameters() {
-        return keyParameters.toArray(new CacheInvocationParameter[keyParameters.size()]);
+        if (CollectionUtils.isEmpty(keyParameters)) {
+            return getAllParameters();
+        } else {
+            return keyParameters.toArray(new CacheInvocationParameter[keyParameters.size()]);
+        }
     }
 
     /**
@@ -104,7 +91,7 @@ public abstract class AbstractCacheKeyInvocationContext<A extends Annotation> im
      */
     @Override
     public CacheInvocationParameter getValueParameter() {
-        return valueParameter;
+        return null;
     }
 
     /**

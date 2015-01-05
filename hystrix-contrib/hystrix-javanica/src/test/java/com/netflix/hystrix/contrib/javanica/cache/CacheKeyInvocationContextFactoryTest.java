@@ -68,7 +68,8 @@ public class CacheKeyInvocationContextFactoryTest {
 
         // then
         assertNotNull(context.getKeyParameters());
-        assertEquals(0, context.getKeyParameters().length);
+        assertEquals(1, context.getKeyParameters().length);
+        assertEquals(String.class, context.getKeyParameters()[0].getRawType());
     }
 
     public static class TestCacheClass {
