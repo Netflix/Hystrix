@@ -17,7 +17,6 @@ package com.netflix.hystrix.exception;
 
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixInvokable;
-import com.netflix.hystrix.util.ExceptionThreadingUtility;
 
 /**
  * RuntimeException that is thrown when a {@link HystrixCommand} fails and does not have a fallback.
@@ -40,7 +39,6 @@ public class HystrixRuntimeException extends RuntimeException {
         this.failureCause = failureCause;
         this.commandClass = commandClass;
         this.fallbackException = fallbackException;
-        ExceptionThreadingUtility.attachCallingThreadStack(this);
     }
 
     public HystrixRuntimeException(FailureType failureCause, Class<? extends HystrixInvokable> commandClass, String message, Throwable cause, Throwable fallbackException) {
@@ -48,7 +46,6 @@ public class HystrixRuntimeException extends RuntimeException {
         this.failureCause = failureCause;
         this.commandClass = commandClass;
         this.fallbackException = fallbackException;
-        ExceptionThreadingUtility.attachCallingThreadStack(this);
     }
 
     /**
