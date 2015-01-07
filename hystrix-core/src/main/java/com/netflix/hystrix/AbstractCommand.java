@@ -367,7 +367,6 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         }
 
         final HystrixInvokable<R> _this = this;
-        final AtomicReference<Action0> endCurrentThreadExecutingCommand = new AtomicReference<Action0>(); // don't like how this is being done
 
         // create an Observable that will lazily execute when subscribed to
         Observable<R> o = Observable.create(new OnSubscribe<R>() {
@@ -389,8 +388,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                             /* used to track userThreadExecutionTime */
                             invocationStartTime = System.currentTimeMillis();
 
-                            // store the command that is being run
-                            endCurrentThreadExecutingCommand.set(Hystrix.startCurrentThreadExecutingCommand(getCommandKey()));
+
 
                             getRunObservableDecoratedForMetricsAndErrorHandling(performAsyncTimeout)
                                     .doOnTerminate(new Action0() {
@@ -454,11 +452,6 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                         /* execution time (must occur before terminal state otherwise a race condition can occur if requested by client) */
                         recordTotalExecutionTime(invocationStartTime);
                     }
-
-                    // pop the command that is being run
-                    if (endCurrentThreadExecutingCommand.get() != null) {
-                        endCurrentThreadExecutingCommand.get().call();
-                    }
                 } finally {
                     metrics.decrementConcurrentExecutionCount();
                     // record that we're completed
@@ -496,6 +489,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         metrics.incrementConcurrentExecutionCount();
 
         final HystrixRequestContext currentRequestContext = HystrixRequestContext.getContextForCurrentThread();
+        final AtomicReference<Action0> endCurrentThreadExecutingCommand = new AtomicReference<Action0>(); // don't like how this is being done
 
         Observable<R> run = null;
         if (properties.executionIsolationStrategy().get().equals(ExecutionIsolationStrategy.THREAD)) {
@@ -516,7 +510,8 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                         // not timed out so execute
                         try {
                             threadPool.markThreadExecution();
-                            final Action0 endCurrentThread = Hystrix.startCurrentThreadExecutingCommand(getCommandKey());
+                            // store the command that is being run
+                            endCurrentThreadExecutingCommand.set(Hystrix.startCurrentThreadExecutingCommand(getCommandKey()));
                             getExecutionObservable().doOnTerminate(new Action0() {
 
                                 @Override
@@ -524,7 +519,6 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                                     // TODO is this actually the end of the thread?
                                     threadPool.markThreadCompletion();
                                     executionHook.onThreadComplete(_self);
-                                    endCurrentThread.call();
                                 }
                             }).unsafeSubscribe(s);
                         } catch (Throwable t) {
@@ -539,6 +533,8 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         } else {
             // semaphore isolated
             executionHook.onRunStart(_self);
+            // store the command that is being run
+            endCurrentThreadExecutingCommand.set(Hystrix.startCurrentThreadExecutingCommand(getCommandKey()));
             try {
                 run = getExecutionObservable();
             } catch (Throwable t) {
@@ -657,6 +653,14 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                 setRequestContextIfNeeded(currentRequestContext);
             }
 
+        }).doOnTerminate(new Action0() {
+            @Override
+            public void call() {
+                // pop the command that is being run
+                if (endCurrentThreadExecutingCommand.get() != null) {
+                    endCurrentThreadExecutingCommand.get().call();
+                }
+            }
         }).map(new Func1<R, R>() {
 
             @Override
