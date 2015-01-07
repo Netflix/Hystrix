@@ -624,6 +624,12 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                     } catch (Exception hookException) {
                         logger.warn("Error calling ExecutionHook.endRunFailure", hookException);
                     }
+                    /*
+                     * Treat HystrixBadRequestException from ExecutionHook like a plain HystrixBadRequestException.
+                     */
+                    if (e instanceof HystrixBadRequestException){
+                        return Observable.error(e);
+                    }
 
                     logger.debug("Error executing HystrixCommand.run(). Proceeding to fallback logic ...", e);
 
