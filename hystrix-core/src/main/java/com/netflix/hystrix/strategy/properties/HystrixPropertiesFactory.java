@@ -36,6 +36,15 @@ import com.netflix.hystrix.strategy.HystrixPlugins;
  */
 public class HystrixPropertiesFactory {
 
+    /**
+     * Clears all the defaults in the static property cache. This makes it possible for property defaults to not persist for
+     * an entire JVM lifetime.  May be invoked directly, and also gets invoked by <code>Hystrix.reset()</code>
+     */
+    public static void reset() {
+        commandProperties.clear();
+        threadPoolProperties.clear();
+    }
+
     // String is CommandKey.name() (we can't use CommandKey directly as we can't guarantee it implements hashcode/equals correctly)
     private static final ConcurrentHashMap<String, HystrixCommandProperties> commandProperties = new ConcurrentHashMap<String, HystrixCommandProperties>();
 
