@@ -617,6 +617,70 @@ public class HystrixObservableCommandTest {
 
     /**
      * Test a successful command execution.
+     */
+    @Test
+    public void testObserveSuccessWithFallback() {
+        try {
+            final TestHystrixCommand<Boolean> command = new KnownFailureTestCommandWithFallback(new TestCircuitBreaker());
+            assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
+            assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
+            assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
+
+            final CountDownLatch latch = new CountDownLatch(1);
+
+            command.observe().subscribe(new Subscriber<Boolean>() {
+                @Override
+                public void onCompleted() {
+                    System.out.println("*** onCompleted");
+                    assertEquals(1, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
+                    assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
+                    assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
+                    assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
+                    assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
+                    assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
+                    assertEquals(1, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+                    assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
+                    assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
+                    assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
+                    assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+
+                    assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
+
+                    assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+
+                    // semaphore isolated
+                    assertFalse(command.isExecutedInThread());
+
+                    latch.countDown();
+                }
+
+                @Override
+                public void onError(Throwable e) {
+                    System.out.println("*** onError : " + e);
+                    fail(e.getMessage());
+                }
+
+                @Override
+                public void onNext(Boolean b) {
+                    System.out.println("*** onNext : " + b);
+                    assertEquals(false, b);
+                    assertTrue(command.getExecutionTimeInMilliseconds() > -1);
+                    assertFalse(command.isSuccessfulExecution());
+                    assertTrue(command.isFailedExecution());
+                    assertTrue(command.isResponseFromFallback());
+                }
+            });
+
+            latch.await(1000, TimeUnit.MILLISECONDS);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail("We received an exception.");
+        }
+    }
+
+    /**
+     * Test a successful command execution.
      * 
      * @Test
      *       public void testObserveOnScheduler() throws Exception {
