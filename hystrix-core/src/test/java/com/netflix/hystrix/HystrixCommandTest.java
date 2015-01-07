@@ -4347,6 +4347,25 @@ public class HystrixCommandTest {
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
+    @Test
+    public void testExceptionConvertedToBadRequestExceptionInExecutionHookBypassesCircuitBreaker(){
+        TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
+        try {
+            new ExceptionToBadRequestByExecutionHookCommand(circuitBreaker, ExecutionIsolationStrategy.THREAD).execute();
+            fail("we expect to receive a " + HystrixBadRequestException.class.getSimpleName());
+        } catch (HystrixBadRequestException e) {
+            // success
+            e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail("We expect a " + HystrixBadRequestException.class.getSimpleName() + " but got a " + e.getClass().getSimpleName());
+        }
+
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
+    }
+
     /* ******************************************************************************** */
     /* ******************************************************************************** */
     /* private HystrixCommand class implementations for unit testing */
@@ -4432,6 +4451,11 @@ public class HystrixCommandTest {
 
             TestCommandBuilder setExecutionSemaphore(TryableSemaphore executionSemaphore) {
                 this.executionSemaphore = executionSemaphore;
+                return this;
+            }
+
+            TestCommandBuilder setExecutionHook(TestExecutionHook executionHook) {
+                this.executionHook = executionHook;
                 return this;
             }
 
@@ -5217,6 +5241,37 @@ public class HystrixCommandTest {
 
     }
 
+    private static class BusinessException extends Exception {
+        public BusinessException(String msg) {
+            super(msg);
+        }
+    }
+
+    private static class ExceptionToBadRequestByExecutionHookCommand extends TestHystrixCommand<Boolean> {
+        public ExceptionToBadRequestByExecutionHookCommand(TestCircuitBreaker circuitBreaker, ExecutionIsolationStrategy isolationType) {
+            super(testPropsBuilder()
+                    .setCircuitBreaker(circuitBreaker)
+                    .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionIsolationStrategy(isolationType))
+                    .setExecutionHook(new TestExecutionHook(){
+                        @Override
+                        public <T> Exception onRunError(HystrixInvokable<T> commandInstance, Exception e) {
+                            super.onRunError(commandInstance, e);
+                            return new HystrixBadRequestException("autoconverted exception", e);
+                        }
+                    }));
+        }
+
+        @Override
+        protected Boolean run() throws BusinessException {
+            throw new BusinessException("invalid input by the user");
+        }
+
+        @Override
+        protected String getCacheKey() {
+            return "nein";
+        }
+    }
+
     private static class CommandWithErrorThrown extends TestHystrixCommand<Boolean> {
 
         public CommandWithErrorThrown(TestCircuitBreaker circuitBreaker) {
@@ -5404,4 +5459,5 @@ public class HystrixCommandTest {
         }
 
     }
+
 }
