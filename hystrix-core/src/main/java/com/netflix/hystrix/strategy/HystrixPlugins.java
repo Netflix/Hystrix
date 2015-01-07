@@ -56,6 +56,17 @@ public class HystrixPlugins {
     }
 
     /**
+     * Reset all of the HystrixPlugins to null.  You may invoke this directly, or it also gets invoked via <code>Hystrix.reset()</code>
+     */
+    public static void reset() {
+        getInstance().notifier.set(null);
+        getInstance().concurrencyStrategy.set(null);
+        getInstance().metricsPublisher.set(null);
+        getInstance().propertiesFactory.set(null);
+        getInstance().commandExecutionHook.set(null);
+    }
+
+    /**
      * Retrieve instance of {@link HystrixEventNotifier} to use based on order of precedence as defined in {@link HystrixPlugins} class header.
      * <p>
      * Override default by using {@link #registerEventNotifier(HystrixEventNotifier)} or setting property: <code>hystrix.plugin.HystrixEventNotifier.implementation</code> with the full classname to
@@ -278,5 +289,6 @@ public class HystrixPlugins {
             return null;
         }
     }
+
 
 }
