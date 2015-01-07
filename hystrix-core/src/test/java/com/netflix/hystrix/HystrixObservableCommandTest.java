@@ -4285,7 +4285,7 @@ public class HystrixObservableCommandTest {
     /**
      * Test that we can still use thread isolation if desired.
      */
-    @Test(timeout = 500)
+    @Test
     public void testSynchronousExecutionTimeoutValueViaExecute() {
         HystrixObservableCommand.Setter properties = HystrixObservableCommand.Setter
                 .withGroupKey(HystrixCommandGroupKey.Factory.asKey("TestKey"))
@@ -4298,6 +4298,7 @@ public class HystrixObservableCommandTest {
         HystrixObservableCommand<String> command = new HystrixObservableCommand<String>(properties) {
             @Override
             protected Observable<String> construct() {
+
                 return Observable.create(new OnSubscribe<String>() {
 
                     @Override
@@ -4336,7 +4337,7 @@ public class HystrixObservableCommandTest {
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
-    @Test(timeout = 500)
+    @Test
     public void testSynchronousExecutionUsingThreadIsolationTimeoutValueViaObserve() {
         HystrixObservableCommand.Setter properties = HystrixObservableCommand.Setter
                 .withGroupKey(HystrixCommandGroupKey.Factory.asKey("TestKey"))
@@ -4383,7 +4384,7 @@ public class HystrixObservableCommandTest {
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
-    @Test(timeout = 500)
+    @Test
     public void testAsyncExecutionTimeoutValueViaObserve() {
         HystrixObservableCommand.Setter properties = HystrixObservableCommand.Setter
                 .withGroupKey(HystrixCommandGroupKey.Factory.asKey("TestKey"))
