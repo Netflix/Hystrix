@@ -33,15 +33,12 @@ import org.slf4j.LoggerFactory;
 
 import rx.Notification;
 import rx.Observable;
-import rx.Observer;
 import rx.Observable.OnSubscribe;
 import rx.Observable.Operator;
-import rx.Scheduler;
 import rx.Subscriber;
 import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func1;
-import rx.schedulers.Schedulers;
 import rx.subjects.ReplaySubject;
 import rx.subscriptions.CompositeSubscription;
 
@@ -54,7 +51,6 @@ import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategyDefault;
 import com.netflix.hystrix.strategy.concurrency.HystrixContextRunnable;
-import com.netflix.hystrix.strategy.concurrency.HystrixContextScheduler;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
 import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
@@ -367,7 +363,6 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         }
 
         final HystrixInvokable<R> _this = this;
-        final AtomicReference<Action0> endCurrentThreadExecutingCommand = new AtomicReference<Action0>(); // don't like how this is being done
 
         // create an Observable that will lazily execute when subscribed to
         Observable<R> o = Observable.create(new OnSubscribe<R>() {
@@ -389,8 +384,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                             /* used to track userThreadExecutionTime */
                             invocationStartTime = System.currentTimeMillis();
 
-                            // store the command that is being run
-                            endCurrentThreadExecutingCommand.set(Hystrix.startCurrentThreadExecutingCommand(getCommandKey()));
+
 
                             getRunObservableDecoratedForMetricsAndErrorHandling(performAsyncTimeout)
                                     .doOnTerminate(new Action0() {
@@ -454,11 +448,6 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                         /* execution time (must occur before terminal state otherwise a race condition can occur if requested by client) */
                         recordTotalExecutionTime(invocationStartTime);
                     }
-
-                    // pop the command that is being run
-                    if (endCurrentThreadExecutingCommand.get() != null) {
-                        endCurrentThreadExecutingCommand.get().call();
-                    }
                 } finally {
                     metrics.decrementConcurrentExecutionCount();
                     // record that we're completed
@@ -496,11 +485,11 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         metrics.incrementConcurrentExecutionCount();
 
         final HystrixRequestContext currentRequestContext = HystrixRequestContext.getContextForCurrentThread();
+        final AtomicReference<Action0> endCurrentThreadExecutingCommand = new AtomicReference<Action0>(); // don't like how this is being done
 
         Observable<R> run = null;
         if (properties.executionIsolationStrategy().get().equals(ExecutionIsolationStrategy.THREAD)) {
             // mark that we are executing in a thread (even if we end up being rejected we still were a THREAD execution and not SEMAPHORE)
-            isExecutedInThread.set(true);
 
             run = Observable.create(new OnSubscribe<R>() {
 
@@ -516,17 +505,10 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                         // not timed out so execute
                         try {
                             threadPool.markThreadExecution();
-                            final Action0 endCurrentThread = Hystrix.startCurrentThreadExecutingCommand(getCommandKey());
-                            getExecutionObservable().doOnTerminate(new Action0() {
-
-                                @Override
-                                public void call() {
-                                    // TODO is this actually the end of the thread?
-                                    threadPool.markThreadCompletion();
-                                    executionHook.onThreadComplete(_self);
-                                    endCurrentThread.call();
-                                }
-                            }).unsafeSubscribe(s);
+                            // store the command that is being run
+                            endCurrentThreadExecutingCommand.set(Hystrix.startCurrentThreadExecutingCommand(getCommandKey()));
+                            isExecutedInThread.set(true);
+                            getExecutionObservable().unsafeSubscribe(s);
                         } catch (Throwable t) {
                             // the run() method is a user provided implementation so can throw instead of using Observable.onError
                             // so we catch it here and turn it into Observable.error
@@ -539,6 +521,8 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         } else {
             // semaphore isolated
             executionHook.onRunStart(_self);
+            // store the command that is being run
+            endCurrentThreadExecutingCommand.set(Hystrix.startCurrentThreadExecutingCommand(getCommandKey()));
             try {
                 run = getExecutionObservable();
             } catch (Throwable t) {
@@ -657,6 +641,18 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                 setRequestContextIfNeeded(currentRequestContext);
             }
 
+        }).doOnTerminate(new Action0() {
+            @Override
+            public void call() {
+                // pop the command that is being run
+                if (endCurrentThreadExecutingCommand.get() != null) {
+                    endCurrentThreadExecutingCommand.get().call();
+                }
+                if (isExecutedInThread.get()) {
+                    threadPool.markThreadCompletion();
+                    executionHook.onThreadComplete(_self);
+                }
+            }
         }).map(new Func1<R, R>() {
 
             @Override

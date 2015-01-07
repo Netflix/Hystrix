@@ -5745,8 +5745,8 @@ public class HystrixObservableCommandTest {
         System.out.println("results.observeOnThread.get(): " + results.observeOnThread.get() + "  " + Thread.currentThread());
         assertTrue(results.observeOnThread.get().equals(Thread.currentThread())); // rejected so we stay on calling thread
 
-        // thread isolated so even though we're rejected we mark that it attempted execution in a thread
-        assertTrue(results.command.isExecutedInThread());
+        // thread isolated, but rejected, so this is false
+        assertFalse(results.command.isExecutedInThread());
     }
 
     /**
@@ -5766,8 +5766,8 @@ public class HystrixObservableCommandTest {
         assertTrue(results.isContextInitializedObserveOn.get()); // we capture and set the context once the user provided Observable emits
         assertTrue(results.observeOnThread.get().getName().startsWith("RxNewThread"));
 
-        // thread isolated so even though we're rejected we mark that it attempted execution in a thread
-        assertTrue(results.command.isExecutedInThread());
+        // thread isolated, but rejected, so this is false
+        assertFalse(results.command.isExecutedInThread());
     }
 
     /**
@@ -5785,8 +5785,8 @@ public class HystrixObservableCommandTest {
         assertTrue(results.isContextInitializedObserveOn.get()); // the user scheduler captures context
         assertTrue(results.observeOnThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler for getFallback
 
-        // thread isolated so even though we're rejected we mark that it attempted execution in a thread
-        assertTrue(results.command.isExecutedInThread());
+        // thread isolated, but rejected, so this is false
+        assertFalse(results.command.isExecutedInThread());
     }
 
     /* *************************************** testShortCircuitedWithFallbackRequestContext *********************************** */
