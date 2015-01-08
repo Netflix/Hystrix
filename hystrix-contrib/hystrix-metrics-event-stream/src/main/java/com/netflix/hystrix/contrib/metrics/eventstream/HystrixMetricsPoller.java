@@ -84,7 +84,13 @@ public class HystrixMetricsPoller {
         // use compareAndSet to make sure it starts only once and when not running
         if (running.compareAndSet(false, true)) {
             logger.info("Starting HystrixMetricsPoller");
-            scheduledTask = executor.scheduleWithFixedDelay(new MetricsPoller(listener), 0, delay, TimeUnit.MILLISECONDS);
+            try {
+                scheduledTask = executor.scheduleWithFixedDelay(new MetricsPoller(listener), 0, delay, TimeUnit.MILLISECONDS);
+            } catch (Throwable ex) {
+                logger.error("Exception while creating the MetricsPoller task");
+                ex.printStackTrace();
+                running.set(false);
+            }
         }
     }
 
@@ -94,8 +100,10 @@ public class HystrixMetricsPoller {
     public synchronized void pause() {
         // use compareAndSet to make sure it stops only once and when running
         if (running.compareAndSet(true, false)) {
-            logger.info("Stopping the Servo Metrics Poller");
+            logger.info("Stopping the HystrixMetricsPoller");
             scheduledTask.cancel(true);
+        } else {
+            logger.debug("Attempted to pause a stopped poller");
         }
     }
 
