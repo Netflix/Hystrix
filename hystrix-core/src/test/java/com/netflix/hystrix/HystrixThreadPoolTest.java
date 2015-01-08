@@ -79,14 +79,12 @@ public class HystrixThreadPoolTest {
 
     @Test
     public void ensureThreadPoolInstanceIsTheOneRegisteredWithMetricsPublisherAndThreadPoolCache() throws IllegalAccessException, NoSuchFieldException {
-        new HystrixPluginsTest().reset();
         HystrixPlugins.getInstance().registerMetricsPublisher(new HystrixMetricsPublisher() {
             @Override
             public HystrixMetricsPublisherThreadPool getMetricsPublisherForThreadPool(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolMetrics metrics, HystrixThreadPoolProperties properties) {
                 return new HystrixMetricsPublisherThreadPoolContainer(metrics);
             }
         });
-        new HystrixMetricsPublisherFactoryTest().reset();
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("threadPoolFactoryConcurrencyTest");
         HystrixThreadPool poolOne = new HystrixThreadPool.HystrixThreadPoolDefault(
                 threadPoolKey, HystrixThreadPoolProperties.Setter.getUnitTestPropertiesBuilder());

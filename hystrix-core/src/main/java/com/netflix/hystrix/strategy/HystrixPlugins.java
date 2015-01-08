@@ -25,6 +25,7 @@ import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
 import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHookDefault;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisher;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherDefault;
+import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherFactory;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategyDefault;
 
@@ -64,6 +65,7 @@ public class HystrixPlugins {
         getInstance().metricsPublisher.set(null);
         getInstance().propertiesFactory.set(null);
         getInstance().commandExecutionHook.set(null);
+        HystrixMetricsPublisherFactory.reset();
     }
 
     /**
