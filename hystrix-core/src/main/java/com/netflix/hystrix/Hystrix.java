@@ -5,6 +5,7 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.hystrix.strategy.HystrixPlugins;
+import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherFactory;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

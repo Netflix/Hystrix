@@ -16,6 +16,7 @@
 package com.netflix.hystrix.strategy.metrics;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.hystrix.HystrixCircuitBreaker;
 import com.netflix.hystrix.HystrixCommand;
@@ -81,30 +82,16 @@ public class HystrixMetricsPublisherFactory {
 
     /**
      * Resets the SINGLETON object.
-     *
-     */
-    /* package */ static void reset() {
-        SINGLETON = new HystrixMetricsPublisherFactory();
-    }
-
-    /**
      * Clears all state from publishers. If new requests come in instances will be recreated.
      *
      */
-    /* package */ void _reset() {
-        commandPublishers.clear();
-        threadPoolPublishers.clear();
+    public static void reset() {
+        SINGLETON = new HystrixMetricsPublisherFactory();
+        SINGLETON.commandPublishers.clear();
+        SINGLETON.threadPoolPublishers.clear();
     }
 
-    private final HystrixMetricsPublisher strategy;
-
-    private HystrixMetricsPublisherFactory() {
-        this(HystrixPlugins.getInstance().getMetricsPublisher());
-    }
-
-    /* package */ HystrixMetricsPublisherFactory(HystrixMetricsPublisher strategy) {
-        this.strategy = strategy;
-    }
+    /* package */ HystrixMetricsPublisherFactory()  {}
 
     // String is CommandKey.name() (we can't use CommandKey directly as we can't guarantee it implements hashcode/equals correctly)
     private final ConcurrentHashMap<String, HystrixMetricsPublisherCommand> commandPublishers = new ConcurrentHashMap<String, HystrixMetricsPublisherCommand>();
@@ -116,7 +103,7 @@ public class HystrixMetricsPublisherFactory {
             return publisher;
         }
         // it doesn't exist so we need to create it
-        publisher = strategy.getMetricsPublisherForCommand(commandKey, commandOwner, metrics, circuitBreaker, properties);
+        publisher = HystrixPlugins.getInstance().getMetricsPublisher().getMetricsPublisherForCommand(commandKey, commandOwner, metrics, circuitBreaker, properties);
         // attempt to store it (race other threads)
         HystrixMetricsPublisherCommand existing = commandPublishers.putIfAbsent(commandKey.name(), publisher);
         if (existing == null) {
@@ -141,7 +128,7 @@ public class HystrixMetricsPublisherFactory {
             return publisher;
         }
         // it doesn't exist so we need to create it
-        publisher = strategy.getMetricsPublisherForThreadPool(threadPoolKey, metrics, properties);
+        publisher = HystrixPlugins.getInstance().getMetricsPublisher().getMetricsPublisherForThreadPool(threadPoolKey, metrics, properties);
         // attempt to store it (race other threads)
         HystrixMetricsPublisherThreadPool existing = threadPoolPublishers.putIfAbsent(threadPoolKey.name(), publisher);
         if (existing == null) {

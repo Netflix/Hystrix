@@ -1,10 +1,13 @@
 package com.netflix.hystrix.strategy.metrics;
 
+import static junit.framework.Assert.assertNotSame;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
 
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.netflix.hystrix.strategy.HystrixPlugins;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -20,7 +23,7 @@ import com.netflix.hystrix.HystrixThreadPoolProperties;
 public class HystrixMetricsPublisherFactoryTest {
     @Before
     public void reset() {
-        HystrixMetricsPublisherFactory.reset();
+        HystrixPlugins.reset();
     }
 
     /**
@@ -29,7 +32,8 @@ public class HystrixMetricsPublisherFactoryTest {
     @Test
     public void testSingleInitializePerKey() {
         final TestHystrixMetricsPublisher publisher = new TestHystrixMetricsPublisher();
-        final HystrixMetricsPublisherFactory factory = new HystrixMetricsPublisherFactory(publisher);
+        HystrixPlugins.getInstance().registerMetricsPublisher(publisher);
+        final HystrixMetricsPublisherFactory factory = new HystrixMetricsPublisherFactory();
         ArrayList<Thread> threads = new ArrayList<Thread>();
         for (int i = 0; i < 20; i++) {
             threads.add(new Thread(new Runnable() {
@@ -61,6 +65,32 @@ public class HystrixMetricsPublisherFactoryTest {
         // we should see 2 commands and 1 threadPool publisher created
         assertEquals(2, publisher.commandCounter.get());
         assertEquals(1, publisher.threadCounter.get());
+    }
+
+    @Test
+    public void testMetricsPublisherReset() {
+        // precondition: HystrixMetricsPublisherFactory class is not loaded. Calling HystrixPlugins.reset() here should be good enough to run this with other tests.
+
+        // set first custom publisher
+        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("key");
+        HystrixMetricsPublisherCommand firstCommand = new HystrixMetricsPublisherCommandDefault(key, null, null, null, null);
+        HystrixMetricsPublisher firstPublisher = new CustomPublisher(firstCommand);
+        HystrixPlugins.getInstance().registerMetricsPublisher(firstPublisher);
+
+        // ensure that first custom publisher is used
+        HystrixMetricsPublisherCommand cmd = HystrixMetricsPublisherFactory.createOrRetrievePublisherForCommand(key, null, null, null, null);
+        assertSame(firstCommand, cmd);
+
+        // reset, then change to second custom publisher
+        HystrixPlugins.reset();
+        HystrixMetricsPublisherCommand secondCommand = new HystrixMetricsPublisherCommandDefault(key, null, null, null, null);
+        HystrixMetricsPublisher secondPublisher = new CustomPublisher(secondCommand);
+        HystrixPlugins.getInstance().registerMetricsPublisher(secondPublisher);
+
+        // ensure that second custom publisher is used
+        cmd = HystrixMetricsPublisherFactory.createOrRetrievePublisherForCommand(key, null, null, null, null);
+        assertNotSame(firstCommand, cmd);
+        assertSame(secondCommand, cmd);
     }
 
     private static class TestHystrixMetricsPublisher extends HystrixMetricsPublisher {
@@ -96,5 +126,17 @@ public class HystrixMetricsPublisherFactoryTest {
 
     private static enum TestThreadPoolKey implements HystrixThreadPoolKey {
         TEST_A, TEST_B;
+    }
+
+    static class CustomPublisher extends HystrixMetricsPublisher{
+        private HystrixMetricsPublisherCommand commandToReturn;
+        public CustomPublisher(HystrixMetricsPublisherCommand commandToReturn){
+            this.commandToReturn = commandToReturn;
+        }
+
+        @Override
+        public HystrixMetricsPublisherCommand getMetricsPublisherForCommand(HystrixCommandKey commandKey, HystrixCommandGroupKey commandGroupKey, HystrixCommandMetrics metrics, HystrixCircuitBreaker circuitBreaker, HystrixCommandProperties properties) {
+            return commandToReturn;
+        }
     }
 }

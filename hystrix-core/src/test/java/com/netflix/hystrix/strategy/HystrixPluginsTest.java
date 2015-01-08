@@ -29,12 +29,7 @@ import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategyDefault;
 public class HystrixPluginsTest {
     @After
     public void reset() {
-        // use private access to reset so we can test different initializations via the public static flow
-        HystrixPlugins.getInstance().concurrencyStrategy.set(null);
-        HystrixPlugins.getInstance().metricsPublisher.set(null);
-        HystrixPlugins.getInstance().notifier.set(null);
-        HystrixPlugins.getInstance().propertiesFactory.set(null);
-        HystrixPlugins.getInstance().commandExecutionHook.set(null);
+        HystrixPlugins.reset();
     }
 
     @Test
@@ -241,5 +236,4 @@ public class HystrixPluginsTest {
             return null;
         }
     }
-
 }
