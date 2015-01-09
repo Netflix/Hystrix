@@ -26,12 +26,6 @@ subprojects {
 
     group = "com.netflix.${githubProjectName}"
 
-    //sourceSets.test.java.srcDir 'src/main/java'
-
-    /*tasks.withType(Javadoc).each {
-        it.classpath = sourceSets.main.compileClasspath
-    }*/
-
     eclipse {
         classpath {
             // include 'provided' dependencies on the classpath
