@@ -19,7 +19,7 @@ repositories {
 
 dependencies {
     compile project(':hystrix-core')
-    compile 'org.clojure:clojure:1.6.0'
+    compile 'org.clojure:clojure:1.5.1'
 }
 
 /*
