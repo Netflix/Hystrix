@@ -62,8 +62,6 @@ import com.netflix.hystrix.util.HystrixTimer;
 import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 
 /* package */abstract class AbstractCommand<R> implements HystrixInvokableInfo<R>, HystrixObservable<R> {
-    // TODO make this package private
-
     private static final Logger logger = LoggerFactory.getLogger(AbstractCommand.class);
     protected final HystrixCircuitBreaker circuitBreaker;
     protected final HystrixThreadPool threadPool;
@@ -383,7 +381,6 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                         try {
                             /* used to track userThreadExecutionTime */
                             invocationStartTime = System.currentTimeMillis();
-
 
 
                             getRunObservableDecoratedForMetricsAndErrorHandling(performAsyncTimeout)
@@ -778,6 +775,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                 public Observable<R> call(Throwable t) {
                     Exception e = originalException;
                     Exception fe = getExceptionFromThrowable(t);
+
 
                     if (fe instanceof UnsupportedOperationException) {
                         logger.debug("No fallback for HystrixCommand. ", fe); // debug only since we're throwing the exception and someone higher will do something with it
