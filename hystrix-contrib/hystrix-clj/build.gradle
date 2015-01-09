@@ -1,56 +1,54 @@
-    buildscript {
-        repositories {
-            mavenRepo name: 'clojars', url: 'http://clojars.org/repo'
-        }
-        dependencies {
-            classpath 'clojuresque:clojuresque:1.5.8'
-        }
-    }
-    apply plugin: 'clojure'
-	apply plugin: 'eclipse'
-	apply plugin: 'idea'
-
+buildscript {
     repositories {
-        mavenCentral()
-        clojarsRepo()
+        jcenter()
+        maven{
+          name 'clojars'
+          url 'http://clojars.org/repo'
+        }
     }
-
     dependencies {
-        compile project(':hystrix-core')
-        compile 'org.clojure:clojure:1.4.0'
+        classpath 'com.netflix.nebula:nebula-clojure-plugin:1.12.2'
     }
+}
+apply plugin: 'nebula-clojure' // this is a wrapper around clojuresque to make it behave well with other plugins
 
-	/*
-	 * Add Counterclockwise and include 'provided' dependencies
-	 */
-	eclipse {
-	  project {
-	    natures "ccw.nature"
-	  }
-	  classpath {
-	    downloadSources = true
-	    downloadJavadoc = true
-	  }
-	}
+repositories {
+    mavenCentral()
+    clojarsRepo()
+}
+
+dependencies {
+    compile project(':hystrix-core')
+    compile 'org.clojure:clojure:1.6.0'
+}
+
+/*
+ * Add Counterclockwise and include 'provided' dependencies
+ */
+eclipse {
+  project {
+    natures "ccw.nature"
+  }
+}
 
 
-    ////////////////////////////////////////////////////////////////////////////////
-    // Define a task that runs an nrepl server. The port is given with the nreplPort
-    // property:
-    //    gradlew nrepl -PnreplPort=9999
-    // or put the property in ~/.gradle/gradle.properties
-	def nreplPort = 9999 // hardcoding to 9999 until figuring out how to make this not break Eclipse project import when the property isn't defined
-    configurations { nrepl }
-    dependencies { nrepl 'org.clojure:tools.nrepl:0.2.1' }
-    task nrepl(type: JavaExec) {
-        classpath configurations.nrepl.asPath,
-                  project.sourceSets.main.clojure.srcDirs,
-                  project.sourceSets.test.clojure.srcDirs,
-                  sourceSets.main.runtimeClasspath
-        main = "clojure.main"
-        args '--eval', "(ns gradle-nrepl (:require [clojure.tools.nrepl.server :refer (start-server stop-server)]))",
-            '--eval', "(println \"Starting nrepl server on port $nreplPort\")",
-            '--eval', "(def server (start-server :port $nreplPort))"
-    }
+////////////////////////////////////////////////////////////////////////////////
+// Define a task that runs an nrepl server. The port is given with the nreplPort
+// property:
+//    gradlew nrepl -PnreplPort=9999
+// or put the property in ~/.gradle/gradle.properties
+def nreplPort = 9999 // hardcoding to 9999 until figuring out how to make this not break Eclipse project import when the property isn't defined
+configurations { nrepl }
+dependencies { nrepl 'org.clojure:tools.nrepl:0.2.1' }
+task nrepl(type: JavaExec) {
+    classpath configurations.nrepl.asPath,
+              project.sourceSets.main.clojure.srcDirs,
+              project.sourceSets.test.clojure.srcDirs,
+              sourceSets.main.runtimeClasspath
+    main = "clojure.main"
+    args '--eval', "(ns gradle-nrepl (:require [clojure.tools.nrepl.server :refer (start-server stop-server)]))",
+        '--eval', "(println \"Starting nrepl server on port $nreplPort\")",
+        '--eval', "(def server (start-server :port $nreplPort))"
+}
 
 // vim:ft=groovy

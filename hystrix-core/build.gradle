@@ -1,6 +1,3 @@
-apply plugin: 'java'
-apply plugin: 'eclipse'
-apply plugin: 'idea'
 apply plugin: 'osgi'
 
 dependencies {
@@ -27,24 +24,6 @@ javadoc {
 
 // skip if not on Java 6 (every JDK changes Javadoc behavior)
 javadoc.onlyIf { JavaVersion.current().java6 }
-
-eclipse {
-  classpath {
-		// include 'provided' dependencies on the classpath
-		plusConfigurations += configurations.provided
-		downloadSources = true
-		downloadJavadoc = true
-  }
-}
-
-
-idea {
-	module {
-		// include 'provided' dependencies on the classpath
-		scopes.COMPILE.plus += configurations.provided
-
-	}
-}
 
 jar {
     manifest {
