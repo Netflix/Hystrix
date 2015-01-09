@@ -27,6 +27,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import rx.Observable;
 import rx.Observer;
 import rx.Scheduler;
 import rx.functions.Action1;
@@ -1992,7 +1993,7 @@ public class HystrixCommandTest {
     }
 
     @Test
-    public void testRejectedExecutionSemaphoreWithFallback() {
+    public void testRejectedExecutionSemaphoreWithFallbackViaExecute() {
         final TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
         final ArrayBlockingQueue<Boolean> results = new ArrayBlockingQueue<Boolean>(2);
 
@@ -2035,6 +2036,71 @@ public class HystrixCommandTest {
         // should contain both a true and false result
         assertTrue(results.contains(Boolean.TRUE));
         assertTrue(results.contains(Boolean.FALSE));
+
+        assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
+        assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
+        // the rest should not be involved in this test
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+
+        System.out.println("**** DONE");
+
+        assertEquals(2, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+    }
+
+    @Test
+    public void testRejectedExecutionSemaphoreWithFallbackViaObserve() {
+        final TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
+        final ArrayBlockingQueue<Observable<Boolean>> results = new ArrayBlockingQueue<Observable<Boolean>>(2);
+
+        final AtomicBoolean exceptionReceived = new AtomicBoolean();
+
+        Runnable r = new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), new Runnable() {
+
+            @Override
+            public void run() {
+                try {
+                    results.add(new TestSemaphoreCommandWithFallback(circuitBreaker, 1, 200, false).observe());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    exceptionReceived.set(true);
+                }
+            }
+
+        });
+
+        // 2 threads, the second should be rejected by the semaphore and return fallback
+        Thread t1 = new Thread(r);
+        Thread t2 = new Thread(r);
+
+        t1.start();
+        t2.start();
+        try {
+            t1.join();
+            t2.join();
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail("failed waiting on threads");
+        }
+
+        if (exceptionReceived.get()) {
+            fail("We should have received a fallback response");
+        }
+
+        final List<Boolean> blockingList = Observable.merge(results).toList().toBlocking().single();
+
+        // both threads should have returned values
+        assertEquals(2, blockingList.size());
+        // should contain both a true and false result
+        assertTrue(blockingList.contains(Boolean.TRUE));
+        assertTrue(blockingList.contains(Boolean.FALSE));
 
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
