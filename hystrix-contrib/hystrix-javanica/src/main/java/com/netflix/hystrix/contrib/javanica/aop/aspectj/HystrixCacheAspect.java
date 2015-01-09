@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 Netflix, Inc.
+ * Copyright 2015 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,17 +15,20 @@
  */
 package com.netflix.hystrix.contrib.javanica.aop.aspectj;
 
-import com.netflix.hystrix.contrib.javanica.cache.CacheKeyInvocationContextFactory;
+
+import com.netflix.hystrix.contrib.javanica.cache.CacheInvocationContext;
+import com.netflix.hystrix.contrib.javanica.cache.CacheInvocationContextFactory;
 import com.netflix.hystrix.contrib.javanica.cache.HystrixRequestCacheManager;
+import com.netflix.hystrix.contrib.javanica.command.ExecutionType;
 import com.netflix.hystrix.contrib.javanica.command.MetaHolder;
 import org.apache.commons.lang3.Validate;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
+import com.netflix.hystrix.contrib.javanica.cache.annotation.CacheRemove;
 
-import javax.cache.annotation.CacheKeyInvocationContext;
-import javax.cache.annotation.CacheRemove;
+
 import java.lang.reflect.Method;
 
 import static com.netflix.hystrix.contrib.javanica.utils.AopUtils.getMethodFromTarget;
@@ -38,7 +41,7 @@ import static com.netflix.hystrix.contrib.javanica.utils.AopUtils.getMethodFromT
 @Aspect
 public class HystrixCacheAspect {
 
-    @Pointcut("@annotation(javax.cache.annotation.CacheRemove) && !@annotation(com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand)")
+    @Pointcut("@annotation(com.netflix.hystrix.contrib.javanica.cache.annotation.CacheRemove) && !@annotation(com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand)")
     public void cacheRemoveAnnotationPointcut() {
     }
 
@@ -49,8 +52,10 @@ public class HystrixCacheAspect {
         Object[] args = joinPoint.getArgs();
         Validate.notNull(method, "failed to get method from joinPoint: %s", joinPoint);
         MetaHolder metaHolder = MetaHolder.builder()
-                .args(args).method(method).obj(obj).build();
-        CacheKeyInvocationContext<CacheRemove> context = CacheKeyInvocationContextFactory
+                .args(args).method(method).obj(obj)
+                .executionType(ExecutionType.SYNCHRONOUS)
+                .build();
+        CacheInvocationContext<CacheRemove> context = CacheInvocationContextFactory
                 .createCacheRemoveInvocationContext(metaHolder);
         HystrixRequestCacheManager.getInstance().clearCache(context);
         return joinPoint.proceed();

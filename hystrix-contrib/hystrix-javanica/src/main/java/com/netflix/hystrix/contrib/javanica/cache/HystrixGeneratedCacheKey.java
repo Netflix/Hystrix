@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 Netflix, Inc.
+ * Copyright 2015 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,12 @@
  */
 package com.netflix.hystrix.contrib.javanica.cache;
 
-import javax.cache.annotation.GeneratedCacheKey;
-
 /**
- * Specific interface to adopt {@link GeneratedCacheKey} for Hystrix environment.
+ * Specific interface to adopt {@link HystrixGeneratedCacheKey} for Hystrix environment.
  *
  * @author dmgcodevil
  */
-public interface HystrixGeneratedCacheKey extends GeneratedCacheKey {
+public interface HystrixGeneratedCacheKey  {
 
     /**
      * Key to be used for request caching.

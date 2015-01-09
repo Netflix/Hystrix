@@ -30,8 +30,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
-import static com.netflix.hystrix.contrib.javanica.cache.CacheKeyInvocationContextFactory.createCacheRemoveInvocationContext;
-import static com.netflix.hystrix.contrib.javanica.cache.CacheKeyInvocationContextFactory.createCacheResultInvocationContext;
+import static com.netflix.hystrix.contrib.javanica.cache.CacheInvocationContextFactory.createCacheRemoveInvocationContext;
+import static com.netflix.hystrix.contrib.javanica.cache.CacheInvocationContextFactory.createCacheResultInvocationContext;
 
 /**
  * Base implementation of {@link HystrixCommandFactory} interface.

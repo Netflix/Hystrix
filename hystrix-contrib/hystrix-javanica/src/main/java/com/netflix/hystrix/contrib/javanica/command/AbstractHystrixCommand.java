@@ -18,18 +18,19 @@ package com.netflix.hystrix.contrib.javanica.command;
 
 import com.google.common.base.Throwables;
 import com.netflix.hystrix.HystrixCollapser;
-import com.netflix.hystrix.contrib.javanica.cache.CacheKeyGeneratorFactory;
-import com.netflix.hystrix.contrib.javanica.cache.HystrixRequestCacheManager;
+import com.netflix.hystrix.contrib.javanica.cache.CacheInvocationContext;
 import com.netflix.hystrix.contrib.javanica.cache.HystrixCacheKeyGenerator;
+import com.netflix.hystrix.contrib.javanica.cache.HystrixGeneratedCacheKey;
+import com.netflix.hystrix.contrib.javanica.cache.HystrixRequestCacheManager;
+import com.netflix.hystrix.contrib.javanica.cache.annotation.CacheRemove;
+import com.netflix.hystrix.contrib.javanica.cache.annotation.CacheResult;
 import com.netflix.hystrix.contrib.javanica.conf.HystrixPropertiesManager;
 import com.netflix.hystrix.contrib.javanica.exception.CommandActionExecutionException;
 import com.netflix.hystrix.exception.HystrixBadRequestException;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
 
 import javax.annotation.concurrent.ThreadSafe;
-import javax.cache.annotation.CacheKeyInvocationContext;
-import javax.cache.annotation.CacheRemove;
-import javax.cache.annotation.CacheResult;
+
 import java.util.Collection;
 import java.util.Map;
 
@@ -43,12 +44,13 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
 
     private CommandActions commandActions;
     private final Map<String, Object> commandProperties;
-    private CacheKeyInvocationContext<CacheResult> cacheResultInvocationContext;
-    private CacheKeyInvocationContext<CacheRemove> cacheRemoveInvocationContext;
+    private CacheInvocationContext<CacheResult> cacheResultInvocationContext;
+    private CacheInvocationContext<CacheRemove> cacheRemoveInvocationContext;
     private final Collection<HystrixCollapser.CollapsedRequest<Object, Object>> collapsedRequests;
     private final Class<? extends Throwable>[] ignoreExceptions;
     private final ExecutionType executionType;
-    private final CacheKeyGeneratorFactory cacheKeyGeneratorFactory = CacheKeyGeneratorFactory.getInstance();
+    //private final CacheKeyGeneratorFactory cacheKeyGeneratorFactory = CacheKeyGeneratorFactory.getInstance();
+    HystrixCacheKeyGenerator defaultCacheKeyGenerator = HystrixCacheKeyGenerator.getInstance();
 
     protected AbstractHystrixCommand(HystrixCommandBuilder builder) {
         super(builder.getSetterBuilder().build());
@@ -125,12 +127,13 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
      */
     @Override
     protected String getCacheKey() {
-        String key;
+        String key = null;
         if (cacheResultInvocationContext != null) {
-            HystrixCacheKeyGenerator keyGenerator = cacheKeyGeneratorFactory
-                    .create(cacheResultInvocationContext.getCacheAnnotation().cacheKeyGenerator());
-            return keyGenerator.generateCacheKey(cacheResultInvocationContext).getCacheKey();
+            HystrixGeneratedCacheKey hystrixGeneratedCacheKey =
+                    defaultCacheKeyGenerator.generateCacheKey(cacheResultInvocationContext);
+            return hystrixGeneratedCacheKey.getCacheKey();
         }
+
         // deprecated approach
         if (commandActions.getCacheKeyAction() != null) {
             key = String.valueOf(commandActions.getCacheKeyAction().execute(executionType));

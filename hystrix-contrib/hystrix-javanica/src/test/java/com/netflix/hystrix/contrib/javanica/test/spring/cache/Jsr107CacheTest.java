@@ -1,12 +1,16 @@
 package com.netflix.hystrix.contrib.javanica.test.spring.cache;
 
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
 import com.netflix.hystrix.HystrixInvokableInfo;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.aop.aspectj.HystrixCacheAspect;
-import com.netflix.hystrix.contrib.javanica.cache.DefaultHystrixGeneratedCacheKey;
-import com.netflix.hystrix.contrib.javanica.cache.HystrixCacheKeyGenerator;
-import com.netflix.hystrix.contrib.javanica.cache.HystrixGeneratedCacheKey;
+import com.netflix.hystrix.contrib.javanica.cache.annotation.CacheKey;
+import com.netflix.hystrix.contrib.javanica.cache.annotation.CacheRemove;
+import com.netflix.hystrix.contrib.javanica.cache.annotation.CacheResult;
+import com.netflix.hystrix.contrib.javanica.exception.HystrixCachingException;
 import com.netflix.hystrix.contrib.javanica.test.spring.conf.AopCglibConfig;
+import com.netflix.hystrix.contrib.javanica.test.spring.domain.Profile;
 import com.netflix.hystrix.contrib.javanica.test.spring.domain.User;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import org.junit.Before;
@@ -21,12 +25,6 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.annotation.PostConstruct;
-import javax.cache.annotation.CacheInvocationParameter;
-import javax.cache.annotation.CacheKey;
-import javax.cache.annotation.CacheKeyInvocationContext;
-import javax.cache.annotation.CacheRemove;
-import javax.cache.annotation.CacheResult;
-import java.lang.annotation.Annotation;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -127,6 +125,63 @@ public class Jsr107CacheTest {
     }
 
     @Test
+    public void testGetSetGetUserCache_givenGetUserByEmailAndUpdateProfile() {
+        HystrixRequestContext context = HystrixRequestContext.initializeContext();
+        try {
+
+            User user = userService.getUserByEmail("email");
+            HystrixInvokableInfo<?> getUserByIdCommand = getLastExecutedCommand();
+            // this is the first time we've executed this command with
+            // the value of "1" so it should not be from cache
+            assertFalse(getUserByIdCommand.isResponseFromCache());
+            assertEquals("1", user.getId());
+            assertEquals("name", user.getName());
+            assertEquals("email", user.getProfile().getEmail()); // initial email value
+
+            user = userService.getUserByEmail("email");
+            assertEquals("1", user.getId());
+            getUserByIdCommand = getLastExecutedCommand();
+            // this is the second time we've executed this command with
+            // the same value so it should return from cache
+            assertTrue(getUserByIdCommand.isResponseFromCache());
+            assertEquals("email", user.getProfile().getEmail()); // same email
+
+            // create new user with same id but with new email
+            Profile profile = new Profile();
+            profile.setEmail("new_email");
+            user.setProfile(profile);
+            userService.updateProfile(user); // update the user profile
+
+            user = userService.getUserByEmail("new_email");
+            getUserByIdCommand = getLastExecutedCommand();
+            // this is the first time we've executed this command after "updateProfile"
+            // method was invoked and a cache for "getUserByEmail" command was flushed
+            // so the response should not be from cache
+            assertFalse(getUserByIdCommand.isResponseFromCache());
+            assertEquals("1", user.getId());
+            assertEquals("name", user.getName());
+            assertEquals("new_email", user.getProfile().getEmail());
+
+
+        } finally {
+            context.shutdown();
+        }
+
+        // start a new request context
+        context = HystrixRequestContext.initializeContext();
+        try {
+            User user = userService.getUserByEmail("new_email");
+            HystrixInvokableInfo<?> getUserByIdCommand = getLastExecutedCommand();
+            assertEquals("1", user.getId());
+            // this is a new request context so this
+            // should not come from cache
+            assertFalse(getUserByIdCommand.isResponseFromCache());
+        } finally {
+            context.shutdown();
+        }
+    }
+
+    @Test
     public void testGetSetGetUserCache_givenOneCommandAndOneMethodAnnotatedWithCacheRemove() {
         HystrixRequestContext context = HystrixRequestContext.initializeContext();
         try {
@@ -180,12 +235,37 @@ public class Jsr107CacheTest {
         }
     }
 
+
+    @Test(expected = HystrixCachingException.class)
+    public void testGetUser_givenWrongCacheKeyMethodReturnType_shouldThrowException() {
+        HystrixRequestContext context = HystrixRequestContext.initializeContext();
+        try {
+            User user = userService.getUserByName("name");
+        } finally {
+            context.shutdown();
+        }
+    }
+
+    @Test(expected = HystrixCachingException.class)
+    public void testGetUserByName_givenNonexistentCacheKeyMethod_shouldThrowException() {
+        HystrixRequestContext context = HystrixRequestContext.initializeContext();
+        try {
+            User user = userService.getUser();
+        } finally {
+            context.shutdown();
+        }
+    }
+
     public static class UserService {
         private Map<String, User> storage = new ConcurrentHashMap<String, User>();
 
         @PostConstruct
         private void init() {
-            storage.put("1", new User("1", "name"));
+            User user = new User("1", "name");
+            Profile profile = new Profile();
+            profile.setEmail("email");
+            user.setProfile(profile);
+            storage.put("1", user);
         }
 
         @CacheResult
@@ -194,26 +274,54 @@ public class Jsr107CacheTest {
             return storage.get(id);
         }
 
-        @CacheRemove(cacheName = "getUserById", cacheKeyGenerator = UserCacheKeyGenerator.class)
+        @CacheResult(cacheKeyMethod = "getUserByNameCacheKey")
         @HystrixCommand
-        public void update(@CacheKey User user) {
+        public User getUserByName(String name) {
+            return null;
+        }
+
+        private Long getUserByNameCacheKey() {
+            return 0L;
+        }
+
+        @CacheResult(cacheKeyMethod = "nonexistent")
+        @HystrixCommand
+        public User getUser() {
+            return null;
+        }
+
+        @CacheResult(cacheKeyMethod = "getUserByEmailCacheKey")
+        @HystrixCommand
+        public User getUserByEmail(final String email) {
+            return Iterables.tryFind(storage.values(), new Predicate<User>() {
+                @Override
+                public boolean apply(User input) {
+                    return input.getProfile().getEmail().equalsIgnoreCase(email);
+                }
+            }).orNull();
+        }
+
+        private String getUserByEmailCacheKey(String email) {
+            return email;
+        }
+
+        @CacheRemove(commandKey = "getUserById")
+        @HystrixCommand
+        public void update(@CacheKey("id") User user) {
             storage.put(user.getId(), user);
         }
 
-        @CacheRemove(cacheName = "getUserById")
+        @CacheRemove(commandKey = "getUserByEmail")
+        @HystrixCommand
+        public void updateProfile(@CacheKey("profile.email") User user) {
+            storage.get(user.getId()).setProfile(user.getProfile());
+        }
+
+        @CacheRemove(commandKey = "getUserById")
         public void updateName(@CacheKey String id, String name) {
             storage.get(id).setName(name);
         }
 
-    }
-
-    public static class UserCacheKeyGenerator implements HystrixCacheKeyGenerator {
-        @Override
-        public HystrixGeneratedCacheKey generateCacheKey(CacheKeyInvocationContext<? extends Annotation> cacheKeyInvocationContext) {
-            CacheInvocationParameter cacheInvocationParameter = cacheKeyInvocationContext.getKeyParameters()[0];
-            User user = (User) cacheInvocationParameter.getValue();
-            return new DefaultHystrixGeneratedCacheKey(user.getId());
-        }
     }
 
     /**

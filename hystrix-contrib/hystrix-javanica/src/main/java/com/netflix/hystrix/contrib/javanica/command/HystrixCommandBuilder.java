@@ -16,10 +16,11 @@
 package com.netflix.hystrix.contrib.javanica.command;
 
 import com.netflix.hystrix.HystrixCollapser;
+import com.netflix.hystrix.contrib.javanica.cache.CacheInvocationContext;
+import com.netflix.hystrix.contrib.javanica.cache.annotation.CacheRemove;
+import com.netflix.hystrix.contrib.javanica.cache.annotation.CacheResult;
 
-import javax.cache.annotation.CacheKeyInvocationContext;
-import javax.cache.annotation.CacheRemove;
-import javax.cache.annotation.CacheResult;
+
 import java.util.Collection;
 import java.util.Map;
 
@@ -33,8 +34,8 @@ public class HystrixCommandBuilder {
     private CommandSetterBuilder setterBuilder;
     private CommandActions commandActions;
     private Map<String, Object> commandProperties;
-    private CacheKeyInvocationContext<CacheResult> cacheResultInvocationContext;
-    private CacheKeyInvocationContext<CacheRemove> cacheRemoveInvocationContext;
+    private CacheInvocationContext<CacheResult> cacheResultInvocationContext;
+    private CacheInvocationContext<CacheRemove> cacheRemoveInvocationContext;
     private Collection<HystrixCollapser.CollapsedRequest<Object, Object>> collapsedRequests;
     private Class<? extends Throwable>[] ignoreExceptions;
     private ExecutionType executionType;
@@ -51,11 +52,11 @@ public class HystrixCommandBuilder {
         return commandProperties;
     }
 
-    public CacheKeyInvocationContext<CacheResult> getCacheResultInvocationContext() {
+    public CacheInvocationContext<CacheResult> getCacheResultInvocationContext() {
         return cacheResultInvocationContext;
     }
 
-    public CacheKeyInvocationContext<CacheRemove> getCacheRemoveInvocationContext() {
+    public CacheInvocationContext<CacheRemove> getCacheRemoveInvocationContext() {
         return cacheRemoveInvocationContext;
     }
 
@@ -105,23 +106,23 @@ public class HystrixCommandBuilder {
     }
 
     /**
-     * Sets CacheResult invocation context, see {@link CacheKeyInvocationContext} and {@link CacheResult}.
+     * Sets CacheResult invocation context, see {@link CacheInvocationContext} and {@link CacheResult}.
      *
      * @param pCacheResultInvocationContext the CacheResult invocation context
      * @return this {@link HystrixCommandBuilder}
      */
-    public HystrixCommandBuilder cacheResultInvocationContext(CacheKeyInvocationContext<CacheResult> pCacheResultInvocationContext) {
+    public HystrixCommandBuilder cacheResultInvocationContext(CacheInvocationContext<CacheResult> pCacheResultInvocationContext) {
         this.cacheResultInvocationContext = pCacheResultInvocationContext;
         return this;
     }
 
     /**
-     * Sets CacheRemove invocation context, see {@link CacheKeyInvocationContext} and {@link CacheRemove}.
+     * Sets CacheRemove invocation context, see {@link CacheInvocationContext} and {@link CacheRemove}.
      *
      * @param pCacheRemoveInvocationContext the CacheRemove invocation context
      * @return this {@link HystrixCommandBuilder}
      */
-    public HystrixCommandBuilder cacheRemoveInvocationContext(CacheKeyInvocationContext<CacheRemove> pCacheRemoveInvocationContext) {
+    public HystrixCommandBuilder cacheRemoveInvocationContext(CacheInvocationContext<CacheRemove> pCacheRemoveInvocationContext) {
         this.cacheRemoveInvocationContext = pCacheRemoveInvocationContext;
         return this;
     }

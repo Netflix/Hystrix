@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 Netflix, Inc.
+ * Copyright 2015 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,9 @@ package com.netflix.hystrix.contrib.javanica.cache;
 
 import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixRequestCache;
+import com.netflix.hystrix.contrib.javanica.cache.annotation.CacheRemove;
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategyDefault;
 
-import javax.cache.annotation.CacheKeyInvocationContext;
-import javax.cache.annotation.CacheRemove;
 
 /**
  * Cache manager to work with {@link HystrixRequestCache}.
@@ -44,11 +43,12 @@ public final class HystrixRequestCacheManager {
      * @param context the runtime information about an intercepted method invocation for a method
      *                annotated with {@link CacheRemove} annotation
      */
-    public void clearCache(CacheKeyInvocationContext<CacheRemove> context) {
-        String cacheName = context.getCacheName();
-        HystrixCacheKeyGenerator keyGenerator = CacheKeyGeneratorFactory.getInstance()
-                .create(context.getCacheAnnotation().cacheKeyGenerator());
-        String key = keyGenerator.generateCacheKey(context).getCacheKey();
+    public void clearCache(CacheInvocationContext<CacheRemove> context) {
+        HystrixCacheKeyGenerator defaultCacheKeyGenerator = HystrixCacheKeyGenerator.getInstance();
+        String cacheName = context.getCacheAnnotation().commandKey();
+        HystrixGeneratedCacheKey hystrixGeneratedCacheKey =
+                defaultCacheKeyGenerator.generateCacheKey(context);
+        String key = hystrixGeneratedCacheKey.getCacheKey();
         HystrixRequestCache.getInstance(HystrixCommandKey.Factory.asKey(cacheName),
                 HystrixConcurrencyStrategyDefault.getInstance()).clear(key);
     }

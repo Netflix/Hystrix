@@ -13,25 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.hystrix.contrib.javanica.cache;
-
-import javax.cache.annotation.CacheResult;
-import java.lang.reflect.Method;
+package com.netflix.hystrix.contrib.javanica.exception;
 
 /**
- * Concrete implementation of {@link AbstractCacheKeyInvocationContext} provides information of invocation
- * context for {@link CacheResult} annotation.
+ * Indicates that something is going wrong with caching logic.
  *
  * @author dmgcodevil
  */
-public class CacheResultInvocationContext extends AbstractCacheKeyInvocationContext<CacheResult> {
+public class HystrixCacheKeyGenerationException extends RuntimeException {
 
-    public CacheResultInvocationContext(CacheResult cacheAnnotation, Object target, Method method, Object... args) {
-        super(cacheAnnotation, target, method, args);
+    public HystrixCacheKeyGenerationException() {
     }
 
-    @Override
-    public String getCacheName() {
-        return null;
+    public HystrixCacheKeyGenerationException(String message) {
+        super(message);
+    }
+
+    public HystrixCacheKeyGenerationException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
+    public HystrixCacheKeyGenerationException(Throwable cause) {
+        super(cause);
     }
 }
