@@ -59,8 +59,7 @@ public class HystrixCacheKeyGenerator {
                 for (CacheInvocationParameter parameter : cacheInvocationContext.getKeyParameters()) {
                     CacheKey cacheKey = parameter.getCacheKeyAnnotation();
                     if (StringUtils.isNotBlank(cacheKey.value())) {
-                        Object value = getPropertyValue(Arrays.asList(StringUtils.split(cacheKey.value(), ".")), parameter.getValue());
-                        cacheKeyBuilder.append(value);
+                        appendPropertyValue(cacheKeyBuilder, Arrays.asList(StringUtils.split(cacheKey.value(), ".")), parameter.getValue());
                     } else {
                         cacheKeyBuilder.append(parameter.getValue());
                     }
@@ -72,11 +71,14 @@ public class HystrixCacheKeyGenerator {
         }
     }
 
-    private Object getPropertyValue(List<String> names, Object obj) throws HystrixCacheKeyGenerationException {
+    private Object appendPropertyValue(StringBuilder cacheKeyBuilder, List<String> names, Object obj) throws HystrixCacheKeyGenerationException {
         for (String name : names) {
             if (obj != null) {
                 obj = getPropertyValue(name, obj);
             }
+        }
+        if (obj != null) {
+            cacheKeyBuilder.append(obj);
         }
         return obj;
     }

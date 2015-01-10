@@ -16,7 +16,7 @@
 package com.netflix.hystrix.contrib.javanica.exception;
 
 /**
- * Indicates that something is going wrong with caching logic.
+ * Indicates that something is going wrong with cache key generation logic.
  *
  * @author dmgcodevil
  */
