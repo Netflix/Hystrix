@@ -190,10 +190,57 @@ _cacheKeyMethod_ has higher priority than an arguments of a method, that means w
 of a method that annotated with _@CacheResult_ will not be used to generate cache key, instead specified
 _cacheKeyMethod_ fully assigns to itself responsibility for cache key generation.
 By default this returns empty string which means "do not use cache method.
+You can consider _cacheKeyMethod_ as a replacement for common key generators (for example [JSR170-CacheKeyGenerator](https://github.com/jsr107/jsr107spec/blob/master/src/main/java/javax/cache/annotation/CacheKeyGenerator.java)) but with _cacheKeyMethod_ cache key generation becomes more convenient and simple. Not to be unfounded let's compare the two approaches:
+JSR107
+```java
 
+    @CacheRemove(cacheName = "getUserById", cacheKeyGenerator = UserCacheKeyGenerator.class)
+    @HystrixCommand
+    public void update(@CacheKey User user) {
+         storage.put(user.getId(), user);
+    }
+        
+    public static class UserCacheKeyGenerator implements HystrixCacheKeyGenerator {
+        @Override
+        public HystrixGeneratedCacheKey generateCacheKey(CacheKeyInvocationContext<? extends Annotation>  cacheKeyInvocationContext) {
+            CacheInvocationParameter cacheInvocationParameter = cacheKeyInvocationContext.getKeyParameters()[0];
+            User user = (User) cacheInvocationParameter.getValue();
+            return new DefaultHystrixGeneratedCacheKey(user.getId());
+        }
+    }
+```
+
+Javanica cacheKeyMethod
+
+```java
+        @CacheRemove(commandKey = "getUserById", cacheKeyMethod=)
+        @HystrixCommand
+        public void update(User user) {
+            storage.put(user.getId(), user);
+        }
+        private String cacheKeyMethod(User user) {
+            return user.getId();
+        }
+
+```
+or even just
+```java
+        @CacheRemove(commandKey = "getUserById")
+        @HystrixCommand
+        public void update(@CacheKey("id") User user) {
+            storage.put(user.getId(), user);
+        }
+```
+You don't need to create new classes, also approach with cacheKeyMethod helps during refactoring if you will give correct names for cache key methods. It is recommended to append prefix "cacheKeyMethod" to the real method name, for example:
+```java
+public User getUserById(@CacheKey String id);
+```
+```java
+private User getUserByIdCacheKeyMethod(String id);
+```
 **Cache key generator**
 
-**HystrixCacheKeyGenerator** generates a **HystrixGeneratedCacheKey** based on **CacheInvocationContext**. Implementation is thread-safe.
+Jacanica has only one cache key generator **HystrixCacheKeyGenerator** that generates a _HystrixGeneratedCacheKey_ based on _CacheInvocationContext_. Implementation is thread-safe.
 Parameters of an annotated method are selected by the following rules:
 - If no parameters are annotated with _@CacheKey_ then all parameters are included
 - If one or more _@CacheKey_ annotations exist only those parameters with the _@CacheKey_ annotation are included
