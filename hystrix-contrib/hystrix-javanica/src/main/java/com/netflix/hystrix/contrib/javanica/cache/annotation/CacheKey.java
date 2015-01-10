@@ -22,7 +22,10 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * // todo
+ * Marks a method argument as part of the cache key.
+ * If no arguments are marked all arguments are used.
+ * If {@link CacheResult} or {@link CacheRemove} annotation has specified <code>cacheKeyMethod</code> then
+ * a method arguments will not be used to build cache key even if they annotated with {@link CacheKey}.
  *
  * @author dmgcodevil
  */
@@ -31,5 +34,14 @@ import java.lang.annotation.Target;
 @Documented
 public @interface CacheKey {
 
-    public String value() default "";
+    /**
+     * Allows specify name of a certain argument property.
+     * for example: <code>@CacheKey("id") User user</code>,
+     * or in case composite property: <code>@CacheKey("profile.name") User user</code>.
+     * <code>null</code> properties are ignored, i.e. if <code>profile</code> is <code>null</code>
+     * then result of <code>@CacheKey("profile.name") User user</code> will be empty string.
+     *
+     * @return name of an argument property
+     */
+    String value() default "";
 }

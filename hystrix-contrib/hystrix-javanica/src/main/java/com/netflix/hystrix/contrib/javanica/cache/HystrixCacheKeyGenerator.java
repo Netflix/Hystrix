@@ -29,7 +29,10 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Creates cache keys with {@link DefaultHystrixGeneratedCacheKey} type.
+ * Generates a {@link HystrixGeneratedCacheKey} based on
+ * a {@link CacheInvocationContext}.
+ * <p/>
+ * Implementation is thread-safe.
  *
  * @author dmgcodevil
  */

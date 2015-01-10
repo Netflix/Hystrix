@@ -28,28 +28,37 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * // todo
+ * Runtime information about an intercepted method invocation for a method
+ * annotated with {@link com.netflix.hystrix.contrib.javanica.cache.annotation.CacheResult},
+ * {@link com.netflix.hystrix.contrib.javanica.cache.annotation.CacheRemove} annotations.
  *
  * @author dmgcodevil
  */
 public class CacheInvocationContext<A extends Annotation> {
 
-    private Method method;
-    private Object target;
-    private MethodExecutionAction cacheKeyMethod;
-    private ExecutionType executionType;
-    private A cacheAnnotation;
+    private final Method method;
+    private final Object target;
+    private final MethodExecutionAction cacheKeyMethod;
+    private final ExecutionType executionType = ExecutionType.SYNCHRONOUS;
+    private final A cacheAnnotation;
 
     private List<CacheInvocationParameter> parameters = Collections.emptyList();
     private List<CacheInvocationParameter> keyParameters = Collections.emptyList();
 
-    public CacheInvocationContext(A cacheAnnotation, MethodExecutionAction cacheKeyMethod,
-                                  ExecutionType executionType, Object target, Method method, Object... args) {
+    /**
+     * Constructor to create CacheInvocationContext based on passed parameters.
+     *
+     * @param cacheAnnotation the caching annotation, like {@link com.netflix.hystrix.contrib.javanica.cache.annotation.CacheResult}
+     * @param cacheKeyMethod  the method to generate cache key
+     * @param target          the current instance of intercepted method
+     * @param method          the method annotated with on of caching annotations
+     * @param args            the method arguments
+     */
+    public CacheInvocationContext(A cacheAnnotation, MethodExecutionAction cacheKeyMethod, Object target, Method method, Object... args) {
         this.method = method;
         this.target = target;
         this.cacheKeyMethod = cacheKeyMethod;
         this.cacheAnnotation = cacheAnnotation;
-        this.executionType = executionType;
         Class<?>[] parametersTypes = method.getParameterTypes();
         Annotation[][] parametersAnnotations = method.getParameterAnnotations();
         int parameterCount = parametersTypes.length;
@@ -76,10 +85,20 @@ public class CacheInvocationContext<A extends Annotation> {
         }
     }
 
+    /**
+     * Gets intercepted method that annotated with caching annotation.
+     *
+     * @return method
+     */
     public Method getMethod() {
         return method;
     }
 
+    /**
+     * Gets current instance that can be used to invoke {@link #cacheKeyMethod} or for another needs.
+     *
+     * @return current instance
+     */
     public Object getTarget() {
         return target;
     }
@@ -89,7 +108,7 @@ public class CacheInvocationContext<A extends Annotation> {
     }
 
     /**
-     * todo
+     * Gets all method parameters.
      *
      * @return immutable list of {@link CacheInvocationParameter} objects
      */
@@ -98,7 +117,18 @@ public class CacheInvocationContext<A extends Annotation> {
     }
 
     /**
-     * // todo
+     * Returns a clone of the array of all method parameters annotated with
+     * {@link com.netflix.hystrix.contrib.javanica.cache.annotation.CacheKey} annotation to be used by the
+     * {@link HystrixCacheKeyGenerator} in creating a {@link HystrixGeneratedCacheKey}. The returned array
+     * may be the same as or a subset of the array returned by {@link #getAllParameters()}.
+     * <p/>
+     * Parameters in this array are selected by the following rules:
+     * <ul>
+     * <li>If no parameters are annotated with {@link com.netflix.hystrix.contrib.javanica.cache.annotation.CacheKey}
+     * then all parameters are included</li>
+     * <li>If one or more {@link com.netflix.hystrix.contrib.javanica.cache.annotation.CacheKey} annotations exist only those parameters
+     * with the {@link com.netflix.hystrix.contrib.javanica.cache.annotation.CacheKey} annotation are included</li>
+     * </ul>
      *
      * @return immutable list of {@link CacheInvocationParameter} objects
      */
@@ -106,18 +136,38 @@ public class CacheInvocationContext<A extends Annotation> {
         return keyParameters;
     }
 
+    /**
+     * Checks whether any method argument annotated with {@link com.netflix.hystrix.contrib.javanica.cache.annotation.CacheKey} annotation.
+     *
+     * @return true if at least one method argument with {@link com.netflix.hystrix.contrib.javanica.cache.annotation.CacheKey} annotation
+     */
     public boolean hasKeyParameters() {
         return CollectionUtils.isNotEmpty(keyParameters);
     }
 
+    /**
+     * Gets method name to be used to get a key for request caching.
+     *
+     * @return method name
+     */
     public String getCacheKeyMethodName() {
         return cacheKeyMethod != null ? cacheKeyMethod.getMethod().getName() : null;
     }
 
+    /**
+     * Gets action that invokes cache key method, the result of execution is used as cache key.
+     *
+     * @return cache key method execution action, see {@link MethodExecutionAction}.
+     */
     public MethodExecutionAction getCacheKeyMethod() {
         return cacheKeyMethod;
     }
 
+    /**
+     * Gets execution type of cache key action.
+     *
+     * @return execution type
+     */
     public ExecutionType getExecutionType() {
         return executionType;
     }

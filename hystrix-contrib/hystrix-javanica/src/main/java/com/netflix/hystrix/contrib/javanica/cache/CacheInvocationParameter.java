@@ -25,7 +25,8 @@ import java.util.Arrays;
 import java.util.Set;
 
 /**
- * // todo
+ * A parameter to an intercepted method invocation. Contains the parameter value
+ * as well static type and annotation information about the parameter.
  *
  * @author dmgcodevil
  */
@@ -45,26 +46,56 @@ public class CacheInvocationParameter {
         this.cacheKeyAnnotation = (CacheKey) cacheKeyAnnotation();
     }
 
+    /**
+     * Returns an immutable Set of all Annotations on this method parameter, never null.
+     *
+     * @return set of {@link Annotation}
+     */
     public Set<Annotation> getAnnotations() {
         return annotations;
     }
 
+    /**
+     * Gets {@link CacheKey} for the parameter.
+     *
+     * @return {@link CacheKey} annotation or null if the parameter isn't annotated with {@link CacheKey}.
+     */
     public CacheKey getCacheKeyAnnotation() {
         return cacheKeyAnnotation;
     }
 
+    /**
+     * Checks whether the parameter annotated with {@link CacheKey} or not.
+     *
+     * @return true if parameter annotated with {@link CacheKey}  otherwise - false
+     */
     public boolean hasCacheKeyAnnotation() {
         return cacheKeyAnnotation != null;
     }
 
+    /**
+     * Gets the parameter type as declared on the method.
+     *
+     * @return parameter type
+     */
     public Class<?> getRawType() {
         return rawType;
     }
 
+    /**
+     * Gets the parameter value
+     *
+     * @return parameter value
+     */
     public Object getValue() {
         return value;
     }
 
+    /**
+     * Gets index of the parameter in the original parameter array.
+     *
+     * @return index of the parameter
+     */
     public int getPosition() {
         return position;
     }

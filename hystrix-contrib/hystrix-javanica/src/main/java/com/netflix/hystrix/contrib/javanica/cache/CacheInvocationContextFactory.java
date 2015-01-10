@@ -27,30 +27,40 @@ import java.lang.reflect.Method;
 import static com.netflix.hystrix.contrib.javanica.utils.AopUtils.getDeclaredMethod;
 
 /**
- * // todo
+ * Factory to create certain {@link CacheInvocationContext}.
  *
  * @author dmgcodevil
  */
 public class CacheInvocationContextFactory {
 
+    /**
+     * Create {@link CacheInvocationContext} parametrized with {@link CacheResult} annotation.
+     *
+     * @param metaHolder the meta holder, see {@link com.netflix.hystrix.contrib.javanica.command.MetaHolder}
+     * @return initialized and configured {@link CacheInvocationContext}
+     */
     public static CacheInvocationContext<CacheResult> createCacheResultInvocationContext(MetaHolder metaHolder) {
         if (metaHolder.getMethod().isAnnotationPresent(CacheResult.class)) {
             Method method = metaHolder.getMethod();
             CacheResult cacheResult = method.getAnnotation(CacheResult.class);
             MethodExecutionAction cacheKeyMethod = createCacheKeyAction(cacheResult.cacheKeyMethod(), metaHolder);
-            return new CacheInvocationContext<CacheResult>(cacheResult, cacheKeyMethod,
-                    metaHolder.getExecutionType(), metaHolder.getObj(), method, metaHolder.getArgs());
+            return new CacheInvocationContext<CacheResult>(cacheResult, cacheKeyMethod, metaHolder.getObj(), method, metaHolder.getArgs());
         }
         return null;
     }
 
+    /**
+     * Create {@link CacheInvocationContext} parametrized with {@link CacheRemove} annotation.
+     *
+     * @param metaHolder the meta holder, see {@link com.netflix.hystrix.contrib.javanica.command.MetaHolder}
+     * @return initialized and configured {@link CacheInvocationContext}
+     */
     public static CacheInvocationContext<CacheRemove> createCacheRemoveInvocationContext(MetaHolder metaHolder) {
         if (metaHolder.getMethod().isAnnotationPresent(CacheRemove.class)) {
             Method method = metaHolder.getMethod();
             CacheRemove cacheRemove = method.getAnnotation(CacheRemove.class);
             MethodExecutionAction cacheKeyMethod = createCacheKeyAction(cacheRemove.cacheKeyMethod(), metaHolder);
-            return new CacheInvocationContext<CacheRemove>(cacheRemove, cacheKeyMethod,
-                    metaHolder.getExecutionType(), metaHolder.getObj(), method, metaHolder.getArgs());
+            return new CacheInvocationContext<CacheRemove>(cacheRemove, cacheKeyMethod, metaHolder.getObj(), method, metaHolder.getArgs());
         }
         return null;
     }

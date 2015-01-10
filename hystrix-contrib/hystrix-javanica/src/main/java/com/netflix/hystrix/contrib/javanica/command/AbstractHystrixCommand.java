@@ -49,8 +49,7 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
     private final Collection<HystrixCollapser.CollapsedRequest<Object, Object>> collapsedRequests;
     private final Class<? extends Throwable>[] ignoreExceptions;
     private final ExecutionType executionType;
-    //private final CacheKeyGeneratorFactory cacheKeyGeneratorFactory = CacheKeyGeneratorFactory.getInstance();
-    HystrixCacheKeyGenerator defaultCacheKeyGenerator = HystrixCacheKeyGenerator.getInstance();
+    private HystrixCacheKeyGenerator defaultCacheKeyGenerator = HystrixCacheKeyGenerator.getInstance();
 
     protected AbstractHystrixCommand(HystrixCommandBuilder builder) {
         super(builder.getSetterBuilder().build());

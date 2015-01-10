@@ -15,7 +15,11 @@
  */
 package com.netflix.hystrix.contrib.javanica.command;
 
-
+/**
+ * Wrapper for command actions combines different actions together.
+ *
+ * @author dmgcodevil
+ */
 public class CommandActions {
 
     private final CommandAction commandAction;

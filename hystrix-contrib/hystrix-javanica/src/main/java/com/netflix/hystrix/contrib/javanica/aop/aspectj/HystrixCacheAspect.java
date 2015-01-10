@@ -19,6 +19,7 @@ package com.netflix.hystrix.contrib.javanica.aop.aspectj;
 import com.netflix.hystrix.contrib.javanica.cache.CacheInvocationContext;
 import com.netflix.hystrix.contrib.javanica.cache.CacheInvocationContextFactory;
 import com.netflix.hystrix.contrib.javanica.cache.HystrixRequestCacheManager;
+import com.netflix.hystrix.contrib.javanica.cache.annotation.CacheRemove;
 import com.netflix.hystrix.contrib.javanica.command.ExecutionType;
 import com.netflix.hystrix.contrib.javanica.command.MetaHolder;
 import org.apache.commons.lang3.Validate;
@@ -26,15 +27,14 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
-import com.netflix.hystrix.contrib.javanica.cache.annotation.CacheRemove;
-
 
 import java.lang.reflect.Method;
 
 import static com.netflix.hystrix.contrib.javanica.utils.AopUtils.getMethodFromTarget;
 
 /**
- * AspectJ aspect to process methods which annotated with annotations from <code>javax.cache.annotation</code> package.
+ * AspectJ aspect to process methods which annotated with annotations from
+ * <code>com.netflix.hystrix.contrib.javanica.cache.annotation</code> package.
  *
  * @author dmgcodevil
  */
