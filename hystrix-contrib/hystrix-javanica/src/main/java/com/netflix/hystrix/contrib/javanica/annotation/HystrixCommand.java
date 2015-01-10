@@ -84,17 +84,6 @@ public @interface HystrixCommand {
     String fallbackMethod() default "";
 
     /**
-     * Method name to be used to get a key for request caching.
-     * The command and get cache key method should be placed in the same class.
-     * <p/>
-     * By default this returns empty string which means "do not cache".
-     *
-     * @return method name or empty string
-     */
-    @Deprecated
-    String cacheKeyMethod() default "";
-
-    /**
      * Specifies command properties.
      *
      * @return command properties

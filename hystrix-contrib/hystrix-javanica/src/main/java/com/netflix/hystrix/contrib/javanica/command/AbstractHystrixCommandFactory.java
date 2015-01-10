@@ -64,9 +64,8 @@ public abstract class AbstractHystrixCommandFactory<T extends AbstractHystrixCom
         Map<String, Object> commandProperties = getCommandProperties(metaHolder.getHystrixCommand());
         CommandAction commandAction = new MethodExecutionAction(metaHolder.getObj(), metaHolder.getMethod(), metaHolder.getArgs());
         CommandAction fallbackAction = createFallbackAction(metaHolder, collapsedRequests);
-        CommandAction cacheKeyAction = createCacheKeyAction(metaHolder);
         CommandActions commandActions = CommandActions.builder().commandAction(commandAction)
-                .fallbackAction(fallbackAction).cacheKeyAction(cacheKeyAction).build();
+                .fallbackAction(fallbackAction).build();
 
         HystrixCommandBuilder hystrixCommandBuilder = new HystrixCommandBuilder().setterBuilder(setterBuilder)
                 .commandActions(commandActions)

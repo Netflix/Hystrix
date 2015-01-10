@@ -81,14 +81,6 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
         return commandActions.getFallbackAction();
     }
 
-    /**
-     * Gets key action.
-     *
-     * @return key action
-     */
-    CommandAction getCacheKeyAction() {
-        return commandActions.getCacheKeyAction();
-    }
 
     /**
      * Gets command properties.
@@ -130,14 +122,7 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
         if (cacheResultInvocationContext != null) {
             HystrixGeneratedCacheKey hystrixGeneratedCacheKey =
                     defaultCacheKeyGenerator.generateCacheKey(cacheResultInvocationContext);
-            return hystrixGeneratedCacheKey.getCacheKey();
-        }
-
-        // deprecated approach
-        if (commandActions.getCacheKeyAction() != null) {
-            key = String.valueOf(commandActions.getCacheKeyAction().execute(executionType));
-        } else {
-            key = super.getCacheKey();
+            key = hystrixGeneratedCacheKey.getCacheKey();
         }
         return key;
     }
