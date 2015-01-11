@@ -278,18 +278,45 @@ Examples:
 ```
 
 **Get-Set-Get pattern**
+To get more about this pattern you can read [this](https://github.com/Netflix/Hystrix/wiki/How-To-Use#get-set-get-with-request-cache-invalidation) chapter
 Example:
 ```java
+    public class UserService {    
         @CacheResult
         @HystrixCommand
-        public User getUserById(@CacheKey String id) {
+        public User getUserById(@CacheKey String id) { // GET
             return storage.get(id);
         }
 
         @CacheRemove(commandKey = "getUserById")
         @HystrixCommand
-        public void update(@CacheKey("id") User user) {
+        public void update(@CacheKey("id") User user) { // SET
             storage.put(user.getId(), user);
+        }
+    }    
+        
+        // test app
+        
+        public void test(){
+        User user = userService.getUserById("1");
+        HystrixInvokableInfo<?> getUserByIdCommand = getLastExecutedCommand();
+        // this is the first time we've executed this command with
+        // the value of "1" so it should not be from cache
+        assertFalse(getUserByIdCommand.isResponseFromCache());
+        user = userService.getUserById("1");
+        getUserByIdCommand = getLastExecutedCommand();
+        // this is the second time we've executed this command with
+        // the same value so it should return from cache
+        assertTrue(getUserByIdCommand.isResponseFromCache());
+        
+        user = new User("1", "new_name");
+        userService.update(user); // update the user
+        user = userService.getUserById("1");
+        getUserByIdCommand = getLastExecutedCommand();
+        // this is the first time we've executed this command after "update"
+        // method was invoked and a cache for "getUserById" command was flushed
+        // so the response shouldn't be from cache
+        assertFalse(getUserByIdCommand.isResponseFromCache());
         }
 ```
 
