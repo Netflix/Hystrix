@@ -451,4 +451,5 @@ All requests that were processed successfully or failed will be returned to an u
 
 #Development Status and Future
 Please create an issue if you need a feature or you detected some bugs. Thanks
-**Note**: Javaniva 1.4.+ is more stable than 1.3.+ All fixes initially are added in 1.4.+ and after if it's not much efforts merged to 1.3.  It's recommended to use Javaniva 1.4.+ 
+
+**Note**: Javaniva 1.4.+ is more stable than 1.3.+ All fixes initially are added in 1.4.+ and after if it's not much efforts then merged to 1.3.  **It's recommended to use Javaniva 1.4.+** 
