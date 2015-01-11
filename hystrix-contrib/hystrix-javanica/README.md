@@ -320,6 +320,22 @@ Example:
         }
 ```
 
+**Note**: You can use @CacheRemove annotation in conjunction with  @HystrixCommand or without. If you want annotate not command method with @CacheRemove annotation then you need to add HystrixCacheAspect aspect to your configuration:
+
+```xml
+<aspects>
+        ...
+        <aspect name="com.netflix.hystrix.contrib.javanica.aop.aspectj.HystrixCacheAspect"/>
+        ...
+</aspects>
+
+<!-- or Spring conf -->
+
+    <aop:aspectj-autoproxy/>
+    <bean id="hystrixAspect" class="com.netflix.hystrix.contrib.javanica.aop.aspectj.HystrixCacheAspect"></bean>
+
+```
+
 ## Configuration
 ### Command Properties
 
