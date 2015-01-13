@@ -31,7 +31,7 @@ public class HystrixRuntimeException extends RuntimeException {
     private final FailureType failureCause;
 
     public static enum FailureType {
-        COMMAND_EXCEPTION, TIMEOUT, SHORTCIRCUIT, REJECTED_THREAD_EXECUTION, REJECTED_SEMAPHORE_EXECUTION, REJECTED_SEMAPHORE_FALLBACK
+        COMMAND_EXCEPTION, TIMEOUT, SHORTCIRCUIT, REJECTED_THREAD_EXECUTION, REJECTED_SEMAPHORE_EXECUTION, BAD_REQUEST_EXCEPTION, REJECTED_SEMAPHORE_FALLBACK
     }
 
     public HystrixRuntimeException(FailureType failureCause, Class<? extends HystrixCommand> commandClass, String message, Exception cause, Throwable fallbackException) {

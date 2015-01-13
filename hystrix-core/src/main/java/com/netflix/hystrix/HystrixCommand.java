@@ -1632,6 +1632,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                     metrics.markFallbackSuccess();
                     // record the executionResult
                     executionResult = executionResult.addEvents(HystrixEventType.FALLBACK_SUCCESS);
+
                     return executionHook.onComplete(this, fallback);
                 } catch (UnsupportedOperationException fe) {
                     logger.debug("No fallback for HystrixCommand. ", fe); // debug only since we're throwing the exception and someone higher will do something with it
@@ -5346,7 +5347,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             assertEquals(1, command.builder.executionHook.threadComplete.get());
 
             // expected hook execution sequence
-            assertEquals("onStart - onThreadStart - onRunStart - onRunSuccess - onThreadComplete - onComplete - ", command.builder.executionHook.executionSequence.toString());
+            assertEquals("onStart - onThreadStart - onRunStart - onRunSuccess - onComplete - onThreadComplete - ", command.builder.executionHook.executionSequence.toString());
 
             /* test with queue() */
             command = new SuccessfulTestCommand();
@@ -5382,7 +5383,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             assertEquals(1, command.builder.executionHook.threadComplete.get());
 
             // expected hook execution sequence
-            assertEquals("onStart - onThreadStart - onRunStart - onRunSuccess - onThreadComplete - onComplete - ", command.builder.executionHook.executionSequence.toString());
+            assertEquals("onStart - onThreadStart - onRunStart - onRunSuccess - onComplete - onThreadComplete - ", command.builder.executionHook.executionSequence.toString());
         }
 
         /**
@@ -5437,7 +5438,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             assertEquals(1, command.builder.executionHook.threadComplete.get());
 
             // expected hook execution sequence
-            assertEquals("onStart - onThreadStart - onRunStart - onRunSuccess - onThreadComplete - onComplete - ", command.builder.executionHook.executionSequence.toString());
+            assertEquals("onStart - onThreadStart - onRunStart - onRunSuccess - onComplete - onThreadComplete - ", command.builder.executionHook.executionSequence.toString());
         }
 
         /**
@@ -5486,7 +5487,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             assertEquals(1, command.builder.executionHook.threadComplete.get());
 
             // expected hook execution sequence
-            assertEquals("onStart - onThreadStart - onRunStart - onRunSuccess - onThreadComplete - onComplete - ", command.builder.executionHook.executionSequence.toString());
+            assertEquals("onStart - onThreadStart - onRunStart - onRunSuccess - onComplete - onThreadComplete - ", command.builder.executionHook.executionSequence.toString());
         }
 
         /**
@@ -5531,7 +5532,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             assertEquals(1, command.builder.executionHook.threadComplete.get());
 
             // expected hook execution sequence
-            assertEquals("onStart - onThreadStart - onRunStart - onRunError - onFallbackStart - onFallbackError - onError - onThreadComplete - onComplete - ", command.builder.executionHook.executionSequence.toString());
+            assertEquals("onStart - onThreadStart - onRunStart - onRunError - onFallbackStart - onFallbackError - onError - onThreadComplete - ", command.builder.executionHook.executionSequence.toString());
 
             /* test with queue() */
             command = new UnknownFailureTestCommandWithoutFallback();
@@ -5570,7 +5571,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             assertEquals(1, command.builder.executionHook.threadComplete.get());
 
             // expected hook execution sequence
-            assertEquals("onStart - onThreadStart - onRunStart - onRunError - onFallbackStart - onFallbackError - onError - onThreadComplete - onComplete - ", command.builder.executionHook.executionSequence.toString());
+            assertEquals("onStart - onThreadStart - onRunStart - onRunError - onFallbackStart - onFallbackError - onError - onThreadComplete - ", command.builder.executionHook.executionSequence.toString());
 
         }
 
@@ -5609,7 +5610,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             assertEquals(1, command.builder.executionHook.threadComplete.get());
 
             // expected hook execution sequence
-            assertEquals("onStart - onThreadStart - onRunStart - onRunError - onFallbackStart - onFallbackSuccess - onThreadComplete - onComplete - ", command.builder.executionHook.executionSequence.toString());
+            assertEquals("onStart - onThreadStart - onRunStart - onRunError - onFallbackStart - onFallbackSuccess - onComplete - onThreadComplete - ", command.builder.executionHook.executionSequence.toString());
 
             /* test with queue() */
             command = new KnownFailureTestCommandWithFallback(new TestCircuitBreaker());
@@ -5690,7 +5691,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             assertEquals(1, command.builder.executionHook.threadComplete.get());
 
             // expected hook execution sequence
-            assertEquals("onStart - onThreadStart - onRunStart - onRunError - onFallbackStart - onFallbackError - onError - onThreadComplete - onComplete - ", command.builder.executionHook.executionSequence.toString());
+            assertEquals("onStart - onThreadStart - onRunStart - onRunError - onFallbackStart - onFallbackError - onError - onThreadComplete - ", command.builder.executionHook.executionSequence.toString());
 
             /* test with queue() */
             command = new KnownFailureTestCommandWithFallbackFailure();
@@ -5729,7 +5730,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             assertEquals(1, command.builder.executionHook.threadComplete.get());
 
             // expected hook execution sequence
-            assertEquals("onStart - onThreadStart - onRunStart - onRunError - onFallbackStart - onFallbackError - onError - onThreadComplete - onComplete - ", command.builder.executionHook.executionSequence.toString());
+            assertEquals("onStart - onThreadStart - onRunStart - onRunError - onFallbackStart - onFallbackError - onError - onThreadComplete - ", command.builder.executionHook.executionSequence.toString());
         }
 
         /**
@@ -5780,7 +5781,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             assertEquals(1, command.builder.executionHook.threadComplete.get());
 
             // expected hook execution sequence
-            assertEquals("onStart - onThreadStart - onRunStart - onFallbackStart - onFallbackError - onError - onRunSuccess - onThreadComplete - onComplete - ", command.builder.executionHook.executionSequence.toString());
+            assertEquals("onStart - onThreadStart - onRunStart - onFallbackStart - onFallbackError - onRunSuccess - onError - onThreadComplete - ", command.builder.executionHook.executionSequence.toString());
         }
 
         /**
@@ -5828,7 +5829,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             assertEquals(1, command.builder.executionHook.threadComplete.get());
 
             // expected hook execution sequence
-            assertEquals("onStart - onThreadStart - onRunStart - onFallbackStart - onFallbackSuccess - onRunSuccess - onThreadComplete - onComplete - ", command.builder.executionHook.executionSequence.toString());
+            assertEquals("onStart - onThreadStart - onRunStart - onFallbackStart - onFallbackSuccess - onComplete - onRunSuccess - onThreadComplete - ", command.builder.executionHook.executionSequence.toString());
         }
 
         /**
@@ -5931,7 +5932,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             assertEquals(0, command.builder.executionHook.threadComplete.get());
 
             // expected hook execution sequence
-            assertEquals("onStart - onFallbackStart - onFallbackError - onError - onComplete - ", command.builder.executionHook.executionSequence.toString());
+            assertEquals("onStart - onFallbackStart - onFallbackError - onError - ", command.builder.executionHook.executionSequence.toString());
         }
 
         /**
@@ -5979,7 +5980,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             assertEquals(0, command.builder.executionHook.threadComplete.get());
 
             // expected hook execution sequence
-            assertEquals("onStart - onFallbackStart - onFallbackError - onError - onComplete - ", command.builder.executionHook.executionSequence.toString());
+            assertEquals("onStart - onFallbackStart - onFallbackError - onError - ", command.builder.executionHook.executionSequence.toString());
         }
 
         /**
@@ -6108,7 +6109,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             assertEquals(0, command.builder.executionHook.threadComplete.get());
 
             // expected hook execution sequence
-            assertEquals("onStart - onFallbackStart - onFallbackError - onError - onComplete - ", command.builder.executionHook.executionSequence.toString());
+            assertEquals("onStart - onFallbackStart - onFallbackError - onError - ", command.builder.executionHook.executionSequence.toString());
         }
 
         /**
@@ -6146,7 +6147,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             // we should not have a response from execute()
             assertNull(command.builder.executionHook.endExecuteSuccessResponse);
             // we should not have an exception since run() succeeded
-            assertNull(command.builder.executionHook.endExecuteFailureException);
+            assertNotNull(command.builder.executionHook.endExecuteFailureException);
 
             // thread execution
             assertEquals(0, command.builder.executionHook.threadStart.get());
