@@ -5792,7 +5792,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             assertEquals(1, command.builder.executionHook.threadComplete.get());
 
             // expected hook execution sequence
-            assertEquals("onStart - onThreadStart - onRunStart - onFallbackStart - onFallbackError - onRunSuccess - onError - onThreadComplete - ", command.builder.executionHook.executionSequence.toString());
+            assertEquals("onStart - onThreadStart - onRunStart - onFallbackStart - onFallbackError - onError - onRunSuccess - onThreadComplete - ", command.builder.executionHook.executionSequence.toString());
         }
 
         /**
