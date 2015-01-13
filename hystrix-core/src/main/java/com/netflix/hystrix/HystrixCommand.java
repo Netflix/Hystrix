@@ -1020,8 +1020,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                         @Override
                         public void run() {
                             try {
-                                R v = originalCommand.getFallbackOrThrowException(HystrixEventType.TIMEOUT, FailureType.TIMEOUT, "timed-out", new TimeoutException());
-                                observer.onNext(v);
+                                observer.onNext(originalCommand.getFallbackOrThrowException(HystrixEventType.TIMEOUT, FailureType.TIMEOUT, "timed-out", new TimeoutException()));
                                 observer.onCompleted();
                             } catch (HystrixRuntimeException re) {
                                 observer.onError(re);
@@ -1113,7 +1112,6 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
                     // execute outside of future so that fireAndForget will still work (ie. someone calls queue() but not get()) and so that multiple requests can be deduped through request caching
                     R r = executeCommand();
-                    r = executionHook.onComplete(this, r);
                     observer.onNext(r);
                     /* execution time (must occur before terminal state otherwise a race condition can occur if requested by client) */
                     recordTotalExecutionTime(invocationStartTime);
@@ -1186,8 +1184,6 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                             R r = executeCommand();
                             // if we can go from NOT_EXECUTED to COMPLETED then we did not timeout
                             if (isCommandTimedOut.compareAndSet(TimedOutStatus.NOT_EXECUTED, TimedOutStatus.COMPLETED)) {
-                                // give the hook an opportunity to modify it
-                                r = executionHook.onComplete(_this, r);
                                 // pass to the observer
                                 observer.onNext(r);
                                 // state changes before termination
@@ -1292,7 +1288,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                 metrics.markSuccess(duration);
                 circuitBreaker.markSuccess();
                 eventNotifier.markCommandExecution(getCommandKey(), properties.executionIsolationStrategy().get(), (int) duration, executionResult.events);
-                return response;
+                return executionHook.onComplete(this, response);
             }
         } catch (HystrixBadRequestException e) {
             try {
@@ -1643,7 +1639,6 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                     metrics.markFallbackSuccess();
                     // record the executionResult
                     executionResult = executionResult.addEvents(HystrixEventType.FALLBACK_SUCCESS);
-
                     return executionHook.onComplete(this, fallback);
                 } catch (UnsupportedOperationException fe) {
                     logger.debug("No fallback for HystrixCommand. ", fe); // debug only since we're throwing the exception and someone higher will do something with it
@@ -5657,7 +5652,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             assertEquals(1, command.builder.executionHook.threadComplete.get());
 
             // expected hook execution sequence
-            assertEquals("onStart - onThreadStart - onRunStart - onRunError - onFallbackStart - onFallbackSuccess - onThreadComplete - onComplete - ", command.builder.executionHook.executionSequence.toString());
+            assertEquals("onStart - onThreadStart - onRunStart - onRunError - onFallbackStart - onFallbackSuccess - onComplete - onThreadComplete - ", command.builder.executionHook.executionSequence.toString());
         }
 
         /**
@@ -5902,7 +5897,52 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
          * Execution hook on short-circuit with a fallback
          */
         @Test
-        public void testExecutionHookShortCircuitedWithFallbackViaQueue() {
+        public void testExecutionHookShortCircuitedWithFallbackViaExecute() {
+            TestCircuitBreaker circuitBreaker = new TestCircuitBreaker().setForceShortCircuit(true);
+            KnownFailureTestCommandWithFallback command = new KnownFailureTestCommandWithFallback(circuitBreaker);
+            try {
+                // now execute one that will be short-circuited
+                command.execute();
+            } catch (Exception e) {
+                throw new RuntimeException("not expecting", e);
+            }
+
+            assertTrue(command.isResponseShortCircuited());
+
+            // the run() method should not run as we're short-circuited
+            assertEquals(0, command.builder.executionHook.startRun.get());
+            // we should not have a response because of short-circuit
+            assertNull(command.builder.executionHook.runSuccessResponse);
+            // we should not have an exception because we didn't run
+            assertNull(command.builder.executionHook.runFailureException);
+
+            // the fallback() method should be run due to short-circuit
+            assertEquals(1, command.builder.executionHook.startFallback.get());
+            // response since we have a fallback
+            assertNotNull(command.builder.executionHook.fallbackSuccessResponse);
+            // null since fallback succeeds
+            assertNull(command.builder.executionHook.fallbackFailureException);
+
+            // execution occurred
+            assertEquals(1, command.builder.executionHook.startExecute.get());
+            // we should have a response because of fallback
+            assertNotNull(command.builder.executionHook.endExecuteSuccessResponse);
+            // we should not have an exception because of fallback
+            assertNull(command.builder.executionHook.endExecuteFailureException);
+
+            // thread execution
+            assertEquals(0, command.builder.executionHook.threadStart.get());
+            assertEquals(0, command.builder.executionHook.threadComplete.get());
+
+            // expected hook execution sequence
+            assertEquals("onStart - onFallbackStart - onFallbackSuccess - onComplete - ", command.builder.executionHook.executionSequence.toString());
+        }
+
+        /**
+         * Execution hook on short-circuit without a fallback
+         */
+        @Test
+        public void testExecutionHookShortCircuitedWithoutFallbackViaQueue() {
             TestCircuitBreaker circuitBreaker = new TestCircuitBreaker().setForceShortCircuit(true);
             KnownFailureTestCommandWithoutFallback command = new KnownFailureTestCommandWithoutFallback(circuitBreaker);
             try {
@@ -5950,7 +5990,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
          * Execution hook on short-circuit with a fallback
          */
         @Test
-        public void testExecutionHookShortCircuitedWithFallbackViaExecute() {
+        public void testExecutionHookShortCircuitedWithoutFallbackViaExecute() {
             TestCircuitBreaker circuitBreaker = new TestCircuitBreaker().setForceShortCircuit(true);
             KnownFailureTestCommandWithoutFallback command = new KnownFailureTestCommandWithoutFallback(circuitBreaker);
             try {
