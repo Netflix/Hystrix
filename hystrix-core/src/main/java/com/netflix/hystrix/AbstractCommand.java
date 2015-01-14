@@ -409,7 +409,17 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                     metrics.markShortCircuited();
                     // short-circuit and go directly to fallback (or throw an exception if no fallback implemented)
                     try {
-                        getFallbackOrThrowException(HystrixEventType.SHORT_CIRCUITED, FailureType.SHORTCIRCUIT, "short-circuited").unsafeSubscribe(observer);
+                        getFallbackOrThrowException(HystrixEventType.SHORT_CIRCUITED, FailureType.SHORTCIRCUIT, "short-circuited")
+                                .map(new Func1<R, R>() {
+
+                                    @Override
+                                    public R call(R t1) {
+                                        // allow transforming the results via the executionHook if the fallback succeeds
+                                        return executionHook.onComplete(_this, t1);
+                                    }
+
+                                })
+                                .unsafeSubscribe(observer);
                     } catch (Exception e) {
                         observer.onError(e);
                     }
