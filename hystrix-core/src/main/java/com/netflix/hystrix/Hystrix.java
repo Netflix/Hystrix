@@ -61,6 +61,7 @@ public class Hystrix {
         HystrixCircuitBreaker.Factory.reset();
         HystrixPlugins.reset();
         HystrixPropertiesFactory.reset();
+        currentCommand.set(new LinkedList<HystrixCommandKey>());
     }
 
     private static ThreadLocal<LinkedList<HystrixCommandKey>> currentCommand = new ThreadLocal<LinkedList<HystrixCommandKey>>() {

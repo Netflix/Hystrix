@@ -3899,7 +3899,7 @@ public class HystrixCommandTest {
         assertEquals(1, command.builder.executionHook.threadComplete.get());
 
         // expected hook execution sequence
-        assertEquals("onStart - onThreadStart - onRunStart - onFallbackStart - onFallbackError - onError - onThreadComplete - ", command.builder.executionHook.executionSequence.toString());
+        assertEquals("onStart - onThreadStart - onRunStart - onFallbackStart - onFallbackError - onError - onRunSuccess - onThreadComplete - ", command.builder.executionHook.executionSequence.toString());
 
     }
 
@@ -3948,7 +3948,7 @@ public class HystrixCommandTest {
         assertEquals(1, command.builder.executionHook.threadComplete.get());
 
         // expected hook execution sequence
-        assertEquals("onStart - onThreadStart - onRunStart - onFallbackStart - onFallbackSuccess - onComplete - onThreadComplete - ", command.builder.executionHook.executionSequence.toString());
+        assertEquals("onStart - onThreadStart - onRunStart - onFallbackStart - onFallbackSuccess - onComplete - onRunSuccess - onThreadComplete - ", command.builder.executionHook.executionSequence.toString());
     }
 
     /**
@@ -4008,10 +4008,57 @@ public class HystrixCommandTest {
     }
 
     /**
+     * Execution hook on short-circuited with a fallback
+     */
+    @Test
+    public void testExecutionHookShortCircuitedWithFallback() {
+        TestCircuitBreaker circuitBreaker = new TestCircuitBreaker().setForceShortCircuit(true);
+        KnownFailureTestCommandWithFallback command = new KnownFailureTestCommandWithFallback(circuitBreaker);
+
+        try {
+            // now execute one that will be short-circuited
+            command.queue().get();
+        } catch (Exception e) {
+            throw new RuntimeException("not expecting", e);
+        }
+
+        assertTrue(command.isResponseShortCircuited());
+
+        // the run() method should not run as we're short-circuited
+        assertEquals(0, command.builder.executionHook.startRun.get());
+        // we should not have a response because of short-circuit
+        assertNull(command.builder.executionHook.runSuccessResponse);
+        // we should not have an exception because we didn't run
+        assertNull(command.builder.executionHook.runFailureException);
+
+        // the fallback() method should be run due to short-circuit
+        assertEquals(1, command.builder.executionHook.startFallback.get());
+        // response since we have a fallback
+        assertNotNull(command.builder.executionHook.fallbackSuccessResponse);
+        // null since fallback succeeds
+        assertNull(command.builder.executionHook.fallbackFailureException);
+
+        // execution occurred
+        assertEquals(1, command.builder.executionHook.startExecute.get());
+        // we should have a response because of fallback
+        assertNotNull(command.builder.executionHook.endExecuteSuccessResponse);
+        // we should not have an exception because of fallback
+        assertNull(command.builder.executionHook.endExecuteFailureException);
+
+        // thread execution
+        assertEquals(0, command.builder.executionHook.threadStart.get());
+        assertEquals(0, command.builder.executionHook.threadComplete.get());
+
+        // expected hook execution sequence
+        assertEquals("onStart - onFallbackStart - onFallbackSuccess - onComplete - ", command.builder.executionHook.executionSequence.toString());
+
+    }
+
+    /**
      * Execution hook on short-circuit with a fallback
      */
     @Test
-    public void testExecutionHookShortCircuitedWithFallbackViaQueue() {
+    public void testExecutionHookShortCircuitedWithoutFallbackViaQueue() {
         TestCircuitBreaker circuitBreaker = new TestCircuitBreaker().setForceShortCircuit(true);
         KnownFailureTestCommandWithoutFallback command = new KnownFailureTestCommandWithoutFallback(circuitBreaker);
         try {
@@ -4059,7 +4106,7 @@ public class HystrixCommandTest {
      * Execution hook on short-circuit with a fallback
      */
     @Test
-    public void testExecutionHookShortCircuitedWithFallbackViaExecute() {
+    public void testExecutionHookShortCircuitedWithoutFallbackViaExecute() {
         TestCircuitBreaker circuitBreaker = new TestCircuitBreaker().setForceShortCircuit(true);
         KnownFailureTestCommandWithoutFallback command = new KnownFailureTestCommandWithoutFallback(circuitBreaker);
         try {

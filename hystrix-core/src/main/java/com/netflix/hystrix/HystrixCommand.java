@@ -24,6 +24,8 @@ import java.util.concurrent.TimeoutException;
 import rx.Observable;
 import rx.Observable.OnSubscribe;
 import rx.Subscriber;
+import rx.functions.Action0;
+import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 
 import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
@@ -304,6 +306,15 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
                 }
             }
 
+        }).doOnTerminate(new Action0() {
+            @Override
+            public void call() {
+                //If the command timed out, then the calling thread has already walked away so we need
+                //to handle these markers.  Otherwise, the calling thread will perform these for us.
+                if (isCommandTimedOut.get().equals(TimedOutStatus.TIMED_OUT)) {
+                    handleThreadEnd();
+                }
+            }
         });
     }
 
