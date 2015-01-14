@@ -817,9 +817,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                         metrics.markShortCircuited();
                         // short-circuit and go directly to fallback (or throw an exception if no fallback implemented)
                         try {
-                            R v = getFallbackOrThrowException(HystrixEventType.SHORT_CIRCUITED, FailureType.SHORTCIRCUIT, "short-circuited");
-                            R wrappedV = executionHook.onComplete(_this, v);
-                            observer.onNext(wrappedV);
+                            observer.onNext(getFallbackOrThrowException(HystrixEventType.SHORT_CIRCUITED, FailureType.SHORTCIRCUIT, "short-circuited"));
                             observer.onCompleted();
                         } catch (Exception e) {
                             observer.onError(e);
@@ -1022,9 +1020,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                         @Override
                         public void run() {
                             try {
-                                R v = originalCommand.getFallbackOrThrowException(HystrixEventType.TIMEOUT, FailureType.TIMEOUT, "timed-out", new TimeoutException());
-                                R wrappedV = executionHook.onComplete(originalCommand, v);
-                                observer.onNext(wrappedV);
+                                observer.onNext(originalCommand.getFallbackOrThrowException(HystrixEventType.TIMEOUT, FailureType.TIMEOUT, "timed-out", new TimeoutException()));
                                 observer.onCompleted();
                             } catch (HystrixRuntimeException re) {
                                 observer.onError(re);
@@ -1118,7 +1114,6 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
                     // execute outside of future so that fireAndForget will still work (ie. someone calls queue() but not get()) and so that multiple requests can be deduped through request caching
                     R r = executeCommand();
-                    r = executionHook.onComplete(this, r);
                     observer.onNext(r);
                     /* execution time (must occur before terminal state otherwise a race condition can occur if requested by client) */
                     recordTotalExecutionTime(invocationStartTime);
@@ -1191,8 +1186,6 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                             R r = executeCommand();
                             // if we can go from NOT_EXECUTED to COMPLETED then we did not timeout
                             if (isCommandTimedOut.compareAndSet(TimedOutStatus.NOT_EXECUTED, TimedOutStatus.COMPLETED)) {
-                                // give the hook an opportunity to modify it
-                                r = executionHook.onComplete(_this, r);
                                 // pass to the observer
                                 observer.onNext(r);
                                 // state changes before termination
@@ -1252,16 +1245,12 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             // mark on counter
             metrics.markThreadPoolRejection();
             // use a fallback instead (or throw exception if not implemented)
-            R v = getFallbackOrThrowException(HystrixEventType.THREAD_POOL_REJECTED, FailureType.REJECTED_THREAD_EXECUTION, "could not be queued for execution", e);
-            R wrappedV = executionHook.onComplete(_this, v);
-            observer.onNext(wrappedV);
+            observer.onNext(getFallbackOrThrowException(HystrixEventType.THREAD_POOL_REJECTED, FailureType.REJECTED_THREAD_EXECUTION, "could not be queued for execution", e));
             observer.onCompleted();
         } catch (Exception e) {
             // unknown exception
             logger.error(getLogMessagePrefix() + ": Unexpected exception while submitting to queue.", e);
-            R v = getFallbackOrThrowException(HystrixEventType.THREAD_POOL_REJECTED, FailureType.REJECTED_THREAD_EXECUTION, "had unexpected exception while attempting to queue for execution.", e);
-            R wrappedV = executionHook.onComplete(_this, v);
-            observer.onNext(wrappedV);
+            observer.onNext(getFallbackOrThrowException(HystrixEventType.THREAD_POOL_REJECTED, FailureType.REJECTED_THREAD_EXECUTION, "had unexpected exception while attempting to queue for execution.", e));
             observer.onCompleted();
         }
     }
@@ -1301,7 +1290,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                 metrics.markSuccess(duration);
                 circuitBreaker.markSuccess();
                 eventNotifier.markCommandExecution(getCommandKey(), properties.executionIsolationStrategy().get(), (int) duration, executionResult.events);
-                return response;
+                return executionHook.onComplete(this, response);
             }
         } catch (HystrixBadRequestException e) {
             try {
@@ -1652,7 +1641,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                     metrics.markFallbackSuccess();
                     // record the executionResult
                     executionResult = executionResult.addEvents(HystrixEventType.FALLBACK_SUCCESS);
-                    return fallback;
+                    return executionHook.onComplete(this, fallback);
                 } catch (UnsupportedOperationException fe) {
                     logger.debug("No fallback for HystrixCommand. ", fe); // debug only since we're throwing the exception and someone higher will do something with it
 
