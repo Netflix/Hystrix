@@ -58,7 +58,9 @@ public abstract class HystrixCommandExecutionHook {
 
     /**
      * Invoked after successful execution of {@link HystrixCommand#run()} with response value.
-     * 
+     * In a {@link HystrixCommand} using {@link ExecutionIsolationStrategy#THREAD}, this will get invoked if the Hystrix thread
+     * successfully runs, regardless of whether the calling thread encountered a timeout.
+     *
      * @param commandInstance
      *            The executing HystrixCommand instance.
      * @param response
@@ -247,6 +249,8 @@ public abstract class HystrixCommandExecutionHook {
 
     /**
      * Invoked at completion of thread execution when {@link HystrixCommand} is executed using {@link ExecutionIsolationStrategy#THREAD}.
+     * This will get invoked if the Hystrix thread successfully executes, regardless of whether the calling thread
+     * encountered a timeout.
      * 
      * @param commandInstance
      *            The executing HystrixCommand instance.
