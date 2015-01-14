@@ -1044,8 +1044,6 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                                 originalCommand.recordTotalExecutionTime(originalCommand.invocationStartTime);
 
                                 timeoutRunnable.run();
-
-
                             }
 
                             observer.unsubscribe();
