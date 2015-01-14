@@ -4,12 +4,18 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import com.netflix.hystrix.HystrixCommand.Setter;
 import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
 
 public class HystrixTest {
+    @Before
+    public void reset() {
+        Hystrix.reset();
+    }
+
     @Test
     public void testNotInThread() {
         assertNull(Hystrix.getCurrentThreadExecutingCommand());
