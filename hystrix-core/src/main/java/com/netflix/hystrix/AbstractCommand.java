@@ -108,6 +108,8 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
     protected final AtomicReference<TimedOutStatus> isCommandTimedOut = new AtomicReference<TimedOutStatus>(TimedOutStatus.NOT_EXECUTED);
     protected final AtomicBoolean isExecutionComplete = new AtomicBoolean(false);
     protected final AtomicBoolean isExecutedInThread = new AtomicBoolean(false);
+    protected final AtomicReference<Action0> endCurrentThreadExecutingCommand = new AtomicReference<Action0>(); // don't like how this is being done
+
 
     /**
      * Instance of RequestCache logic
@@ -492,7 +494,6 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         metrics.incrementConcurrentExecutionCount();
 
         final HystrixRequestContext currentRequestContext = HystrixRequestContext.getContextForCurrentThread();
-        final AtomicReference<Action0> endCurrentThreadExecutingCommand = new AtomicReference<Action0>(); // don't like how this is being done
 
         Observable<R> run = null;
         if (properties.executionIsolationStrategy().get().equals(ExecutionIsolationStrategy.THREAD)) {
@@ -557,8 +558,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                     executionResult = executionResult.addEvents(HystrixEventType.SUCCESS);
                     once = true;
                 }
-
-                return executionHook.onRunSuccess(_self, t1);
+                return t1;
             }
 
         }).doOnCompleted(new Action0() {
@@ -587,7 +587,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                 } else if (t instanceof HystrixObservableTimeoutOperator.HystrixTimeoutException) {
                     /**
                      * Timeout handling
-                     * 
+                     *
                      * Callback is performed on the HystrixTimer thread.
                      */
                     return getFallbackOrThrowException(HystrixEventType.TIMEOUT, FailureType.TIMEOUT, "timed-out", new TimeoutException());
@@ -634,7 +634,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                     /*
                      * Treat HystrixBadRequestException from ExecutionHook like a plain HystrixBadRequestException.
                      */
-                    if (e instanceof HystrixBadRequestException){
+                    if (e instanceof HystrixBadRequestException) {
                         return Observable.error(e);
                     }
 
@@ -657,13 +657,10 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         }).doOnTerminate(new Action0() {
             @Override
             public void call() {
-                // pop the command that is being run
-                if (endCurrentThreadExecutingCommand.get() != null) {
-                    endCurrentThreadExecutingCommand.get().call();
-                }
-                if (isExecutedInThread.get()) {
-                    threadPool.markThreadCompletion();
-                    executionHook.onThreadComplete(_self);
+                //if the command timed out, then we've reached this point in the calling thread
+                //but the Hystrix thread is still doing work.  Let it handle these markers.
+                if (!isCommandTimedOut.get().equals(TimedOutStatus.TIMED_OUT)) {
+                    handleThreadEnd();
                 }
             }
         }).map(new Func1<R, R>() {
@@ -861,6 +858,16 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                 }
 
             });
+        }
+    }
+
+    protected void handleThreadEnd() {
+        if (endCurrentThreadExecutingCommand.get() != null) {
+            endCurrentThreadExecutingCommand.get().call();
+        }
+        if (isExecutedInThread.get()) {
+            threadPool.markThreadCompletion();
+            executionHook.onThreadComplete(this);
         }
     }
 
