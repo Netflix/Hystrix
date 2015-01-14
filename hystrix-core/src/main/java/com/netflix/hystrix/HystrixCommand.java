@@ -842,7 +842,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
         if (properties.executionIsolationStrategy().get().equals(ExecutionIsolationStrategy.THREAD)) {
             // wrap for timeout support
-            o = new TimeoutObservable<R>(o, _this, performAsyncTimeout, executionHook);
+            o = new TimeoutObservable<R>(o, _this, performAsyncTimeout);
         }
 
         // error handling
@@ -1003,7 +1003,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
     private static class TimeoutObservable<R> extends Observable<R> {
 
-        public TimeoutObservable(final Observable<R> o, final HystrixCommand<R> originalCommand, final boolean isNonBlocking, final HystrixCommandExecutionHook executionHook) {
+        public TimeoutObservable(final Observable<R> o, final HystrixCommand<R> originalCommand, final boolean isNonBlocking) {
             super(new OnSubscribe<R>() {
 
                 @Override
