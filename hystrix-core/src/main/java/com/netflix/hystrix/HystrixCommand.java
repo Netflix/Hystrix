@@ -294,8 +294,6 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
 
     @Override
     final protected Observable<R> getExecutionObservable() {
-        final HystrixInvokable<R> _self = this;
-
         return Observable.create(new OnSubscribe<R>() {
 
             @Override
@@ -308,11 +306,6 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
                 }
             }
 
-        }).map(new Func1<R, R>() {
-            @Override
-            public R call(R r) {
-                return executionHook.onRunSuccess(_self, r);
-            }
         }).doOnTerminate(new Action0() {
             @Override
             public void call() {

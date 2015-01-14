@@ -516,7 +516,12 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                             // store the command that is being run
                             endCurrentThreadExecutingCommand.set(Hystrix.startCurrentThreadExecutingCommand(getCommandKey()));
                             isExecutedInThread.set(true);
-                            getExecutionObservable().unsafeSubscribe(s);
+                            getExecutionObservable().map(new Func1<R, R>() {
+                                @Override
+                                public R call(R r) {
+                                    return executionHook.onRunSuccess(_self, r);
+                                }
+                            }).unsafeSubscribe(s);
                         } catch (Throwable t) {
                             // the run() method is a user provided implementation so can throw instead of using Observable.onError
                             // so we catch it here and turn it into Observable.error
@@ -532,7 +537,12 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
             // store the command that is being run
             endCurrentThreadExecutingCommand.set(Hystrix.startCurrentThreadExecutingCommand(getCommandKey()));
             try {
-                run = getExecutionObservable();
+                run = getExecutionObservable().map(new Func1<R, R>() {
+                    @Override
+                    public R call(R r) {
+                        return executionHook.onRunSuccess(_self, r);
+                    }
+                });
             } catch (Throwable t) {
                 // the run() method is a user provided implementation so can throw instead of using Observable.onError
                 // so we catch it here and turn it into Observable.error
