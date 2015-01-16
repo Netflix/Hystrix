@@ -24,7 +24,7 @@ import java.util.Arrays;
 import javax.annotation.concurrent.Immutable;
 
 /**
- * Simple immutable holder to keep all necessary information to build Hystrix command.
+ * Simple immutable holder to keep all necessary information about current method to build Hystrix command.
  */
 @Immutable
 public class MetaHolder {

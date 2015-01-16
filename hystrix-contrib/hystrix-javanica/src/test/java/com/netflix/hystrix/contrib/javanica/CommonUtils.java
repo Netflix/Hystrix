@@ -2,10 +2,12 @@ package com.netflix.hystrix.contrib.javanica;
 
 
 import com.google.common.base.Function;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixCommandMetrics;
+import com.netflix.hystrix.HystrixInvokableInfo;
 import com.netflix.hystrix.HystrixRequestLog;
 
 import javax.annotation.Nullable;
@@ -18,6 +20,13 @@ public class CommonUtils {
 
     public HystrixCommandMetrics getMetrics(String commandKey) {
         return HystrixCommandMetrics.getInstance(HystrixCommandKey.Factory.asKey(commandKey));
+    }
+
+
+    public static HystrixInvokableInfo<?> getLastExecutedCommand() {
+        Collection<HystrixInvokableInfo<?>> executedCommands =
+                HystrixRequestLog.getCurrentRequest().getAllExecutedCommands();
+        return Iterables.getLast(executedCommands);
     }
 
     public static void assertExecutedCommands(String... commands) {

@@ -175,21 +175,166 @@ If `userResource.getUserById(id);` throws an exception which type is _BadRequest
 
 ## Request Cache
 
-Request caching is enabled by defining the _get cache key_ method like in example below:
-```java
-    @HystrixCommand(cacheKeyMethod = "getUserIdCacheKey")
-    public User getUserById(String id) {
-        return userResource.getUserById(id);
-    }
+Javanica provides specific annotations in order to enable and manage request caching. This annotations look very similar to [JSR107](https://github.com/jsr107/jsr107spec) but less extensive than those, by other hand Hystrix doesn't provide independent and complex caching system therefore  there is no need to have such diversity of annotations as in JSR107.
+Javanica has only three annotations dedicated for request caching.
 
-    private String getUserIdCacheKey(String id){
-        return id;
+
+| Annotation        | Description           | Properties  |
+| ------------- |-------------| -----|
+| @CacheResult     | Marks a methods that results should be cached for a Hystrix command.This annotation must be used in conjunction with HystrixCommand annotation. | cacheKeyMethod |
+| @CacheRemove     | Marks methods used to invalidate cache of a command. Generated cache key must be same as key generated within link CacheResult context      |   commandKey, cacheKeyMethod |
+| @CacheKey | Marks a method argument as part of the cache key. If no arguments are marked all arguments are used. If _@CacheResult_ or _@CacheRemove_ annotation has specified _cacheKeyMethod_ then a method arguments will not be used to build cache key even if they annotated with _@CacheKey_    |    value |
+
+**cacheKeyMethod** - a method name to be used to get a key for request caching. The command and cache key method should be placed in the same class and have same method signature except cache key method return type that should be _String_.
+_cacheKeyMethod_ has higher priority than an arguments of a method, that means what actual arguments
+of a method that annotated with _@CacheResult_ will not be used to generate cache key, instead specified
+_cacheKeyMethod_ fully assigns to itself responsibility for cache key generation.
+By default this returns empty string which means "do not use cache method.
+You can consider _cacheKeyMethod_ as a replacement for common key generators (for example [JSR170-CacheKeyGenerator](https://github.com/jsr107/jsr107spec/blob/master/src/main/java/javax/cache/annotation/CacheKeyGenerator.java)) but with _cacheKeyMethod_ cache key generation becomes more convenient and simple. Not to be unfounded let's compare the two approaches:
+JSR107
+```java
+
+    @CacheRemove(cacheName = "getUserById", cacheKeyGenerator = UserCacheKeyGenerator.class)
+    @HystrixCommand
+    public void update(@CacheKey User user) {
+         storage.put(user.getId(), user);
+    }
+        
+    public static class UserCacheKeyGenerator implements HystrixCacheKeyGenerator {
+        @Override
+        public HystrixGeneratedCacheKey generateCacheKey(CacheKeyInvocationContext<? extends Annotation>  cacheKeyInvocationContext) {
+            CacheInvocationParameter cacheInvocationParameter = cacheKeyInvocationContext.getKeyParameters()[0];
+            User user = (User) cacheInvocationParameter.getValue();
+            return new DefaultHystrixGeneratedCacheKey(user.getId());
+        }
     }
 ```
 
-If "getUserIdCacheKey" returns `null` then the cache key will be "null" (string).
+Javanica cacheKeyMethod
 
-**_Its important to remember that Hystrix command and "get cache key" method should be placed in the same class and have same method signature_**.
+```java
+        @CacheRemove(commandKey = "getUserById", cacheKeyMethod=)
+        @HystrixCommand
+        public void update(User user) {
+            storage.put(user.getId(), user);
+        }
+        private String cacheKeyMethod(User user) {
+            return user.getId();
+        }
+
+```
+or even just
+```java
+        @CacheRemove(commandKey = "getUserById")
+        @HystrixCommand
+        public void update(@CacheKey("id") User user) {
+            storage.put(user.getId(), user);
+        }
+```
+You don't need to create new classes, also approach with cacheKeyMethod helps during refactoring if you will give correct names for cache key methods. It is recommended to append prefix "cacheKeyMethod" to the real method name, for example:
+```java
+public User getUserById(@CacheKey String id);
+```
+```java
+private User getUserByIdCacheKeyMethod(String id);
+```
+**Cache key generator**
+
+Jacanica has only one cache key generator **HystrixCacheKeyGenerator** that generates a _HystrixGeneratedCacheKey_ based on _CacheInvocationContext_. Implementation is thread-safe.
+Parameters of an annotated method are selected by the following rules:
+- If no parameters are annotated with _@CacheKey_ then all parameters are included
+- If one or more _@CacheKey_ annotations exist only those parameters with the _@CacheKey_ annotation are included
+
+**Note**:  If _CacheResult_ or _CacheRemove_ annotation has specified **cacheKeyMethod** then a method arguments **will not be used to build cache key** even if they annotated with _CacheKey_.
+
+**@CacheKey and value property**
+This annotation has one property by default that allows specify name of a certain argument property. for example: ```@CacheKey("id") User user```, or in case composite property: ```@CacheKey("profile.name") User user```. Null properties are ignored, i.e. if ```profile``` is ```null```  then result of ```@CacheKey("profile.name") User user``` will be empty string.
+
+Examples:
+
+```java
+        @CacheResult
+        @HystrixCommand
+        public User getUserById(@CacheKey String id) {
+            return storage.get(id);
+        }
+        
+        // --------------------------------------------------
+        @CacheResult(cacheKeyMethod = "getUserByNameCacheKey")
+        @HystrixCommand
+        public User getUserByName(String name) {
+            return storage.getByName(name);
+        }
+        private Long getUserByNameCacheKey(String name) {
+            return name;
+        }
+        // --------------------------------------------------
+        @CacheResult
+        @HystrixCommand
+        public void getUserByProfileName(@CacheKey("profile.email") User user) {
+            storage.getUserByProfileName(user.getProfile().getName());
+        }
+        
+```
+
+**Get-Set-Get pattern**
+To get more about this pattern you can read [this](https://github.com/Netflix/Hystrix/wiki/How-To-Use#get-set-get-with-request-cache-invalidation) chapter
+Example:
+```java
+    public class UserService {    
+        @CacheResult
+        @HystrixCommand
+        public User getUserById(@CacheKey String id) { // GET
+            return storage.get(id);
+        }
+
+        @CacheRemove(commandKey = "getUserById")
+        @HystrixCommand
+        public void update(@CacheKey("id") User user) { // SET
+            storage.put(user.getId(), user);
+        }
+    }    
+        
+        // test app
+        
+        public void test(){
+        User user = userService.getUserById("1");
+        HystrixInvokableInfo<?> getUserByIdCommand = getLastExecutedCommand();
+        // this is the first time we've executed this command with
+        // the value of "1" so it should not be from cache
+        assertFalse(getUserByIdCommand.isResponseFromCache());
+        user = userService.getUserById("1");
+        getUserByIdCommand = getLastExecutedCommand();
+        // this is the second time we've executed this command with
+        // the same value so it should return from cache
+        assertTrue(getUserByIdCommand.isResponseFromCache());
+        
+        user = new User("1", "new_name");
+        userService.update(user); // update the user
+        user = userService.getUserById("1");
+        getUserByIdCommand = getLastExecutedCommand();
+        // this is the first time we've executed this command after "update"
+        // method was invoked and a cache for "getUserById" command was flushed
+        // so the response shouldn't be from cache
+        assertFalse(getUserByIdCommand.isResponseFromCache());
+        }
+```
+
+**Note**: You can use @CacheRemove annotation in conjunction with  @HystrixCommand or without. If you want annotate not command method with @CacheRemove annotation then you need to add HystrixCacheAspect aspect to your configuration:
+
+```xml
+<aspects>
+        ...
+        <aspect name="com.netflix.hystrix.contrib.javanica.aop.aspectj.HystrixCacheAspect"/>
+        ...
+</aspects>
+
+<!-- or Spring conf -->
+
+    <aop:aspectj-autoproxy/>
+    <bean id="hystrixAspect" class="com.netflix.hystrix.contrib.javanica.aop.aspectj.HystrixCacheAspect"></bean>
+
+```
 
 ## Configuration
 ### Command Properties
@@ -305,17 +450,6 @@ All requests that were processed successfully or failed will be returned to an u
 
 
 #Development Status and Future
-Todo list:
+Please create an issue if you need a feature or you detected some bugs. Thanks
 
-1. Add new annotation that can be applied for types in order to define default command properties for all commands that are specified in a class. For example specify default group key or default properties for all commands.
-2.Add Cache annotation to mark some parameters which should participate in building cache key, for example:
-
-```java
-@HystrixCommand
-User getUserByParams(@Cache String id, String name, @Cache Integer age)
-```
-`toString()` method will be invoked for parameters: id and age to build cache key:
-Pseudo code
-```
-String cacheKey = id.toString()+age.toString()
-```
+**Note**: Javaniva 1.4.+ is more stable than 1.3.+ All fixes initially are added in 1.4.+ and after if it's not much efforts then merged to 1.3.  **It's recommended to use Javaniva 1.4.+** 
