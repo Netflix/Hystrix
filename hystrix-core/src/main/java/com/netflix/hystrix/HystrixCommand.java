@@ -5401,6 +5401,9 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                 } catch (ExecutionException ee) {
                     System.out.println("Received expected ex : " + ee.getCause());
                     ee.getCause().printStackTrace();
+                } catch (Exception e) {
+                    System.out.println("Received expected ex : " + e);
+                    e.printStackTrace();
                 }
             }
 
@@ -5437,6 +5440,9 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                 } catch (ExecutionException ee) {
                     System.out.println("Received expected ex : " + ee.getCause());
                     ee.getCause().printStackTrace();
+                } catch (Exception e) {
+                    System.out.println("Received expected ex : " + e);
+                    e.printStackTrace();
                 }
             }
         }
@@ -8040,7 +8046,6 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
 
             @Override
             public <T> Exception onError(HystrixCommand<T> commandInstance, FailureType failureType, Exception e) {
-                System.out.println("onError invoked with : " + commandInstance + " : " + failureType + " : " + e);
                 endExecuteFailureException = e;
                 endExecuteFailureType = failureType;
                 recordHookCall(executionSequence, "onError");
