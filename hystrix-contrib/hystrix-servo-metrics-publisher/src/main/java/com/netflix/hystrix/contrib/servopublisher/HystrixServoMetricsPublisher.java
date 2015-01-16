@@ -34,10 +34,22 @@ import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherThreadPool;
  */
 public class HystrixServoMetricsPublisher extends HystrixMetricsPublisher {
 
-    private static HystrixServoMetricsPublisher INSTANCE = new HystrixServoMetricsPublisher();
+    private static HystrixServoMetricsPublisher INSTANCE = null;
 
     public static HystrixServoMetricsPublisher getInstance() {
+        if (INSTANCE == null) {
+            HystrixServoMetricsPublisher temp = createInstance();
+            INSTANCE = temp;
+        }
         return INSTANCE;
+    }
+
+    private static synchronized HystrixServoMetricsPublisher createInstance() {
+        if (INSTANCE == null) {
+            return new HystrixServoMetricsPublisher();
+        } else {
+            return INSTANCE;
+        }
     }
 
     private HystrixServoMetricsPublisher() {
