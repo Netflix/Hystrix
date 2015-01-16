@@ -3403,6 +3403,29 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             assertEquals(2, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
         }
 
+        @Test
+        public void testNonBlockingCommandQueueFiresTimeout() { //see https://github.com/Netflix/Hystrix/issues/514
+            final TestHystrixCommand<Boolean> cmd = new TestCommandWithTimeout(50, TestCommandWithTimeout.FALLBACK_SUCCESS);
+
+            new Thread() {
+                @Override
+                public void run() {
+                    cmd.queue();
+                }
+            }.start();
+
+            try {
+                Thread.sleep(200);
+                //timeout should occur in 50ms, and underlying thread should run for 500ms
+                //therefore, after 200ms, the command should have finished with a fallback on timeout
+            } catch (InterruptedException ie) {
+                throw new RuntimeException(ie);
+            }
+
+            assertTrue(cmd.isExecutionComplete());
+            assertTrue(cmd.isResponseTimedOut());
+        }
+
         /**
          * Test when a command fails to get queued up in the threadpool where the command didn't implement getFallback.
          * <p>
