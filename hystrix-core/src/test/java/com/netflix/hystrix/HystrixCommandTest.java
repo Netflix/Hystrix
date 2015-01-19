@@ -4778,7 +4778,7 @@ public class HystrixCommandTest {
      * Fallback: SUCCESS
      */
     @Test
-    public void testExecutionHookSempahoreRejectedSuccessfulFallback() {
+    public void testExecutionHookSemaphoreRejectedSuccessfulFallback() {
         assertHooksOnSuccess(
                 new Func0<TestHystrixCommand<Boolean>>() {
                     @Override
