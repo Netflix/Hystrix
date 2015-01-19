@@ -74,7 +74,7 @@ public class ObservableTest {
                 }
             });
             assertEquals(3, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-            com.netflix.hystrix.HystrixCommand getUserCommand = getHystrixCommandByKey("getUser");
+            com.netflix.hystrix.HystrixInvokableInfo getUserCommand = getHystrixCommandByKey("getUser");
             assertTrue(getUserCommand.getExecutionEvents().contains(HystrixEventType.SUCCESS));
         } finally {
             context.shutdown();
@@ -90,7 +90,7 @@ public class ObservableTest {
             // blocking
             assertEquals(exUser, userService.getUser(" ", "").toBlocking().single());
             assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-            com.netflix.hystrix.HystrixCommand getUserCommand = getHystrixCommandByKey("getUser");
+            com.netflix.hystrix.HystrixInvokableInfo getUserCommand = getHystrixCommandByKey("getUser");
             // confirm that command has failed
             assertTrue(getUserCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
             // and that fallback was successful

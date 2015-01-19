@@ -97,8 +97,8 @@ public class CommandFallbackTest {
             assertEquals(3, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
             HystrixInvokableInfo<?> getUserAsyncFallbackCommand = getHystrixCommandByKey(
                     "getUserAsyncFallbackCommand");
-            com.netflix.hystrix.HystrixCommand firstFallbackCommand = getHystrixCommandByKey("firstFallbackCommand");
-            com.netflix.hystrix.HystrixCommand secondFallbackCommand = getHystrixCommandByKey("secondFallbackCommand");
+            com.netflix.hystrix.HystrixInvokableInfo firstFallbackCommand = getHystrixCommandByKey("firstFallbackCommand");
+            com.netflix.hystrix.HystrixInvokableInfo secondFallbackCommand = getHystrixCommandByKey("secondFallbackCommand");
 
             assertEquals("getUserAsyncFallbackCommand", getUserAsyncFallbackCommand.getCommandKey().name());
             // confirm that command has failed
@@ -122,8 +122,8 @@ public class CommandFallbackTest {
             assertEquals(3, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
             HystrixInvokableInfo<?> getUserSyncFallbackCommand = getHystrixCommandByKey(
                     "getUserSyncFallbackCommand");
-            com.netflix.hystrix.HystrixCommand firstFallbackCommand = getHystrixCommandByKey("firstFallbackCommand");
-            com.netflix.hystrix.HystrixCommand secondFallbackCommand = getHystrixCommandByKey("secondFallbackCommand");
+            com.netflix.hystrix.HystrixInvokableInfo firstFallbackCommand = getHystrixCommandByKey("firstFallbackCommand");
+            com.netflix.hystrix.HystrixInvokableInfo secondFallbackCommand = getHystrixCommandByKey("secondFallbackCommand");
 
             assertEquals("getUserSyncFallbackCommand", getUserSyncFallbackCommand.getCommandKey().name());
             // confirm that command has failed
