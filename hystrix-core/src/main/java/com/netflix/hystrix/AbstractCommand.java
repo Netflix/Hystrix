@@ -404,7 +404,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                         metrics.markSemaphoreRejection();
                         logger.debug("HystrixCommand Execution Rejection by Semaphore."); // debug only since we're throwing the exception and someone higher will do something with it
                         // retrieve a fallback or throw an exception if no fallback available
-                        getFallbackOrThrowException(HystrixEventType.SEMAPHORE_REJECTED, FailureType.REJECTED_SEMAPHORE_EXECUTION, "could not acquire a semaphore for execution").
+                        getFallbackOrThrowException(HystrixEventType.SEMAPHORE_REJECTED, FailureType.REJECTED_SEMAPHORE_EXECUTION, "could not acquire a semaphore for execution", new RuntimeException("could not acquire a semaphore for execution")).
                                 map(new Func1<R, R>() {
 
                                     @Override
@@ -420,7 +420,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                     metrics.markShortCircuited();
                     // short-circuit and go directly to fallback (or throw an exception if no fallback implemented)
                     try {
-                        getFallbackOrThrowException(HystrixEventType.SHORT_CIRCUITED, FailureType.SHORTCIRCUIT, "short-circuited")
+                        getFallbackOrThrowException(HystrixEventType.SHORT_CIRCUITED, FailureType.SHORTCIRCUIT, "short-circuited", new RuntimeException("Hystrix circuit short-circuited and is OPEN"))
                                 .map(new Func1<R, R>() {
 
                                     @Override
@@ -770,13 +770,6 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
             // if we couldn't acquire a permit, we "fail fast" by throwing an exception
             return Observable.error(new HystrixRuntimeException(FailureType.REJECTED_SEMAPHORE_FALLBACK, this.getClass(), getLogMessagePrefix() + " fallback execution rejected.", null, null));
         }
-    }
-
-    /**
-     * @throws HystrixRuntimeException
-     */
-    private Observable<R> getFallbackOrThrowException(HystrixEventType eventType, FailureType failureType, String message) {
-        return getFallbackOrThrowException(eventType, failureType, message, null);
     }
 
     /**
