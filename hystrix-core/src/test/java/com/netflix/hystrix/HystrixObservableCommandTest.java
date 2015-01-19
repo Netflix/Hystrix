@@ -4012,7 +4012,7 @@ public class HystrixObservableCommandTest {
                     public void call(TestHystrixCommand<Boolean> command) {
                         assertEquals(1, command.builder.executionHook.startExecute.get());
                         assertNull(command.builder.executionHook.endExecuteSuccessResponse);
-                        assertNull(command.builder.executionHook.endExecuteFailureException); //by design, ex=null in this case
+                        assertEquals(RuntimeException.class, command.builder.executionHook.endExecuteFailureException.getClass());
                         assertEquals(FailureType.SHORTCIRCUIT, command.builder.executionHook.endExecuteFailureType);
                         assertEquals(0, command.builder.executionHook.startRun.get());
                         assertNull(command.builder.executionHook.runSuccessResponse);
@@ -4082,7 +4082,7 @@ public class HystrixObservableCommandTest {
                     public void call(TestHystrixCommand<Boolean> command) {
                         assertEquals(1, command.builder.executionHook.startExecute.get());
                         assertNull(command.builder.executionHook.endExecuteSuccessResponse);
-                        assertNull(command.builder.executionHook.endExecuteFailureException); //by design, ex=null in this case
+                        assertEquals(RuntimeException.class, command.builder.executionHook.endExecuteFailureException.getClass());
                         assertEquals(FailureType.SHORTCIRCUIT, command.builder.executionHook.endExecuteFailureType);
                         assertEquals(0, command.builder.executionHook.startRun.get());
                         assertNull(command.builder.executionHook.runSuccessResponse);
@@ -4337,7 +4337,7 @@ public class HystrixObservableCommandTest {
                     public void call(TestHystrixCommand<Boolean> command) {
                         assertEquals(1, command.builder.executionHook.startExecute.get());
                         assertNull(command.builder.executionHook.endExecuteSuccessResponse);
-                        assertNull(command.builder.executionHook.endExecuteFailureException); //by design, null=ex in this case
+                        assertEquals(RuntimeException.class, command.builder.executionHook.endExecuteFailureException.getClass());
                         assertEquals(FailureType.REJECTED_SEMAPHORE_EXECUTION, command.builder.executionHook.endExecuteFailureType);
                         assertEquals(0, command.builder.executionHook.startRun.get());
                         assertNull(command.builder.executionHook.runSuccessResponse);
@@ -4465,7 +4465,7 @@ public class HystrixObservableCommandTest {
                     public void call(TestHystrixCommand<Boolean> command) {
                         assertEquals(1, command.builder.executionHook.startExecute.get());
                         assertNull(command.builder.executionHook.endExecuteSuccessResponse);
-                        assertNull(command.builder.executionHook.endExecuteFailureException); //by design, ex=null in this case
+                        assertEquals(RuntimeException.class, command.builder.executionHook.endExecuteFailureException.getClass());
                         assertEquals(FailureType.REJECTED_SEMAPHORE_EXECUTION, command.builder.executionHook.endExecuteFailureType);
                         assertEquals(0, command.builder.executionHook.startRun.get());
                         assertNull(command.builder.executionHook.runSuccessResponse);
@@ -4501,7 +4501,7 @@ public class HystrixObservableCommandTest {
                     public void call(TestHystrixCommand<Boolean> command) {
                         assertEquals(1, command.builder.executionHook.startExecute.get());
                         assertNull(command.builder.executionHook.endExecuteSuccessResponse);
-                        assertNull(command.builder.executionHook.endExecuteFailureException); //by design, ex=null in this case
+                        assertEquals(RuntimeException.class, command.builder.executionHook.endExecuteFailureException.getClass());
                         assertEquals(FailureType.SHORTCIRCUIT, command.builder.executionHook.endExecuteFailureType);
                         assertEquals(0, command.builder.executionHook.startRun.get());
                         assertNull(command.builder.executionHook.runSuccessResponse);
@@ -4573,7 +4573,7 @@ public class HystrixObservableCommandTest {
                     public void call(TestHystrixCommand<Boolean> command) {
                         assertEquals(1, command.builder.executionHook.startExecute.get());
                         assertNull(command.builder.executionHook.endExecuteSuccessResponse);
-                        assertNull(command.builder.executionHook.endExecuteFailureException); //by design, ex=null in this case
+                        assertEquals(RuntimeException.class, command.builder.executionHook.endExecuteFailureException.getClass());
                         assertEquals(FailureType.SHORTCIRCUIT, command.builder.executionHook.endExecuteFailureType);
                         assertEquals(0, command.builder.executionHook.startRun.get());
                         assertNull(command.builder.executionHook.runSuccessResponse);
