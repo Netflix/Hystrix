@@ -415,7 +415,7 @@ public class HystrixObservableCommandTest {
      */
     @Test
     public void testSemaphoreIsolatedObserveFailureWithFallbackFailure() {
-        TestHystrixCommand<Boolean> command = new KnownFailureTestCommandWithFallbackFailure(new TestCircuitBreaker());
+        TestHystrixCommand<Boolean> command = new KnownFailureTestCommandWithFallbackFailure(new TestCircuitBreaker(), ExecutionIsolationStrategy.SEMAPHORE);
         try {
             command.observe().toBlocking().single();
             fail("we shouldn't get here");
@@ -3242,7 +3242,7 @@ public class HystrixObservableCommandTest {
                 new Func0<TestHystrixCommand<Boolean>>() {
                     @Override
                     public TestHystrixCommand<Boolean> call() {
-                        return new SuccessfulTestCommand();
+                        return new SuccessfulTestCommand(ExecutionIsolationStrategy.THREAD);
                     }
                 },
                 new Action1<TestHystrixCommand<Boolean>>() {
@@ -3317,7 +3317,7 @@ public class HystrixObservableCommandTest {
                 new Func0<TestHystrixCommand<Boolean>>() {
                     @Override
                     public TestHystrixCommand<Boolean> call() {
-                        return new KnownFailureTestCommandWithoutFallback(new TestCircuitBreaker());
+                        return new KnownFailureTestCommandWithoutFallback(new TestCircuitBreaker(), ExecutionIsolationStrategy.THREAD);
                     }
                 },
                 new Action1<TestHystrixCommand<Boolean>>() {
@@ -3355,7 +3355,7 @@ public class HystrixObservableCommandTest {
                 new Func0<TestHystrixCommand<Boolean>>() {
                     @Override
                     public TestHystrixCommand<Boolean> call() {
-                        return new KnownFailureTestCommandWithFallback(new TestCircuitBreaker());
+                        return new KnownFailureTestCommandWithFallback(new TestCircuitBreaker(), ExecutionIsolationStrategy.THREAD);
                     }
                 },
                 new Action1<TestHystrixCommand<Boolean>>() {
@@ -3393,7 +3393,7 @@ public class HystrixObservableCommandTest {
                 new Func0<TestHystrixCommand<Boolean>>() {
                     @Override
                     public TestHystrixCommand<Boolean> call() {
-                        return new KnownFailureTestCommandWithFallbackFailure(new TestCircuitBreaker());
+                        return new KnownFailureTestCommandWithFallbackFailure(new TestCircuitBreaker(), ExecutionIsolationStrategy.THREAD);
                     }
                 },
                 new Action1<TestHystrixCommand<Boolean>>() {
@@ -3431,7 +3431,7 @@ public class HystrixObservableCommandTest {
                 new Func0<TestHystrixCommand<Boolean>>() {
                     @Override
                     public TestHystrixCommand<Boolean> call() {
-                        return new TestCommandWithTimeout(50, TestCommandWithTimeout.FALLBACK_NOT_IMPLEMENTED);
+                        return new TestCommandWithTimeout(50, TestCommandWithTimeout.FALLBACK_NOT_IMPLEMENTED, ExecutionIsolationStrategy.THREAD, TestCommandWithTimeout.RESULT_SUCCESS);
                     }
                 },
                 new Action1<TestHystrixCommand<Boolean>>() {
@@ -3481,7 +3481,7 @@ public class HystrixObservableCommandTest {
                 new Func0<TestHystrixCommand<Boolean>>() {
                     @Override
                     public TestHystrixCommand<Boolean> call() {
-                        return new TestCommandWithTimeout(50, TestCommandWithTimeout.FALLBACK_SUCCESS);
+                        return new TestCommandWithTimeout(50, TestCommandWithTimeout.FALLBACK_SUCCESS, ExecutionIsolationStrategy.THREAD, TestCommandWithTimeout.RESULT_SUCCESS);
                     }
                 },
                 new Action1<TestHystrixCommand<Boolean>>() {
@@ -3531,7 +3531,7 @@ public class HystrixObservableCommandTest {
                 new Func0<TestHystrixCommand<Boolean>>() {
                     @Override
                     public TestHystrixCommand<Boolean> call() {
-                        return new TestCommandWithTimeout(50, TestCommandWithTimeout.FALLBACK_FAILURE);
+                        return new TestCommandWithTimeout(50, TestCommandWithTimeout.FALLBACK_FAILURE, ExecutionIsolationStrategy.THREAD, TestCommandWithTimeout.RESULT_SUCCESS);
                     }
                 },
                 new Action1<TestHystrixCommand<Boolean>>() {
@@ -3581,7 +3581,7 @@ public class HystrixObservableCommandTest {
                 new Func0<TestHystrixCommand<Boolean>>() {
                     @Override
                     public TestHystrixCommand<Boolean> call() {
-                        return new TestCommandWithTimeout(50, TestCommandWithTimeout.FALLBACK_NOT_IMPLEMENTED, TestCommandWithTimeout.RESULT_EXCEPTION);
+                        return new TestCommandWithTimeout(50, TestCommandWithTimeout.FALLBACK_NOT_IMPLEMENTED, ExecutionIsolationStrategy.THREAD, TestCommandWithTimeout.RESULT_EXCEPTION);
                     }
                 },
                 new Action1<TestHystrixCommand<Boolean>>() {
@@ -3631,7 +3631,7 @@ public class HystrixObservableCommandTest {
                 new Func0<TestHystrixCommand<Boolean>>() {
                     @Override
                     public TestHystrixCommand<Boolean> call() {
-                        return new TestCommandWithTimeout(50, TestCommandWithTimeout.FALLBACK_SUCCESS, TestCommandWithTimeout.RESULT_EXCEPTION);
+                        return new TestCommandWithTimeout(50, TestCommandWithTimeout.FALLBACK_SUCCESS, ExecutionIsolationStrategy.THREAD, TestCommandWithTimeout.RESULT_EXCEPTION);
                     }
                 },
                 new Action1<TestHystrixCommand<Boolean>>() {
@@ -3681,7 +3681,7 @@ public class HystrixObservableCommandTest {
                 new Func0<TestHystrixCommand<Boolean>>() {
                     @Override
                     public TestHystrixCommand<Boolean> call() {
-                        return new TestCommandWithTimeout(50, TestCommandWithTimeout.FALLBACK_FAILURE, TestCommandWithTimeout.RESULT_EXCEPTION);
+                        return new TestCommandWithTimeout(50, TestCommandWithTimeout.FALLBACK_FAILURE, ExecutionIsolationStrategy.THREAD, TestCommandWithTimeout.RESULT_EXCEPTION);
                     }
                 },
                 new Action1<TestHystrixCommand<Boolean>>() {
@@ -6927,6 +6927,10 @@ public class HystrixObservableCommandTest {
             this(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionIsolationStrategy(ExecutionIsolationStrategy.SEMAPHORE));
         }
 
+        public SuccessfulTestCommand(ExecutionIsolationStrategy isolationStrategy) {
+            this(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionIsolationStrategy(isolationStrategy));
+        }
+
         public SuccessfulTestCommand(HystrixCommandProperties.Setter properties) {
             super(testPropsBuilder().setCommandPropertiesDefaults(properties));
         }
@@ -7113,11 +7117,15 @@ public class HystrixObservableCommandTest {
             super(testPropsBuilder().setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics));
         }
 
+        private KnownFailureTestCommandWithoutFallback(TestCircuitBreaker circuitBreaker, ExecutionIsolationStrategy isolationStrategy) {
+            super(testPropsBuilder(isolationStrategy).setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics));
+        }
+
         @Override
         protected Observable<Boolean> construct() {
-            // TODO duplicate with error inside async Observable
+            // TODO duplicate with error inside sync Observable
             System.out.println("*** simulated failed execution ***");
-            throw new RuntimeException("we failed with a simulated issue");
+            return Observable.error(new RuntimeException("we failed with a simulated issue"));
         }
 
     }
@@ -7131,6 +7139,10 @@ public class HystrixObservableCommandTest {
             super(testPropsBuilder().setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics));
         }
 
+        public KnownFailureTestCommandWithFallback(TestCircuitBreaker circuitBreaker, ExecutionIsolationStrategy isolationStrategy) {
+            super(testPropsBuilder(isolationStrategy).setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics));
+        }
+
         public KnownFailureTestCommandWithFallback(TestCircuitBreaker circuitBreaker, boolean fallbackEnabled) {
             super(testPropsBuilder().setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics)
                     .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withFallbackEnabled(fallbackEnabled).withExecutionIsolationStrategy(ExecutionIsolationStrategy.SEMAPHORE)));
@@ -7138,9 +7150,9 @@ public class HystrixObservableCommandTest {
 
         @Override
         protected Observable<Boolean> construct() {
-            // TODO duplicate with error inside async Observable
+            // TODO duplicate with error inside sync Observable (I know at least 1 unit test will fail.  See https://github.com/Netflix/Hystrix/issues/525)
             System.out.println("*** simulated failed execution ***");
-            throw new RuntimeException("we failed with a simulated issue");
+            return Observable.error(new RuntimeException("we failed with a simulated issue"));
         }
 
         @Override
@@ -7155,7 +7167,7 @@ public class HystrixObservableCommandTest {
     private static class KnownHystrixBadRequestFailureTestCommand extends TestHystrixCommand<Boolean> {
 
         public KnownHystrixBadRequestFailureTestCommand(TestCircuitBreaker circuitBreaker) {
-            super(testPropsBuilder().setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics));
+            super(testPropsBuilder(ExecutionIsolationStrategy.THREAD).setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics));
         }
 
         @Override
@@ -7255,10 +7267,15 @@ public class HystrixObservableCommandTest {
             super(testPropsBuilder(ExecutionIsolationStrategy.THREAD).setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics));
         }
 
+        private KnownFailureTestCommandWithFallbackFailure(TestCircuitBreaker circuitBreaker, ExecutionIsolationStrategy isolationStrategy) {
+            super(testPropsBuilder(isolationStrategy).setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics));
+        }
+
         @Override
         protected Observable<Boolean> construct() {
+            //TODO duplicate with sync error
             System.out.println("*** simulated failed execution ***");
-            throw new RuntimeException("we failed with a simulated issue");
+            return Observable.error(new RuntimeException("we failed with a simulated issue"));
         }
 
         @Override
