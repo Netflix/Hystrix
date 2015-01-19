@@ -29,6 +29,7 @@ import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandGroupKey;
 import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixEventType;
+import com.netflix.hystrix.HystrixInvokableInfo;
 import com.netflix.hystrix.HystrixRequestLog;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 
@@ -98,7 +99,7 @@ public class CommandCollapserGetValueForKey extends HystrixCollapser<List<String
                 assertEquals("ValueForKey: 3", f3.get());
                 assertEquals("ValueForKey: 4", f4.get());
 
-                int numExecuted = HystrixRequestLog.getCurrentRequest().getExecutedCommands().size();
+                int numExecuted = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size();
 
                 System.err.println("num executed: " + numExecuted);
 
@@ -108,11 +109,10 @@ public class CommandCollapserGetValueForKey extends HystrixCollapser<List<String
                     fail("some of the commands should have been collapsed");
                 }
 
-                System.err.println("HystrixRequestLog.getCurrentRequest().getExecutedCommands(): " + HystrixRequestLog.getCurrentRequest().getExecutedCommands());
                 System.err.println("HystrixRequestLog.getCurrentRequest().getAllExecutedCommands(): " + HystrixRequestLog.getCurrentRequest().getAllExecutedCommands());
 
                 int numLogs = 0;
-                for (HystrixCommand<?> command : HystrixRequestLog.getCurrentRequest().getExecutedCommands()) {
+                for (HystrixInvokableInfo<?> command : HystrixRequestLog.getCurrentRequest().getAllExecutedCommands()) {
                     numLogs++;
                     
                     // assert the command is the one we're expecting

@@ -53,8 +53,8 @@ public class CommandTest {
         Future<User> f1 = userService.getUserAsync("1", "name: ");
 
         assertEquals("name: 1", f1.get().getName());
-        assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
-        com.netflix.hystrix.HystrixCommand<?> command = getCommand();
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+        com.netflix.hystrix.HystrixInvokableInfo<?> command = getCommand();
         // assert the command key name is the we're expecting
         assertEquals("GetUserCommand", command.getCommandKey().name());
         // assert the command group key name is the we're expecting
@@ -69,8 +69,8 @@ public class CommandTest {
     public void testGetUserSync() {
         User u1 = userService.getUserSync("1", "name: ");
         assertEquals("name: 1", u1.getName());
-        assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
-        com.netflix.hystrix.HystrixCommand<?> command = getCommand();
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+        com.netflix.hystrix.HystrixInvokableInfo<?> command = getCommand();
         assertEquals("getUserSync", command.getCommandKey().name());
         assertEquals("UserGroup", command.getCommandGroup().name());
         assertEquals("UserGroup", command.getThreadPoolKey().name());
@@ -81,12 +81,12 @@ public class CommandTest {
     public void should_work_with_parameterized_method() throws Exception {
         assertEquals(Integer.valueOf(1), userService.echo(1));
 
-        assertEquals(1, HystrixRequestLog.getCurrentRequest().getExecutedCommands().size());
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
         assertTrue(getCommand().getExecutionEvents().contains(HystrixEventType.SUCCESS));
     }
 
-    private com.netflix.hystrix.HystrixCommand<?> getCommand() {
-        return HystrixRequestLog.getCurrentRequest().getExecutedCommands().iterator().next();
+    private com.netflix.hystrix.HystrixInvokableInfo<?> getCommand() {
+        return HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().iterator().next();
     }
 
     public static class UserService {

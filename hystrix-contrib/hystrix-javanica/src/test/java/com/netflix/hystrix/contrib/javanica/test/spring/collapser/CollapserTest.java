@@ -111,7 +111,7 @@ public class CollapserTest {
             assertEquals("name: 5", f5.get().getName());
 
             assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-            com.netflix.hystrix.HystrixCommand getUserCommand = getHystrixCommandByKey("getUserAsyncWithFallback");
+            com.netflix.hystrix.HystrixInvokableInfo getUserCommand = getHystrixCommandByKey("getUserAsyncWithFallback");
 
             // confirm that it was a COLLAPSED command execution
             assertTrue(getUserCommand.getExecutionEvents().contains(HystrixEventType.COLLAPSED));
@@ -144,7 +144,7 @@ public class CollapserTest {
             assertEquals("name: 5", f5.get().getName());
 
             assertEquals(2, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-            com.netflix.hystrix.HystrixCommand getUserCommand = getHystrixCommandByKey("getUserAsyncWithFallbackCommand");
+            com.netflix.hystrix.HystrixInvokableInfo getUserCommand = getHystrixCommandByKey("getUserAsyncWithFallbackCommand");
 
             // confirm that it was a COLLAPSED command execution
             assertTrue(getUserCommand.getExecutionEvents().contains(HystrixEventType.COLLAPSED));

@@ -64,7 +64,7 @@ public class ErrorPropagationTest {
             userService.getUserById(badId);
         } finally {
             assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-            com.netflix.hystrix.HystrixCommand getUserCommand = getHystrixCommandByKey(COMMAND_KEY);
+            com.netflix.hystrix.HystrixInvokableInfo getUserCommand = getHystrixCommandByKey(COMMAND_KEY);
             // will not affect metrics
             assertFalse(getUserCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
             // and will not trigger fallback logic
@@ -80,7 +80,7 @@ public class ErrorPropagationTest {
             userService.getUserById("4"); // user with id 4 doesn't exist
         } finally {
             assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-            com.netflix.hystrix.HystrixCommand getUserCommand = getHystrixCommandByKey(COMMAND_KEY);
+            com.netflix.hystrix.HystrixInvokableInfo getUserCommand = getHystrixCommandByKey(COMMAND_KEY);
             // will not affect metrics
             assertFalse(getUserCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
             // and will not trigger fallback logic
@@ -96,7 +96,7 @@ public class ErrorPropagationTest {
             userService.activateUser("1"); // this method always throws ActivationException
         } finally {
             assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-            com.netflix.hystrix.HystrixCommand activateUserCommand = getHystrixCommandByKey("activateUser");
+            com.netflix.hystrix.HystrixInvokableInfo activateUserCommand = getHystrixCommandByKey("activateUser");
             // will not affect metrics
             assertTrue(activateUserCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
             assertTrue(activateUserCommand.getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
@@ -113,7 +113,7 @@ public class ErrorPropagationTest {
             userService.blockUser("1"); // this method always throws ActivationException
         } finally {
             assertEquals(2, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-            com.netflix.hystrix.HystrixCommand activateUserCommand = getHystrixCommandByKey("blockUser");
+            com.netflix.hystrix.HystrixInvokableInfo activateUserCommand = getHystrixCommandByKey("blockUser");
             // will not affect metrics
             assertTrue(activateUserCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
             assertTrue(activateUserCommand.getExecutionEvents().contains(HystrixEventType.FALLBACK_FAILURE));

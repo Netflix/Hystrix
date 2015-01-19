@@ -30,8 +30,8 @@ public class CommonUtils {
     }
 
     public static void assertExecutedCommands(String... commands) {
-        Collection<HystrixCommand<?>> executedCommands =
-                HystrixRequestLog.getCurrentRequest().getExecutedCommands();
+        Collection<HystrixInvokableInfo<?>> executedCommands =
+                HystrixRequestLog.getCurrentRequest().getAllExecutedCommands();
 
         List<String> executedCommandsKeys = getExecutedCommandsKeys(Lists.newArrayList(executedCommands));
 
@@ -41,27 +41,27 @@ public class CommonUtils {
     }
 
     public static List<String> getExecutedCommandsKeys() {
-        Collection<HystrixCommand<?>> executedCommands =
-                HystrixRequestLog.getCurrentRequest().getExecutedCommands();
+        Collection<HystrixInvokableInfo<?>> executedCommands =
+                HystrixRequestLog.getCurrentRequest().getAllExecutedCommands();
 
         return getExecutedCommandsKeys(Lists.newArrayList(executedCommands));
     }
 
-    public static List<String> getExecutedCommandsKeys(List<HystrixCommand<?>> executedCommands) {
-        return Lists.transform(executedCommands, new Function<HystrixCommand<?>, String>() {
+    public static List<String> getExecutedCommandsKeys(List<HystrixInvokableInfo<?>> executedCommands) {
+        return Lists.transform(executedCommands, new Function<HystrixInvokableInfo<?>, String>() {
             @Nullable
             @Override
-            public String apply(@Nullable HystrixCommand<?> input) {
+            public String apply(@Nullable HystrixInvokableInfo<?> input) {
                 return input.getCommandKey().name();
             }
         });
     }
 
-    public static HystrixCommand getHystrixCommandByKey(String key) {
-        HystrixCommand hystrixCommand = null;
-        Collection<HystrixCommand<?>> executedCommands =
-                HystrixRequestLog.getCurrentRequest().getExecutedCommands();
-        for (HystrixCommand command : executedCommands) {
+    public static HystrixInvokableInfo getHystrixCommandByKey(String key) {
+        HystrixInvokableInfo hystrixCommand = null;
+        Collection<HystrixInvokableInfo<?>> executedCommands =
+                HystrixRequestLog.getCurrentRequest().getAllExecutedCommands();
+        for (HystrixInvokableInfo command : executedCommands) {
             if (command.getCommandKey().name().equals(key)) {
                 hystrixCommand = command;
                 break;
