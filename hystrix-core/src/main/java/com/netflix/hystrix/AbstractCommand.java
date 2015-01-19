@@ -404,7 +404,16 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                         metrics.markSemaphoreRejection();
                         logger.debug("HystrixCommand Execution Rejection by Semaphore."); // debug only since we're throwing the exception and someone higher will do something with it
                         // retrieve a fallback or throw an exception if no fallback available
-                        getFallbackOrThrowException(HystrixEventType.SEMAPHORE_REJECTED, FailureType.REJECTED_SEMAPHORE_EXECUTION, "could not acquire a semaphore for execution").unsafeSubscribe(observer);
+                        getFallbackOrThrowException(HystrixEventType.SEMAPHORE_REJECTED, FailureType.REJECTED_SEMAPHORE_EXECUTION, "could not acquire a semaphore for execution").
+                                map(new Func1<R, R>() {
+
+                                    @Override
+                                    public R call(R t1) {
+                                        // allow transforming the results via the executionHook if the fallback succeeds
+                                        return executionHook.onComplete(_this, t1);
+                                    }
+
+                                }).unsafeSubscribe(observer);
                     }
                 } else {
                     // record that we are returning a short-circuited fallback
@@ -516,12 +525,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                             // store the command that is being run
                             endCurrentThreadExecutingCommand.set(Hystrix.startCurrentThreadExecutingCommand(getCommandKey()));
                             isExecutedInThread.set(true);
-                            getExecutionObservable().map(new Func1<R, R>() {
-                                @Override
-                                public R call(R r) {
-                                    return executionHook.onRunSuccess(_self, r);
-                                }
-                            }).unsafeSubscribe(s);
+                            getExecutionObservableWithLifecycle().unsafeSubscribe(s);
                         } catch (Throwable t) {
                             // the run() method is a user provided implementation so can throw instead of using Observable.onError
                             // so we catch it here and turn it into Observable.error
@@ -537,12 +541,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
             // store the command that is being run
             endCurrentThreadExecutingCommand.set(Hystrix.startCurrentThreadExecutingCommand(getCommandKey()));
             try {
-                run = getExecutionObservable().map(new Func1<R, R>() {
-                    @Override
-                    public R call(R r) {
-                        return executionHook.onRunSuccess(_self, r);
-                    }
-                });
+                run = getExecutionObservableWithLifecycle();
             } catch (Throwable t) {
                 // the run() method is a user provided implementation so can throw instead of using Observable.onError
                 // so we catch it here and turn it into Observable.error
@@ -606,18 +605,6 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                      * BadRequest handling
                      */
                     try {
-                        Exception decorated = executionHook.onRunError(_self, (Exception) t);
-
-                        if (decorated instanceof HystrixBadRequestException) {
-                            t = (HystrixBadRequestException) decorated;
-                        } else {
-                            logger.warn("ExecutionHook.onRunError returned an exception that was not an instance of HystrixBadRequestException so will be ignored.", decorated);
-                        }
-                    } catch (Exception hookException) {
-                        logger.warn("Error calling ExecutionHook.onRunError", hookException);
-                    }
-
-                    try {
                         Exception decorated = executionHook.onError(_self, FailureType.BAD_REQUEST_EXCEPTION, (Exception) t);
 
                         if (decorated instanceof HystrixBadRequestException) {
@@ -633,14 +620,6 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                      */
                     return Observable.error(t);
                 } else {
-                    /**
-                     * All other error handling
-                     */
-                    try {
-                        e = executionHook.onRunError(_self, e);
-                    } catch (Exception hookException) {
-                        logger.warn("Error calling ExecutionHook.endRunFailure", hookException);
-                    }
                     /*
                      * Treat HystrixBadRequestException from ExecutionHook like a plain HystrixBadRequestException.
                      */
@@ -648,6 +627,10 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                         return Observable.error(e);
                     }
 
+
+                    /**
+                     * All other error handling
+                     */
                     logger.debug("Error executing HystrixCommand.run(). Proceeding to fallback logic ...", e);
 
                     // report failure
@@ -684,6 +667,39 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         });
 
         return run;
+    }
+
+    private Observable<R> getExecutionObservableWithLifecycle() {
+        final HystrixInvokable<R> _self = this;
+
+        return getExecutionObservable().map(new Func1<R, R>() {
+            @Override
+            public R call(R r) {
+                return executionHook.onRunSuccess(_self, r);
+            }
+        }).onErrorResumeNext(new Func1<Throwable, Observable<R>>() {
+            @Override
+            public Observable<R> call(Throwable t) {
+                try {
+                    Throwable wrappedThrowable = executionHook.onRunError(_self, (Exception) t);
+                    return Observable.error(wrappedThrowable);
+                } catch (Throwable ex) {
+                    logger.warn("Error calling ExecutionHook.onRunError", ex);
+                    return Observable.error(t);
+                }
+
+            }
+        }).doOnTerminate(new Action0() {
+            @Override
+            public void call() {
+                //If the command timed out, then the calling thread has already walked away so we need
+                //to handle these markers.  Otherwise, the calling thread will perform these for us.
+                if (isCommandTimedOut.get().equals(TimedOutStatus.TIMED_OUT)) {
+                    handleThreadEnd();
+
+                }
+            }
+        });
     }
 
     /**
