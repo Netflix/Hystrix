@@ -16,6 +16,7 @@
 package com.netflix.hystrix;
 
 import java.lang.ref.Reference;
+import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -307,11 +308,19 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
 
     @Override
     final protected Observable<R> getFallbackObservable() {
+        final HystrixCommand<R> _self = this;
+
         return Observable.create(new OnSubscribe<R>() {
 
             @Override
             public void call(Subscriber<? super R> s) {
                 try {
+                    try {
+                        _self.getClass().getDeclaredMethod("getFallback");
+                        System.out.println("Fallback *WAS* FOUND!");
+                    } catch (NoSuchMethodException nmse) {
+                        System.out.println("Fallback not found!");
+                    }
                     s.onNext(getFallback());
                     s.onCompleted();
                 } catch (Throwable e) {
