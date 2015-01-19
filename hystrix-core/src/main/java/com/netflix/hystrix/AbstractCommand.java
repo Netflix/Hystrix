@@ -404,7 +404,16 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                         metrics.markSemaphoreRejection();
                         logger.debug("HystrixCommand Execution Rejection by Semaphore."); // debug only since we're throwing the exception and someone higher will do something with it
                         // retrieve a fallback or throw an exception if no fallback available
-                        getFallbackOrThrowException(HystrixEventType.SEMAPHORE_REJECTED, FailureType.REJECTED_SEMAPHORE_EXECUTION, "could not acquire a semaphore for execution").unsafeSubscribe(observer);
+                        getFallbackOrThrowException(HystrixEventType.SEMAPHORE_REJECTED, FailureType.REJECTED_SEMAPHORE_EXECUTION, "could not acquire a semaphore for execution").
+                                map(new Func1<R, R>() {
+
+                                    @Override
+                                    public R call(R t1) {
+                                        // allow transforming the results via the executionHook if the fallback succeeds
+                                        return executionHook.onComplete(_this, t1);
+                                    }
+
+                                }).unsafeSubscribe(observer);
                     }
                 } else {
                     // record that we are returning a short-circuited fallback
