@@ -819,7 +819,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                         metrics.markShortCircuited();
                         // short-circuit and go directly to fallback (or throw an exception if no fallback implemented)
                         try {
-                            observer.onNext(getFallbackOrThrowException(HystrixEventType.SHORT_CIRCUITED, FailureType.SHORTCIRCUIT, "short-circuited"));
+                            observer.onNext(getFallbackOrThrowException(HystrixEventType.SHORT_CIRCUITED, FailureType.SHORTCIRCUIT, "short-circuited", new RuntimeException("Hystrix circuit short-circuited and is OPEN")));
                             observer.onCompleted();
                         } catch (Exception e) {
                             observer.onError(e);
@@ -1140,7 +1140,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
             metrics.markSemaphoreRejection();
             logger.debug("HystrixCommand Execution Rejection by Semaphore."); // debug only since we're throwing the exception and someone higher will do something with it
             // retrieve a fallback or throw an exception if no fallback available
-            observer.onNext(getFallbackOrThrowException(HystrixEventType.SEMAPHORE_REJECTED, FailureType.REJECTED_SEMAPHORE_EXECUTION, "could not acquire a semaphore for execution"));
+            observer.onNext(getFallbackOrThrowException(HystrixEventType.SEMAPHORE_REJECTED, FailureType.REJECTED_SEMAPHORE_EXECUTION, "could not acquire a semaphore for execution", new RuntimeException("could not acquire a semaphore for execution")));
             observer.onCompleted();
             // empty subscription since we executed synchronously
             return Subscriptions.empty();
@@ -1614,13 +1614,6 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
         } else {
             return executionSemaphoreOverride;
         }
-    }
-
-    /**
-     * @throws HystrixRuntimeException
-     */
-    private R getFallbackOrThrowException(HystrixEventType eventType, FailureType failureType, String message) {
-        return getFallbackOrThrowException(eventType, failureType, message, null);
     }
 
     /**
@@ -6328,7 +6321,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                         public void call(TestHystrixCommand<Boolean> command) {
                             assertEquals(1, command.builder.executionHook.startExecute.get());
                             assertNull(command.builder.executionHook.endExecuteSuccessResponse);
-                            assertNull(command.builder.executionHook.endExecuteFailureException); //by design, ex=null in this case
+                            assertEquals(RuntimeException.class, command.builder.executionHook.endExecuteFailureException.getClass());
                             assertEquals(FailureType.SHORTCIRCUIT, command.builder.executionHook.endExecuteFailureType);
                             assertEquals(0, command.builder.executionHook.startRun.get());
                             assertNull(command.builder.executionHook.runSuccessResponse);
@@ -6398,7 +6391,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                         public void call(TestHystrixCommand<Boolean> command) {
                             assertEquals(1, command.builder.executionHook.startExecute.get());
                             assertNull(command.builder.executionHook.endExecuteSuccessResponse);
-                            assertNull(command.builder.executionHook.endExecuteFailureException); //by design, ex=null in this case
+                            assertEquals(RuntimeException.class, command.builder.executionHook.endExecuteFailureException.getClass());
                             assertEquals(FailureType.SHORTCIRCUIT, command.builder.executionHook.endExecuteFailureType);
                             assertEquals(0, command.builder.executionHook.startRun.get());
                             assertNull(command.builder.executionHook.runSuccessResponse);
@@ -6653,7 +6646,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                         public void call(TestHystrixCommand<Boolean> command) {
                             assertEquals(1, command.builder.executionHook.startExecute.get());
                             assertNull(command.builder.executionHook.endExecuteSuccessResponse);
-                            assertNull(command.builder.executionHook.endExecuteFailureException); //by design, null=ex in this case
+                            assertEquals(RuntimeException.class, command.builder.executionHook.endExecuteFailureException.getClass());
                             assertEquals(FailureType.REJECTED_SEMAPHORE_EXECUTION, command.builder.executionHook.endExecuteFailureType);
                             assertEquals(0, command.builder.executionHook.startRun.get());
                             assertNull(command.builder.executionHook.runSuccessResponse);
@@ -6781,7 +6774,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                         public void call(TestHystrixCommand<Boolean> command) {
                             assertEquals(1, command.builder.executionHook.startExecute.get());
                             assertNull(command.builder.executionHook.endExecuteSuccessResponse);
-                            assertNull(command.builder.executionHook.endExecuteFailureException); //by design, ex=null in this case
+                            assertEquals(RuntimeException.class, command.builder.executionHook.endExecuteFailureException.getClass());
                             assertEquals(FailureType.REJECTED_SEMAPHORE_EXECUTION, command.builder.executionHook.endExecuteFailureType);
                             assertEquals(0, command.builder.executionHook.startRun.get());
                             assertNull(command.builder.executionHook.runSuccessResponse);
@@ -6817,7 +6810,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                         public void call(TestHystrixCommand<Boolean> command) {
                             assertEquals(1, command.builder.executionHook.startExecute.get());
                             assertNull(command.builder.executionHook.endExecuteSuccessResponse);
-                            assertNull(command.builder.executionHook.endExecuteFailureException); //by design, ex=null in this case
+                            assertEquals(RuntimeException.class, command.builder.executionHook.endExecuteFailureException.getClass());
                             assertEquals(FailureType.SHORTCIRCUIT, command.builder.executionHook.endExecuteFailureType);
                             assertEquals(0, command.builder.executionHook.startRun.get());
                             assertNull(command.builder.executionHook.runSuccessResponse);
@@ -6889,7 +6882,7 @@ public abstract class HystrixCommand<R> implements HystrixExecutable<R> {
                         public void call(TestHystrixCommand<Boolean> command) {
                             assertEquals(1, command.builder.executionHook.startExecute.get());
                             assertNull(command.builder.executionHook.endExecuteSuccessResponse);
-                            assertNull(command.builder.executionHook.endExecuteFailureException); //by design, ex=null in this case
+                            assertEquals(RuntimeException.class, command.builder.executionHook.endExecuteFailureException.getClass());
                             assertEquals(FailureType.SHORTCIRCUIT, command.builder.executionHook.endExecuteFailureType);
                             assertEquals(0, command.builder.executionHook.startRun.get());
                             assertNull(command.builder.executionHook.runSuccessResponse);
