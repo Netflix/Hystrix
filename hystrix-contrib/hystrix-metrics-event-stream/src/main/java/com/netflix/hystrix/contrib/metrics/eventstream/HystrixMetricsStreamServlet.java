@@ -63,7 +63,21 @@ public class HystrixMetricsStreamServlet extends HttpServlet {
     private static AtomicInteger concurrentConnections = new AtomicInteger(0);
     private static DynamicIntProperty maxConcurrentConnections = DynamicPropertyFactory.getInstance().getIntProperty("hystrix.stream.maxConcurrentConnections", 5);
 
-    private volatile boolean isDestroyed = false;
+    private static volatile boolean isDestroyed = false;
+    
+    /**
+     * WebSphere won't shutdown a servlet until after a 60 second timeout if there is an instance of the servlet executing 
+     * a request.  Add this method to enable a hook to notify Hystrix to shutdown.  You must invoke this method at
+     * shutdown, perhaps from some other serverlet's destroy() method.
+     */
+    public static void shutdown() {
+    	isDestroyed = true;
+    }
+    
+    @Override 
+    public void init() throws ServletException {
+    	isDestroyed = false;
+    }
     
     /**
      * Handle incoming GETs
@@ -146,6 +160,11 @@ public class HystrixMetricsStreamServlet extends HttpServlet {
                         // after outputting all the messages we will flush the stream
                         response.flushBuffer();
                         
+                        // explicitly check for client disconnect - PrintWriter does not throw exceptions
+                        if (response.getWriter().checkError()) {
+                        	throw new IOException("io error");
+                        }
+
                         // now wait the 'delay' time
                         Thread.sleep(delay);
                     }
