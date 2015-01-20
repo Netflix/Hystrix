@@ -316,6 +316,10 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         return subject;
     }
 
+    protected abstract Observable<R> getExecutionObservable();
+
+    protected abstract Observable<R> getFallbackObservable();
+
     /**
      * Used for asynchronous execution of command with a callback by subscribing to the {@link Observable}.
      * <p>
@@ -339,15 +343,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
      *             if invoked more than once
      */
     final public Observable<R> toObservable() {
-        return toObservable(true);
-    }
-
-    protected abstract Observable<R> getExecutionObservable();
-
-    protected abstract Observable<R> getFallbackObservable();
-
-    protected ObservableCommand<R> toObservable(final boolean performAsyncTimeout) {
-        /* this is a stateful object so can only be used once */
+         /* this is a stateful object so can only be used once */
         if (!started.compareAndSet(false, true)) {
             throw new IllegalStateException("This instance can only be executed once. Please instantiate a new instance.");
         }
@@ -384,8 +380,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                             /* used to track userThreadExecutionTime */
                             invocationStartTime = System.currentTimeMillis();
 
-
-                            getRunObservableDecoratedForMetricsAndErrorHandling(performAsyncTimeout)
+                            getRunObservableDecoratedForMetricsAndErrorHandling()
                                     .doOnTerminate(new Action0() {
 
                                         @Override
@@ -497,7 +492,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
      * 
      * @return R
      */
-    private Observable<R> getRunObservableDecoratedForMetricsAndErrorHandling(final boolean performAsyncTimeout) {
+    private Observable<R> getRunObservableDecoratedForMetricsAndErrorHandling() {
         final AbstractCommand<R> _self = this;
         // allow tracking how many concurrent threads are executing
         metrics.incrementConcurrentExecutionCount();
@@ -556,7 +551,8 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                 setRequestContextIfNeeded(currentRequestContext);
             }
 
-        }).lift(new HystrixObservableTimeoutOperator<>(_self, performAsyncTimeout)).map(new Func1<R, R>() {
+
+        }).lift(new HystrixObservableTimeoutOperator<>(_self)).map(new Func1<R, R>() {
 
             boolean once = false;
 
@@ -894,11 +890,9 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
     private static class HystrixObservableTimeoutOperator<R> implements Operator<R, R> {
 
         final AbstractCommand<R> originalCommand;
-        final boolean isNonBlocking;
 
-        public HystrixObservableTimeoutOperator(final AbstractCommand<R> originalCommand, final boolean isNonBlocking) {
+        public HystrixObservableTimeoutOperator(final AbstractCommand<R> originalCommand) {
             this.originalCommand = originalCommand;
-            this.isNonBlocking = isNonBlocking;
         }
 
         public static class HystrixTimeoutException extends Exception {
@@ -953,23 +947,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                 }
             };
 
-            Reference<TimerListener> _tl = null;
-            if (isNonBlocking) {
-                /*
-                 * Scheduling a separate timer to do timeouts is more expensive
-                 * so we'll only do it if we're being used in a non-blocking manner.
-                 */
-                _tl = HystrixTimer.getInstance().addTimerListener(listener);
-            } else {
-                /*
-                 * Otherwise we just set the hook that queue().get() can trigger if a timeout occurs.
-                 * 
-                 * This allows the blocking and non-blocking approaches to be coded basically the same way
-                 * though it is admittedly awkward if we were just blocking (the use of Reference annoys me for example)
-                 */
-                _tl = new SoftReference<>(listener);
-            }
-            final Reference<TimerListener> tl = _tl;
+            final Reference<TimerListener> tl = HystrixTimer.getInstance().addTimerListener(listener);
 
             // set externally so execute/queue can see this
             originalCommand.timeoutTimer.set(tl);
