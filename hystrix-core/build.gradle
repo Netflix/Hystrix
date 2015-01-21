@@ -4,7 +4,7 @@ apply plugin: 'idea'
 
 dependencies {
     compile 'com.netflix.archaius:archaius-core:0.4.1'
-    compile 'io.reactivex:rxjava:1.0.2'
+    compile 'io.reactivex:rxjava:1.0.4'
     compile 'org.slf4j:slf4j-api:1.7.0'
     compile 'com.google.code.findbugs:jsr305:2.0.0'
     provided 'junit:junit-dep:4.10'
@@ -14,7 +14,7 @@ javadoc {
     // the exclude isn't working, nor is there a subPackages options as docs suggest there should be
     // we do not want the com.netflix.hystrix.util package include
     exclude '**/util/**'
-			
+
     options {
         doclet = "org.benjchristensen.doclet.DocletExclude"
         docletpath = [rootProject.file('./gradle/doclet-exclude.jar')]
