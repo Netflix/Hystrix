@@ -1,5 +1,16 @@
 # Hystrix Releases #
 
+### Version 1.3.20 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.3.20%22)) ###
+* [Pull 533] (https://github.com/Netflix/Hystrix/pull/533) Upgrade to RxJava 1.0.4
+* [Pull 528] (https://github.com/Netflix/Hystrix/pull/528) Pass RuntimeException to onError hook in semaphore-rejection and short-circuit cases, instead of null
+* [Pull 520] (https://github.com/Netflix/Hystrix/pull/520) More unit tests for hook ordering
+* [Commit 61b77c] (https://github.com/Netflix/Hystrix/commit/61b77c305bda6dbd4dc8c86445b4a6670f981845) Fix flow where ExecutionHook.onComplete was called twice
+* [Commit a5e52a] (https://github.com/Netflix/Hystrix/commit/a5e52a6d29cd911c1e14ec107a875a9343472db5) Add call to ExecutionHook.onError in HystrixBadRequestException flow
+* [Commit cec25e] (https://github.com/Netflix/Hystrix/commit/cec25ed7c6f10c4c59189b443bda844fa39043d6) Fix hook ordering assertions
+* [Pull 508] (https://github.com/Netflix/Hystrix/pull/508) Backport of [Pull 327] (https://github.com/Netflix/Hystrix/pull/327) from master: Add hook assertions to unit tests
+* [Pull 507] (https://github.com/Netflix/Hystrix/pull/507) Fix hystrix-clj unit tests
+* [Commit 62be49] (https://github.com/Netflix/Hystrix/commit/62be49465ae418509814fd195081ef7611eb6015) RxJava 1.0.2
+
 ### Version 1.3.19 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.3.19%22)) ###
 
 * [Pull 348](https://github.com/Netflix/Hystrix/pull/348) Javanica: Allow for @HystrixCommand to be used on parameterized return type
