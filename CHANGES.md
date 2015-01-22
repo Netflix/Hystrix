@@ -1,5 +1,56 @@
 # Hystrix Releases #
 
+### Version 1.4.0 Release Candidate 6 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.0-RC6%22)) ###
+
+_NOTE: This code is believed to be production worthy but is still a "Release Candidate" until [these possible functional or design issues are resolved](https://github.com/Netflix/Hystrix/issues?q=is%3Aopen+is%3Aissue+milestone%3A1.4.0-RC7)._
+* [Pull 534](https://github.com/Netflix/Hystrix/pull/534) Bump RxJava to 1.0.4
+* [Pull 532](https://github.com/Netflix/Hystrix/pull/532) Hystrix-Clojure: Fix typo
+* [Pull 531](https://github.com/Netflix/Hystrix/pull/531) Move onThreadStart execution hook after check that wrapping thread timed out 
+* [Pull 530](https://github.com/Netflix/Hystrix/pull/530) Add shutdown hook to metrics servlet for WebSphere
+* [Pull 527](https://github.com/Netflix/Hystrix/pull/527) Creating a synthetic exception in the semaphore execution and short-circuited case
+* [Pull 526](https://github.com/Netflix/Hystrix/pull/526) Move onRunSuccess/onRunError and thread-pool book-keeping to Hystrix thread
+* [Pull 524](https://github.com/Netflix/Hystrix/pull/524) Change calls from getExecutedCommands() to getAllExecutedCommands()
+* [Pull 516](https://github.com/Netflix/Hystrix/pull/516) Updated HystrixServoMetricsPublisher initalization of singleton
+* [Pull 489](https://github.com/Netflix/Hystrix/pull/489) Javanica: Request Caching
+* [Pull 512](https://github.com/Netflix/Hystrix/pull/512) Add execution hook Javadoc
+* [Pull 511](https://github.com/Netflix/Hystrix/pull/511) Fix missing onComplete hook call when command short-circuits and missing onRunSuccess hook call in thread-timeout case
+* [Pull 466](https://github.com/Netflix/Hystrix/pull/466) Add unit tests to HystrixCommand and HystrixObservableCommand
+* [Pull 465](https://github.com/Netflix/Hystrix/pull/465) Handle error in construction of HystrixMetricsPoller
+* [Pull 457](https://github.com/Netflix/Hystrix/pull/457) Fixing resettability of HystrixMetricsPublisherFactory
+* [Pull 451](https://github.com/Netflix/Hystrix/pull/451) Removed ExceptionThreadingUtility
+* [Pull 366](https://github.com/Netflix/Hystrix/pull/366) Added support to get command start time in Nanos
+* [Pull 456](https://github.com/Netflix/Hystrix/pull/456) Allow hooks to generate HystrixBadRequestExceptions that get handled appropriately
+* [Pull 454](https://github.com/Netflix/Hystrix/pull/454) Add tests around HystrixRequestLog in HystrixObservableCommand
+* [Pull 453](https://github.com/Netflix/Hystrix/pull/453) Resettable command and thread pool defaults
+* [Pull 452](https://github.com/Netflix/Hystrix/pull/452) Make HystrixPlugins resettable
+* [Pull 450](https://github.com/Netflix/Hystrix/pull/450) Add fallback tests to HystrixObservableCommand
+* [Pull 449](https://github.com/Netflix/Hystrix/pull/449) Move thread completion bookkeeping to end of chain
+* [Pull 447](https://github.com/Netflix/Hystrix/pull/447) Synchronous queue fix
+* [Pull 376](https://github.com/Netflix/Hystrix/pull/376) Javanica README cleanup
+* [Pull 378](https://github.com/Netflix/Hystrix/pull/378) Exection hook call sequences (based on work submitted in [Pull 327](https://github.com/Netflix/Hystrix/pull/327))
+* [Pull 374](https://github.com/Netflix/Hystrix/pull/374) RequestBatch logging
+* [Pull 371](https://github.com/Netflix/Hystrix/pull/371) Defer creation of IllegalStateException in collapser flow (based on work submitted in [Pull 264](https://github.com/Netflix/Hystrix/pull/264))
+* [Pull 369](https://github.com/Netflix/Hystrix/pull/369) Added basic auth to Hystrix Dashboard (based on work submitted in [Pull 336](https://github.com/Netflix/Hystrix/pull/336))
+* [Pull 367](https://github.com/Netflix/Hystrix/pull/367) Added thread pool metrics back to execution flow (based on test submitted in [Pull 339](https://github.com/Netflix/Hystrix/pull/339))
+* [Pull 365](https://github.com/Netflix/Hystrix/pull/365) Fix Javadoc for HystrixCommand.Setter
+* [Pull 364](https://github.com/Netflix/Hystrix/pull/364) Upgrade servo to 0.7.5
+* [Pull 362](https://github.com/Netflix/Hystrix/pull/362) Fixed hystrix-rxnetty-metrics-stream unit tests
+* [Pull 359](https://github.com/Netflix/Hystrix/pull/359) Fixed Javanica unit tests
+* [Pull 361](https://github.com/Netflix/Hystrix/pull/361) Race condition when creating HystrixThreadPool (initially submitted as [Pull 270](https://github.com/Netflix/Hystrix/pull/270))
+* [Pull 358](https://github.com/Netflix/Hystrix/pull/358) Fixed Clojure unit tests that failed with RxJava 1.0
+* [Commit 2edcd5](https://github.com/Netflix/Hystrix/commit/2edcd578194849a1c2f5acd73a2e6f10ebfdd112) Upgrade to core-metrics 3.0.2
+* [Pull 310](https://github.com/Netflix/Hystrix/pull/310) Osgi-ify hystrix-core, hystrix-examples
+* [Pull 340](https://github.com/Netflix/Hystrix/pull/340) Race condition when creating HystrixThreadPool
+* [Pull 343](https://github.com/Netflix/Hystrix/pull/343) Added 3 new constructors for common command setup
+* [Pull 347](https://github.com/Netflix/Hystrix/pull/347) Javanica: Allow for @HystrixCommand to be used on parameterized return type
+* [Pull 353](https://github.com/Netflix/Hystrix/pull/353) Fixing a hystrix-examples compilation failure
+* [Pull 338](https://github.com/Netflix/Hystrix/pull/338) API Changes after design review of [Issue 321](https://github.com/Netflix/Hystrix/issues/321)
+* [Pull 344](https://github.com/Netflix/Hystrix/pull/344) Upgrade to Gradle 1.12 
+* [Pull 334](https://github.com/Netflix/Hystrix/pull/334) Javanica: Hystrix Error Propagation 
+* [Pull 326](https://github.com/Netflix/Hystrix/pull/326) Javanica: Added support for setting threadPoolProperties through @HystrixCommand annotation
+* [Pull 318](https://github.com/Netflix/Hystrix/pull/318) HystrixAsyncCommand and HystrixObservableCommand
+* [Pull 316](https://github.com/Netflix/Hystrix/pull/316) Add support for execution.isolation.semaphore.timeoutInMilliseconds
+
 ### Version 1.3.20 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.3.20%22)) ###
 * [Pull 533] (https://github.com/Netflix/Hystrix/pull/533) Upgrade to RxJava 1.0.4
 * [Pull 528] (https://github.com/Netflix/Hystrix/pull/528) Pass RuntimeException to onError hook in semaphore-rejection and short-circuit cases, instead of null
