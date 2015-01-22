@@ -1,7 +1,3 @@
-apply plugin: 'java'
-apply plugin: 'eclipse'
-apply plugin: 'idea'
-
 dependencies {
     compile 'org.javassist:javassist:3.18.1-GA'
 
@@ -16,21 +12,5 @@ dependencies {
                 "Boot-Class-Path": "hystrix-network-auditor-agent-" + version + ".jar",
                 "Premain-Class": "com.netflix.hystrix.contrib.networkauditor.HystrixNetworkAuditorAgent")
         }
-    }
-}
-
-eclipse {
-    classpath {
-        // include 'provided' dependencies on the classpath
-        plusConfigurations += configurations.provided
-        downloadSources = true
-        downloadJavadoc = true
-    }
-}
-
-idea {
-    module {
-        // include 'provided' dependencies on the classpath
-        scopes.COMPILE.plus += configurations.provided
     }
 }
