@@ -16,6 +16,10 @@
 package com.netflix.hystrix.strategy.metrics;
 
 import com.netflix.hystrix.HystrixCircuitBreaker;
+import com.netflix.hystrix.HystrixCollapser;
+import com.netflix.hystrix.HystrixCollapserKey;
+import com.netflix.hystrix.HystrixCollapserMetrics;
+import com.netflix.hystrix.HystrixCollapserProperties;
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandGroupKey;
 import com.netflix.hystrix.HystrixCommandKey;
@@ -85,6 +89,27 @@ public abstract class HystrixMetricsPublisher {
      */
     public HystrixMetricsPublisherThreadPool getMetricsPublisherForThreadPool(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolMetrics metrics, HystrixThreadPoolProperties properties) {
         return new HystrixMetricsPublisherThreadPoolDefault(threadPoolKey, metrics, properties);
+    }
+
+    /**
+     * Construct an implementation of {@link HystrixMetricsPublisherCollapser} for {@link HystrixCollapser} instances having key {@link HystrixCollapserKey}.
+     * <p>
+     * This will be invoked once per {@link HystrixCollapserKey} instance.
+     * <p>
+     * <b>Default Implementation</b>
+     * <p>
+     * Return instance of {@link HystrixMetricsPublisherCollapserDefault}
+     *
+     * @param collapserKey
+     *            {@link HystrixCollapserKey} representing the name or type of {@link HystrixCollapser}
+     * @param metrics
+     *            {@link HystrixCollapserMetrics} instance tracking metrics for the {@link HystrixCollapser} instance having the key as defined by {@link HystrixCollapserKey}
+     * @param properties
+     *            {@link HystrixCollapserProperties} instance for the {@link HystrixCollapser} instance having the key as defined by {@link HystrixCollapserKey}
+     * @return instance of {@link HystrixMetricsPublisherCollapser} that will have its <code>initialize</code> method invoked once.
+     */
+    public HystrixMetricsPublisherCollapser getMetricsPublisherForCollapser(HystrixCollapserKey collapserKey, HystrixCollapserMetrics metrics, HystrixCollapserProperties properties) {
+        return new HystrixMetricsPublisherCollapserDefault(collapserKey, metrics, properties);
     }
 
 }
