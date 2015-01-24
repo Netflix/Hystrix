@@ -2,6 +2,8 @@ package com.netflix.hystrix.collapser;
 
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.netflix.hystrix.HystrixCollapserMetrics;
+import com.netflix.hystrix.HystrixCommandMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,13 +45,17 @@ public class RequestCollapserFactory<BatchReturnType, ResponseType, RequestArgum
     }
     
     public RequestCollapserFactory(HystrixCollapserKey collapserKey, Scope scope, CollapserTimer timer, HystrixCollapserProperties.Setter propertiesBuilder) {
-        /* strategy: ConcurrencyStrategy */
-        this.concurrencyStrategy = HystrixPlugins.getInstance().getConcurrencyStrategy();
+        this(collapserKey, scope, timer, HystrixPropertiesFactory.getCollapserProperties(collapserKey, propertiesBuilder));
+    }
 
+    public RequestCollapserFactory(HystrixCollapserKey collapserKey, Scope scope, CollapserTimer timer, HystrixCollapserProperties properties) {
+         /* strategy: ConcurrencyStrategy */
+        this.concurrencyStrategy = HystrixPlugins.getInstance().getConcurrencyStrategy();
         this.timer = timer;
         this.scope = scope;
         this.collapserKey = collapserKey;
-        this.properties = HystrixPropertiesFactory.getCollapserProperties(this.collapserKey, propertiesBuilder);
+        this.properties = properties;
+
     }
 
     public HystrixCollapserKey getCollapserKey() {
