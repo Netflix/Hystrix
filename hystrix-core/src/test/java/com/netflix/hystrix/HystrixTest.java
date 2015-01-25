@@ -16,7 +16,7 @@ public class HystrixTest {
         Hystrix.reset();
     }
 
-    @Test
+    /*@Test
     public void testNotInThread() {
         assertNull(Hystrix.getCurrentThreadExecutingCommand());
     }
@@ -187,7 +187,7 @@ public class HystrixTest {
         assertEquals(700L, (long) cmd2.getProperties().executionIsolationThreadTimeoutInMilliseconds().get());
         assertEquals(40L, (long) cmd2.threadPool.getExecutor().getCorePoolSize());
 
-    }
+	}*/
 
     private static class ResettableCommand extends HystrixCommand<Boolean> {
         ResettableCommand(int timeout, int poolCoreSize) {
