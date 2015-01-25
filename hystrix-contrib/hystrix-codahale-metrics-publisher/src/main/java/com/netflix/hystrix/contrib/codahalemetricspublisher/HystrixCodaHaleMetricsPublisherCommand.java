@@ -43,7 +43,7 @@ public class HystrixCodaHaleMetricsPublisherCommand implements HystrixMetricsPub
         this.circuitBreaker = circuitBreaker;
         this.properties = properties;
         this.metricRegistry = metricRegistry;
-        this.metricGroup = "HystrixCommand";
+        this.metricGroup = commandGroupKey.name();
         this.metricType = key.name();
     }
 
