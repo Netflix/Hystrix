@@ -177,8 +177,6 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
             }
 
         };
-
-
     }
 
     private HystrixCollapserProperties getProperties() {
