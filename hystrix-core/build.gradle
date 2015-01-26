@@ -1,7 +1,3 @@
-apply plugin: 'java'
-apply plugin: 'eclipse'
-apply plugin: 'idea'
-
 dependencies {
     compile 'com.netflix.archaius:archaius-core:0.4.1'
     compile 'io.reactivex:rxjava:1.0.4'
@@ -22,22 +18,4 @@ javadoc {
         windowTitle = "Hystrix Javadoc ${project.version}"
     }
     options.addStringOption('top').value = '<a href="https://github.com/Netflix/Hystrix"><img width="92" height="79" border="0" align="left" src="http://netflix.github.com/Hystrix/images/hystrix-logo-small.png"></a><h2 class="title" style="padding-top:40px">Hystrix: Latency and Fault Tolerance for Distributed Systems</h2>'
-}
-
-eclipse {
-  classpath {
-		// include 'provided' dependencies on the classpath
-		plusConfigurations += configurations.provided
-		downloadSources = true
-		downloadJavadoc = true
-  }
-}
-
-
-idea {
-	module {
-		// include 'provided' dependencies on the classpath
-		scopes.COMPILE.plus += configurations.provided
-
-	}
 }

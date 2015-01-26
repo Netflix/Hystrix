@@ -1,36 +1,16 @@
-apply plugin: 'java'
-apply plugin: 'eclipse'
-apply plugin: 'idea'
-
 dependencies {
     compile 'org.javassist:javassist:3.18.1-GA'
-
-    jar {
-        // make a fatjar otherwise it's painful getting the boot-class-path correct when deploying
-        from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
-        manifest {
-            attributes( 
-                "Agent-Class": "com.netflix.hystrix.contrib.networkauditor.HystrixNetworkAuditorAgent", 
-                "Can-Redefine-Classes": true, 
-                "Can-Retransform-Classes": true, 
-                "Boot-Class-Path": "hystrix-network-auditor-agent-" + version + ".jar",
-                "Premain-Class": "com.netflix.hystrix.contrib.networkauditor.HystrixNetworkAuditorAgent")
-        }
-    }
 }
 
-eclipse {
-    classpath {
-        // include 'provided' dependencies on the classpath
-        plusConfigurations += configurations.provided
-        downloadSources = true
-        downloadJavadoc = true
-    }
-}
-
-idea {
-    module {
-        // include 'provided' dependencies on the classpath
-        scopes.COMPILE.plus += configurations.provided
+jar {
+    // make a fatjar otherwise it's painful getting the boot-class-path correct when deploying
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    manifest {
+        attributes( 
+            "Agent-Class": "com.netflix.hystrix.contrib.networkauditor.HystrixNetworkAuditorAgent", 
+            "Can-Redefine-Classes": true, 
+            "Can-Retransform-Classes": true, 
+            "Boot-Class-Path": "hystrix-network-auditor-agent-" + version + ".jar",
+            "Premain-Class": "com.netflix.hystrix.contrib.networkauditor.HystrixNetworkAuditorAgent")
     }
 }

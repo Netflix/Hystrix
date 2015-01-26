@@ -1,8 +1,4 @@
-apply plugin: 'java'
-apply plugin: 'eclipse'
-apply plugin: 'idea'
-
-aspectjVersion = '1.7.4'
+def aspectjVersion = '1.7.4'
 
 dependencies {
   compile project(':hystrix-core')
@@ -20,20 +16,4 @@ dependencies {
   testCompile 'org.springframework:spring-test:4.0.0.RELEASE'
   testCompile 'cglib:cglib:3.1'
   testCompile 'org.mockito:mockito-all:1.9.5'
-}
-
-eclipse {
-  classpath {
-    // include 'provided' dependencies on the classpath
-    plusConfigurations += configurations.provided
-    downloadSources = true
-    downloadJavadoc = true
-  }
-}
-
-idea {
-  module {
-    // include 'provided' dependencies on the classpath
-    scopes.COMPILE.plus += configurations.provided
-  }
 }
