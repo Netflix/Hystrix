@@ -158,18 +158,18 @@ public class HystrixMetricsPoller {
         public void run() {
             try {
                 for (HystrixCommandMetrics commandMetrics : HystrixCommandMetrics.getInstances()) {
-                    StringWriter jsonString = getCommandJson(commandMetrics);
-                    listener.handleJsonMetric(jsonString.getBuffer().toString());
+                    String jsonString = getCommandJson(commandMetrics);
+                    listener.handleJsonMetric(jsonString);
                 }
 
                 for (HystrixThreadPoolMetrics threadPoolMetrics : HystrixThreadPoolMetrics.getInstances()) {
-                    StringWriter jsonString = getThreadPoolJson(threadPoolMetrics);
-                    listener.handleJsonMetric(jsonString.getBuffer().toString());
+                    String jsonString = getThreadPoolJson(threadPoolMetrics);
+                    listener.handleJsonMetric(jsonString);
                 }
 
                 for (HystrixCollapserMetrics collapserMetrics : HystrixCollapserMetrics.getInstances()) {
-                    StringWriter jsonString = getCollapserJson(collapserMetrics);
-                    listener.handleJsonMetric(jsonString.getBuffer().toString());
+                    String jsonString = getCollapserJson(collapserMetrics);
+                    listener.handleJsonMetric(jsonString);
                 }
 
             } catch (Exception e) {
@@ -180,7 +180,7 @@ public class HystrixMetricsPoller {
             }
         }
 
-        private StringWriter getCommandJson(HystrixCommandMetrics commandMetrics) throws IOException {
+        private String getCommandJson(HystrixCommandMetrics commandMetrics) throws IOException {
             HystrixCommandKey key = commandMetrics.getCommandKey();
             HystrixCircuitBreaker circuitBreaker = HystrixCircuitBreaker.Factory.getInstance(key);
 
@@ -286,10 +286,10 @@ public class HystrixMetricsPoller {
             json.writeEndObject();
             json.close();
 
-            return jsonString;
+            return jsonString.getBuffer().toString();
         }
 
-        private StringWriter getThreadPoolJson(HystrixThreadPoolMetrics threadPoolMetrics) throws IOException {
+        private String getThreadPoolJson(HystrixThreadPoolMetrics threadPoolMetrics) throws IOException {
             HystrixThreadPoolKey key = threadPoolMetrics.getThreadPoolKey();
             StringWriter jsonString = new StringWriter();
             JsonGenerator json = jsonFactory.createJsonGenerator(jsonString);
@@ -318,10 +318,10 @@ public class HystrixMetricsPoller {
             json.writeEndObject();
             json.close();
 
-            return jsonString;
+            return jsonString.getBuffer().toString();
         }
 
-        private StringWriter getCollapserJson(HystrixCollapserMetrics collapserMetrics) throws IOException {
+        private String getCollapserJson(HystrixCollapserMetrics collapserMetrics) throws IOException {
             HystrixCollapserKey key = collapserMetrics.getCollapserKey();
             StringWriter jsonString = new StringWriter();
             JsonGenerator json = jsonFactory.createJsonGenerator(jsonString);
@@ -371,7 +371,7 @@ public class HystrixMetricsPoller {
             json.writeEndObject();
             json.close();
 
-            return jsonString;
+            return jsonString.getBuffer().toString();
         }
     }
 

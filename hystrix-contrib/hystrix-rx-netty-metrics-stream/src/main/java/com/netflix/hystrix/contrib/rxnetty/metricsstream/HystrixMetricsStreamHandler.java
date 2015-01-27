@@ -1,5 +1,6 @@
 package com.netflix.hystrix.contrib.rxnetty.metricsstream;
 
+import com.netflix.hystrix.HystrixCollapserMetrics;
 import com.netflix.hystrix.HystrixCommandMetrics;
 import com.netflix.hystrix.HystrixThreadPoolMetrics;
 import io.netty.buffer.ByteBuf;
@@ -83,6 +84,9 @@ public class HystrixMetricsStreamHandler<I, O> implements RequestHandler<I, O> {
                             }
                             for (HystrixThreadPoolMetrics threadPoolMetrics : HystrixThreadPoolMetrics.getInstances()) {
                                 writeMetric(toJson(threadPoolMetrics), response);
+                            }
+                            for (HystrixCollapserMetrics collapserMetrics : HystrixCollapserMetrics.getInstances()) {
+                                writeMetric(toJson(collapserMetrics), response);
                             }
                         } catch (Exception e) {
                             subject.onError(e);
