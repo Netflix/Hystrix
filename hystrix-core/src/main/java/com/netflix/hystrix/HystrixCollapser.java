@@ -121,7 +121,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
 
     /* package for tests */ HystrixCollapser(HystrixCollapserKey collapserKey, Scope scope, CollapserTimer timer, HystrixCollapserProperties.Setter propertiesBuilder, HystrixCollapserMetrics metrics) {
         if (collapserKey == null || collapserKey.name().trim().equals("")) {
-            String defaultKeyName = getDefaultNameFromClass (getClass());
+            String defaultKeyName = getDefaultNameFromClass(getClass());
             collapserKey = HystrixCollapserKey.Factory.asKey(defaultKeyName);
         }
 
