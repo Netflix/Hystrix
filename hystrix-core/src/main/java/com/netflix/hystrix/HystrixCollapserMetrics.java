@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
  * Used by {@link HystrixCollapser} to record metrics.
  * {@link HystrixEventNotifier} not hooked up yet.  It may be in the future.
  */
-public class HystrixCollapserMetrics {
+public class HystrixCollapserMetrics extends HystrixMetrics {
 
     @SuppressWarnings("unused")
     private static final Logger logger = LoggerFactory.getLogger(HystrixCollapserMetrics.class);
@@ -83,14 +83,13 @@ public class HystrixCollapserMetrics {
     }
 
     private final HystrixCollapserKey key;
-    private final HystrixRollingNumber counter;
     private final HystrixRollingPercentile percentileBatchSize;
     private final HystrixRollingPercentile percentileShardSize;
 
     /* package */HystrixCollapserMetrics(HystrixCollapserKey key, HystrixCollapserProperties properties) {
+        super(new HystrixRollingNumber(properties.metricsRollingStatisticalWindowInMilliseconds(), properties.metricsRollingStatisticalWindowBuckets()));
         this.key = key;
 
-        this.counter = new HystrixRollingNumber(properties.metricsRollingStatisticalWindowInMilliseconds(), properties.metricsRollingStatisticalWindowBuckets());
         this.percentileBatchSize = new HystrixRollingPercentile(properties.metricsRollingPercentileWindowInMilliseconds(), properties.metricsRollingPercentileWindowBuckets(), properties.metricsRollingPercentileBucketSize(), properties.metricsRollingPercentileEnabled());
         this.percentileShardSize = new HystrixRollingPercentile(properties.metricsRollingPercentileWindowInMilliseconds(), properties.metricsRollingPercentileWindowBuckets(), properties.metricsRollingPercentileBucketSize(), properties.metricsRollingPercentileEnabled());
     }
@@ -102,14 +101,6 @@ public class HystrixCollapserMetrics {
      */
     public HystrixCollapserKey getCollapserKey() {
         return key;
-    }
-
-    public long getCumulativeCount(HystrixRollingNumberEvent event) {
-        return counter.getCumulativeSum(event);
-    }
-
-    public long getRollingCount(HystrixRollingNumberEvent event) {
-        return counter.getRollingSum(event);
     }
 
     /**
@@ -162,7 +153,4 @@ public class HystrixCollapserMetrics {
     public void markShards(int numShards) {
         percentileShardSize.addValue(numShards);
     }
-
-
-
 }

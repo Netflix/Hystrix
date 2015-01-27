@@ -30,7 +30,7 @@ import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 /**
  * Used by {@link HystrixThreadPool} to record metrics.
  */
-public class HystrixThreadPoolMetrics {
+public class HystrixThreadPoolMetrics extends HystrixMetrics {
 
     @SuppressWarnings("unused")
     private static final Logger logger = LoggerFactory.getLogger(HystrixThreadPoolMetrics.class);
@@ -99,15 +99,14 @@ public class HystrixThreadPoolMetrics {
     }
 
     private final HystrixThreadPoolKey threadPoolKey;
-    private final HystrixRollingNumber counter;
     private final ThreadPoolExecutor threadPool;
     private final HystrixThreadPoolProperties properties;
 
     private HystrixThreadPoolMetrics(HystrixThreadPoolKey threadPoolKey, ThreadPoolExecutor threadPool, HystrixThreadPoolProperties properties) {
+        super(new HystrixRollingNumber(properties.metricsRollingStatisticalWindowInMilliseconds(), properties.metricsRollingStatisticalWindowBuckets()));
         this.threadPoolKey = threadPoolKey;
         this.threadPool = threadPool;
         this.properties = properties;
-        this.counter = new HystrixRollingNumber(properties.metricsRollingStatisticalWindowInMilliseconds(), properties.metricsRollingStatisticalWindowBuckets());
     }
 
     /**
@@ -222,11 +221,11 @@ public class HystrixThreadPoolMetrics {
      * Rolling count of number of threads executed during rolling statistical window.
      * <p>
      * The rolling window is defined by {@link HystrixThreadPoolProperties#metricsRollingStatisticalWindowInMilliseconds()}.
-     * 
+     *
      * @return rolling count of threads executed
      */
     public long getRollingCountThreadsExecuted() {
-        return counter.getRollingSum(HystrixRollingNumberEvent.THREAD_EXECUTION);
+        return getRollingCount(HystrixRollingNumberEvent.THREAD_EXECUTION);
     }
 
     /**
@@ -235,7 +234,7 @@ public class HystrixThreadPoolMetrics {
      * @return cumulative count of threads executed
      */
     public long getCumulativeCountThreadsExecuted() {
-        return counter.getCumulativeSum(HystrixRollingNumberEvent.THREAD_EXECUTION);
+        return getCumulativeCount(HystrixRollingNumberEvent.THREAD_EXECUTION);
     }
 
     /**

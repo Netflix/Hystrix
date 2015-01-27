@@ -35,7 +35,7 @@ import com.netflix.hystrix.util.HystrixRollingPercentile;
 /**
  * Used by {@link HystrixCommand} to record metrics.
  */
-public class HystrixCommandMetrics {
+public class HystrixCommandMetrics extends HystrixMetrics {
 
     @SuppressWarnings("unused")
     private static final Logger logger = LoggerFactory.getLogger(HystrixCommandMetrics.class);
@@ -103,7 +103,6 @@ public class HystrixCommandMetrics {
     }
 
     private final HystrixCommandProperties properties;
-    private final HystrixRollingNumber counter;
     private final HystrixRollingPercentile percentileExecution;
     private final HystrixRollingPercentile percentileTotal;
     private final HystrixCommandKey key;
@@ -112,10 +111,10 @@ public class HystrixCommandMetrics {
     private final HystrixEventNotifier eventNotifier;
 
     /* package */HystrixCommandMetrics(HystrixCommandKey key, HystrixCommandGroupKey commandGroup, HystrixCommandProperties properties, HystrixEventNotifier eventNotifier) {
+        super(new HystrixRollingNumber(properties.metricsRollingStatisticalWindowInMilliseconds(), properties.metricsRollingStatisticalWindowBuckets()));
         this.key = key;
         this.group = commandGroup;
         this.properties = properties;
-        this.counter = new HystrixRollingNumber(properties.metricsRollingStatisticalWindowInMilliseconds(), properties.metricsRollingStatisticalWindowBuckets());
         this.percentileExecution = new HystrixRollingPercentile(properties.metricsRollingPercentileWindowInMilliseconds(), properties.metricsRollingPercentileWindowBuckets(), properties.metricsRollingPercentileBucketSize(), properties.metricsRollingPercentileEnabled());
         this.percentileTotal = new HystrixRollingPercentile(properties.metricsRollingPercentileWindowInMilliseconds(), properties.metricsRollingPercentileWindowBuckets(), properties.metricsRollingPercentileBucketSize(), properties.metricsRollingPercentileEnabled());
         this.eventNotifier = eventNotifier;
@@ -146,30 +145,6 @@ public class HystrixCommandMetrics {
      */
     public HystrixCommandProperties getProperties() {
         return properties;
-    }
-
-    /**
-     * Get the cumulative count since the start of the application for the given {@link HystrixRollingNumberEvent}.
-     * 
-     * @param event
-     *            {@link HystrixRollingNumberEvent} of the event to retrieve a sum for
-     * @return long cumulative count
-     */
-    public long getCumulativeCount(HystrixRollingNumberEvent event) {
-        return counter.getCumulativeSum(event);
-    }
-
-    /**
-     * Get the rolling count for the given {@link HystrixRollingNumberEvent}.
-     * <p>
-     * The rolling window is defined by {@link HystrixCommandProperties#metricsRollingStatisticalWindowInMilliseconds()}.
-     * 
-     * @param event
-     *            {@link HystrixRollingNumberEvent} of the event to retrieve a sum for
-     * @return long rolling count
-     */
-    public long getRollingCount(HystrixRollingNumberEvent event) {
-        return counter.getRollingSum(event);
     }
 
     /**

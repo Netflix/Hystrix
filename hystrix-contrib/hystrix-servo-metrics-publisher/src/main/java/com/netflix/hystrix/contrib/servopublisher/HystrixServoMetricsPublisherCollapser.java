@@ -22,6 +22,7 @@ import com.netflix.hystrix.HystrixCollapserKey;
 import com.netflix.hystrix.HystrixCollapserMetrics;
 import com.netflix.hystrix.HystrixCollapserProperties;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherCollapser;
+import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 import com.netflix.servo.DefaultMonitorRegistry;
 import com.netflix.servo.annotations.DataSourceLevel;
 import com.netflix.servo.monitor.BasicCompositeMonitor;
@@ -127,24 +128,14 @@ public class HystrixServoMetricsPublisherCollapser extends HystrixServoMetricsPu
             }
         });
 
-        monitors.add(new CounterMetric(MonitorConfig.builder("countRequestsBatched").build()) {
-            @Override
-            public Number getValue() {
-                return metrics.getCumulativeCountRequestsBatched();
-            }
-        });
+        monitors.add(getCumulativeCountForEvent("countRequestsBatched", metrics, HystrixRollingNumberEvent.COLLAPSER_REQUEST_BATCHED));
+        monitors.add(getCumulativeCountForEvent("countBatches", metrics, HystrixRollingNumberEvent.COLLAPSER_BATCH));
+        monitors.add(getCumulativeCountForEvent("countResponsesFromCache", metrics, HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
-        monitors.add(new CounterMetric(MonitorConfig.builder("countBatches").build()) {
+        monitors.add(new GaugeMetric(MonitorConfig.builder("batchSize_mean").build()) {
             @Override
             public Number getValue() {
-                return metrics.getCumulativeCountBatches();
-            }
-        });
-
-        monitors.add(new CounterMetric(MonitorConfig.builder("countResponsesFromCache").build()) {
-            @Override
-            public Number getValue() {
-                return metrics.getCumulativeCountResponsesFromCache();
+                return metrics.getBatchSizeMean();
             }
         });
 
@@ -194,6 +185,13 @@ public class HystrixServoMetricsPublisherCollapser extends HystrixServoMetricsPu
             @Override
             public Number getValue() {
                 return metrics.getBatchSizePercentile(100);
+            }
+        });
+
+        monitors.add(new GaugeMetric(MonitorConfig.builder("shardSize_mean").build()) {
+            @Override
+            public Number getValue() {
+                return metrics.getShardSizeMean();
             }
         });
 
@@ -250,6 +248,35 @@ public class HystrixServoMetricsPublisherCollapser extends HystrixServoMetricsPu
             @Override
             public Number getValue() {
                 return metrics.getShardSizePercentile(100);
+            }
+        });
+
+        // properties (so the values can be inspected and monitored)
+        monitors.add(new InformationalMetric<Number>(MonitorConfig.builder("propertyValue_rollingStatisticalWindowInMilliseconds").build()) {
+            @Override
+            public Number getValue() {
+                return properties.metricsRollingStatisticalWindowInMilliseconds().get();
+            }
+        });
+
+        monitors.add(new InformationalMetric<Boolean>(MonitorConfig.builder("propertyValue_requestCacheEnabled").build()) {
+            @Override
+            public Boolean getValue() {
+                return properties.requestCacheEnabled().get();
+            }
+        });
+
+        monitors.add(new InformationalMetric<Number>(MonitorConfig.builder("propertyValue_maxRequestsInBatch").build()) {
+            @Override
+            public Number getValue() {
+                return properties.maxRequestsInBatch().get();
+            }
+        });
+
+        monitors.add(new InformationalMetric<Number>(MonitorConfig.builder("propertyValue_timerDelayInMilliseconds").build()) {
+            @Override
+            public Number getValue() {
+                return properties.timerDelayInMilliseconds().get();
             }
         });
 

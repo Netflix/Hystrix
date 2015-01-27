@@ -153,7 +153,6 @@ public class HystrixCodaHaleMetricsPublisherCollapser implements HystrixMetricsP
             }
         });
 
-
         // properties (so the values can be inspected and monitored)
         metricRegistry.register(createMetricName("propertyValue_rollingStatisticalWindowInMilliseconds"), new Gauge<Number>() {
             @Override

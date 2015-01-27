@@ -16,6 +16,7 @@
 package com.netflix.hystrix.contrib.servopublisher;
 
 import com.netflix.hystrix.HystrixCommandMetrics;
+import com.netflix.hystrix.HystrixMetrics;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 import com.netflix.servo.annotations.DataSourceLevel;
 import com.netflix.servo.annotations.DataSourceType;
@@ -87,7 +88,7 @@ import com.netflix.servo.tag.Tag;
         public abstract Number getValue();
     }
 
-    protected Monitor<?> getCumulativeCountForEvent(String name, final HystrixCommandMetrics metrics, final HystrixRollingNumberEvent event) {
+    protected Monitor<?> getCumulativeCountForEvent(String name, final HystrixMetrics metrics, final HystrixRollingNumberEvent event) {
         return new CounterMetric(MonitorConfig.builder(name).withTag(getServoTypeTag()).withTag(getServoInstanceTag()).build()) {
             @Override
             public Long getValue() {
@@ -97,7 +98,7 @@ import com.netflix.servo.tag.Tag;
         };
     }
 
-    protected Monitor<?> getRollingCountForEvent(String name, final HystrixCommandMetrics metrics, final HystrixRollingNumberEvent event) {
+    protected Monitor<?> getRollingCountForEvent(String name, final HystrixMetrics metrics, final HystrixRollingNumberEvent event) {
         return new GaugeMetric(MonitorConfig.builder(name).withTag(DataSourceLevel.DEBUG).withTag(getServoTypeTag()).withTag(getServoInstanceTag()).build()) {
             @Override
             public Number getValue() {
