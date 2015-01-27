@@ -1,8 +1,6 @@
-apply plugin: 'java'
-apply plugin: 'eclipse'
-apply plugin: 'idea'
-
-aspectjVersion = '1.7.4'
+ext {
+    aspectjVersion = '1.7.4'
+}
 
 dependencies {
     compile project(':hystrix-core')
@@ -23,20 +21,4 @@ dependencies {
     testCompile 'org.mockito:mockito-all:1.9.5'
     testCompile 'log4j:log4j:1.2.17'
     testCompile 'org.slf4j:slf4j-log4j12:1.7.7'
-}
-
-eclipse {
-  classpath {
-    // include 'provided' dependencies on the classpath
-    plusConfigurations += configurations.provided
-    downloadSources = true
-    downloadJavadoc = true
-  }
-}
-
-idea {
-  module {
-    // include 'provided' dependencies on the classpath
-    scopes.COMPILE.plus += configurations.provided
-  }
 }

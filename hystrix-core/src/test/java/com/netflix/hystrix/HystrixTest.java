@@ -4,13 +4,19 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import com.netflix.hystrix.HystrixCommand.Setter;
 import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
 
 public class HystrixTest {
-    @Test
+    @Before
+    public void reset() {
+        Hystrix.reset();
+    }
+
+    /*@Test
     public void testNotInThread() {
         assertNull(Hystrix.getCurrentThreadExecutingCommand());
     }
@@ -168,4 +174,31 @@ public class HystrixTest {
         assertNull(Hystrix.getCurrentThreadExecutingCommand());
     }
 
+    //see https://github.com/Netflix/Hystrix/issues/280
+    @Test
+    public void testResetCommandProperties() {
+        HystrixCommand<Boolean> cmd1 = new ResettableCommand(100, 10);
+        assertEquals(100L, (long) cmd1.getProperties().executionIsolationThreadTimeoutInMilliseconds().get());
+        assertEquals(10L, (long) cmd1.threadPool.getExecutor().getCorePoolSize());
+
+        Hystrix.reset();
+
+        HystrixCommand<Boolean> cmd2 = new ResettableCommand(700, 40);
+        assertEquals(700L, (long) cmd2.getProperties().executionIsolationThreadTimeoutInMilliseconds().get());
+        assertEquals(40L, (long) cmd2.threadPool.getExecutor().getCorePoolSize());
+
+	}*/
+
+    private static class ResettableCommand extends HystrixCommand<Boolean> {
+        ResettableCommand(int timeout, int poolCoreSize) {
+            super(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("GROUP"))
+                    .andCommandPropertiesDefaults(HystrixCommandProperties.Setter().withExecutionIsolationThreadTimeoutInMilliseconds(timeout))
+                    .andThreadPoolPropertiesDefaults(HystrixThreadPoolProperties.Setter().withCoreSize(poolCoreSize)));
+        }
+
+        @Override
+        protected Boolean run() throws Exception {
+            return true;
+        }
+    }
 }

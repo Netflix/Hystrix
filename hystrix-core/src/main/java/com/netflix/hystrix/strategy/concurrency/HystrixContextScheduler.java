@@ -180,7 +180,6 @@ public class HystrixContextScheduler extends Scheduler {
 
         @Override
         public Subscription schedule(Action0 action, long delayTime, TimeUnit unit) {
-            System.out.println("delayed scheduling");
             throw new IllegalStateException("Hystrix does not support delayed scheduling");
         }
 

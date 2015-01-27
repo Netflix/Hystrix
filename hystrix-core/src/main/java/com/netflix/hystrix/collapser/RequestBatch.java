@@ -121,7 +121,7 @@ public class RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> {
                                 } else {
                                     ee = new RuntimeException("Throwable caught while executing batch and mapping responses.", e);
                                 }
-                                logger.error("Exception mapping responses to requests.", e);
+                                logger.debug("Exception mapping responses to requests.", e);
                                 // if a failure occurs we want to pass that exception to all of the Futures that we've returned
                                 for (CollapsedRequest<ResponseType, RequestArgumentType> request : requests) {
                                     try {
@@ -143,10 +143,10 @@ public class RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> {
                             @Override
                             public void call() {
                                 // check that all requests had setResponse or setException invoked in case 'mapResponseToRequests' was implemented poorly
-                                IllegalStateException ie = new IllegalStateException("No response set by " + commandCollapser.getCollapserKey().name() + " 'mapResponseToRequests' implementation.");
+                                Exception e = null;
                                 for (CollapsedRequest<ResponseType, RequestArgumentType> request : shardRequests) {
                                     try {
-                                        ((CollapsedRequestObservableFunction<ResponseType, RequestArgumentType>) request).setExceptionIfResponseNotReceived(ie);
+                                       e = ((CollapsedRequestObservableFunction<ResponseType, RequestArgumentType>) request).setExceptionIfResponseNotReceived(e,"No response set by " + commandCollapser.getCollapserKey().name() + " 'mapResponseToRequests' implementation.");
                                     } catch (IllegalStateException e2) {
                                         logger.debug("Partial success of 'mapResponseToRequests' resulted in IllegalStateException while setting 'No response set' Exception. Continuing ... ", e2);
                                     }

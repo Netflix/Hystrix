@@ -2,10 +2,12 @@ package com.netflix.hystrix.contrib.javanica;
 
 
 import com.google.common.base.Function;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixCommandMetrics;
+import com.netflix.hystrix.HystrixInvokableInfo;
 import com.netflix.hystrix.HystrixRequestLog;
 
 import javax.annotation.Nullable;
@@ -20,9 +22,16 @@ public class CommonUtils {
         return HystrixCommandMetrics.getInstance(HystrixCommandKey.Factory.asKey(commandKey));
     }
 
+
+    public static HystrixInvokableInfo<?> getLastExecutedCommand() {
+        Collection<HystrixInvokableInfo<?>> executedCommands =
+                HystrixRequestLog.getCurrentRequest().getAllExecutedCommands();
+        return Iterables.getLast(executedCommands);
+    }
+
     public static void assertExecutedCommands(String... commands) {
-        Collection<HystrixCommand<?>> executedCommands =
-                HystrixRequestLog.getCurrentRequest().getExecutedCommands();
+        Collection<HystrixInvokableInfo<?>> executedCommands =
+                HystrixRequestLog.getCurrentRequest().getAllExecutedCommands();
 
         List<String> executedCommandsKeys = getExecutedCommandsKeys(Lists.newArrayList(executedCommands));
 
@@ -32,27 +41,27 @@ public class CommonUtils {
     }
 
     public static List<String> getExecutedCommandsKeys() {
-        Collection<HystrixCommand<?>> executedCommands =
-                HystrixRequestLog.getCurrentRequest().getExecutedCommands();
+        Collection<HystrixInvokableInfo<?>> executedCommands =
+                HystrixRequestLog.getCurrentRequest().getAllExecutedCommands();
 
         return getExecutedCommandsKeys(Lists.newArrayList(executedCommands));
     }
 
-    public static List<String> getExecutedCommandsKeys(List<HystrixCommand<?>> executedCommands) {
-        return Lists.transform(executedCommands, new Function<HystrixCommand<?>, String>() {
+    public static List<String> getExecutedCommandsKeys(List<HystrixInvokableInfo<?>> executedCommands) {
+        return Lists.transform(executedCommands, new Function<HystrixInvokableInfo<?>, String>() {
             @Nullable
             @Override
-            public String apply(@Nullable HystrixCommand<?> input) {
+            public String apply(@Nullable HystrixInvokableInfo<?> input) {
                 return input.getCommandKey().name();
             }
         });
     }
 
-    public static HystrixCommand getHystrixCommandByKey(String key) {
-        HystrixCommand hystrixCommand = null;
-        Collection<HystrixCommand<?>> executedCommands =
-                HystrixRequestLog.getCurrentRequest().getExecutedCommands();
-        for (HystrixCommand command : executedCommands) {
+    public static HystrixInvokableInfo getHystrixCommandByKey(String key) {
+        HystrixInvokableInfo hystrixCommand = null;
+        Collection<HystrixInvokableInfo<?>> executedCommands =
+                HystrixRequestLog.getCurrentRequest().getAllExecutedCommands();
+        for (HystrixInvokableInfo command : executedCommands) {
             if (command.getCommandKey().name().equals(key)) {
                 hystrixCommand = command;
                 break;

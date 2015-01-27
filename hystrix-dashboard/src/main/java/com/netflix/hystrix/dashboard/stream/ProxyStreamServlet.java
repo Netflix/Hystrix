@@ -39,13 +39,14 @@ public class ProxyStreamServlet extends HttpServlet {
      */
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         String origin = request.getParameter("origin");
+        String authorization = request.getParameter("authorization");
         if (origin == null) {
             response.setStatus(500);
             response.getWriter().println("Required parameter 'origin' missing. Example: 107.20.175.135:7001");
             return;
         }
         origin = origin.trim();
-        
+
         HttpGet httpget = null;
         InputStream is = null;
         boolean hasFirstParameter = false;
@@ -60,7 +61,7 @@ public class ProxyStreamServlet extends HttpServlet {
         @SuppressWarnings("unchecked")
         Map<String, String[]> params = request.getParameterMap();
         for (String key : params.keySet()) {
-            if (!key.equals("origin")) {
+            if (!key.equals("origin") && !key.equals("authorization")) {
                 String[] values = params.get(key);
                 String value = values[0].trim();
                 if (hasFirstParameter) {
@@ -76,6 +77,9 @@ public class ProxyStreamServlet extends HttpServlet {
         logger.info("\n\nProxy opening connection to: " + proxyUrl + "\n\n");
         try {
             httpget = new HttpGet(proxyUrl);
+            if (authorization != null) {
+                httpget.addHeader("Authorization", authorization);
+            }
             HttpClient client = ProxyConnectionManager.httpClient;
             HttpResponse httpResponse = client.execute(httpget);
             int statusCode = httpResponse.getStatusLine().getStatusCode();

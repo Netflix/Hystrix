@@ -7,7 +7,6 @@ import rx.Observable;
 import rx.internal.operators.OperatorMulticast;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.RunnableFuture;
 
@@ -30,7 +29,6 @@ public class ExecutionTypeTest {
                 {returnType(Future.class), shouldHaveExecutionType(ASYNCHRONOUS)},
                 {returnType(AsyncResult.class), shouldHaveExecutionType(ASYNCHRONOUS)},
                 {returnType(RunnableFuture.class), shouldHaveExecutionType(ASYNCHRONOUS)},
-                {returnType(CompletableFuture.class), shouldHaveExecutionType(ASYNCHRONOUS)},
                 {returnType(Observable.class), shouldHaveExecutionType(OBSERVABLE)},
                 {returnType(OperatorMulticast.class), shouldHaveExecutionType(OBSERVABLE)},
         });

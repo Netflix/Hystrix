@@ -15,16 +15,11 @@
  */
 package com.netflix.hystrix.contrib.javanica.command;
 
-import com.netflix.hystrix.HystrixCollapser;
 import com.netflix.hystrix.contrib.javanica.exception.FallbackInvocationException;
-import com.netflix.hystrix.exception.HystrixBadRequestException;
-import com.netflix.hystrix.exception.HystrixRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.concurrent.ThreadSafe;
-import java.util.Collection;
-import java.util.Map;
 
 /**
  * Implementation of AbstractHystrixCommand which returns an Object as result.
@@ -34,17 +29,8 @@ public class GenericCommand extends AbstractHystrixCommand<Object> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GenericCommand.class);
 
-    /**
-     * {@inheritDoc}
-     */
-    protected GenericCommand(CommandSetterBuilder setterBuilder,
-                             CommandActions commandActions,
-                             Map<String, Object> commandProperties,
-                             Collection<HystrixCollapser.CollapsedRequest<Object, Object>> collapsedRequests,
-                             Class<? extends Throwable>[] ignoreExceptions,
-                             ExecutionType executionType) {
-        super(setterBuilder, commandActions, commandProperties, collapsedRequests,
-                ignoreExceptions, executionType);
+    public GenericCommand(HystrixCommandBuilder builder) {
+        super(builder);
     }
 
     /**

@@ -55,4 +55,6 @@ public interface HystrixInvokableInfo<R> {
 
     public int getExecutionTimeInMilliseconds();
 
+    public long getCommandRunStartTimeInNanos();
+
 }

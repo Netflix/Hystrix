@@ -23,7 +23,7 @@ public class HystrixCommandPropertiesTest {
                 .withCircuitBreakerErrorThresholdPercentage(40) // % of 'marks' that must be failed to trip the circuit
                 .withMetricsRollingStatisticalWindowInMilliseconds(5000)// milliseconds back that will be tracked
                 .withMetricsRollingStatisticalWindowBuckets(5) // buckets
-                .withMetricsExpireAfterInactivityInMilliseconds(86400) // expire after 1 day
+                .withMetricsExpireAfterInactivityInMilliseconds(86400000) // expire whole metric after 1 day w/o any update
                 .withCircuitBreakerRequestVolumeThreshold(0) // in testing we will not have a threshold unless we're specifically testing that feature
                 .withCircuitBreakerSleepWindowInMilliseconds(5000000) // milliseconds after tripping circuit before allowing retry (by default set VERY long as we want it to effectively never allow a singleTest for most unit tests)
                 .withCircuitBreakerEnabled(true)

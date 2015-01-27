@@ -1,35 +1,45 @@
-ext.githubProjectName = rootProject.name
-
 buildscript {
     repositories {
-        mavenLocal()
-        mavenCentral() // maven { url 'http://jcenter.bintray.com' }
+        jcenter()
     }
-    apply from: file('gradle/buildscript.gradle'), to: buildscript 
-}
-
-allprojects {
-    repositories { 
-        mavenCentral() // maven { url: 'http://jcenter.bintray.com' }
+    dependencies {
+        classpath 'com.netflix.nebula:gradle-extra-configurations-plugin:2.0.1'
     }
 }
 
-apply from: file('gradle/convention.gradle')
-apply from: file('gradle/maven.gradle')
-//apply from: file('gradle/check.gradle')
-apply from: file('gradle/license.gradle')
-apply from: file('gradle/release.gradle')
+plugins {
+    id 'nebula.netflixoss' version '2.2.5'
+}
+
+ext {
+    githubProjectName = rootProject.name    
+}
 
 subprojects {
+    apply plugin: 'nebula.netflixoss'
+    apply plugin: 'java'
+    apply plugin: 'nebula.provided-base'
+
+    repositories {
+        jcenter()
+    }
 
     group = "com.netflix.${githubProjectName}"
 
-    sourceSets.test.java.srcDir 'src/main/java'
+    eclipse {
+        classpath {
+            // include 'provided' dependencies on the classpath
+            plusConfigurations += [configurations.provided]
+            downloadSources = true
+            downloadJavadoc = true
+        }
+    }
 
-    tasks.withType(Javadoc).each {
-        it.classpath = sourceSets.main.compileClasspath
+
+    idea {
+        module {
+            // include 'provided' dependencies on the classpath
+            scopes.COMPILE.plus += [configurations.provided]
+        }
     }
 }
-
-// Prevent contrib project from being published
-project('hystrix-contrib').task('uploadMavenCentral', overwrite:true) { }

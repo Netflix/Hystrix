@@ -16,6 +16,7 @@
 package com.netflix.hystrix.strategy.metrics;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.hystrix.HystrixCircuitBreaker;
 import com.netflix.hystrix.HystrixCommand;
@@ -47,11 +48,7 @@ public class HystrixMetricsPublisherFactory {
 
     /**
      * Get an instance of {@link HystrixMetricsPublisherThreadPool} with the given factory {@link HystrixMetricsPublisher} implementation for each {@link HystrixThreadPool} instance.
-     * 
-     * @param metricsPublisher
-     *            Implementation of {@link HystrixMetricsPublisher} to use.
-     *            <p>
-     *            See {@link HystrixMetricsPublisher} class header JavaDocs for precedence of how this is retrieved.
+     *
      * @param threadPoolKey
      *            Pass-thru to {@link HystrixMetricsPublisher#getMetricsPublisherForThreadPool} implementation
      * @param metrics
@@ -83,15 +80,18 @@ public class HystrixMetricsPublisherFactory {
         return SINGLETON.getPublisherForCommand(commandKey, commandOwner, metrics, circuitBreaker, properties);
     }
 
-    private final HystrixMetricsPublisher strategy;
-
-    private HystrixMetricsPublisherFactory() {
-        this(HystrixPlugins.getInstance().getMetricsPublisher());
+    /**
+     * Resets the SINGLETON object.
+     * Clears all state from publishers. If new requests come in instances will be recreated.
+     *
+     */
+    public static void reset() {
+        SINGLETON = new HystrixMetricsPublisherFactory();
+        SINGLETON.commandPublishers.clear();
+        SINGLETON.threadPoolPublishers.clear();
     }
 
-    /* package */ HystrixMetricsPublisherFactory(HystrixMetricsPublisher strategy) {
-        this.strategy = strategy;
-    }
+    /* package */ HystrixMetricsPublisherFactory()  {}
 
     // String is CommandKey.name() (we can't use CommandKey directly as we can't guarantee it implements hashcode/equals correctly)
     private final ConcurrentHashMap<String, HystrixMetricsPublisherCommand> commandPublishers = new ConcurrentHashMap<String, HystrixMetricsPublisherCommand>();
@@ -103,7 +103,7 @@ public class HystrixMetricsPublisherFactory {
             return publisher;
         }
         // it doesn't exist so we need to create it
-        publisher = strategy.getMetricsPublisherForCommand(commandKey, commandOwner, metrics, circuitBreaker, properties);
+        publisher = HystrixPlugins.getInstance().getMetricsPublisher().getMetricsPublisherForCommand(commandKey, commandOwner, metrics, circuitBreaker, properties);
         // attempt to store it (race other threads)
         HystrixMetricsPublisherCommand existing = commandPublishers.putIfAbsent(commandKey.name(), publisher);
         if (existing == null) {
@@ -128,7 +128,7 @@ public class HystrixMetricsPublisherFactory {
             return publisher;
         }
         // it doesn't exist so we need to create it
-        publisher = strategy.getMetricsPublisherForThreadPool(threadPoolKey, metrics, properties);
+        publisher = HystrixPlugins.getInstance().getMetricsPublisher().getMetricsPublisherForThreadPool(threadPoolKey, metrics, properties);
         // attempt to store it (race other threads)
         HystrixMetricsPublisherThreadPool existing = threadPoolPublishers.putIfAbsent(threadPoolKey.name(), publisher);
         if (existing == null) {

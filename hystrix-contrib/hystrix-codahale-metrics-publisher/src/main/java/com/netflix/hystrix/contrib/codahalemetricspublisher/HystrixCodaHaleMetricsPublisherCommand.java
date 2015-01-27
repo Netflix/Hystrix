@@ -43,7 +43,7 @@ public class HystrixCodaHaleMetricsPublisherCommand implements HystrixMetricsPub
         this.circuitBreaker = circuitBreaker;
         this.properties = properties;
         this.metricRegistry = metricRegistry;
-        this.metricGroup = "HystrixCommand";
+        this.metricGroup = commandGroupKey.name();
         this.metricType = key.name();
     }
 
@@ -65,6 +65,7 @@ public class HystrixCodaHaleMetricsPublisherCommand implements HystrixMetricsPub
         });
 
         // cumulative counts
+        createCumulativeCountForEvent("countBadRequests", HystrixRollingNumberEvent.BAD_REQUEST);
         createCumulativeCountForEvent("countCollapsedRequests", HystrixRollingNumberEvent.COLLAPSED);
         createCumulativeCountForEvent("countExceptionsThrown", HystrixRollingNumberEvent.EXCEPTION_THROWN);
         createCumulativeCountForEvent("countFailure", HystrixRollingNumberEvent.FAILURE);
@@ -79,6 +80,7 @@ public class HystrixCodaHaleMetricsPublisherCommand implements HystrixMetricsPub
         createCumulativeCountForEvent("countTimeout", HystrixRollingNumberEvent.TIMEOUT);
 
         // rolling counts
+        createRollingCountForEvent("rollingCountBadRequests", HystrixRollingNumberEvent.BAD_REQUEST);
         createRollingCountForEvent("rollingCountCollapsedRequests", HystrixRollingNumberEvent.COLLAPSED);
         createRollingCountForEvent("rollingCountExceptionsThrown", HystrixRollingNumberEvent.EXCEPTION_THROWN);
         createRollingCountForEvent("rollingCountFailure", HystrixRollingNumberEvent.FAILURE);

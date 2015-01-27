@@ -54,10 +54,9 @@ public class HystrixCommandAspect {
         HystrixCommand hystrixCommand = method.getAnnotation(HystrixCommand.class);
         HystrixCollapser hystrixCollapser = method.getAnnotation(HystrixCollapser.class);
         ExecutionType executionType = ExecutionType.getExecutionType(method.getReturnType());
-        Method cacheKeyMethod = getMethodFromTarget(joinPoint, hystrixCommand.cacheKeyMethod());
         MetaHolder metaHolder = MetaHolder.builder()
                 .args(args).method(method).obj(obj).proxyObj(joinPoint.getThis())
-                .cacheKeyMethod(cacheKeyMethod).executionType(executionType)
+                .executionType(executionType)
                 .hystrixCommand(hystrixCommand).hystrixCollapser(hystrixCollapser)
                 .defaultCommandKey(method.getName())
                 .defaultCollapserKey(method.getName())

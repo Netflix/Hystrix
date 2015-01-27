@@ -1,6 +1,7 @@
 package com.netflix.hystrix.contrib.javanica.test.spring.configuration.collapser;
 
 import com.netflix.hystrix.HystrixEventType;
+import com.netflix.hystrix.HystrixInvokableInfo;
 import com.netflix.hystrix.HystrixRequestLog;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCollapser;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
@@ -44,7 +45,7 @@ public class CollapserPropertiesTest {
             assertEquals("name: 3", u3.getName());
             assertEquals("name: 4", u4.getName());
 
-            com.netflix.hystrix.HystrixExecutableInfo<?> command = HystrixRequestLog.getCurrentRequest()
+            HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest()
                     .getAllExecutedCommands().iterator().next();
             assertEquals("getUser", command.getCommandKey().name());
             //When a command is fronted by an HystrixCollapser then this marks how many requests are collapsed into the single command execution.

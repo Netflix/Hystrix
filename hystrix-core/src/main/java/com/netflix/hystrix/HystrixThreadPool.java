@@ -159,8 +159,11 @@ public interface HystrixThreadPool {
             this.properties = HystrixPropertiesFactory.getThreadPoolProperties(threadPoolKey, propertiesDefaults);
             HystrixConcurrencyStrategy concurrencyStrategy = HystrixPlugins.getInstance().getConcurrencyStrategy();
             this.queue = concurrencyStrategy.getBlockingQueue(properties.maxQueueSize().get());
-            this.threadPool = concurrencyStrategy.getThreadPool(threadPoolKey, properties.coreSize(), properties.coreSize(), properties.keepAliveTimeMinutes(), TimeUnit.MINUTES, queue);
-            this.metrics = HystrixThreadPoolMetrics.getInstance(threadPoolKey, threadPool, properties);
+            this.metrics = HystrixThreadPoolMetrics.getInstance(
+                    threadPoolKey,
+                    concurrencyStrategy.getThreadPool(threadPoolKey, properties.coreSize(), properties.coreSize(), properties.keepAliveTimeMinutes(), TimeUnit.MINUTES, queue),
+                    properties);
+            this.threadPool = metrics.getThreadPool();
             this.scheduler = new HystrixContextScheduler(concurrencyStrategy, this);
 
             /* strategy: HystrixMetricsPublisherThreadPool */
@@ -199,11 +202,11 @@ public interface HystrixThreadPool {
         /**
          * Whether the threadpool queue has space available according to the <code>queueSizeRejectionThreshold</code> settings.
          * <p>
-         * If a SynchronousQueue implementation is used (<code>maxQueueSize</code> == -1), it always returns 0 as the size so this would always return true.
+         * If a SynchronousQueue implementation is used (<code>maxQueueSize</code> <= 0), it always returns 0 as the size so this would always return true.
          */
         @Override
         public boolean isQueueSpaceAvailable() {
-            if (properties.maxQueueSize().get() < 0) {
+            if (properties.maxQueueSize().get() <= 0) {
                 // we don't have a queue so we won't look for space but instead
                 // let the thread-pool reject or not
                 return true;

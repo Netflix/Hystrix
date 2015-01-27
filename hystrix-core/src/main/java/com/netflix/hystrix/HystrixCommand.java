@@ -24,9 +24,7 @@ import java.util.concurrent.TimeoutException;
 import rx.Observable;
 import rx.Observable.OnSubscribe;
 import rx.Subscriber;
-import rx.schedulers.Schedulers;
 
-import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
 import com.netflix.hystrix.exception.HystrixBadRequestException;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
 import com.netflix.hystrix.exception.HystrixRuntimeException.FailureType;
@@ -156,8 +154,7 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
      * Example:
      * <pre> {@code
      *  Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("GroupName"))
-                .andCommandKey(HystrixCommandKey.Factory.asKey("CommandName"))
-                .andEventNotifier(notifier);
+                .andCommandKey(HystrixCommandKey.Factory.asKey("CommandName"));
      * } </pre>
      * 
      * @NotThreadSafe

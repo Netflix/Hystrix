@@ -15,17 +15,19 @@
  */
 package com.netflix.hystrix.contrib.javanica.command;
 
-
+/**
+ * Wrapper for command actions combines different actions together.
+ *
+ * @author dmgcodevil
+ */
 public class CommandActions {
 
     private final CommandAction commandAction;
     private final CommandAction fallbackAction;
-    private final CommandAction cacheKeyAction;
 
     public CommandActions(Builder builder) {
         this.commandAction = builder.commandAction;
         this.fallbackAction = builder.fallbackAction;
-        this.cacheKeyAction = builder.cacheKeyAction;
     }
 
     public static Builder builder() {
@@ -40,14 +42,9 @@ public class CommandActions {
         return fallbackAction;
     }
 
-    public CommandAction getCacheKeyAction() {
-        return cacheKeyAction;
-    }
-
     public static class Builder {
         private CommandAction commandAction;
         private CommandAction fallbackAction;
-        private CommandAction cacheKeyAction;
 
         public Builder commandAction(CommandAction pCommandAction) {
             this.commandAction = pCommandAction;
@@ -56,11 +53,6 @@ public class CommandActions {
 
         public Builder fallbackAction(CommandAction pFallbackAction) {
             this.fallbackAction = pFallbackAction;
-            return this;
-        }
-
-        public Builder cacheKeyAction(CommandAction pCacheKeyAction) {
-            this.cacheKeyAction = pCacheKeyAction;
             return this;
         }
 

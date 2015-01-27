@@ -90,6 +90,14 @@ public class HystrixThreadPoolMetrics {
         return Collections.unmodifiableCollection(metrics.values());
     }
 
+    /**
+     * Clears all state from metrics. If new requests come in instances will be recreated and metrics started from scratch.
+     *
+     */
+    /* package */ static void reset() {
+        metrics.clear();
+    }
+
     private final HystrixThreadPoolKey threadPoolKey;
     private final HystrixRollingNumber counter;
     private final ThreadPoolExecutor threadPool;
@@ -100,6 +108,15 @@ public class HystrixThreadPoolMetrics {
         this.threadPool = threadPool;
         this.properties = properties;
         this.counter = new HystrixRollingNumber(properties.metricsRollingStatisticalWindowInMilliseconds(), properties.metricsRollingStatisticalWindowBuckets());
+    }
+
+    /**
+     * {@link ThreadPoolExecutor} this executor represents.
+     *
+     * @return ThreadPoolExecutor
+     */
+    public ThreadPoolExecutor getThreadPool() {
+        return threadPool;
     }
 
     /**

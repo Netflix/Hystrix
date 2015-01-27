@@ -4,6 +4,9 @@ import java.util.LinkedList;
 import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 
+import com.netflix.hystrix.strategy.HystrixPlugins;
+import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherFactory;
+import com.netflix.hystrix.strategy.properties.HystrixPropertiesFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,10 +54,14 @@ public class Hystrix {
     private static void _reset() {
         // clear metrics
         HystrixCommandMetrics.reset();
+        HystrixThreadPoolMetrics.reset();
         // clear collapsers
         HystrixCollapser.reset();
         // clear circuit breakers
         HystrixCircuitBreaker.Factory.reset();
+        HystrixPlugins.reset();
+        HystrixPropertiesFactory.reset();
+        currentCommand.set(new LinkedList<HystrixCommandKey>());
     }
 
     private static ThreadLocal<LinkedList<HystrixCommandKey>> currentCommand = new ThreadLocal<LinkedList<HystrixCommandKey>>() {
