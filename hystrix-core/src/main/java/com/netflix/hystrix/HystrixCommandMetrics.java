@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.netflix.hystrix.exception.HystrixBadRequestException;
 import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
 import com.netflix.hystrix.util.HystrixRollingNumber;
@@ -303,6 +304,14 @@ public class HystrixCommandMetrics {
     }
 
     /**
+     * When a {@link HystrixCommand} is executed and triggers a {@link HystrixBadRequestException} during its execution
+     */
+    /* package */void markBadRequest(long duration) {
+        eventNotifier.markEvent(HystrixEventType.BAD_REQUEST, key);
+        counter.increment(HystrixRollingNumberEvent.BAD_REQUEST);
+    }
+
+    /**
      * Increment concurrent requests counter.
      * 
      * @param numberOfPermitsUsed
@@ -345,7 +354,8 @@ public class HystrixCommandMetrics {
     }
 
     /**
-     * When a {@link HystrixCommand} throws an exception (this will occur every time {@link #markFallbackFailure} occurs and whenever {@link #markFailure} occurs without a fallback implemented)
+     * When a {@link HystrixCommand} throws an exception (this will occur every time {@link #markFallbackFailure} occurs,
+     * whenever {@link #markFailure} occurs without a fallback implemented, or whenever a {@link #markBadRequest(long)} occurs)
      */
     /* package */void markExceptionThrown() {
         eventNotifier.markEvent(HystrixEventType.EXCEPTION_THROWN, key);

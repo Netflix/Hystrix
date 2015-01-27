@@ -134,6 +134,7 @@ public class HystrixServoMetricsPublisherCommand extends HystrixServoMetricsPubl
         });
 
         // cumulative counts
+        monitors.add(getCumulativeCountForEvent("countBadRequests", metrics, HystrixRollingNumberEvent.BAD_REQUEST));
         monitors.add(getCumulativeCountForEvent("countCollapsedRequests", metrics, HystrixRollingNumberEvent.COLLAPSED));
         monitors.add(getCumulativeCountForEvent("countExceptionsThrown", metrics, HystrixRollingNumberEvent.EXCEPTION_THROWN));
         monitors.add(getCumulativeCountForEvent("countFailure", metrics, HystrixRollingNumberEvent.FAILURE));
@@ -148,6 +149,7 @@ public class HystrixServoMetricsPublisherCommand extends HystrixServoMetricsPubl
         monitors.add(getCumulativeCountForEvent("countTimeout", metrics, HystrixRollingNumberEvent.TIMEOUT));
 
         // rolling counts
+        monitors.add(getRollingCountForEvent("rollingCountBadRequests", metrics, HystrixRollingNumberEvent.BAD_REQUEST));
         monitors.add(getRollingCountForEvent("rollingCountCollapsedRequests", metrics, HystrixRollingNumberEvent.COLLAPSED));
         monitors.add(getRollingCountForEvent("rollingCountExceptionsThrown", metrics, HystrixRollingNumberEvent.EXCEPTION_THROWN));
         monitors.add(getRollingCountForEvent("rollingCountFailure", metrics, HystrixRollingNumberEvent.FAILURE));
