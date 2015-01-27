@@ -605,6 +605,8 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                      * BadRequest handling
                      */
                     try {
+                        metrics.markBadRequest(System.currentTimeMillis() - invocationStartTime);
+                        System.out.println("Done with markBadRequest() call");
                         Exception decorated = executionHook.onError(_self, FailureType.BAD_REQUEST_EXCEPTION, (Exception) t);
 
                         if (decorated instanceof HystrixBadRequestException) {
@@ -624,9 +626,9 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                      * Treat HystrixBadRequestException from ExecutionHook like a plain HystrixBadRequestException.
                      */
                     if (e instanceof HystrixBadRequestException) {
+                        metrics.markBadRequest(System.currentTimeMillis() - invocationStartTime);
                         return Observable.error(e);
                     }
-
 
                     /**
                      * All other error handling
