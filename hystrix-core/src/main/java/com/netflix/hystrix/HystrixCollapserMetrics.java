@@ -83,12 +83,14 @@ public class HystrixCollapserMetrics extends HystrixMetrics {
     }
 
     private final HystrixCollapserKey key;
+    private final HystrixCollapserProperties properties;
     private final HystrixRollingPercentile percentileBatchSize;
     private final HystrixRollingPercentile percentileShardSize;
 
     /* package */HystrixCollapserMetrics(HystrixCollapserKey key, HystrixCollapserProperties properties) {
         super(new HystrixRollingNumber(properties.metricsRollingStatisticalWindowInMilliseconds(), properties.metricsRollingStatisticalWindowBuckets()));
         this.key = key;
+        this.properties = properties;
 
         this.percentileBatchSize = new HystrixRollingPercentile(properties.metricsRollingPercentileWindowInMilliseconds(), properties.metricsRollingPercentileWindowBuckets(), properties.metricsRollingPercentileBucketSize(), properties.metricsRollingPercentileEnabled());
         this.percentileShardSize = new HystrixRollingPercentile(properties.metricsRollingPercentileWindowInMilliseconds(), properties.metricsRollingPercentileWindowBuckets(), properties.metricsRollingPercentileBucketSize(), properties.metricsRollingPercentileEnabled());
@@ -101,6 +103,10 @@ public class HystrixCollapserMetrics extends HystrixMetrics {
      */
     public HystrixCollapserKey getCollapserKey() {
         return key;
+    }
+
+    public HystrixCollapserProperties getProperties() {
+        return properties;
     }
 
     /**
@@ -153,4 +159,6 @@ public class HystrixCollapserMetrics extends HystrixMetrics {
     public void markShards(int numShards) {
         percentileShardSize.addValue(numShards);
     }
+
+
 }
