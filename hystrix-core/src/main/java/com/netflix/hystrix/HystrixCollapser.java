@@ -20,6 +20,8 @@ import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 
+import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherCollapser;
+import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherFactory;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -119,7 +121,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
 
     /* package for tests */ HystrixCollapser(HystrixCollapserKey collapserKey, Scope scope, CollapserTimer timer, HystrixCollapserProperties.Setter propertiesBuilder, HystrixCollapserMetrics metrics) {
         if (collapserKey == null || collapserKey.name().trim().equals("")) {
-            String defaultKeyName = getDefaultNameFromClass (getClass());
+            String defaultKeyName = getDefaultNameFromClass(getClass());
             collapserKey = HystrixCollapserKey.Factory.asKey(defaultKeyName);
         }
 
@@ -134,6 +136,9 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
         }
 
         final HystrixCollapser<BatchReturnType, ResponseType, RequestArgumentType> self = this;
+
+         /* strategy: HystrixMetricsPublisherCollapser */
+        HystrixMetricsPublisherFactory.createOrRetrievePublisherForCollapser(collapserKey, this.metrics, properties);
 
         /**
          * Used to pass public method invocation to the underlying implementation in a separate package while leaving the methods 'protected' in this class.
