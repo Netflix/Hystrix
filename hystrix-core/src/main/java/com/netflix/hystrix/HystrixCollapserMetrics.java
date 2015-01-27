@@ -104,28 +104,12 @@ public class HystrixCollapserMetrics {
         return key;
     }
 
-    public Number getRollingCountRequestsBatched() {
-        return counter.getRollingSum(HystrixRollingNumberEvent.COLLAPSER_REQUEST_BATCHED);
+    public long getCumulativeCount(HystrixRollingNumberEvent event) {
+        return counter.getCumulativeSum(event);
     }
 
-    public Number getCumulativeCountRequestsBatched() {
-        return counter.getCumulativeSum(HystrixRollingNumberEvent.COLLAPSER_REQUEST_BATCHED);
-    }
-
-    public Number getRollingCountResponsesFromCache() {
-        return counter.getRollingSum(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE);
-    }
-
-    public Number getCumulativeCountResponsesFromCache() {
-        return counter.getCumulativeSum(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE);
-    }
-
-    public Number getRollingCountBatches() {
-        return counter.getRollingSum(HystrixRollingNumberEvent.COLLAPSER_BATCH);
-    }
-
-    public Number getCumulativeCountBatches() {
-        return counter.getCumulativeSum(HystrixRollingNumberEvent.COLLAPSER_BATCH);
+    public long getRollingCount(HystrixRollingNumberEvent event) {
+        return counter.getRollingSum(event);
     }
 
     /**
@@ -141,6 +125,10 @@ public class HystrixCollapserMetrics {
         return percentileBatchSize.getPercentile(percentile);
     }
 
+    public int getBatchSizeMean() {
+        return percentileBatchSize.getMean();
+    }
+
     /**
      * Retrieve the shard size for the {@link HystrixCollapser} being invoked at a given percentile.
      * <p>
@@ -152,6 +140,10 @@ public class HystrixCollapserMetrics {
      */
     public int getShardSizePercentile(double percentile) {
         return percentileShardSize.getPercentile(percentile);
+    }
+
+    public int getShardSizeMean() {
+        return percentileShardSize.getMean();
     }
 
     public void markRequestBatched() {
@@ -170,4 +162,7 @@ public class HystrixCollapserMetrics {
     public void markShards(int numShards) {
         percentileShardSize.addValue(numShards);
     }
+
+
+
 }
