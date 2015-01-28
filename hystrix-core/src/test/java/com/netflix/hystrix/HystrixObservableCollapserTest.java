@@ -209,7 +209,7 @@ public class HystrixObservableCollapserTest {
                         if (request.getArgument() == null) {
                             throw new NullPointerException("Simulated Error");
                         }
-                        if (request.getArgument() == "TIMEOUT") {
+                        if (request.getArgument().equals("TIMEOUT")) {
                             try {
                                 Thread.sleep(200);
                             } catch (InterruptedException e) {
