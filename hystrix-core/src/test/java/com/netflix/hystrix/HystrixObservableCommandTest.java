@@ -7186,7 +7186,7 @@ public class HystrixObservableCommandTest {
 
         @Override
         protected Observable<Boolean> construct() {
-            return Observable.<Boolean>error(new RuntimeException("we failed with a simulated async issue"));
+            return Observable.error(new RuntimeException("we failed with a simulated async issue"));
         }
 
         @Override
@@ -7214,7 +7214,7 @@ public class HystrixObservableCommandTest {
                     } catch (InterruptedException ie) {
                         return Observable.error(ie);
                     }
-                    return Observable.<Boolean>error(new RuntimeException("we failed with a simulated async issue"));
+                    return Observable.error(new RuntimeException("we failed with a simulated async issue"));
                 }
             });
         }
@@ -7244,7 +7244,7 @@ public class HystrixObservableCommandTest {
                     } catch (InterruptedException ie) {
                         return Observable.error(ie);
                     }
-                    return Observable.<Boolean>error(new RuntimeException("we failed with a simulated async issue"));
+                    return Observable.error(new RuntimeException("we failed with a simulated async issue"));
                 }
             });
         }
@@ -7293,12 +7293,12 @@ public class HystrixObservableCommandTest {
 
         @Override
         protected Observable<Boolean> construct() {
-            return Observable.<Boolean>error(new RuntimeException("we failed with a simulated async issue"));
+            return Observable.error(new RuntimeException("we failed with a simulated async issue"));
         }
 
         @Override
         protected Observable<Boolean> resumeWithFallback() {
-            return Observable.<Boolean>error(new RuntimeException("we failed with a simulated async fallback issue"));
+            return Observable.error(new RuntimeException("we failed with a simulated async fallback issue"));
         }
     }
 
@@ -7313,7 +7313,7 @@ public class HystrixObservableCommandTest {
 
         @Override
         protected Observable<Boolean> construct() {
-            return Observable.<Boolean>error(new RuntimeException("we failed with a simulated async issue"));
+            return Observable.error(new RuntimeException("we failed with a simulated async issue"));
         }
     }
 
