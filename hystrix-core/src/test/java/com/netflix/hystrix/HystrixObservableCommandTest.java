@@ -106,9 +106,7 @@ public class HystrixObservableCommandTest {
         for (Future<Boolean> future : futures) {
             try {
                 future.get();
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            } catch (ExecutionException e) {
+            } catch (InterruptedException | ExecutionException e) {
                 throw new RuntimeException(e);
             }
         }
