@@ -2738,10 +2738,10 @@ public class HystrixObservableCommandTest {
             TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
 
             SuccessfulCacheableCommand command = new SuccessfulCacheableCommand(circuitBreaker, true, "one");
-            assertEquals(true, command.observe().toBlocking().single());
+            assertEquals("one", command.observe().toBlocking().single());
 
             SuccessfulCacheableCommand command2 = new SuccessfulCacheableCommand(circuitBreaker, true, "two");
-            assertEquals(true, command2.observe().toBlocking().toFuture().get());
+            assertEquals("two", command2.observe().toBlocking().toFuture().get());
 
             fail("We expect an exception because cacheKey requires RequestVariable.");
 
