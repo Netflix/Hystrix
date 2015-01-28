@@ -116,7 +116,7 @@ public class HystrixServoMetricsPublisherCommand extends HystrixServoMetricsPubl
      */
     private List<Monitor<?>> getServoMonitors() {
 
-        List<Monitor<?>> monitors = new ArrayList<Monitor<?>>();
+        List<Monitor<?>> monitors = new ArrayList<>();
 
         monitors.add(new InformationalMetric<Boolean>(MonitorConfig.builder("isCircuitBreakerOpen").build()) {
             @Override

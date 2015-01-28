@@ -30,8 +30,8 @@ public class RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType
 
     private final HystrixCollapserBridge<BatchReturnType, ResponseType, RequestArgumentType> commandCollapser;
     // batch can be null once shutdown
-    private final AtomicReference<RequestBatch<BatchReturnType, ResponseType, RequestArgumentType>> batch = new AtomicReference<RequestBatch<BatchReturnType, ResponseType, RequestArgumentType>>();
-    private final AtomicReference<Reference<TimerListener>> timerListenerReference = new AtomicReference<Reference<TimerListener>>();
+    private final AtomicReference<RequestBatch<BatchReturnType, ResponseType, RequestArgumentType>> batch = new AtomicReference<>();
+    private final AtomicReference<Reference<TimerListener>> timerListenerReference = new AtomicReference<>();
     private final AtomicBoolean timerListenerRegistered = new AtomicBoolean();
     private final CollapserTimer timer;
     private final HystrixCollapserProperties properties;
@@ -49,7 +49,7 @@ public class RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType
         this.concurrencyStrategy = concurrencyStrategy;
         this.properties = properties;
         this.timer = timer;
-        batch.set(new RequestBatch<BatchReturnType, ResponseType, RequestArgumentType>(properties, commandCollapser, properties.maxRequestsInBatch().get()));
+        batch.set(new RequestBatch<>(properties, commandCollapser, properties.maxRequestsInBatch().get()));
     }
 
     /**
@@ -90,7 +90,7 @@ public class RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType
         if (previousBatch == null) {
             throw new IllegalStateException("Trying to start null batch which means it was shutdown already.");
         }
-        if (batch.compareAndSet(previousBatch, new RequestBatch<BatchReturnType, ResponseType, RequestArgumentType>(properties, commandCollapser, properties.maxRequestsInBatch().get()))) {
+        if (batch.compareAndSet(previousBatch, new RequestBatch<>(properties, commandCollapser, properties.maxRequestsInBatch().get()))) {
             // this thread won so trigger the previous batch
             previousBatch.executeBatchIfNotAlreadyStarted();
         }
@@ -120,7 +120,7 @@ public class RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType
         CollapsedTask() {
             // this gets executed from the context of a HystrixCommand parent thread (such as a Tomcat thread)
             // so we create the callable now where we can capture the thread context
-            callableWithContextOfParent = new HystrixContextCallable<Void>(concurrencyStrategy, new Callable<Void>() {
+            callableWithContextOfParent = new HystrixContextCallable<>(concurrencyStrategy, new Callable<Void>() {
                 // the wrapCallable call allows a strategy to capture thread-context if desired
 
                 @Override

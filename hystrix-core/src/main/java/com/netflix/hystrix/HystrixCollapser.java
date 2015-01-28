@@ -126,7 +126,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
         }
 
         HystrixCollapserProperties properties = HystrixPropertiesFactory.getCollapserProperties(collapserKey, propertiesBuilder);
-        this.collapserFactory = new RequestCollapserFactory<BatchReturnType, ResponseType, RequestArgumentType>(collapserKey, scope, timer, properties);
+        this.collapserFactory = new RequestCollapserFactory<>(collapserKey, scope, timer, properties);
         this.requestCache = HystrixRequestCache.getInstance(collapserKey, HystrixPlugins.getInstance().getConcurrencyStrategy());
 
         if (metrics == null) {
@@ -593,6 +593,6 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
     // this is a micro-optimization but saves about 1-2microseconds (on 2011 MacBook Pro) 
     // on the repetitive string processing that will occur on the same classes over and over again
     @SuppressWarnings("rawtypes")
-    private static ConcurrentHashMap<Class<? extends HystrixCollapser>, String> defaultNameCache = new ConcurrentHashMap<Class<? extends HystrixCollapser>, String>();
+    private static ConcurrentHashMap<Class<? extends HystrixCollapser>, String> defaultNameCache = new ConcurrentHashMap<>();
 
 }

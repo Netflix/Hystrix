@@ -19,6 +19,9 @@ subprojects {
     apply plugin: 'nebula.netflixoss'
     apply plugin: 'java'
     apply plugin: 'nebula.provided-base'
+    
+    sourceCompatibility = 1.7
+    targetCompatibility = 1.7
 
     repositories {
         jcenter()

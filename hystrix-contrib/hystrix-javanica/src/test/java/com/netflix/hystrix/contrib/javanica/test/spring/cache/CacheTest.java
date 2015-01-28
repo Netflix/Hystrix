@@ -257,7 +257,7 @@ public class CacheTest {
     }
 
     public static class UserService {
-        private Map<String, User> storage = new ConcurrentHashMap<String, User>();
+        private Map<String, User> storage = new ConcurrentHashMap<>();
 
         @PostConstruct
         private void init() {

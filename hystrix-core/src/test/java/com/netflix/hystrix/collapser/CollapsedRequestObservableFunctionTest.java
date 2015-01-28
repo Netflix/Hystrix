@@ -14,7 +14,7 @@ import rx.Observable;
 public class CollapsedRequestObservableFunctionTest {
     @Test
     public void testSetResponseSuccess() throws InterruptedException, ExecutionException {
-        CollapsedRequestObservableFunction<String, String> cr = new CollapsedRequestObservableFunction<String, String>("hello");
+        CollapsedRequestObservableFunction<String, String> cr = new CollapsedRequestObservableFunction<>("hello");
         Observable<String> o = Observable.create(cr);
         Future<String> v = o.toBlocking().toFuture();
 
@@ -26,7 +26,7 @@ public class CollapsedRequestObservableFunctionTest {
 
     @Test
     public void testSetNullResponseSuccess() throws InterruptedException, ExecutionException {
-        CollapsedRequestObservableFunction<String, String> cr = new CollapsedRequestObservableFunction<String, String>("hello");
+        CollapsedRequestObservableFunction<String, String> cr = new CollapsedRequestObservableFunction<>("hello");
         Observable<String> o = Observable.create(cr);
         Future<String> v = o.toBlocking().toFuture();
 
@@ -38,7 +38,7 @@ public class CollapsedRequestObservableFunctionTest {
 
     @Test
     public void testSetException() throws InterruptedException, ExecutionException {
-        CollapsedRequestObservableFunction<String, String> cr = new CollapsedRequestObservableFunction<String, String>("hello");
+        CollapsedRequestObservableFunction<String, String> cr = new CollapsedRequestObservableFunction<>("hello");
         Observable<String> o = Observable.create(cr);
         Future<String> v = o.toBlocking().toFuture();
 
@@ -55,7 +55,7 @@ public class CollapsedRequestObservableFunctionTest {
 
     @Test
     public void testSetExceptionAfterResponse() throws InterruptedException, ExecutionException {
-        CollapsedRequestObservableFunction<String, String> cr = new CollapsedRequestObservableFunction<String, String>("hello");
+        CollapsedRequestObservableFunction<String, String> cr = new CollapsedRequestObservableFunction<>("hello");
         Observable<String> o = Observable.create(cr);
         Future<String> v = o.toBlocking().toFuture();
 
@@ -73,7 +73,7 @@ public class CollapsedRequestObservableFunctionTest {
 
     @Test
     public void testSetResponseAfterException() throws InterruptedException, ExecutionException {
-        CollapsedRequestObservableFunction<String, String> cr = new CollapsedRequestObservableFunction<String, String>("hello");
+        CollapsedRequestObservableFunction<String, String> cr = new CollapsedRequestObservableFunction<>("hello");
         Observable<String> o = Observable.create(cr);
         Future<String> v = o.toBlocking().toFuture();
 
@@ -96,7 +96,7 @@ public class CollapsedRequestObservableFunctionTest {
 
     @Test
     public void testSetResponseDuplicate() throws InterruptedException, ExecutionException {
-        CollapsedRequestObservableFunction<String, String> cr = new CollapsedRequestObservableFunction<String, String>("hello");
+        CollapsedRequestObservableFunction<String, String> cr = new CollapsedRequestObservableFunction<>("hello");
         Observable<String> o = Observable.create(cr);
         Future<String> v = o.toBlocking().toFuture();
 
@@ -114,7 +114,7 @@ public class CollapsedRequestObservableFunctionTest {
 
     @Test(expected = CancellationException.class)
     public void testSetResponseAfterUnsubscribe() throws InterruptedException, ExecutionException {
-        CollapsedRequestObservableFunction<String, String> cr = new CollapsedRequestObservableFunction<String, String>("hello");
+        CollapsedRequestObservableFunction<String, String> cr = new CollapsedRequestObservableFunction<>("hello");
         Observable<String> o = Observable.create(cr);
         Future<String> f = o.toBlocking().toFuture();
 
@@ -133,7 +133,7 @@ public class CollapsedRequestObservableFunctionTest {
 
     @Test(expected = CancellationException.class)
     public void testSetExceptionAfterUnsubscribe() throws InterruptedException, ExecutionException {
-        CollapsedRequestObservableFunction<String, String> cr = new CollapsedRequestObservableFunction<String, String>("hello");
+        CollapsedRequestObservableFunction<String, String> cr = new CollapsedRequestObservableFunction<>("hello");
         Observable<String> o = Observable.create(cr);
         Future<String> f = o.toBlocking().toFuture();
 
@@ -152,7 +152,7 @@ public class CollapsedRequestObservableFunctionTest {
 
     @Test
     public void testUnsubscribeAfterSetResponse() throws InterruptedException, ExecutionException {
-        CollapsedRequestObservableFunction<String, String> cr = new CollapsedRequestObservableFunction<String, String>("hello");
+        CollapsedRequestObservableFunction<String, String> cr = new CollapsedRequestObservableFunction<>("hello");
         Observable<String> o = Observable.create(cr);
         Future<String> v = o.toBlocking().toFuture();
 

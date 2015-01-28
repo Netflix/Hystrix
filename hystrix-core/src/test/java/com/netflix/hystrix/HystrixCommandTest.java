@@ -545,8 +545,8 @@ public class HystrixCommandTest {
     @Test
     public void testCallbackThreadForThreadIsolation() throws Exception {
 
-        final AtomicReference<Thread> commandThread = new AtomicReference<Thread>();
-        final AtomicReference<Thread> subscribeThread = new AtomicReference<Thread>();
+        final AtomicReference<Thread> commandThread = new AtomicReference<>();
+        final AtomicReference<Thread> subscribeThread = new AtomicReference<>();
 
         TestHystrixCommand<Boolean> command = new TestHystrixCommand<Boolean>(TestHystrixCommand.testPropsBuilder()) {
 
@@ -600,8 +600,8 @@ public class HystrixCommandTest {
     @Test
     public void testCallbackThreadForSemaphoreIsolation() throws Exception {
 
-        final AtomicReference<Thread> commandThread = new AtomicReference<Thread>();
-        final AtomicReference<Thread> subscribeThread = new AtomicReference<Thread>();
+        final AtomicReference<Thread> commandThread = new AtomicReference<>();
+        final AtomicReference<Thread> subscribeThread = new AtomicReference<>();
 
         TestHystrixCommand<Boolean> command = new TestHystrixCommand<Boolean>(TestHystrixCommand.testPropsBuilder()
                 .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionIsolationStrategy(ExecutionIsolationStrategy.SEMAPHORE))) {
@@ -1964,7 +1964,7 @@ public class HystrixCommandTest {
             throw new RuntimeException(e);
         }
 
-        final ArrayBlockingQueue<Boolean> results = new ArrayBlockingQueue<Boolean>(2);
+        final ArrayBlockingQueue<Boolean> results = new ArrayBlockingQueue<>(2);
 
         final AtomicBoolean exceptionReceived = new AtomicBoolean();
 
@@ -2031,7 +2031,7 @@ public class HystrixCommandTest {
     @Test
     public void testRejectedExecutionSemaphoreWithFallbackViaExecute() {
         final TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
-        final ArrayBlockingQueue<Boolean> results = new ArrayBlockingQueue<Boolean>(2);
+        final ArrayBlockingQueue<Boolean> results = new ArrayBlockingQueue<>(2);
 
         final AtomicBoolean exceptionReceived = new AtomicBoolean();
 
@@ -2095,7 +2095,7 @@ public class HystrixCommandTest {
     @Test
     public void testRejectedExecutionSemaphoreWithFallbackViaObserve() {
         final TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
-        final ArrayBlockingQueue<Observable<Boolean>> results = new ArrayBlockingQueue<Observable<Boolean>>(2);
+        final ArrayBlockingQueue<Observable<Boolean>> results = new ArrayBlockingQueue<>(2);
 
         final AtomicBoolean exceptionReceived = new AtomicBoolean();
 
@@ -3330,7 +3330,7 @@ public class HystrixCommandTest {
     public void testCheckedExceptionViaObserve() throws InterruptedException {
         TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
         CommandWithCheckedException command = new CommandWithCheckedException(circuitBreaker);
-        final AtomicReference<Throwable> t = new AtomicReference<Throwable>();
+        final AtomicReference<Throwable> t = new AtomicReference<>();
         final CountDownLatch latch = new CountDownLatch(1);
         try {
             command.observe().subscribe(new Observer<Boolean>() {
@@ -3440,7 +3440,7 @@ public class HystrixCommandTest {
     public void testErrorThrownViaObserve() throws InterruptedException {
         TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
         CommandWithErrorThrown command = new CommandWithErrorThrown(circuitBreaker);
-        final AtomicReference<Throwable> t = new AtomicReference<Throwable>();
+        final AtomicReference<Throwable> t = new AtomicReference<>();
         final CountDownLatch latch = new CountDownLatch(1);
         try {
             command.observe().subscribe(new Observer<Boolean>() {
@@ -5148,9 +5148,9 @@ public class HystrixCommandTest {
      */
     @Test
     public void testObservableTimeoutNoFallbackThreadContext() {
-        TestSubscriber<Boolean> ts = new TestSubscriber<Boolean>();
+        TestSubscriber<Boolean> ts = new TestSubscriber<>();
 
-        final AtomicReference<Thread> onErrorThread = new AtomicReference<Thread>();
+        final AtomicReference<Thread> onErrorThread = new AtomicReference<>();
         final AtomicBoolean isRequestContextInitialized = new AtomicBoolean();
 
         TestHystrixCommand<Boolean> command = new TestCommandWithTimeout(50, TestCommandWithTimeout.FALLBACK_NOT_IMPLEMENTED);
@@ -5684,7 +5684,7 @@ public class HystrixCommandTest {
         }
 
         public SingleThreadedPoolWithQueue(int queueSize, int rejectionQueueSizeThreshold) {
-            queue = new LinkedBlockingQueue<Runnable>(queueSize);
+            queue = new LinkedBlockingQueue<>(queueSize);
             pool = new ThreadPoolExecutor(1, 1, 1, TimeUnit.MINUTES, queue);
             this.rejectionQueueSizeThreshold = rejectionQueueSizeThreshold;
         }
@@ -5725,7 +5725,7 @@ public class HystrixCommandTest {
         final ThreadPoolExecutor pool;
 
         public SingleThreadedPoolWithNoQueue() {
-            queue = new SynchronousQueue<Runnable>();
+            queue = new SynchronousQueue<>();
             pool = new ThreadPoolExecutor(1, 1, 1, TimeUnit.MINUTES, queue);
         }
 

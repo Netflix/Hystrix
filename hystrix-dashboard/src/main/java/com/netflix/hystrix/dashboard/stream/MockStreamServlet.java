@@ -92,8 +92,7 @@ public class MockStreamServlet extends HttpServlet {
     private String getFileFromPackage(String filename) {
         try {
             String file = "/" + this.getClass().getPackage().getName().replace('.', '/') + "/" + filename;
-            InputStream is = this.getClass().getResourceAsStream(file);
-            try {
+            try (InputStream is = this.getClass().getResourceAsStream(file)) {
                 /* this is FAR too much work just to get a string from a file */
                 BufferedReader in = new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")));
                 StringWriter s = new StringWriter();
@@ -102,8 +101,6 @@ public class MockStreamServlet extends HttpServlet {
                     s.write(c);
                 }
                 return s.toString();
-            } finally {
-                is.close();
             }
         } catch (Exception e) {
             throw new RuntimeException("Could not find file: " + filename, e);

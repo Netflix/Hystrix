@@ -34,7 +34,7 @@ public class HystrixMetricsPublisherFactoryTest {
         final TestHystrixMetricsPublisher publisher = new TestHystrixMetricsPublisher();
         HystrixPlugins.getInstance().registerMetricsPublisher(publisher);
         final HystrixMetricsPublisherFactory factory = new HystrixMetricsPublisherFactory();
-        ArrayList<Thread> threads = new ArrayList<Thread>();
+        ArrayList<Thread> threads = new ArrayList<>();
         for (int i = 0; i < 20; i++) {
             threads.add(new Thread(new Runnable() {
 

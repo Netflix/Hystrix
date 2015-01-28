@@ -168,9 +168,9 @@ public class CreditCardCommand extends HystrixCommand<CreditCardAuthorizationRes
             }
 
             if (Math.random() < 0.8) {
-                return new Result<Transaction>(true);
+                return new Result<>(true);
             } else {
-                return new Result<Transaction>(false);
+                return new Result<>(false);
             }
 
         }
