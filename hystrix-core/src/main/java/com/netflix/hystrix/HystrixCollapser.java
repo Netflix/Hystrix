@@ -20,7 +20,6 @@ import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 
-import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherCollapser;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherFactory;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesFactory;
 import org.slf4j.Logger;

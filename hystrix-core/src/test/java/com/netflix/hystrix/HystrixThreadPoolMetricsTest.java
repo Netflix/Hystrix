@@ -1,6 +1,5 @@
 package com.netflix.hystrix;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 

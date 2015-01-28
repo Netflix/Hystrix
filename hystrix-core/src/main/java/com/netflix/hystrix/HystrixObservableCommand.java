@@ -16,12 +16,8 @@
 package com.netflix.hystrix;
 
 import rx.Observable;
-import rx.functions.Func1;
-import rx.schedulers.Schedulers;
 
 import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
-import com.netflix.hystrix.exception.HystrixBadRequestException;
-import com.netflix.hystrix.exception.HystrixRuntimeException;
 import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 

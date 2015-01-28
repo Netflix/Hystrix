@@ -16,7 +16,6 @@
 package com.netflix.hystrix;
 
 import java.lang.ref.Reference;
-import java.lang.ref.SoftReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;

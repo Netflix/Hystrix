@@ -15,11 +15,8 @@
  */
 package com.netflix.hystrix;
 
-import java.lang.ref.Reference;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import rx.Observable;
 import rx.Observable.OnSubscribe;
@@ -30,7 +27,6 @@ import com.netflix.hystrix.exception.HystrixRuntimeException;
 import com.netflix.hystrix.exception.HystrixRuntimeException.FailureType;
 import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
-import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 
 /**
  * Used to wrap code that will execute potentially risky functionality (typically meaning a service call over the network)
