@@ -115,7 +115,7 @@ public class RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> {
                             @Override
                             public void call(Throwable e) {
                                 // handle Throwable in case anything is thrown so we don't block Observers waiting for onError/onCompleted
-                                Exception ee = null;
+                                Exception ee;
                                 if (e instanceof Exception) {
                                     ee = (Exception) e;
                                 } else {

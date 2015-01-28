@@ -498,7 +498,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 
         final HystrixRequestContext currentRequestContext = HystrixRequestContext.getContextForCurrentThread();
 
-        Observable<R> run = null;
+        Observable<R> run;
         if (properties.executionIsolationStrategy().get().equals(ExecutionIsolationStrategy.THREAD)) {
             // mark that we are executing in a thread (even if we end up being rejected we still were a THREAD execution and not SEMAPHORE)
 
@@ -720,7 +720,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
             executionHook.onFallbackStart(this);
             final AbstractCommand<R> _cmd = this;
 
-            Observable<R> fallback = null;
+            Observable<R> fallback;
             try {
                 fallback = getFallbackObservable();
             } catch (Throwable t) {
@@ -1431,7 +1431,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         }
 
         // we can return a static version since it's immutable
-        private static ExecutionResult EMPTY = new ExecutionResult(new HystrixEventType[0]);
+        private static ExecutionResult EMPTY = new ExecutionResult();
 
         /**
          * Creates a new ExecutionResult by adding the defined 'events' to the ones on the current instance.
@@ -1630,7 +1630,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
     }
 
     protected Exception getExceptionFromThrowable(Throwable t) {
-        Exception e = null;
+        Exception e;
         if (t instanceof Exception) {
             e = (Exception) t;
         } else {

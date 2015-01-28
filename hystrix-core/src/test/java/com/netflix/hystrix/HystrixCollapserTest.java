@@ -866,7 +866,7 @@ public class HystrixCollapserTest {
         TestCollapserTimer timer = new TestCollapserTimer();
         TestCollapserWithVoidResponseTypeAndMissingMapResponseToRequests collapser1 = new TestCollapserWithVoidResponseTypeAndMissingMapResponseToRequests(timer, 1);
         Future<Void> response1 = collapser1.queue();
-        Future<Void> response2 = new TestCollapserWithVoidResponseTypeAndMissingMapResponseToRequests(timer, 2).queue();
+        new TestCollapserWithVoidResponseTypeAndMissingMapResponseToRequests(timer, 2).queue();
         timer.incrementTime(100); // let time pass that equals the default delay/period
 
         // we will fetch one of these just so we wait for completion ... but expect an error
