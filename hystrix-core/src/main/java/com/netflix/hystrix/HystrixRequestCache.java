@@ -57,7 +57,7 @@ public class HystrixRequestCache {
         @Override
         public void shutdown(ConcurrentHashMap<ValueCacheKey, Observable<?>> value) {
             // nothing to shutdown
-        };
+        }
 
     });
 

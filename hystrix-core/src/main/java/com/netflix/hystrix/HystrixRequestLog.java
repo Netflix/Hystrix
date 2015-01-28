@@ -58,7 +58,7 @@ public class HystrixRequestLog {
 
         public void shutdown(HystrixRequestLog value) {
             // nothing to shutdown
-        };
+        }
 
     });
 

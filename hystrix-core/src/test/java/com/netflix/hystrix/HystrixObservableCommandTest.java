@@ -55,7 +55,6 @@ import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.concurrency.HystrixContextRunnable;
 import com.netflix.hystrix.strategy.concurrency.HystrixContextScheduler;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
-import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 import com.netflix.hystrix.strategy.properties.HystrixProperty;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
@@ -2739,10 +2738,10 @@ public class HystrixObservableCommandTest {
             TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
 
             SuccessfulCacheableCommand command = new SuccessfulCacheableCommand(circuitBreaker, true, "one");
-            assertEquals(true, command.observe().toBlocking().single());
+            assertEquals("one", command.observe().toBlocking().single());
 
             SuccessfulCacheableCommand command2 = new SuccessfulCacheableCommand(circuitBreaker, true, "two");
-            assertEquals(true, command2.observe().toBlocking().toFuture().get());
+            assertEquals("two", command2.observe().toBlocking().toFuture().get());
 
             fail("We expect an exception because cacheKey requires RequestVariable.");
 
@@ -7187,7 +7186,7 @@ public class HystrixObservableCommandTest {
 
         @Override
         protected Observable<Boolean> construct() {
-            return Observable.<Boolean>error(new RuntimeException("we failed with a simulated async issue"));
+            return Observable.error(new RuntimeException("we failed with a simulated async issue"));
         }
 
         @Override
@@ -7215,7 +7214,7 @@ public class HystrixObservableCommandTest {
                     } catch (InterruptedException ie) {
                         return Observable.error(ie);
                     }
-                    return Observable.<Boolean>error(new RuntimeException("we failed with a simulated async issue"));
+                    return Observable.error(new RuntimeException("we failed with a simulated async issue"));
                 }
             });
         }
@@ -7245,7 +7244,7 @@ public class HystrixObservableCommandTest {
                     } catch (InterruptedException ie) {
                         return Observable.error(ie);
                     }
-                    return Observable.<Boolean>error(new RuntimeException("we failed with a simulated async issue"));
+                    return Observable.error(new RuntimeException("we failed with a simulated async issue"));
                 }
             });
         }
@@ -7294,12 +7293,12 @@ public class HystrixObservableCommandTest {
 
         @Override
         protected Observable<Boolean> construct() {
-            return Observable.<Boolean>error(new RuntimeException("we failed with a simulated async issue"));
+            return Observable.error(new RuntimeException("we failed with a simulated async issue"));
         }
 
         @Override
         protected Observable<Boolean> resumeWithFallback() {
-            return Observable.<Boolean>error(new RuntimeException("we failed with a simulated async fallback issue"));
+            return Observable.error(new RuntimeException("we failed with a simulated async fallback issue"));
         }
     }
 
@@ -7314,7 +7313,7 @@ public class HystrixObservableCommandTest {
 
         @Override
         protected Observable<Boolean> construct() {
-            return Observable.<Boolean>error(new RuntimeException("we failed with a simulated async issue"));
+            return Observable.error(new RuntimeException("we failed with a simulated async issue"));
         }
     }
 
@@ -8086,15 +8085,15 @@ public class HystrixObservableCommandTest {
     }
 
     enum CommandKeyForUnitTest implements HystrixCommandKey {
-        KEY_ONE, KEY_TWO;
+        KEY_ONE, KEY_TWO
     }
 
     enum CommandGroupForUnitTest implements HystrixCommandGroupKey {
-        OWNER_ONE, OWNER_TWO;
+        OWNER_ONE, OWNER_TWO
     }
 
     enum ThreadPoolKeyForUnitTest implements HystrixThreadPoolKey {
-        THREAD_POOL_ONE, THREAD_POOL_TWO;
+        THREAD_POOL_ONE, THREAD_POOL_TWO
     }
 
     private static HystrixPropertiesStrategy TEST_PROPERTIES_FACTORY = new TestPropertiesFactory();

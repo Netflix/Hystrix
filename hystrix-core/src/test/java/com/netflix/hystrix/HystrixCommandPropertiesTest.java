@@ -166,7 +166,7 @@ public class HystrixCommandPropertiesTest {
     // NOTE: We use "unitTestPrefix" as a prefix so we can't end up pulling in external properties that change unit test behavior
 
     public enum TestKey implements HystrixCommandKey {
-        TEST;
+        TEST
     }
 
     private static class TestPropertiesCommand extends HystrixCommandProperties {

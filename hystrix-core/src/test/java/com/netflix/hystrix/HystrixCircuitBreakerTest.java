@@ -490,15 +490,15 @@ public class HystrixCircuitBreakerTest {
     }
 
     private static enum CommandOwnerForUnitTest implements HystrixCommandGroupKey {
-        OWNER_ONE, OWNER_TWO;
+        OWNER_ONE, OWNER_TWO
     }
 
     private static enum ThreadPoolKeyForUnitTest implements HystrixThreadPoolKey {
-        THREAD_POOL_ONE, THREAD_POOL_TWO;
+        THREAD_POOL_ONE, THREAD_POOL_TWO
     }
 
     private static enum CommandKeyForUnitTest implements HystrixCommandKey {
-        KEY_ONE, KEY_TWO;
+        KEY_ONE, KEY_TWO
     }
 
     // ignoring since this never ends ... useful for testing https://github.com/Netflix/Hystrix/issues/236

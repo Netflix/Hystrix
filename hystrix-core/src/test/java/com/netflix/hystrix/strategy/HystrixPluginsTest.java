@@ -1,30 +1,16 @@
 package com.netflix.hystrix.strategy;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.After;
-import org.junit.Test;
 
-import rx.functions.Action1;
-
-import com.netflix.hystrix.Hystrix;
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandGroupKey;
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
-import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategyDefault;
-import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
-import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifierDefault;
 import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
-import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHookDefault;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisher;
-import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherDefault;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
-import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategyDefault;
 
 public class HystrixPluginsTest {
     @After

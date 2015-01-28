@@ -121,11 +121,11 @@ public class HystrixMetricsPublisherFactoryTest {
     }
 
     private static enum TestCommandKey implements HystrixCommandKey {
-        TEST_A, TEST_B;
+        TEST_A, TEST_B
     }
 
     private static enum TestThreadPoolKey implements HystrixThreadPoolKey {
-        TEST_A, TEST_B;
+        TEST_A, TEST_B
     }
 
     static class CustomPublisher extends HystrixMetricsPublisher{

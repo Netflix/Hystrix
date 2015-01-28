@@ -350,7 +350,7 @@ public abstract class HystrixCollapserProperties {
         }
 
         private static enum TestHystrixCollapserKey implements HystrixCollapserKey {
-            TEST;
+            TEST
         }
     }
 

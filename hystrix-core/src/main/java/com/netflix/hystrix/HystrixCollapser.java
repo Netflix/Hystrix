@@ -20,7 +20,6 @@ import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 
-import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherCollapser;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherFactory;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesFactory;
 import org.slf4j.Logger;
@@ -379,7 +378,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
     public Observable<ResponseType> toObservable(Scheduler observeOn) {
 
         /* try from cache first */
-        if (getProperties().requestCachingEnabled().get()) {
+        if (getProperties().requestCacheEnabled().get()) {
             Observable<ResponseType> fromCache = requestCache.get(getCacheKey());
             if (fromCache != null) {
                 metrics.markResponseFromCache();
@@ -390,7 +389,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
         RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType> requestCollapser = collapserFactory.getRequestCollapser(collapserInstanceWrapper);
         Observable<ResponseType> response = requestCollapser.submitRequest(getRequestArgument());
         metrics.markRequestBatched();
-        if (getProperties().requestCachingEnabled().get()) {
+        if (getProperties().requestCacheEnabled().get()) {
             /*
              * A race can occur here with multiple threads queuing but only one will be cached.
              * This means we can have some duplication of requests in a thread-race but we're okay

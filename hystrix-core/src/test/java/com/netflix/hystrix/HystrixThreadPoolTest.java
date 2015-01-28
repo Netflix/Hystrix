@@ -8,10 +8,8 @@ import static org.hamcrest.core.Is.is;
 
 import com.netflix.hystrix.HystrixThreadPool.Factory;
 import com.netflix.hystrix.strategy.HystrixPlugins;
-import com.netflix.hystrix.strategy.HystrixPluginsTest;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisher;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherFactory;
-import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherFactoryTest;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherThreadPool;
 import org.junit.Before;
 import org.junit.Test;

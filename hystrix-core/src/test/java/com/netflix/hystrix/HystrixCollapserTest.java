@@ -866,7 +866,7 @@ public class HystrixCollapserTest {
         TestCollapserTimer timer = new TestCollapserTimer();
         TestCollapserWithVoidResponseTypeAndMissingMapResponseToRequests collapser1 = new TestCollapserWithVoidResponseTypeAndMissingMapResponseToRequests(timer, 1);
         Future<Void> response1 = collapser1.queue();
-        Future<Void> response2 = new TestCollapserWithVoidResponseTypeAndMissingMapResponseToRequests(timer, 2).queue();
+        new TestCollapserWithVoidResponseTypeAndMissingMapResponseToRequests(timer, 2).queue();
         timer.incrementTime(100); // let time pass that equals the default delay/period
 
         // we will fetch one of these just so we wait for completion ... but expect an error
@@ -944,8 +944,7 @@ public class HystrixCollapserTest {
 
         private static HystrixCollapserMetrics createMetrics() {
             HystrixCollapserKey key = HystrixCollapserKey.Factory.asKey("COLLAPSER_ONE");
-            HystrixCollapserMetrics metrics = HystrixCollapserMetrics.getInstance(key, new HystrixPropertiesCollapserDefault(key, HystrixCollapserProperties.Setter()));
-            return metrics;
+            return HystrixCollapserMetrics.getInstance(key, new HystrixPropertiesCollapserDefault(key, HystrixCollapserProperties.Setter()));
         }
 
         public TestRequestCollapser(Scope scope, TestCollapserTimer timer, String value, int defaultMaxRequestsInBatch, int defaultTimerDelayInMilliseconds, ConcurrentLinkedQueue<HystrixCommand<List<String>>> executionLog) {
@@ -1096,7 +1095,7 @@ public class HystrixCollapserTest {
                 if (request.getArgument() == null) {
                     throw new NullPointerException("Simulated Error");
                 }
-                if (request.getArgument() == "TIMEOUT") {
+                if (request.getArgument().equals("TIMEOUT")) {
                     try {
                         Thread.sleep(200);
                     } catch (InterruptedException e) {

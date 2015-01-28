@@ -2,8 +2,6 @@ package com.netflix.hystrix.collapser;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.netflix.hystrix.HystrixCollapserMetrics;
-import com.netflix.hystrix.HystrixCommandMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

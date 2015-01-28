@@ -147,7 +147,7 @@ public abstract class HystrixConcurrencyStrategy {
 
             public void shutdown(T value) {
                 rv.shutdown(value);
-            };
+            }
         };
     }
     
