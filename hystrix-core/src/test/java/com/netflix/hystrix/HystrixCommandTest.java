@@ -6288,15 +6288,15 @@ public class HystrixCommandTest {
     }
 
     enum CommandKeyForUnitTest implements HystrixCommandKey {
-        KEY_ONE, KEY_TWO;
+        KEY_ONE, KEY_TWO
     }
 
     enum CommandGroupForUnitTest implements HystrixCommandGroupKey {
-        OWNER_ONE, OWNER_TWO;
+        OWNER_ONE, OWNER_TWO
     }
 
     enum ThreadPoolKeyForUnitTest implements HystrixThreadPoolKey {
-        THREAD_POOL_ONE, THREAD_POOL_TWO;
+        THREAD_POOL_ONE, THREAD_POOL_TWO
     }
 
     private static HystrixPropertiesStrategy TEST_PROPERTIES_FACTORY = new TestPropertiesFactory();

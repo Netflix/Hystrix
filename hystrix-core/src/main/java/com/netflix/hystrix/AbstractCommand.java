@@ -69,7 +69,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 
     protected static enum TimedOutStatus {
         NOT_EXECUTED, COMPLETED, TIMED_OUT
-    };
+    }
 
     protected final HystrixCommandMetrics metrics;
 

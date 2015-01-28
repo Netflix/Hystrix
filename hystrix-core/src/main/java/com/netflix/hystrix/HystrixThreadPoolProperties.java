@@ -290,7 +290,7 @@ public abstract class HystrixThreadPoolProperties {
         }
 
         private static enum TestThreadPoolKey implements HystrixThreadPoolKey {
-            TEST;
+            TEST
         }
     }
 }
