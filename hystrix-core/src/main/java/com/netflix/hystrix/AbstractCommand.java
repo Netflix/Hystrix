@@ -1442,9 +1442,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         public ExecutionResult addEvents(HystrixEventType... events) {
             ArrayList<HystrixEventType> newEvents = new ArrayList<>();
             newEvents.addAll(this.events);
-            for (HystrixEventType e : events) {
-                newEvents.add(e);
-            }
+            Collections.addAll(newEvents, events);
             return new ExecutionResult(Collections.unmodifiableList(newEvents), executionTime, exception);
         }
 
