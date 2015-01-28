@@ -29,7 +29,7 @@ public class RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> {
     private static final Logger logger = LoggerFactory.getLogger(HystrixCollapser.class);
 
     private final HystrixCollapserBridge<BatchReturnType, ResponseType, RequestArgumentType> commandCollapser;
-    final ConcurrentLinkedQueue<CollapsedRequest<ResponseType, RequestArgumentType>> requests = new ConcurrentLinkedQueue<CollapsedRequest<ResponseType, RequestArgumentType>>();
+    final ConcurrentLinkedQueue<CollapsedRequest<ResponseType, RequestArgumentType>> requests = new ConcurrentLinkedQueue<>();
     // use AtomicInteger to count so we can use ConcurrentLinkedQueue instead of LinkedBlockingQueue
     private final AtomicInteger count = new AtomicInteger(0);
     private final int maxBatchSize;
@@ -65,7 +65,7 @@ public class RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> {
                 if (s > maxBatchSize) {
                     return null;
                 } else {
-                    CollapsedRequestObservableFunction<ResponseType, RequestArgumentType> f = new CollapsedRequestObservableFunction<ResponseType, RequestArgumentType>(arg);
+                    CollapsedRequestObservableFunction<ResponseType, RequestArgumentType> f = new CollapsedRequestObservableFunction<>(arg);
                     requests.add(f);
                     return Observable.create(f);
                 }

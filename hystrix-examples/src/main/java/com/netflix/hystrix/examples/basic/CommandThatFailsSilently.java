@@ -46,7 +46,7 @@ public class CommandThatFailsSilently extends HystrixCommand<List<String>> {
         if (throwException) {
             throw new RuntimeException("failure from CommandThatFailsFast");
         } else {
-            ArrayList<String> values = new ArrayList<String>();
+            ArrayList<String> values = new ArrayList<>();
             values.add("success");
             return values;
         }

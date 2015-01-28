@@ -153,7 +153,7 @@ public class HystrixContextScheduler extends Scheduler {
                 return Subscriptions.empty();
             }
 
-            final AtomicReference<Subscription> sf = new AtomicReference<Subscription>();
+            final AtomicReference<Subscription> sf = new AtomicReference<>();
             Subscription s = Subscriptions.from(threadPool.getExecutor().submit(new Runnable() {
 
                 @Override

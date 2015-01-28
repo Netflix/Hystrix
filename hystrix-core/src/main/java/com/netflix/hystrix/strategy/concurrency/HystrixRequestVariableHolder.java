@@ -36,7 +36,7 @@ public class HystrixRequestVariableHolder<T> {
 
     static final Logger logger = LoggerFactory.getLogger(HystrixRequestVariableHolder.class);
 
-    private static ConcurrentHashMap<RVCacheKey, HystrixRequestVariable<?>> requestVariableInstance = new ConcurrentHashMap<RVCacheKey, HystrixRequestVariable<?>>();
+    private static ConcurrentHashMap<RVCacheKey, HystrixRequestVariable<?>> requestVariableInstance = new ConcurrentHashMap<>();
 
     private final HystrixRequestVariableLifecycle<T> lifeCycleMethods;
 

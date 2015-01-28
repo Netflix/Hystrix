@@ -36,7 +36,7 @@ public class HystrixCollapserMetrics extends HystrixMetrics {
     private static final Logger logger = LoggerFactory.getLogger(HystrixCollapserMetrics.class);
 
     // String is HystrixCollapserKey.name() (we can't use HystrixCollapserKey directly as we can't guarantee it implements hashcode/equals correctly)
-    private static final ConcurrentHashMap<String, HystrixCollapserMetrics> metrics = new ConcurrentHashMap<String, HystrixCollapserMetrics>();
+    private static final ConcurrentHashMap<String, HystrixCollapserMetrics> metrics = new ConcurrentHashMap<>();
 
     /**
      * Get or create the {@link HystrixCollapserMetrics} instance for a given {@link HystrixCollapserKey}.

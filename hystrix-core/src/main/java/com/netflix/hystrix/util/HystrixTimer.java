@@ -63,7 +63,7 @@ public class HystrixTimer {
         }
     }
 
-    /* package */ AtomicReference<ScheduledExecutor> executor = new AtomicReference<ScheduledExecutor>();
+    /* package */ AtomicReference<ScheduledExecutor> executor = new AtomicReference<>();
 
     /**
      * Add a {@link TimerListener} that will be executed until it is garbage collected or removed by clearing the returned {@link Reference}.

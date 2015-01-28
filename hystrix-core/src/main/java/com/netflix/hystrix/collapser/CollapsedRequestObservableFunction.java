@@ -22,7 +22,7 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
  */
 /* package */class CollapsedRequestObservableFunction<T, R> implements CollapsedRequest<T, R>, OnSubscribe<T> {
     private final R argument;
-    private final AtomicReference<CollapsedRequestObservableFunction.ResponseHolder<T>> rh = new AtomicReference<CollapsedRequestObservableFunction.ResponseHolder<T>>(new CollapsedRequestObservableFunction.ResponseHolder<T>());
+    private final AtomicReference<CollapsedRequestObservableFunction.ResponseHolder<T>> rh = new AtomicReference<>(new CollapsedRequestObservableFunction.ResponseHolder<T>());
     private final BooleanSubscription subscription = new BooleanSubscription();
 
     public CollapsedRequestObservableFunction(R arg) {
@@ -209,15 +209,15 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
         }
 
         public ResponseHolder<T> setResponse(T response) {
-            return new ResponseHolder<T>(new AtomicReference<T>(response), e, o);
+            return new ResponseHolder<>(new AtomicReference<>(response), e, o);
         }
 
         public ResponseHolder<T> setObserver(Observer<? super T> observer) {
-            return new ResponseHolder<T>(r, e, observer);
+            return new ResponseHolder<>(r, e, observer);
         }
 
         public ResponseHolder<T> setException(Exception exception) {
-            return new ResponseHolder<T>(r, exception, o);
+            return new ResponseHolder<>(r, exception, o);
         }
 
         public Observer<? super T> getObserver() {

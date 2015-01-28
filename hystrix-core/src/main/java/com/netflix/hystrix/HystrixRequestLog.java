@@ -50,7 +50,7 @@ public class HystrixRequestLog {
      */
     /* package */static final int MAX_STORAGE = 1000;
 
-    private static final HystrixRequestVariableHolder<HystrixRequestLog> currentRequestLog = new HystrixRequestVariableHolder<HystrixRequestLog>(new HystrixRequestVariableLifecycle<HystrixRequestLog>() {
+    private static final HystrixRequestVariableHolder<HystrixRequestLog> currentRequestLog = new HystrixRequestVariableHolder<>(new HystrixRequestVariableLifecycle<HystrixRequestLog>() {
         @Override
         public HystrixRequestLog initialValue() {
             return new HystrixRequestLog();
@@ -65,12 +65,12 @@ public class HystrixRequestLog {
     /**
      * History of {@link HystrixCommand} executed in this request.
      */
-    private LinkedBlockingQueue<HystrixCommand<?>> executedCommands = new LinkedBlockingQueue<HystrixCommand<?>>(MAX_STORAGE);
+    private LinkedBlockingQueue<HystrixCommand<?>> executedCommands = new LinkedBlockingQueue<>(MAX_STORAGE);
 
     /**
      * History of {@link HystrixInvokableInfo} executed in this request.
      */
-    private LinkedBlockingQueue<HystrixInvokableInfo<?>> allExecutedCommands = new LinkedBlockingQueue<HystrixInvokableInfo<?>>(MAX_STORAGE);
+    private LinkedBlockingQueue<HystrixInvokableInfo<?>> allExecutedCommands = new LinkedBlockingQueue<>(MAX_STORAGE);
 
     // prevent public instantiation
     private HystrixRequestLog() {
@@ -164,8 +164,8 @@ public class HystrixRequestLog {
      */
     public String getExecutedCommandsAsString() {
         try {
-            LinkedHashMap<String, Integer> aggregatedCommandsExecuted = new LinkedHashMap<String, Integer>();
-            Map<String, Integer> aggregatedCommandExecutionTime = new HashMap<String, Integer>();
+            LinkedHashMap<String, Integer> aggregatedCommandsExecuted = new LinkedHashMap<>();
+            Map<String, Integer> aggregatedCommandExecutionTime = new HashMap<>();
 
             StringBuilder builder = new StringBuilder();
             int estimatedLength = 0;
@@ -173,7 +173,7 @@ public class HystrixRequestLog {
                 builder.setLength(0);
                 builder.append(command.getCommandKey().name());
 
-                List<HystrixEventType> events = new ArrayList<HystrixEventType>(command.getExecutionEvents());
+                List<HystrixEventType> events = new ArrayList<>(command.getExecutionEvents());
                 if (events.size() > 0) {
                     Collections.sort(events);
                     //replicate functionality of Arrays.toString(events.toArray()) to append directly to existing StringBuilder
