@@ -343,7 +343,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
      *             if invoked more than once
      */
     final public Observable<R> toObservable() {
-         /* this is a stateful object so can only be used once */
+        /* this is a stateful object so can only be used once */
         if (!started.compareAndSet(false, true)) {
             throw new IllegalStateException("This instance can only be executed once. Please instantiate a new instance.");
         }
