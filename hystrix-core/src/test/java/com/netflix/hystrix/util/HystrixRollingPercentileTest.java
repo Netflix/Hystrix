@@ -183,8 +183,7 @@ public class HystrixRollingPercentileTest {
     }
 
     public PercentileSnapshot getPercentileForValues(int... values) {
-        PercentileSnapshot p = new PercentileSnapshot(values);
-        return p;
+        return new PercentileSnapshot(values);
     }
 
     @Test

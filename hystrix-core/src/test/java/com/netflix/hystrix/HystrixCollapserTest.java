@@ -944,8 +944,7 @@ public class HystrixCollapserTest {
 
         private static HystrixCollapserMetrics createMetrics() {
             HystrixCollapserKey key = HystrixCollapserKey.Factory.asKey("COLLAPSER_ONE");
-            HystrixCollapserMetrics metrics = HystrixCollapserMetrics.getInstance(key, new HystrixPropertiesCollapserDefault(key, HystrixCollapserProperties.Setter()));
-            return metrics;
+            return HystrixCollapserMetrics.getInstance(key, new HystrixPropertiesCollapserDefault(key, HystrixCollapserProperties.Setter()));
         }
 
         public TestRequestCollapser(Scope scope, TestCollapserTimer timer, String value, int defaultMaxRequestsInBatch, int defaultTimerDelayInMilliseconds, ConcurrentLinkedQueue<HystrixCommand<List<String>>> executionLog) {
