@@ -479,7 +479,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                 o = new CachedObservableResponse<>((CachedObservableOriginal<R>) fromCache, this);
             }
             // we just created an ObservableCommand so we cast and return it
-            return (ObservableCommand<R>) o;
+            return o;
         } else {
             // no request caching so a simple wrapper just to pass 'this' along with the Observable
             return new ObservableCommand<>(o, this);
@@ -604,7 +604,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                         Exception decorated = executionHook.onError(_self, FailureType.BAD_REQUEST_EXCEPTION, (Exception) t);
 
                         if (decorated instanceof HystrixBadRequestException) {
-                            t = (HystrixBadRequestException) decorated;
+                            t = decorated;
                         } else {
                             logger.warn("ExecutionHook.onError returned an exception that was not an instance of HystrixBadRequestException so will be ignored.", decorated);
                         }
@@ -744,7 +744,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                     Exception decorated = executionHook.onFallbackError(_cmd, e);
 
                     if (decorated instanceof RuntimeException) {
-                        e = (RuntimeException) decorated;
+                        e = decorated;
                     } else {
                         logger.warn("ExecutionHook.onFallbackError returned an exception that was not an instance of RuntimeException so will be ignored.", decorated);
                     }
