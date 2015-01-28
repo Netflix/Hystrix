@@ -3519,7 +3519,7 @@ public class HystrixCommandTest {
     private <T> void assertHooksOnSuccess(Func0<TestHystrixCommand<T>> ctor, Action1<TestHystrixCommand<T>> assertion) {
         assertExecute(ctor.call(), assertion, true);
         assertBlockingQueue(ctor.call(), assertion, true);
-        //assertNonBlockingQueue(ctor.call(), assertion, true);
+        assertNonBlockingQueue(ctor.call(), assertion, true, false);
         assertBlockingObserve(ctor.call(), assertion, true);
         assertNonBlockingObserve(ctor.call(), assertion, true);
     }
@@ -3533,9 +3533,34 @@ public class HystrixCommandTest {
     private <T> void assertHooksOnFailure(Func0<TestHystrixCommand<T>> ctor, Action1<TestHystrixCommand<T>> assertion) {
         assertExecute(ctor.call(), assertion, false);
         assertBlockingQueue(ctor.call(), assertion, false);
-        //assertNonBlockingQueue(ctor.call(), assertion, false);
+        assertNonBlockingQueue(ctor.call(), assertion, false, false);
         assertBlockingObserve(ctor.call(), assertion, false);
         assertNonBlockingObserve(ctor.call(), assertion, false);
+    }
+
+
+    /**
+     * Run the command in multiple modes and check that the hook assertions hold in each and that the command fails
+     * @param ctor {@link com.netflix.hystrix.HystrixCommandTest.TestHystrixCommand} constructor
+     * @param assertion sequence of assertions to check after the command has completed
+     * @param <T> type of object returned by command
+     */
+    private <T> void assertHooksOnFailure(Func0<TestHystrixCommand<T>> ctor, Action1<TestHystrixCommand<T>> assertion, boolean failFast) {
+        assertExecute(ctor.call(), assertion, false);
+        assertBlockingQueue(ctor.call(), assertion, false);
+        assertNonBlockingQueue(ctor.call(), assertion, false, failFast);
+        assertBlockingObserve(ctor.call(), assertion, false);
+        assertNonBlockingObserve(ctor.call(), assertion, false);
+    }
+
+    /**
+     * Run the command in multiple modes and check that the hook assertions hold in each and that the command fails as soon as possible
+     * @param ctor {@link com.netflix.hystrix.HystrixCommandTest.TestHystrixCommand} constructor
+     * @param assertion sequence of assertions to check after the command has completed
+     * @param <T> type of object returned by command
+     */
+    private <T> void assertHooksOnFailFast(Func0<TestHystrixCommand<T>> ctor, Action1<TestHystrixCommand<T>> assertion) {
+        assertHooksOnFailure(ctor, assertion, true);
     }
 
     /**
@@ -3603,9 +3628,24 @@ public class HystrixCommandTest {
      * @param isSuccess should the command succeed?
      * @param <T> type of object returned by command
      */
-    private <T> void assertNonBlockingQueue(TestHystrixCommand<T> command, Action1<TestHystrixCommand<T>> assertion, boolean isSuccess) {
+    private <T> void assertNonBlockingQueue(TestHystrixCommand<T> command, Action1<TestHystrixCommand<T>> assertion, boolean isSuccess, boolean failFast) {
         System.out.println("Running command.queue(), sleeping the test thread until command is complete, and then running assertions...");
-        Future<T> f = command.queue();
+        Future<T> f = null;
+        if (failFast) {
+            try {
+                f = command.queue();
+                fail("Expected a failure when queuing the command");
+            } catch (Exception ex) {
+                System.out.println("Received expected fail fast ex : " + ex);
+                ex.printStackTrace();
+            }
+        } else {
+            try {
+                f = command.queue();
+            } catch (Exception ex) {
+                throw new RuntimeException(ex);
+            }
+        }
         awaitCommandCompletion(command);
 
         assertion.call(command);
@@ -4226,7 +4266,7 @@ public class HystrixCommandTest {
      */
     @Test
     public void testExecutionHookThreadPoolQueueFullNoFallback() {
-        assertHooksOnFailure(
+        assertHooksOnFailFast(
                 new Func0<TestHystrixCommand<Boolean>>() {
                     @Override
                     public TestHystrixCommand<Boolean> call() {
@@ -4320,7 +4360,7 @@ public class HystrixCommandTest {
      */
     @Test
     public void testExecutionHookThreadPoolQueueFullUnsuccessfulFallback() {
-        assertHooksOnFailure(
+        assertHooksOnFailFast(
                 new Func0<TestHystrixCommand<Boolean>>() {
                     @Override
                     public TestHystrixCommand<Boolean> call() {
@@ -4367,7 +4407,7 @@ public class HystrixCommandTest {
      */
     @Test
     public void testExecutionHookThreadPoolFullNoFallback() {
-        assertHooksOnFailure(
+        assertHooksOnFailFast(
                 new Func0<TestHystrixCommand<Boolean>>() {
                     @Override
                     public TestHystrixCommand<Boolean> call() {
@@ -4457,7 +4497,7 @@ public class HystrixCommandTest {
      */
     @Test
     public void testExecutionHookThreadPoolFullUnsuccessfulFallback() {
-        assertHooksOnFailure(
+        assertHooksOnFailFast(
                 new Func0<TestHystrixCommand<Boolean>>() {
                     @Override
                     public TestHystrixCommand<Boolean> call() {
@@ -4500,7 +4540,7 @@ public class HystrixCommandTest {
      */
     @Test
     public void testExecutionHookThreadShortCircuitNoFallback() {
-        assertHooksOnFailure(
+        assertHooksOnFailFast(
                 new Func0<TestHystrixCommand<Boolean>>() {
                     @Override
                     public TestHystrixCommand<Boolean> call() {
@@ -4570,7 +4610,7 @@ public class HystrixCommandTest {
      */
     @Test
     public void testExecutionHookThreadShortCircuitUnsuccessfulFallback() {
-        assertHooksOnFailure(
+        assertHooksOnFailFast(
                 new Func0<TestHystrixCommand<Boolean>>() {
                     @Override
                     public TestHystrixCommand<Boolean> call() {
@@ -4797,7 +4837,7 @@ public class HystrixCommandTest {
      */
     @Test
     public void testExecutionHookSemaphoreRejectedNoFallback() {
-        assertHooksOnFailure(
+        assertHooksOnFailFast(
                 new Func0<TestHystrixCommand<Boolean>>() {
                     @Override
                     public TestHystrixCommand<Boolean> call() {
@@ -4925,7 +4965,7 @@ public class HystrixCommandTest {
      */
     @Test
     public void testExecutionHookSemaphoreRejectedUnsuccessfulFallback() {
-        assertHooksOnFailure(
+        assertHooksOnFailFast(
                 new Func0<TestHystrixCommand<Boolean>>() {
                     @Override
                     public TestHystrixCommand<Boolean> call() {
@@ -4988,7 +5028,7 @@ public class HystrixCommandTest {
      */
     @Test
     public void testExecutionHookSemaphoreShortCircuitNoFallback() {
-        assertHooksOnFailure(
+        assertHooksOnFailFast(
                 new Func0<TestHystrixCommand<Boolean>>() {
                     @Override
                     public TestHystrixCommand<Boolean> call() {
@@ -5060,7 +5100,7 @@ public class HystrixCommandTest {
      */
     @Test
     public void testExecutionHookSemaphoreShortCircuitUnsuccessfulFallback() {
-        assertHooksOnFailure(
+        assertHooksOnFailFast(
                 new Func0<TestHystrixCommand<Boolean>>() {
                     @Override
                     public TestHystrixCommand<Boolean> call() {
