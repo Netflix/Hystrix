@@ -5272,7 +5272,7 @@ public class HystrixCommandTest {
     }
 
     @Test
-    public void testExceptionConvertedToBadRequestExceptionInExecutionHookBypassesCircuitBreaker(){
+    public void testExceptionConvertedToBadRequestExceptionInExecutionHookBypassesCircuitBreaker() {
         TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
         try {
             new ExceptionToBadRequestByExecutionHookCommand(circuitBreaker, ExecutionIsolationStrategy.THREAD).execute();
@@ -5289,6 +5289,84 @@ public class HystrixCommandTest {
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.BAD_REQUEST));
+    }
+
+    @Test
+    public void testInterruptFutureOnTimeout() throws InterruptedException, ExecutionException {
+        // given
+        InterruptibleCommand cmd = new InterruptibleCommand(new TestCircuitBreaker(), true);
+
+        // when
+        Future<Boolean> f = cmd.queue();
+
+        // then
+        Thread.sleep(500);
+        assertTrue(cmd.hasBeenInterrupted());
+    }
+
+    @Test
+    public void testInterruptObserveOnTimeout() throws InterruptedException {
+        // given
+        InterruptibleCommand cmd = new InterruptibleCommand(new TestCircuitBreaker(), true);
+
+        // when
+        cmd.observe().subscribe();
+
+        // then
+        Thread.sleep(500);
+        assertTrue(cmd.hasBeenInterrupted());
+    }
+
+    @Test
+    public void testInterruptToObservableOnTimeout() throws InterruptedException {
+        // given
+        InterruptibleCommand cmd = new InterruptibleCommand(new TestCircuitBreaker(), true);
+
+        // when
+        cmd.toObservable().subscribe();
+
+        // then
+        Thread.sleep(500);
+        assertTrue(cmd.hasBeenInterrupted());
+    }
+
+    @Test
+    public void testDoNotInterruptFutureOnTimeoutIfPropertySaysNotTo() throws InterruptedException, ExecutionException {
+        // given
+        InterruptibleCommand cmd = new InterruptibleCommand(new TestCircuitBreaker(), false);
+
+        // when
+        Future<Boolean> f = cmd.queue();
+
+        // then
+        Thread.sleep(500);
+        assertFalse(cmd.hasBeenInterrupted());
+    }
+
+    @Test
+    public void testDoNotInterruptObserveOnTimeoutIfPropertySaysNotTo() throws InterruptedException {
+        // given
+        InterruptibleCommand cmd = new InterruptibleCommand(new TestCircuitBreaker(), false);
+
+        // when
+        cmd.observe().subscribe();
+
+        // then
+        Thread.sleep(500);
+        assertFalse(cmd.hasBeenInterrupted());
+    }
+
+    @Test
+    public void testDoNotInterruptToObservableOnTimeoutIfPropertySaysNotTo() throws InterruptedException {
+        // given
+        InterruptibleCommand cmd = new InterruptibleCommand(new TestCircuitBreaker(), false);
+
+        // when
+        cmd.toObservable().subscribe();
+
+        // then
+        Thread.sleep(500);
+        assertFalse(cmd.hasBeenInterrupted());
     }
 
     /* ******************************************************************************** */
@@ -5900,7 +5978,7 @@ public class HystrixCommandTest {
 
         private TestSemaphoreCommandWithSlowFallback(TestCircuitBreaker circuitBreaker, int fallbackSemaphoreExecutionCount, long fallbackSleep) {
             super(testPropsBuilder().setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics)
-                    .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withFallbackIsolationSemaphoreMaxConcurrentRequests(fallbackSemaphoreExecutionCount)));
+                    .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withFallbackIsolationSemaphoreMaxConcurrentRequests(fallbackSemaphoreExecutionCount).withExecutionIsolationThreadInterruptOnTimeout(false)));
             this.fallbackSleep = fallbackSleep;
         }
 
@@ -6285,6 +6363,39 @@ public class HystrixCommandTest {
             throw new IOException("simulated checked exception message");
         }
 
+    }
+
+    private static class InterruptibleCommand extends TestHystrixCommand<Boolean> {
+
+        public InterruptibleCommand(TestCircuitBreaker circuitBreaker, boolean shouldInterrupt) {
+            super(testPropsBuilder()
+                    .setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics)
+                    .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter()
+                            .withExecutionIsolationThreadInterruptOnTimeout(shouldInterrupt)
+                            .withExecutionIsolationThreadTimeoutInMilliseconds(100)));
+        }
+
+        private volatile boolean hasBeenInterrupted;
+
+        public boolean hasBeenInterrupted()
+        {
+            return hasBeenInterrupted;
+        }
+
+        @Override
+        protected Boolean run() throws Exception
+        {
+            try {
+                Thread.sleep(2000);
+            }
+            catch (InterruptedException e) {
+                System.out.println("Interrupted!");
+                e.printStackTrace();
+                hasBeenInterrupted = true;
+            }
+
+            return hasBeenInterrupted;
+        }
     }
 
     enum CommandKeyForUnitTest implements HystrixCommandKey {
