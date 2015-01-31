@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.netflix.hystrix.strategy.concurrency.HystrixContextScheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +35,10 @@ import rx.Notification;
 import rx.Observable;
 import rx.Observable.OnSubscribe;
 import rx.Observable.Operator;
+import rx.Producer;
+import rx.Scheduler;
 import rx.Subscriber;
+import rx.Subscription;
 import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func1;
@@ -528,7 +532,12 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                     }
                 }
 
-            }).subscribeOn(threadPool.getScheduler());
+            });
+
+            //I believe there is a bug in RxJava's {@link Observable#subscribeOn} method that doesn't properly hook up unsubscription.
+            //In place of that method, I'm using a custom operator ({@link OperatorSubscribeOnThatAllowsUnsubscribe}) that properly hooks these up.
+            //Once I get the work done in Rx to apply the fix, this should return to use {@link Observable#susbcribeOn}
+            run = run.nest().lift(new OperatorSubscribeOnThatAllowsUnsubscribe<R>(threadPool.getScheduler(), properties));
         } else {
             // semaphore isolated
             executionHook.onRunStart(_self);
@@ -995,6 +1004,92 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         }
 
     }
+
+    public static class OperatorSubscribeOnThatAllowsUnsubscribe<T> implements Operator<T, Observable<T>> {
+
+        private final Scheduler scheduler;
+        private final HystrixCommandProperties properties;
+
+        public OperatorSubscribeOnThatAllowsUnsubscribe(Scheduler scheduler, HystrixCommandProperties properties) {
+            this.scheduler = scheduler;
+            this.properties = properties;
+        }
+
+        @Override
+        public Subscriber<? super Observable<T>> call(final Subscriber<? super T> subscriber) {
+            boolean shouldInterrupt = properties.executionIsolationThreadInterruptOnTimeout().get();
+            final Scheduler.Worker inner = ((HystrixContextScheduler) scheduler).createWorker(shouldInterrupt);
+            subscriber.add(inner);
+            return new Subscriber<Observable<T>>(subscriber) {
+
+                @Override
+                public void onCompleted() {
+                    // ignore because this is a nested Observable and we expect only 1 Observable<T> emitted to onNext
+                }
+
+                @Override
+                public void onError(Throwable e) {
+                    subscriber.onError(e);
+                }
+
+                @Override
+                public void onNext(final Observable<T> o) {
+                    Subscription subscription = inner.schedule(new Action0() {
+
+                        @Override
+                        public void call() {
+                            final Thread t = Thread.currentThread();
+                            o.unsafeSubscribe(new Subscriber<T>(subscriber) {
+
+                                @Override
+                                public void onCompleted() {
+                                    subscriber.onCompleted();
+                                }
+
+                                @Override
+                                public void onError(Throwable e) {
+                                    subscriber.onError(e);
+                                }
+
+                                @Override
+                                public void onNext(T t) {
+                                    subscriber.onNext(t);
+                                }
+
+                                @Override
+                                public void setProducer(final Producer producer) {
+                                    subscriber.setProducer(new Producer() {
+
+                                        @Override
+                                        public void request(final long n) {
+                                            if (Thread.currentThread() == t) {
+                                                // don't schedule if we're already on the thread (primarily for first setProducer call)
+                                                // see unit test 'testSetProducerSynchronousRequest' for more context on this
+                                                producer.request(n);
+                                            } else {
+                                                inner.schedule(new Action0() {
+
+                                                    @Override
+                                                    public void call() {
+                                                        producer.request(n);
+                                                    }
+                                                });
+                                            }
+                                        }
+
+                                    });
+                                }
+
+                            });
+                        }
+                    });
+                    subscriber.add(subscription);
+                }
+
+            };
+        }
+    }
+
 
     private static void setRequestContextIfNeeded(final HystrixRequestContext currentRequestContext) {
         if (!HystrixRequestContext.isCurrentThreadInitialized()) {

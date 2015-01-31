@@ -15,10 +15,12 @@
  */
 package com.netflix.hystrix.strategy.concurrency;
 
+import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.netflix.hystrix.HystrixCommandProperties;
 import rx.Scheduler;
 import rx.Subscription;
 import rx.functions.Action0;
@@ -62,6 +64,14 @@ public class HystrixContextScheduler extends Scheduler {
         return new HystrixContextSchedulerWorker(actualScheduler.createWorker());
     }
 
+    public Worker createWorker(boolean shouldInterrupt) {
+        if (actualScheduler instanceof ThreadPoolScheduler) {
+            return new HystrixContextSchedulerWorker(((ThreadPoolScheduler) actualScheduler).createWorker(shouldInterrupt));
+        } else {
+            return new HystrixContextSchedulerWorker(actualScheduler.createWorker());
+        }
+    }
+
     private class HystrixContextSchedulerWorker extends Worker {
 
         private BooleanSubscription s = new BooleanSubscription();
@@ -103,7 +113,7 @@ public class HystrixContextScheduler extends Scheduler {
 
     }
 
-    private static class ThreadPoolScheduler extends Scheduler {
+    public static class ThreadPoolScheduler extends Scheduler {
 
         private final HystrixThreadPool threadPool;
 
@@ -113,9 +123,12 @@ public class HystrixContextScheduler extends Scheduler {
 
         @Override
         public Worker createWorker() {
-            return new ThreadPoolWorker(threadPool);
+            return new ThreadPoolWorker(threadPool, true);
         }
 
+        public Worker createWorker(boolean shouldInterrupt) {
+            return new ThreadPoolWorker(threadPool, shouldInterrupt);
+        }
     }
 
     /**
@@ -130,10 +143,12 @@ public class HystrixContextScheduler extends Scheduler {
     private static class ThreadPoolWorker extends Worker {
 
         private final HystrixThreadPool threadPool;
+        private final boolean shouldInterrupt;
         private final CompositeSubscription subscription = new CompositeSubscription();
 
-        public ThreadPoolWorker(HystrixThreadPool threadPool) {
+        public ThreadPoolWorker(HystrixThreadPool threadPool, boolean shouldInterrupt) {
             this.threadPool = threadPool;
+            this.shouldInterrupt = shouldInterrupt;
         }
 
         @Override
@@ -154,7 +169,7 @@ public class HystrixContextScheduler extends Scheduler {
             }
 
             final AtomicReference<Subscription> sf = new AtomicReference<>();
-            Subscription s = Subscriptions.from(threadPool.getExecutor().submit(new Runnable() {
+            Future<?> submittedTask = threadPool.getExecutor().submit(new Runnable() {
 
                 @Override
                 public void run() {
@@ -165,13 +180,15 @@ public class HystrixContextScheduler extends Scheduler {
                         action.call();
                     } finally {
                         // remove the subscription now that we're completed
-                        Subscription s = sf.get();
-                        if (s != null) {
-                            subscription.remove(s);
+                        Subscription completed = sf.get();
+                        if (completed != null) {
+                            subscription.remove(completed);
                         }
                     }
                 }
-            }));
+            });
+
+            Subscription s = new FutureSubscriptionWithConfigurableInterrupt(submittedTask, shouldInterrupt);
 
             sf.set(s);
             subscription.add(s);
@@ -182,6 +199,32 @@ public class HystrixContextScheduler extends Scheduler {
         public Subscription schedule(Action0 action, long delayTime, TimeUnit unit) {
             throw new IllegalStateException("Hystrix does not support delayed scheduling");
         }
+
+        /**
+         * Experimentally copied over from RxJava {@link rx.subscriptions.Subscriptions)}
+         * (https://github.com/ReactiveX/RxJava/blob/1.x/src/main/java/rx/subscriptions/Subscriptions.java)
+         *
+         * If this proves worthwhile, will work to get this functionality in RxJava proper and depend on it
+         */
+        private static final class FutureSubscriptionWithConfigurableInterrupt implements Subscription {
+            final Future<?> f;
+            final boolean shouldInterruptOnCancel;
+
+            public FutureSubscriptionWithConfigurableInterrupt(Future<?> f, boolean shouldInterruptOnCancel) {
+                this.f = f;
+                this.shouldInterruptOnCancel = shouldInterruptOnCancel;
+            }
+            @Override
+            public void unsubscribe() {
+                f.cancel(shouldInterruptOnCancel);
+            }
+
+            @Override
+            public boolean isUnsubscribed() {
+                return f.isCancelled();
+            }
+        }
+
 
     }
 
