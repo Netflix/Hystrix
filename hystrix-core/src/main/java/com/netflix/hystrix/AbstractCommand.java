@@ -1034,6 +1034,10 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 
                 @Override
                 public void onNext(final Observable<T> o) {
+                    /**
+                     * This is the diff from OperatorSubscribeOn.  In that version, inner.schedule is called and then
+                     * the Subscription is lost.  Here we call subscriber.add on it.
+                     */
                     Subscription subscription = inner.schedule(new Action0() {
 
                         @Override
