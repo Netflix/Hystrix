@@ -15,16 +15,12 @@
  */
 package com.netflix.hystrix.strategy.concurrency;
 
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.*;
 
-import rx.Scheduler;
-import rx.Subscription;
+import rx.*;
 import rx.functions.Action0;
-import rx.subscriptions.BooleanSubscription;
-import rx.subscriptions.CompositeSubscription;
-import rx.subscriptions.Subscriptions;
+import rx.internal.schedulers.ScheduledAction;
+import rx.subscriptions.*;
 
 import com.netflix.hystrix.HystrixThreadPool;
 import com.netflix.hystrix.strategy.HystrixPlugins;
@@ -64,7 +60,6 @@ public class HystrixContextScheduler extends Scheduler {
 
     private class HystrixContextSchedulerWorker extends Worker {
 
-        private BooleanSubscription s = new BooleanSubscription();
         private final Worker worker;
 
         private HystrixContextSchedulerWorker(Worker actualWorker) {
@@ -73,12 +68,12 @@ public class HystrixContextScheduler extends Scheduler {
 
         @Override
         public void unsubscribe() {
-            s.unsubscribe();
+            worker.unsubscribe();
         }
 
         @Override
         public boolean isUnsubscribed() {
-            return s.isUnsubscribed();
+            return worker.isUnsubscribed();
         }
 
         @Override
@@ -150,32 +145,20 @@ public class HystrixContextScheduler extends Scheduler {
         public Subscription schedule(final Action0 action) {
             if (subscription.isUnsubscribed()) {
                 // don't schedule, we are unsubscribed
-                return Subscriptions.empty();
+                return Subscriptions.unsubscribed();
             }
+            
+            // This is internal RxJava API but it is too useful.
+            ScheduledAction sa = new ScheduledAction(action);
+            
+            subscription.add(sa);
+            sa.addParent(subscription);
+            
+            Future<?> f = threadPool.getExecutor().submit(sa);
+            
+            sa.add(f);
 
-            final AtomicReference<Subscription> sf = new AtomicReference<>();
-            Subscription s = Subscriptions.from(threadPool.getExecutor().submit(new Runnable() {
-
-                @Override
-                public void run() {
-                    try {
-                        if (subscription.isUnsubscribed()) {
-                            return;
-                        }
-                        action.call();
-                    } finally {
-                        // remove the subscription now that we're completed
-                        Subscription s = sf.get();
-                        if (s != null) {
-                            subscription.remove(s);
-                        }
-                    }
-                }
-            }));
-
-            sf.set(s);
-            subscription.add(s);
-            return s;
+            return sa;
         }
 
         @Override
