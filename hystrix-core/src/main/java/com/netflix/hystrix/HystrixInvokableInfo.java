@@ -53,6 +53,10 @@ public interface HystrixInvokableInfo<R> {
 
     public List<HystrixEventType> getExecutionEvents();
 
+    public int getNumberEmissions();
+
+    public int getNumberFallbackEmissions();
+
     public int getExecutionTimeInMilliseconds();
 
     public long getCommandRunStartTimeInNanos();

@@ -20,6 +20,7 @@ import rx.Observable;
 import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
 import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
+import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
 
 /**
  * Used to wrap code that will execute potentially risky functionality (typically meaning a service call over the network)
@@ -47,6 +48,18 @@ public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> imp
     protected HystrixObservableCommand(HystrixCommandGroupKey group) {
         // use 'null' to specify use the default
         this(new Setter(group));
+    }
+
+    /**
+     *
+     * Overridden to true so that all onNext emissions are captured
+     *
+     * @return if onNext events should be reported on
+     * This affects {@link HystrixRequestLog}, and {@link HystrixEventNotifier} currently.  Metrics/Hooks later
+     */
+    @Override
+    protected boolean shouldOutputOnNextEvents() {
+        return true;
     }
 
     /**
