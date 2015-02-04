@@ -121,7 +121,7 @@ public class HystrixObservableCommandTest {
      * Test a successful semaphore-isolated command execution.
      */
     @Test
-    public void testSempahoreIsolatedObserveSuccess() {
+    public void testSemaphoreIsolatedObserveSuccess() {
         try {
             TestHystrixCommand<Boolean> command = new SuccessfulTestCommand();
             assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
@@ -150,6 +150,9 @@ public class HystrixObservableCommandTest {
             assertEquals(0, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
             assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+            assertEquals(2, command.getExecutionEvents().size());
+            assertTrue(command.getExecutionEvents().contains(HystrixEventType.EMIT));
+            assertTrue(command.getExecutionEvents().contains(HystrixEventType.SUCCESS));
 
             // semaphore isolated
             assertFalse(command.isExecutedInThread());
@@ -192,6 +195,9 @@ public class HystrixObservableCommandTest {
             assertEquals(0, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
             assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+            assertEquals(2, command.getExecutionEvents().size());
+            assertTrue(command.getExecutionEvents().contains(HystrixEventType.EMIT));
+            assertTrue(command.getExecutionEvents().contains(HystrixEventType.SUCCESS));
 
             // thread isolated
             assertTrue(command.isExecutedInThread());
@@ -206,7 +212,7 @@ public class HystrixObservableCommandTest {
      * Test that a command can not be executed multiple times.
      */
     @Test
-    public void testSempahoreIsolatedObserveMultipleTimes() {
+    public void testSemaphoreIsolatedObserveMultipleTimes() {
         SuccessfulTestCommand command = new SuccessfulTestCommand();
         assertFalse(command.isExecutionComplete());
         // first should succeed
@@ -238,6 +244,9 @@ public class HystrixObservableCommandTest {
         // semaphore isolated
         assertFalse(command.isExecutedInThread());
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+        assertEquals(2, command.getExecutionEvents().size());
+        assertTrue(command.getExecutionEvents().contains(HystrixEventType.EMIT));
+        assertTrue(command.getExecutionEvents().contains(HystrixEventType.SUCCESS));
     }
 
     /**
@@ -281,6 +290,8 @@ public class HystrixObservableCommandTest {
         assertEquals(100, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+        assertEquals(1, command.getExecutionEvents().size());
+        assertTrue(command.getExecutionEvents().contains(HystrixEventType.FAILURE));
 
         // semaphore isolated
         assertFalse(command.isExecutedInThread());
@@ -324,6 +335,8 @@ public class HystrixObservableCommandTest {
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+        assertEquals(1, command.getExecutionEvents().size());
+        assertTrue(command.getExecutionEvents().contains(HystrixEventType.FAILURE));
 
         // semaphore isolated
         assertFalse(command.isExecutedInThread());
@@ -333,7 +346,7 @@ public class HystrixObservableCommandTest {
      * Test a command execution that fails but has a fallback.
      */
     @Test
-    public void tesSemaphoreIsolatedtObserveFailureWithFallback() {
+    public void tesSemaphoreIsolatedObserveFailureWithFallback() {
         TestHystrixCommand<Boolean> command = new KnownFailureTestCommandWithFallback(new TestCircuitBreaker());
         try {
             assertEquals(false, command.observe().toBlocking().single());
@@ -363,6 +376,10 @@ public class HystrixObservableCommandTest {
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+        assertEquals(3, command.getExecutionEvents().size());
+        assertTrue(command.getExecutionEvents().contains(HystrixEventType.FAILURE));
+        assertTrue(command.getExecutionEvents().contains(HystrixEventType.FALLBACK_EMIT));
+        assertTrue(command.getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
 
         // semaphore isolated
         assertFalse(command.isExecutedInThread());
@@ -402,6 +419,10 @@ public class HystrixObservableCommandTest {
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+        assertEquals(3, command.getExecutionEvents().size());
+        assertTrue(command.getExecutionEvents().contains(HystrixEventType.FAILURE));
+        assertTrue(command.getExecutionEvents().contains(HystrixEventType.FALLBACK_EMIT));
+        assertTrue(command.getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
 
         // thread isolated
         assertTrue(command.isExecutedInThread());
@@ -442,6 +463,9 @@ public class HystrixObservableCommandTest {
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+        assertEquals(2, command.getExecutionEvents().size());
+        assertTrue(command.getExecutionEvents().contains(HystrixEventType.FAILURE));
+        assertTrue(command.getExecutionEvents().contains(HystrixEventType.FALLBACK_FAILURE));
 
         // semaphore isolated
         assertFalse(command.isExecutedInThread());
@@ -481,6 +505,9 @@ public class HystrixObservableCommandTest {
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+        assertEquals(2, command.getExecutionEvents().size());
+        assertTrue(command.getExecutionEvents().contains(HystrixEventType.FAILURE));
+        assertTrue(command.getExecutionEvents().contains(HystrixEventType.FALLBACK_FAILURE));
 
         // thread isolated
         assertTrue(command.isExecutedInThread());
@@ -520,6 +547,8 @@ public class HystrixObservableCommandTest {
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+        assertEquals(1, command.getExecutionEvents().size());
+        assertTrue(command.getExecutionEvents().contains(HystrixEventType.FAILURE));
 
         // thread isolated
         assertTrue(command.isExecutedInThread());
@@ -559,13 +588,17 @@ public class HystrixObservableCommandTest {
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+        assertEquals(3, command.getExecutionEvents().size());
+        assertTrue(command.getExecutionEvents().contains(HystrixEventType.TIMEOUT));
+        assertTrue(command.getExecutionEvents().contains(HystrixEventType.FALLBACK_EMIT));
+        assertTrue(command.getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
 
         // semaphore isolated
         assertFalse(command.isExecutedInThread());
     }
 
     /**
-     * Test a command execution that fails with no fallback.
+     * Test a command execution that times out and performs a fallback
      */
     @Test
     public void testThreadIsolatedObserveFailureWithTimeoutAndFallback() {
@@ -598,6 +631,10 @@ public class HystrixObservableCommandTest {
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+        assertEquals(3, command.getExecutionEvents().size());
+        assertTrue(command.getExecutionEvents().contains(HystrixEventType.TIMEOUT));
+        assertTrue(command.getExecutionEvents().contains(HystrixEventType.FALLBACK_EMIT));
+        assertTrue(command.getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
 
         // thread isolated
         assertTrue(command.isExecutedInThread());
@@ -1901,14 +1938,16 @@ public class HystrixObservableCommandTest {
         // the second one should not have executed as it should have received the cached value instead
         assertFalse(command2.executed);
 
-        // the execution log for command1 should show a SUCCESS
-        assertEquals(1, command1.getExecutionEvents().size());
+        // the execution log for command1 should show an EMIT and a SUCCESS
+        assertEquals(2, command1.getExecutionEvents().size());
+        assertTrue(command1.getExecutionEvents().contains(HystrixEventType.EMIT));
         assertTrue(command1.getExecutionEvents().contains(HystrixEventType.SUCCESS));
         assertTrue(command1.getExecutionTimeInMilliseconds() > -1);
         assertFalse(command1.isResponseFromCache());
 
         // the execution log for command2 should show it came from cache
-        assertEquals(2, command2.getExecutionEvents().size()); // it will include the SUCCESS + RESPONSE_FROM_CACHE
+        assertEquals(3, command2.getExecutionEvents().size()); // it will include the EMIT + SUCCESS + RESPONSE_FROM_CACHE
+        assertTrue(command2.getExecutionEvents().contains(HystrixEventType.EMIT));
         assertTrue(command2.getExecutionEvents().contains(HystrixEventType.SUCCESS));
         assertTrue(command2.getExecutionEvents().contains(HystrixEventType.RESPONSE_FROM_CACHE));
         assertTrue(command2.getExecutionTimeInMilliseconds() == -1);
@@ -1956,12 +1995,14 @@ public class HystrixObservableCommandTest {
         // both should execute as they are different
         assertTrue(command2.executed);
 
-        // the execution log for command1 should show a SUCCESS
-        assertEquals(1, command1.getExecutionEvents().size());
+        // the execution log for command1 should show an EMIT and a SUCCESS
+        assertEquals(2, command1.getExecutionEvents().size());
+        assertTrue(command1.getExecutionEvents().contains(HystrixEventType.EMIT));
         assertTrue(command1.getExecutionEvents().contains(HystrixEventType.SUCCESS));
 
-        // the execution log for command2 should show a SUCCESS
-        assertEquals(1, command2.getExecutionEvents().size());
+        // the execution log for command2 should show an EMIT and a SUCCESS
+        assertEquals(2, command2.getExecutionEvents().size());
+        assertTrue(command2.getExecutionEvents().contains(HystrixEventType.EMIT));
         assertTrue(command2.getExecutionEvents().contains(HystrixEventType.SUCCESS));
         assertTrue(command2.getExecutionTimeInMilliseconds() > -1);
         assertFalse(command2.isResponseFromCache());
@@ -2013,16 +2054,19 @@ public class HystrixObservableCommandTest {
         // but the 3rd should come from cache
         assertFalse(command3.executed);
 
-        // the execution log for command1 should show a SUCCESS
-        assertEquals(1, command1.getExecutionEvents().size());
+        // the execution log for command1 should show an EMIT and a SUCCESS
+        assertEquals(2, command1.getExecutionEvents().size());
+        assertTrue(command1.getExecutionEvents().contains(HystrixEventType.EMIT));
         assertTrue(command1.getExecutionEvents().contains(HystrixEventType.SUCCESS));
 
-        // the execution log for command2 should show a SUCCESS
-        assertEquals(1, command2.getExecutionEvents().size());
+        // the execution log for command2 should show an EMIT and a SUCCESS
+        assertEquals(2, command2.getExecutionEvents().size());
+        assertTrue(command2.getExecutionEvents().contains(HystrixEventType.EMIT));
         assertTrue(command2.getExecutionEvents().contains(HystrixEventType.SUCCESS));
 
         // the execution log for command3 should show it came from cache
-        assertEquals(2, command3.getExecutionEvents().size()); // it will include the SUCCESS + RESPONSE_FROM_CACHE
+        assertEquals(3, command3.getExecutionEvents().size()); // it will include the EMIT + SUCCESS + RESPONSE_FROM_CACHE
+        assertTrue(command3.getExecutionEvents().contains(HystrixEventType.EMIT));
         assertTrue(command3.getExecutionEvents().contains(HystrixEventType.SUCCESS));
         assertTrue(command3.getExecutionEvents().contains(HystrixEventType.RESPONSE_FROM_CACHE));
         assertTrue(command3.getExecutionTimeInMilliseconds() == -1);
@@ -2078,14 +2122,16 @@ public class HystrixObservableCommandTest {
         assertFalse(command3.executed);
         assertFalse(command4.executed);
 
-        // the execution log for command1 should show a SUCCESS
-        assertEquals(1, command1.getExecutionEvents().size());
+        // the execution log for command1 should show an EMIT and a SUCCESS
+        assertEquals(2, command1.getExecutionEvents().size());
+        assertTrue(command1.getExecutionEvents().contains(HystrixEventType.EMIT));
         assertTrue(command1.getExecutionEvents().contains(HystrixEventType.SUCCESS));
         assertTrue(command1.getExecutionTimeInMilliseconds() > -1);
         assertFalse(command1.isResponseFromCache());
 
         // the execution log for command2 should show it came from cache
-        assertEquals(2, command2.getExecutionEvents().size()); // it will include the SUCCESS + RESPONSE_FROM_CACHE
+        assertEquals(3, command2.getExecutionEvents().size()); // it will include the EMIT + SUCCESS + RESPONSE_FROM_CACHE
+        assertTrue(command2.getExecutionEvents().contains(HystrixEventType.EMIT));
         assertTrue(command2.getExecutionEvents().contains(HystrixEventType.SUCCESS));
         assertTrue(command2.getExecutionEvents().contains(HystrixEventType.RESPONSE_FROM_CACHE));
         assertTrue(command2.getExecutionTimeInMilliseconds() == -1);
@@ -2149,16 +2195,19 @@ public class HystrixObservableCommandTest {
         // this should also execute since we disabled the cache
         assertTrue(command3.executed);
 
-        // the execution log for command1 should show a SUCCESS
-        assertEquals(1, command1.getExecutionEvents().size());
+        // the execution log for command1 should show an EMIT and a SUCCESS
+        assertEquals(2, command1.getExecutionEvents().size());
+        assertTrue(command1.getExecutionEvents().contains(HystrixEventType.EMIT));
         assertTrue(command1.getExecutionEvents().contains(HystrixEventType.SUCCESS));
 
-        // the execution log for command2 should show a SUCCESS
-        assertEquals(1, command2.getExecutionEvents().size());
+        // the execution log for command2 should show an EMIT and a SUCCESS
+        assertEquals(2, command2.getExecutionEvents().size());
+        assertTrue(command2.getExecutionEvents().contains(HystrixEventType.EMIT));
         assertTrue(command2.getExecutionEvents().contains(HystrixEventType.SUCCESS));
 
-        // the execution log for command3 should show a SUCCESS
-        assertEquals(1, command3.getExecutionEvents().size());
+        // the execution log for command3 should show an EMIT and a SUCCESS
+        assertEquals(2, command3.getExecutionEvents().size());
+        assertTrue(command3.getExecutionEvents().contains(HystrixEventType.EMIT));
         assertTrue(command3.getExecutionEvents().contains(HystrixEventType.SUCCESS));
 
         assertEquals(3, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
@@ -2213,16 +2262,20 @@ public class HystrixObservableCommandTest {
         // but the 3rd should come from cache
         assertFalse(command3.executed);
 
-        // the execution log for command1 should show a SUCCESS
-        assertEquals(1, command1.getExecutionEvents().size());
+        // the execution log for command1 should show an EMIT and a SUCCESS
+        assertEquals(2, command1.getExecutionEvents().size());
+        assertTrue(command1.getExecutionEvents().contains(HystrixEventType.EMIT));
         assertTrue(command1.getExecutionEvents().contains(HystrixEventType.SUCCESS));
 
-        // the execution log for command2 should show a SUCCESS
-        assertEquals(1, command2.getExecutionEvents().size());
+
+        // the execution log for command2 should show an EMIT and a SUCCESS
+        assertEquals(2, command2.getExecutionEvents().size());
+        assertTrue(command2.getExecutionEvents().contains(HystrixEventType.EMIT));
         assertTrue(command2.getExecutionEvents().contains(HystrixEventType.SUCCESS));
 
         // the execution log for command3 should show it comes from cache
-        assertEquals(2, command3.getExecutionEvents().size()); // it will include the SUCCESS + RESPONSE_FROM_CACHE
+        assertEquals(3, command3.getExecutionEvents().size()); // it will include the EMIT + SUCCESS + RESPONSE_FROM_CACHE
+        assertTrue(command3.getExecutionEvents().contains(HystrixEventType.EMIT));
         assertTrue(command3.getExecutionEvents().contains(HystrixEventType.SUCCESS));
         assertTrue(command3.getExecutionEvents().contains(HystrixEventType.RESPONSE_FROM_CACHE));
 
@@ -2281,16 +2334,19 @@ public class HystrixObservableCommandTest {
         // this should also execute because caching is disabled
         assertTrue(command3.executed);
 
-        // the execution log for command1 should show a SUCCESS
-        assertEquals(1, command1.getExecutionEvents().size());
+        // the execution log for command1 should show an EMIT and a SUCCESS
+        assertEquals(2, command1.getExecutionEvents().size());
+        assertTrue(command1.getExecutionEvents().contains(HystrixEventType.EMIT));
         assertTrue(command1.getExecutionEvents().contains(HystrixEventType.SUCCESS));
 
-        // the execution log for command2 should show a SUCCESS
-        assertEquals(1, command2.getExecutionEvents().size());
+        // the execution log for command2 should show an EMIT and a SUCCESS
+        assertEquals(2, command2.getExecutionEvents().size());
+        assertTrue(command2.getExecutionEvents().contains(HystrixEventType.EMIT));
         assertTrue(command2.getExecutionEvents().contains(HystrixEventType.SUCCESS));
 
-        // the execution log for command3 should show a SUCCESS
-        assertEquals(1, command3.getExecutionEvents().size());
+        // the execution log for command3 should show an EMIT and a SUCCESS
+        assertEquals(2, command3.getExecutionEvents().size());
+        assertTrue(command3.getExecutionEvents().contains(HystrixEventType.EMIT));
         assertTrue(command3.getExecutionEvents().contains(HystrixEventType.SUCCESS));
 
         assertEquals(3, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
@@ -2341,16 +2397,18 @@ public class HystrixObservableCommandTest {
         // but the 3rd should come from cache
         assertFalse(command3.executed);
 
-        // the execution log for command1 should show a SUCCESS
-        assertEquals(1, command1.getExecutionEvents().size());
+        // the execution log for command1 should show an EMIT and a SUCCESS
+        assertEquals(2, command1.getExecutionEvents().size());
+        assertTrue(command1.getExecutionEvents().contains(HystrixEventType.EMIT));
         assertTrue(command1.getExecutionEvents().contains(HystrixEventType.SUCCESS));
 
-        // the execution log for command2 should show a SUCCESS
-        assertEquals(1, command2.getExecutionEvents().size());
+        // the execution log for command2 should show an EMIT and a SUCCESS
+        assertEquals(2, command2.getExecutionEvents().size());
+        assertTrue(command2.getExecutionEvents().contains(HystrixEventType.EMIT));
         assertTrue(command2.getExecutionEvents().contains(HystrixEventType.SUCCESS));
 
         // the execution log for command3 should show it comes from cache
-        assertEquals(2, command3.getExecutionEvents().size()); // it will include the SUCCESS + RESPONSE_FROM_CACHE
+        assertEquals(3, command3.getExecutionEvents().size()); // it will include the EMIT + SUCCESS + RESPONSE_FROM_CACHE
         assertTrue(command3.getExecutionEvents().contains(HystrixEventType.RESPONSE_FROM_CACHE));
 
         assertEquals(2, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
@@ -2401,16 +2459,19 @@ public class HystrixObservableCommandTest {
         // this should also execute because caching is disabled
         assertTrue(command3.executed);
 
-        // the execution log for command1 should show a SUCCESS
-        assertEquals(1, command1.getExecutionEvents().size());
+        // the execution log for command1 should show an EMIT and a SUCCESS
+        assertEquals(2, command1.getExecutionEvents().size());
+        assertTrue(command1.getExecutionEvents().contains(HystrixEventType.EMIT));
         assertTrue(command1.getExecutionEvents().contains(HystrixEventType.SUCCESS));
 
-        // the execution log for command2 should show a SUCCESS
-        assertEquals(1, command2.getExecutionEvents().size());
+        // the execution log for command2 should show an EMIT and a SUCCESS
+        assertEquals(2, command2.getExecutionEvents().size());
+        assertTrue(command2.getExecutionEvents().contains(HystrixEventType.EMIT));
         assertTrue(command2.getExecutionEvents().contains(HystrixEventType.SUCCESS));
 
-        // the execution log for command3 should show a SUCCESS
-        assertEquals(1, command3.getExecutionEvents().size());
+        // the execution log for command3 should show an EMIT and a SUCCESS
+        assertEquals(2, command3.getExecutionEvents().size());
+        assertTrue(command3.getExecutionEvents().contains(HystrixEventType.EMIT));
         assertTrue(command3.getExecutionEvents().contains(HystrixEventType.SUCCESS));
 
         assertEquals(3, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
@@ -2539,16 +2600,16 @@ public class HystrixObservableCommandTest {
 
         HystrixObservableCommand<?>[] executeCommands = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().toArray(new HystrixObservableCommand<?>[] {});
 
-        System.out.println(":executeCommands[0].getExecutionEvents()" + executeCommands[0].getExecutionEvents());
-        assertEquals(2, executeCommands[0].getExecutionEvents().size());
+        assertEquals(3, executeCommands[0].getExecutionEvents().size());
         assertTrue(executeCommands[0].getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
+        assertTrue(executeCommands[0].getExecutionEvents().contains(HystrixEventType.FALLBACK_EMIT));
         assertTrue(executeCommands[0].getExecutionEvents().contains(HystrixEventType.TIMEOUT));
         assertTrue(executeCommands[0].getExecutionTimeInMilliseconds() > -1);
         assertTrue(executeCommands[0].isResponseTimedOut());
         assertTrue(executeCommands[0].isResponseFromFallback());
         assertFalse(executeCommands[0].isResponseFromCache());
 
-        assertEquals(3, executeCommands[1].getExecutionEvents().size()); // it will include FALLBACK_SUCCESS/TIMEOUT + RESPONSE_FROM_CACHE
+        assertEquals(4, executeCommands[1].getExecutionEvents().size()); // it will include FALLBACK_SUCCESS/TIMEOUT + RESPONSE_FROM_CACHE
         assertTrue(executeCommands[1].getExecutionEvents().contains(HystrixEventType.RESPONSE_FROM_CACHE));
         assertTrue(executeCommands[1].getExecutionTimeInMilliseconds() == -1);
         assertTrue(executeCommands[1].isResponseFromCache());
@@ -2556,7 +2617,6 @@ public class HystrixObservableCommandTest {
         assertTrue(executeCommands[1].isResponseFromFallback());
     }
 
-    //
     @Test
     public void testRequestCacheOnTimeoutThrowsException() throws Exception {
         TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
@@ -6655,6 +6715,12 @@ public class HystrixObservableCommandTest {
             assertEquals(0, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
             assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+            System.out.println("REQ LOG : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
+            assertEquals(2, command.getExecutionEvents().size());
+            assertTrue(command.getExecutionEvents().contains(HystrixEventType.EMIT));
+            assertEquals(3, command.getNumberEmissions());
+            assertTrue(command.getExecutionEvents().contains(HystrixEventType.SUCCESS));
+            assertEquals(0, command.getNumberFallbackEmissions());
 
             // semaphore isolated
             assertFalse(command.isExecutedInThread());
@@ -6684,15 +6750,13 @@ public class HystrixObservableCommandTest {
             assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
             assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
             
-            // but it will say it is both SUCCESSful and FAILED
-            assertTrue(command.isSuccessfulExecution());
+            assertFalse(command.isSuccessfulExecution());
             assertTrue(command.isFailedExecution());
 
             // we will have an exception
             assertNotNull(command.getFailedExecutionException());
 
             assertTrue(command.getExecutionTimeInMilliseconds() > -1);
-            assertTrue(command.isSuccessfulExecution());
 
             assertEquals(1, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
             assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
@@ -6706,6 +6770,13 @@ public class HystrixObservableCommandTest {
             assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
             assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+            System.out.println("REQ LOG : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
+            assertEquals(2, command.getExecutionEvents().size());
+            assertTrue(command.getExecutionEvents().contains(HystrixEventType.EMIT));
+            assertEquals(3, command.getNumberEmissions());
+            assertTrue(command.getExecutionEvents().contains(HystrixEventType.FAILURE));
+            assertEquals(0, command.getNumberFallbackEmissions());
+
 
             // semaphore isolated
             assertFalse(command.isExecutedInThread());
@@ -6735,14 +6806,12 @@ public class HystrixObservableCommandTest {
             assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
             assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
 
-            // but it will say it is both SUCCESSful and FAILED
-            assertTrue(command.isSuccessfulExecution());
+            assertFalse(command.isSuccessfulExecution());
             assertTrue(command.isFailedExecution());
             
             assertNotNull(command.getFailedExecutionException());
 
             assertTrue(command.getExecutionTimeInMilliseconds() > -1);
-            assertTrue(command.isSuccessfulExecution());
 
             assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
             assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
@@ -6756,6 +6825,14 @@ public class HystrixObservableCommandTest {
             assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
             assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+            System.out.println("REQ LOG : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
+            assertEquals(4, command.getExecutionEvents().size());
+            assertTrue(command.getExecutionEvents().contains(HystrixEventType.EMIT));
+            assertEquals(3, command.getNumberEmissions());
+            assertTrue(command.getExecutionEvents().contains(HystrixEventType.FAILURE));
+            assertTrue(command.getExecutionEvents().contains(HystrixEventType.FALLBACK_EMIT));
+            assertEquals(4, command.getNumberFallbackEmissions());
+            assertTrue(command.getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
 
             // semaphore isolated
             assertFalse(command.isExecutedInThread());
@@ -6785,14 +6862,12 @@ public class HystrixObservableCommandTest {
             assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
             assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
 
-            // but it will say it is both SUCCESSful and FAILED
-            assertTrue(command.isSuccessfulExecution());
+            assertFalse(command.isSuccessfulExecution());
             assertTrue(command.isFailedExecution());
             
             assertNotNull(command.getFailedExecutionException());
 
             assertTrue(command.getExecutionTimeInMilliseconds() > -1);
-            assertTrue(command.isSuccessfulExecution());
 
             assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
             assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
@@ -6806,6 +6881,15 @@ public class HystrixObservableCommandTest {
             assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
 
             assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+            System.out.println("REQ LOG : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
+            assertEquals(4, command.getExecutionEvents().size());
+            assertTrue(command.getExecutionEvents().contains(HystrixEventType.EMIT));
+            assertEquals(3, command.getNumberEmissions());
+            assertTrue(command.getExecutionEvents().contains(HystrixEventType.FAILURE));
+            assertTrue(command.getExecutionEvents().contains(HystrixEventType.FALLBACK_EMIT));
+            assertEquals(1, command.getNumberFallbackEmissions());
+            assertTrue(command.getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
+
 
             // semaphore isolated
             assertFalse(command.isExecutedInThread());

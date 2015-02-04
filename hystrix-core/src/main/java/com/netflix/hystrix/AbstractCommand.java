@@ -551,20 +551,14 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
             }
 
 
-        }).lift(new HystrixObservableTimeoutOperator<>(_self)).map(new Func1<R, R>() {
-
-            boolean once = false;
-
+        }).lift(new HystrixObservableTimeoutOperator<>(_self)).doOnNext(new Action1<R>() {
             @Override
-            public R call(R t1) {
-                if (!once) {
-                    // report success
-                    executionResult = executionResult.addEvents(HystrixEventType.SUCCESS);
-                    once = true;
+            public void call(R r) {
+                if (shouldOutputOnNextEvents()) {
+                    executionResult = executionResult.addEmission(HystrixEventType.EMIT);
+                    eventNotifier.markEvent(HystrixEventType.EMIT, getCommandKey());
                 }
-                return t1;
             }
-
         }).doOnCompleted(new Action0() {
 
             @Override
@@ -572,6 +566,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                 long duration = System.currentTimeMillis() - invocationStartTime;
                 metrics.addCommandExecutionTime(duration);
                 metrics.markSuccess(duration);
+                executionResult = executionResult.addEvents(HystrixEventType.SUCCESS);
                 circuitBreaker.markSuccess();
                 eventNotifier.markCommandExecution(getCommandKey(), properties.executionIsolationStrategy().get(), (int) duration, executionResult.events);
             }
@@ -781,7 +776,15 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
             executionResult = executionResult.addEvents(eventType);
             final AbstractCommand<R> _cmd = this;
 
-            return getFallbackWithProtection().doOnCompleted(new Action0() {
+            return getFallbackWithProtection().doOnNext(new Action1<R>() {
+                @Override
+                public void call(R r) {
+                    if (shouldOutputOnNextEvents()) {
+                        executionResult = executionResult.addEmission(HystrixEventType.FALLBACK_EMIT);
+                        eventNotifier.markEvent(HystrixEventType.FALLBACK_EMIT, getCommandKey());
+                    }
+                }
+            }).doOnCompleted(new Action0() {
 
                 @Override
                 public void call() {
@@ -884,6 +887,16 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
             threadPool.markThreadCompletion();
             executionHook.onThreadComplete(this);
         }
+    }
+
+    /**
+     *
+     * @return if onNext events should be reported on
+     * This affects {@link HystrixRequestLog}, and {@link HystrixEventNotifier} currently.
+     * Metrics/hooks will be affected once they are in place
+     */
+    protected boolean shouldOutputOnNextEvents() {
+        return false;
     }
 
     private static class HystrixObservableTimeoutOperator<R> implements Operator<R, R> {
@@ -1402,32 +1415,36 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         private final int executionTime;
         private final Exception exception;
         private final long commandRunStartTimeInNanos;
+        private final int numEmissions;
+        private final int numFallbackEmissions;
 
         private ExecutionResult(HystrixEventType... events) {
-            this(Arrays.asList(events), -1, null);
+            this(Arrays.asList(events), -1, null, 0, 0);
         }
 
         public ExecutionResult setExecutionTime(int executionTime) {
-            return new ExecutionResult(events, executionTime, exception);
+            return new ExecutionResult(events, executionTime, exception, numEmissions, numFallbackEmissions);
         }
 
         public ExecutionResult setException(Exception e) {
-            return new ExecutionResult(events, executionTime, e);
+            return new ExecutionResult(events, executionTime, e, numEmissions, numFallbackEmissions);
         }
 
-        private ExecutionResult(List<HystrixEventType> events, int executionTime, Exception e) {
+        private ExecutionResult(List<HystrixEventType> events, int executionTime, Exception e, int numEmissions, int numFallbackEmissions) {
             // we are safe assigning the List reference instead of deep-copying
             // because we control the original list in 'newEvent'
             this.events = events;
             this.executionTime = executionTime;
             if (executionTime >= 0 ) {
-                this.commandRunStartTimeInNanos = System.nanoTime() - this.executionTime*1000*1000; // 1000*1000 will conver the milliseconds to nanoseconds
+                this.commandRunStartTimeInNanos = System.nanoTime() - this.executionTime*1000*1000; // 1000*1000 will convert the milliseconds to nanoseconds
             }
             else {
                 this.commandRunStartTimeInNanos = -1;
             }
             this.exception = e;
 
+            this.numEmissions = numEmissions;
+            this.numFallbackEmissions = numFallbackEmissions;
         }
 
         // we can return a static version since it's immutable
@@ -1440,10 +1457,14 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
          * @return
          */
         public ExecutionResult addEvents(HystrixEventType... events) {
-            ArrayList<HystrixEventType> newEvents = new ArrayList<>();
-            newEvents.addAll(this.events);
-            Collections.addAll(newEvents, events);
-            return new ExecutionResult(Collections.unmodifiableList(newEvents), executionTime, exception);
+            return new ExecutionResult(getUpdatedList(this.events, events), executionTime, exception, numEmissions, numFallbackEmissions);
+        }
+
+        private static List<HystrixEventType> getUpdatedList(List<HystrixEventType> currentList, HystrixEventType... newEvents) {
+            ArrayList<HystrixEventType> updatedEvents = new ArrayList<>();
+            updatedEvents.addAll(currentList);
+            Collections.addAll(updatedEvents, newEvents);
+            return Collections.unmodifiableList(updatedEvents);
         }
 
         public int getExecutionTime() {
@@ -1455,6 +1476,28 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 
         public Exception getException() {
             return exception;
+        }
+
+        /**
+         * This method may be called many times for {@code HystrixEventType.EMIT} and {@link HystrixEventType.FALLBACK_EMIT}.
+         * To save on storage, on the first time we see that event type, it gets added to the event list, and the count gets incremented.
+         * @param eventType emission event
+         * @return "updated" {@link ExecutionResult}
+         */
+        public ExecutionResult addEmission(HystrixEventType eventType) {
+            switch (eventType) {
+                case EMIT: if (events.contains(HystrixEventType.EMIT)) {
+                    return new ExecutionResult(events, executionTime, exception, numEmissions + 1, numFallbackEmissions);
+                } else {
+                    return new ExecutionResult(getUpdatedList(this.events, HystrixEventType.EMIT), executionTime, exception, numEmissions +1, numFallbackEmissions);
+                }
+                case FALLBACK_EMIT: if (events.contains(HystrixEventType.FALLBACK_EMIT)) {
+                    return new ExecutionResult(events, executionTime, exception, numEmissions, numFallbackEmissions + 1);
+                } else {
+                    return new ExecutionResult(getUpdatedList(this.events, HystrixEventType.FALLBACK_EMIT), executionTime, exception, numEmissions, numFallbackEmissions + 1);
+                }
+                default: return this;
+            }
         }
     }
 
@@ -1608,6 +1651,24 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
      */
     public List<HystrixEventType> getExecutionEvents() {
         return executionResult.events;
+    }
+
+    /**
+     * Number of emissions of the execution of a command.  Only interesting in the streaming case.
+     * @return number of <code>OnNext</code> emissions by a streaming command
+     */
+    @Override
+    public int getNumberEmissions() {
+        return executionResult.numEmissions;
+    }
+
+    /**
+     * Number of emissions of the execution of a fallback.  Only interesting in the streaming case.
+     * @return number of <code>OnNext</code> emissions by a streaming fallback
+     */
+    @Override
+    public int getNumberFallbackEmissions() {
+        return executionResult.numFallbackEmissions;
     }
 
     /**
