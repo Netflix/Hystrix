@@ -2,7 +2,7 @@ apply plugin: 'osgi'
 
 dependencies {
     compile 'com.netflix.archaius:archaius-core:0.4.1'
-    compile 'io.reactivex:rxjava:1.0.4'
+    compile 'io.reactivex:rxjava:1.0.5'
     compile 'org.slf4j:slf4j-api:1.7.0'
     testCompile 'junit:junit-dep:4.10'
 }
