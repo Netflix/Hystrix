@@ -512,19 +512,13 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                         s.onError(new RuntimeException("timed out before executing run()"));
                     } else {
                         // not timed out so execute
-                        try {
-                            executionHook.onThreadStart(_self);
-                            executionHook.onRunStart(_self);
-                            threadPool.markThreadExecution();
-                            // store the command that is being run
-                            endCurrentThreadExecutingCommand.set(Hystrix.startCurrentThreadExecutingCommand(getCommandKey()));
-                            isExecutedInThread.set(true);
-                            getExecutionObservableWithLifecycle().unsafeSubscribe(s);
-                        } catch (Throwable t) {
-                            // the run() method is a user provided implementation so can throw instead of using Observable.onError
-                            // so we catch it here and turn it into Observable.error
-                            Observable.<R> error(t).unsafeSubscribe(s);
-                        }
+                        executionHook.onThreadStart(_self);
+                        executionHook.onRunStart(_self);
+                        threadPool.markThreadExecution();
+                        // store the command that is being run
+                        endCurrentThreadExecutingCommand.set(Hystrix.startCurrentThreadExecutingCommand(getCommandKey()));
+                        isExecutedInThread.set(true);
+                        getExecutionObservableWithLifecycle().unsafeSubscribe(s); //the getExecutionObservableWithLifecycle method already wraps sync exceptions, so no need to catch here
                     }
                 }
 
@@ -534,13 +528,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
             executionHook.onRunStart(_self);
             // store the command that is being run
             endCurrentThreadExecutingCommand.set(Hystrix.startCurrentThreadExecutingCommand(getCommandKey()));
-            try {
-                run = getExecutionObservableWithLifecycle();
-            } catch (Throwable t) {
-                // the run() method is a user provided implementation so can throw instead of using Observable.onError
-                // so we catch it here and turn it into Observable.error
-                run = Observable.error(t);
-            }
+            run = getExecutionObservableWithLifecycle();  //the getExecutionObservableWithLifecycle method already wraps sync exceptions, so no need to catch here
         }
 
         run = run.doOnEach(new Action1<Notification<? super R>>() {
@@ -663,34 +651,44 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
     private Observable<R> getExecutionObservableWithLifecycle() {
         final HystrixInvokable<R> _self = this;
 
-        return getExecutionObservable().map(new Func1<R, R>() {
-            @Override
-            public R call(R r) {
-                return executionHook.onRunSuccess(_self, r);
-            }
-        }).onErrorResumeNext(new Func1<Throwable, Observable<R>>() {
-            @Override
-            public Observable<R> call(Throwable t) {
-                try {
-                    Throwable wrappedThrowable = executionHook.onRunError(_self, (Exception) t);
-                    return Observable.error(wrappedThrowable);
-                } catch (Throwable ex) {
-                    logger.warn("Error calling ExecutionHook.onRunError", ex);
-                    return Observable.error(t);
+        try {
+            Observable<R> userObservable = getExecutionObservable();
+            return userObservable.map(new Func1<R, R>() {
+                @Override
+                public R call(R r) {
+                    return executionHook.onRunSuccess(_self, r);
                 }
-
-            }
-        }).doOnTerminate(new Action0() {
-            @Override
-            public void call() {
-                //If the command timed out, then the calling thread has already walked away so we need
-                //to handle these markers.  Otherwise, the calling thread will perform these for us.
-                if (isCommandTimedOut.get().equals(TimedOutStatus.TIMED_OUT)) {
-                    handleThreadEnd();
-
+            }).onErrorResumeNext(new Func1<Throwable, Observable<R>>() {
+                @Override
+                public Observable<R> call(Throwable t) {
+                    return wrapWithOnErrorHook(t);
                 }
-            }
-        });
+            }).doOnTerminate(new Action0() {
+                @Override
+                public void call() {
+                    //If the command timed out, then the calling thread has already walked away so we need
+                    //to handle these markers.  Otherwise, the calling thread will perform these for us.
+                    if (isCommandTimedOut.get().equals(TimedOutStatus.TIMED_OUT)) {
+                        handleThreadEnd();
+
+                    }
+                }
+            });
+        } catch (Throwable ex) {
+            // the run() method is a user provided implementation so can throw instead of using Observable.onError
+            // so we catch it here and turn it into Observable.error
+            return wrapWithOnErrorHook(ex);
+        }
+    }
+
+    private Observable<R> wrapWithOnErrorHook(Throwable t) {
+        try {
+            Throwable wrappedThrowable = executionHook.onRunError(this, (Exception) t);
+            return Observable.error(wrappedThrowable);
+        } catch (Throwable hookEx) {
+            logger.warn("Error calling ExecutionHook.onRunError", hookEx);
+            return Observable.error(t);
+        }
     }
 
     /**
