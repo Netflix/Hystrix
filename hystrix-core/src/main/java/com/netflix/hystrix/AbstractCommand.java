@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.netflix.hystrix.strategy.concurrency.HystrixContextScheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,6 +35,8 @@ import rx.Notification;
 import rx.Observable;
 import rx.Observable.OnSubscribe;
 import rx.Observable.Operator;
+import rx.Producer;
+import rx.Scheduler;
 import rx.Subscriber;
 import rx.functions.Action0;
 import rx.functions.Action1;
@@ -521,8 +524,9 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                         getExecutionObservableWithLifecycle().unsafeSubscribe(s); //the getExecutionObservableWithLifecycle method already wraps sync exceptions, so no need to catch here
                     }
                 }
-
-            }).subscribeOn(threadPool.getScheduler());
+            //Subscribing to this Observable using the designated thread pool's {@link rx.Scheduler}.  At the moment, we can't use the standard Rx subscribeOn (http://reactivex.io/documentation/operators/subscribeon.html),
+            //as it doesn't support configurably interrupting threads.  Instead, a custom operator is used in its place that is heavily based on the actual subscribeOn implmentation.
+            }).nest().lift(new OperatorSubscribeOnWithConfigurableInterrupt<R>(threadPool.getScheduler(), properties.executionIsolationThreadInterruptOnTimeout().get()));
         } else {
             // semaphore isolated
             executionHook.onRunStart(_self);
@@ -948,7 +952,6 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 
                         timeoutRunnable.run();
                     }
-
                 }
 
                 @Override
@@ -1171,6 +1174,95 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
          */
         public AbstractCommand<R> getCommand() {
             return originalObservable.originalCommand;
+        }
+    }
+
+    /**
+     * Custom operator that is derived from rx.internal.operators.OperatorSubscribeOn.
+     * This allows the thread-interruption to be configured, based on the {@link HystrixCommandProperties}
+     *
+     * @param <T>
+     */
+    private final static class OperatorSubscribeOnWithConfigurableInterrupt<T> implements Operator<T, Observable<T>> {
+
+        private final Scheduler scheduler;
+        private final boolean shouldInterruptThread;
+
+        public OperatorSubscribeOnWithConfigurableInterrupt(Scheduler scheduler, boolean shouldInterruptThread) {
+            this.scheduler = scheduler;
+            this.shouldInterruptThread = shouldInterruptThread;
+        }
+
+        @Override
+        public Subscriber<? super Observable<T>> call(final Subscriber<? super T> subscriber) {
+            final Scheduler.Worker inner = ((HystrixContextScheduler) scheduler).createWorker(shouldInterruptThread);
+            subscriber.add(inner);
+            return new Subscriber<Observable<T>>(subscriber) {
+
+                @Override
+                public void onCompleted() {
+                    // ignore because this is a nested Observable and we expect only 1 Observable<T> emitted to onNext
+                }
+
+                @Override
+                public void onError(Throwable e) {
+                    subscriber.onError(e);
+                }
+
+                @Override
+                public void onNext(final Observable<T> o) {
+                    inner.schedule(new Action0() {
+
+                        @Override
+                        public void call() {
+                            final Thread t = Thread.currentThread();
+                            o.unsafeSubscribe(new Subscriber<T>(subscriber) {
+
+                                @Override
+                                public void onCompleted() {
+                                    subscriber.onCompleted();
+                                }
+
+                                @Override
+                                public void onError(Throwable e) {
+                                    subscriber.onError(e);
+                                }
+
+                                @Override
+                                public void onNext(T t) {
+                                    subscriber.onNext(t);
+                                }
+
+                                @Override
+                                public void setProducer(final Producer producer) {
+                                    subscriber.setProducer(new Producer() {
+
+                                        @Override
+                                        public void request(final long n) {
+                                            if (Thread.currentThread() == t) {
+                                                // don't schedule if we're already on the thread (primarily for first setProducer call)
+                                                // see unit test 'testSetProducerSynchronousRequest' for more context on this
+                                                producer.request(n);
+                                            } else {
+                                                inner.schedule(new Action0() {
+
+                                                    @Override
+                                                    public void call() {
+                                                        producer.request(n);
+                                                    }
+                                                });
+                                            }
+                                        }
+
+                                    });
+                                }
+
+                            });
+                        }
+                    });
+                }
+
+            };
         }
     }
 
