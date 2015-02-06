@@ -46,6 +46,7 @@ public class HystrixObservableCollapserTest {
     public void init() {
         // since we're going to modify properties of the same class between tests, wipe the cache each time
         HystrixCollapser.reset();
+        Hystrix.reset();
         /* we must call this to simulate a new request lifecycle running and clearing caches */
         HystrixRequestContext.initializeContext();
     }
@@ -78,6 +79,15 @@ public class HystrixObservableCollapserTest {
         assertEquals(2L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_REQUEST_BATCHED));
         assertEquals(1L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_BATCH));
         assertEquals(0L, metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+    }
+
+    @Test
+    public void stressTestRequestCollapser() throws Exception {
+        for(int i = 0; i < 1000; i++) {
+            init();
+            testTwoRequests();
+            cleanup();
+        }
     }
 
     private static class TestRequestCollapser extends HystrixObservableCollapser<String, String, String, String> {
