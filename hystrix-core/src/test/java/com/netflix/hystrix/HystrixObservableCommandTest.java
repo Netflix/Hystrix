@@ -5025,13 +5025,21 @@ public class HystrixObservableCommandTest {
 
         final AtomicBoolean exceptionReceived = new AtomicBoolean();
 
+        final TryableSemaphoreActual semaphore = new TryableSemaphoreActual(HystrixProperty.Factory.asProperty(1));
+
+        // used to wait until all commands have started
+        final CountDownLatch startLatch = new CountDownLatch(2);
+
+        // used to signal that all command can finish
+        final CountDownLatch sharedLatch = new CountDownLatch(1);
+
         Runnable r = new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), new Runnable() {
 
             @Override
             public void run() {
                 try {
                     executionThreads.add(Thread.currentThread());
-                    results.add(new TestSemaphoreCommand(circuitBreaker, 1, 200, TestSemaphoreCommand.RESULT_SUCCESS, TestSemaphoreCommand.FALLBACK_NOT_IMPLEMENTED).toObservable().map(new Func1<Boolean, Boolean>() {
+                    results.add(new LatchedSemaphoreCommand(circuitBreaker, semaphore, startLatch, sharedLatch).toObservable().map(new Func1<Boolean, Boolean>() {
 
                         @Override
                         public Boolean call(Boolean b) {
@@ -5042,6 +5050,7 @@ public class HystrixObservableCommandTest {
                     }).toBlocking().single());
                 } catch (Exception e) {
                     e.printStackTrace();
+                    startLatch.countDown();
                     exceptionReceived.set(true);
                 }
             }
@@ -5054,6 +5063,15 @@ public class HystrixObservableCommandTest {
 
         t1.start();
         t2.start();
+
+        try {
+            startLatch.await();
+        } catch (InterruptedException ie) {
+            fail("Got interrupted while waiting for commands to start");
+        }
+
+        sharedLatch.countDown();
+
         try {
             t1.join();
             t2.join();
@@ -5080,8 +5098,6 @@ public class HystrixObservableCommandTest {
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
-
-        System.out.println("**** DONE");
 
         assertEquals(2, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
