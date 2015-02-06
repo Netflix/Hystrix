@@ -5506,6 +5506,11 @@ public class HystrixObservableCommandTest {
                         return new HystrixContextScheduler(HystrixPlugins.getInstance().getConcurrencyStrategy(), this);
                     }
 
+                    @Override
+                    public Scheduler getScheduler(boolean shouldInterruptThread) {
+                        return new HystrixContextScheduler(HystrixPlugins.getInstance().getConcurrencyStrategy(), this, shouldInterruptThread);
+                    }
+
                 })) {
 
             @Override
@@ -7519,6 +7524,11 @@ public class HystrixObservableCommandTest {
         }
 
         @Override
+        public Scheduler getScheduler(boolean shouldInterruptThread) {
+            return new HystrixContextScheduler(HystrixPlugins.getInstance().getConcurrencyStrategy(), this, shouldInterruptThread);
+        }
+
+        @Override
         public void markThreadExecution() {
             // not used for this test
         }
@@ -7556,6 +7566,11 @@ public class HystrixObservableCommandTest {
         @Override
         public Scheduler getScheduler() {
             return new HystrixContextScheduler(HystrixPlugins.getInstance().getConcurrencyStrategy(), this);
+        }
+
+        @Override
+        public Scheduler getScheduler(boolean shouldInterruptThread) {
+            return new HystrixContextScheduler(HystrixPlugins.getInstance().getConcurrencyStrategy(), this, shouldInterruptThread);
         }
 
         @Override
@@ -8119,6 +8134,11 @@ public class HystrixObservableCommandTest {
                         @Override
                         public Scheduler getScheduler() {
                             return new HystrixContextScheduler(HystrixPlugins.getInstance().getConcurrencyStrategy(), this);
+                        }
+
+                        @Override
+                        public Scheduler getScheduler(boolean shouldInterruptThread) {
+                            return new HystrixContextScheduler(HystrixPlugins.getInstance().getConcurrencyStrategy(), this, shouldInterruptThread);
                         }
 
                     }));

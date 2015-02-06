@@ -52,6 +52,8 @@ public interface HystrixThreadPool {
 
     public Scheduler getScheduler();
 
+    public Scheduler getScheduler(boolean shouldInterruptThread);
+
     /**
      * Mark when a thread begins executing a command.
      */
@@ -153,7 +155,8 @@ public interface HystrixThreadPool {
         private final BlockingQueue<Runnable> queue;
         private final ThreadPoolExecutor threadPool;
         private final HystrixThreadPoolMetrics metrics;
-        private final Scheduler scheduler;
+        private final Scheduler nonInterruptingScheduler;
+        private final Scheduler interruptingScheduler;
 
         public HystrixThreadPoolDefault(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolProperties.Setter propertiesDefaults) {
             this.properties = HystrixPropertiesFactory.getThreadPoolProperties(threadPoolKey, propertiesDefaults);
@@ -164,7 +167,8 @@ public interface HystrixThreadPool {
                     concurrencyStrategy.getThreadPool(threadPoolKey, properties.coreSize(), properties.coreSize(), properties.keepAliveTimeMinutes(), TimeUnit.MINUTES, queue),
                     properties);
             this.threadPool = metrics.getThreadPool();
-            this.scheduler = new HystrixContextScheduler(concurrencyStrategy, this);
+            this.nonInterruptingScheduler = new HystrixContextScheduler(concurrencyStrategy, this, false);
+            this.interruptingScheduler = new HystrixContextScheduler(concurrencyStrategy, this, true);
 
             /* strategy: HystrixMetricsPublisherThreadPool */
             HystrixMetricsPublisherFactory.createOrRetrievePublisherForThreadPool(threadPoolKey, this.metrics, this.properties);
@@ -178,8 +182,18 @@ public interface HystrixThreadPool {
 
         @Override
         public Scheduler getScheduler() {
+            //by default, interrupt underlying threads on timeout
+            return getScheduler(true);
+        }
+
+        @Override
+        public Scheduler getScheduler(boolean shouldInterruptThread) {
             touchConfig();
-            return scheduler;
+            if (shouldInterruptThread) {
+                return interruptingScheduler;
+            } else {
+                return nonInterruptingScheduler;
+            }
         }
 
         // allow us to change things via fast-properties by setting it each time
