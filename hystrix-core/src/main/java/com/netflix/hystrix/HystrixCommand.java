@@ -367,8 +367,6 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
          * We use the 'immediate' schedule since Future.get() is blocking so we don't want to bother doing the callback to the Future on a separate thread
          * as we don't need to separate the Hystrix thread from user threads since they are already providing it via the Future.get() call.
          * 
-         * --- performAsyncTimeout: false
-         * 
          * We pass 'false' to tell the Observable we will block on it so it doesn't schedule an async timeout.
          * 
          * This optimizes for using the calling thread to do the timeout rather than scheduling another thread.
