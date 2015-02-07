@@ -2913,6 +2913,58 @@ public class HystrixObservableCommandTest {
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
+    @Test
+    public void testInterruptObserveOnTimeout() throws InterruptedException {
+        // given
+        InterruptibleCommand cmd = new InterruptibleCommand(new TestCircuitBreaker(), true);
+
+        // when
+        cmd.observe().subscribe();
+
+        // then
+        Thread.sleep(500);
+        assertTrue(cmd.hasBeenInterrupted());
+    }
+
+    @Test
+    public void testInterruptToObservableOnTimeout() throws InterruptedException {
+        // given
+        InterruptibleCommand cmd = new InterruptibleCommand(new TestCircuitBreaker(), true);
+
+        // when
+        cmd.toObservable().subscribe();
+
+        // then
+        Thread.sleep(500);
+        assertTrue(cmd.hasBeenInterrupted());
+    }
+
+    @Test
+    public void testDoNotInterruptObserveOnTimeoutIfPropertySaysNotTo() throws InterruptedException {
+        // given
+        InterruptibleCommand cmd = new InterruptibleCommand(new TestCircuitBreaker(), false);
+
+        // when
+        cmd.observe().subscribe();
+
+        // then
+        Thread.sleep(500);
+        assertFalse(cmd.hasBeenInterrupted());
+    }
+
+    @Test
+    public void testDoNotInterruptToObservableOnTimeoutIfPropertySaysNotTo() throws InterruptedException {
+        // given
+        InterruptibleCommand cmd = new InterruptibleCommand(new TestCircuitBreaker(), false);
+
+        // when
+        cmd.toObservable().subscribe();
+
+        // then
+        Thread.sleep(500);
+        assertFalse(cmd.hasBeenInterrupted());
+    }
+
     /**
      * Run the command in multiple modes and check that the hook assertions hold in each and that the command succeeds
      * @param ctor {@link com.netflix.hystrix.HystrixObservableCommandTest.TestHystrixCommand} constructor
@@ -8027,6 +8079,38 @@ public class HystrixObservableCommandTest {
             return fallback;
         }
 
+    }
+
+    private static class InterruptibleCommand extends TestHystrixCommand<Boolean> {
+
+        public InterruptibleCommand(TestCircuitBreaker circuitBreaker, boolean shouldInterrupt) {
+            super(testPropsBuilder()
+                    .setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics)
+                    .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter()
+                            .withExecutionIsolationThreadInterruptOnTimeout(shouldInterrupt)
+                            .withExecutionIsolationThreadTimeoutInMilliseconds(100)));
+        }
+
+        private volatile boolean hasBeenInterrupted;
+
+        public boolean hasBeenInterrupted()
+        {
+            return hasBeenInterrupted;
+        }
+
+        @Override
+        protected Observable<Boolean> construct() {
+            try {
+                Thread.sleep(2000);
+            }
+            catch (InterruptedException e) {
+                System.out.println("Interrupted!");
+                e.printStackTrace();
+                hasBeenInterrupted = true;
+            }
+
+            return Observable.just(hasBeenInterrupted);
+        }
     }
 
     private static class RequestCacheNullPointerExceptionCase extends TestHystrixCommand<Boolean> {

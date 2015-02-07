@@ -6396,14 +6396,12 @@ public class HystrixCommandTest {
 
         private volatile boolean hasBeenInterrupted;
 
-        public boolean hasBeenInterrupted()
-        {
+        public boolean hasBeenInterrupted() {
             return hasBeenInterrupted;
         }
 
         @Override
-        protected Boolean run() throws Exception
-        {
+        protected Boolean run() throws Exception {
             try {
                 Thread.sleep(2000);
             }
