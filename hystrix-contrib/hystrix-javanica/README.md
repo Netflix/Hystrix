@@ -343,7 +343,7 @@ Command properties can be set using @HystrixCommand's 'commandProperties' like b
 
 ```java
     @HystrixCommand(commandProperties = {
-            @HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "500")
+            @HystrixProperty(name = "execution.timeoutInMilliseconds", value = "500")
         })
     public User getUserById(String id) {
         return userResource.getUserById(id);
@@ -353,7 +353,7 @@ Command properties can be set using @HystrixCommand's 'commandProperties' like b
 Javanica dynamically sets properties using Hystrix ConfigurationManager.
 For the example above Javanica behind the scenes performs next action:
 ```java
-ConfigurationManager.getConfigInstance().setProperty("hystrix.command.getUserById.execution.isolation.thread.timeoutInMilliseconds", "500");
+ConfigurationManager.getConfigInstance().setProperty("hystrix.command.getUserById.execution.timeoutInMilliseconds", "500");
 ```
 More about Hystrix command properties [command](https://github.com/Netflix/Hystrix/wiki/Configuration#wiki-CommandExecution) and [fallback](https://github.com/Netflix/Hystrix/wiki/Configuration#wiki-CommandFallback)
 
@@ -361,7 +361,7 @@ ThreadPoolProperties can be set using @HystrixCommand's 'threadPoolProperties' l
 
 ```java
     @HystrixCommand(commandProperties = {
-            @HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "500")
+            @HystrixProperty(name = "execution.timeoutInMilliseconds", value = "500")
         },
                 threadPoolProperties = {
                         @HystrixProperty(name = "coreSize", value = "30"),
