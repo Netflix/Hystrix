@@ -496,7 +496,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
      */
     private Observable<R> getRunObservableDecoratedForMetricsAndErrorHandling() {
         final AbstractCommand<R> _self = this;
-        // allow tracking how many concurrent threads are executing
+        // allow tracking how many concurrent commands are executing
         metrics.incrementConcurrentExecutionCount();
 
         final HystrixRequestContext currentRequestContext = HystrixRequestContext.getContextForCurrentThread();

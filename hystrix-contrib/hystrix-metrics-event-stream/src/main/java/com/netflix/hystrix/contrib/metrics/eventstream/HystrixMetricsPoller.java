@@ -70,8 +70,7 @@ public class HystrixMetricsPoller {
      * <p>
      * Use <code>pause</code> to temporarily stop polling that can be restarted again with <code>start</code>.
      * 
-     * @param MetricsAsJsonPollerListener
-     *            for callbacks
+     * @param listener for callbacks
      * @param delay
      */
     public HystrixMetricsPoller(MetricsAsJsonPollerListener listener, int delay) {
@@ -221,6 +220,7 @@ public class HystrixMetricsPoller {
             json.writeNumberField("rollingCountTimeout", commandMetrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
 
             json.writeNumberField("currentConcurrentExecutionCount", commandMetrics.getCurrentConcurrentExecutionCount());
+            json.writeNumberField("rollingMaxConcurrentExecutionCount", commandMetrics.getRollingMaxConcurrentExecutions());
 
             // latency percentiles
             json.writeNumberField("latencyExecute_mean", commandMetrics.getExecutionTimeMean());
