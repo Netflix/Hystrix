@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.netflix.hystrix.strategy.concurrency.HystrixContextScheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,6 +35,8 @@ import rx.Notification;
 import rx.Observable;
 import rx.Observable.OnSubscribe;
 import rx.Observable.Operator;
+import rx.Producer;
+import rx.Scheduler;
 import rx.Subscriber;
 import rx.functions.Action0;
 import rx.functions.Action1;
@@ -521,8 +524,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                         getExecutionObservableWithLifecycle().unsafeSubscribe(s); //the getExecutionObservableWithLifecycle method already wraps sync exceptions, so no need to catch here
                     }
                 }
-
-            }).subscribeOn(threadPool.getScheduler());
+            }).subscribeOn(threadPool.getScheduler(properties.executionIsolationThreadInterruptOnTimeout().get()));
         } else {
             // semaphore isolated
             executionHook.onRunStart(_self);
@@ -948,7 +950,6 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 
                         timeoutRunnable.run();
                     }
-
                 }
 
                 @Override

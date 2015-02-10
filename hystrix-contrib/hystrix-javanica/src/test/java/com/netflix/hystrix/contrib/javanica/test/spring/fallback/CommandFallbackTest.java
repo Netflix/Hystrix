@@ -86,56 +86,56 @@ public class CommandFallbackTest {
      */
 
 
-    @Test
-    public void testGetUserAsyncWithFallbackCommand() throws ExecutionException, InterruptedException {
-        HystrixRequestContext context = HystrixRequestContext.initializeContext();
-        try {
-            Future<User> f1 = userService.getUserAsyncFallbackCommand(" ", "name: ");
-
-            assertEquals("def", f1.get().getName());
-
-            assertEquals(3, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-            HystrixInvokableInfo<?> getUserAsyncFallbackCommand = getHystrixCommandByKey(
-                    "getUserAsyncFallbackCommand");
-            com.netflix.hystrix.HystrixInvokableInfo firstFallbackCommand = getHystrixCommandByKey("firstFallbackCommand");
-            com.netflix.hystrix.HystrixInvokableInfo secondFallbackCommand = getHystrixCommandByKey("secondFallbackCommand");
-
-            assertEquals("getUserAsyncFallbackCommand", getUserAsyncFallbackCommand.getCommandKey().name());
-            // confirm that command has failed
-            assertTrue(getUserAsyncFallbackCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
-            // confirm that first fallback has failed
-            assertTrue(firstFallbackCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
-            // and that second fallback was successful
-            assertTrue(secondFallbackCommand.getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
-        } finally {
-            context.shutdown();
-        }
-    }
-
-    @Test
-    public void testGetUserSyncWithFallbackCommand() {
-        HystrixRequestContext context = HystrixRequestContext.initializeContext();
-        try {
-            User u1 = userService.getUserSyncFallbackCommand(" ", "name: ");
-
-            assertEquals("def", u1.getName());
-            assertEquals(3, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-            HystrixInvokableInfo<?> getUserSyncFallbackCommand = getHystrixCommandByKey(
-                    "getUserSyncFallbackCommand");
-            com.netflix.hystrix.HystrixInvokableInfo firstFallbackCommand = getHystrixCommandByKey("firstFallbackCommand");
-            com.netflix.hystrix.HystrixInvokableInfo secondFallbackCommand = getHystrixCommandByKey("secondFallbackCommand");
-
-            assertEquals("getUserSyncFallbackCommand", getUserSyncFallbackCommand.getCommandKey().name());
-            // confirm that command has failed
-            assertTrue(getUserSyncFallbackCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
-            // confirm that first fallback has failed
-            assertTrue(firstFallbackCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
-            // and that second fallback was successful
-            assertTrue(secondFallbackCommand.getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
-        } finally {
-            context.shutdown();
-        }
-    }
+//    @Test
+//    public void testGetUserAsyncWithFallbackCommand() throws ExecutionException, InterruptedException {
+//        HystrixRequestContext context = HystrixRequestContext.initializeContext();
+//        try {
+//            Future<User> f1 = userService.getUserAsyncFallbackCommand(" ", "name: ");
+//
+//            assertEquals("def", f1.get().getName());
+//
+//            assertEquals(3, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+//            HystrixInvokableInfo<?> getUserAsyncFallbackCommand = getHystrixCommandByKey(
+//                    "getUserAsyncFallbackCommand");
+//            com.netflix.hystrix.HystrixInvokableInfo firstFallbackCommand = getHystrixCommandByKey("firstFallbackCommand");
+//            com.netflix.hystrix.HystrixInvokableInfo secondFallbackCommand = getHystrixCommandByKey("secondFallbackCommand");
+//
+//            assertEquals("getUserAsyncFallbackCommand", getUserAsyncFallbackCommand.getCommandKey().name());
+//            // confirm that command has failed
+//            assertTrue(getUserAsyncFallbackCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
+//            // confirm that first fallback has failed
+//            assertTrue(firstFallbackCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
+//            // and that second fallback was successful
+//            assertTrue(secondFallbackCommand.getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
+//        } finally {
+//            context.shutdown();
+//        }
+//    }
+//
+//    @Test
+//    public void testGetUserSyncWithFallbackCommand() {
+//        HystrixRequestContext context = HystrixRequestContext.initializeContext();
+//        try {
+//            User u1 = userService.getUserSyncFallbackCommand(" ", "name: ");
+//
+//            assertEquals("def", u1.getName());
+//            assertEquals(3, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+//            HystrixInvokableInfo<?> getUserSyncFallbackCommand = getHystrixCommandByKey(
+//                    "getUserSyncFallbackCommand");
+//            com.netflix.hystrix.HystrixInvokableInfo firstFallbackCommand = getHystrixCommandByKey("firstFallbackCommand");
+//            com.netflix.hystrix.HystrixInvokableInfo secondFallbackCommand = getHystrixCommandByKey("secondFallbackCommand");
+//
+//            assertEquals("getUserSyncFallbackCommand", getUserSyncFallbackCommand.getCommandKey().name());
+//            // confirm that command has failed
+//            assertTrue(getUserSyncFallbackCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
+//            // confirm that first fallback has failed
+//            assertTrue(firstFallbackCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
+//            // and that second fallback was successful
+//            assertTrue(secondFallbackCommand.getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
+//        } finally {
+//            context.shutdown();
+//        }
+//    }
 
 
     public static class UserService {
