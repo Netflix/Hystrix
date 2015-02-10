@@ -288,20 +288,21 @@ public class HystrixCommandMetrics extends HystrixMetrics {
 
     /**
      * Increment concurrent requests counter.
-     * 
-     * @param numberOfPermitsUsed
      */
     /* package */void incrementConcurrentExecutionCount() {
-        concurrentExecutionCount.incrementAndGet();
+        int numConcurrent = concurrentExecutionCount.incrementAndGet();
+        counter.updateRollingMax(HystrixRollingNumberEvent.COMMAND_MAX_ACTIVE, (long) numConcurrent);
     }
     
     /**
-     * Increment concurrent requests counter.
-     * 
-     * @param numberOfPermitsUsed
+     * Decrement concurrent requests counter.
      */
     /* package */void decrementConcurrentExecutionCount() {
         concurrentExecutionCount.decrementAndGet();
+    }
+
+    public long getRollingMaxConcurrentExecutions() {
+        return counter.getRollingMaxValue(HystrixRollingNumberEvent.COMMAND_MAX_ACTIVE);
     }
 
     /**

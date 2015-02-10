@@ -84,6 +84,7 @@ final class JsonMappers {
         json.writeNumberField("rollingCountTimeout", commandMetrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
 
         json.writeNumberField("currentConcurrentExecutionCount", commandMetrics.getCurrentConcurrentExecutionCount());
+        json.writeNumberField("rollingMaxConcurrentExecutionCount", commandMetrics.getRollingMaxConcurrentExecutions());
 
         // latency percentiles
         json.writeNumberField("latencyExecute_mean", commandMetrics.getExecutionTimeMean());
