@@ -15,6 +15,14 @@
  */
 package com.netflix.hystrix;
 
+import com.netflix.hystrix.strategy.HystrixPlugins;
+import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
+import com.netflix.hystrix.util.HystrixRollingNumber;
+import com.netflix.hystrix.util.HystrixRollingNumberEvent;
+import com.netflix.hystrix.util.HystrixRollingPercentile;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
@@ -100,6 +108,19 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      */
     /* package */ static void reset() {
         metrics.clear();
+    }
+
+    /**
+     * Expire metrics that have not been updated within the allowed time-frame
+     */
+    /* package */ static void expire() {
+        long now = System.currentTimeMillis();
+        for (HystrixCommandMetrics instance : getInstances()) {
+            int expireAfterInactivityInMilliseconds = instance.properties.metricsExpireAfterInactivityInMilliseconds().get();
+            if (expireAfterInactivityInMilliseconds > 0
+                    && now - instance.lastTouch.get() > expireAfterInactivityInMilliseconds)
+                metrics.remove(instance.key.name());
+        }
     }
 
     private final HystrixCommandProperties properties;
@@ -231,6 +252,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     /* package */void markSuccess(long duration) {
         eventNotifier.markEvent(HystrixEventType.SUCCESS, key);
         counter.increment(HystrixRollingNumberEvent.SUCCESS);
+        touch();
     }
 
     /**
@@ -241,6 +263,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     /* package */void markFailure(long duration) {
         eventNotifier.markEvent(HystrixEventType.FAILURE, key);
         counter.increment(HystrixRollingNumberEvent.FAILURE);
+        touch();
     }
 
     /**
@@ -252,6 +275,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     /* package */void markTimeout(long duration) {
         eventNotifier.markEvent(HystrixEventType.TIMEOUT, key);
         counter.increment(HystrixRollingNumberEvent.TIMEOUT);
+        touch();
     }
 
     /**
@@ -260,6 +284,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     /* package */void markShortCircuited() {
         eventNotifier.markEvent(HystrixEventType.SHORT_CIRCUITED, key);
         counter.increment(HystrixRollingNumberEvent.SHORT_CIRCUITED);
+        touch();
     }
 
     /**
@@ -268,6 +293,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     /* package */void markThreadPoolRejection() {
         eventNotifier.markEvent(HystrixEventType.THREAD_POOL_REJECTED, key);
         counter.increment(HystrixRollingNumberEvent.THREAD_POOL_REJECTED);
+        touch();
     }
 
     /**
@@ -276,6 +302,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     /* package */void markSemaphoreRejection() {
         eventNotifier.markEvent(HystrixEventType.SEMAPHORE_REJECTED, key);
         counter.increment(HystrixRollingNumberEvent.SEMAPHORE_REJECTED);
+        touch();
     }
 
     /**
@@ -288,20 +315,18 @@ public class HystrixCommandMetrics extends HystrixMetrics {
 
     /**
      * Increment concurrent requests counter.
-     * 
-     * @param numberOfPermitsUsed
      */
     /* package */void incrementConcurrentExecutionCount() {
         concurrentExecutionCount.incrementAndGet();
+        touch();
     }
     
     /**
      * Increment concurrent requests counter.
-     * 
-     * @param numberOfPermitsUsed
-     */
+     *
     /* package */void decrementConcurrentExecutionCount() {
         concurrentExecutionCount.decrementAndGet();
+        touch();
     }
 
     /**
@@ -310,6 +335,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     /* package */void markFallbackSuccess() {
         eventNotifier.markEvent(HystrixEventType.FALLBACK_SUCCESS, key);
         counter.increment(HystrixRollingNumberEvent.FALLBACK_SUCCESS);
+        touch();
     }
 
     /**
@@ -318,6 +344,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     /* package */void markFallbackFailure() {
         eventNotifier.markEvent(HystrixEventType.FALLBACK_FAILURE, key);
         counter.increment(HystrixRollingNumberEvent.FALLBACK_FAILURE);
+        touch();
     }
 
     /**
@@ -326,6 +353,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     /* package */void markFallbackRejection() {
         eventNotifier.markEvent(HystrixEventType.FALLBACK_REJECTION, key);
         counter.increment(HystrixRollingNumberEvent.FALLBACK_REJECTION);
+        touch();
     }
 
     /**
@@ -335,6 +363,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     /* package */void markExceptionThrown() {
         eventNotifier.markEvent(HystrixEventType.EXCEPTION_THROWN, key);
         counter.increment(HystrixRollingNumberEvent.EXCEPTION_THROWN);
+        touch();
     }
 
     /**
@@ -345,6 +374,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     /* package */void markCollapsed(int numRequestsCollapsedToBatch) {
         eventNotifier.markEvent(HystrixEventType.COLLAPSED, key);
         counter.add(HystrixRollingNumberEvent.COLLAPSED, numRequestsCollapsedToBatch);
+        touch();
     }
 
     /**
@@ -355,6 +385,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     /* package */void markResponseFromCache() {
         eventNotifier.markEvent(HystrixEventType.RESPONSE_FROM_CACHE, key);
         counter.increment(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE);
+        touch();
     }
 
     /**
@@ -362,6 +393,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      */
     /* package */void addCommandExecutionTime(long duration) {
         percentileExecution.addValue((int) duration);
+        touch();
     }
 
     /**
@@ -372,10 +404,21 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      */
     /* package */void addUserThreadExecutionTime(long duration) {
         percentileTotal.addValue((int) duration);
+        touch();
+    }
+
+    /**
+     * Touches metrics change with current timestamp. Calls {@link com.netflix.hystrix.HystrixCommandMetrics#expire()} afterwards so
+     * outdated metrics are removed instantly.
+     */
+    private void touch() {
+        lastTouch.set(System.currentTimeMillis());
+        expire();
     }
 
     private volatile HealthCounts healthCountsSnapshot = new HealthCounts(0, 0, 0);
     private volatile AtomicLong lastHealthCountsSnapshot = new AtomicLong(System.currentTimeMillis());
+    private volatile AtomicLong lastTouch = new AtomicLong(System.currentTimeMillis());
 
     /**
      * Retrieve a snapshot of total requests, error count and error percentage.
