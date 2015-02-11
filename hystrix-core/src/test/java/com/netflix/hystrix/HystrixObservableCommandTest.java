@@ -580,7 +580,7 @@ public class HystrixObservableCommandTest {
      */
     @Test
     public void testThreadIsolatedObserveTimeoutWithSuccessAndFallback() {
-        testObserveFailureWithTimeoutAndFallback(ExecutionIsolationStrategy.SEMAPHORE, TestCommandWithTimeout.RESULT_SUCCESS);
+        testObserveFailureWithTimeoutAndFallback(ExecutionIsolationStrategy.THREAD, TestCommandWithTimeout.RESULT_SUCCESS);
     }
 
     /**
@@ -588,13 +588,16 @@ public class HystrixObservableCommandTest {
      */
     @Test
     public void testThreadIsolatedObserveTimeoutWithFailureAndFallback() {
-        testObserveFailureWithTimeoutAndFallback(ExecutionIsolationStrategy.SEMAPHORE, TestCommandWithTimeout.RESULT_EXCEPTION);
+        testObserveFailureWithTimeoutAndFallback(ExecutionIsolationStrategy.THREAD, TestCommandWithTimeout.RESULT_EXCEPTION);
     }
 
     private void testObserveFailureWithTimeoutAndFallback(ExecutionIsolationStrategy isolationStrategy, int executionResult) {
-        TestHystrixCommand<Boolean> command = new TestCommandWithTimeout(2000, TestCommandWithTimeout.FALLBACK_SUCCESS, isolationStrategy, executionResult, true);
+        TestHystrixCommand<Boolean> command = new TestCommandWithTimeout(200, TestCommandWithTimeout.FALLBACK_SUCCESS, isolationStrategy, executionResult, true);
+        long observedCommandDuration = 0;
         try {
+            long startTime = System.currentTimeMillis();
             assertEquals(false, command.observe().toBlocking().single());
+            observedCommandDuration = System.currentTimeMillis() - startTime;
         } catch (Exception e) {
             e.printStackTrace();
             fail("We should have received a response from the fallback.");
@@ -602,7 +605,12 @@ public class HystrixObservableCommandTest {
 
         assertNull(command.getFailedExecutionException());
 
-        assertTrue(command.getExecutionTimeInMilliseconds() > -1);
+        System.out.println("Command time : " + command.getExecutionTimeInMilliseconds());
+        System.out.println("Observed command time : " + observedCommandDuration);
+        assertTrue(command.getExecutionTimeInMilliseconds() >= 200);
+        assertTrue(observedCommandDuration >= 200);
+        assertTrue(command.getExecutionTimeInMilliseconds() < 1000);
+        assertTrue(observedCommandDuration < 1000);
         assertFalse(command.isFailedExecution());
         assertTrue(command.isResponseFromFallback());
 
@@ -7781,7 +7789,11 @@ public class HystrixObservableCommandTest {
                 public void call(Subscriber<? super Boolean> sub) {
                     System.out.println("***** running");
                     try {
-                        Thread.sleep(timeout * 10);
+                        for (int i = 0; i < (timeout * 5); i++) {
+                            if (!sub.isUnsubscribed()) {
+                                Thread.sleep(1);
+                            }
+                        }
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                         // ignore and sleep some more to simulate a dependency that doesn't obey interrupts
