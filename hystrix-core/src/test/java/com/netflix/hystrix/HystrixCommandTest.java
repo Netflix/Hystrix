@@ -5922,7 +5922,7 @@ public class HystrixCommandTest {
         }
 
         @Override
-        public Scheduler getScheduler(boolean shouldInterruptThread) {
+        public Scheduler getScheduler(Func0<Boolean> shouldInterruptThread) {
             return new HystrixContextScheduler(HystrixPlugins.getInstance().getConcurrencyStrategy(), this, shouldInterruptThread);
         }
 
@@ -5967,7 +5967,7 @@ public class HystrixCommandTest {
         }
 
         @Override
-        public Scheduler getScheduler(boolean shouldInterruptThread) {
+        public Scheduler getScheduler(Func0<Boolean> shouldInterruptThread) {
             return new HystrixContextScheduler(HystrixPlugins.getInstance().getConcurrencyStrategy(), this, shouldInterruptThread);
         }
 
@@ -6348,7 +6348,7 @@ public class HystrixCommandTest {
                         }
 
                         @Override
-                        public Scheduler getScheduler(boolean shouldInterruptThread) {
+                        public Scheduler getScheduler(Func0<Boolean> shouldInterruptThread) {
                             return new HystrixContextScheduler(HystrixPlugins.getInstance().getConcurrencyStrategy(), this, shouldInterruptThread);
                         }
 
@@ -6467,7 +6467,7 @@ public class HystrixCommandTest {
                     .setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics)
                     .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter()
                             .withExecutionIsolationThreadInterruptOnTimeout(shouldInterrupt)
-                            .withExecutionIsolationThreadTimeoutInMilliseconds(100)));
+                            .withExecutionTimeoutInMilliseconds(100)));
         }
 
         private volatile boolean hasBeenInterrupted;

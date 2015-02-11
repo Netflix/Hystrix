@@ -19,6 +19,7 @@ import java.util.concurrent.*;
 
 import rx.*;
 import rx.functions.Action0;
+import rx.functions.Func0;
 import rx.internal.schedulers.ScheduledAction;
 import rx.subscriptions.*;
 
@@ -48,11 +49,15 @@ public class HystrixContextScheduler extends Scheduler {
     }
 
     public HystrixContextScheduler(HystrixConcurrencyStrategy concurrencyStrategy, HystrixThreadPool threadPool) {
-        this(concurrencyStrategy, threadPool, true);
+        this(concurrencyStrategy, threadPool, new Func0<Boolean>() {
+            @Override
+            public Boolean call() {
+                return false;
+            }
+        });
     }
 
-
-    public HystrixContextScheduler(HystrixConcurrencyStrategy concurrencyStrategy, HystrixThreadPool threadPool, boolean shouldInterruptThread) {
+    public HystrixContextScheduler(HystrixConcurrencyStrategy concurrencyStrategy, HystrixThreadPool threadPool, Func0<Boolean> shouldInterruptThread) {
         this.concurrencyStrategy = concurrencyStrategy;
         this.threadPool = threadPool;
         this.actualScheduler = new ThreadPoolScheduler(threadPool, shouldInterruptThread);
@@ -106,9 +111,9 @@ public class HystrixContextScheduler extends Scheduler {
     private static class ThreadPoolScheduler extends Scheduler {
 
         private final HystrixThreadPool threadPool;
-        private final boolean shouldInterruptThread;
+        private final Func0<Boolean> shouldInterruptThread;
 
-        public ThreadPoolScheduler(HystrixThreadPool threadPool, boolean shouldInterruptThread) {
+        public ThreadPoolScheduler(HystrixThreadPool threadPool, Func0<Boolean> shouldInterruptThread) {
             this.threadPool = threadPool;
             this.shouldInterruptThread = shouldInterruptThread;
         }
@@ -133,9 +138,9 @@ public class HystrixContextScheduler extends Scheduler {
 
         private final HystrixThreadPool threadPool;
         private final CompositeSubscription subscription = new CompositeSubscription();
-        private final boolean shouldInterruptThread;
+        private final Func0<Boolean> shouldInterruptThread;
 
-        public ThreadPoolWorker(HystrixThreadPool threadPool, boolean shouldInterruptThread) {
+        public ThreadPoolWorker(HystrixThreadPool threadPool, Func0<Boolean> shouldInterruptThread) {
             this.threadPool = threadPool;
             this.shouldInterruptThread = shouldInterruptThread;
         }
@@ -167,7 +172,6 @@ public class HystrixContextScheduler extends Scheduler {
             sa.addParent(subscription);
 
             Future<?> f = threadPool.getExecutor().submit(sa);
-
             sa.add(new FutureCompleterWithConfigurableInterrupt(f, shouldInterruptThread));
 
             return sa;
@@ -185,17 +189,22 @@ public class HystrixContextScheduler extends Scheduler {
      */
     private static class FutureCompleterWithConfigurableInterrupt implements Subscription {
         private final Future<?> f;
-        private final boolean shouldInterruptThread;
+        private final Func0<Boolean> shouldInterruptThread;
 
-        private FutureCompleterWithConfigurableInterrupt(Future<?> f, boolean shouldInterruptThread) {
+        private FutureCompleterWithConfigurableInterrupt(Future<?> f, Func0<Boolean> shouldInterruptThread) {
             this.f = f;
             this.shouldInterruptThread = shouldInterruptThread;
         }
 
         @Override
         public void unsubscribe() {
-            f.cancel(shouldInterruptThread);
+            if (shouldInterruptThread.call()) {
+                f.cancel(true);
+            } else {
+                f.cancel(false);
+            }
         }
+
         @Override
         public boolean isUnsubscribed() {
             return f.isCancelled();
