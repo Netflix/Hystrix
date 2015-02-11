@@ -5421,6 +5421,34 @@ public class HystrixCommandTest {
         assertTrue(2 == new PrimaryCommand(new TestCircuitBreaker()).execute());
     }
 
+    @Test
+    public void testSlowFallback() {
+        class PrimaryCommand extends TestHystrixCommand<Integer> {
+            public PrimaryCommand(TestCircuitBreaker circuitBreaker) {
+                super(testPropsBuilder().setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics));
+            }
+
+            @Override
+            protected Integer run() throws Exception {
+                throw new RuntimeException("primary failure");
+            }
+
+            @Override
+            protected Integer getFallback() {
+                try {
+                    Thread.sleep(1500);
+                    return 1;
+                } catch (InterruptedException ie) {
+                    System.out.println("Caught Interrupted Exception");
+                    ie.printStackTrace();
+                }
+                return -1;
+            }
+        }
+
+        assertTrue(1 == new PrimaryCommand(new TestCircuitBreaker()).execute());
+    }
+
     /* ******************************************************************************** */
     /* ******************************************************************************** */
     /* private HystrixCommand class implementations for unit testing */
