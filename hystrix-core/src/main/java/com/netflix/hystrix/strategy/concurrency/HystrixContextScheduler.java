@@ -52,7 +52,7 @@ public class HystrixContextScheduler extends Scheduler {
         this(concurrencyStrategy, threadPool, new Func0<Boolean>() {
             @Override
             public Boolean call() {
-                return false;
+                return true;
             }
         });
     }

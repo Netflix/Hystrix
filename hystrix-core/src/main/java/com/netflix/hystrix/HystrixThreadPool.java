@@ -183,7 +183,7 @@ public interface HystrixThreadPool {
             return getScheduler(new Func0<Boolean>() {
                 @Override
                 public Boolean call() {
-                    return false;
+                    return true;
                 }
             });
         }
