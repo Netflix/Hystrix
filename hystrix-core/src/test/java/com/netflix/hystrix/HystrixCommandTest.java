@@ -5387,6 +5387,67 @@ public class HystrixCommandTest {
         assertFalse(cmd.hasBeenInterrupted());
     }
 
+    @Test
+    public void testChainedCommand() {
+        class SubCommand extends TestHystrixCommand<Integer> {
+
+            public SubCommand(TestCircuitBreaker circuitBreaker) {
+                super(testPropsBuilder().setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics));
+            }
+
+            @Override
+            protected Integer run() throws Exception {
+                return 2;
+            }
+        }
+
+        class PrimaryCommand extends TestHystrixCommand<Integer> {
+            public PrimaryCommand(TestCircuitBreaker circuitBreaker) {
+                super(testPropsBuilder().setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics));
+            }
+
+            @Override
+            protected Integer run() throws Exception {
+                throw new RuntimeException("primary failure");
+            }
+
+            @Override
+            protected Integer getFallback() {
+                SubCommand subCmd = new SubCommand(new TestCircuitBreaker());
+                return subCmd.execute();
+            }
+        }
+
+        assertTrue(2 == new PrimaryCommand(new TestCircuitBreaker()).execute());
+    }
+
+    @Test
+    public void testSlowFallback() {
+        class PrimaryCommand extends TestHystrixCommand<Integer> {
+            public PrimaryCommand(TestCircuitBreaker circuitBreaker) {
+                super(testPropsBuilder().setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics));
+            }
+
+            @Override
+            protected Integer run() throws Exception {
+                throw new RuntimeException("primary failure");
+            }
+
+            @Override
+            protected Integer getFallback() {
+                try {
+                    Thread.sleep(1500);
+                    return 1;
+                } catch (InterruptedException ie) {
+                    System.out.println("Caught Interrupted Exception");
+                    ie.printStackTrace();
+                }
+                return -1;
+            }
+        }
+
+        assertTrue(1 == new PrimaryCommand(new TestCircuitBreaker()).execute());
+    }
 
     /* ******************************************************************************** */
     /* ******************************************************************************** */
@@ -5861,7 +5922,7 @@ public class HystrixCommandTest {
         }
 
         @Override
-        public Scheduler getScheduler(boolean shouldInterruptThread) {
+        public Scheduler getScheduler(Func0<Boolean> shouldInterruptThread) {
             return new HystrixContextScheduler(HystrixPlugins.getInstance().getConcurrencyStrategy(), this, shouldInterruptThread);
         }
 
@@ -5906,7 +5967,7 @@ public class HystrixCommandTest {
         }
 
         @Override
-        public Scheduler getScheduler(boolean shouldInterruptThread) {
+        public Scheduler getScheduler(Func0<Boolean> shouldInterruptThread) {
             return new HystrixContextScheduler(HystrixPlugins.getInstance().getConcurrencyStrategy(), this, shouldInterruptThread);
         }
 
@@ -6287,7 +6348,7 @@ public class HystrixCommandTest {
                         }
 
                         @Override
-                        public Scheduler getScheduler(boolean shouldInterruptThread) {
+                        public Scheduler getScheduler(Func0<Boolean> shouldInterruptThread) {
                             return new HystrixContextScheduler(HystrixPlugins.getInstance().getConcurrencyStrategy(), this, shouldInterruptThread);
                         }
 
@@ -6406,7 +6467,7 @@ public class HystrixCommandTest {
                     .setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics)
                     .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter()
                             .withExecutionIsolationThreadInterruptOnTimeout(shouldInterrupt)
-                            .withExecutionIsolationThreadTimeoutInMilliseconds(100)));
+                            .withExecutionTimeoutInMilliseconds(100)));
         }
 
         private volatile boolean hasBeenInterrupted;

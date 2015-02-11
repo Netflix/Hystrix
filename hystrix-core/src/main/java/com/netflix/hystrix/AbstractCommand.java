@@ -40,6 +40,7 @@ import rx.Scheduler;
 import rx.Subscriber;
 import rx.functions.Action0;
 import rx.functions.Action1;
+import rx.functions.Func0;
 import rx.functions.Func1;
 import rx.subjects.ReplaySubject;
 import rx.subscriptions.CompositeSubscription;
@@ -524,7 +525,13 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                         getExecutionObservableWithLifecycle().unsafeSubscribe(s); //the getExecutionObservableWithLifecycle method already wraps sync exceptions, so no need to catch here
                     }
                 }
-            }).subscribeOn(threadPool.getScheduler(properties.executionIsolationThreadInterruptOnTimeout().get()));
+            }).subscribeOn(threadPool.getScheduler(new Func0<Boolean>() {
+
+                @Override
+                public Boolean call() {
+                    return properties.executionIsolationThreadInterruptOnTimeout().get() && _self.isCommandTimedOut.get().equals(TimedOutStatus.TIMED_OUT);
+                }
+            }));
         } else {
             // semaphore isolated
             executionHook.onRunStart(_self);
@@ -814,7 +821,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 
                         return Observable.error(new HystrixRuntimeException(failureType, _cmd.getClass(), getLogMessagePrefix() + " " + message + " and no fallback available.", e, fe));
                     } else {
-                        logger.debug("HystrixCommand execution " + failureType.name() + " and fallback retrieval failed.", fe);
+                        logger.debug("HystrixCommand execution " + failureType.name() + " and fallback failed.", fe);
                         metrics.markFallbackFailure();
                         // record the executionResult
                         executionResult = executionResult.addEvents(HystrixEventType.FALLBACK_FAILURE);
@@ -826,7 +833,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                             logger.warn("Error calling ExecutionHook.onError", hookException);
                         }
 
-                        return Observable.error(new HystrixRuntimeException(failureType, _cmd.getClass(), getLogMessagePrefix() + " " + message + " and failed retrieving fallback.", e, fe));
+                        return Observable.error(new HystrixRuntimeException(failureType, _cmd.getClass(), getLogMessagePrefix() + " " + message + " and fallback failed.", e, fe));
                     }
                 }
 
@@ -938,7 +945,6 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                     // if we can go from NOT_EXECUTED to TIMED_OUT then we do the timeout codepath
                     // otherwise it means we lost a race and the run() execution completed
                     if (originalCommand.isCommandTimedOut.compareAndSet(TimedOutStatus.NOT_EXECUTED, TimedOutStatus.TIMED_OUT)) {
-                        // do fallback logic
                         // report timeout failure
                         originalCommand.metrics.markTimeout(System.currentTimeMillis() - originalCommand.invocationStartTime);
 
