@@ -814,7 +814,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 
                         return Observable.error(new HystrixRuntimeException(failureType, _cmd.getClass(), getLogMessagePrefix() + " " + message + " and no fallback available.", e, fe));
                     } else {
-                        logger.debug("HystrixCommand execution " + failureType.name() + " and fallback retrieval failed.", fe);
+                        logger.debug("HystrixCommand execution " + failureType.name() + " and fallback failed.", fe);
                         metrics.markFallbackFailure();
                         // record the executionResult
                         executionResult = executionResult.addEvents(HystrixEventType.FALLBACK_FAILURE);
@@ -826,7 +826,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                             logger.warn("Error calling ExecutionHook.onError", hookException);
                         }
 
-                        return Observable.error(new HystrixRuntimeException(failureType, _cmd.getClass(), getLogMessagePrefix() + " " + message + " and failed retrieving fallback.", e, fe));
+                        return Observable.error(new HystrixRuntimeException(failureType, _cmd.getClass(), getLogMessagePrefix() + " " + message + " and fallback failed.", e, fe));
                     }
                 }
 

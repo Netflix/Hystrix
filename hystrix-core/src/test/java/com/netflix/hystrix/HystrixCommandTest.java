@@ -5387,6 +5387,39 @@ public class HystrixCommandTest {
         assertFalse(cmd.hasBeenInterrupted());
     }
 
+    @Test
+    public void testChainedCommand() {
+        class SubCommand extends TestHystrixCommand<Integer> {
+
+            public SubCommand(TestCircuitBreaker circuitBreaker) {
+                super(testPropsBuilder().setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics));
+            }
+
+            @Override
+            protected Integer run() throws Exception {
+                return 2;
+            }
+        }
+
+        class PrimaryCommand extends TestHystrixCommand<Integer> {
+            public PrimaryCommand(TestCircuitBreaker circuitBreaker) {
+                super(testPropsBuilder().setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics));
+            }
+
+            @Override
+            protected Integer run() throws Exception {
+                throw new RuntimeException("primary failure");
+            }
+
+            @Override
+            protected Integer getFallback() {
+                SubCommand subCmd = new SubCommand(new TestCircuitBreaker());
+                return subCmd.execute();
+            }
+        }
+
+        assertTrue(2 == new PrimaryCommand(new TestCircuitBreaker()).execute());
+    }
 
     /* ******************************************************************************** */
     /* ******************************************************************************** */
