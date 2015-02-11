@@ -607,8 +607,8 @@ public class HystrixObservableCommandTest {
 
         System.out.println("Command time : " + command.getExecutionTimeInMilliseconds());
         System.out.println("Observed command time : " + observedCommandDuration);
-        assertTrue(command.getExecutionTimeInMilliseconds() > 200);
-        assertTrue(observedCommandDuration > 200);
+        assertTrue(command.getExecutionTimeInMilliseconds() >= 200);
+        assertTrue(observedCommandDuration >= 200);
         assertTrue(command.getExecutionTimeInMilliseconds() < 1000);
         assertTrue(observedCommandDuration < 1000);
         assertFalse(command.isFailedExecution());
