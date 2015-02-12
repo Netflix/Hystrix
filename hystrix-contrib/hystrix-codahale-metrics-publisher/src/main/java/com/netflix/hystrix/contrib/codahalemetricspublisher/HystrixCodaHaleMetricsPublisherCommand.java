@@ -259,7 +259,13 @@ public class HystrixCodaHaleMetricsPublisherCommand implements HystrixMetricsPub
         metricRegistry.register(createMetricName("propertyValue_executionIsolationThreadTimeoutInMilliseconds"), new Gauge<Number>() {
             @Override
             public Number getValue() {
-                return properties.executionIsolationThreadTimeoutInMilliseconds().get();
+                return properties.executionTimeoutInMilliseconds().get();
+            }
+        });
+        metricRegistry.register(createMetricName("propertyValue_executionTimeoutInMilliseconds"), new Gauge<Number>() {
+            @Override
+            public Number getValue() {
+                return properties.executionTimeoutInMilliseconds().get();
             }
         });
         metricRegistry.register(createMetricName("propertyValue_executionIsolationStrategy"), new Gauge<String>() {

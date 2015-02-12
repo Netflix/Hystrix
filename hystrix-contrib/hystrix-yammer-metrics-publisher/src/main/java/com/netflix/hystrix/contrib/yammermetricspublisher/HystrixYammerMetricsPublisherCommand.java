@@ -257,10 +257,16 @@ public class HystrixYammerMetricsPublisherCommand implements HystrixMetricsPubli
                 return properties.circuitBreakerForceClosed().get();
             }
         });
+        metricsRegistry.newGauge(createMetricName("propertyValue_executionTimeoutInMilliseconds"), new Gauge<Number>() {
+            @Override
+            public Number value() {
+                return properties.executionTimeoutInMilliseconds().get();
+            }
+        });
         metricsRegistry.newGauge(createMetricName("propertyValue_executionIsolationThreadTimeoutInMilliseconds"), new Gauge<Number>() {
             @Override
             public Number value() {
-                return properties.executionIsolationThreadTimeoutInMilliseconds().get();
+                return properties.executionTimeoutInMilliseconds().get();
             }
         });
         metricsRegistry.newGauge(createMetricName("propertyValue_executionIsolationStrategy"), new Gauge<String>() {

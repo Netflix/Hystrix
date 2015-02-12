@@ -60,7 +60,7 @@ public class HystrixCommandTimeoutConcurrencyTesting {
             super(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("testTimeoutConcurrency"))
                     .andCommandKey(HystrixCommandKey.Factory.asKey("testTimeoutConcurrencyCommand"))
                     .andCommandPropertiesDefaults(HystrixCommandProperties.Setter()
-                            .withExecutionIsolationThreadTimeoutInMilliseconds(1)));
+                            .withExecutionTimeoutInMilliseconds(1)));
         }
 
         @Override

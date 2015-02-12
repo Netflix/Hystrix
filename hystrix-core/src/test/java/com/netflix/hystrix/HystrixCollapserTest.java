@@ -1097,7 +1097,7 @@ public class HystrixCollapserTest {
         private final Collection<CollapsedRequest<String, String>> requests;
 
         TestCollapserCommand(Collection<CollapsedRequest<String, String>> requests) {
-            super(testPropsBuilder().setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionIsolationThreadTimeoutInMilliseconds(50)));
+            super(testPropsBuilder().setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionTimeoutInMilliseconds(50)));
             this.requests = requests;
         }
 

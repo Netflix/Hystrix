@@ -201,7 +201,7 @@ public class HystrixTest {
     private static class ResettableCommand extends HystrixCommand<Boolean> {
         ResettableCommand(int timeout, int poolCoreSize) {
             super(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("GROUP"))
-                    .andCommandPropertiesDefaults(HystrixCommandProperties.Setter().withExecutionIsolationThreadTimeoutInMilliseconds(timeout))
+                    .andCommandPropertiesDefaults(HystrixCommandProperties.Setter().withExecutionTimeoutInMilliseconds(timeout))
                     .andThreadPoolPropertiesDefaults(HystrixThreadPoolProperties.Setter().withCoreSize(poolCoreSize)));
         }
 

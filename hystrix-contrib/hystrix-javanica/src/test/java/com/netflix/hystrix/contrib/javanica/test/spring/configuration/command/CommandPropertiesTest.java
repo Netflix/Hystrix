@@ -61,7 +61,7 @@ public class CommandPropertiesTest {
             assertEquals("Test", command.getThreadPoolKey().name());
             assertTrue(command.getExecutionEvents().contains(HystrixEventType.SUCCESS));
             // assert properties
-            assertEquals(110, command.getProperties().executionIsolationThreadTimeoutInMilliseconds().get().intValue());
+            assertEquals(110, command.getProperties().executionTimeoutInMilliseconds().get().intValue());
             assertEquals(false, command.getProperties().executionIsolationThreadInterruptOnTimeout().get());
 
             Field field = command.getClass().getSuperclass().getSuperclass().getSuperclass().getDeclaredField("threadPool");
