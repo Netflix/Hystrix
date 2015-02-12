@@ -117,12 +117,7 @@ public class HystrixCommandPropertiesTest {
 
             @Override
             public HystrixProperty<Integer> executionIsolationThreadTimeoutInMilliseconds() {
-                return HystrixProperty.Factory.asProperty(builder.getExecutionTimeoutInMilliseconds());
-            }
-
-            @Override
-            public HystrixProperty<Integer> executionTimeoutInMilliseconds() {
-                return HystrixProperty.Factory.asProperty(builder.getExecutionTimeoutInMilliseconds());
+                return HystrixProperty.Factory.asProperty(builder.getExecutionIsolationThreadTimeoutInMilliseconds());
             }
 
             @Override

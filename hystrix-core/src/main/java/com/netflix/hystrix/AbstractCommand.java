@@ -960,7 +960,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 
                 @Override
                 public int getIntervalTimeInMilliseconds() {
-                    return originalCommand.properties.executionTimeoutInMilliseconds().get();
+                    return originalCommand.properties.executionIsolationThreadTimeoutInMilliseconds().get();
                 }
             };
 
