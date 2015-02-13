@@ -123,6 +123,7 @@ public class HystrixCommandTest {
             assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
             assertEquals(0, command.builder.metrics.getHealthCounts().getErrorPercentage());
+            assertEquals(0, command.builder.metrics.getCurrentConcurrentExecutionCount());
 
             assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
 
@@ -162,6 +163,7 @@ public class HystrixCommandTest {
             e.printStackTrace();
             // we want to get here
         }
+        assertEquals(0, command.builder.metrics.getCurrentConcurrentExecutionCount());
     }
 
     /**
@@ -203,6 +205,7 @@ public class HystrixCommandTest {
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(100, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, command.builder.metrics.getCurrentConcurrentExecutionCount());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -243,6 +246,7 @@ public class HystrixCommandTest {
         assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, command.builder.metrics.getCurrentConcurrentExecutionCount());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -279,6 +283,7 @@ public class HystrixCommandTest {
         assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, command.builder.metrics.getCurrentConcurrentExecutionCount());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -316,6 +321,7 @@ public class HystrixCommandTest {
         assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, command.builder.metrics.getCurrentConcurrentExecutionCount());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -351,6 +357,7 @@ public class HystrixCommandTest {
         assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(0, command.builder.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, command.builder.metrics.getCurrentConcurrentExecutionCount());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -394,6 +401,7 @@ public class HystrixCommandTest {
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(100, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, command.builder.metrics.getCurrentConcurrentExecutionCount());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -435,6 +443,7 @@ public class HystrixCommandTest {
         assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, command.builder.metrics.getCurrentConcurrentExecutionCount());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -470,6 +479,7 @@ public class HystrixCommandTest {
         assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, command.builder.metrics.getCurrentConcurrentExecutionCount());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -510,6 +520,7 @@ public class HystrixCommandTest {
         assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, command.builder.metrics.getCurrentConcurrentExecutionCount());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -545,6 +556,7 @@ public class HystrixCommandTest {
             assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
             assertEquals(0, command.builder.metrics.getHealthCounts().getErrorPercentage());
+            assertEquals(0, command.builder.metrics.getCurrentConcurrentExecutionCount());
 
             assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
 
@@ -720,6 +732,7 @@ public class HystrixCommandTest {
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(100, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
 
         assertEquals(4, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -777,6 +790,7 @@ public class HystrixCommandTest {
             assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
             assertEquals(100, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
+            assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
 
             assertEquals(4, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
         } catch (Exception e) {
@@ -849,6 +863,7 @@ public class HystrixCommandTest {
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(100, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
 
         assertEquals(4, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -913,6 +928,8 @@ public class HystrixCommandTest {
         assertEquals(0, circuitBreaker_one.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(100, circuitBreaker_one.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, circuitBreaker_one.metrics.getCurrentConcurrentExecutionCount());
+
 
         assertEquals(0, circuitBreaker_two.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
         assertEquals(0, circuitBreaker_two.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
@@ -928,6 +945,8 @@ public class HystrixCommandTest {
         assertEquals(0, circuitBreaker_two.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(100, circuitBreaker_two.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, circuitBreaker_two.metrics.getCurrentConcurrentExecutionCount());
+
 
         assertEquals(4, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -960,6 +979,8 @@ public class HystrixCommandTest {
         assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(0, command.builder.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, command.builder.metrics.getCurrentConcurrentExecutionCount());
+
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -1007,6 +1028,8 @@ public class HystrixCommandTest {
         assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, command.builder.metrics.getCurrentConcurrentExecutionCount());
+
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -1042,6 +1065,8 @@ public class HystrixCommandTest {
         assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, command.builder.metrics.getCurrentConcurrentExecutionCount());
+
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -1083,6 +1108,8 @@ public class HystrixCommandTest {
         assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, command.builder.metrics.getCurrentConcurrentExecutionCount());
+
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -1129,6 +1156,8 @@ public class HystrixCommandTest {
         assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, command.builder.metrics.getCurrentConcurrentExecutionCount());
+
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -1180,6 +1209,8 @@ public class HystrixCommandTest {
         assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, command.builder.metrics.getCurrentConcurrentExecutionCount());
+
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -1227,6 +1258,8 @@ public class HystrixCommandTest {
         assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, command.builder.metrics.getCurrentConcurrentExecutionCount());
+
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -1261,6 +1294,8 @@ public class HystrixCommandTest {
         assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, command.builder.metrics.getCurrentConcurrentExecutionCount());
+
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -1304,6 +1339,8 @@ public class HystrixCommandTest {
         assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, command.builder.metrics.getCurrentConcurrentExecutionCount());
+
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -1351,6 +1388,8 @@ public class HystrixCommandTest {
         assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, command.builder.metrics.getCurrentConcurrentExecutionCount());
+
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -1385,6 +1424,8 @@ public class HystrixCommandTest {
         assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, command.builder.metrics.getCurrentConcurrentExecutionCount());
+
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -1428,6 +1469,8 @@ public class HystrixCommandTest {
         assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, command.builder.metrics.getCurrentConcurrentExecutionCount());
+
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -1476,6 +1519,8 @@ public class HystrixCommandTest {
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(100, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
+
 
         assertEquals(2, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -1557,6 +1602,8 @@ public class HystrixCommandTest {
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(50, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
+
 
         assertEquals(2, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -1617,6 +1664,7 @@ public class HystrixCommandTest {
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(100, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(1, circuitBreaker.metrics.getCurrentConcurrentExecutionCount()); //pool-filler still going
 
         assertEquals(2, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -1678,6 +1726,7 @@ public class HystrixCommandTest {
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(100, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(1, circuitBreaker.metrics.getCurrentConcurrentExecutionCount()); //pool-filler still going
 
         assertEquals(2, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -1753,6 +1802,8 @@ public class HystrixCommandTest {
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(100, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
+
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -1818,6 +1869,8 @@ public class HystrixCommandTest {
         assertEquals(0, s1.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(0, s1.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, s1.metrics.getCurrentConcurrentExecutionCount());
+
 
         assertEquals(0, s2.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
         assertEquals(1, s2.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
@@ -1833,6 +1886,8 @@ public class HystrixCommandTest {
         assertEquals(0, s2.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(100, s2.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, s2.metrics.getCurrentConcurrentExecutionCount());
+
 
         assertEquals(2, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -1894,6 +1949,8 @@ public class HystrixCommandTest {
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+
+        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
 
         assertEquals(3, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -1963,6 +2020,8 @@ public class HystrixCommandTest {
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+
+        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
 
         assertEquals(3, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -2042,6 +2101,8 @@ public class HystrixCommandTest {
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
+        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
+
         assertEquals(3, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
@@ -2103,6 +2164,8 @@ public class HystrixCommandTest {
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+
+        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
 
         System.out.println("**** DONE");
 
@@ -2169,6 +2232,8 @@ public class HystrixCommandTest {
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+
+        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
 
         System.out.println("**** DONE");
 
@@ -2275,6 +2340,7 @@ public class HystrixCommandTest {
 
         // verifies that some executions failed
         assertEquals("expected some of shared semaphore commands to get rejected", sharedSemaphore.numberOfPermits.get().longValue(), failureCount.get());
+        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
     }
 
     /**
@@ -2385,6 +2451,7 @@ public class HystrixCommandTest {
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(0, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
 
         assertEquals(2, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -2438,6 +2505,7 @@ public class HystrixCommandTest {
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(0, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
 
         assertEquals(2, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -2500,6 +2568,7 @@ public class HystrixCommandTest {
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(0, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
 
         assertEquals(3, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -2568,6 +2637,7 @@ public class HystrixCommandTest {
         assertEquals(3, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(0, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
 
         assertEquals(4, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
 
@@ -2630,6 +2700,7 @@ public class HystrixCommandTest {
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(0, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
 
         assertEquals(3, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -2694,6 +2765,7 @@ public class HystrixCommandTest {
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(0, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
 
         assertEquals(3, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -2754,6 +2826,7 @@ public class HystrixCommandTest {
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(0, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
 
         assertEquals(3, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -2810,6 +2883,7 @@ public class HystrixCommandTest {
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(0, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
 
         assertEquals(3, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -2866,6 +2940,7 @@ public class HystrixCommandTest {
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(0, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
 
         assertEquals(3, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -2932,6 +3007,7 @@ public class HystrixCommandTest {
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(100, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
 
         assertEquals(4, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -2971,6 +3047,7 @@ public class HystrixCommandTest {
         assertEquals(4, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(100, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
 
         assertEquals(5, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
 
@@ -3055,6 +3132,7 @@ public class HystrixCommandTest {
         assertEquals(3, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(100, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
 
         assertEquals(4, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -3125,6 +3203,7 @@ public class HystrixCommandTest {
         assertEquals(3, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(100, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
 
         assertEquals(4, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -3200,6 +3279,8 @@ public class HystrixCommandTest {
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.BAD_REQUEST));
+
+        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
     }
 
     /**
@@ -3227,6 +3308,8 @@ public class HystrixCommandTest {
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.BAD_REQUEST));
+
+        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
     }
 
     /**
@@ -3262,6 +3345,8 @@ public class HystrixCommandTest {
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.BAD_REQUEST));
+
+        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
     }
 
     /**
@@ -3285,6 +3370,8 @@ public class HystrixCommandTest {
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.BAD_REQUEST));
+
+        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
     }
 
     /**
@@ -3312,6 +3399,8 @@ public class HystrixCommandTest {
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.BAD_REQUEST));
+
+        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
     }
 
     /**
@@ -3337,6 +3426,8 @@ public class HystrixCommandTest {
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.BAD_REQUEST));
+
+        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
     }
 
     /**
@@ -3390,6 +3481,8 @@ public class HystrixCommandTest {
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.BAD_REQUEST));
+
+        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
     }
 
     /**
@@ -3418,6 +3511,8 @@ public class HystrixCommandTest {
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.BAD_REQUEST));
+
+        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
     }
 
     /**
@@ -3447,6 +3542,8 @@ public class HystrixCommandTest {
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.BAD_REQUEST));
+
+        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
     }
 
     /**
@@ -3502,6 +3599,8 @@ public class HystrixCommandTest {
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.BAD_REQUEST));
+
+        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
     }
 
     @Test
@@ -3525,6 +3624,8 @@ public class HystrixCommandTest {
 
         assertTrue(cmd.isExecutionComplete());
         assertTrue(cmd.isResponseTimedOut());
+
+        assertEquals(0, cmd.metrics.getCurrentConcurrentExecutionCount());
     }
 
 
@@ -5190,6 +5291,7 @@ public class HystrixCommandTest {
         assertEquals(0, commandDisabled.builder.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(100, commandDisabled.builder.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, commandDisabled.builder.metrics.getCurrentConcurrentExecutionCount());
 
         assertEquals(2, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -5285,6 +5387,7 @@ public class HystrixCommandTest {
         assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(100, command.builder.metrics.getHealthCounts().getErrorPercentage());
+        assertEquals(0, command.builder.metrics.getCurrentConcurrentExecutionCount());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -5307,6 +5410,8 @@ public class HystrixCommandTest {
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.BAD_REQUEST));
+
+        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
     }
 
     @Test

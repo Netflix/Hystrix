@@ -90,6 +90,43 @@ public class HystrixCommandMetricsTest {
         assertEquals(75, metrics.getHealthCounts().getErrorPercentage());
     }
 
+    @Test
+    public void testCurrentConcurrentExecutionCount() {
+        class LatentCommand extends HystrixCommand<Boolean> {
+
+            long duration;
+
+            public LatentCommand(long duration) {
+                super(HystrixCommandGroupKey.Factory.asKey("Latent"), HystrixThreadPoolKey.Factory.asKey("Latent"), 1000);
+                this.duration = duration;
+            }
+
+            @Override
+            protected Boolean run() throws Exception {
+                Thread.sleep(duration);
+                return true;
+            }
+
+            @Override
+            protected Boolean getFallback() {
+                return false;
+            }
+        }
+
+        HystrixCommandMetrics metrics = null;
+
+        int NUM_CMDS = 8;
+        for (int i = 0; i < NUM_CMDS; i++) {
+            LatentCommand cmd = new LatentCommand(400);
+            if (metrics == null) {
+                metrics = cmd.metrics;
+            }
+            cmd.queue();
+        }
+
+        assertEquals(NUM_CMDS, metrics.getCurrentConcurrentExecutionCount());
+    }
+
     /**
      * Utility method for creating {@link HystrixCommandMetrics} for unit tests.
      */
