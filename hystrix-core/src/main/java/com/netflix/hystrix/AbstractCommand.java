@@ -638,6 +638,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         }).doOnTerminate(new Action0() {
             @Override
             public void call() {
+
                 //if the command timed out, then we've reached this point in the calling thread
                 //but the Hystrix thread is still doing work.  Let it handle these markers.
                 if (!isCommandTimedOut.get().equals(TimedOutStatus.TIMED_OUT)) {
