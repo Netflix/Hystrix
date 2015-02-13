@@ -370,6 +370,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
             public void call(Subscriber<? super R> observer) {
                 // async record keeping
                 recordExecutedCommand();
+                metrics.incrementConcurrentExecutionCount();
 
                 // mark that we're starting execution on the ExecutionHook
                 executionHook.onStart(_this);
@@ -497,8 +498,6 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
      */
     private Observable<R> getRunObservableDecoratedForMetricsAndErrorHandling() {
         final AbstractCommand<R> _self = this;
-        // allow tracking how many concurrent commands are executing
-        metrics.incrementConcurrentExecutionCount();
 
         final HystrixRequestContext currentRequestContext = HystrixRequestContext.getContextForCurrentThread();
 
@@ -638,7 +637,6 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         }).doOnTerminate(new Action0() {
             @Override
             public void call() {
-
                 //if the command timed out, then we've reached this point in the calling thread
                 //but the Hystrix thread is still doing work.  Let it handle these markers.
                 if (!isCommandTimedOut.get().equals(TimedOutStatus.TIMED_OUT)) {

@@ -1664,8 +1664,7 @@ public class HystrixCommandTest {
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(100, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
-        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
-
+        assertEquals(1, circuitBreaker.metrics.getCurrentConcurrentExecutionCount()); //pool-filler still going
 
         assertEquals(2, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
@@ -1727,8 +1726,7 @@ public class HystrixCommandTest {
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 
         assertEquals(100, circuitBreaker.metrics.getHealthCounts().getErrorPercentage());
-        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
-
+        assertEquals(1, circuitBreaker.metrics.getCurrentConcurrentExecutionCount()); //pool-filler still going
 
         assertEquals(2, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
