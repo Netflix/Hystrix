@@ -170,7 +170,6 @@
             assertNotNull(data,"propertyValue_circuitBreakerForceOpen");
             assertNotNull(data,"propertyValue_executionIsolationStrategy");
             assertNotNull(data,"propertyValue_executionIsolationThreadTimeoutInMilliseconds");
-            //this key was deprecated in 1.4.0-RC7. //TODO prefer propertyValue_executionInterruptOnTimeout instead
             assertNotNull(data,"propertyValue_executionIsolationThreadInterruptOnTimeout");
             // assertNotNull(data,"propertyValue_executionIsolationThreadPoolKeyOverride");
             assertNotNull(data,"propertyValue_executionIsolationSemaphoreMaxConcurrentRequests");

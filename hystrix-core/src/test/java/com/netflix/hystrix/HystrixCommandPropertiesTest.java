@@ -32,7 +32,7 @@ public class HystrixCommandPropertiesTest {
      */
     /* package */static HystrixCommandProperties.Setter getUnitTestPropertiesSetter() {
         return new HystrixCommandProperties.Setter()
-                .withExecutionIsolationThreadTimeoutInMilliseconds(1000)// when an execution will be timed out
+                .withExecutionTimeoutInMilliseconds(1000)// when an execution will be timed out
                 .withExecutionIsolationStrategy(ExecutionIsolationStrategy.THREAD) // we want thread execution by default in tests
                 .withExecutionIsolationThreadInterruptOnTimeout(true)
                 .withCircuitBreakerForceOpen(false) // we don't want short-circuiting by default
@@ -113,11 +113,6 @@ public class HystrixCommandPropertiesTest {
             @Override
             public HystrixProperty<String> executionIsolationThreadPoolKeyOverride() {
                 return HystrixProperty.Factory.nullProperty();
-            }
-
-            @Override
-            public HystrixProperty<Integer> executionIsolationThreadTimeoutInMilliseconds() {
-                return HystrixProperty.Factory.asProperty(builder.getExecutionTimeoutInMilliseconds());
             }
 
             @Override

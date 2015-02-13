@@ -323,7 +323,6 @@ public class HystrixServoMetricsPublisherCommand extends HystrixServoMetricsPubl
                 return properties.circuitBreakerForceClosed().get();
             }
         });
-        //this naming convention is deprecated as of 1.4.0-RC7, remove in 1.5.x
         monitors.add(new InformationalMetric<Number>(MonitorConfig.builder("propertyValue_executionIsolationThreadTimeoutInMilliseconds").build()) {
             @Override
             public Number getValue() {

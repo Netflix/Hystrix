@@ -110,7 +110,7 @@ public class HystrixConcurrencyStrategyTest {
         static final HystrixCommand.Setter properties = HystrixCommand.Setter
                 .withGroupKey(HystrixCommandGroupKey.Factory.asKey("TimeoutTest"))
                 .andCommandPropertiesDefaults(HystrixCommandProperties.Setter()
-                        .withExecutionIsolationThreadTimeoutInMilliseconds(50));
+                        .withExecutionTimeoutInMilliseconds(50));
 
         public TimeoutCommand() {
             super(properties);

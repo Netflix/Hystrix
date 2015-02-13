@@ -105,7 +105,7 @@ public class CommandPropertiesTest {
 
         @HystrixCommand(commandKey = "GetUserCommand", groupKey = "UserGroupKey", threadPoolKey = "Test",
                 commandProperties = {
-                        @HystrixProperty(name = "execution.timeoutInMilliseconds", value = "110"),
+                        @HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "110"),
                         @HystrixProperty(name = "execution.isolation.thread.interruptOnTimeout", value = "false")
                 },
                 threadPoolProperties = {

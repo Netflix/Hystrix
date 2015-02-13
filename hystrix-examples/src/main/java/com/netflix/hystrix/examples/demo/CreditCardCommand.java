@@ -79,7 +79,7 @@ public class CreditCardCommand extends HystrixCommand<CreditCardAuthorizationRes
     private CreditCardCommand(AuthorizeNetGateway gateway, Order order, PaymentInformation payment, BigDecimal amount) {
         super(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("CreditCard"))
                 // defaulting to a fairly long timeout value because failing a credit card transaction is a bad user experience and 'costly' to re-attempt
-                .andCommandPropertiesDefaults(HystrixCommandProperties.Setter().withExecutionIsolationThreadTimeoutInMilliseconds(3000)));
+                .andCommandPropertiesDefaults(HystrixCommandProperties.Setter().withExecutionTimeoutInMilliseconds(3000)));
         this.gateway = gateway;
         this.order = order;
         this.payment = payment;
