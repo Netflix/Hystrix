@@ -70,6 +70,26 @@ public class HystrixCommandMetricsTest {
 
     }
 
+    @Test
+    public void testBadRequestsDoNotAffectErrorPercentage() {
+        HystrixCommandProperties.Setter properties = HystrixCommandPropertiesTest.getUnitTestPropertiesSetter();
+        HystrixCommandMetrics metrics = getMetrics(properties);
+
+        metrics.markSuccess(100);
+        assertEquals(0, metrics.getHealthCounts().getErrorPercentage());
+
+        metrics.markFailure(1000);
+        assertEquals(50, metrics.getHealthCounts().getErrorPercentage());
+
+        metrics.markBadRequest(1);
+        metrics.markBadRequest(2);
+        assertEquals(50, metrics.getHealthCounts().getErrorPercentage());
+
+        metrics.markFailure(45);
+        metrics.markFailure(55);
+        assertEquals(75, metrics.getHealthCounts().getErrorPercentage());
+    }
+
     /**
      * Utility method for creating {@link HystrixCommandMetrics} for unit tests.
      */
