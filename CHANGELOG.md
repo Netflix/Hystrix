@@ -1,5 +1,41 @@
 # Hystrix Releases #
 
+### Version 1.4.0 Release Candidate 7 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.0-RC7%22)) ###
+_NOTE: This code is believed to be production worthy.  As of now, there are no known bugs preventing this becoming 1.4.0.  Please report any design issues/questions, bugs, or any observations about this release to the [Issues](https://github.com/Netflix/Hystrix/issues) page
+
+* [Pull 678](https://github.com/Netflix/Hystrix/pull/678) Fix current concurrent execution count
+* [Pull 676](https://github.com/Netflix/Hystrix/pull/676) Add test to confirm that bad requests do not affect circuit breaker's computed error percentage
+* [Pull 675](https://github.com/Netflix/Hystrix/pull/675) Deprecate method names for executionTimeout that are thread-specific
+* [Pull 672](https://github.com/Netflix/Hystrix/pull/672) Limit the thread-interrupt behavior to occur only on timeouts
+* [Pull 669](https://github.com/Netflix/Hystrix/pull/669) Added unit tests to demonstrate non-blocking semaphore timeout
+* [Pull 667](https://github.com/Netflix/Hystrix/pull/667) Added rolling max counter for command execution
+* [Pull 666](https://github.com/Netflix/Hystrix/pull/666) Added missing licenses
+* [Pull 665](https://github.com/Netflix/Hystrix/pull/665) Added comment to HystrixConcurrencyStrategy about non-idempotency of strategy application
+* [Pull 647](https://github.com/Netflix/Hystrix/pull/647) Tie command property to thread interrupt
+* [Pull 645](https://github.com/Netflix/Hystrix/pull/645) Remove incorrect reference to async timeout
+* [Pull 644](https://github.com/Netflix/Hystrix/pull/644) Add RequestCollapser metrics to Yammer Metrics Publisher
+* [Pull 643](https://github.com/Netflix/Hystrix/pull/643) Stress-test HystrixObservalbeCollapser
+* [Pull 642](https://github.com/Netflix/Hystrix/pull/642) Fix flakiness of HystrixObservableCommandTest.testRejectedViaSemaphoreIsolation
+* [Pull 641](https://github.com/Netflix/Hystrix/pull/641) Fix flakiness of testSemaphorePermitsInUse
+* [Pull 608](https://github.com/Netflix/Hystrix/pull/608) Make HystrixObservableCommand handle both sync and async exceptions
+* [Pull 607](https://github.com/Netflix/Hystrix/pull/607) Upgrade RxJava from 1.0.4 to 1.0.5
+* [Pull 604](https://github.com/Netflix/Hystrix/pull/604) Added EMIT and FALLBACK_EMIT event types that get emitted in HystrixObservableCommand
+* [Pull 599](https://github.com/Netflix/Hystrix/pull/599) Added metrics to HystrixObservableCollapser
+* [Pull 596](https://github.com/Netflix/Hystrix/pull/596) Fixed HystrixContextScheduler to conform with RxJava Worker contract
+* [Pull 583](https://github.com/Netflix/Hystrix/pull/583) Style and consistency fixes
+* [Pull 582](https://github.com/Netflix/Hystrix/pull/582) Add more unit tests for non-blocking HystrixCommand.queue()
+* [Pull 580](https://github.com/Netflix/Hystrix/pull/580) Unit test to demonstrate fixed non-blocking timeout for HystrixCommand.queue()
+* [Pull 579](https://github.com/Netflix/Hystrix/pull/579) Remove synchronous timeout
+* [Pull 577](https://github.com/Netflix/Hystrix/pull/577) Upgrade language level to Java7
+* [Pull 576](https://github.com/Netflix/Hystrix/pull/576) Add request collapser metrics
+* [Pull 573](https://github.com/Netflix/Hystrix/pull/573) Fix link to CHANGELOG.md in README.md
+* [Pull 572](https://github.com/Netflix/Hystrix/pull/572) Add bad request metrics at the command granularity
+* [Pull 567](https://github.com/Netflix/Hystrix/pull/567) Comment out flaky unit-tests
+* [Pull 566](https://github.com/Netflix/Hystrix/pull/566) Fix hardcoded groupname in CodaHale metrics publisher
+* [Commit 6c08d9](https://github.com/Netflix/Hystrix/commit/6c08d90fd10a947bdbee81afc9c0f866d1f33eef) Bumped nebula.netflixoss from 2.2.3 to 2.2.5
+* [Pull 562](https://github.com/Netflix/Hystrix/pull/562) Build changes to nebula.netflixoss (initially submitted as [Pull 469](https://github.com/Netflix/Hystrix/pull/469))
+	
+	
 ### Version 1.4.0 Release Candidate 6 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.0-RC6%22)) ###
 
 _NOTE: This code is believed to be production worthy but is still a "Release Candidate" until [these possible functional or design issues are resolved](https://github.com/Netflix/Hystrix/issues?q=is%3Aopen+is%3Aissue+milestone%3A1.4.0-RC7)._
