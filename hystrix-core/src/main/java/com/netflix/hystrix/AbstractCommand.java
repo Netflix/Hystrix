@@ -577,6 +577,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                      * Rejection handling
                      */
                     metrics.markThreadPoolRejection();
+                    threadPool.markThreadRejection();
                     // use a fallback instead (or throw exception if not implemented)
                     return getFallbackOrThrowException(HystrixEventType.THREAD_POOL_REJECTED, FailureType.REJECTED_THREAD_EXECUTION, "could not be queued for execution", e);
                 } else if (t instanceof HystrixObservableTimeoutOperator.HystrixTimeoutException) {

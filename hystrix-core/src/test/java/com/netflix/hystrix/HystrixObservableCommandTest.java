@@ -5616,6 +5616,11 @@ public class HystrixObservableCommandTest {
                     }
 
                     @Override
+                    public void markThreadRejection() {
+
+                    }
+
+                    @Override
                     public boolean isQueueSpaceAvailable() {
                         // always return false so we reject everything
                         return false;
@@ -7659,6 +7664,11 @@ public class HystrixObservableCommandTest {
         }
 
         @Override
+        public void markThreadRejection() {
+            //not used for this test
+        }
+
+        @Override
         public boolean isQueueSpaceAvailable() {
             return queue.size() < rejectionQueueSizeThreshold;
         }
@@ -7701,6 +7711,11 @@ public class HystrixObservableCommandTest {
         @Override
         public void markThreadCompletion() {
             // not used for this test
+        }
+
+        @Override
+        public void markThreadRejection() {
+            //not used for this test
         }
 
         @Override
@@ -8278,6 +8293,11 @@ public class HystrixObservableCommandTest {
 
                         @Override
                         public void markThreadCompletion() {
+
+                        }
+
+                        @Override
+                        public void markThreadRejection() {
 
                         }
 

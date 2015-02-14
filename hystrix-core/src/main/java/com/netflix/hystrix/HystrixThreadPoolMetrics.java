@@ -259,4 +259,10 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
         counter.updateRollingMax(HystrixRollingNumberEvent.THREAD_MAX_ACTIVE, threadPool.getActiveCount());
     }
 
+    /**
+     * Invoked each time a command is rejected from the thread-pool
+     */
+    public void markThreadRejection() {
+        counter.increment(HystrixRollingNumberEvent.THREAD_POOL_REJECTED);
+    }
 }

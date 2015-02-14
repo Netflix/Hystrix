@@ -173,6 +173,8 @@ public class HystrixServoMetricsPublisherThreadPool extends HystrixServoMetricsP
         monitors.add(getCumulativeCountForEvent("countThreadsExecuted", metrics, HystrixRollingNumberEvent.THREAD_EXECUTION));
         monitors.add(getRollingCountForEvent("rollingCountThreadsExecuted", metrics, HystrixRollingNumberEvent.THREAD_EXECUTION));
 
+        monitors.add(getRollingCountForEvent("rollingCountCommandsRejected", metrics, HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
+
         // properties
         monitors.add(new InformationalMetric<Number>(MonitorConfig.builder("propertyValue_corePoolSize").build()) {
             @Override
