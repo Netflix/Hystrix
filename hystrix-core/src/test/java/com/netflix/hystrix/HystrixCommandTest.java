@@ -2405,8 +2405,8 @@ public class HystrixCommandTest {
     @Test
     public void testRequestCache1() {
         TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
-        SuccessfulCacheableCommand command1 = new SuccessfulCacheableCommand(circuitBreaker, true, "A");
-        SuccessfulCacheableCommand command2 = new SuccessfulCacheableCommand(circuitBreaker, true, "A");
+        SuccessfulCacheableCommand<String> command1 = new SuccessfulCacheableCommand<>(circuitBreaker, true, "A");
+        SuccessfulCacheableCommand<String> command2 = new SuccessfulCacheableCommand<>(circuitBreaker, true, "A");
 
         assertTrue(command1.isCommandRunningInThread());
 
@@ -2462,8 +2462,8 @@ public class HystrixCommandTest {
     @Test
     public void testRequestCache2() {
         TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
-        SuccessfulCacheableCommand command1 = new SuccessfulCacheableCommand(circuitBreaker, true, "A");
-        SuccessfulCacheableCommand command2 = new SuccessfulCacheableCommand(circuitBreaker, true, "B");
+        SuccessfulCacheableCommand<String> command1 = new SuccessfulCacheableCommand<>(circuitBreaker, true, "A");
+        SuccessfulCacheableCommand<String> command2 = new SuccessfulCacheableCommand<>(circuitBreaker, true, "B");
 
         assertTrue(command1.isCommandRunningInThread());
 
@@ -2516,9 +2516,9 @@ public class HystrixCommandTest {
     @Test
     public void testRequestCache3() {
         TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
-        SuccessfulCacheableCommand command1 = new SuccessfulCacheableCommand(circuitBreaker, true, "A");
-        SuccessfulCacheableCommand command2 = new SuccessfulCacheableCommand(circuitBreaker, true, "B");
-        SuccessfulCacheableCommand command3 = new SuccessfulCacheableCommand(circuitBreaker, true, "A");
+        SuccessfulCacheableCommand<String> command1 = new SuccessfulCacheableCommand<>(circuitBreaker, true, "A");
+        SuccessfulCacheableCommand<String> command2 = new SuccessfulCacheableCommand<>(circuitBreaker, true, "B");
+        SuccessfulCacheableCommand<String> command3 = new SuccessfulCacheableCommand<>(circuitBreaker, true, "A");
 
         assertTrue(command1.isCommandRunningInThread());
 
@@ -2650,9 +2650,9 @@ public class HystrixCommandTest {
     @Test
     public void testNoRequestCache3() {
         TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
-        SuccessfulCacheableCommand command1 = new SuccessfulCacheableCommand(circuitBreaker, false, "A");
-        SuccessfulCacheableCommand command2 = new SuccessfulCacheableCommand(circuitBreaker, false, "B");
-        SuccessfulCacheableCommand command3 = new SuccessfulCacheableCommand(circuitBreaker, false, "A");
+        SuccessfulCacheableCommand<String> command1 = new SuccessfulCacheableCommand<>(circuitBreaker, false, "A");
+        SuccessfulCacheableCommand<String> command2 = new SuccessfulCacheableCommand<>(circuitBreaker, false, "B");
+        SuccessfulCacheableCommand<String> command3 = new SuccessfulCacheableCommand<>(circuitBreaker, false, "A");
 
         assertTrue(command1.isCommandRunningInThread());
 
@@ -3245,10 +3245,10 @@ public class HystrixCommandTest {
 
             TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
 
-            SuccessfulCacheableCommand command = new SuccessfulCacheableCommand(circuitBreaker, true, "one");
+            SuccessfulCacheableCommand command = new SuccessfulCacheableCommand<>(circuitBreaker, true, "one");
             assertEquals("one", command.execute());
 
-            SuccessfulCacheableCommand command2 = new SuccessfulCacheableCommand(circuitBreaker, true, "two");
+            SuccessfulCacheableCommand command2 = new SuccessfulCacheableCommand<>(circuitBreaker, true, "two");
             assertEquals("two", command2.queue().get());
 
             fail("We expect an exception because cacheKey requires RequestVariable.");
@@ -4758,6 +4758,44 @@ public class HystrixCommandTest {
     }
 
     /**
+     * Short-circuit? : NO
+     * Request-cache? : YES
+     */
+    @Test
+    public void testExecutionHookResponseFromCache() {
+        final TestCircuitBreaker cb = new TestCircuitBreaker();
+        HystrixCommand<Boolean> fillCache = new SuccessfulCacheableCommand<>(cb, true, true);
+        assertEquals(true, fillCache.execute());
+
+        assertHooksOnSuccess(
+                new Func0<TestHystrixCommand<Boolean>>() {
+                    @Override
+                    public TestHystrixCommand<Boolean> call() {
+                        return new SuccessfulCacheableCommand<>(cb, true, true);
+                    }
+                },
+                new Action1<TestHystrixCommand<Boolean>>() {
+                    @Override
+                    public void call(TestHystrixCommand<Boolean> command) {
+                        assertEquals(0, command.builder.executionHook.startExecute.get());
+                        assertNull(command.builder.executionHook.endExecuteSuccessResponse);
+                        assertNull(command.builder.executionHook.endExecuteFailureException);
+                        assertNull(command.builder.executionHook.endExecuteFailureType);
+                        assertEquals(0, command.builder.executionHook.startRun.get());
+                        assertNull(command.builder.executionHook.runSuccessResponse);
+                        assertNull(command.builder.executionHook.runFailureException);
+                        assertEquals(0, command.builder.executionHook.startFallback.get());
+                        assertNull(command.builder.executionHook.fallbackSuccessResponse);
+                        assertNull(command.builder.executionHook.fallbackFailureException);
+                        assertEquals(0, command.builder.executionHook.threadStart.get());
+                        assertEquals(0, command.builder.executionHook.threadComplete.get());
+                        assertEquals(1, command.builder.executionHook.cacheHit.get());
+                        assertEquals("onCacheHit - ", command.builder.executionHook.executionSequence.toString());
+                    }
+                });
+    }
+
+    /**
      *********************** END THREAD-ISOLATED Execution Hook Tests **************************************
      */
 
@@ -5806,20 +5844,20 @@ public class HystrixCommandTest {
     /**
      * A Command implementation that supports caching.
      */
-    private static class SuccessfulCacheableCommand extends TestHystrixCommand<String> {
+    private static class SuccessfulCacheableCommand<T> extends TestHystrixCommand<T> {
 
         private final boolean cacheEnabled;
         private volatile boolean executed = false;
-        private final String value;
+        private final T value;
 
-        public SuccessfulCacheableCommand(TestCircuitBreaker circuitBreaker, boolean cacheEnabled, String value) {
+        public SuccessfulCacheableCommand(TestCircuitBreaker circuitBreaker, boolean cacheEnabled, T value) {
             super(testPropsBuilder().setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics));
             this.value = value;
             this.cacheEnabled = cacheEnabled;
         }
 
         @Override
-        protected String run() {
+        protected T run() {
             executed = true;
             System.out.println("successfully executed");
             return value;
@@ -5832,7 +5870,7 @@ public class HystrixCommandTest {
         @Override
         public String getCacheKey() {
             if (cacheEnabled)
-                return value;
+                return value.toString();
             else
                 return null;
         }

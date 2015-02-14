@@ -266,4 +266,11 @@ public abstract class HystrixCommandExecutionHook {
         // do nothing by default
     }
 
+    /**
+     * Invoked when the command response is found in the {@link com.netflix.hystrix.HystrixRequestCache}.
+     * @param commandInstance The executing HystrixCommand
+     */
+    public <T> void onCacheHit(HystrixInvokable<T> commandInstance) {
+        // do nothing by default
+    }
 }
