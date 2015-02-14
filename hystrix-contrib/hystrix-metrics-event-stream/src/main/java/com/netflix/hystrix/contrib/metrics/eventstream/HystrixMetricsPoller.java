@@ -310,6 +310,7 @@ public class HystrixMetricsPoller {
             json.writeNumberField("currentTaskCount", threadPoolMetrics.getCurrentTaskCount().longValue());
             json.writeNumberField("rollingCountThreadsExecuted", threadPoolMetrics.getRollingCount(HystrixRollingNumberEvent.THREAD_EXECUTION));
             json.writeNumberField("rollingMaxActiveThreads", threadPoolMetrics.getRollingMaxActiveThreads());
+            json.writeNumberField("rollingCountCommandRejections", threadPoolMetrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
 
             json.writeNumberField("propertyValue_queueSizeRejectionThreshold", threadPoolMetrics.getProperties().queueSizeRejectionThreshold().get());
             json.writeNumberField("propertyValue_metricsRollingStatisticalWindowInMilliseconds", threadPoolMetrics.getProperties().metricsRollingStatisticalWindowInMilliseconds().get());

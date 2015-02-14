@@ -19,6 +19,7 @@ import com.netflix.hystrix.HystrixThreadPoolKey;
 import com.netflix.hystrix.HystrixThreadPoolMetrics;
 import com.netflix.hystrix.HystrixThreadPoolProperties;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherThreadPool;
+import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 import com.yammer.metrics.core.Gauge;
 import com.yammer.metrics.core.MetricName;
 import com.yammer.metrics.core.MetricsRegistry;
@@ -106,6 +107,13 @@ public class HystrixYammerMetricsPublisherThreadPool implements HystrixMetricsPu
             @Override
             public Number value() {
                 return metrics.getCumulativeCountThreadsExecuted();
+            }
+        });
+
+        metricsRegistry.newGauge(createMetricName("rollingCountCommandsRejected"), new Gauge<Number>() {
+            @Override
+            public Number value() {
+                return metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED);
             }
         });
 

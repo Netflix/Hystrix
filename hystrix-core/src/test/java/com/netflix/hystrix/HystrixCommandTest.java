@@ -6042,6 +6042,11 @@ public class HystrixCommandTest {
         }
 
         @Override
+        public void markThreadRejection() {
+            // not used for this test
+        }
+
+        @Override
         public boolean isQueueSpaceAvailable() {
             return queue.size() < rejectionQueueSizeThreshold;
         }
@@ -6083,6 +6088,11 @@ public class HystrixCommandTest {
 
         @Override
         public void markThreadCompletion() {
+            // not used for this test
+        }
+
+        @Override
+        public void markThreadRejection() {
             // not used for this test
         }
 
@@ -6438,6 +6448,11 @@ public class HystrixCommandTest {
 
                         @Override
                         public void markThreadCompletion() {
+
+                        }
+
+                        @Override
+                        public void markThreadRejection() {
 
                         }
 

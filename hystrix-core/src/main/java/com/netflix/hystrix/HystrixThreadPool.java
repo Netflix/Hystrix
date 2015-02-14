@@ -66,6 +66,11 @@ public interface HystrixThreadPool {
     public void markThreadCompletion();
 
     /**
+     * Mark when a command gets rejected from the threadpool
+     */
+    public void markThreadRejection();
+
+    /**
      * Whether the queue will allow adding an item to it.
      * <p>
      * This allows dynamic control of the max queueSize versus whatever the actual max queueSize is so that dynamic changes can be done via property changes rather than needing an app
@@ -209,6 +214,11 @@ public interface HystrixThreadPool {
         @Override
         public void markThreadCompletion() {
             metrics.markThreadCompletion();
+        }
+
+        @Override
+        public void markThreadRejection() {
+            metrics.markThreadRejection();
         }
 
         /**
