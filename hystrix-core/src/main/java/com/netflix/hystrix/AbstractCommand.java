@@ -357,6 +357,8 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
             if (fromCache != null) {
                 /* mark that we received this response from cache */
                 metrics.markResponseFromCache();
+                isExecutionComplete.set(true);
+                executionHook.onCacheHit(this);
                 return new CachedObservableResponse<>((CachedObservableOriginal<R>) fromCache, this);
             }
         }
@@ -1877,6 +1879,11 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                 onThreadComplete(c);
             }
             actual.onThreadComplete(commandInstance);
+        }
+
+        @Override
+        public <T> void onCacheHit(HystrixInvokable<T> commandInstance) {
+            actual.onCacheHit(commandInstance);
         }
 
         @SuppressWarnings({ "unchecked", "rawtypes" })
