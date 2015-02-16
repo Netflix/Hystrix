@@ -3066,13 +3066,13 @@ public class HystrixObservableCommandTest {
         System.out.println("Running command.observe(), immediately blocking and then running assertions...");
         if (isSuccess) {
             try {
-                command.observe().toBlocking().single();
+                command.observe().toList().toBlocking().single();
             } catch (Exception ex) {
                 throw new RuntimeException(ex);
             }
         } else {
             try {
-                command.observe().toBlocking().single();
+                command.observe().toList().toBlocking().single();
                 fail("Expected a command failure!");
             } catch (Exception ex) {
                 System.out.println("Received expected ex : " + ex);
@@ -3123,13 +3123,13 @@ public class HystrixObservableCommandTest {
 
         if (isSuccess) {
             try {
-                o.toBlocking().single();
+                o.toList().toBlocking().single();
             } catch (Exception ex) {
                 throw new RuntimeException(ex);
             }
         } else {
             try {
-                o.toBlocking().single();
+                o.toList().toBlocking().single();
                 fail("Expected a command failure!");
             } catch (Exception ex) {
                 System.out.println("Received expected ex : " + ex);
@@ -3185,6 +3185,80 @@ public class HystrixObservableCommandTest {
                         assertEquals(1, command.builder.executionHook.threadStart.get());
                         assertEquals(1, command.builder.executionHook.threadComplete.get());
                         assertEquals("onStart - onThreadStart - onRunStart - onRunSuccess - onComplete - onThreadComplete - ", command.builder.executionHook.executionSequence.toString());
+                    }
+                });
+    }
+
+    /**
+     * Short-circuit? : NO
+     * Thread/semaphore: THREAD
+     * Thread Pool full? : NO
+     * Thread Pool Queue full?: NO
+     * Timeout: NO
+     * Execution Result: SUCCESS
+     */
+    @Test
+    public void testExecutionHookThreadMultipleEmitsAndThenSuccess() {
+        assertHooksOnSuccess(
+                new Func0<TestHystrixCommand<Boolean>>() {
+                    @Override
+                    public TestHystrixCommand<Boolean> call() {
+                        return new TestCommandWithMultipleValues(ExecutionIsolationStrategy.THREAD);
+                    }
+                },
+                new Action1<TestHystrixCommand<Boolean>>() {
+                    @Override
+                    public void call(TestHystrixCommand<Boolean> command) {
+                        assertEquals(1, command.builder.executionHook.startExecute.get());
+                        assertNotNull(command.builder.executionHook.endExecuteSuccessResponse);
+                        assertNull(command.builder.executionHook.endExecuteFailureException);
+                        assertNull(command.builder.executionHook.endExecuteFailureType);
+                        assertEquals(1, command.builder.executionHook.startRun.get());
+                        assertNotNull(command.builder.executionHook.runSuccessResponse);
+                        assertNull(command.builder.executionHook.runFailureException);
+                        assertEquals(0, command.builder.executionHook.startFallback.get());
+                        assertNull(command.builder.executionHook.fallbackSuccessResponse);
+                        assertNull(command.builder.executionHook.fallbackFailureException);
+                        assertEquals(1, command.builder.executionHook.threadStart.get());
+                        assertEquals(1, command.builder.executionHook.threadComplete.get());
+                        assertEquals("onStart - onThreadStart - onRunStart - onRunSuccess - onComplete - onRunSuccess - onComplete - onRunSuccess - onComplete - onThreadComplete - ", command.builder.executionHook.executionSequence.toString());
+                    }
+                });
+    }
+
+    /**
+     * Short-circuit? : NO
+     * Thread/semaphore: THREAD
+     * Thread Pool full? : NO
+     * Thread Pool Queue full?: NO
+     * Timeout: NO
+     * Execution Result: EMITx3, FAILURE, FALLBACK_EMITx4, FALLBACK_SUCCESS
+     */
+    @Test
+    public void testExecutionHookThreadMultipleEmitsThenErrorThenMultipleFallbackEmitsAndThenFallbackSuccess() {
+        assertHooksOnSuccess(
+                new Func0<TestHystrixCommand<Boolean>>() {
+                    @Override
+                    public TestHystrixCommand<Boolean> call() {
+                        return new TestPartialSuccessWithFallback(ExecutionIsolationStrategy.THREAD);
+                    }
+                },
+                new Action1<TestHystrixCommand<Boolean>>() {
+                    @Override
+                    public void call(TestHystrixCommand<Boolean> command) {
+                        assertEquals(1, command.builder.executionHook.startExecute.get());
+                        assertNotNull(command.builder.executionHook.endExecuteSuccessResponse);
+                        assertNull(command.builder.executionHook.endExecuteFailureException);
+                        assertNull(command.builder.executionHook.endExecuteFailureType);
+                        assertEquals(1, command.builder.executionHook.startRun.get());
+                        assertNotNull(command.builder.executionHook.runSuccessResponse);
+                        assertNotNull(command.builder.executionHook.runFailureException);
+                        assertEquals(1, command.builder.executionHook.startFallback.get());
+                        assertNotNull(command.builder.executionHook.fallbackSuccessResponse);
+                        assertNull(command.builder.executionHook.fallbackFailureException);
+                        assertEquals(1, command.builder.executionHook.threadStart.get());
+                        assertEquals(1, command.builder.executionHook.threadComplete.get());
+                        assertEquals("onStart - onThreadStart - onRunStart - onRunSuccess - onComplete - onRunSuccess - onComplete - onRunSuccess - onComplete - onRunError - onFallbackStart - onFallbackSuccess - onComplete - onFallbackSuccess - onComplete - onFallbackSuccess - onComplete - onFallbackSuccess - onComplete - onThreadComplete - ", command.builder.executionHook.executionSequence.toString());
                     }
                 });
     }
@@ -6929,7 +7003,7 @@ public class HystrixObservableCommandTest {
             assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
             assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
             assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
-            assertEquals(Arrays.asList(1, 2, 3), command.observe().toList().toBlocking().single());
+            assertEquals(Arrays.asList(true, false, true), command.observe().toList().toBlocking().single());
             assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
             assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
             assertEquals(1, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
@@ -7032,10 +7106,10 @@ public class HystrixObservableCommandTest {
             assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
             assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
             assertEquals(0, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
-            TestSubscriber<Integer> ts = new TestSubscriber<>();
+            TestSubscriber<Boolean> ts = new TestSubscriber<>();
             command.toObservable().subscribe(ts);
             ts.awaitTerminalEvent();
-            ts.assertReceivedOnNext(Arrays.asList(1, 2, 3, 1, 2, 3, 4));
+            ts.assertReceivedOnNext(Arrays.asList(false, true, false, true, false, true, false));
             ts.assertNoErrors();
             
             assertEquals(1, command.builder.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
@@ -7256,7 +7330,7 @@ public class HystrixObservableCommandTest {
     /**
      * Successful execution - no fallback implementation.
      */
-    private static class TestCommandWithMultipleValues extends TestHystrixCommand<Integer> {
+    private static class TestCommandWithMultipleValues extends TestHystrixCommand<Boolean> {
 
         public TestCommandWithMultipleValues() {
             this(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionIsolationStrategy(ExecutionIsolationStrategy.SEMAPHORE));
@@ -7271,8 +7345,8 @@ public class HystrixObservableCommandTest {
         }
 
         @Override
-        protected Observable<Integer> construct() {
-            return Observable.just(1, 2, 3).subscribeOn(Schedulers.computation());
+        protected Observable<Boolean> construct() {
+            return Observable.just(true, false, true).subscribeOn(Schedulers.computation());
         }
 
     }
@@ -7292,22 +7366,30 @@ public class HystrixObservableCommandTest {
 
     }
     
-    private static class TestPartialSuccessWithFallback extends TestHystrixCommand<Integer> {
+    private static class TestPartialSuccessWithFallback extends TestHystrixCommand<Boolean> {
 
         TestPartialSuccessWithFallback() {
             super(TestHystrixCommand.testPropsBuilder());
         }
 
+        public TestPartialSuccessWithFallback(ExecutionIsolationStrategy isolationStrategy) {
+            this(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionIsolationStrategy(isolationStrategy));
+        }
+
+        public TestPartialSuccessWithFallback(HystrixCommandProperties.Setter properties) {
+            super(testPropsBuilder().setCommandPropertiesDefaults(properties));
+        }
+
         @Override
-        protected Observable<Integer> construct() {
-            return Observable.just(1, 2, 3)
-                    .concatWith(Observable.<Integer> error(new RuntimeException("forced error")))
+        protected Observable<Boolean> construct() {
+            return Observable.just(false, true, false)
+                    .concatWith(Observable.<Boolean> error(new RuntimeException("forced error")))
                     .subscribeOn(Schedulers.computation());
         }
         
         @Override
-        protected Observable<Integer> resumeWithFallback() {
-            return Observable.just(1, 2, 3, 4);
+        protected Observable<Boolean> resumeWithFallback() {
+            return Observable.just(true, false, true, false);
         }
 
     }
