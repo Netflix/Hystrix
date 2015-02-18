@@ -33,7 +33,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
-import com.netflix.hystrix.HystrixCommandTest.TestHystrixCommand;
 import com.netflix.hystrix.collapser.CollapserTimer;
 import com.netflix.hystrix.collapser.RealCollapserTimer;
 import com.netflix.hystrix.collapser.RequestCollapser;

@@ -643,26 +643,29 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
     private Observable<R> getExecutionObservableWithLifecycle() {
         final HystrixInvokable<R> _self = this;
 
-        try {
-            return getExecutionObservable()
-                    .lift(new ExecutionHookApplication(_self))
-                    .lift(new DeprecatedOnRunHookApplication(_self))
-                    .doOnTerminate(new Action0() {
-                        @Override
-                        public void call() {
-                            //If the command timed out, then the calling thread has already walked away so we need
-                            //to handle these markers.  Otherwise, the calling thread will perform these for us.
-                            if (isCommandTimedOut.get().equals(TimedOutStatus.TIMED_OUT)) {
-                                handleThreadEnd();
+        Observable<R> userObservable;
 
-                            }
-                        }
-                    });
+        try {
+            userObservable = getExecutionObservable();
+
         } catch (Throwable ex) {
             // the run() method is a user provided implementation so can throw instead of using Observable.onError
             // so we catch it here and turn it into Observable.error
-            return Observable.error(wrapWithOnRunErrorHook(ex));
+            userObservable = Observable.error(ex);
         }
+        return userObservable .lift(new ExecutionHookApplication(_self))
+                .lift(new DeprecatedOnRunHookApplication(_self))
+                .doOnTerminate(new Action0() {
+                    @Override
+                    public void call() {
+                        //If the command timed out, then the calling thread has already walked away so we need
+                        //to handle these markers.  Otherwise, the calling thread will perform these for us.
+                        if (isCommandTimedOut.get().equals(TimedOutStatus.TIMED_OUT)) {
+                            handleThreadEnd();
+
+                        }
+                    }
+                });
     }
 
     /**
@@ -1408,16 +1411,6 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         }
     }
 
-    private Exception wrapWithOnRunErrorHook(Throwable t) {
-        Exception e = getExceptionFromThrowable(t);
-        try {
-            return executionHook.onRunError(this, e);
-        } catch (Throwable hookEx) {
-            logger.warn("Error calling ExecutionHook.onRunError", hookEx);
-            return e;
-        }
-    }
-
     private Exception wrapWithOnExecutionErrorHook(Throwable t) {
         Exception e = getExceptionFromThrowable(t);
         try {
@@ -1930,6 +1923,46 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         }
 
         @Override
+        public <T> T onEmit(HystrixInvokable<T> commandInstance, T value) {
+            return actual.onEmit(commandInstance, value);
+        }
+
+        @Override
+        public <T> void onSuccess(HystrixInvokable<T> commandInstance) {
+            actual.onSuccess(commandInstance);
+        }
+
+        @Override
+        public <T> void onExecutionStart(HystrixInvokable<T> commandInstance) {
+            actual.onExecutionStart(commandInstance);
+        }
+
+        @Override
+        public <T> T onExecutionEmit(HystrixInvokable<T> commandInstance, T value) {
+            return actual.onExecutionEmit(commandInstance, value);
+        }
+
+        @Override
+        public <T> Exception onExecutionError(HystrixInvokable<T> commandInstance, Exception e) {
+            return actual.onExecutionError(commandInstance, e);
+        }
+
+        @Override
+        public <T> void onExecutionSuccess(HystrixInvokable<T> commandInstance) {
+            actual.onExecutionSuccess(commandInstance);
+        }
+
+        @Override
+        public <T> T onFallbackEmit(HystrixInvokable<T> commandInstance, T value) {
+            return actual.onFallbackEmit(commandInstance, value);
+        }
+
+        @Override
+        public <T> void onFallbackSuccess(HystrixInvokable<T> commandInstance) {
+            actual.onFallbackSuccess(commandInstance);
+        }
+
+        @Override
         @Deprecated
         public <T> void onRunStart(HystrixCommand<T> commandInstance) {
             actual.onRunStart(commandInstance);
@@ -1951,6 +1984,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         }
 
         @Override
+        @Deprecated
         public <T> T onRunSuccess(HystrixInvokable<T> commandInstance, T response) {
             HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
             if (c != null) {
@@ -1966,6 +2000,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         }
 
         @Override
+        @Deprecated
         public <T> Exception onRunError(HystrixInvokable<T> commandInstance, Exception e) {
             HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
             if (c != null) {
@@ -1996,6 +2031,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         }
 
         @Override
+        @Deprecated
         public <T> T onFallbackSuccess(HystrixInvokable<T> commandInstance, T fallbackResponse) {
             HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
             if (c != null) {
@@ -2041,6 +2077,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         }
 
         @Override
+        @Deprecated
         public <T> T onComplete(HystrixInvokable<T> commandInstance, T response) {
             HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
             if (c != null) {
