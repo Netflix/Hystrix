@@ -20,7 +20,7 @@ import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 public interface AbstractTestHystrixCommand<R> extends HystrixObservable<R>, InspectableBuilder {
 
     public static enum ExecutionResult {
-        SUCCESS, FAILURE, ASYNC_FAILURE, BAD_REQUEST, ASYNC_BAD_REQUEST, MULTIPLE_EMITS_THEN_SUCCESS, MULTIPLE_EMITS_THEN_FAILURE, NO_EMITS_THEN_SUCCESS
+        SUCCESS, FAILURE, ASYNC_FAILURE, HYSTRIX_FAILURE, ASYNC_HYSTRIX_FAILURE, ERROR, ASYNC_ERROR, BAD_REQUEST, ASYNC_BAD_REQUEST, MULTIPLE_EMITS_THEN_SUCCESS, MULTIPLE_EMITS_THEN_FAILURE, NO_EMITS_THEN_SUCCESS
     }
 
     public static enum FallbackResult {
