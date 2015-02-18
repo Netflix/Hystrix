@@ -19,10 +19,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesCollapserDefault;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
@@ -38,7 +36,6 @@ import rx.schedulers.Schedulers;
 
 import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
 import com.netflix.hystrix.HystrixCollapserTest.TestCollapserTimer;
-import com.netflix.hystrix.HystrixObservableCommandTest.TestHystrixCommand;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 
 public class HystrixObservableCollapserTest {
@@ -205,7 +202,7 @@ public class HystrixObservableCollapserTest {
         };
     }
 
-    private static class TestCollapserCommand extends TestHystrixCommand<String> {
+    private static class TestCollapserCommand extends TestHystrixObservableCommand<String> {
 
         private final Collection<CollapsedRequest<String, String>> requests;
 
