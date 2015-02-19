@@ -675,51 +675,12 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
      * <p>
      * If something in the <code>getFallback()</code> implementation is latent (such as a network call) then the semaphore will cause us to start rejecting requests rather than allowing potentially
      * all threads to pile up and block.
-     * 
+     *
      * @return K
      * @throws UnsupportedOperationException
      *             if getFallback() not implemented
-     * @throws HystrixException
-     *             if getFallback() fails (throws an Exception) or is rejected by the semaphore
-     */
-    private Observable<R> getFallbackWithProtection() {
-        final TryableSemaphore fallbackSemaphore = getFallbackSemaphore();
-
-        // acquire a permit
-        if (fallbackSemaphore.tryAcquire()) {
-            executionHook.onFallbackStart(this);
-            final AbstractCommand<R> _cmd = this;
-
-            Observable<R> fallback;
-            try {
-                fallback = getFallbackObservable();
-            } catch (Throwable t) {
-                // getFallback() is user provided and can throw so we catch it and turn it into Observable.error
-                fallback = Observable.error(t);
-            }
-
-            return fallback
-                    .lift(new FallbackHookApplication(_cmd))
-                    .lift(new DeprecatedOnFallbackHookApplication(_cmd))
-                    .doOnTerminate(new Action0() {
-
-                        @Override
-                        public void call() {
-                            fallbackSemaphore.release();
-                        }
-
-                    });
-        } else {
-            metrics.markFallbackRejection();
-
-            logger.debug("HystrixCommand Fallback Rejection."); // debug only since we're throwing the exception and someone higher will do something with it
-            // if we couldn't acquire a permit, we "fail fast" by throwing an exception
-            return Observable.error(new HystrixRuntimeException(FailureType.REJECTED_SEMAPHORE_FALLBACK, this.getClass(), getLogMessagePrefix() + " fallback execution rejected.", null, null));
-        }
-    }
-
-    /**
      * @throws HystrixRuntimeException
+     *             if getFallback() fails (throws an Exception) or is rejected by the semaphore
      */
     private Observable<R> getFallbackOrThrowException(final HystrixEventType eventType, final FailureType failureType, final String message, final Exception originalException) {
         final HystrixRequestContext currentRequestContext = HystrixRequestContext.getContextForCurrentThread();
@@ -731,7 +692,40 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
             executionResult = executionResult.addEvents(eventType);
             final AbstractCommand<R> _cmd = this;
 
-            return getFallbackWithProtection().doOnNext(new Action1<R>() {
+            final TryableSemaphore fallbackSemaphore = getFallbackSemaphore();
+
+            Observable<R> fallbackExecutionChain;
+
+            // acquire a permit
+            if (fallbackSemaphore.tryAcquire()) {
+                executionHook.onFallbackStart(this);
+
+                try {
+                    fallbackExecutionChain = getFallbackObservable();
+                } catch (Throwable t) {
+                    // getFallback() is user provided and can throw so we catch it and turn it into Observable.error
+                    fallbackExecutionChain = Observable.error(t);
+                }
+
+                fallbackExecutionChain =  fallbackExecutionChain
+                        .lift(new FallbackHookApplication(_cmd))
+                        .lift(new DeprecatedOnFallbackHookApplication(_cmd))
+                        .doOnTerminate(new Action0() {
+
+                            @Override
+                            public void call() {
+                                fallbackSemaphore.release();
+                            }
+                        });
+            } else {
+                metrics.markFallbackRejection();
+
+                logger.debug("HystrixCommand Fallback Rejection."); // debug only since we're throwing the exception and someone higher will do something with it
+                // if we couldn't acquire a permit, we "fail fast" by throwing an exception
+                return Observable.error(new HystrixRuntimeException(FailureType.REJECTED_SEMAPHORE_FALLBACK, this.getClass(), getLogMessagePrefix() + " fallback execution rejected.", null, null));
+            }
+
+            return fallbackExecutionChain.doOnNext(new Action1<R>() {
                 @Override
                 public void call(R r) {
                     if (shouldOutputOnNextEvents()) {

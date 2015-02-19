@@ -40,6 +40,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.omg.PortableServer.THREAD_POLICY_ID;
 import rx.Observable;
 import rx.Observer;
 import rx.Scheduler;
@@ -1884,7 +1885,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         // the 1st thread executes single-threaded and gets a fallback, the next 2 are concurrent so only 1 of them is permitted by the fallback semaphore so 1 is rejected
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         // whenever a fallback_rejection occurs it is also a fallback_failure
-        assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(2, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
         // we should not have rejected any via the "execution semaphore" but instead via the "fallback semaphore"
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
@@ -3548,6 +3549,71 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
     }
 
     @Test
+    public void testFallbackRejectionOccursWithLatentFallback() {
+        TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
+        TryableSemaphore fallbackSemaphore = new AbstractCommand.TryableSemaphoreActual(HystrixProperty.Factory.asProperty(2));
+        final TestHystrixCommand<?> cmd = getFallbackLatentCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.FallbackResult.SUCCESS, 1000, circuitBreaker, fallbackSemaphore);
+        final TestHystrixCommand<?> cmd2 = getFallbackLatentCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.FallbackResult.SUCCESS, 1000, circuitBreaker, fallbackSemaphore);
+        final TestHystrixCommand<?> cmd3 = getFallbackLatentCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.FallbackResult.SUCCESS, 1000, circuitBreaker, fallbackSemaphore);
+
+        //saturate the fallback semaphore
+        Future<?> result = cmd.queue();
+        Future<?> result2 = cmd2.queue();
+
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException ie) {
+            fail("should not get interrupted");
+        }
+
+        //this should have a rejected fallback, since 2 commands are already executing a fallback with a semaphore count of 2
+        Future<?> result3 = cmd3.queue();
+
+        try {
+            //now wait for the third future to complete - this should be a fast-fail while the other 2 commands are executing their fallbacks
+            result3.get();
+            fail("should not get a result from a command with a rejected fallback");
+        } catch (InterruptedException ex) {
+            fail("Unexpected interruption to future, which should have fast-failed");
+        } catch (ExecutionException ex) {
+            assertFalse(result.isDone());
+            assertFalse(result2.isDone());
+            assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
+            assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
+            assertEquals(3, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
+            assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.BAD_REQUEST));
+            assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
+            assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
+            assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+            assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
+            assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
+            assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
+            assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
+            assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+        }
+
+        try {
+            //now wait for the first 2 futures to complete.  They should both have successful fallbacks 1000 millis after they started
+            assertEquals(FlexibleTestHystrixCommand.FALLBACK_VALUE, result.get());
+            assertEquals(FlexibleTestHystrixCommand.FALLBACK_VALUE, result2.get());
+            assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
+            assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
+            assertEquals(3, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
+            assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.BAD_REQUEST));
+            assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
+            assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
+            assertEquals(2, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+            assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
+            assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
+            assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
+            assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
+            assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+        } catch (InterruptedException | ExecutionException e) {
+            fail("Interrupted during Future.get()");
+        }
+    }
+
+    @Test
     public void testNonBlockingCommandQueueFiresTimeout() { //see https://github.com/Netflix/Hystrix/issues/514
         final TestHystrixCommand<?> cmd = getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.SUCCESS, 200, AbstractTestHystrixCommand.FallbackResult.SUCCESS, 50);
 
@@ -4025,8 +4091,8 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
     /* ******************************************************************************** */
 
     @Override
-    TestHystrixCommand<?> getCommand(ExecutionIsolationStrategy isolationStrategy, AbstractTestHystrixCommand.ExecutionResult executionResult, int executionLatency, AbstractTestHystrixCommand.FallbackResult fallbackResult, TestCircuitBreaker circuitBreaker, HystrixThreadPool threadPool, int timeout, AbstractTestHystrixCommand.CacheEnabled cacheEnabled, Object value, TryableSemaphore semaphore, boolean circuitBreakerDisabled) {
-        return new FlexibleTestHystrixCommand(isolationStrategy, executionResult, executionLatency, fallbackResult, circuitBreaker, threadPool, timeout, cacheEnabled, value, semaphore, circuitBreakerDisabled);
+    TestHystrixCommand<?> getCommand(ExecutionIsolationStrategy isolationStrategy, AbstractTestHystrixCommand.ExecutionResult executionResult, int executionLatency, AbstractTestHystrixCommand.FallbackResult fallbackResult, int fallbackLatency, TestCircuitBreaker circuitBreaker, HystrixThreadPool threadPool, int timeout, AbstractTestHystrixCommand.CacheEnabled cacheEnabled, Object value, TryableSemaphore executionSemaphore, TryableSemaphore fallbackSemaphore, boolean circuitBreakerDisabled) {
+        return new FlexibleTestHystrixCommand(isolationStrategy, executionResult, executionLatency, fallbackResult, fallbackLatency, circuitBreaker, threadPool, timeout, cacheEnabled, value, executionSemaphore, fallbackSemaphore, circuitBreakerDisabled);
     }
 
     private static class FlexibleTestHystrixCommand extends TestHystrixCommand<Integer> {
@@ -4034,13 +4100,14 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         private final AbstractTestHystrixCommand.ExecutionResult executionResult;
         private final int executionLatency;
         private final AbstractTestHystrixCommand.FallbackResult fallbackResult;
+        private final int fallbackLatency;
         private final CacheEnabled cacheEnabled;
         private final Object value;
 
         static int EXECUTE_VALUE = 1;
         static int FALLBACK_VALUE = 11;
 
-        public FlexibleTestHystrixCommand(ExecutionIsolationStrategy isolationStrategy, AbstractTestHystrixCommand.ExecutionResult executionResult, int executionLatency, FallbackResult fallbackResult, TestCircuitBreaker circuitBreaker, HystrixThreadPool threadPool, int timeout, CacheEnabled cacheEnabled, Object value, TryableSemaphore semaphore, boolean circuitBreakerDisabled) {
+        public FlexibleTestHystrixCommand(ExecutionIsolationStrategy isolationStrategy, AbstractTestHystrixCommand.ExecutionResult executionResult, int executionLatency, FallbackResult fallbackResult, int fallbackLatency, TestCircuitBreaker circuitBreaker, HystrixThreadPool threadPool, int timeout, CacheEnabled cacheEnabled, Object value, TryableSemaphore executionSemaphore, TryableSemaphore fallbackSemaphore, boolean circuitBreakerDisabled) {
             super(testPropsBuilder()
                     .setCircuitBreaker(circuitBreaker)
                     .setMetrics(circuitBreaker.metrics)
@@ -4049,10 +4116,12 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
                             .withExecutionIsolationStrategy(isolationStrategy)
                             .withExecutionTimeoutInMilliseconds(timeout)
                             .withCircuitBreakerEnabled(!circuitBreakerDisabled))
-                    .setExecutionSemaphore(semaphore));
+                    .setExecutionSemaphore(executionSemaphore)
+                    .setFallbackSemaphore(fallbackSemaphore));
             this.executionResult = executionResult;
             this.executionLatency = executionLatency;
             this.fallbackResult = fallbackResult;
+            this.fallbackLatency = fallbackLatency;
             this.cacheEnabled = cacheEnabled;
             this.value = value;
         }
@@ -4060,22 +4129,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         @Override
         protected Integer run() throws Exception {
             System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " starting the run() method");
-            if (executionLatency > 0) {
-                try {
-                    System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " About to sleep for : " + executionLatency);
-                    Thread.sleep(executionLatency);
-                    System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Woke up from sleep!");
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                    // ignore and sleep some more to simulate a dependency that doesn't obey interrupts
-                    try {
-                        Thread.sleep(executionLatency);
-                    } catch (Exception e2) {
-                        // ignore
-                    }
-                    System.out.println("after interruption with extra sleep");
-                }
-            }
+            addLatency(executionLatency);
             if (executionResult == AbstractTestHystrixCommand.ExecutionResult.SUCCESS) {
                 return EXECUTE_VALUE;
             } else if (executionResult == AbstractTestHystrixCommand.ExecutionResult.FAILURE) {
@@ -4093,6 +4147,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
 
         @Override
         protected Integer getFallback() {
+            addLatency(fallbackLatency);
             if (fallbackResult == AbstractTestHystrixCommand.FallbackResult.SUCCESS) {
                 return FALLBACK_VALUE;
             } else if (fallbackResult == AbstractTestHystrixCommand.FallbackResult.FAILURE) {
@@ -4110,6 +4165,25 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
                 return value.toString();
             else
                 return null;
+        }
+
+        private void addLatency(int latency) {
+            if (latency > 0) {
+                try {
+                    System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " About to sleep for : " + latency);
+                    Thread.sleep(latency);
+                    System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Woke up from sleep!");
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                    // ignore and sleep some more to simulate a dependency that doesn't obey interrupts
+                    try {
+                        Thread.sleep(latency);
+                    } catch (Exception e2) {
+                        // ignore
+                    }
+                    System.out.println("after interruption with extra sleep");
+                }
+            }
         }
     }
 

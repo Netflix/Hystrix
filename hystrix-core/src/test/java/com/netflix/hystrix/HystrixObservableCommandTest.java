@@ -5671,8 +5671,8 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
     /* ******************************************************************************** */
 
     @Override
-    TestHystrixObservableCommand<?> getCommand(ExecutionIsolationStrategy isolationStrategy, AbstractTestHystrixCommand.ExecutionResult executionResult, int executionLatency, AbstractTestHystrixCommand.FallbackResult fallbackResult, TestCircuitBreaker circuitBreaker, HystrixThreadPool threadPool, int timeout, AbstractTestHystrixCommand.CacheEnabled cacheEnabled, Object value, AbstractCommand.TryableSemaphore semaphore, boolean circuitBreakerDisabled) {
-        return new FlexibleTestHystrixObservableCommand(isolationStrategy, executionResult, executionLatency, fallbackResult, circuitBreaker, threadPool, timeout, cacheEnabled, value, semaphore, circuitBreakerDisabled);
+    TestHystrixObservableCommand<?> getCommand(ExecutionIsolationStrategy isolationStrategy, AbstractTestHystrixCommand.ExecutionResult executionResult, int executionLatency, AbstractTestHystrixCommand.FallbackResult fallbackResult, int fallbackLatency, TestCircuitBreaker circuitBreaker, HystrixThreadPool threadPool, int timeout, AbstractTestHystrixCommand.CacheEnabled cacheEnabled, Object value, AbstractCommand.TryableSemaphore executionSemaphore, AbstractCommand.TryableSemaphore fallbackSemaphore, boolean circuitBreakerDisabled) {
+        return new FlexibleTestHystrixObservableCommand(isolationStrategy, executionResult, executionLatency, fallbackResult, fallbackLatency, circuitBreaker, threadPool, timeout, cacheEnabled, value, executionSemaphore, fallbackSemaphore, circuitBreakerDisabled);
     }
 
     private static class FlexibleTestHystrixObservableCommand extends TestHystrixObservableCommand<Integer> {
@@ -5680,10 +5680,11 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         private final AbstractTestHystrixCommand.ExecutionResult executionResult;
         private final int executionLatency;
         private final AbstractTestHystrixCommand.FallbackResult fallbackResult;
+        private final int fallbackLatency;
         private final CacheEnabled cacheEnabled;
         private final Object value;
 
-        public FlexibleTestHystrixObservableCommand(ExecutionIsolationStrategy isolationStrategy, AbstractTestHystrixCommand.ExecutionResult executionResult, int executionLatency, FallbackResult fallbackResult, TestCircuitBreaker circuitBreaker, HystrixThreadPool threadPool, int timeout, CacheEnabled cacheEnabled, Object value, TryableSemaphore semaphore, boolean circuitBreakerDisabled) {
+        public FlexibleTestHystrixObservableCommand(ExecutionIsolationStrategy isolationStrategy, AbstractTestHystrixCommand.ExecutionResult executionResult, int executionLatency, FallbackResult fallbackResult, int fallbackLatency, TestCircuitBreaker circuitBreaker, HystrixThreadPool threadPool, int timeout, CacheEnabled cacheEnabled, Object value, TryableSemaphore executionSemaphore, TryableSemaphore fallbackSemaphore, boolean circuitBreakerDisabled) {
             super(testPropsBuilder()
                     .setCircuitBreaker(circuitBreaker)
                     .setMetrics(circuitBreaker.metrics)
@@ -5692,10 +5693,12 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
                             .withExecutionIsolationStrategy(isolationStrategy)
                             .withExecutionTimeoutInMilliseconds(timeout)
                             .withCircuitBreakerEnabled(!circuitBreakerDisabled))
-                    .setExecutionSemaphore(semaphore));
+                    .setExecutionSemaphore(executionSemaphore)
+                    .setFallbackSemaphore(fallbackSemaphore));
             this.executionResult = executionResult;
             this.executionLatency = executionLatency;
             this.fallbackResult = fallbackResult;
+            this.fallbackLatency = fallbackLatency;
             this.cacheEnabled = cacheEnabled;
             this.value = value;
         }
@@ -5753,13 +5756,16 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         @Override
         protected Observable<Integer> resumeWithFallback() {
             if (fallbackResult == AbstractTestHystrixCommand.FallbackResult.FAILURE) {
+                addLatency(fallbackLatency);
                 throw new RuntimeException("Fallback Sync Failure for TestHystrixCommand");
             } else if (fallbackResult == FallbackResult.UNIMPLEMENTED) {
+                addLatency(fallbackLatency);
                 return super.resumeWithFallback();
             }
             return Observable.create(new OnSubscribe<Integer>() {
                 @Override
                 public void call(Subscriber<? super Integer> subscriber) {
+                    addLatency(fallbackLatency);
                     if (fallbackResult == AbstractTestHystrixCommand.FallbackResult.SUCCESS) {
                         subscriber.onNext(11);
                         subscriber.onCompleted();
