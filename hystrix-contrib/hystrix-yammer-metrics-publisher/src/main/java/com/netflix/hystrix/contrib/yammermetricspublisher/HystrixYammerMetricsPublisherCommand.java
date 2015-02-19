@@ -70,8 +70,10 @@ public class HystrixYammerMetricsPublisherCommand implements HystrixMetricsPubli
         // cumulative counts
         createCumulativeCountForEvent("countBadRequests", HystrixRollingNumberEvent.BAD_REQUEST);
         createCumulativeCountForEvent("countCollapsedRequests", HystrixRollingNumberEvent.COLLAPSED);
+        createCumulativeCountForEvent("countEmit", HystrixRollingNumberEvent.EMIT);
         createCumulativeCountForEvent("countExceptionsThrown", HystrixRollingNumberEvent.EXCEPTION_THROWN);
         createCumulativeCountForEvent("countFailure", HystrixRollingNumberEvent.FAILURE);
+        createCumulativeCountForEvent("countFallbackEmit", HystrixRollingNumberEvent.FALLBACK_EMIT);
         createCumulativeCountForEvent("countFallbackFailure", HystrixRollingNumberEvent.FALLBACK_FAILURE);
         createCumulativeCountForEvent("countFallbackRejection", HystrixRollingNumberEvent.FALLBACK_REJECTION);
         createCumulativeCountForEvent("countFallbackSuccess", HystrixRollingNumberEvent.FALLBACK_SUCCESS);
