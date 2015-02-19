@@ -359,6 +359,22 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     }
 
     /**
+     * When a {@link HystrixObservableCommand} emits a value during execution
+     */
+    /* package */void markEmit() {
+        eventNotifier.markEvent(HystrixEventType.EMIT, getCommandKey());
+        counter.increment(HystrixRollingNumberEvent.EMIT);
+    }
+
+    /**
+     * When a {@link HystrixObservableCommand} emits a value during fallback
+     */
+    /* package */void markFallbackEmit() {
+        eventNotifier.markEvent(HystrixEventType.FALLBACK_EMIT, getCommandKey());
+        counter.increment(HystrixRollingNumberEvent.FALLBACK_EMIT);
+    }
+
+    /**
      * Execution time of {@link HystrixCommand#run()}.
      */
     /* package */void addCommandExecutionTime(long duration) {

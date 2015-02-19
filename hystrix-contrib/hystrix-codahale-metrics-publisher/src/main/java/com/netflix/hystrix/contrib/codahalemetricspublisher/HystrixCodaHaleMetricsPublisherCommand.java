@@ -69,8 +69,10 @@ public class HystrixCodaHaleMetricsPublisherCommand implements HystrixMetricsPub
         // cumulative counts
         createCumulativeCountForEvent("countBadRequests", HystrixRollingNumberEvent.BAD_REQUEST);
         createCumulativeCountForEvent("countCollapsedRequests", HystrixRollingNumberEvent.COLLAPSED);
+        createCumulativeCountForEvent("countEmit", HystrixRollingNumberEvent.EMIT);
         createCumulativeCountForEvent("countExceptionsThrown", HystrixRollingNumberEvent.EXCEPTION_THROWN);
         createCumulativeCountForEvent("countFailure", HystrixRollingNumberEvent.FAILURE);
+        createCumulativeCountForEvent("countFallbackEmit", HystrixRollingNumberEvent.FALLBACK_EMIT);
         createCumulativeCountForEvent("countFallbackFailure", HystrixRollingNumberEvent.FALLBACK_FAILURE);
         createCumulativeCountForEvent("countFallbackRejection", HystrixRollingNumberEvent.FALLBACK_REJECTION);
         createCumulativeCountForEvent("countFallbackSuccess", HystrixRollingNumberEvent.FALLBACK_SUCCESS);
@@ -84,8 +86,10 @@ public class HystrixCodaHaleMetricsPublisherCommand implements HystrixMetricsPub
         // rolling counts
         createRollingCountForEvent("rollingCountBadRequests", HystrixRollingNumberEvent.BAD_REQUEST);
         createRollingCountForEvent("rollingCountCollapsedRequests", HystrixRollingNumberEvent.COLLAPSED);
+        createRollingCountForEvent("rollingCountEmit", HystrixRollingNumberEvent.EMIT);
         createRollingCountForEvent("rollingCountExceptionsThrown", HystrixRollingNumberEvent.EXCEPTION_THROWN);
         createRollingCountForEvent("rollingCountFailure", HystrixRollingNumberEvent.FAILURE);
+        createRollingCountForEvent("rollingCountFallbackEmit", HystrixRollingNumberEvent.FALLBACK_EMIT);
         createRollingCountForEvent("rollingCountFallbackFailure", HystrixRollingNumberEvent.FALLBACK_FAILURE);
         createRollingCountForEvent("rollingCountFallbackRejection", HystrixRollingNumberEvent.FALLBACK_REJECTION);
         createRollingCountForEvent("rollingCountFallbackSuccess", HystrixRollingNumberEvent.FALLBACK_SUCCESS);

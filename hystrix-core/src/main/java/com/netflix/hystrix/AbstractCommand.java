@@ -543,7 +543,8 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
             public void call(R r) {
                 if (shouldOutputOnNextEvents()) {
                     executionResult = executionResult.addEmission(HystrixEventType.EMIT);
-                    eventNotifier.markEvent(HystrixEventType.EMIT, getCommandKey());
+
+                    metrics.markEmit();
                 }
             }
         }).doOnCompleted(new Action0() {
@@ -730,7 +731,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                 public void call(R r) {
                     if (shouldOutputOnNextEvents()) {
                         executionResult = executionResult.addEmission(HystrixEventType.FALLBACK_EMIT);
-                        eventNotifier.markEvent(HystrixEventType.FALLBACK_EMIT, getCommandKey());
+                        metrics.markFallbackEmit();
                     }
                 }
             }).doOnCompleted(new Action0() {

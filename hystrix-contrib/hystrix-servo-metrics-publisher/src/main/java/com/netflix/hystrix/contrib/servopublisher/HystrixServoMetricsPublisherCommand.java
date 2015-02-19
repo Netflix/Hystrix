@@ -136,8 +136,10 @@ public class HystrixServoMetricsPublisherCommand extends HystrixServoMetricsPubl
         // cumulative counts
         monitors.add(getCumulativeCountForEvent("countBadRequests", metrics, HystrixRollingNumberEvent.BAD_REQUEST));
         monitors.add(getCumulativeCountForEvent("countCollapsedRequests", metrics, HystrixRollingNumberEvent.COLLAPSED));
+        monitors.add(getCumulativeCountForEvent("countEmit", metrics, HystrixRollingNumberEvent.EMIT));
         monitors.add(getCumulativeCountForEvent("countExceptionsThrown", metrics, HystrixRollingNumberEvent.EXCEPTION_THROWN));
         monitors.add(getCumulativeCountForEvent("countFailure", metrics, HystrixRollingNumberEvent.FAILURE));
+        monitors.add(getCumulativeCountForEvent("countFallbackEmit", metrics, HystrixRollingNumberEvent.FALLBACK_EMIT));
         monitors.add(getCumulativeCountForEvent("countFallbackFailure", metrics, HystrixRollingNumberEvent.FALLBACK_FAILURE));
         monitors.add(getCumulativeCountForEvent("countFallbackRejection", metrics, HystrixRollingNumberEvent.FALLBACK_REJECTION));
         monitors.add(getCumulativeCountForEvent("countFallbackSuccess", metrics, HystrixRollingNumberEvent.FALLBACK_SUCCESS));
@@ -151,8 +153,10 @@ public class HystrixServoMetricsPublisherCommand extends HystrixServoMetricsPubl
         // rolling counts
         monitors.add(getRollingCountForEvent("rollingCountBadRequests", metrics, HystrixRollingNumberEvent.BAD_REQUEST));
         monitors.add(getRollingCountForEvent("rollingCountCollapsedRequests", metrics, HystrixRollingNumberEvent.COLLAPSED));
+        monitors.add(getRollingCountForEvent("rollingCountEmit", metrics, HystrixRollingNumberEvent.EMIT));
         monitors.add(getRollingCountForEvent("rollingCountExceptionsThrown", metrics, HystrixRollingNumberEvent.EXCEPTION_THROWN));
         monitors.add(getRollingCountForEvent("rollingCountFailure", metrics, HystrixRollingNumberEvent.FAILURE));
+        monitors.add(getRollingCountForEvent("rollingCountFallbackEmit", metrics, HystrixRollingNumberEvent.FALLBACK_EMIT));
         monitors.add(getRollingCountForEvent("rollingCountFallbackFailure", metrics, HystrixRollingNumberEvent.FALLBACK_FAILURE));
         monitors.add(getRollingCountForEvent("rollingCountFallbackRejection", metrics, HystrixRollingNumberEvent.FALLBACK_REJECTION));
         monitors.add(getRollingCountForEvent("rollingCountFallbackSuccess", metrics, HystrixRollingNumberEvent.FALLBACK_SUCCESS));
