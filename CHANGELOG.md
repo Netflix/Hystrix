@@ -1,5 +1,18 @@
 # Hystrix Releases #
 
+### Version 1.4.0 Release Candidate 8 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.0-rc.8%22)) ###
+_NOTE: This code is believed to be production worthy.  As of now, there are no known bugs preventing this becoming 1.4.0.  Please report any design issues/questions, bugs, or any observations about this release to the [Issues](https://github.com/Netflix/Hystrix/issues) page._
+
+* [Pull 691](https://github.com/Netflix/Hystrix/pull/691) HystrixCommandTest test with large number of semaphores
+* [Pull 690](https://github.com/Netflix/Hystrix/pull/690) Add back ExceptionThreadingUtility
+* [Pull 688](https://github.com/Netflix/Hystrix/pull/688) Add metrics for EMIT and FALLBACK_EMIT
+* [Pull 687](https://github.com/Netflix/Hystrix/pull/687) Fixed issue where fallback rejection was also incrementing fallback failure metric
+* [Pull 686](https://github.com/Netflix/Hystrix/pull/686) HystrixCommandTest Unit test refactoring
+* [Pull 683](https://github.com/Netflix/Hystrix/pull/683) Add and Deprecate pieces of execution hook API to be more consistent
+* [Pull 681](https://github.com/Netflix/Hystrix/pull/681) Add cache hit execution hook
+* [Pull 680](https://github.com/Netflix/Hystrix/pull/680) Add command rejection metrics for HystrixThreadPools
+
+
 ### Version 1.4.0 Release Candidate 7 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.0-rc.7%22)) ###
 NOTE: This code is believed to be production worthy.  As of now, there are no known bugs preventing this becoming 1.4.0.  Please report any design issues/questions, bugs, or any observations about this release to the [Issues](https://github.com/Netflix/Hystrix/issues) page
 
