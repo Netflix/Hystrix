@@ -273,7 +273,12 @@ public abstract class HystrixCommandProperties {
      * @return {@code HystrixProperty<Integer>}
      */
     public HystrixProperty<Integer> executionTimeoutInMilliseconds() {
-        return executionTimeoutInMilliseconds;
+        /**
+         * Calling a deprecated method here is a temporary workaround.  We do this because {@link #executionTimeoutInMilliseconds()} is a new method (as of 1.4.0-rc.7) and an extending
+         * class will not have this method.  It will have {@link #executionIsolationThreadTimeoutInMilliseconds()}, however.
+         * So, to stay compatible with an extension, we perform this redirect.
+         */
+        return executionIsolationThreadTimeoutInMilliseconds();
     }
     
     /**
