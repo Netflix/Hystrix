@@ -1,5 +1,13 @@
 # Hystrix Releases #
 
+### Version 1.4.0 Release Candidate 9 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.0-rc.9%22)) ###
+_NOTE: This code is believed to be production worthy.  As of now, there are no known bugs preventing this becoming 1.4.0.  Please report any design issues/questions, bugs, or any observations about this release to the [Issues](https://github.com/Netflix/Hystrix/issues) page._
+
+* [Pull 697](https://github.com/Netflix/Hystrix/pull/697) Add execution event for FALLBACK_REJECTION and unit tests
+* [Pull 696](https://github.com/Netflix/Hystrix/pull/696) Upgrade to RxJava 1.0.7
+* [Pull 694](https://github.com/Netflix/Hystrix/pull/694) Make execution timeout in HystrixCommandProperties work in the case when classes extend HystrixCommandProperties
+* [Pull 693](https://github.com/Netflix/Hystrix/pull/693) Hystrix Dashboard sorting issue
+
 ### Version 1.4.0 Release Candidate 8 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.0-rc.8%22)) ###
 _NOTE: This code is believed to be production worthy.  As of now, there are no known bugs preventing this becoming 1.4.0.  Please report any design issues/questions, bugs, or any observations about this release to the [Issues](https://github.com/Netflix/Hystrix/issues) page._
 
