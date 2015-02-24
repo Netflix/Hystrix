@@ -686,8 +686,6 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
     private Observable<R> getFallbackOrThrowException(final HystrixEventType eventType, final FailureType failureType, final String message, final Exception originalException) {
         final HystrixRequestContext currentRequestContext = HystrixRequestContext.getContextForCurrentThread();
 
-        //System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " getFallback in : " + this);
-
         if (properties.fallbackEnabled().get()) {
             /* fallback behavior is permitted so attempt */
             // record the executionResult
