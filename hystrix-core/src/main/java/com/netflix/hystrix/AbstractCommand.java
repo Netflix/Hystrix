@@ -720,7 +720,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                         });
             } else {
                 metrics.markFallbackRejection();
-
+                executionResult = executionResult.addEvents(HystrixEventType.FALLBACK_REJECTION);
                 logger.debug("HystrixCommand Fallback Rejection."); // debug only since we're throwing the exception and someone higher will do something with it
                 // if we couldn't acquire a permit, we "fail fast" by throwing an exception
                 return Observable.error(new HystrixRuntimeException(FailureType.REJECTED_SEMAPHORE_FALLBACK, this.getClass(), getLogMessagePrefix() + " fallback execution rejected.", null, null));
