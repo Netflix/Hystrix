@@ -171,7 +171,9 @@ public class HystrixContextScheduler extends Scheduler {
             subscription.add(sa);
             sa.addParent(subscription);
 
+            //System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " about to submit to pool : (" + threadPool.getExecutor().getActiveCount() + "/" + threadPool.getExecutor().getCorePoolSize() + ")");
             Future<?> f = threadPool.getExecutor().submit(sa);
+            //System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " pool submission succeeded : (" + threadPool.getExecutor().getActiveCount() + "/" + threadPool.getExecutor().getCorePoolSize() + ")");
             sa.add(new FutureCompleterWithConfigurableInterrupt(f, shouldInterruptThread));
 
             return sa;
