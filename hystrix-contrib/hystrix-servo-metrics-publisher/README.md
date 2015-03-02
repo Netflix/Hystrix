@@ -2,6 +2,8 @@
 
 This is an implementation of [HystrixMetricsPublisher](http://netflix.github.com/Hystrix/javadoc/index.html?com/netflix/hystrix/strategy/metrics/HystrixMetricsPublisher.html) that publishes metrics using [Netflix Servo](https://github.com/Netflix/servo).
 
+Servo enables metrics to be exposed via JMX or published to Graphite or CloudWatch.
+
 See the [Metrics & Monitoring](https://github.com/Netflix/Hystrix/wiki/Metrics-and-Monitoring) Wiki for more information.
 
 # Binaries
@@ -23,3 +25,24 @@ and for Ivy:
 ```xml
 <dependency org="com.netflix.hystrix" name="hystrix-servo-metrics-publisher" rev="1.1.2" />
 ```
+
+#Example Publishing metrics to Graphite
+
+Some minimal Servo configuration must be done during application startup (ie time of Hystrix plugin registration) to enable Servo to publish Hystrix metrics to Graphite:
+
+```java
+// Registry plugin with hystrix
+HystrixPlugins.getInstance().registerMetricsPublisher(HystrixServoMetricsPublisher.getInstance());
+        
+   ........
+        
+// Minimal Servo configuration for publishing to Graphite
+final List<MetricObserver> observers = new ArrayList<MetricObserver>();
+
+observers.add(new GraphiteMetricObserver(getHostName(), "graphite-server.example.com:2003"));
+PollScheduler.getInstance().start();
+PollRunnable task = new PollRunnable(new MonitorRegistryMetricPoller(), BasicMetricFilter.MATCH_ALL, true, observers);
+PollScheduler.getInstance().addPoller(task, 5, TimeUnit.SECONDS);
+```
+
+It's that simple.  See [Servo wiki](https://github.com/Netflix/servo/wiki/Getting-Started) and [Publishing to Graphite](https://github.com/Netflix/servo/wiki/Publishing-to-Graphite) for full documentation.
