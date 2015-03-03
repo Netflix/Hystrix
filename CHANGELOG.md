@@ -1,5 +1,44 @@
 # Hystrix Releases #
 
+### Version 1.4.0 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.0%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.0/)) ###
+
+This version adds HystrixObservableCommand and implements both it and HystrixCommand in terms of [Observables](https://github.com/ReactiveX/RxJava).  
+
+A HystrixObservableCommand allows for fully non-blocking commands that can be composed as part of a larger Observable chain.  See [the wiki](https://github.com/Netflix/Hystrix/wiki/How-To-Use#reactive-commands) for more details on usage.  Here's an example (using Java 8):
+
+```java
+public class ObservableHttpCommand extends HystrixObsverableCommand<BackendResponse> {
+
+@Override
+protected Observable<BackendResponse> construct() {
+    return httpClient.submit(HttpClientRequest.createGet("/mock.json?numItems=" + numItems))
+        .flatMap((HttpClientResponse<ByteBuf> r) -> r.getContent()
+        .map(b -> BackendResponse.fromJson(new ByteBufInputStream(b))));
+    }
+
+@Override
+protected Observable<BackendResponse> resumeWithFallback() {
+    return Observable.just(new BackendResponse(0, numItems, new String[] {}));
+}}
+
+```
+
+Because an Observable represents a stream of data, your HystrixObservableCommand may now return a stream of data, and supply a stream of data as a fallback.  The methods to do so are `construct()` and `resumeWithFallback()`, respectively.  All other aspects of the Hystrix state machine work the same in a HystrixCommand.  See [this wiki page](https://github.com/Netflix/Hystrix/wiki/How-it-Works#flow-chart) for a diagram of this state machine.
+
+The public API of HystrixCommand is unchanged, though the internals have significantly changed.  Some bugfixes are now possible that affect Hystrix semantics:
+
+* Timeouts now apply to semaphore-isolated commands as well as thread-isolated commands.  Before 1.4.x, semaphore-isolated commands could not timeout.  They now have a timeout registered on another (HystrixTimer) thread, which triggers the timeout flow.  If you use semaphore-isolated commands, they will now see timeouts.  As all HystrixCommands have a [default timeout](https://github.com/Netflix/Hystrix/wiki/Configuration#execution.isolation.thread.timeoutInMilliseconds), this potentially affects all semaphore-isolated commands.
+* Timeouts now fire on `HystrixCommand.queue()`, even if the caller never calls `get()` on the resulting Future.  Before 1.4.x, only calls to `get()` triggered the timeout mechanism to take effect.
+
+You can see more in-depth examples of how the new functionality of Hystrix 1.4 is used at [Netflix/ReactiveLab](https://github.com/Netflix/ReactiveLab).
+
+You can learn more about Observables and RxJava at [Netflix/RxJava](https://github.com/ReactiveX/RxJava).
+
+As this was a major refactoring of Hystrix internals, we (Netflix) have run a release candidate of Hystrix 1.4 in canaries and production over the last month to gain confidence.
+
+* [Pull 701](https://github.com/Netflix/Hystrix/pull/701) Fix Javadoc warnings
+* [Pull 700](https://github.com/Netflix/Hystrix/pull/700) Example code for publishing to Graphite
+
 ### Version 1.4.0 Release Candidate 9 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.0-rc.9%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.0-rc.9/)) ###
 _NOTE: This code is believed to be production worthy.  As of now, there are no known bugs preventing this becoming 1.4.0.  Please report any design issues/questions, bugs, or any observations about this release to the [Issues](https://github.com/Netflix/Hystrix/issues) page._
 
