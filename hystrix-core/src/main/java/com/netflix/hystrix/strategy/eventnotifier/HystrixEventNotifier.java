@@ -42,8 +42,8 @@ public abstract class HystrixEventNotifier {
      * <p>
      * <b>Default Implementation: </b> Does nothing
      * 
-     * @param eventType
-     * @param key
+     * @param eventType event type
+     * @param key event key
      */
     public void markEvent(HystrixEventType eventType, HystrixCommandKey key) {
         // do nothing

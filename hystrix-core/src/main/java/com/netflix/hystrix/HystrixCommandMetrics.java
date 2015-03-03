@@ -226,7 +226,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     /**
      * When a {@link HystrixCommand} successfully completes it will call this method to report its success along with how long the execution took.
      * 
-     * @param duration
+     * @param duration command duration
      */
     /* package */void markSuccess(long duration) {
         eventNotifier.markEvent(HystrixEventType.SUCCESS, key);
@@ -236,7 +236,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     /**
      * When a {@link HystrixCommand} fails to complete it will call this method to report its failure along with how long the execution took.
      * 
-     * @param duration
+     * @param duration command duration
      */
     /* package */void markFailure(long duration) {
         eventNotifier.markEvent(HystrixEventType.FAILURE, key);
@@ -247,7 +247,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      * When a {@link HystrixCommand} times out (fails to complete) it will call this method to report its failure along with how long the command waited (this time should equal or be very close to the
      * timeout value).
      * 
-     * @param duration
+     * @param duration command duration
      */
     /* package */void markTimeout(long duration) {
         eventNotifier.markEvent(HystrixEventType.TIMEOUT, key);
@@ -341,7 +341,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     /**
      * When a command is fronted by an {@link HystrixCollapser} then this marks how many requests are collapsed into the single command execution.
      * 
-     * @param numRequestsCollapsedToBatch
+     * @param numRequestsCollapsedToBatch number of requests which got batched
      */
     /* package */void markCollapsed(int numRequestsCollapsedToBatch) {
         eventNotifier.markEvent(HystrixEventType.COLLAPSED, key);

@@ -59,7 +59,7 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
      * 
      * @throws IllegalStateException
      *             if called more than once or after setException.
-     * @param response
+     * @param response response to give to initial command
      */
     @Override
     public void setResponse(T response) {
@@ -89,7 +89,7 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
     /**
      * Set an exception if a response is not yet received otherwise skip it
      * 
-     * @param e
+     * @param e synthetic error to set on initial command when no actual response is available
      */
     public void setExceptionIfResponseNotReceived(Exception e) {
         while (true) {
@@ -139,7 +139,7 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
      * 
      * @throws IllegalStateException
      *             if called more than once or after setResponse.
-     * @param response
+     * @param e received exception that gets set on the initial command
      */
     @Override
     public void setException(Exception e) {

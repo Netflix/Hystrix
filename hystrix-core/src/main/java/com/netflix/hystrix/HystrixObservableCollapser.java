@@ -503,7 +503,7 @@ public abstract class HystrixObservableCollapser<K, BatchReturnType, ResponseTyp
         /**
          * {@link Scope} defining what scope the collapsing should occur within
          * 
-         * @param scope
+         * @param scope collapser scope
          * 
          * @return Setter for fluent interface via method chaining
          */

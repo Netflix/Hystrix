@@ -64,8 +64,8 @@ public abstract class HystrixPropertiesStrategy {
      * <p>
      * Returns {@link HystrixCommandKey#name()}
      * 
-     * @param commandKey
-     * @param builder
+     * @param commandKey command key used in determining command's cache key
+     * @param builder builder for {@link HystrixCommandProperties} used in determining command's cache key
      * @return String value to be used as the cache key of a {@link HystrixCommandProperties} implementation.
      */
     public String getCommandPropertiesCacheKey(HystrixCommandKey commandKey, HystrixCommandProperties.Setter builder) {
@@ -102,9 +102,9 @@ public abstract class HystrixPropertiesStrategy {
      * <b>Default Implementation</b>
      * <p>
      * Returns {@link HystrixThreadPoolKey#name()}
-     * 
-     * @param threadPoolKey
-     * @param builder
+     *
+     * @param threadPoolKey thread pool key used in determining thread pool's cache key
+     * @param builder builder for {@link HystrixThreadPoolProperties} used in determining thread pool's cache key
      * @return String value to be used as the cache key of a {@link HystrixThreadPoolProperties} implementation.
      */
     public String getThreadPoolPropertiesCacheKey(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolProperties.Setter builder) {
@@ -141,9 +141,9 @@ public abstract class HystrixPropertiesStrategy {
      * <b>Default Implementation</b>
      * <p>
      * Returns {@link HystrixCollapserKey#name()}
-     * 
-     * @param collapserKey
-     * @param builder
+     *
+     * @param collapserKey collapser key used in determining collapser's cache key
+     * @param builder builder for {@link HystrixCollapserProperties} used in determining collapser's cache key
      * @return String value to be used as the cache key of a {@link HystrixCollapserProperties} implementation.
      */
     public String getCollapserPropertiesCacheKey(HystrixCollapserKey collapserKey, HystrixCollapserProperties.Setter builder) {

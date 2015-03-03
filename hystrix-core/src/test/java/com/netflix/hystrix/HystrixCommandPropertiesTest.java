@@ -59,7 +59,7 @@ public class HystrixCommandPropertiesTest {
      * Return a static representation of the properties with values from the Builder so that UnitTests can create properties that are not affected by the actual implementations which pick up their
      * values dynamically.
      * 
-     * @param builder
+     * @param builder command properties builder
      * @return HystrixCommandProperties
      */
     /* package */static HystrixCommandProperties asMock(final Setter builder) {

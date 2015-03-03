@@ -6503,8 +6503,8 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
         /**
          * 
-         * @param circuitBreaker
-         * @param semaphore
+         * @param circuitBreaker circuit breaker (passed in so it may be shared)
+         * @param semaphore semaphore (passed in so it may be shared)
          * @param startLatch
          *            this command calls {@link CountDownLatch#countDown()} immediately
          *            upon running

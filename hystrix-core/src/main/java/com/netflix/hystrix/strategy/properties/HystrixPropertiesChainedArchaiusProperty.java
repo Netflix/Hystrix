@@ -70,7 +70,7 @@ public abstract class HystrixPropertiesChainedArchaiusProperty {
         }
 
         /**
-         * @param nextProperty
+         * @param nextProperty next property in the chain
          */
         public ChainLink(ChainLink<T> nextProperty) {
             next = nextProperty;
@@ -110,7 +110,7 @@ public abstract class HystrixPropertiesChainedArchaiusProperty {
         }
 
         /**
-         * @param r
+         * @param r callback to execut
          */
         public void addCallback(Runnable r) {
             callbacks.add(r);

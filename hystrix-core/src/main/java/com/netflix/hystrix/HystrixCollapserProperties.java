@@ -325,7 +325,7 @@ public abstract class HystrixCollapserProperties {
          * Return a static representation of the properties with values from the Builder so that UnitTests can create properties that are not affected by the actual implementations which pick up their
          * values dynamically.
          * 
-         * @param builder
+         * @param builder collapser properties builder
          * @return HystrixCollapserProperties
          */
         /* package */static HystrixCollapserProperties asMock(final Setter builder) {

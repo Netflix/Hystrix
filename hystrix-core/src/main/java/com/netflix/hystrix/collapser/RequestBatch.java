@@ -103,7 +103,6 @@ public class RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> {
      * think a response was never received and will either block indefinitely or will timeout while waiting.</li>
      * </ul>
      * 
-     * @param args
      */
     public void executeBatchIfNotAlreadyStarted() {
         /*
