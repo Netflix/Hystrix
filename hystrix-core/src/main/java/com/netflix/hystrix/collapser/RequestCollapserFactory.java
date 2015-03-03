@@ -136,7 +136,7 @@ public class RequestCollapserFactory<BatchReturnType, ResponseType, RequestArgum
     /**
      * Lookup (or create and store) the RequestVariable for a given HystrixCollapserKey.
      * 
-     * @param key
+     * @param commandCollapser collapser to retrieve {@link HystrixRequestVariableHolder} for
      * @return HystrixRequestVariableHolder
      */
     @SuppressWarnings("unchecked")
@@ -259,7 +259,7 @@ public class RequestCollapserFactory<BatchReturnType, ResponseType, RequestArgum
         /**
          * {@link Scope} defining what scope the collapsing should occur within
          * 
-         * @param scope
+         * @param scope collapser scope
          * 
          * @return Setter for fluent interface via method chaining
          */

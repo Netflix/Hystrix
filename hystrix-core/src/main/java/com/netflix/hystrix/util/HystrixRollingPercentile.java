@@ -379,8 +379,8 @@ public class HystrixRollingPercentile {
          * @see <a href="http://en.wikipedia.org/wiki/Percentile">Percentile (Wikipedia)</a>
          * @see <a href="http://cnx.org/content/m10805/latest/">Percentile</a>
          * 
-         * @param percent
-         * @return
+         * @param percent percentile of data desired
+         * @return data at the asked-for percentile.  Interpolation is used if exactness is not possible
          */
         private int computePercentile(double percent) {
             // Some just-in-case edge cases

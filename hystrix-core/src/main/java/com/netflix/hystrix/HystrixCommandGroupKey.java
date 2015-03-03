@@ -44,7 +44,7 @@ public interface HystrixCommandGroupKey {
         /**
          * Retrieve (or create) an interned HystrixCommandGroup instance for a given name.
          * 
-         * @param name
+         * @param name command group name
          * @return HystrixCommandGroup instance that is interned (cached) so a given name will always retrieve the same instance.
          */
         public static HystrixCommandGroupKey asKey(String name) {

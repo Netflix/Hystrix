@@ -3438,6 +3438,39 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
     }
 
+    @Test
+    public void testSemaphoreExecutionWithTimeout() {
+        //TestHystrixCommand<?> cmd = getLatentCommand(ExecutionIsolationStrategy.SEMAPHORE, AbstractTestHystrixCommand.ExecutionResult.SUCCESS, 1000, AbstractTestHystrixCommand.FallbackResult.SUCCESS, 200);
+        TestHystrixCommand<?> cmd = new InterruptibleCommand(new TestCircuitBreaker(), false);
+
+        System.out.println("Starting command");
+        long timeMillis = System.currentTimeMillis();
+        try {
+            cmd.execute();
+            fail("Should throw");
+        } catch (Throwable t) {
+            System.out.println("Unsuccessful Execution took : " + (System.currentTimeMillis() - timeMillis));
+            assertEquals(0, cmd.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
+            assertEquals(1, cmd.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
+            assertEquals(0, cmd.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
+            assertEquals(0, cmd.metrics.getRollingCount(HystrixRollingNumberEvent.BAD_REQUEST));
+            assertEquals(0, cmd.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
+            assertEquals(0, cmd.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
+            assertEquals(0, cmd.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+            assertEquals(0, cmd.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
+            assertEquals(0, cmd.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
+            assertEquals(0, cmd.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
+            assertEquals(1, cmd.metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
+            assertEquals(0, cmd.metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+
+            assertEquals(100, cmd.metrics.getHealthCounts().getErrorPercentage());
+            assertEquals(0, cmd.metrics.getCurrentConcurrentExecutionCount());
+
+            assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+        }
+
+    }
+
     /**
      * Test a java.lang.Error being thrown
      */
@@ -4677,8 +4710,8 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
 
         /**
          * 
-         * @param circuitBreaker
-         * @param semaphore
+         * @param circuitBreaker circuit breaker (passed in so it may be shared)
+         * @param semaphore semaphore (passed in so it may be shared)
          * @param startLatch
          *            this command calls {@link java.util.concurrent.CountDownLatch#countDown()} immediately
          *            upon running

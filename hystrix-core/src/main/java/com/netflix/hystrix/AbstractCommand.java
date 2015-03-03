@@ -278,7 +278,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
     /**
      * Allow the Collapser to mark this command instance as being used for a collapsed request and how many requests were collapsed.
      * 
-     * @param sizeOfBatch
+     * @param sizeOfBatch number of commands in request batch
      */
     /* package */void markAsCollapsedCommand(int sizeOfBatch) {
         getMetrics().markCollapsed(sizeOfBatch);
@@ -955,8 +955,6 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
     /**
      * Get the TryableSemaphore this HystrixCommand should use if a fallback occurs.
      * 
-     * @param circuitBreaker
-     * @param fallbackSemaphore
      * @return TryableSemaphore
      */
     protected TryableSemaphore getFallbackSemaphore() {
@@ -978,8 +976,6 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
     /**
      * Get the TryableSemaphore this HystrixCommand should use for execution if not running in a separate thread.
      * 
-     * @param circuitBreaker
-     * @param fallbackSemaphore
      * @return TryableSemaphore
      */
     protected TryableSemaphore getExecutionSemaphore() {
@@ -1469,7 +1465,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
      * <p>
      * This will only throw an HystrixRuntimeException, HystrixBadRequestException or IllegalStateException
      * 
-     * @param e
+     * @param e initial exception
      * @return HystrixRuntimeException, HystrixBadRequestException or IllegalStateException
      */
     protected RuntimeException decomposeException(Exception e) {
@@ -1661,8 +1657,8 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         /**
          * Creates a new ExecutionResult by adding the defined 'events' to the ones on the current instance.
          * 
-         * @param events
-         * @return
+         * @param events events to add
+         * @return new {@link com.netflix.hystrix.AbstractCommand.ExecutionResult} with events added
          */
         public ExecutionResult addEvents(HystrixEventType... events) {
             return new ExecutionResult(getUpdatedList(this.events, events), executionTime, exception, numEmissions, numFallbackEmissions);

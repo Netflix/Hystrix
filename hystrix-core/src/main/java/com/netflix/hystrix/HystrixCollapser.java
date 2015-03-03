@@ -519,7 +519,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
         /**
          * When set any client thread blocking on get() will immediately be unblocked and receive the exception.
          * 
-         * @param exception
+         * @param exception exception to set on response
          * @throws IllegalStateException
          *             if called more than once or after setResponse.
          */

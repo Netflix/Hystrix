@@ -1224,7 +1224,7 @@ public class HystrixCollapserTest {
          * <p>
          * This is because executing multiple times in a tight-loop would not achieve the correct behavior, such as batching, since it will all execute "now" not after intervals of time.
          * 
-         * @param timeInMilliseconds
+         * @param timeInMilliseconds amount of time to increment
          */
         public synchronized void incrementTime(int timeInMilliseconds) {
             for (ATask t : tasks) {
