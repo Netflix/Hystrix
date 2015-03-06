@@ -288,7 +288,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
     /**
      * Used for asynchronous execution of command with a callback by subscribing to the {@link Observable}.
      * <p>
-     * This eagerly starts execution of the command the same as {@link #queue()} and {@link #execute()}.
+     * This eagerly starts execution of the command the same as {@link HystrixCommand#queue()} and {@link HystrixCommand#execute()}.
      * <p>
      * A lazy {@link Observable} can be obtained from {@link #toObservable()}.
      * <p>
@@ -1108,7 +1108,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
     }
 
     /**
-     * @return {@link HystrixCommandGroupKey} used to group together multiple {@link HystrixFutureCommand} objects.
+     * @return {@link HystrixCommandGroupKey} used to group together multiple {@link AbstractCommand} objects.
      *         <p>
      *         The {@link HystrixCommandGroupKey} is used to represent a common relationship between commands. For example, a library or team name, the system all related commands interace with,
      *         common business purpose etc.
@@ -1137,8 +1137,8 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
     }
 
     /**
-     * The {@link HystrixCommandMetrics} associated with this {@link HystrixFutureCommand} instance.
-     * 
+     * The {@link HystrixCommandMetrics} associated with this {@link AbstractCommand} instance.
+     *
      * @return HystrixCommandMetrics
      */
     public HystrixCommandMetrics getMetrics() {
@@ -1146,7 +1146,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
     }
 
     /**
-     * The {@link HystrixCommandProperties} associated with this {@link HystrixFutureCommand} instance.
+     * The {@link HystrixCommandProperties} associated with this {@link AbstractCommand} instance.
      * 
      * @return HystrixCommandProperties
      */
@@ -1683,7 +1683,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         }
 
         /**
-         * This method may be called many times for {@code HystrixEventType.EMIT} and {@link HystrixEventType.FALLBACK_EMIT}.
+         * This method may be called many times for {@code HystrixEventType.EMIT} and {@code HystrixEventType.FALLBACK_EMIT}.
          * To save on storage, on the first time we see that event type, it gets added to the event list, and the count gets incremented.
          * @param eventType emission event
          * @return "updated" {@link ExecutionResult}

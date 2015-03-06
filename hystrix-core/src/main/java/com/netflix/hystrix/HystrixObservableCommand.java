@@ -69,7 +69,7 @@ public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> imp
      * <p>
      * Do not create multiple {@link HystrixObservableCommand} implementations with the same {@link HystrixCommandKey} but different injected default properties as the first instantiated will win.
      * <p>
-     * Properties passed in via {@link Setter#andCommandPropertiesDefaults} or {@link Setter#andThreadPoolPropertiesDefaults} are cached for the given {@link HystrixCommandKey} for the life of the JVM
+     * Properties passed in via {@link Setter#andCommandPropertiesDefaults} are cached for the given {@link HystrixCommandKey} for the life of the JVM
      * or until {@link Hystrix#reset()} is called. Dynamic properties allow runtime changes. Read more on the <a href="https://github.com/Netflix/Hystrix/wiki/Configuration">Hystrix Wiki</a>.
      * 
      * @param setter
@@ -194,14 +194,14 @@ public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> imp
     }
 
     /**
-     * Implement this method with code to be executed when {@link #execute()} or {@link #queue()} are invoked.
+     * Implement this method with code to be executed when {@link #observe()} or {@link #toObservable()} are invoked.
      * 
      * @return R response type
      */
     protected abstract Observable<R> construct();
 
     /**
-     * If {@link #execute()} or {@link #queue()} fails in any way then this method will be invoked to provide an opportunity to return a fallback response.
+     * If {@link #observe()} or {@link #toObservable()} fails in any way then this method will be invoked to provide an opportunity to return a fallback response.
      * <p>
      * This should do work that does not require network transport to produce.
      * <p>
