@@ -32,21 +32,20 @@ public interface HystrixObservable<R> extends HystrixInvokable<R> {
     /**
      * Used for asynchronous execution of command with a callback by subscribing to the {@link Observable}.
      * <p>
-     * This eagerly starts execution of the command the same as {@link #queue()} and {@link #execute()}.
+     * This eagerly starts execution of the command the same as {@link HystrixCommand#queue()} and {@link HystrixCommand#execute()}.
      * <p>
      * A lazy {@link Observable} can be obtained from {@link #toObservable()}.
      * <p>
      * <b>Callback Scheduling</b>
      * <p>
      * <ul>
-     * <li>When using {@link ExecutionIsolationStrategy#THREAD} this defaults to using {@link Schedulers#threadPoolForComputation()} for callbacks.</li>
+     * <li>When using {@link ExecutionIsolationStrategy#THREAD} this defaults to using {@link Schedulers#computation()} for callbacks.</li>
      * <li>When using {@link ExecutionIsolationStrategy#SEMAPHORE} this defaults to using {@link Schedulers#immediate()} for callbacks.</li>
      * </ul>
-     * Use {@link HystrixCommand#toObservable(rx.Scheduler)} or {@link HystrixCollapser#toObservable(rx.Scheduler)} to schedule the callback differently.
      * <p>
      * See https://github.com/ReactiveX/RxJava/wiki for more information.
-     * 
-     * @return {@code Observable<R>} that executes and calls back with the result of {@link #run()} execution or a fallback from {@link #getFallback()} if the command fails for any reason.
+     *
+     * @return {@code Observable<R>} that executes and calls back with the result of the command execution or a fallback if the command execution fails for any reason.
      * @throws HystrixRuntimeException
      *             if a fallback does not exist
      *             <p>
@@ -60,7 +59,7 @@ public interface HystrixObservable<R> extends HystrixInvokable<R> {
      *             if invoked more than once
      */
     public Observable<R> observe();
-    
+
     /**
      * Used for asynchronous execution of command with a callback by subscribing to the {@link Observable}.
      * <p>
@@ -71,14 +70,13 @@ public interface HystrixObservable<R> extends HystrixInvokable<R> {
      * <b>Callback Scheduling</b>
      * <p>
      * <ul>
-     * <li>When using {@link ExecutionIsolationStrategy#THREAD} this defaults to using {@link Schedulers#threadPoolForComputation()} for callbacks.</li>
+     * <li>When using {@link ExecutionIsolationStrategy#THREAD} this defaults to using {@link Schedulers#computation()} for callbacks.</li>
      * <li>When using {@link ExecutionIsolationStrategy#SEMAPHORE} this defaults to using {@link Schedulers#immediate()} for callbacks.</li>
      * </ul>
-     * Use {@link HystrixCommand#toObservable(rx.Scheduler)} or {@link HystrixCollapser#toObservable(rx.Scheduler)} to schedule the callback differently.
      * <p>
      * See https://github.com/ReactiveX/RxJava/wiki for more information.
-     * 
-     * @return {@code Observable<R>} that executes and calls back with the result of {@link #run()} execution or a fallback from {@link #getFallback()} if the command fails for any reason.
+     *
+     * @return {@code Observable<R>} that executes and calls back with the result of the command execution or a fallback if the command execution fails for any reason.
      * @throws HystrixRuntimeException
      *             if a fallback does not exist
      *             <p>
