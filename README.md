@@ -118,7 +118,7 @@ mvn -f download-hystrix-pom.xml dependency:copy-dependencies
 
 It will download hystrix-core-*.jar and its dependencies into ./target/dependency/.
 
-You need Java 6 or later.
+You need Java 7 or later.
 
 ## Build
 
