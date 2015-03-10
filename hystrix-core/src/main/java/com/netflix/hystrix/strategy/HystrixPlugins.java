@@ -15,8 +15,10 @@
  */
 package com.netflix.hystrix.strategy;
 
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.netflix.config.ConfigurationManager;
 import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategyDefault;
@@ -50,7 +52,12 @@ public class HystrixPlugins {
     /* package */ final AtomicReference<HystrixCommandExecutionHook> commandExecutionHook = new AtomicReference<>();
 
     private HystrixPlugins() {
-
+        try {
+            // Load configuration from hystrix-plugins.properties, if that file exists
+            ConfigurationManager.loadCascadedPropertiesFromResources("hystrix-plugins");
+        } catch (IOException e) {
+            // fail silently
+        }
     }
 
     public static HystrixPlugins getInstance() {
