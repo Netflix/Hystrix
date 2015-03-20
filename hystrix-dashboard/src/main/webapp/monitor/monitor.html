@@ -131,6 +131,8 @@
 					//	}, false);
 
 					source.addEventListener('error', function(e) {
+						$("#dependencies .loading").html("Unable to connect to Command Metric Stream.");
+						$("#dependencies .loading").addClass("failed");
 					  if (e.eventPhase == EventSource.CLOSED) {
 					    // Connection was closed.
 						  console.log("Connection was closed on error: " + e);
@@ -166,6 +168,8 @@
 					//	}, false);
 	
 					source.addEventListener('error', function(e) {
+						$("#dependencyThreadPools .loading").html("Unable to connect to Thread Pool Metric Stream.");
+						$("#dependencyThreadPools .loading").addClass("failed");
 					  if (e.eventPhase == EventSource.CLOSED) {
 					    // Connection was closed.
 						  console.log("Connection was closed on error: " + e);
