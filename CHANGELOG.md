@@ -1,5 +1,9 @@
 # Hystrix Releases #
 
+### Version 1.4.1 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.1%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.1/)) ###
+
+* [Pull 716](https://github.com/Netflix/Hystrix/pull/716) Fixed backwards-incompatibility where .execute(), .queue(), .observe(), .toObservable() were all made final in 1.4.0
+
 ### Version 1.4.0 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.0%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.0/)) ###
 
 This version adds HystrixObservableCommand and implements both it and HystrixCommand in terms of [Observables](https://github.com/ReactiveX/RxJava).  
