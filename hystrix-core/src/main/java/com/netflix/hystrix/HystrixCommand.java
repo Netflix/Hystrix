@@ -330,7 +330,7 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
      * @throws IllegalStateException
      *             if invoked more than once
      */
-    final public R execute() {
+    public R execute() {
         try {
             return queue().get();
         } catch (Exception e) {
@@ -360,7 +360,7 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
      * @throws IllegalStateException
      *             if invoked more than once
      */
-    final public Future<R> queue() {
+    public Future<R> queue() {
         /*
          * --- Schedulers.immediate()
          * 

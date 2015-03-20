@@ -307,7 +307,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
      * @throws IllegalStateException
      *             if invoked more than once
      */
-    final public Observable<R> observe() {
+    public Observable<R> observe() {
         // us a ReplaySubject to buffer the eagerly subscribed-to Observable
         ReplaySubject<R> subject = ReplaySubject.create();
         // eagerly kick off subscription
@@ -342,7 +342,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
      * @throws IllegalStateException
      *             if invoked more than once
      */
-    final public Observable<R> toObservable() {
+    public Observable<R> toObservable() {
         /* this is a stateful object so can only be used once */
         if (!started.compareAndSet(false, true)) {
             throw new IllegalStateException("This instance can only be executed once. Please instantiate a new instance.");
