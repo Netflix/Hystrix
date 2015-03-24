@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.netflix.hystrix.strategy.concurrency.DefaultRequestLogStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -258,7 +259,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         this.requestCache = HystrixRequestCache.getInstance(this.commandKey, this.concurrencyStrategy);
 
         /* store reference to request log regardless of which thread later hits it */
-        if (concurrencyStrategy instanceof HystrixConcurrencyStrategyDefault) {
+        if (concurrencyStrategy instanceof DefaultRequestLogStrategy) {
             // if we're using the default we support only optionally using a request context
             if (HystrixRequestContext.isCurrentThreadInitialized()) {
                 currentRequestLog = HystrixRequestLog.getCurrentRequest(concurrencyStrategy);
