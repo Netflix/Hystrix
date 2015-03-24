@@ -20,7 +20,7 @@ package com.netflix.hystrix.strategy.concurrency;
  * 
  * @ExcludeFromJavadoc
  */
-public class HystrixConcurrencyStrategyDefault extends HystrixConcurrencyStrategy {
+public class HystrixConcurrencyStrategyDefault extends HystrixConcurrencyStrategy implements DefaultRequestLogStrategy {
 
     private static HystrixConcurrencyStrategyDefault INSTANCE = new HystrixConcurrencyStrategyDefault();
 
