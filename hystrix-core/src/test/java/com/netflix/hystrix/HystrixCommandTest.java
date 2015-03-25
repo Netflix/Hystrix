@@ -3645,7 +3645,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         }
 
         try {
-            latch.await(5, TimeUnit.SECONDS);
+            latch.await(30, TimeUnit.SECONDS);
 
             System.out.println("MAP : " + exceptionTypes);
         } catch (InterruptedException ie) {
