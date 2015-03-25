@@ -4,7 +4,7 @@
 
 * [Pull 723](https://github.com/Netflix/Hystrix/pull/723) Fixed Javanica issue where annotation appeared in superclasses
 * [Pull 727](https://github.com/Netflix/Hystrix/pull/727) Fixed TravisCI issue by raising timeout in fallback rejection unit test
-* [Pull 724](https://github.com/Netflix/Hystrix/pull/724) Fixed backwards-incompatibility where using a customer HystrixConcurrencyStrategy forced use of a non-null HystrixRequestContext
+* [Pull 724](https://github.com/Netflix/Hystrix/pull/724) Fixed backwards-incompatibility where using a custom HystrixConcurrencyStrategy forced use of a non-null HystrixRequestContext
 * [Pull 717](https://github.com/Netflix/Hystrix/pull/717) Added error message to dashboard HTML when connection to metrics source fails
 
 ### Version 1.4.1 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.1%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.1/)) ###
