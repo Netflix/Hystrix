@@ -16,9 +16,13 @@
 package com.netflix.hystrix.strategy.concurrency;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
+import java.lang.IllegalStateException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
+import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -41,11 +45,7 @@ public class HystrixConcurrencyStrategyTest {
 
     @After
     public void cleanup() {
-        // instead of storing the reference from initialize we'll just get the current state and shutdown
-        if (HystrixRequestContext.getContextForCurrentThread() != null) {
-            // it could have been set NULL by the test
-            HystrixRequestContext.getContextForCurrentThread().shutdown();
-        }
+        shutdownContextIfExists();
 
         // force properties to be clean as well
         ConfigurationManager.getConfigInstance().clear();
@@ -82,7 +82,9 @@ public class HystrixConcurrencyStrategyTest {
 
         @Override
         protected String run() throws Exception {
-            System.out.println("Executing => Commands: " + HystrixRequestLog.getCurrentRequest().getAllExecutedCommands());
+            if (HystrixRequestContext.isCurrentThreadInitialized()) {
+                System.out.println("Executing => Commands: " + HystrixRequestLog.getCurrentRequest().getAllExecutedCommands());
+            }
             return "Hello";
         }
 
@@ -106,7 +108,26 @@ public class HystrixConcurrencyStrategyTest {
         assertEquals(true, isInitialized.get());
     }
 
-    public static class TimeoutCommand extends HystrixCommand<Void> {
+    @Test
+    public void testNoRequestContextOnSimpleConcurencyStrategyWithoutException() throws Exception {
+        shutdownContextIfExists();
+        ConfigurationManager.getConfigInstance().setProperty("hystrix.command.default.requestLog.enabled", "false");
+
+        new SimpleCommand().execute();
+
+        assertTrue("We are able to run the simple command without a context initialization error.", true);
+    }
+
+    private void shutdownContextIfExists() {
+        // instead of storing the reference from initialize we'll just get the current state and shutdown
+        if (HystrixRequestContext.getContextForCurrentThread() != null) {
+            // it could have been set NULL by the test
+            HystrixRequestContext.getContextForCurrentThread().shutdown();
+        }
+    }
+    private static class DummyHystrixConcurrencyStrategy extends HystrixConcurrencyStrategy {}
+
+  public static class TimeoutCommand extends HystrixCommand<Void> {
         static final HystrixCommand.Setter properties = HystrixCommand.Setter
                 .withGroupKey(HystrixCommandGroupKey.Factory.asKey("TimeoutTest"))
                 .andCommandPropertiesDefaults(HystrixCommandProperties.Setter()
