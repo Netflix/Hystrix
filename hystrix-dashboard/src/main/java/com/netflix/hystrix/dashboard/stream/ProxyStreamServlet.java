@@ -26,6 +26,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.http.Header;
+import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.HttpClient;
@@ -106,7 +107,9 @@ public class ProxyStreamServlet extends HttpServlet {
 
                 // set headers
                 for (Header header : httpResponse.getAllHeaders()) {
-                    response.addHeader(header.getName(), header.getValue());
+                    if (!HttpHeaders.TRANSFER_ENCODING.equals(header.getName())) {
+                        response.addHeader(header.getName(), header.getValue());
+                    }
                 }
 
                 // copy data from source to response
