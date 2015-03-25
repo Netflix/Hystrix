@@ -257,21 +257,25 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         /* setup the request cache for this instance */
         this.requestCache = HystrixRequestCache.getInstance(this.commandKey, this.concurrencyStrategy);
 
-        /* store reference to request log regardless of which thread later hits it */
-        if (concurrencyStrategy instanceof HystrixConcurrencyStrategyDefault) {
-            // if we're using the default we support only optionally using a request context
-            if (HystrixRequestContext.isCurrentThreadInitialized()) {
+        if (properties.requestLogEnabled().get()) {
+            /* store reference to request log regardless of which thread later hits it */
+            if (concurrencyStrategy instanceof HystrixConcurrencyStrategyDefault) {
+              // if we're using the default we support only optionally using a request context
+              if (HystrixRequestContext.isCurrentThreadInitialized()) {
                 currentRequestLog = HystrixRequestLog.getCurrentRequest(concurrencyStrategy);
-            } else {
+              } else {
                 currentRequestLog = null;
+              }
+            } else {
+              // if it's a custom strategy it must ensure the context is initialized
+              if (HystrixRequestLog.getCurrentRequest(concurrencyStrategy) != null) {
+                currentRequestLog = HystrixRequestLog.getCurrentRequest(concurrencyStrategy);
+              } else {
+                currentRequestLog = null;
+              }
             }
         } else {
-            // if it's a custom strategy it must ensure the context is initialized
-            if (HystrixRequestLog.getCurrentRequest(concurrencyStrategy) != null) {
-                currentRequestLog = HystrixRequestLog.getCurrentRequest(concurrencyStrategy);
-            } else {
-                currentRequestLog = null;
-            }
+            currentRequestLog = null;
         }
     }
 
