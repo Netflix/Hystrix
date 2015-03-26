@@ -9,6 +9,9 @@
 				<a href="javascript://" title="Timed-out Request Count" class="line tooltip timeout"><%= addCommas(rollingCountTimeout) %></a>
 				<a href="javascript://" title="Threadpool Rejected Request Count" class="line tooltip rejected"><%= addCommas(rollingCountThreadPoolRejected) %></a>
 			<% } %>
+			<% if(propertyValue_executionIsolationStrategy == 'SEMAPHORE') { %>
+				<a href="javascript://" title="Semaphore Rejected Request Count" class="line tooltip rejected"><%= addCommas(rollingCountSemaphoreRejected) %></a>
+			<% } %>
 			<a href="javascript://" title="Failure Request Count" class="line tooltip failure"><%= addCommas(rollingCountFailure) %></a> 
 		</div>
 		<div class="cell borderRight">
