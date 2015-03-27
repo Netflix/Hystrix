@@ -44,7 +44,7 @@ public class CacheInvocationContextFactory {
             Method method = metaHolder.getMethod();
             CacheResult cacheResult = method.getAnnotation(CacheResult.class);
             MethodExecutionAction cacheKeyMethod = createCacheKeyAction(cacheResult.cacheKeyMethod(), metaHolder);
-            return new CacheInvocationContext<>(cacheResult, cacheKeyMethod, metaHolder.getObj(), method, metaHolder.getArgs());
+            return new CacheInvocationContext<CacheResult>(cacheResult, cacheKeyMethod, metaHolder.getObj(), method, metaHolder.getArgs());
         }
         return null;
     }
@@ -60,7 +60,7 @@ public class CacheInvocationContextFactory {
             Method method = metaHolder.getMethod();
             CacheRemove cacheRemove = method.getAnnotation(CacheRemove.class);
             MethodExecutionAction cacheKeyMethod = createCacheKeyAction(cacheRemove.cacheKeyMethod(), metaHolder);
-            return new CacheInvocationContext<>(cacheRemove, cacheKeyMethod, metaHolder.getObj(), method, metaHolder.getArgs());
+            return new CacheInvocationContext<CacheRemove>(cacheRemove, cacheKeyMethod, metaHolder.getObj(), method, metaHolder.getArgs());
         }
         return null;
     }

@@ -133,7 +133,6 @@ public interface HystrixProperty<T> {
          * @param values properties to iterate over
          * @return first non-null value or null if none found
          */
-        @SafeVarargs
         public static <T> HystrixProperty<T> asProperty(final HystrixProperty<T>... values) {
             return new HystrixProperty<T>() {
 

@@ -87,16 +87,16 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
     /* FALLBACK Semaphore */
     protected final TryableSemaphore fallbackSemaphoreOverride;
     /* each circuit has a semaphore to restrict concurrent fallback execution */
-    protected static final ConcurrentHashMap<String, TryableSemaphore> fallbackSemaphorePerCircuit = new ConcurrentHashMap<>();
+    protected static final ConcurrentHashMap<String, TryableSemaphore> fallbackSemaphorePerCircuit = new ConcurrentHashMap<String, TryableSemaphore>();
     /* END FALLBACK Semaphore */
 
     /* EXECUTION Semaphore */
     protected final TryableSemaphore executionSemaphoreOverride;
     /* each circuit has a semaphore to restrict concurrent fallback execution */
-    protected static final ConcurrentHashMap<String, TryableSemaphore> executionSemaphorePerCircuit = new ConcurrentHashMap<>();
+    protected static final ConcurrentHashMap<String, TryableSemaphore> executionSemaphorePerCircuit = new ConcurrentHashMap<String, TryableSemaphore>();
     /* END EXECUTION Semaphore */
 
-    protected final AtomicReference<Reference<TimerListener>> timeoutTimer = new AtomicReference<>();
+    protected final AtomicReference<Reference<TimerListener>> timeoutTimer = new AtomicReference<Reference<TimerListener>>();
 
     protected AtomicBoolean started = new AtomicBoolean();
     protected volatile long invocationStartTime = -1;
@@ -105,10 +105,10 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
     protected volatile ExecutionResult executionResult = ExecutionResult.EMPTY;
 
     /* If this command executed and timed-out */
-    protected final AtomicReference<TimedOutStatus> isCommandTimedOut = new AtomicReference<>(TimedOutStatus.NOT_EXECUTED);
+    protected final AtomicReference<TimedOutStatus> isCommandTimedOut = new AtomicReference<TimedOutStatus>(TimedOutStatus.NOT_EXECUTED);
     protected final AtomicBoolean isExecutionComplete = new AtomicBoolean(false);
     protected final AtomicBoolean isExecutedInThread = new AtomicBoolean(false);
-    protected final AtomicReference<Action0> endCurrentThreadExecutingCommand = new AtomicReference<>(); // don't like how this is being done
+    protected final AtomicReference<Action0> endCurrentThreadExecutingCommand = new AtomicReference<Action0>(); // don't like how this is being done
 
 
     /**
@@ -119,7 +119,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 
     // this is a micro-optimization but saves about 1-2microseconds (on 2011 MacBook Pro) 
     // on the repetitive string processing that will occur on the same classes over and over again
-    private static ConcurrentHashMap<Class<?>, String> defaultNameCache = new ConcurrentHashMap<>();
+    private static ConcurrentHashMap<Class<?>, String> defaultNameCache = new ConcurrentHashMap<Class<?>, String>();
 
     /* package */static String getDefaultNameFromClass(Class<?> cls) {
         String fromCache = defaultNameCache.get(cls);
@@ -360,7 +360,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                 metrics.markResponseFromCache();
                 isExecutionComplete.set(true);
                 executionHook.onCacheHit(this);
-                return new CachedObservableResponse<>((CachedObservableOriginal<R>) fromCache, this);
+                return new CachedObservableResponse<R>((CachedObservableOriginal<R>) fromCache, this);
             }
         }
 
@@ -470,17 +470,17 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         // put in cache
         if (isRequestCachingEnabled()) {
             // wrap it for caching
-            o = new CachedObservableOriginal<>(o.cache(), this);
+            o = new CachedObservableOriginal<R>(o.cache(), this);
             Observable<R> fromCache = requestCache.putIfAbsent(getCacheKey(), o);
             if (fromCache != null) {
                 // another thread beat us so we'll use the cached value instead
-                o = new CachedObservableResponse<>((CachedObservableOriginal<R>) fromCache, this);
+                o = new CachedObservableResponse<R>((CachedObservableOriginal<R>) fromCache, this);
             }
             // we just created an ObservableCommand so we cast and return it
             return o;
         } else {
             // no request caching so a simple wrapper just to pass 'this' along with the Observable
-            return new ObservableCommand<>(o, this);
+            return new ObservableCommand<R>(o, this);
         }
     }
 
@@ -542,7 +542,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
             }
 
 
-        }).lift(new HystrixObservableTimeoutOperator<>(_self)).doOnNext(new Action1<R>() {
+        }).lift(new HystrixObservableTimeoutOperator<R>(_self)).doOnNext(new Action1<R>() {
             @Override
             public void call(R r) {
                 if (shouldOutputOnNextEvents()) {
@@ -1669,7 +1669,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         }
 
         private static List<HystrixEventType> getUpdatedList(List<HystrixEventType> currentList, HystrixEventType... newEvents) {
-            ArrayList<HystrixEventType> updatedEvents = new ArrayList<>();
+            ArrayList<HystrixEventType> updatedEvents = new ArrayList<HystrixEventType>();
             updatedEvents.addAll(currentList);
             Collections.addAll(updatedEvents, newEvents);
             return Collections.unmodifiableList(updatedEvents);

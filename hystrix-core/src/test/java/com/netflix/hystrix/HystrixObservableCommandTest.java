@@ -101,7 +101,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
          */
         int count = Runtime.getRuntime().availableProcessors();
         final CountDownLatch latch = new CountDownLatch(count);
-        ArrayList<Future<Boolean>> futures = new ArrayList<>();
+        ArrayList<Future<Boolean>> futures = new ArrayList<Future<Boolean>>();
         for (int i = 0; i < count; ++i) {
             futures.add(Observable.create(new OnSubscribe<Boolean>() {
                 @Override
@@ -120,7 +120,9 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         for (Future<Boolean> future : futures) {
             try {
                 future.get();
-            } catch (InterruptedException | ExecutionException e) {
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            } catch (ExecutionException e) {
                 throw new RuntimeException(e);
             }
         }
@@ -651,8 +653,8 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
     @Test
     public void testObserveOnImmediateSchedulerByDefaultForSemaphoreIsolation() throws Exception {
 
-        final AtomicReference<Thread> commandThread = new AtomicReference<>();
-        final AtomicReference<Thread> subscribeThread = new AtomicReference<>();
+        final AtomicReference<Thread> commandThread = new AtomicReference<Thread>();
+        final AtomicReference<Thread> subscribeThread = new AtomicReference<Thread>();
 
         TestHystrixObservableCommand<Boolean> command = new TestHystrixObservableCommand<Boolean>(TestHystrixObservableCommand.testPropsBuilder()
                 .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionIsolationStrategy(ExecutionIsolationStrategy.SEMAPHORE))) {
@@ -1497,7 +1499,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
             throw new RuntimeException(e);
         }
 
-        final ArrayBlockingQueue<Boolean> results = new ArrayBlockingQueue<>(2);
+        final ArrayBlockingQueue<Boolean> results = new ArrayBlockingQueue<Boolean>(2);
 
         final AtomicBoolean exceptionReceived = new AtomicBoolean();
 
@@ -1564,7 +1566,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
     @Test
     public void testRejectedExecutionSemaphoreWithFallback() {
         final TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
-        final ArrayBlockingQueue<Boolean> results = new ArrayBlockingQueue<>(2);
+        final ArrayBlockingQueue<Boolean> results = new ArrayBlockingQueue<Boolean>(2);
 
         final AtomicBoolean exceptionReceived = new AtomicBoolean();
 
@@ -1804,8 +1806,8 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
     @Test
     public void testRequestCache1UsingThreadIsolation() {
         TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
-        SuccessfulCacheableCommand<String> command1 = new SuccessfulCacheableCommand<>(circuitBreaker, true, "A");
-        SuccessfulCacheableCommand<String> command2 = new SuccessfulCacheableCommand<>(circuitBreaker, true, "A");
+        SuccessfulCacheableCommand<String> command1 = new SuccessfulCacheableCommand<String>(circuitBreaker, true, "A");
+        SuccessfulCacheableCommand<String> command2 = new SuccessfulCacheableCommand<String>(circuitBreaker, true, "A");
 
         assertTrue(command1.isCommandRunningInThread());
 
@@ -1862,8 +1864,8 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
     @Test
     public void testRequestCache2UsingThreadIsolation() {
         TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
-        SuccessfulCacheableCommand<String> command1 = new SuccessfulCacheableCommand<>(circuitBreaker, true, "A");
-        SuccessfulCacheableCommand<String> command2 = new SuccessfulCacheableCommand<>(circuitBreaker, true, "B");
+        SuccessfulCacheableCommand<String> command1 = new SuccessfulCacheableCommand<String>(circuitBreaker, true, "A");
+        SuccessfulCacheableCommand<String> command2 = new SuccessfulCacheableCommand<String>(circuitBreaker, true, "B");
 
         assertTrue(command1.isCommandRunningInThread());
 
@@ -1917,9 +1919,9 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
     @Test
     public void testRequestCache3UsingThreadIsolation() {
         TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
-        SuccessfulCacheableCommand<String> command1 = new SuccessfulCacheableCommand<>(circuitBreaker, true, "A");
-        SuccessfulCacheableCommand<String> command2 = new SuccessfulCacheableCommand<>(circuitBreaker, true, "B");
-        SuccessfulCacheableCommand<String> command3 = new SuccessfulCacheableCommand<>(circuitBreaker, true, "A");
+        SuccessfulCacheableCommand<String> command1 = new SuccessfulCacheableCommand<String>(circuitBreaker, true, "A");
+        SuccessfulCacheableCommand<String> command2 = new SuccessfulCacheableCommand<String>(circuitBreaker, true, "B");
+        SuccessfulCacheableCommand<String> command3 = new SuccessfulCacheableCommand<String>(circuitBreaker, true, "A");
 
         assertTrue(command1.isCommandRunningInThread());
 
@@ -2060,9 +2062,9 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
     @Test
     public void testNoRequestCache3UsingThreadIsolation() {
         TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
-        SuccessfulCacheableCommand<String> command1 = new SuccessfulCacheableCommand<>(circuitBreaker, false, "A");
-        SuccessfulCacheableCommand<String> command2 = new SuccessfulCacheableCommand<>(circuitBreaker, false, "B");
-        SuccessfulCacheableCommand<String> command3 = new SuccessfulCacheableCommand<>(circuitBreaker, false, "A");
+        SuccessfulCacheableCommand<String> command1 = new SuccessfulCacheableCommand<String>(circuitBreaker, false, "A");
+        SuccessfulCacheableCommand<String> command2 = new SuccessfulCacheableCommand<String>(circuitBreaker, false, "B");
+        SuccessfulCacheableCommand<String> command3 = new SuccessfulCacheableCommand<String>(circuitBreaker, false, "A");
 
         assertTrue(command1.isCommandRunningInThread());
 
@@ -2695,10 +2697,10 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
             TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
 
-            SuccessfulCacheableCommand<String> command = new SuccessfulCacheableCommand<>(circuitBreaker, true, "one");
+            SuccessfulCacheableCommand<String> command = new SuccessfulCacheableCommand<String>(circuitBreaker, true, "one");
             assertEquals("one", command.observe().toBlocking().single());
 
-            SuccessfulCacheableCommand<String> command2 = new SuccessfulCacheableCommand<>(circuitBreaker, true, "two");
+            SuccessfulCacheableCommand<String> command2 = new SuccessfulCacheableCommand<String>(circuitBreaker, true, "two");
             assertEquals("two", command2.observe().toBlocking().toFuture().get());
 
             fail("We expect an exception because cacheKey requires RequestVariable.");
@@ -2872,7 +2874,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
     public void testCheckedExceptionViaObserve() throws InterruptedException {
         TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
         CommandWithCheckedException command = new CommandWithCheckedException(circuitBreaker);
-        final AtomicReference<Throwable> t = new AtomicReference<>();
+        final AtomicReference<Throwable> t = new AtomicReference<Throwable>();
         final CountDownLatch latch = new CountDownLatch(1);
         try {
             command.observe().subscribe(new Observer<Boolean>() {
@@ -2930,7 +2932,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
     public void testErrorThrownViaObserve() throws InterruptedException {
         TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
         CommandWithErrorThrown command = new CommandWithErrorThrown(circuitBreaker, true);
-        final AtomicReference<Throwable> t = new AtomicReference<>();
+        final AtomicReference<Throwable> t = new AtomicReference<Throwable>();
         final CountDownLatch latch = new CountDownLatch(1);
         try {
             command.observe().subscribe(new Observer<Boolean>() {
@@ -3584,9 +3586,9 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
      */
     @Test
     public void testObservableTimeoutNoFallbackThreadContext() {
-        TestSubscriber<Boolean> ts = new TestSubscriber<>();
+        TestSubscriber<Boolean> ts = new TestSubscriber<Boolean>();
 
-        final AtomicReference<Thread> onErrorThread = new AtomicReference<>();
+        final AtomicReference<Thread> onErrorThread = new AtomicReference<Thread>();
         final AtomicBoolean isRequestContextInitialized = new AtomicBoolean();
 
         TestHystrixObservableCommand<Boolean> command = new TestCommandWithTimeout(50, TestCommandWithTimeout.FALLBACK_NOT_IMPLEMENTED);
@@ -3650,9 +3652,9 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
      */
     @Test
     public void testObservableTimeoutFallbackThreadContext() {
-        TestSubscriber<Boolean> ts = new TestSubscriber<>();
+        TestSubscriber<Boolean> ts = new TestSubscriber<Boolean>();
 
-        final AtomicReference<Thread> onErrorThread = new AtomicReference<>();
+        final AtomicReference<Thread> onErrorThread = new AtomicReference<Thread>();
         final AtomicBoolean isRequestContextInitialized = new AtomicBoolean();
 
         TestHystrixObservableCommand<Boolean> command = new TestCommandWithTimeout(50, TestCommandWithTimeout.FALLBACK_SUCCESS);
@@ -3706,7 +3708,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
     @Test
     public void testRejectedViaSemaphoreIsolation() {
         final TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
-        final ArrayBlockingQueue<Boolean> results = new ArrayBlockingQueue<>(2);
+        final ArrayBlockingQueue<Boolean> results = new ArrayBlockingQueue<Boolean>(2);
         final List<Thread> executionThreads = Collections.synchronizedList(new ArrayList<Thread>(2));
         final List<Thread> responseThreads = Collections.synchronizedList(new ArrayList<Thread>(2));
 
@@ -3792,7 +3794,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
     @Test
     public void testRejectedViaThreadIsolation() throws InterruptedException {
         final TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
-        final ArrayBlockingQueue<Boolean> results = new ArrayBlockingQueue<>(10);
+        final ArrayBlockingQueue<Boolean> results = new ArrayBlockingQueue<Boolean>(10);
         final List<Thread> executionThreads = Collections.synchronizedList(new ArrayList<Thread>(20));
         final List<Thread> responseThreads = Collections.synchronizedList(new ArrayList<Thread>(10));
 
@@ -4511,11 +4513,11 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     private final class RequestContextTestResults {
         volatile TestHystrixObservableCommand<Boolean> command;
-        final AtomicReference<Thread> originThread = new AtomicReference<>();
+        final AtomicReference<Thread> originThread = new AtomicReference<Thread>();
         final AtomicBoolean isContextInitialized = new AtomicBoolean();
-        TestSubscriber<Boolean> ts = new TestSubscriber<>();
+        TestSubscriber<Boolean> ts = new TestSubscriber<Boolean>();
         final AtomicBoolean isContextInitializedObserveOn = new AtomicBoolean();
-        final AtomicReference<Thread> observeOnThread = new AtomicReference<>();
+        final AtomicReference<Thread> observeOnThread = new AtomicReference<Thread>();
     }
 
     /* *************************************** testSuccessfuleRequestContext *********************************** */
@@ -5505,7 +5507,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
             assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
             assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
             assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
-            TestSubscriber<Integer> ts = new TestSubscriber<>();
+            TestSubscriber<Integer> ts = new TestSubscriber<Integer>();
             command.toObservable().subscribe(ts);
             ts.awaitTerminalEvent();
             ts.assertReceivedOnNext(Arrays.asList(1, 2, 3));
@@ -5561,7 +5563,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
             assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
             assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
             assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
-            TestSubscriber<Boolean> ts = new TestSubscriber<>();
+            TestSubscriber<Boolean> ts = new TestSubscriber<Boolean>();
             command.toObservable().subscribe(ts);
             ts.awaitTerminalEvent();
             ts.assertReceivedOnNext(Arrays.asList(false, true, false, true, false, true, false));
@@ -5617,7 +5619,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
             assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
             assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
             assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
-            TestSubscriber<Integer> ts = new TestSubscriber<>();
+            TestSubscriber<Integer> ts = new TestSubscriber<Integer>();
             command.toObservable().subscribe(ts);
             ts.awaitTerminalEvent();
             ts.assertReceivedOnNext(Arrays.asList(1, 2, 3, 4));

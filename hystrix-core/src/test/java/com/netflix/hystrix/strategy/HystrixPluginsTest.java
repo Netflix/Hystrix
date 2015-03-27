@@ -222,7 +222,7 @@ public class HystrixPluginsTest {
         }
     }
     
-    private static final ThreadLocal<String> testRequestIdThreadLocal = new ThreadLocal<>();
+    private static final ThreadLocal<String> testRequestIdThreadLocal = new ThreadLocal<String>();
 
     public static class DummyCommand extends HystrixCommand<Void> {
 

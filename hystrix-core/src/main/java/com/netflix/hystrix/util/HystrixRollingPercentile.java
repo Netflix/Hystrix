@@ -471,7 +471,7 @@ public class HystrixRollingPercentile {
                  * but since we never clear the data directly, only increment/decrement head/tail we would never get a NULL
                  * just potentially return stale data which we are okay with doing
                  */
-                ArrayList<Bucket> array = new ArrayList<>();
+                ArrayList<Bucket> array = new ArrayList<Bucket>();
                 for (int i = 0; i < size; i++) {
                     array.add(data.get(convert(i)));
                 }
@@ -517,8 +517,8 @@ public class HystrixRollingPercentile {
         }
 
         BucketCircularArray(int size) {
-            AtomicReferenceArray<Bucket> _buckets = new AtomicReferenceArray<>(size + 1); // + 1 as extra room for the add/remove;
-            state = new AtomicReference<>(new ListState(_buckets, 0, 0));
+            AtomicReferenceArray<Bucket> _buckets = new AtomicReferenceArray<Bucket>(size + 1); // + 1 as extra room for the add/remove;
+            state = new AtomicReference<ListState>(new ListState(_buckets, 0, 0));
             dataLength = _buckets.length();
             numBuckets = size;
         }

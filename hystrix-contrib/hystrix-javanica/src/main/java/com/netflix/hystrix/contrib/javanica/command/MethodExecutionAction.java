@@ -99,7 +99,9 @@ public class MethodExecutionAction extends CommandAction {
         try {
             m.setAccessible(true); // suppress Java language access
             result = m.invoke(o, args);
-        } catch (IllegalAccessException | InvocationTargetException e) {
+        } catch (IllegalAccessException e) {
+            propagateCause(e);
+        } catch (InvocationTargetException e) {
             propagateCause(e);
         }
         return result;

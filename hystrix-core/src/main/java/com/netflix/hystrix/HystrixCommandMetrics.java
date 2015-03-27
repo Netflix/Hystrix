@@ -41,7 +41,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     private static final Logger logger = LoggerFactory.getLogger(HystrixCommandMetrics.class);
 
     // String is HystrixCommandKey.name() (we can't use HystrixCommandKey directly as we can't guarantee it implements hashcode/equals correctly)
-    private static final ConcurrentHashMap<String, HystrixCommandMetrics> metrics = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, HystrixCommandMetrics> metrics = new ConcurrentHashMap<String, HystrixCommandMetrics>();
 
     /**
      * Get or create the {@link HystrixCommandMetrics} instance for a given {@link HystrixCommandKey}.

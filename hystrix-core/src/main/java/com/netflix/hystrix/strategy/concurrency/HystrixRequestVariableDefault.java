@@ -93,7 +93,7 @@ public class HystrixRequestVariableDefault<T> implements HystrixRequestVariable<
          * Whichever instance of LazyInitializer succeeds will then have get() invoked which will call
          * the initialValue() method once-and-only-once.
          */
-        LazyInitializer<T> l = new LazyInitializer<>(this);
+        LazyInitializer<T> l = new LazyInitializer<T>(this);
         LazyInitializer<?> existing = variableMap.putIfAbsent(this, l);
         if (existing == null) {
             /*
@@ -132,7 +132,7 @@ public class HystrixRequestVariableDefault<T> implements HystrixRequestVariable<
      *            the value to set
      */
     public void set(T value) {
-        HystrixRequestContext.getContextForCurrentThread().state.put(this, new LazyInitializer<>(this, value));
+        HystrixRequestContext.getContextForCurrentThread().state.put(this, new LazyInitializer<T>(this, value));
     }
 
     /**

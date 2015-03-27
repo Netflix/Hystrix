@@ -111,7 +111,7 @@ public class HystrixServoMetricsPublisherCollapser extends HystrixServoMetricsPu
      */
     private List<Monitor<?>> getServoMonitors() {
 
-        List<Monitor<?>> monitors = new ArrayList<>();
+        List<Monitor<?>> monitors = new ArrayList<Monitor<?>>();
 
         monitors.add(new InformationalMetric<String>(MonitorConfig.builder("name").build()) {
             @Override

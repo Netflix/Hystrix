@@ -98,7 +98,7 @@ public class RequestCollapserFactory<BatchReturnType, ResponseType, RequestArgum
      * Static global cache of RequestCollapsers for Scope.GLOBAL
      */
     // String is CollapserKey.name() (we can't use CollapserKey directly as we can't guarantee it implements hashcode/equals correctly)
-    private static ConcurrentHashMap<String, RequestCollapser<?, ?, ?>> globalScopedCollapsers = new ConcurrentHashMap<>();
+    private static ConcurrentHashMap<String, RequestCollapser<?, ?, ?>> globalScopedCollapsers = new ConcurrentHashMap<String, RequestCollapser<?, ?, ?>>();
 
     @SuppressWarnings("unchecked")
     private RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType> getCollapserForGlobalScope(HystrixCollapserBridge<BatchReturnType, ResponseType, RequestArgumentType> commandCollapser) {
@@ -107,7 +107,7 @@ public class RequestCollapserFactory<BatchReturnType, ResponseType, RequestArgum
             return (RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType>) collapser;
         }
         // create new collapser using 'this' first instance as the one that will get cached for future executions ('this' is stateless so we can do that)
-        RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType> newCollapser = new RequestCollapser<>(commandCollapser, properties, timer, concurrencyStrategy);
+        RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType> newCollapser = new RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType>(commandCollapser, properties, timer, concurrencyStrategy);
         RequestCollapser<?, ?, ?> existing = globalScopedCollapsers.putIfAbsent(collapserKey.name(), newCollapser);
         if (existing == null) {
             // we won
@@ -125,7 +125,7 @@ public class RequestCollapserFactory<BatchReturnType, ResponseType, RequestArgum
      * Static global cache of RequestVariables with RequestCollapsers for Scope.REQUEST
      */
     // String is HystrixCollapserKey.name() (we can't use HystrixCollapserKey directly as we can't guarantee it implements hashcode/equals correctly)
-    private static ConcurrentHashMap<String, HystrixRequestVariableHolder<RequestCollapser<?, ?, ?>>> requestScopedCollapsers = new ConcurrentHashMap<>();
+    private static ConcurrentHashMap<String, HystrixRequestVariableHolder<RequestCollapser<?, ?, ?>>> requestScopedCollapsers = new ConcurrentHashMap<String, HystrixRequestVariableHolder<RequestCollapser<?, ?, ?>>>();
 
     /* we are casting because the Map needs to be <?, ?> but we know it is <ReturnType, RequestArgumentType> for this thread */
     @SuppressWarnings("unchecked")
@@ -206,7 +206,7 @@ public class RequestCollapserFactory<BatchReturnType, ResponseType, RequestArgum
                 @Override
                 public RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType> initialValue() {
                     // this gets calls once per request per HystrixCollapser instance
-                    return new RequestCollapser<>(commandCollapser, properties, timer, concurrencyStrategy);
+                    return new RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType>(commandCollapser, properties, timer, concurrencyStrategy);
                 }
 
                 @Override
@@ -287,6 +287,6 @@ public class RequestCollapserFactory<BatchReturnType, ResponseType, RequestArgum
     // this is a micro-optimization but saves about 1-2microseconds (on 2011 MacBook Pro) 
     // on the repetitive string processing that will occur on the same classes over and over again
     @SuppressWarnings("rawtypes")
-    private static ConcurrentHashMap<Class<? extends HystrixCollapser>, String> defaultNameCache = new ConcurrentHashMap<>();
+    private static ConcurrentHashMap<Class<? extends HystrixCollapser>, String> defaultNameCache = new ConcurrentHashMap<Class<? extends HystrixCollapser>, String>();
 
 }
