@@ -3667,29 +3667,29 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
 //        assertEquals(0, circuitBreaker.metrics.getCumulativeCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
 //    }
 //
-//    static class EventCommand extends HystrixCommand {
-//        public EventCommand() {
-//            super(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("eventGroup")).andCommandPropertiesDefaults(new HystrixCommandProperties.Setter().withFallbackIsolationSemaphoreMaxConcurrentRequests(3)));
-//        }
-//
-//        @Override
-//        protected String run() throws Exception {
-//            System.out.println(Thread.currentThread().getName() + " : In run()");
-//            throw new RuntimeException("run_exception");
-//        }
-//
-//        @Override
-//        public String getFallback() {
-//            try {
-//                System.out.println(Thread.currentThread().getName() + " : In fallback => " + getExecutionEvents());
-//                Thread.sleep(30000L);
-//            } catch (InterruptedException e) {
-//                System.out.println(Thread.currentThread().getName() + " : Interruption occurred");
-//            }
-//            System.out.println(Thread.currentThread().getName() + " : CMD Success Result");
-//            return "fallback";
-//        }
-//    }
+    static class EventCommand extends HystrixCommand {
+        public EventCommand() {
+            super(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("eventGroup")).andCommandPropertiesDefaults(new HystrixCommandProperties.Setter().withFallbackIsolationSemaphoreMaxConcurrentRequests(3)));
+        }
+
+        @Override
+        protected String run() throws Exception {
+            System.out.println(Thread.currentThread().getName() + " : In run()");
+            throw new RuntimeException("run_exception");
+        }
+
+        @Override
+        public String getFallback() {
+            try {
+                System.out.println(Thread.currentThread().getName() + " : In fallback => " + getExecutionEvents());
+                Thread.sleep(30000L);
+            } catch (InterruptedException e) {
+                System.out.println(Thread.currentThread().getName() + " : Interruption occurred");
+            }
+            System.out.println(Thread.currentThread().getName() + " : CMD Success Result");
+            return "fallback";
+        }
+    }
 
     //if I set fallback semaphore to same as threadpool (10), I set up a race.
     //instead, I set fallback sempahore to much less (3).  This should guarantee that all fallbacks only happen in the threadpool, and main thread does not block
