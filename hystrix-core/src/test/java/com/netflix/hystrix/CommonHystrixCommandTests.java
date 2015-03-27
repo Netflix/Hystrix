@@ -171,7 +171,7 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
         }
 
         public SingleThreadedPoolWithQueue(int queueSize, int rejectionQueueSizeThreshold) {
-            queue = new LinkedBlockingQueue<>(queueSize);
+            queue = new LinkedBlockingQueue<Runnable>(queueSize);
             pool = new ThreadPoolExecutor(1, 1, 1, TimeUnit.MINUTES, queue);
             this.rejectionQueueSizeThreshold = rejectionQueueSizeThreshold;
         }
@@ -222,7 +222,7 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
         final ThreadPoolExecutor pool;
 
         public SingleThreadedPoolWithNoQueue() {
-            queue = new SynchronousQueue<>();
+            queue = new SynchronousQueue<Runnable>();
             pool = new ThreadPoolExecutor(1, 1, 1, TimeUnit.MINUTES, queue);
         }
 

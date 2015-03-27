@@ -37,7 +37,7 @@ public class HystrixRequestCache {
     private static final Logger logger = LoggerFactory.getLogger(HystrixRequestCache.class);
 
     // the String key must be: HystrixRequestCache.prefix + concurrencyStrategy + cacheKey
-    private final static ConcurrentHashMap<RequestCacheKey, HystrixRequestCache> caches = new ConcurrentHashMap<>();
+    private final static ConcurrentHashMap<RequestCacheKey, HystrixRequestCache> caches = new ConcurrentHashMap<RequestCacheKey, HystrixRequestCache>();
 
     private final RequestCacheKey rcKey;
     private final HystrixConcurrencyStrategy concurrencyStrategy;
@@ -47,11 +47,11 @@ public class HystrixRequestCache {
      * <p>
      * Key => CommandPrefix + CacheKey : Future<?> from queue()
      */
-    private static final HystrixRequestVariableHolder<ConcurrentHashMap<ValueCacheKey, Observable<?>>> requestVariableForCache = new HystrixRequestVariableHolder<>(new HystrixRequestVariableLifecycle<ConcurrentHashMap<ValueCacheKey, Observable<?>>>() {
+    private static final HystrixRequestVariableHolder<ConcurrentHashMap<ValueCacheKey, Observable<?>>> requestVariableForCache = new HystrixRequestVariableHolder<ConcurrentHashMap<ValueCacheKey, Observable<?>>>(new HystrixRequestVariableLifecycle<ConcurrentHashMap<ValueCacheKey, Observable<?>>>() {
 
         @Override
         public ConcurrentHashMap<ValueCacheKey, Observable<?>> initialValue() {
-            return new ConcurrentHashMap<>();
+            return new ConcurrentHashMap<ValueCacheKey, Observable<?>>();
         }
 
         @Override

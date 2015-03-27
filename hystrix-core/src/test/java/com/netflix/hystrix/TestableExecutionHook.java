@@ -31,9 +31,9 @@ class TestableExecutionHook extends HystrixCommandExecutionHook {
     }
 
     StringBuilder executionSequence = new StringBuilder();
-    List<Notification<?>> commandEmissions = new ArrayList<>();
-    List<Notification<?>> executionEmissions = new ArrayList<>();
-    List<Notification<?>> fallbackEmissions = new ArrayList<>();
+    List<Notification<?>> commandEmissions = new ArrayList<Notification<?>>();
+    List<Notification<?>> executionEmissions = new ArrayList<Notification<?>>();
+    List<Notification<?>> fallbackEmissions = new ArrayList<Notification<?>>();
 
     public boolean commandEmissionsMatch(int numOnNext, int numOnError, int numOnCompleted) {
         return eventsMatch(commandEmissions, numOnNext, numOnError, numOnCompleted);

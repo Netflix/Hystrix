@@ -115,7 +115,7 @@ public class HystrixMetricsStreamHandlerTest {
         for (int i = 0; i < 3 && server == null; i++) {
             port = 10000 + random.nextInt(50000);
             try {
-                return RxNetty.newHttpServerBuilder(port, new HystrixMetricsStreamHandler<>(
+                return RxNetty.newHttpServerBuilder(port, new HystrixMetricsStreamHandler<ByteBuf, ByteBuf>(
                         DEFAULT_HYSTRIX_PREFIX,
                         DEFAULT_INTERVAL,
                         new RequestHandler<ByteBuf, ByteBuf>() {  // Application handler

@@ -82,7 +82,7 @@ public class Hystrix {
     private static ThreadLocal<LinkedList<HystrixCommandKey>> currentCommand = new ThreadLocal<LinkedList<HystrixCommandKey>>() {
         @Override
         protected LinkedList<HystrixCommandKey> initialValue() {
-            return new LinkedList<>();
+            return new LinkedList<HystrixCommandKey>();
         }
     };
 

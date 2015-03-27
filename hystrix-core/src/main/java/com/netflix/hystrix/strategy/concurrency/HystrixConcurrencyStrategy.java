@@ -105,9 +105,9 @@ public abstract class HystrixConcurrencyStrategy {
          * and rejecting is the preferred solution.
          */
         if (maxQueueSize <= 0) {
-            return new SynchronousQueue<>();
+            return new SynchronousQueue<Runnable>();
         } else {
-            return new LinkedBlockingQueue<>(maxQueueSize);
+            return new LinkedBlockingQueue<Runnable>(maxQueueSize);
         }
     }
 

@@ -37,7 +37,7 @@ public interface HystrixCollapserKey {
         }
 
         // used to intern instances so we don't keep re-creating them millions of times for the same key
-        private static ConcurrentHashMap<String, HystrixCollapserKey> intern = new ConcurrentHashMap<>();
+        private static ConcurrentHashMap<String, HystrixCollapserKey> intern = new ConcurrentHashMap<String, HystrixCollapserKey>();
 
         /**
          * Retrieve (or create) an interned HystrixCollapserKey instance for a given name.

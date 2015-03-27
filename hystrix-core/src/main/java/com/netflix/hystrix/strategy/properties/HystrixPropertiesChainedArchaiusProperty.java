@@ -65,8 +65,8 @@ public abstract class HystrixPropertiesChainedArchaiusProperty {
          */
         public ChainLink() {
             next = null;
-            pReference = new AtomicReference<>(this);
-            callbacks = new ArrayList<>();
+            pReference = new AtomicReference<ChainLink<T>>(this);
+            callbacks = new ArrayList<Runnable>();
         }
 
         /**
@@ -74,8 +74,8 @@ public abstract class HystrixPropertiesChainedArchaiusProperty {
          */
         public ChainLink(ChainLink<T> nextProperty) {
             next = nextProperty;
-            pReference = new AtomicReference<>(next);
-            callbacks = new ArrayList<>();
+            pReference = new AtomicReference<ChainLink<T>>(next);
+            callbacks = new ArrayList<Runnable>();
         }
 
         protected void checkAndFlip() {

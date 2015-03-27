@@ -203,7 +203,7 @@ public class HystrixMetricsStreamServlet extends HttpServlet {
          * <p>
          * This is a safety check against a runaway poller causing memory leaks.
          */
-        private final LinkedBlockingQueue<String> jsonMetrics = new LinkedBlockingQueue<>(1000);
+        private final LinkedBlockingQueue<String> jsonMetrics = new LinkedBlockingQueue<String>(1000);
 
         /**
          * Store JSON messages in a queue.
@@ -219,7 +219,7 @@ public class HystrixMetricsStreamServlet extends HttpServlet {
          * @return
          */
         public List<String> getJsonMetrics() {
-            ArrayList<String> metrics = new ArrayList<>();
+            ArrayList<String> metrics = new ArrayList<String>();
             jsonMetrics.drainTo(metrics);
             return metrics;
         }

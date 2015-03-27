@@ -98,7 +98,7 @@ public class HystrixMetricsPublisherFactory {
     /* package */ HystrixMetricsPublisherFactory()  {}
 
     // String is CommandKey.name() (we can't use CommandKey directly as we can't guarantee it implements hashcode/equals correctly)
-    private final ConcurrentHashMap<String, HystrixMetricsPublisherCommand> commandPublishers = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, HystrixMetricsPublisherCommand> commandPublishers = new ConcurrentHashMap<String, HystrixMetricsPublisherCommand>();
 
     /* package */ HystrixMetricsPublisherCommand getPublisherForCommand(HystrixCommandKey commandKey, HystrixCommandGroupKey commandOwner, HystrixCommandMetrics metrics, HystrixCircuitBreaker circuitBreaker, HystrixCommandProperties properties) {
         // attempt to retrieve from cache first
@@ -123,7 +123,7 @@ public class HystrixMetricsPublisherFactory {
     }
 
     // String is ThreadPoolKey.name() (we can't use ThreadPoolKey directly as we can't guarantee it implements hashcode/equals correctly)
-    private final ConcurrentHashMap<String, HystrixMetricsPublisherThreadPool> threadPoolPublishers = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, HystrixMetricsPublisherThreadPool> threadPoolPublishers = new ConcurrentHashMap<String, HystrixMetricsPublisherThreadPool>();
 
     /* package */ HystrixMetricsPublisherThreadPool getPublisherForThreadPool(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolMetrics metrics, HystrixThreadPoolProperties properties) {
         // attempt to retrieve from cache first
@@ -163,7 +163,7 @@ public class HystrixMetricsPublisherFactory {
     }
 
     // String is CollapserKey.name() (we can't use CollapserKey directly as we can't guarantee it implements hashcode/equals correctly)
-    private final ConcurrentHashMap<String, HystrixMetricsPublisherCollapser> collapserPublishers = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, HystrixMetricsPublisherCollapser> collapserPublishers = new ConcurrentHashMap<String, HystrixMetricsPublisherCollapser>();
 
     /* package */ HystrixMetricsPublisherCollapser getPublisherForCollapser(HystrixCollapserKey collapserKey, HystrixCollapserMetrics metrics, HystrixCollapserProperties properties) {
         // attempt to retrieve from cache first

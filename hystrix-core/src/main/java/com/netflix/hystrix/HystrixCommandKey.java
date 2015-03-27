@@ -37,7 +37,7 @@ public interface HystrixCommandKey {
         }
 
         // used to intern instances so we don't keep re-creating them millions of times for the same key
-        private static ConcurrentHashMap<String, HystrixCommandKey> intern = new ConcurrentHashMap<>();
+        private static ConcurrentHashMap<String, HystrixCommandKey> intern = new ConcurrentHashMap<String, HystrixCommandKey>();
 
         /**
          * Retrieve (or create) an interned HystrixCommandKey instance for a given name.

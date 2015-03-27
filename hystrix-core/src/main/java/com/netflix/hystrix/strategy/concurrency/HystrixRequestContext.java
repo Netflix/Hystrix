@@ -72,7 +72,7 @@ public class HystrixRequestContext {
      * HystrixRequestContext object with the ConcurrentHashMap within it nulled out since once it is nullified
      * from the parent thread it is shared across all child threads.
      */
-    private static ThreadLocal<HystrixRequestContext> requestVariables = new ThreadLocal<>();
+    private static ThreadLocal<HystrixRequestContext> requestVariables = new ThreadLocal<HystrixRequestContext>();
 
     public static boolean isCurrentThreadInitialized() {
         HystrixRequestContext context = requestVariables.get();
@@ -115,7 +115,7 @@ public class HystrixRequestContext {
      * 
      * Only HystrixRequestVariable has a reason to be accessing this field.
      */
-    /* package */ConcurrentHashMap<HystrixRequestVariableDefault<?>, HystrixRequestVariableDefault.LazyInitializer<?>> state = new ConcurrentHashMap<>();
+    /* package */ConcurrentHashMap<HystrixRequestVariableDefault<?>, HystrixRequestVariableDefault.LazyInitializer<?>> state = new ConcurrentHashMap<HystrixRequestVariableDefault<?>, HystrixRequestVariableDefault.LazyInitializer<?>>();
 
     // instantiation should occur via static factory methods.
     private HystrixRequestContext() {
