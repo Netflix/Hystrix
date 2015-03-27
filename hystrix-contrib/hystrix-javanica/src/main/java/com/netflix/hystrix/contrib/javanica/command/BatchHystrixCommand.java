@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.concurrent.ThreadSafe;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -63,14 +64,11 @@ public class BatchHystrixCommand extends AbstractHystrixCommand<List<Optional<Ob
     @Override
     protected List<Optional<Object>> run() throws Exception {
         List<Optional<Object>> response = Lists.newArrayList();
-        for (HystrixCollapser.CollapsedRequest<Object, Object> request : getCollapsedRequests()) {
-            final Object[] args = (Object[]) request.getArgument();
-            try {
-                response.add(Optional.of(fallbackEnabled ? processWithFallback(args) : process(args)));
-            } catch (Exception ex) {
-                request.setException(ex);
-                response.add(Optional.absent());
-            }
+        List requests = collect(getCollapsedRequests());
+        Object[] args = {requests};
+        List result = (List) process(args);
+        for (Object res : result) {
+            response.add(Optional.of(res));
         }
         return response;
     }
@@ -133,5 +131,14 @@ public class BatchHystrixCommand extends AbstractHystrixCommand<List<Optional<Ob
         the HystrixCommand would cause failure on all of the batched calls. Thus existence of fallback method does not
         eliminate the break of all requests and the collapser as a whole.
     }*/
+
+    List<Object> collect(Collection<HystrixCollapser.CollapsedRequest<Object, Object>> requests) {
+        List<Object> commandArgs = new ArrayList<Object>();
+        for (HystrixCollapser.CollapsedRequest<Object, Object> request : requests) {
+            final Object[] args = (Object[]) request.getArgument();
+            commandArgs.add(args[0]);
+        }
+        return commandArgs;
+    }
 
 }

@@ -23,7 +23,7 @@ import java.util.concurrent.ExecutionException;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-@RunWith(SpringJUnit4ClassRunner.class)
+//@RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = {AopCglibConfig.class, CollapserPropertiesTest.CollapserPropertiesTestConfig.class})
 public class CollapserPropertiesTest {
 
@@ -31,7 +31,7 @@ public class CollapserPropertiesTest {
     @Autowired
     private UserService userService;
 
-    @Test
+  // @Test
     public void testCollapser() throws ExecutionException, InterruptedException {
         HystrixRequestContext context = HystrixRequestContext.initializeContext();
         try {
@@ -62,10 +62,10 @@ public class CollapserPropertiesTest {
     public static class UserService {
 
         @HystrixCommand
-        @HystrixCollapser(collapserKey = "GetUserCollapser", collapserProperties = {
-                @HystrixProperty(name = "maxRequestsInBatch", value = "1"),
-                @HystrixProperty(name = "timerDelayInMilliseconds", value = "200")
-        })
+//        @HystrixCollapser(collapserKey = "GetUserCollapser", collapserProperties = {
+//                @HystrixProperty(name = "maxRequestsInBatch", value = "1"),
+//                @HystrixProperty(name = "timerDelayInMilliseconds", value = "200")
+//        })
         public User getUser(String id, String name) {
             return new User(id, name + id);
         }

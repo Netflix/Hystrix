@@ -41,6 +41,9 @@ public @interface HystrixCollapser {
      */
     String collapserKey() default "";
 
+    // todo: add javadoc
+    String commandKey();
+
     /**
      * Defines what scope the collapsing should occur within.
      * <p/>
@@ -64,6 +67,7 @@ public @interface HystrixCollapser {
      *
      * @return true if processing of a fallback is allowed
      */
+    @Deprecated
     boolean fallbackEnabled() default false;
 
 }

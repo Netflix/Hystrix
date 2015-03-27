@@ -114,6 +114,10 @@ public class MetaHolder {
         return method.getParameterTypes();
     }
 
+    public boolean isCollapser(){
+        return hystrixCollapser!=null;
+    }
+
     public static final class Builder {
 
         private HystrixCollapser hystrixCollapser;
