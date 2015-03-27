@@ -125,14 +125,18 @@ public class CollapserTest {
             return null;
         }
 
-        @HystrixCommand(commandProperties = {@HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "100000")})
+        @HystrixCommand(
+                fallbackMethod = "getUserByIdsFallback",
+                commandProperties =
+                {@HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "100000")})
        //
         public List<User> getUserByIds(List<String> ids) {
-            List<User> users = new ArrayList<User>();
-            for (String id : ids) {
-                users.add(new User(id, "name: " + id));
-            }
-            return users;
+           throw new RuntimeException("");
+//            List<User> users = new ArrayList<User>();
+//            for (String id : ids) {
+//                users.add(new User(id, "name: " + id));
+//            }
+//            return users;
         }
 
         /**
@@ -154,8 +158,13 @@ public class CollapserTest {
         }
 
         @HystrixCommand
-        private User fallbackCommand(String id, String name) {
-            return DEFAULT_USER;
+        private List<User> getUserByIdsFallback(List<String> ids) {
+
+            List<User> users = new ArrayList<User>();
+            for (String id : ids) {
+                users.add(new User(id, "name: " + id));
+            }
+            return users;
         }
 
     }

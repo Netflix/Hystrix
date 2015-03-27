@@ -15,6 +15,7 @@
  */
 package com.netflix.hystrix.contrib.javanica.aop.aspectj;
 
+import com.google.common.collect.ImmutableMap;
 import com.netflix.hystrix.HystrixExecutable;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCollapser;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
@@ -32,6 +33,7 @@ import org.aspectj.lang.annotation.Pointcut;
 
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Map;
 
 import static com.netflix.hystrix.contrib.javanica.utils.AopUtils.getDeclaredMethod;
 import static com.netflix.hystrix.contrib.javanica.utils.AopUtils.getMethodFromTarget;
@@ -42,7 +44,17 @@ import static com.netflix.hystrix.contrib.javanica.utils.AopUtils.getMethodFromT
 @Aspect
 public class HystrixCommandAspect {
 
+    private static final Map<HystrixPointcutType, MetaHolderFactory> META_HOLDER_FACTORY_MAP;
+
+    static {
+        META_HOLDER_FACTORY_MAP = ImmutableMap.<HystrixPointcutType, MetaHolderFactory>builder()
+                .put(HystrixPointcutType.COMMAND, new CommandMetaHolderFactory())
+                .put(HystrixPointcutType.COLLAPSER, new CollapserMetaHolderFactory())
+                .build();
+    }
+
     @Pointcut("@annotation(com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand)")
+
     public void hystrixCommandAnnotationPointcut() {
     }
 
@@ -52,102 +64,96 @@ public class HystrixCommandAspect {
 
     @Around("hystrixCommandAnnotationPointcut() || hystrixCollapserAnnotationPointcut()")
     public Object methodsAnnotatedWithHystrixCommand(final ProceedingJoinPoint joinPoint) throws Throwable {
-
-        MetaHolderCreator metaHolderCreator = new MetaHolderCreator(joinPoint);
-        MetaHolder metaHolder = metaHolderCreator.create();
+        Method method = getMethodFromTarget(joinPoint);
+        Validate.notNull(method, "failed to get method from joinPoint: %s", joinPoint);
+        if (method.isAnnotationPresent(HystrixCommand.class) && method.isAnnotationPresent(HystrixCollapser.class)) {
+            throw new IllegalStateException("method cannot be annotated with HystrixCommand and HystrixCollapser " +
+                    "annotations at the same time");
+        }
+        MetaHolderFactory metaHolderFactory = META_HOLDER_FACTORY_MAP.get(HystrixPointcutType.of(method));
+        MetaHolder metaHolder = metaHolderFactory.create(joinPoint);
         HystrixExecutable executable;
-        ExecutionType executionType = metaHolderCreator.isCollapser() ?
-                metaHolderCreator.collapserExecutionType : metaHolderCreator.commandExecutionType;
-        if (metaHolderCreator.isCollapser()) {
+        ExecutionType executionType = metaHolder.isCollapser() ?
+                metaHolder.getCollapserExecutionType() : metaHolder.getExecutionType();
+        if (metaHolder.isCollapser()) {
             executable = new CommandCollapser(metaHolder);
         } else {
             executable = GenericHystrixCommandFactory.getInstance().create(metaHolder, null);
         }
         Object result;
         try {
-
             result = CommandExecutor.execute(executable, executionType);
         } catch (HystrixBadRequestException e) {
             throw e.getCause();
-        } catch (Exception ex) {
-            throw ex;
         }
         return result;
     }
 
 
+    /**
+     * A factory to create MetaHolder depending on {@link HystrixPointcutType}.
+     */
     private static abstract class MetaHolderFactory {
-
-    }
-
-    private static class MetaHolderCreator {
-
-        private final Method method;
-        private final Object obj;
-        private final Object[] args;
-        private ExecutionType commandExecutionType;
-        private ExecutionType collapserExecutionType;
-
-        private final Object proxy;
-        private MetaHolder.Builder builder;
-        private HystrixCollapser hystrixCollapser;
-        private HystrixCommand hystrixCommand;
-
-        private MetaHolderCreator(final ProceedingJoinPoint joinPoint) {
-            this.method = getMethodFromTarget(joinPoint);
-            Validate.notNull(method, "failed to get method from joinPoint: %s", joinPoint);
-            this.obj = joinPoint.getTarget();
-            this.args = joinPoint.getArgs();
-            this.proxy = joinPoint.getThis();
-            this.builder = metaHolderBuilder();
-
-            if (method.isAnnotationPresent(HystrixCommand.class) && method.isAnnotationPresent(HystrixCollapser.class)) {
-                throw new IllegalStateException("method cannot be annotated with HystrixCommand and HystrixCollapser annotations at the same time");
-            }
-            if (method.isAnnotationPresent(HystrixCommand.class)) {
-                withCommand(method);
-                this.commandExecutionType = ExecutionType.getExecutionType(method.getReturnType());
-                builder.executionType(commandExecutionType);
-            } else {
-                withCollapser(method);
-                collapserExecutionType = ExecutionType.getExecutionType(method.getReturnType());
-                Method batchCommandMethod = getDeclaredMethod(obj.getClass(), hystrixCollapser.commandKey(), List.class);
-                if (batchCommandMethod == null) {
-                    throw new IllegalStateException("no such method: " + hystrixCollapser.commandKey());
-                }
-                withCommand(batchCommandMethod);
-                this.commandExecutionType = ExecutionType.getExecutionType(batchCommandMethod.getReturnType());
-                builder.method(batchCommandMethod);
-                builder.executionType(commandExecutionType);
-            }
-
+        public MetaHolder create(final ProceedingJoinPoint joinPoint) {
+            Method method = getMethodFromTarget(joinPoint);
+            Object obj = joinPoint.getTarget();
+            Object[] args = joinPoint.getArgs();
+            Object proxy = joinPoint.getThis();
+            return create(proxy, method, obj, args);
         }
 
-        private MetaHolder.Builder metaHolderBuilder() {
+        public abstract MetaHolder create(Object proxy, Method method, Object obj, Object[] args);
+
+        MetaHolder.Builder metaHolderBuilder(Object proxy, Method method, Object obj, Object[] args) {
             return MetaHolder.builder()
                     .args(args).method(method).obj(obj).proxyObj(proxy)
                     .defaultGroupKey(obj.getClass().getSimpleName());
         }
+    }
 
-        private void withCommand(Method commandMethod) {
-            hystrixCommand = commandMethod.getAnnotation(HystrixCommand.class);
-            builder.defaultCommandKey(commandMethod.getName());
-            builder.hystrixCommand(hystrixCommand);
-        }
+    private static class CollapserMetaHolderFactory extends MetaHolderFactory {
 
+        @Override
+        public MetaHolder create(Object proxy, Method collapserMethod, Object obj, Object[] args) {
+            HystrixCollapser hystrixCollapser = collapserMethod.getAnnotation(HystrixCollapser.class);
+            Method batchCommandMethod = getDeclaredMethod(obj.getClass(), hystrixCollapser.commandKey(), List.class);
+            if (batchCommandMethod == null) {
+                throw new IllegalStateException("required batch method for collapser is absent: "
+                        + "(java.util.List) " + obj.getClass().getCanonicalName() + "." +
+                        hystrixCollapser.commandKey() + "(java.util.List)");
+            }
+            HystrixCommand hystrixCommand = batchCommandMethod.getAnnotation(HystrixCommand.class);
 
-        private void withCollapser(Method collapserMethod) {
-            hystrixCollapser = collapserMethod.getAnnotation(HystrixCollapser.class);
-            builder.defaultCollapserKey(collapserMethod.getName());
+            MetaHolder.Builder builder = metaHolderBuilder(proxy, batchCommandMethod, obj, args);
             builder.hystrixCollapser(hystrixCollapser);
-        }
+            builder.defaultCollapserKey(collapserMethod.getName());
+            builder.collapserExecutionType(ExecutionType.getExecutionType(collapserMethod.getReturnType()));
 
-        public boolean isCollapser() {
-            return hystrixCollapser != null;
-        }
-
-        public MetaHolder create() {
+            builder.defaultCommandKey(batchCommandMethod.getName());
+            builder.hystrixCommand(hystrixCommand);
+            builder.executionType(ExecutionType.getExecutionType(batchCommandMethod.getReturnType()));
             return builder.build();
+        }
+    }
+
+    private static class CommandMetaHolderFactory extends MetaHolderFactory {
+        @Override
+        public MetaHolder create(Object proxy, Method method, Object obj, Object[] args) {
+            HystrixCommand hystrixCommand = method.getAnnotation(HystrixCommand.class);
+            MetaHolder.Builder builder = metaHolderBuilder(proxy, method, obj, args);
+            builder.defaultCommandKey(method.getName());
+            builder.hystrixCommand(hystrixCommand);
+            builder.executionType(ExecutionType.getExecutionType(method.getReturnType()));
+            return builder.build();
+        }
+    }
+
+    private static enum HystrixPointcutType {
+        COMMAND,
+        COLLAPSER;
+
+        static HystrixPointcutType of(Method method) {
+            return method.isAnnotationPresent(HystrixCommand.class) ? COMMAND : COLLAPSER;
         }
     }
 

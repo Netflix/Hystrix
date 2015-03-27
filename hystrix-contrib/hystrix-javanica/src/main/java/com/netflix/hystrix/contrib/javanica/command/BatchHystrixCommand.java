@@ -16,11 +16,8 @@
 package com.netflix.hystrix.contrib.javanica.command;
 
 
-import com.google.common.base.Optional;
-import com.google.common.collect.Lists;
 import com.netflix.hystrix.HystrixCollapser;
 import com.netflix.hystrix.contrib.javanica.exception.FallbackInvocationException;
-import com.netflix.hystrix.exception.HystrixBadRequestException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,49 +25,28 @@ import javax.annotation.concurrent.ThreadSafe;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 /**
  * This command is used in collapser.
  */
 @ThreadSafe
-public class BatchHystrixCommand extends AbstractHystrixCommand<List<Optional<Object>>> {
+public class BatchHystrixCommand extends AbstractHystrixCommand<List<Object>> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GenericCommand.class);
 
-    /**
-     * If some error occurs during the processing in run() then if {@link #fallbackEnabled} is true then the {@link #processWithFallback}
-     * will be invoked. If {@link #getFallbackAction()} doesn't  process fallback logic as Hystrix command then
-     * command fallback will be processed in the single thread with BatchHystrixCommand,
-     * because the {@link #processWithFallback} is called from run();
-     */
-    private boolean fallbackEnabled;
+
 
     protected BatchHystrixCommand(HystrixCommandBuilder builder) {
         super(builder);
-    }
-
-    public boolean isFallbackEnabled() {
-        return fallbackEnabled;
-    }
-
-    public void setFallbackEnabled(boolean fallbackEnabled) {
-        this.fallbackEnabled = fallbackEnabled;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected List<Optional<Object>> run() throws Exception {
-        List<Optional<Object>> response = Lists.newArrayList();
-        List requests = collect(getCollapsedRequests());
-        Object[] args = {requests};
-        List result = (List) process(args);
-        for (Object res : result) {
-            response.add(Optional.of(res));
-        }
-        return response;
+    protected List<Object> run() throws Exception {
+        Object[] args = toArgs(getCollapsedRequests());
+        return (List) process(args);
     }
 
     private Object process(final Object[] args) throws Exception {
@@ -82,31 +58,14 @@ public class BatchHystrixCommand extends AbstractHystrixCommand<List<Optional<Ob
         });
     }
 
-    private Object processWithFallback(final Object[] args) throws Exception {
-        Object result;
-        try {
-            result = process(args);
-        } catch (Exception ex) {
-            if (ex instanceof HystrixBadRequestException) {
-                throw ex;
-            } else {
-                if (getFallbackAction() != null) {
-                    result = processFallback(args);
-                } else {
-                    // if command doesn't have fallback then
-                    // call super.getFallback() that throws exception by default.
-                    result = super.getFallback();
-                }
-            }
-        }
-        return result;
-    }
 
-    private Object processFallback(final Object[] args) {
+    @Override
+    protected List<Object> getFallback() {
         if (getFallbackAction() != null) {
             final CommandAction commandAction = getFallbackAction();
+            final Object[] args = toArgs(getCollapsedRequests());
             try {
-                return process(new Action() {
+                return (List<Object>) process(new Action() {
                     @Override
                     Object execute() {
                         return commandAction.executeWithArgs(ExecutionType.SYNCHRONOUS, args);
@@ -122,15 +81,9 @@ public class BatchHystrixCommand extends AbstractHystrixCommand<List<Optional<Ob
         }
     }
 
-
-/*    @Override
-    protected List<Object> getFallback() {
-        Calling this method for Batch commands makes no sense in general because if the processing of a request fails
-        then other requests will not be processed within this collapser and setException method will be automatically
-        called on requests instances. Generally this is an all or nothing affair. For example, a timeout or rejection of
-        the HystrixCommand would cause failure on all of the batched calls. Thus existence of fallback method does not
-        eliminate the break of all requests and the collapser as a whole.
-    }*/
+    Object[] toArgs(Collection<HystrixCollapser.CollapsedRequest<Object, Object>> requests) {
+        return new Object[]{collect(getCollapsedRequests())};
+    }
 
     List<Object> collect(Collection<HystrixCollapser.CollapsedRequest<Object, Object>> requests) {
         List<Object> commandArgs = new ArrayList<Object>();

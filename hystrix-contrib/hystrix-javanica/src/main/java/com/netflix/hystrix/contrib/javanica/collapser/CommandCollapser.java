@@ -34,7 +34,7 @@ import static org.slf4j.helpers.MessageFormatter.arrayFormat;
  * Collapses multiple requests into a single {@link HystrixCommand} execution based
  * on a time window and optionally a max batch size.
  */
-public class CommandCollapser extends HystrixCollapser<List<Optional<Object>>, Object, Object> {
+public class CommandCollapser extends HystrixCollapser<List<Object>, Object, Object> {
 
     private MetaHolder metaHolder;
 
@@ -70,7 +70,7 @@ public class CommandCollapser extends HystrixCollapser<List<Optional<Object>>, O
      * Creates batch command.
      */
     @Override
-    protected HystrixCommand<List<Optional<Object>>> createCommand(
+    protected HystrixCommand<List<Object>> createCommand(
             Collection<CollapsedRequest<Object, Object>> collapsedRequests) {
         BatchHystrixCommand command = BatchHystrixCommandFactory.getInstance().create(metaHolder, collapsedRequests);
         command.setFallbackEnabled(metaHolder.getHystrixCollapser().fallbackEnabled());
@@ -81,17 +81,14 @@ public class CommandCollapser extends HystrixCollapser<List<Optional<Object>>, O
      * {@inheritDoc}
      */
     @Override
-    protected void mapResponseToRequests(List<Optional<Object>> batchResponse,
+    protected void mapResponseToRequests(List<Object> batchResponse,
                                          Collection<CollapsedRequest<Object, Object>> collapsedRequests) {
         if (batchResponse.size() < collapsedRequests.size()) {
             throw new RuntimeException(createMessage(collapsedRequests, batchResponse));
         }
         int count = 0;
         for (CollapsedRequest<Object, Object> request : collapsedRequests) {
-            Optional response = batchResponse.get(count++);
-            if (response.isPresent()) { // allows prevent IllegalStateException
-                request.setResponse(response.get());
-            }
+            request.setResponse(batchResponse.get(count++));
         }
     }
 
@@ -120,7 +117,7 @@ public class CommandCollapser extends HystrixCollapser<List<Optional<Object>>, O
     }
 
     private String createMessage(Collection<CollapsedRequest<Object, Object>> requests,
-                                 List<Optional<Object>> response) {
+                                 List<Object> response) {
         return ERROR_MSG + arrayFormat(ERROR_MSF_TEMPLATE, new Object[]{getCollapserKey().name(), requests.size(), response.size()}).getMessage();
     }
 
