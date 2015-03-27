@@ -1,5 +1,12 @@
 # Hystrix Releases #
 
+### Version 1.4.3 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.3%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.3/)) ###
+
+* [Pull 731](https://github.com/Netflix/Hystrix/pull/731) Revert to Java 6
+* [Pull 728](https://github.com/Netflix/Hystrix/pull/728) Add semaphore-rejected count to dashboard
+* [Pull 711](https://github.com/Netflix/Hystrix/pull/711) Use Archaius for plugin registration
+* [Pull 671](https://github.com/Netflix/Hystrix/pull/671) Stop passing Transfer-Encoding header when streaming metrics
+
 ### Version 1.4.2 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.2%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.2/)) ###
 
 * [Pull 723](https://github.com/Netflix/Hystrix/pull/723) Fixed Javanica issue where annotation appeared in superclasses
