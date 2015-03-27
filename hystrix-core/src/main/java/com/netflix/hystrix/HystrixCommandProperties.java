@@ -45,8 +45,7 @@ public abstract class HystrixCommandProperties {
     private static final Integer default_circuitBreakerErrorThresholdPercentage = 50;// default => errorThresholdPercentage = 50 = if 50%+ of requests in 10 seconds are failures or latent when we will trip the circuit
     private static final Boolean default_circuitBreakerForceOpen = false;// default => forceCircuitOpen = false (we want to allow traffic)
     /* package */ static final Boolean default_circuitBreakerForceClosed = false;// default => ignoreErrors = false 
-    private static final Integer default_executionIsolationThreadTimeoutInMilliseconds = 1000; // default => executionTimeoutInMilliseconds: 1000 = 1 second
-    private static final Integer default_executionIsolationSemaphoreTimeoutInMilliseconds = 1000; // default => executionTimeoutInMilliseconds: 1000 = 1 second
+    private static final Integer default_executionTimeoutInMilliseconds = 1000; // default => executionTimeoutInMilliseconds: 1000 = 1 second
     private static final ExecutionIsolationStrategy default_executionIsolationStrategy = ExecutionIsolationStrategy.THREAD;
     private static final Boolean default_executionIsolationThreadInterruptOnTimeout = true;
     private static final Boolean default_metricsRollingPercentileEnabled = true;
@@ -69,9 +68,8 @@ public abstract class HystrixCommandProperties {
     private final HystrixProperty<Boolean> circuitBreakerForceOpen; // a property to allow forcing the circuit open (stopping all requests)
     private final HystrixProperty<Boolean> circuitBreakerForceClosed; // a property to allow ignoring errors and therefore never trip 'open' (ie. allow all traffic through)
     private final HystrixProperty<ExecutionIsolationStrategy> executionIsolationStrategy; // Whether a command should be executed in a separate thread or not.
-    private final HystrixProperty<Integer> executionIsolationThreadTimeoutInMilliseconds; // Timeout value in milliseconds for a command being executed in a thread.
+    private final HystrixProperty<Integer> executionTimeoutInMilliseconds; // Timeout value in milliseconds for a command
     private final HystrixProperty<String> executionIsolationThreadPoolKeyOverride; // What thread-pool this command should run in (if running on a separate thread).
-    private final HystrixProperty<Integer> executionIsolationSemaphoreTimeoutInMilliseconds; // Timeout value in milliseconds for a async semaphore command being executed.
     private final HystrixProperty<Integer> executionIsolationSemaphoreMaxConcurrentRequests; // Number of permits for execution semaphore
     private final HystrixProperty<Integer> fallbackIsolationSemaphoreMaxConcurrentRequests; // Number of permits for fallback semaphore
     private final HystrixProperty<Boolean> fallbackEnabled; // Whether fallback should be attempted.
@@ -116,9 +114,9 @@ public abstract class HystrixCommandProperties {
         this.circuitBreakerForceOpen = getProperty(propertyPrefix, key, "circuitBreaker.forceOpen", builder.getCircuitBreakerForceOpen(), default_circuitBreakerForceOpen);
         this.circuitBreakerForceClosed = getProperty(propertyPrefix, key, "circuitBreaker.forceClosed", builder.getCircuitBreakerForceClosed(), default_circuitBreakerForceClosed);
         this.executionIsolationStrategy = getProperty(propertyPrefix, key, "execution.isolation.strategy", builder.getExecutionIsolationStrategy(), default_executionIsolationStrategy);
-        this.executionIsolationThreadTimeoutInMilliseconds = getProperty(propertyPrefix, key, "execution.isolation.thread.timeoutInMilliseconds", builder.getExecutionIsolationThreadTimeoutInMilliseconds(), default_executionIsolationThreadTimeoutInMilliseconds);
+        //this property name is now misleading.  //TODO figure out a good way to deprecate this property name
+        this.executionTimeoutInMilliseconds = getProperty(propertyPrefix, key, "execution.isolation.thread.timeoutInMilliseconds", builder.getExecutionIsolationThreadTimeoutInMilliseconds(), default_executionTimeoutInMilliseconds);
         this.executionIsolationThreadInterruptOnTimeout = getProperty(propertyPrefix, key, "execution.isolation.thread.interruptOnTimeout", builder.getExecutionIsolationThreadInterruptOnTimeout(), default_executionIsolationThreadInterruptOnTimeout);
-        this.executionIsolationSemaphoreTimeoutInMilliseconds = getProperty(propertyPrefix, key, "execution.isolation.semaphore.timeoutInMilliseconds", builder.getExecutionIsolationSemaphoreTimeoutInMilliseconds(), default_executionIsolationSemaphoreTimeoutInMilliseconds);
         this.executionIsolationSemaphoreMaxConcurrentRequests = getProperty(propertyPrefix, key, "execution.isolation.semaphore.maxConcurrentRequests", builder.getExecutionIsolationSemaphoreMaxConcurrentRequests(), default_executionIsolationSemaphoreMaxConcurrentRequests);
         this.fallbackIsolationSemaphoreMaxConcurrentRequests = getProperty(propertyPrefix, key, "fallback.isolation.semaphore.maxConcurrentRequests", builder.getFallbackIsolationSemaphoreMaxConcurrentRequests(), default_fallbackIsolationSemaphoreMaxConcurrentRequests);
         this.fallbackEnabled = getProperty(propertyPrefix, key, "fallback.enabled", builder.getFallbackEnabled(), default_fallbackEnabled);
@@ -252,31 +250,37 @@ public abstract class HystrixCommandProperties {
     }
 
     /**
-     * Time in milliseconds at which point the calling thread will timeout (using {@link Future#get}) and walk away from the executing thread.
+     * Time in milliseconds at which point the command will timeout and halt execution.
      * <p>
-     * If {@link #executionIsolationThreadInterruptOnTimeout} == true the executing thread will be interrupted.
+     * If {@link #executionIsolationThreadInterruptOnTimeout} == true and the command is thread-isolated, the executing thread will be interrupted.
+     * If the command is semaphore-isolated and a {@link HystrixObservableCommand}, that command will get unsubscribed.
      * <p>
-     * Applicable only when {@link #executionIsolationStrategy()} == THREAD.
-     * 
+     *
      * @return {@code HystrixProperty<Integer>}
      */
+    @Deprecated //prefer {@link #executionTimeoutInMilliseconds}
     public HystrixProperty<Integer> executionIsolationThreadTimeoutInMilliseconds() {
-        return executionIsolationThreadTimeoutInMilliseconds;
-    }
-    
-    /**
-     * Time in milliseconds at which point the async command will be cancelled. 
-     * <p>
-     * If {@link #executionIsolationSemaphoreInterruptOnTimeout} == true the executing command will be cancelled.
-     * <p>
-     * Applicable only when {@link #executionIsolationStrategy()} == SEMAPHORE.
-     * 
-     * @return {@code HystrixProperty<Integer>}
-     */
-    public HystrixProperty<Integer> executionIsolationSemaphoreTimeoutInMilliseconds() {
-        return executionIsolationSemaphoreTimeoutInMilliseconds;
+        return executionTimeoutInMilliseconds;
     }
 
+    /**
+     * Time in milliseconds at which point the command will timeout and halt execution.
+     * <p>
+     * If {@link #executionIsolationThreadInterruptOnTimeout} == true and the command is thread-isolated, the executing thread will be interrupted.
+     * If the command is semaphore-isolated and a {@link HystrixObservableCommand}, that command will get unsubscribed.
+     * <p>
+     *
+     * @return {@code HystrixProperty<Integer>}
+     */
+    public HystrixProperty<Integer> executionTimeoutInMilliseconds() {
+        /**
+         * Calling a deprecated method here is a temporary workaround.  We do this because {@link #executionTimeoutInMilliseconds()} is a new method (as of 1.4.0-rc.7) and an extending
+         * class will not have this method.  It will have {@link #executionIsolationThreadTimeoutInMilliseconds()}, however.
+         * So, to stay compatible with an extension, we perform this redirect.
+         */
+        return executionIsolationThreadTimeoutInMilliseconds();
+    }
+    
     /**
      * Number of concurrent requests permitted to {@link HystrixCommand#getFallback()}. Requests beyond the concurrent limit will fail-fast and not attempt retrieving a fallback.
      * 
@@ -496,8 +500,7 @@ public abstract class HystrixCommandProperties {
         private Integer executionIsolationSemaphoreMaxConcurrentRequests = null;
         private ExecutionIsolationStrategy executionIsolationStrategy = null;
         private Boolean executionIsolationThreadInterruptOnTimeout = null;
-        private Integer executionIsolationThreadTimeoutInMilliseconds = null;
-        private Integer executionIsolationSemaphoreTimeoutInMilliseconds = null;
+        private Integer executionTimeoutInMilliseconds = null;
         private Integer fallbackIsolationSemaphoreMaxConcurrentRequests = null;
         private Boolean fallbackEnabled = null;
         private Integer metricsHealthSnapshotIntervalInMilliseconds = null;
@@ -550,14 +553,15 @@ public abstract class HystrixCommandProperties {
             return executionIsolationThreadInterruptOnTimeout;
         }
 
+        @Deprecated //prefer getExecutionTimeoutInMillisconds()
         public Integer getExecutionIsolationThreadTimeoutInMilliseconds() {
-            return executionIsolationThreadTimeoutInMilliseconds;
-        }
-        
-        public Integer getExecutionIsolationSemaphoreTimeoutInMilliseconds() {
-            return executionIsolationSemaphoreTimeoutInMilliseconds;
+            return executionTimeoutInMilliseconds;
         }
 
+        public Integer getExecutionTimeoutInMilliseconds() {
+            return executionTimeoutInMilliseconds;
+        }
+        
         public Integer getFallbackIsolationSemaphoreMaxConcurrentRequests() {
             return fallbackIsolationSemaphoreMaxConcurrentRequests;
         }
@@ -647,24 +651,17 @@ public abstract class HystrixCommandProperties {
             return this;
         }
 
+        @Deprecated //prefer {@link #withExecutionTimeoutInMilliseconds}
         public Setter withExecutionIsolationThreadTimeoutInMilliseconds(int value) {
-            this.executionIsolationThreadTimeoutInMilliseconds = value;
+            this.executionTimeoutInMilliseconds = value;
             return this;
         }
 
-        public Setter withExecutionIsolationSemaphoreTimeoutInMilliseconds(int value) {
-            this.executionIsolationSemaphoreTimeoutInMilliseconds = value;
+        public Setter withExecutionTimeoutInMilliseconds(int value) {
+            this.executionTimeoutInMilliseconds = value;
             return this;
         }
-        
 
-        public Setter withTimeoutInMilliseconds(int value) {
-            // We can set both values here, as only one will be applicable (based upon executionIsolation)
-            this.executionIsolationThreadTimeoutInMilliseconds = value;
-            this.executionIsolationSemaphoreTimeoutInMilliseconds = value;
-            return this;
-        }
-        
         public Setter withFallbackIsolationSemaphoreMaxConcurrentRequests(int value) {
             this.fallbackIsolationSemaphoreMaxConcurrentRequests = value;
             return this;

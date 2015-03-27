@@ -42,7 +42,7 @@ public interface HystrixCommandKey {
         /**
          * Retrieve (or create) an interned HystrixCommandKey instance for a given name.
          * 
-         * @param name
+         * @param name command name
          * @return HystrixCommandKey instance that is interned (cached) so a given name will always retrieve the same instance.
          */
         public static HystrixCommandKey asKey(String name) {

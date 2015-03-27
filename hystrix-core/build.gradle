@@ -1,11 +1,8 @@
-apply plugin: 'java'
-apply plugin: 'eclipse'
-apply plugin: 'idea'
 apply plugin: 'osgi'
 
 dependencies {
     compile 'com.netflix.archaius:archaius-core:0.4.1'
-    compile 'io.reactivex:rxjava:1.0.2'
+    compile 'io.reactivex:rxjava:1.0.7'
     compile 'org.slf4j:slf4j-api:1.7.0'
     testCompile 'junit:junit-dep:4.10'
 }
@@ -15,35 +12,14 @@ javadoc {
     // the exclude isn't working, nor is there a subPackages options as docs suggest there should be
     // we do not want the com.netflix.hystrix.util package include
     exclude '**/util/**'
-			
-    options {
-        doclet = "org.benjchristensen.doclet.DocletExclude"
+
+        options {
+	doclet = "org.benjchristensen.doclet.DocletExclude"
         docletpath = [rootProject.file('./gradle/doclet-exclude.jar')]
         stylesheetFile = rootProject.file('./gradle/javadocStyleSheet.css')
         windowTitle = "Hystrix Javadoc ${project.version}"
     }
     options.addStringOption('top').value = '<a href="https://github.com/Netflix/Hystrix"><img width="92" height="79" border="0" align="left" src="http://netflix.github.com/Hystrix/images/hystrix-logo-small.png"></a><h2 class="title" style="padding-top:40px">Hystrix: Latency and Fault Tolerance for Distributed Systems</h2>'
-}
-
-// skip if not on Java 6 (every JDK changes Javadoc behavior)
-javadoc.onlyIf { JavaVersion.current().java6 }
-
-eclipse {
-  classpath {
-		// include 'provided' dependencies on the classpath
-		plusConfigurations += configurations.provided
-		downloadSources = true
-		downloadJavadoc = true
-  }
-}
-
-
-idea {
-	module {
-		// include 'provided' dependencies on the classpath
-		scopes.COMPILE.plus += configurations.provided
-
-	}
 }
 
 jar {

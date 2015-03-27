@@ -89,9 +89,9 @@ public class HystrixCacheKeyGenerator {
                     .getReadMethod().invoke(obj);
         } catch (IllegalAccessException e) {
             throw new HystrixCacheKeyGenerationException(e);
-        } catch (InvocationTargetException e) {
-            throw new HystrixCacheKeyGenerationException(e);
         } catch (IntrospectionException e) {
+            throw new HystrixCacheKeyGenerationException(e);
+        } catch (InvocationTargetException e) {
             throw new HystrixCacheKeyGenerationException(e);
         }
     }

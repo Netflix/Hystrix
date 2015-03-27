@@ -1,3 +1,18 @@
+/**
+ * Copyright 2015 Netflix, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.netflix.hystrix;
 
 import static org.junit.Assert.assertEquals;
@@ -8,16 +23,19 @@ import static org.hamcrest.core.Is.is;
 
 import com.netflix.hystrix.HystrixThreadPool.Factory;
 import com.netflix.hystrix.strategy.HystrixPlugins;
-import com.netflix.hystrix.strategy.HystrixPluginsTest;
+import com.netflix.hystrix.strategy.concurrency.*;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisher;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherFactory;
-import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherFactoryTest;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherThreadPool;
+
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import rx.Scheduler;
+import rx.functions.Action0;
+
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class HystrixThreadPoolTest {
     @Before
@@ -104,4 +122,49 @@ public class HystrixThreadPoolTest {
         //Now the HystrixThreadPool ALWAYS has the same reference to the ThreadPoolExecutor so that it no longer matters which
         //wins to be inserted into the HystrixThreadPool.Factory.threadPools cache.
     }
+    @Test(timeout = 2500)
+    public void testUnsubscribeHystrixThreadPool() throws InterruptedException {
+        // methods are package-private so can't test it somewhere else
+        HystrixThreadPool pool = Factory.getInstance(HystrixThreadPoolKey.Factory.asKey("threadPoolFactoryTest"),
+                HystrixThreadPoolProperties.Setter.getUnitTestPropertiesBuilder());
+        
+        final AtomicBoolean interrupted = new AtomicBoolean();
+        final CountDownLatch start = new CountDownLatch(1);
+        final CountDownLatch end = new CountDownLatch(1);
+
+        HystrixContextScheduler hcs = new HystrixContextScheduler(HystrixPlugins.getInstance().getConcurrencyStrategy(), pool);
+
+        Scheduler.Worker w = hcs.createWorker();
+
+        try {
+            w.schedule(new Action0() {
+                @Override
+                public void call() {
+                    start.countDown();
+                    try {
+                        try {
+                            Thread.sleep(5000);
+                        } catch (InterruptedException ex) {
+                            interrupted.set(true);
+                        }
+                    } finally {
+                        end.countDown();
+                    }
+                }
+            });
+            
+            start.await();
+            
+            w.unsubscribe();
+            
+            end.await();
+            
+            Factory.shutdown();
+            
+            assertTrue(interrupted.get());
+        } finally {
+            w.unsubscribe();
+        }
+    }
+
 }

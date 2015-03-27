@@ -130,7 +130,7 @@ public interface HystrixProperty<T> {
         /**
          * When retrieved this will iterate over the contained {@link HystrixProperty} instances until a non-null value is found and return that.
          * 
-         * @param values
+         * @param values properties to iterate over
          * @return first non-null value or null if none found
          */
         public static <T> HystrixProperty<T> asProperty(final HystrixProperty<T>... values) {

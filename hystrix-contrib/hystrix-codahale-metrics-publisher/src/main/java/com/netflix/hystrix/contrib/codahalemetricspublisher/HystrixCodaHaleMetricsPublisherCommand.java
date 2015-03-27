@@ -1,4 +1,6 @@
 /**
+ * Copyright 2015 Netflix, Inc.
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -43,7 +45,7 @@ public class HystrixCodaHaleMetricsPublisherCommand implements HystrixMetricsPub
         this.circuitBreaker = circuitBreaker;
         this.properties = properties;
         this.metricRegistry = metricRegistry;
-        this.metricGroup = "HystrixCommand";
+        this.metricGroup = commandGroupKey.name();
         this.metricType = key.name();
     }
 
@@ -65,9 +67,12 @@ public class HystrixCodaHaleMetricsPublisherCommand implements HystrixMetricsPub
         });
 
         // cumulative counts
+        createCumulativeCountForEvent("countBadRequests", HystrixRollingNumberEvent.BAD_REQUEST);
         createCumulativeCountForEvent("countCollapsedRequests", HystrixRollingNumberEvent.COLLAPSED);
+        createCumulativeCountForEvent("countEmit", HystrixRollingNumberEvent.EMIT);
         createCumulativeCountForEvent("countExceptionsThrown", HystrixRollingNumberEvent.EXCEPTION_THROWN);
         createCumulativeCountForEvent("countFailure", HystrixRollingNumberEvent.FAILURE);
+        createCumulativeCountForEvent("countFallbackEmit", HystrixRollingNumberEvent.FALLBACK_EMIT);
         createCumulativeCountForEvent("countFallbackFailure", HystrixRollingNumberEvent.FALLBACK_FAILURE);
         createCumulativeCountForEvent("countFallbackRejection", HystrixRollingNumberEvent.FALLBACK_REJECTION);
         createCumulativeCountForEvent("countFallbackSuccess", HystrixRollingNumberEvent.FALLBACK_SUCCESS);
@@ -79,9 +84,12 @@ public class HystrixCodaHaleMetricsPublisherCommand implements HystrixMetricsPub
         createCumulativeCountForEvent("countTimeout", HystrixRollingNumberEvent.TIMEOUT);
 
         // rolling counts
+        createRollingCountForEvent("rollingCountBadRequests", HystrixRollingNumberEvent.BAD_REQUEST);
         createRollingCountForEvent("rollingCountCollapsedRequests", HystrixRollingNumberEvent.COLLAPSED);
+        createRollingCountForEvent("rollingCountEmit", HystrixRollingNumberEvent.EMIT);
         createRollingCountForEvent("rollingCountExceptionsThrown", HystrixRollingNumberEvent.EXCEPTION_THROWN);
         createRollingCountForEvent("rollingCountFailure", HystrixRollingNumberEvent.FAILURE);
+        createRollingCountForEvent("rollingCountFallbackEmit", HystrixRollingNumberEvent.FALLBACK_EMIT);
         createRollingCountForEvent("rollingCountFallbackFailure", HystrixRollingNumberEvent.FALLBACK_FAILURE);
         createRollingCountForEvent("rollingCountFallbackRejection", HystrixRollingNumberEvent.FALLBACK_REJECTION);
         createRollingCountForEvent("rollingCountFallbackSuccess", HystrixRollingNumberEvent.FALLBACK_SUCCESS);
@@ -255,7 +263,13 @@ public class HystrixCodaHaleMetricsPublisherCommand implements HystrixMetricsPub
         metricRegistry.register(createMetricName("propertyValue_executionIsolationThreadTimeoutInMilliseconds"), new Gauge<Number>() {
             @Override
             public Number getValue() {
-                return properties.executionIsolationThreadTimeoutInMilliseconds().get();
+                return properties.executionTimeoutInMilliseconds().get();
+            }
+        });
+        metricRegistry.register(createMetricName("propertyValue_executionTimeoutInMilliseconds"), new Gauge<Number>() {
+            @Override
+            public Number getValue() {
+                return properties.executionTimeoutInMilliseconds().get();
             }
         });
         metricRegistry.register(createMetricName("propertyValue_executionIsolationStrategy"), new Gauge<String>() {

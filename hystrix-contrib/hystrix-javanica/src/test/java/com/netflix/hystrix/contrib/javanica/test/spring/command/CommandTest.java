@@ -1,3 +1,18 @@
+/**
+ * Copyright 2015 Netflix, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.netflix.hystrix.contrib.javanica.test.spring.command;
 
 
@@ -36,6 +51,8 @@ public class CommandTest {
 
     @Autowired
     private UserService userService;
+    @Autowired
+    private AdvancedUserService advancedUserService;
     private HystrixRequestContext context;
 
     @Before
@@ -68,13 +85,13 @@ public class CommandTest {
     @Test
     public void testGetUserSync() {
         User u1 = userService.getUserSync("1", "name: ");
-        assertEquals("name: 1", u1.getName());
-        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-        com.netflix.hystrix.HystrixInvokableInfo<?> command = getCommand();
-        assertEquals("getUserSync", command.getCommandKey().name());
-        assertEquals("UserGroup", command.getCommandGroup().name());
-        assertEquals("UserGroup", command.getThreadPoolKey().name());
-        assertTrue(command.getExecutionEvents().contains(HystrixEventType.SUCCESS));
+        assertGetUserSnycCommandExecuted(u1);
+    }
+
+    @Test
+    public void shouldWorkWithInheritedMethod() {
+        User u1 = advancedUserService.getUserSync("1", "name: ");
+        assertGetUserSnycCommandExecuted(u1);
     }
 
     @Test
@@ -83,6 +100,16 @@ public class CommandTest {
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
         assertTrue(getCommand().getExecutionEvents().contains(HystrixEventType.SUCCESS));
+    }
+
+    private void assertGetUserSnycCommandExecuted(User u1) {
+        assertEquals("name: 1", u1.getName());
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+        com.netflix.hystrix.HystrixInvokableInfo<?> command = getCommand();
+        assertEquals("getUserSync", command.getCommandKey().name());
+        assertEquals("UserGroup", command.getCommandGroup().name());
+        assertEquals("UserGroup", command.getThreadPoolKey().name());
+        assertTrue(command.getExecutionEvents().contains(HystrixEventType.SUCCESS));
     }
 
     private com.netflix.hystrix.HystrixInvokableInfo<?> getCommand() {
@@ -113,12 +140,21 @@ public class CommandTest {
 
     }
 
+    public static class AdvancedUserService extends UserService {
+
+    }
+
     @Configurable
     public static class CommandTestConfig {
 
         @Bean
         public UserService userService() {
             return new UserService();
+        }
+
+        @Bean
+        public AdvancedUserService advancedUserService() {
+            return new AdvancedUserService();
         }
     }
 

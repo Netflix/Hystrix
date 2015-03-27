@@ -114,8 +114,8 @@ public class HystrixRollingNumber {
      * <p>
      * The {@link HystrixRollingNumberEvent} must be a "max updater" type <code>HystrixRollingNumberEvent.isMaxUpdater() == true</code>.
      * 
-     * @param type
-     * @param value
+     * @param type  HystrixRollingNumberEvent defining which counter to retrieve values from
+     * @param value long value to be given to the max updater
      */
     public void updateRollingMax(HystrixRollingNumberEvent type, long value) {
         getCurrentBucket().getMaxUpdater(type).update(value);
@@ -144,7 +144,7 @@ public class HystrixRollingNumber {
      * <p>
      * The {@link HystrixRollingNumberEvent} must be a "counter" type <code>HystrixRollingNumberEvent.isCounter() == true</code>.
      * 
-     * @param type
+     * @param type HystrixRollingNumberEvent defining which counter to retrieve values from
      * @return cumulative sum of all increments and adds for the given {@link HystrixRollingNumberEvent} counter type
      */
     public long getCumulativeSum(HystrixRollingNumberEvent type) {

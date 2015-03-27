@@ -1,3 +1,18 @@
+/**
+ * Copyright 2015 Netflix, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.netflix.hystrix.collapser;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -43,13 +58,17 @@ public class RequestCollapserFactory<BatchReturnType, ResponseType, RequestArgum
     }
     
     public RequestCollapserFactory(HystrixCollapserKey collapserKey, Scope scope, CollapserTimer timer, HystrixCollapserProperties.Setter propertiesBuilder) {
-        /* strategy: ConcurrencyStrategy */
-        this.concurrencyStrategy = HystrixPlugins.getInstance().getConcurrencyStrategy();
+        this(collapserKey, scope, timer, HystrixPropertiesFactory.getCollapserProperties(collapserKey, propertiesBuilder));
+    }
 
+    public RequestCollapserFactory(HystrixCollapserKey collapserKey, Scope scope, CollapserTimer timer, HystrixCollapserProperties properties) {
+         /* strategy: ConcurrencyStrategy */
+        this.concurrencyStrategy = HystrixPlugins.getInstance().getConcurrencyStrategy();
         this.timer = timer;
         this.scope = scope;
         this.collapserKey = collapserKey;
-        this.properties = HystrixPropertiesFactory.getCollapserProperties(this.collapserKey, propertiesBuilder);
+        this.properties = properties;
+
     }
 
     public HystrixCollapserKey getCollapserKey() {
@@ -117,7 +136,7 @@ public class RequestCollapserFactory<BatchReturnType, ResponseType, RequestArgum
     /**
      * Lookup (or create and store) the RequestVariable for a given HystrixCollapserKey.
      * 
-     * @param key
+     * @param commandCollapser collapser to retrieve {@link HystrixRequestVariableHolder} for
      * @return HystrixRequestVariableHolder
      */
     @SuppressWarnings("unchecked")
@@ -240,7 +259,7 @@ public class RequestCollapserFactory<BatchReturnType, ResponseType, RequestArgum
         /**
          * {@link Scope} defining what scope the collapsing should occur within
          * 
-         * @param scope
+         * @param scope collapser scope
          * 
          * @return Setter for fluent interface via method chaining
          */

@@ -1,10 +1,12 @@
 /**
+ * Copyright 2015 Netflix, Inc.
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -66,9 +68,12 @@ public class HystrixYammerMetricsPublisherCommand implements HystrixMetricsPubli
         });
 
         // cumulative counts
+        createCumulativeCountForEvent("countBadRequests", HystrixRollingNumberEvent.BAD_REQUEST);
         createCumulativeCountForEvent("countCollapsedRequests", HystrixRollingNumberEvent.COLLAPSED);
+        createCumulativeCountForEvent("countEmit", HystrixRollingNumberEvent.EMIT);
         createCumulativeCountForEvent("countExceptionsThrown", HystrixRollingNumberEvent.EXCEPTION_THROWN);
         createCumulativeCountForEvent("countFailure", HystrixRollingNumberEvent.FAILURE);
+        createCumulativeCountForEvent("countFallbackEmit", HystrixRollingNumberEvent.FALLBACK_EMIT);
         createCumulativeCountForEvent("countFallbackFailure", HystrixRollingNumberEvent.FALLBACK_FAILURE);
         createCumulativeCountForEvent("countFallbackRejection", HystrixRollingNumberEvent.FALLBACK_REJECTION);
         createCumulativeCountForEvent("countFallbackSuccess", HystrixRollingNumberEvent.FALLBACK_SUCCESS);
@@ -80,6 +85,7 @@ public class HystrixYammerMetricsPublisherCommand implements HystrixMetricsPubli
         createCumulativeCountForEvent("countTimeout", HystrixRollingNumberEvent.TIMEOUT);
 
         // rolling counts
+        createRollingCountForEvent("rollingCountBadRequests", HystrixRollingNumberEvent.BAD_REQUEST);
         createRollingCountForEvent("rollingCountCollapsedRequests", HystrixRollingNumberEvent.COLLAPSED);
         createRollingCountForEvent("rollingCountExceptionsThrown", HystrixRollingNumberEvent.EXCEPTION_THROWN);
         createRollingCountForEvent("rollingCountFailure", HystrixRollingNumberEvent.FAILURE);
@@ -253,10 +259,16 @@ public class HystrixYammerMetricsPublisherCommand implements HystrixMetricsPubli
                 return properties.circuitBreakerForceClosed().get();
             }
         });
+        metricsRegistry.newGauge(createMetricName("propertyValue_executionTimeoutInMilliseconds"), new Gauge<Number>() {
+            @Override
+            public Number value() {
+                return properties.executionTimeoutInMilliseconds().get();
+            }
+        });
         metricsRegistry.newGauge(createMetricName("propertyValue_executionIsolationThreadTimeoutInMilliseconds"), new Gauge<Number>() {
             @Override
             public Number value() {
-                return properties.executionIsolationThreadTimeoutInMilliseconds().get();
+                return properties.executionTimeoutInMilliseconds().get();
             }
         });
         metricsRegistry.newGauge(createMetricName("propertyValue_executionIsolationStrategy"), new Gauge<String>() {

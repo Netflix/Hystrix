@@ -22,6 +22,7 @@ import com.netflix.hystrix.HystrixThreadPoolKey;
 import com.netflix.hystrix.HystrixThreadPoolMetrics;
 import com.netflix.hystrix.HystrixThreadPoolProperties;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherThreadPool;
+import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 import com.netflix.servo.DefaultMonitorRegistry;
 import com.netflix.servo.annotations.DataSourceLevel;
 import com.netflix.servo.monitor.BasicCompositeMonitor;
@@ -169,19 +170,10 @@ public class HystrixServoMetricsPublisherThreadPool extends HystrixServoMetricsP
             }
         });
 
-        monitors.add(new CounterMetric(MonitorConfig.builder("countThreadsExecuted").build()) {
-            @Override
-            public Long getValue() {
-                return metrics.getCumulativeCountThreadsExecuted();
-            }
-        });
+        monitors.add(getCumulativeCountForEvent("countThreadsExecuted", metrics, HystrixRollingNumberEvent.THREAD_EXECUTION));
+        monitors.add(getRollingCountForEvent("rollingCountThreadsExecuted", metrics, HystrixRollingNumberEvent.THREAD_EXECUTION));
 
-        monitors.add(new GaugeMetric(MonitorConfig.builder("rollingCountThreadsExecuted").withTag(DataSourceLevel.DEBUG).build()) {
-            @Override
-            public Number getValue() {
-                return metrics.getRollingCountThreadsExecuted();
-            }
-        });
+        monitors.add(getRollingCountForEvent("rollingCountCommandsRejected", metrics, HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
 
         // properties
         monitors.add(new InformationalMetric<Number>(MonitorConfig.builder("propertyValue_corePoolSize").build()) {

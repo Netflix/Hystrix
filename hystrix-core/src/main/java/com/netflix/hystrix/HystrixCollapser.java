@@ -20,6 +20,8 @@ import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 
+import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherFactory;
+import com.netflix.hystrix.strategy.properties.HystrixPropertiesFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,6 +68,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
     private final RequestCollapserFactory<BatchReturnType, ResponseType, RequestArgumentType> collapserFactory;
     private final HystrixRequestCache requestCache;
     private final HystrixCollapserBridge<BatchReturnType, ResponseType, RequestArgumentType> collapserInstanceWrapper;
+    private final HystrixCollapserMetrics metrics;
 
     /**
      * The scope of request collapsing.
@@ -108,19 +111,33 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
      *            Fluent interface for constructor arguments
      */
     protected HystrixCollapser(Setter setter) {
-        this(setter.collapserKey, setter.scope, new RealCollapserTimer(), setter.propertiesSetter);
+        this(setter.collapserKey, setter.scope, new RealCollapserTimer(), setter.propertiesSetter, null);
     }
 
     /* package for tests */ HystrixCollapser(HystrixCollapserKey collapserKey, Scope scope, CollapserTimer timer, HystrixCollapserProperties.Setter propertiesBuilder) {
+        this(collapserKey, scope, timer, propertiesBuilder, null);
+    }
+
+    /* package for tests */ HystrixCollapser(HystrixCollapserKey collapserKey, Scope scope, CollapserTimer timer, HystrixCollapserProperties.Setter propertiesBuilder, HystrixCollapserMetrics metrics) {
         if (collapserKey == null || collapserKey.name().trim().equals("")) {
             String defaultKeyName = getDefaultNameFromClass(getClass());
             collapserKey = HystrixCollapserKey.Factory.asKey(defaultKeyName);
         }
 
-        this.collapserFactory = new RequestCollapserFactory<BatchReturnType, ResponseType, RequestArgumentType>(collapserKey, scope, timer, propertiesBuilder);
+        HystrixCollapserProperties properties = HystrixPropertiesFactory.getCollapserProperties(collapserKey, propertiesBuilder);
+        this.collapserFactory = new RequestCollapserFactory<BatchReturnType, ResponseType, RequestArgumentType>(collapserKey, scope, timer, properties);
         this.requestCache = HystrixRequestCache.getInstance(collapserKey, HystrixPlugins.getInstance().getConcurrencyStrategy());
 
+        if (metrics == null) {
+            this.metrics = HystrixCollapserMetrics.getInstance(collapserKey, properties);
+        } else {
+            this.metrics = metrics;
+        }
+
         final HystrixCollapser<BatchReturnType, ResponseType, RequestArgumentType> self = this;
+
+         /* strategy: HystrixMetricsPublisherCollapser */
+        HystrixMetricsPublisherFactory.createOrRetrievePublisherForCollapser(collapserKey, this.metrics, properties);
 
         /**
          * Used to pass public method invocation to the underlying implementation in a separate package while leaving the methods 'protected' in this class.
@@ -129,15 +146,17 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
 
             @Override
             public Collection<Collection<CollapsedRequest<ResponseType, RequestArgumentType>>> shardRequests(Collection<CollapsedRequest<ResponseType, RequestArgumentType>> requests) {
-                return self.shardRequests(requests);
+                Collection<Collection<CollapsedRequest<ResponseType, RequestArgumentType>>> shards = self.shardRequests(requests);
+                self.metrics.markShards(shards.size());
+                return shards;
             }
 
             @Override
             public Observable<BatchReturnType> createObservableCommand(Collection<CollapsedRequest<ResponseType, RequestArgumentType>> requests) {
                 HystrixCommand<BatchReturnType> command = self.createCommand(requests);
 
-                // mark the number of requests being collapsed together
                 command.markAsCollapsedCommand(requests.size());
+                self.metrics.markBatch(requests.size());
 
                 return command.toObservable();
             }
@@ -194,6 +213,14 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
      */
     public Scope getScope() {
         return Scope.valueOf(collapserFactory.getScope().name());
+    }
+
+    /**
+     * Return the {@link HystrixCollapserMetrics} for this collapser
+     * @return {@link HystrixCollapserMetrics} for this collapser
+     */
+    public HystrixCollapserMetrics getMetrics() {
+        return metrics;
     }
 
     /**
@@ -298,7 +325,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
      * <b>Callback Scheduling</b>
      * <p>
      * <ul>
-     * <li>When using {@link ExecutionIsolationStrategy#THREAD} this defaults to using {@link Schedulers#threadPoolForComputation()} for callbacks.</li>
+     * <li>When using {@link ExecutionIsolationStrategy#THREAD} this defaults to using {@link Schedulers#computation()} for callbacks.</li>
      * <li>When using {@link ExecutionIsolationStrategy#SEMAPHORE} this defaults to using {@link Schedulers#immediate()} for callbacks.</li>
      * </ul>
      * Use {@link #toObservable(rx.Scheduler)} to schedule the callback differently.
@@ -323,7 +350,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
      * <b>Callback Scheduling</b>
      * <p>
      * <ul>
-     * <li>When using {@link ExecutionIsolationStrategy#THREAD} this defaults to using {@link Schedulers#threadPoolForComputation()} for callbacks.</li>
+     * <li>When using {@link ExecutionIsolationStrategy#THREAD} this defaults to using {@link Schedulers#computation()} for callbacks.</li>
      * <li>When using {@link ExecutionIsolationStrategy#SEMAPHORE} this defaults to using {@link Schedulers#immediate()} for callbacks.</li>
      * </ul>
      * <p>
@@ -351,21 +378,18 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
     public Observable<ResponseType> toObservable(Scheduler observeOn) {
 
         /* try from cache first */
-        if (getProperties().requestCachingEnabled().get()) {
+        if (getProperties().requestCacheEnabled().get()) {
             Observable<ResponseType> fromCache = requestCache.get(getCacheKey());
             if (fromCache != null) {
-                /* mark that we received this response from cache */
-                // TODO Add collapser metrics so we can capture this information
-                // we can't add it to the command metrics because the command can change each time (dynamic key for example)
-                // and we don't have access to it when responding from cache
-                // collapserMetrics.markResponseFromCache();
+                metrics.markResponseFromCache();
                 return fromCache;
             }
         }
 
         RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType> requestCollapser = collapserFactory.getRequestCollapser(collapserInstanceWrapper);
         Observable<ResponseType> response = requestCollapser.submitRequest(getRequestArgument());
-        if (getProperties().requestCachingEnabled().get()) {
+        metrics.markRequestBatched();
+        if (getProperties().requestCacheEnabled().get()) {
             /*
              * A race can occur here with multiple threads queuing but only one will be cached.
              * This means we can have some duplication of requests in a thread-race but we're okay
@@ -495,7 +519,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
         /**
          * When set any client thread blocking on get() will immediately be unblocked and receive the exception.
          * 
-         * @param exception
+         * @param exception exception to set on response
          * @throws IllegalStateException
          *             if called more than once or after setResponse.
          */

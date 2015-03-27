@@ -237,8 +237,7 @@
 			var ratePerSecond = data.ratePerSecond;
 			var ratePerSecondPerHost = data.ratePerSecondPerHost;
 			var ratePerSecondPerHostDisplay = ratePerSecondPerHost;
-			var errorThenVolume = (data.errorPercentage * 100000000) +  ratePerSecond;
-			
+			var errorThenVolume = isNaN( ratePerSecond )? -1: (data.errorPercentage * 100000000) +  ratePerSecond;
 			// set the rates on the div element so it's available for sorting
 			$('#CIRCUIT_' + data.escapedName).attr('rate_value', ratePerSecond);
 			$('#CIRCUIT_' + data.escapedName).attr('error_then_volume', errorThenVolume);

@@ -16,14 +16,11 @@
 package com.netflix.hystrix;
 
 import rx.Observable;
-import rx.functions.Func1;
-import rx.schedulers.Schedulers;
 
 import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
-import com.netflix.hystrix.exception.HystrixBadRequestException;
-import com.netflix.hystrix.exception.HystrixRuntimeException;
 import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
+import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
 
 /**
  * Used to wrap code that will execute potentially risky functionality (typically meaning a service call over the network)
@@ -54,13 +51,25 @@ public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> imp
     }
 
     /**
+     *
+     * Overridden to true so that all onNext emissions are captured
+     *
+     * @return if onNext events should be reported on
+     * This affects {@link HystrixRequestLog}, and {@link HystrixEventNotifier} currently.  Metrics/Hooks later
+     */
+    @Override
+    protected boolean shouldOutputOnNextEvents() {
+        return true;
+    }
+
+    /**
      * Construct a {@link HystrixObservableCommand} with defined {@link Setter} that allows injecting property and strategy overrides and other optional arguments.
      * <p>
      * NOTE: The {@link HystrixCommandKey} is used to associate a {@link HystrixObservableCommand} with {@link HystrixCircuitBreaker}, {@link HystrixCommandMetrics} and other objects.
      * <p>
      * Do not create multiple {@link HystrixObservableCommand} implementations with the same {@link HystrixCommandKey} but different injected default properties as the first instantiated will win.
      * <p>
-     * Properties passed in via {@link Setter#andCommandPropertiesDefaults} or {@link Setter#andThreadPoolPropertiesDefaults} are cached for the given {@link HystrixCommandKey} for the life of the JVM
+     * Properties passed in via {@link Setter#andCommandPropertiesDefaults} are cached for the given {@link HystrixCommandKey} for the life of the JVM
      * or until {@link Hystrix#reset()} is called. Dynamic properties allow runtime changes. Read more on the <a href="https://github.com/Netflix/Hystrix/wiki/Configuration">Hystrix Wiki</a>.
      * 
      * @param setter
@@ -185,14 +194,14 @@ public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> imp
     }
 
     /**
-     * Implement this method with code to be executed when {@link #execute()} or {@link #queue()} are invoked.
+     * Implement this method with code to be executed when {@link #observe()} or {@link #toObservable()} are invoked.
      * 
      * @return R response type
      */
     protected abstract Observable<R> construct();
 
     /**
-     * If {@link #execute()} or {@link #queue()} fails in any way then this method will be invoked to provide an opportunity to return a fallback response.
+     * If {@link #observe()} or {@link #toObservable()} fails in any way then this method will be invoked to provide an opportunity to return a fallback response.
      * <p>
      * This should do work that does not require network transport to produce.
      * <p>

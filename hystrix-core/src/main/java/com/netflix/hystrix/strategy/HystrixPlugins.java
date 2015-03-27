@@ -15,8 +15,11 @@
  */
 package com.netflix.hystrix.strategy;
 
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.netflix.config.ConfigurationManager;
+import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategyDefault;
 import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
@@ -33,7 +36,7 @@ import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategyDefault;
  * Registry for plugin implementations that allows global override and handles the retrieval of correct implementation based on order of precedence:
  * <ol>
  * <li>plugin registered globally via <code>register</code> methods in this class</li>
- * <li>plugin registered and retrieved using {@link java.lang.System#getProperty(String)} (see get methods for property names)</li>
+ * <li>plugin registered and retrieved using Archaius (see get methods for property names)</li>
  * <li>default implementation</li>
  * </ol>
  * See the Hystrix GitHub Wiki for more information: <a href="https://github.com/Netflix/Hystrix/wiki/Plugins">https://github.com/Netflix/Hystrix/wiki/Plugins</a>.
@@ -49,7 +52,12 @@ public class HystrixPlugins {
     /* package */ final AtomicReference<HystrixCommandExecutionHook> commandExecutionHook = new AtomicReference<HystrixCommandExecutionHook>();
 
     private HystrixPlugins() {
-
+        try {
+            // Load configuration from hystrix-plugins.properties, if that file exists
+            ConfigurationManager.loadCascadedPropertiesFromResources("hystrix-plugins");
+        } catch (IOException e) {
+            // fail silently
+        }
     }
 
     public static HystrixPlugins getInstance() {
@@ -71,21 +79,21 @@ public class HystrixPlugins {
     /**
      * Retrieve instance of {@link HystrixEventNotifier} to use based on order of precedence as defined in {@link HystrixPlugins} class header.
      * <p>
-     * Override default by using {@link #registerEventNotifier(HystrixEventNotifier)} or setting property: <code>hystrix.plugin.HystrixEventNotifier.implementation</code> with the full classname to
+     * Override default by using {@link #registerEventNotifier(HystrixEventNotifier)} or setting property (via Archaius): <code>hystrix.plugin.HystrixEventNotifier.implementation</code> with the full classname to
      * load.
      * 
      * @return {@link HystrixEventNotifier} implementation to use
      */
     public HystrixEventNotifier getEventNotifier() {
         if (notifier.get() == null) {
-            // check for an implementation from System.getProperty first
-            Object impl = getPluginImplementationViaProperty(HystrixEventNotifier.class);
+            // check for an implementation from Archaius first
+            Object impl = getPluginImplementationViaArchaius(HystrixEventNotifier.class);
             if (impl == null) {
-                // nothing set via properties so initialize with default 
+                // nothing set via Archaius so initialize with default
                 notifier.compareAndSet(null, HystrixEventNotifierDefault.getInstance());
                 // we don't return from here but call get() again in case of thread-race so the winner will always get returned
             } else {
-                // we received an implementation from the system property so use it
+                // we received an implementation from Archaius so use it
                 notifier.compareAndSet(null, (HystrixEventNotifier) impl);
             }
         }
@@ -109,21 +117,21 @@ public class HystrixPlugins {
     /**
      * Retrieve instance of {@link HystrixConcurrencyStrategy} to use based on order of precedence as defined in {@link HystrixPlugins} class header.
      * <p>
-     * Override default by using {@link #registerConcurrencyStrategy(HystrixConcurrencyStrategy)} or setting property: <code>hystrix.plugin.HystrixConcurrencyStrategy.implementation</code> with the
+     * Override default by using {@link #registerConcurrencyStrategy(HystrixConcurrencyStrategy)} or setting property (via Archaius): <code>hystrix.plugin.HystrixConcurrencyStrategy.implementation</code> with the
      * full classname to load.
      * 
      * @return {@link HystrixConcurrencyStrategy} implementation to use
      */
     public HystrixConcurrencyStrategy getConcurrencyStrategy() {
         if (concurrencyStrategy.get() == null) {
-            // check for an implementation from System.getProperty first
-            Object impl = getPluginImplementationViaProperty(HystrixConcurrencyStrategy.class);
+            // check for an implementation from Archaius first
+            Object impl = getPluginImplementationViaArchaius(HystrixConcurrencyStrategy.class);
             if (impl == null) {
-                // nothing set via properties so initialize with default 
+                // nothing set via Archaius so initialize with default
                 concurrencyStrategy.compareAndSet(null, HystrixConcurrencyStrategyDefault.getInstance());
                 // we don't return from here but call get() again in case of thread-race so the winner will always get returned
             } else {
-                // we received an implementation from the system property so use it
+                // we received an implementation from Archaius so use it
                 concurrencyStrategy.compareAndSet(null, (HystrixConcurrencyStrategy) impl);
             }
         }
@@ -147,21 +155,21 @@ public class HystrixPlugins {
     /**
      * Retrieve instance of {@link HystrixMetricsPublisher} to use based on order of precedence as defined in {@link HystrixPlugins} class header.
      * <p>
-     * Override default by using {@link #registerMetricsPublisher(HystrixMetricsPublisher)} or setting property: <code>hystrix.plugin.HystrixMetricsPublisher.implementation</code> with the full
+     * Override default by using {@link #registerMetricsPublisher(HystrixMetricsPublisher)} or setting property (via Archaius): <code>hystrix.plugin.HystrixMetricsPublisher.implementation</code> with the full
      * classname to load.
      * 
      * @return {@link HystrixMetricsPublisher} implementation to use
      */
     public HystrixMetricsPublisher getMetricsPublisher() {
         if (metricsPublisher.get() == null) {
-            // check for an implementation from System.getProperty first
-            Object impl = getPluginImplementationViaProperty(HystrixMetricsPublisher.class);
+            // check for an implementation from Archaius first
+            Object impl = getPluginImplementationViaArchaius(HystrixMetricsPublisher.class);
             if (impl == null) {
-                // nothing set via properties so initialize with default 
+                // nothing set via Archaius so initialize with default
                 metricsPublisher.compareAndSet(null, HystrixMetricsPublisherDefault.getInstance());
                 // we don't return from here but call get() again in case of thread-race so the winner will always get returned
             } else {
-                // we received an implementation from the system property so use it
+                // we received an implementation from Archaius so use it
                 metricsPublisher.compareAndSet(null, (HystrixMetricsPublisher) impl);
             }
         }
@@ -185,21 +193,21 @@ public class HystrixPlugins {
     /**
      * Retrieve instance of {@link HystrixPropertiesStrategy} to use based on order of precedence as defined in {@link HystrixPlugins} class header.
      * <p>
-     * Override default by using {@link #registerPropertiesStrategy(HystrixPropertiesStrategy)} or setting property: <code>hystrix.plugin.HystrixPropertiesStrategy.implementation</code> with the full
+     * Override default by using {@link #registerPropertiesStrategy(HystrixPropertiesStrategy)} or setting property (via Archaius): <code>hystrix.plugin.HystrixPropertiesStrategy.implementation</code> with the full
      * classname to load.
      * 
      * @return {@link HystrixPropertiesStrategy} implementation to use
      */
     public HystrixPropertiesStrategy getPropertiesStrategy() {
         if (propertiesFactory.get() == null) {
-            // check for an implementation from System.getProperty first
-            Object impl = getPluginImplementationViaProperty(HystrixPropertiesStrategy.class);
+            // check for an implementation from Archaius first
+            Object impl = getPluginImplementationViaArchaius(HystrixPropertiesStrategy.class);
             if (impl == null) {
-                // nothing set via properties so initialize with default 
+                // nothing set via Archaius so initialize with default
                 propertiesFactory.compareAndSet(null, HystrixPropertiesStrategyDefault.getInstance());
                 // we don't return from here but call get() again in case of thread-race so the winner will always get returned
             } else {
-                // we received an implementation from the system property so use it
+                // we received an implementation from Archaius so use it
                 propertiesFactory.compareAndSet(null, (HystrixPropertiesStrategy) impl);
             }
         }
@@ -223,7 +231,7 @@ public class HystrixPlugins {
     /**
      * Retrieve instance of {@link HystrixCommandExecutionHook} to use based on order of precedence as defined in {@link HystrixPlugins} class header.
      * <p>
-     * Override default by using {@link #registerCommandExecutionHook(HystrixCommandExecutionHook)} or setting property: <code>hystrix.plugin.HystrixCommandExecutionHook.implementation</code> with the
+     * Override default by using {@link #registerCommandExecutionHook(HystrixCommandExecutionHook)} or setting property (via Archaius): <code>hystrix.plugin.HystrixCommandExecutionHook.implementation</code> with the
      * full classname to
      * load.
      * 
@@ -233,14 +241,14 @@ public class HystrixPlugins {
      */
     public HystrixCommandExecutionHook getCommandExecutionHook() {
         if (commandExecutionHook.get() == null) {
-            // check for an implementation from System.getProperty first
-            Object impl = getPluginImplementationViaProperty(HystrixCommandExecutionHook.class);
+            // check for an implementation from Archaius first
+            Object impl = getPluginImplementationViaArchaius(HystrixCommandExecutionHook.class);
             if (impl == null) {
-                // nothing set via properties so initialize with default 
+                // nothing set via Archaius so initialize with default
                 commandExecutionHook.compareAndSet(null, HystrixCommandExecutionHookDefault.getInstance());
                 // we don't return from here but call get() again in case of thread-race so the winner will always get returned
             } else {
-                // we received an implementation from the system property so use it
+                // we received an implementation from Archaius so use it
                 commandExecutionHook.compareAndSet(null, (HystrixCommandExecutionHook) impl);
             }
         }
@@ -263,15 +271,11 @@ public class HystrixPlugins {
         }
     }
 
-    private static Object getPluginImplementationViaProperty(Class<?> pluginClass) {
+    private static Object getPluginImplementationViaArchaius(Class<?> pluginClass) {
         String classSimpleName = pluginClass.getSimpleName();
-        /*
-         * Check system properties for plugin class.
-         * <p>
-         * This will only happen during system startup thus it's okay to use the synchronized System.getProperties
-         * as it will never get called in normal operations.
-         */
-        String implementingClass = System.getProperty("hystrix.plugin." + classSimpleName + ".implementation");
+        // Check Archaius for plugin class.
+        String propertyName = "hystrix.plugin." + classSimpleName + ".implementation";
+        String implementingClass = DynamicPropertyFactory.getInstance().getStringProperty(propertyName, null).get();
         if (implementingClass != null) {
             try {
                 Class<?> cls = Class.forName(implementingClass);

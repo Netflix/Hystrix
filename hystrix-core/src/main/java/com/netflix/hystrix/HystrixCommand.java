@@ -15,11 +15,8 @@
  */
 package com.netflix.hystrix;
 
-import java.lang.ref.Reference;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import rx.Observable;
 import rx.Observable.OnSubscribe;
@@ -30,7 +27,6 @@ import com.netflix.hystrix.exception.HystrixRuntimeException;
 import com.netflix.hystrix.exception.HystrixRuntimeException.FailureType;
 import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
-import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 
 /**
  * Used to wrap code that will execute potentially risky functionality (typically meaning a service call over the network)
@@ -92,7 +88,7 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
      *            Time in milliseconds at which point the calling thread will timeout (using {@link Future#get}) and walk away from the executing thread.
      */
     protected HystrixCommand(HystrixCommandGroupKey group, int executionIsolationThreadTimeoutInMilliseconds) {
-        this(new Setter(group).andCommandPropertiesDefaults(HystrixCommandProperties.Setter().withExecutionIsolationThreadTimeoutInMilliseconds(executionIsolationThreadTimeoutInMilliseconds)));
+        this(new Setter(group).andCommandPropertiesDefaults(HystrixCommandProperties.Setter().withExecutionTimeoutInMilliseconds(executionIsolationThreadTimeoutInMilliseconds)));
     }
 
     /**
@@ -111,7 +107,7 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
      *            Time in milliseconds at which point the calling thread will timeout (using {@link Future#get}) and walk away from the executing thread.
      */
     protected HystrixCommand(HystrixCommandGroupKey group, HystrixThreadPoolKey threadPool, int executionIsolationThreadTimeoutInMilliseconds) {
-        this(new Setter(group).andThreadPoolKey(threadPool).andCommandPropertiesDefaults(HystrixCommandProperties.Setter().withExecutionIsolationThreadTimeoutInMilliseconds(executionIsolationThreadTimeoutInMilliseconds)));
+        this(new Setter(group).andThreadPoolKey(threadPool).andCommandPropertiesDefaults(HystrixCommandProperties.Setter().withExecutionTimeoutInMilliseconds(executionIsolationThreadTimeoutInMilliseconds)));
     }
 
     /**
@@ -334,7 +330,7 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
      * @throws IllegalStateException
      *             if invoked more than once
      */
-    final public R execute() {
+    public R execute() {
         try {
             return queue().get();
         } catch (Exception e) {
@@ -364,14 +360,12 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
      * @throws IllegalStateException
      *             if invoked more than once
      */
-    final public Future<R> queue() {
+    public Future<R> queue() {
         /*
          * --- Schedulers.immediate()
          * 
          * We use the 'immediate' schedule since Future.get() is blocking so we don't want to bother doing the callback to the Future on a separate thread
          * as we don't need to separate the Hystrix thread from user threads since they are already providing it via the Future.get() call.
-         * 
-         * --- performAsyncTimeout: false
          * 
          * We pass 'false' to tell the Observable we will block on it so it doesn't schedule an async timeout.
          * 
@@ -381,7 +375,7 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
          * It also just makes no sense to use a separate thread to timeout the command when the calling thread
          * is going to sit waiting on it.
          */
-        final ObservableCommand<R> o = toObservable(false);
+        final Observable<R> o = toObservable();
         final Future<R> f = o.toBlocking().toFuture();
 
         /* special handling of error states that throw immediately */
@@ -408,154 +402,7 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
             }
         }
 
-        return new Future<R>() {
-
-            @Override
-            public boolean cancel(boolean mayInterruptIfRunning) {
-                return f.cancel(mayInterruptIfRunning);
-            }
-
-            @Override
-            public boolean isCancelled() {
-                return f.isCancelled();
-            }
-
-            @Override
-            public boolean isDone() {
-                return f.isDone();
-            }
-
-            @Override
-            public R get() throws InterruptedException, ExecutionException {
-                return performBlockingGetWithTimeout(o, f);
-            }
-
-            /**
-             * --- Non-Blocking Timeout (performAsyncTimeout:true) ---
-             * 
-             * When 'toObservable' is done with non-blocking timeout then timeout functionality is provided
-             * by a separate HystrixTimer thread that will "tick" and cancel the underlying async Future inside the Observable.
-             * 
-             * This method allows stealing that responsibility and letting the thread that's going to block anyways
-             * do the work to reduce pressure on the HystrixTimer.
-             * 
-             * Blocking via queue().get() on a non-blocking timeout will work it's just less efficient
-             * as it involves an extra thread and cancels the scheduled action that does the timeout.
-             * 
-             * --- Blocking Timeout (performAsyncTimeout:false) ---
-             * 
-             * When blocking timeout is assumed (default behavior for execute/queue flows) then the async
-             * timeout will not have been scheduled and this will wait in a blocking manner and if a timeout occurs
-             * trigger the timeout logic that comes from inside the Observable/Observer.
-             * 
-             * 
-             * --- Examples
-             * 
-             * Stack for timeout with performAsyncTimeout=false (note the calling thread via get):
-             * 
-             * at com.netflix.hystrix.HystrixCommand$TimeoutObservable$1$1.tick(HystrixCommand.java:788)
-             * at com.netflix.hystrix.HystrixCommand$1.performBlockingGetWithTimeout(HystrixCommand.java:536)
-             * at com.netflix.hystrix.HystrixCommand$1.get(HystrixCommand.java:484)
-             * at com.netflix.hystrix.HystrixCommand.execute(HystrixCommand.java:413)
-             * 
-             * 
-             * Stack for timeout with performAsyncTimeout=true (note the HystrixTimer involved):
-             * 
-             * at com.netflix.hystrix.HystrixCommand$TimeoutObservable$1$1.tick(HystrixCommand.java:799)
-             * at com.netflix.hystrix.util.HystrixTimer$1.run(HystrixTimer.java:101)
-             * 
-             * 
-             * 
-             * @param o
-             * @param f
-             * @throws InterruptedException
-             * @throws ExecutionException
-             */
-            protected R performBlockingGetWithTimeout(final ObservableCommand<R> o, final Future<R> f) throws InterruptedException, ExecutionException {
-                // shortcut if already done
-                if (f.isDone()) {
-                    return f.get();
-                }
-
-                // it's still working so proceed with blocking/timeout logic
-                AbstractCommand<R> originalCommand = o.getCommand();
-                /**
-                 * One thread will get the timeoutTimer if it's set and clear it then do blocking timeout.
-                 * <p>
-                 * If non-blocking timeout was scheduled this will unschedule it. If it wasn't scheduled it is basically
-                 * a no-op but fits the same interface so blocking and non-blocking flows both work the same.
-                 * <p>
-                 * This "originalCommand" concept exists because of request caching. We only do the work and timeout logic
-                 * on the original, not the cached responses. However, whichever the first thread is that comes in to block
-                 * will be the one who performs the timeout logic.
-                 * <p>
-                 * If request caching is disabled then it will always go into here.
-                 */
-                if (originalCommand != null) {
-                    Reference<TimerListener> timer = originalCommand.timeoutTimer.getAndSet(null);
-                    if (timer != null) {
-                        /**
-                         * If an async timeout was scheduled then:
-                         * 
-                         * - We are going to clear the Reference<TimerListener> so the scheduler threads stop managing the timeout
-                         * and we'll take over instead since we're going to be blocking on it anyways.
-                         * 
-                         * - Other threads (since we won the race) will just wait on the normal Future which will release
-                         * once the Observable is marked as completed (which may come via timeout)
-                         * 
-                         * If an async timeout was not scheduled:
-                         * 
-                         * - We go through the same flow as we receive the same interfaces just the "timer.clear()" will do nothing.
-                         */
-                        // get the timer we'll use to perform the timeout
-                        TimerListener l = timer.get();
-                        // remove the timer from the scheduler
-                        timer.clear();
-
-                        // determine how long we should wait for, taking into account time since work started
-                        // and when this thread came in to block. If invocationTime hasn't been set then assume time remaining is entire timeout value
-                        // as this maybe a case of multiple threads trying to run this command in which one thread wins but even before the winning thread is able to set
-                        // the starttime another thread going via the Cached command route gets here first.
-                        long timeout = originalCommand.properties.executionIsolationThreadTimeoutInMilliseconds().get();
-                        long timeRemaining = timeout;
-                        long currTime = System.currentTimeMillis();
-                        if (originalCommand.invocationStartTime != -1) {
-                            timeRemaining = (originalCommand.invocationStartTime
-                                    + originalCommand.properties.executionIsolationThreadTimeoutInMilliseconds().get())
-                                    - currTime;
-
-                        }
-                        if (timeRemaining > 0) {
-                            // we need to block with the calculated timeout
-                            try {
-                                return f.get(timeRemaining, TimeUnit.MILLISECONDS);
-                            } catch (TimeoutException e) {
-                                if (l != null) {
-                                    // this perform the timeout logic on the Observable/Observer
-                                    l.tick();
-                                }
-                            }
-                        } else {
-                            // this means it should have already timed out so do so if it is not completed
-                            if (!f.isDone()) {
-                                if (l != null) {
-                                    l.tick();
-                                }
-                            }
-                        }
-                    }
-                }
-                // other threads will block until the "l.tick" occurs and releases the underlying Future.
-                return f.get();
-            }
-
-            @Override
-            public R get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-                return get();
-            }
-
-        };
-
+        return f;
     }
 
 }

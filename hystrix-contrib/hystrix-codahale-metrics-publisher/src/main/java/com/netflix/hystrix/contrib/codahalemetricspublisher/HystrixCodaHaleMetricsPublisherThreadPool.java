@@ -1,4 +1,6 @@
 /**
+ * Copyright 2015 Netflix, Inc.
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,6 +21,7 @@ import com.netflix.hystrix.HystrixThreadPoolKey;
 import com.netflix.hystrix.HystrixThreadPoolMetrics;
 import com.netflix.hystrix.HystrixThreadPoolProperties;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherThreadPool;
+import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 
 /**
  * Implementation of {@link HystrixMetricsPublisherThreadPool} using Coda Hale Metrics (https://github.com/codahale/metrics)
@@ -103,6 +106,13 @@ public class HystrixCodaHaleMetricsPublisherThreadPool implements HystrixMetrics
             @Override
             public Number getValue() {
                 return metrics.getCumulativeCountThreadsExecuted();
+            }
+        });
+
+        metricRegistry.register(createMetricName("rollingCountCommandsRejected"), new Gauge<Number>() {
+            @Override
+            public Number getValue() {
+                return metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED);
             }
         });
 

@@ -84,7 +84,10 @@ public final class AopUtils {
         try {
             method = type.getDeclaredMethod(methodName, parameterTypes);
         } catch (NoSuchMethodException e) {
-            // do nothing
+            Class<?> superclass = type.getSuperclass();
+            if (superclass != null) {
+                method = getDeclaredMethod(superclass, methodName, parameterTypes);
+            }
         }
         return method;
     }

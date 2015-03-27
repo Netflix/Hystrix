@@ -1,5 +1,181 @@
 # Hystrix Releases #
 
+### Version 1.4.3 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.3%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.3/)) ###
+
+* [Pull 731](https://github.com/Netflix/Hystrix/pull/731) Revert to Java 6
+* [Pull 728](https://github.com/Netflix/Hystrix/pull/728) Add semaphore-rejected count to dashboard
+* [Pull 711](https://github.com/Netflix/Hystrix/pull/711) Use Archaius for plugin registration
+* [Pull 671](https://github.com/Netflix/Hystrix/pull/671) Stop passing Transfer-Encoding header when streaming metrics
+
+### Version 1.4.2 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.2%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.2/)) ###
+
+* [Pull 723](https://github.com/Netflix/Hystrix/pull/723) Fixed Javanica issue where annotation appeared in superclasses
+* [Pull 727](https://github.com/Netflix/Hystrix/pull/727) Fixed TravisCI issue by raising timeout in fallback rejection unit test
+* [Pull 724](https://github.com/Netflix/Hystrix/pull/724) Fixed backwards-incompatibility where using a custom HystrixConcurrencyStrategy forced use of a non-null HystrixRequestContext
+* [Pull 717](https://github.com/Netflix/Hystrix/pull/717) Added error message to dashboard HTML when connection to metrics source fails
+
+### Version 1.4.1 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.1%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.1/)) ###
+
+* [Pull 716](https://github.com/Netflix/Hystrix/pull/716) Fixed backwards-incompatibility where .execute(), .queue(), .observe(), .toObservable() were all made final in 1.4.0
+
+### Version 1.4.0 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.0%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.0/)) ###
+
+This version adds HystrixObservableCommand and implements both it and HystrixCommand in terms of [Observables](https://github.com/ReactiveX/RxJava).  
+
+A HystrixObservableCommand allows for fully non-blocking commands that can be composed as part of a larger Observable chain.  See [the wiki](https://github.com/Netflix/Hystrix/wiki/How-To-Use#reactive-commands) for more details on usage.  Here's an example (using Java 8):
+
+```java
+public class ObservableHttpCommand extends HystrixObsverableCommand<BackendResponse> {
+
+@Override
+protected Observable<BackendResponse> construct() {
+    return httpClient.submit(HttpClientRequest.createGet("/mock.json?numItems=" + numItems))
+        .flatMap((HttpClientResponse<ByteBuf> r) -> r.getContent()
+        .map(b -> BackendResponse.fromJson(new ByteBufInputStream(b))));
+    }
+
+@Override
+protected Observable<BackendResponse> resumeWithFallback() {
+    return Observable.just(new BackendResponse(0, numItems, new String[] {}));
+}}
+
+```
+
+Because an Observable represents a stream of data, your HystrixObservableCommand may now return a stream of data, and supply a stream of data as a fallback.  The methods to do so are `construct()` and `resumeWithFallback()`, respectively.  All other aspects of the Hystrix state machine work the same in a HystrixCommand.  See [this wiki page](https://github.com/Netflix/Hystrix/wiki/How-it-Works#flow-chart) for a diagram of this state machine.
+
+The public API of HystrixCommand is unchanged, though the internals have significantly changed.  Some bugfixes are now possible that affect Hystrix semantics:
+
+* Timeouts now apply to semaphore-isolated commands as well as thread-isolated commands.  Before 1.4.x, semaphore-isolated commands could not timeout.  They now have a timeout registered on another (HystrixTimer) thread, which triggers the timeout flow.  If you use semaphore-isolated commands, they will now see timeouts.  As all HystrixCommands have a [default timeout](https://github.com/Netflix/Hystrix/wiki/Configuration#execution.isolation.thread.timeoutInMilliseconds), this potentially affects all semaphore-isolated commands.
+* Timeouts now fire on `HystrixCommand.queue()`, even if the caller never calls `get()` on the resulting Future.  Before 1.4.x, only calls to `get()` triggered the timeout mechanism to take effect.
+
+You can see more in-depth examples of how the new functionality of Hystrix 1.4 is used at [Netflix/ReactiveLab](https://github.com/Netflix/ReactiveLab).
+
+You can learn more about Observables and RxJava at [Netflix/RxJava](https://github.com/ReactiveX/RxJava).
+
+As this was a major refactoring of Hystrix internals, we (Netflix) have run a release candidate of Hystrix 1.4 in canaries and production over the last month to gain confidence.
+
+* [Pull 701](https://github.com/Netflix/Hystrix/pull/701) Fix Javadoc warnings
+* [Pull 700](https://github.com/Netflix/Hystrix/pull/700) Example code for publishing to Graphite
+
+### Version 1.4.0 Release Candidate 9 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.0-rc.9%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.0-rc.9/)) ###
+_NOTE: This code is believed to be production worthy.  As of now, there are no known bugs preventing this becoming 1.4.0.  Please report any design issues/questions, bugs, or any observations about this release to the [Issues](https://github.com/Netflix/Hystrix/issues) page._
+
+* [Pull 697](https://github.com/Netflix/Hystrix/pull/697) Add execution event for FALLBACK_REJECTION and unit tests
+* [Pull 696](https://github.com/Netflix/Hystrix/pull/696) Upgrade to RxJava 1.0.7
+* [Pull 694](https://github.com/Netflix/Hystrix/pull/694) Make execution timeout in HystrixCommandProperties work in the case when classes extend HystrixCommandProperties
+* [Pull 693](https://github.com/Netflix/Hystrix/pull/693) Hystrix Dashboard sorting issue
+
+### Version 1.4.0 Release Candidate 8 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.0-rc.8%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.0-rc.8/)) ###
+_NOTE: This code is believed to be production worthy.  As of now, there are no known bugs preventing this becoming 1.4.0.  Please report any design issues/questions, bugs, or any observations about this release to the [Issues](https://github.com/Netflix/Hystrix/issues) page._
+
+* [Pull 691](https://github.com/Netflix/Hystrix/pull/691) HystrixCommandTest test with large number of semaphores
+* [Pull 690](https://github.com/Netflix/Hystrix/pull/690) Add back ExceptionThreadingUtility
+* [Pull 688](https://github.com/Netflix/Hystrix/pull/688) Add metrics for EMIT and FALLBACK_EMIT
+* [Pull 687](https://github.com/Netflix/Hystrix/pull/687) Fixed issue where fallback rejection was also incrementing fallback failure metric
+* [Pull 686](https://github.com/Netflix/Hystrix/pull/686) HystrixCommandTest Unit test refactoring
+* [Pull 683](https://github.com/Netflix/Hystrix/pull/683) Add and Deprecate pieces of execution hook API to be more consistent
+* [Pull 681](https://github.com/Netflix/Hystrix/pull/681) Add cache hit execution hook
+* [Pull 680](https://github.com/Netflix/Hystrix/pull/680) Add command rejection metrics for HystrixThreadPools
+
+
+### Version 1.4.0 Release Candidate 7 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.0-rc.7%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.0-rc.7/)) ###
+NOTE: This code is believed to be production worthy.  As of now, there are no known bugs preventing this becoming 1.4.0.  Please report any design issues/questions, bugs, or any observations about this release to the [Issues](https://github.com/Netflix/Hystrix/issues) page
+
+* [Pull 678](https://github.com/Netflix/Hystrix/pull/678) Fix current concurrent execution count
+* [Pull 676](https://github.com/Netflix/Hystrix/pull/676) Add test to confirm that bad requests do not affect circuit breaker's computed error percentage
+* [Pull 675](https://github.com/Netflix/Hystrix/pull/675) Deprecate method names for executionTimeout that are thread-specific
+* [Pull 672](https://github.com/Netflix/Hystrix/pull/672) Limit the thread-interrupt behavior to occur only on timeouts
+* [Pull 669](https://github.com/Netflix/Hystrix/pull/669) Added unit tests to demonstrate non-blocking semaphore timeout
+* [Pull 667](https://github.com/Netflix/Hystrix/pull/667) Added rolling max counter for command execution
+* [Pull 666](https://github.com/Netflix/Hystrix/pull/666) Added missing licenses
+* [Pull 665](https://github.com/Netflix/Hystrix/pull/665) Added comment to HystrixConcurrencyStrategy about non-idempotency of strategy application
+* [Pull 647](https://github.com/Netflix/Hystrix/pull/647) Tie command property to thread interrupt
+* [Pull 645](https://github.com/Netflix/Hystrix/pull/645) Remove incorrect reference to async timeout
+* [Pull 644](https://github.com/Netflix/Hystrix/pull/644) Add RequestCollapser metrics to Yammer Metrics Publisher
+* [Pull 643](https://github.com/Netflix/Hystrix/pull/643) Stress-test HystrixObservalbeCollapser
+* [Pull 642](https://github.com/Netflix/Hystrix/pull/642) Fix flakiness of HystrixObservableCommandTest.testRejectedViaSemaphoreIsolation
+* [Pull 641](https://github.com/Netflix/Hystrix/pull/641) Fix flakiness of testSemaphorePermitsInUse
+* [Pull 608](https://github.com/Netflix/Hystrix/pull/608) Make HystrixObservableCommand handle both sync and async exceptions
+* [Pull 607](https://github.com/Netflix/Hystrix/pull/607) Upgrade RxJava from 1.0.4 to 1.0.5
+* [Pull 604](https://github.com/Netflix/Hystrix/pull/604) Added EMIT and FALLBACK_EMIT event types that get emitted in HystrixObservableCommand
+* [Pull 599](https://github.com/Netflix/Hystrix/pull/599) Added metrics to HystrixObservableCollapser
+* [Pull 596](https://github.com/Netflix/Hystrix/pull/596) Fixed HystrixContextScheduler to conform with RxJava Worker contract
+* [Pull 583](https://github.com/Netflix/Hystrix/pull/583) Style and consistency fixes
+* [Pull 582](https://github.com/Netflix/Hystrix/pull/582) Add more unit tests for non-blocking HystrixCommand.queue()
+* [Pull 580](https://github.com/Netflix/Hystrix/pull/580) Unit test to demonstrate fixed non-blocking timeout for HystrixCommand.queue()
+* [Pull 579](https://github.com/Netflix/Hystrix/pull/579) Remove synchronous timeout
+* [Pull 577](https://github.com/Netflix/Hystrix/pull/577) Upgrade language level to Java7
+* [Pull 576](https://github.com/Netflix/Hystrix/pull/576) Add request collapser metrics
+* [Pull 573](https://github.com/Netflix/Hystrix/pull/573) Fix link to CHANGELOG.md in README.md
+* [Pull 572](https://github.com/Netflix/Hystrix/pull/572) Add bad request metrics at the command granularity
+* [Pull 567](https://github.com/Netflix/Hystrix/pull/567) Comment out flaky unit-tests
+* [Pull 566](https://github.com/Netflix/Hystrix/pull/566) Fix hardcoded groupname in CodaHale metrics publisher
+* [Commit 6c08d9](https://github.com/Netflix/Hystrix/commit/6c08d90fd10a947bdbee81afc9c0f866d1f33eef) Bumped nebula.netflixoss from 2.2.3 to 2.2.5
+* [Pull 562](https://github.com/Netflix/Hystrix/pull/562) Build changes to nebula.netflixoss (initially submitted as [Pull 469](https://github.com/Netflix/Hystrix/pull/469))
+	
+	
+### Version 1.4.0 Release Candidate 6 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.0-RC6%22)) ###
+
+_NOTE: This code is believed to be production worthy but is still a "Release Candidate" until [these possible functional or design issues are resolved](https://github.com/Netflix/Hystrix/issues?q=is%3Aopen+is%3Aissue+milestone%3A1.4.0-RC7)._
+* [Pull 534](https://github.com/Netflix/Hystrix/pull/534) Bump RxJava to 1.0.4
+* [Pull 532](https://github.com/Netflix/Hystrix/pull/532) Hystrix-Clojure: Fix typo
+* [Pull 531](https://github.com/Netflix/Hystrix/pull/531) Move onThreadStart execution hook after check that wrapping thread timed out 
+* [Pull 530](https://github.com/Netflix/Hystrix/pull/530) Add shutdown hook to metrics servlet for WebSphere
+* [Pull 527](https://github.com/Netflix/Hystrix/pull/527) Creating a synthetic exception in the semaphore execution and short-circuited case
+* [Pull 526](https://github.com/Netflix/Hystrix/pull/526) Move onRunSuccess/onRunError and thread-pool book-keeping to Hystrix thread
+* [Pull 524](https://github.com/Netflix/Hystrix/pull/524) Change calls from getExecutedCommands() to getAllExecutedCommands()
+* [Pull 516](https://github.com/Netflix/Hystrix/pull/516) Updated HystrixServoMetricsPublisher initalization of singleton
+* [Pull 489](https://github.com/Netflix/Hystrix/pull/489) Javanica: Request Caching
+* [Pull 512](https://github.com/Netflix/Hystrix/pull/512) Add execution hook Javadoc
+* [Pull 511](https://github.com/Netflix/Hystrix/pull/511) Fix missing onComplete hook call when command short-circuits and missing onRunSuccess hook call in thread-timeout case
+* [Pull 466](https://github.com/Netflix/Hystrix/pull/466) Add unit tests to HystrixCommand and HystrixObservableCommand
+* [Pull 465](https://github.com/Netflix/Hystrix/pull/465) Handle error in construction of HystrixMetricsPoller
+* [Pull 457](https://github.com/Netflix/Hystrix/pull/457) Fixing resettability of HystrixMetricsPublisherFactory
+* [Pull 451](https://github.com/Netflix/Hystrix/pull/451) Removed ExceptionThreadingUtility
+* [Pull 366](https://github.com/Netflix/Hystrix/pull/366) Added support to get command start time in Nanos
+* [Pull 456](https://github.com/Netflix/Hystrix/pull/456) Allow hooks to generate HystrixBadRequestExceptions that get handled appropriately
+* [Pull 454](https://github.com/Netflix/Hystrix/pull/454) Add tests around HystrixRequestLog in HystrixObservableCommand
+* [Pull 453](https://github.com/Netflix/Hystrix/pull/453) Resettable command and thread pool defaults
+* [Pull 452](https://github.com/Netflix/Hystrix/pull/452) Make HystrixPlugins resettable
+* [Pull 450](https://github.com/Netflix/Hystrix/pull/450) Add fallback tests to HystrixObservableCommand
+* [Pull 449](https://github.com/Netflix/Hystrix/pull/449) Move thread completion bookkeeping to end of chain
+* [Pull 447](https://github.com/Netflix/Hystrix/pull/447) Synchronous queue fix
+* [Pull 376](https://github.com/Netflix/Hystrix/pull/376) Javanica README cleanup
+* [Pull 378](https://github.com/Netflix/Hystrix/pull/378) Exection hook call sequences (based on work submitted in [Pull 327](https://github.com/Netflix/Hystrix/pull/327))
+* [Pull 374](https://github.com/Netflix/Hystrix/pull/374) RequestBatch logging
+* [Pull 371](https://github.com/Netflix/Hystrix/pull/371) Defer creation of IllegalStateException in collapser flow (based on work submitted in [Pull 264](https://github.com/Netflix/Hystrix/pull/264))
+* [Pull 369](https://github.com/Netflix/Hystrix/pull/369) Added basic auth to Hystrix Dashboard (based on work submitted in [Pull 336](https://github.com/Netflix/Hystrix/pull/336))
+* [Pull 367](https://github.com/Netflix/Hystrix/pull/367) Added thread pool metrics back to execution flow (based on test submitted in [Pull 339](https://github.com/Netflix/Hystrix/pull/339))
+* [Pull 365](https://github.com/Netflix/Hystrix/pull/365) Fix Javadoc for HystrixCommand.Setter
+* [Pull 364](https://github.com/Netflix/Hystrix/pull/364) Upgrade servo to 0.7.5
+* [Pull 362](https://github.com/Netflix/Hystrix/pull/362) Fixed hystrix-rxnetty-metrics-stream unit tests
+* [Pull 359](https://github.com/Netflix/Hystrix/pull/359) Fixed Javanica unit tests
+* [Pull 361](https://github.com/Netflix/Hystrix/pull/361) Race condition when creating HystrixThreadPool (initially submitted as [Pull 270](https://github.com/Netflix/Hystrix/pull/270))
+* [Pull 358](https://github.com/Netflix/Hystrix/pull/358) Fixed Clojure unit tests that failed with RxJava 1.0
+* [Commit 2edcd5](https://github.com/Netflix/Hystrix/commit/2edcd578194849a1c2f5acd73a2e6f10ebfdd112) Upgrade to core-metrics 3.0.2
+* [Pull 310](https://github.com/Netflix/Hystrix/pull/310) Osgi-ify hystrix-core, hystrix-examples
+* [Pull 340](https://github.com/Netflix/Hystrix/pull/340) Race condition when creating HystrixThreadPool
+* [Pull 343](https://github.com/Netflix/Hystrix/pull/343) Added 3 new constructors for common command setup
+* [Pull 347](https://github.com/Netflix/Hystrix/pull/347) Javanica: Allow for @HystrixCommand to be used on parameterized return type
+* [Pull 353](https://github.com/Netflix/Hystrix/pull/353) Fixing a hystrix-examples compilation failure
+* [Pull 338](https://github.com/Netflix/Hystrix/pull/338) API Changes after design review of [Issue 321](https://github.com/Netflix/Hystrix/issues/321)
+* [Pull 344](https://github.com/Netflix/Hystrix/pull/344) Upgrade to Gradle 1.12 
+* [Pull 334](https://github.com/Netflix/Hystrix/pull/334) Javanica: Hystrix Error Propagation 
+* [Pull 326](https://github.com/Netflix/Hystrix/pull/326) Javanica: Added support for setting threadPoolProperties through @HystrixCommand annotation
+* [Pull 318](https://github.com/Netflix/Hystrix/pull/318) HystrixAsyncCommand and HystrixObservableCommand
+* [Pull 316](https://github.com/Netflix/Hystrix/pull/316) Add support for execution.isolation.semaphore.timeoutInMilliseconds
+
+### Version 1.3.20 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.3.20%22)) ###
+* [Pull 533] (https://github.com/Netflix/Hystrix/pull/533) Upgrade to RxJava 1.0.4
+* [Pull 528] (https://github.com/Netflix/Hystrix/pull/528) Pass RuntimeException to onError hook in semaphore-rejection and short-circuit cases, instead of null
+* [Pull 520] (https://github.com/Netflix/Hystrix/pull/520) More unit tests for hook ordering
+* [Commit 61b77c] (https://github.com/Netflix/Hystrix/commit/61b77c305bda6dbd4dc8c86445b4a6670f981845) Fix flow where ExecutionHook.onComplete was called twice
+* [Commit a5e52a] (https://github.com/Netflix/Hystrix/commit/a5e52a6d29cd911c1e14ec107a875a9343472db5) Add call to ExecutionHook.onError in HystrixBadRequestException flow
+* [Commit cec25e] (https://github.com/Netflix/Hystrix/commit/cec25ed7c6f10c4c59189b443bda844fa39043d6) Fix hook ordering assertions
+* [Pull 508] (https://github.com/Netflix/Hystrix/pull/508) Backport of [Pull 327] (https://github.com/Netflix/Hystrix/pull/327) from master: Add hook assertions to unit tests
+* [Pull 507] (https://github.com/Netflix/Hystrix/pull/507) Fix hystrix-clj unit tests
+* [Commit 62be49] (https://github.com/Netflix/Hystrix/commit/62be49465ae418509814fd195081ef7611eb6015) RxJava 1.0.2
+
 ### Version 1.3.19 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.3.19%22)) ###
 
 * [Pull 348](https://github.com/Netflix/Hystrix/pull/348) Javanica: Allow for @HystrixCommand to be used on parameterized return type

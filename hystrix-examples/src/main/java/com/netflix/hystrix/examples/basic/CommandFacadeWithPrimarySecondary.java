@@ -82,7 +82,7 @@ public class CommandFacadeWithPrimarySecondary extends HystrixCommand<String> {
                     .andThreadPoolKey(HystrixThreadPoolKey.Factory.asKey("PrimaryCommand"))
                     .andCommandPropertiesDefaults(
                             // we default to a 600ms timeout for primary
-                            HystrixCommandProperties.Setter().withExecutionIsolationThreadTimeoutInMilliseconds(600)));
+                            HystrixCommandProperties.Setter().withExecutionTimeoutInMilliseconds(600)));
             this.id = id;
         }
 
@@ -105,7 +105,7 @@ public class CommandFacadeWithPrimarySecondary extends HystrixCommand<String> {
                     .andThreadPoolKey(HystrixThreadPoolKey.Factory.asKey("SecondaryCommand"))
                     .andCommandPropertiesDefaults(
                             // we default to a 100ms timeout for secondary
-                            HystrixCommandProperties.Setter().withExecutionIsolationThreadTimeoutInMilliseconds(100)));
+                            HystrixCommandProperties.Setter().withExecutionTimeoutInMilliseconds(100)));
             this.id = id;
         }
 

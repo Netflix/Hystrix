@@ -27,6 +27,7 @@ import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
 import com.netflix.hystrix.strategy.concurrency.HystrixContextScheduler;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherFactory;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesFactory;
+import rx.functions.Func0;
 
 /**
  * ThreadPool used to executed {@link HystrixCommand#run()} on separate threads when configured to do so with {@link HystrixCommandProperties#executionIsolationStrategy()}.
@@ -52,6 +53,8 @@ public interface HystrixThreadPool {
 
     public Scheduler getScheduler();
 
+    public Scheduler getScheduler(Func0<Boolean> shouldInterruptThread);
+
     /**
      * Mark when a thread begins executing a command.
      */
@@ -61,6 +64,11 @@ public interface HystrixThreadPool {
      * Mark when a thread completes executing a command.
      */
     public void markThreadCompletion();
+
+    /**
+     * Mark when a command gets rejected from the threadpool
+     */
+    public void markThreadRejection();
 
     /**
      * Whether the queue will allow adding an item to it.
@@ -153,7 +161,6 @@ public interface HystrixThreadPool {
         private final BlockingQueue<Runnable> queue;
         private final ThreadPoolExecutor threadPool;
         private final HystrixThreadPoolMetrics metrics;
-        private final Scheduler scheduler;
 
         public HystrixThreadPoolDefault(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolProperties.Setter propertiesDefaults) {
             this.properties = HystrixPropertiesFactory.getThreadPoolProperties(threadPoolKey, propertiesDefaults);
@@ -164,7 +171,6 @@ public interface HystrixThreadPool {
                     concurrencyStrategy.getThreadPool(threadPoolKey, properties.coreSize(), properties.coreSize(), properties.keepAliveTimeMinutes(), TimeUnit.MINUTES, queue),
                     properties);
             this.threadPool = metrics.getThreadPool();
-            this.scheduler = new HystrixContextScheduler(concurrencyStrategy, this);
 
             /* strategy: HystrixMetricsPublisherThreadPool */
             HystrixMetricsPublisherFactory.createOrRetrievePublisherForThreadPool(threadPoolKey, this.metrics, this.properties);
@@ -178,8 +184,19 @@ public interface HystrixThreadPool {
 
         @Override
         public Scheduler getScheduler() {
+            //by default, interrupt underlying threads on timeout
+            return getScheduler(new Func0<Boolean>() {
+                @Override
+                public Boolean call() {
+                    return true;
+                }
+            });
+        }
+
+        @Override
+        public Scheduler getScheduler(Func0<Boolean> shouldInterruptThread) {
             touchConfig();
-            return scheduler;
+            return new HystrixContextScheduler(HystrixPlugins.getInstance().getConcurrencyStrategy(), this, shouldInterruptThread);
         }
 
         // allow us to change things via fast-properties by setting it each time
@@ -197,6 +214,11 @@ public interface HystrixThreadPool {
         @Override
         public void markThreadCompletion() {
             metrics.markThreadCompletion();
+        }
+
+        @Override
+        public void markThreadRejection() {
+            metrics.markThreadRejection();
         }
 
         /**

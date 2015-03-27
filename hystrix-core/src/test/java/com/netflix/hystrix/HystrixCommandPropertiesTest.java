@@ -1,3 +1,18 @@
+/**
+ * Copyright 2015 Netflix, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.netflix.hystrix;
 
 import static org.junit.Assert.assertEquals;
@@ -17,7 +32,7 @@ public class HystrixCommandPropertiesTest {
      */
     /* package */static HystrixCommandProperties.Setter getUnitTestPropertiesSetter() {
         return new HystrixCommandProperties.Setter()
-                .withExecutionIsolationThreadTimeoutInMilliseconds(1000)// when an execution will be timed out
+                .withExecutionTimeoutInMilliseconds(1000)// when an execution will be timed out
                 .withExecutionIsolationStrategy(ExecutionIsolationStrategy.THREAD) // we want thread execution by default in tests
                 .withExecutionIsolationThreadInterruptOnTimeout(true)
                 .withCircuitBreakerForceOpen(false) // we don't want short-circuiting by default
@@ -44,7 +59,7 @@ public class HystrixCommandPropertiesTest {
      * Return a static representation of the properties with values from the Builder so that UnitTests can create properties that are not affected by the actual implementations which pick up their
      * values dynamically.
      * 
-     * @param builder
+     * @param builder command properties builder
      * @return HystrixCommandProperties
      */
     /* package */static HystrixCommandProperties asMock(final Setter builder) {
@@ -101,8 +116,8 @@ public class HystrixCommandPropertiesTest {
             }
 
             @Override
-            public HystrixProperty<Integer> executionIsolationThreadTimeoutInMilliseconds() {
-                return HystrixProperty.Factory.asProperty(builder.getExecutionIsolationThreadTimeoutInMilliseconds());
+            public HystrixProperty<Integer> executionTimeoutInMilliseconds() {
+                return HystrixProperty.Factory.asProperty(builder.getExecutionTimeoutInMilliseconds());
             }
 
             @Override
@@ -166,7 +181,7 @@ public class HystrixCommandPropertiesTest {
     // NOTE: We use "unitTestPrefix" as a prefix so we can't end up pulling in external properties that change unit test behavior
 
     public enum TestKey implements HystrixCommandKey {
-        TEST;
+        TEST
     }
 
     private static class TestPropertiesCommand extends HystrixCommandProperties {

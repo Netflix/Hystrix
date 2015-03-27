@@ -15,16 +15,13 @@
  */
 package com.netflix.hystrix.strategy.concurrency;
 
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.*;
 
-import rx.Scheduler;
-import rx.Subscription;
+import rx.*;
 import rx.functions.Action0;
-import rx.subscriptions.BooleanSubscription;
-import rx.subscriptions.CompositeSubscription;
-import rx.subscriptions.Subscriptions;
+import rx.functions.Func0;
+import rx.internal.schedulers.ScheduledAction;
+import rx.subscriptions.*;
 
 import com.netflix.hystrix.HystrixThreadPool;
 import com.netflix.hystrix.strategy.HystrixPlugins;
@@ -52,9 +49,18 @@ public class HystrixContextScheduler extends Scheduler {
     }
 
     public HystrixContextScheduler(HystrixConcurrencyStrategy concurrencyStrategy, HystrixThreadPool threadPool) {
+        this(concurrencyStrategy, threadPool, new Func0<Boolean>() {
+            @Override
+            public Boolean call() {
+                return true;
+            }
+        });
+    }
+
+    public HystrixContextScheduler(HystrixConcurrencyStrategy concurrencyStrategy, HystrixThreadPool threadPool, Func0<Boolean> shouldInterruptThread) {
         this.concurrencyStrategy = concurrencyStrategy;
         this.threadPool = threadPool;
-        this.actualScheduler = new ThreadPoolScheduler(threadPool);
+        this.actualScheduler = new ThreadPoolScheduler(threadPool, shouldInterruptThread);
     }
 
     @Override
@@ -64,7 +70,6 @@ public class HystrixContextScheduler extends Scheduler {
 
     private class HystrixContextSchedulerWorker extends Worker {
 
-        private BooleanSubscription s = new BooleanSubscription();
         private final Worker worker;
 
         private HystrixContextSchedulerWorker(Worker actualWorker) {
@@ -73,12 +78,12 @@ public class HystrixContextScheduler extends Scheduler {
 
         @Override
         public void unsubscribe() {
-            s.unsubscribe();
+            worker.unsubscribe();
         }
 
         @Override
         public boolean isUnsubscribed() {
-            return s.isUnsubscribed();
+            return worker.isUnsubscribed();
         }
 
         @Override
@@ -106,14 +111,16 @@ public class HystrixContextScheduler extends Scheduler {
     private static class ThreadPoolScheduler extends Scheduler {
 
         private final HystrixThreadPool threadPool;
+        private final Func0<Boolean> shouldInterruptThread;
 
-        public ThreadPoolScheduler(HystrixThreadPool threadPool) {
+        public ThreadPoolScheduler(HystrixThreadPool threadPool, Func0<Boolean> shouldInterruptThread) {
             this.threadPool = threadPool;
+            this.shouldInterruptThread = shouldInterruptThread;
         }
 
         @Override
         public Worker createWorker() {
-            return new ThreadPoolWorker(threadPool);
+            return new ThreadPoolWorker(threadPool, shouldInterruptThread);
         }
 
     }
@@ -131,9 +138,11 @@ public class HystrixContextScheduler extends Scheduler {
 
         private final HystrixThreadPool threadPool;
         private final CompositeSubscription subscription = new CompositeSubscription();
+        private final Func0<Boolean> shouldInterruptThread;
 
-        public ThreadPoolWorker(HystrixThreadPool threadPool) {
+        public ThreadPoolWorker(HystrixThreadPool threadPool, Func0<Boolean> shouldInterruptThread) {
             this.threadPool = threadPool;
+            this.shouldInterruptThread = shouldInterruptThread;
         }
 
         @Override
@@ -150,32 +159,22 @@ public class HystrixContextScheduler extends Scheduler {
         public Subscription schedule(final Action0 action) {
             if (subscription.isUnsubscribed()) {
                 // don't schedule, we are unsubscribed
-                return Subscriptions.empty();
+                return Subscriptions.unsubscribed();
             }
 
-            final AtomicReference<Subscription> sf = new AtomicReference<Subscription>();
-            Subscription s = Subscriptions.from(threadPool.getExecutor().submit(new Runnable() {
+            //Schedulers.submitTo(executor, action, subscription, shouldInterrupt);
 
-                @Override
-                public void run() {
-                    try {
-                        if (subscription.isUnsubscribed()) {
-                            return;
-                        }
-                        action.call();
-                    } finally {
-                        // remove the subscription now that we're completed
-                        Subscription s = sf.get();
-                        if (s != null) {
-                            subscription.remove(s);
-                        }
-                    }
-                }
-            }));
 
-            sf.set(s);
-            subscription.add(s);
-            return s;
+            // This is internal RxJava API but it is too useful.
+            ScheduledAction sa = new ScheduledAction(action);
+            
+            subscription.add(sa);
+            sa.addParent(subscription);
+
+            Future<?> f = threadPool.getExecutor().submit(sa);
+            sa.add(new FutureCompleterWithConfigurableInterrupt(f, shouldInterruptThread));
+
+            return sa;
         }
 
         @Override
@@ -183,6 +182,33 @@ public class HystrixContextScheduler extends Scheduler {
             throw new IllegalStateException("Hystrix does not support delayed scheduling");
         }
 
+    }
+
+    /**
+     * Very similar to rx.internal.schedulers.ScheduledAction.FutureCompleter, but with configurable interrupt behavior
+     */
+    private static class FutureCompleterWithConfigurableInterrupt implements Subscription {
+        private final Future<?> f;
+        private final Func0<Boolean> shouldInterruptThread;
+
+        private FutureCompleterWithConfigurableInterrupt(Future<?> f, Func0<Boolean> shouldInterruptThread) {
+            this.f = f;
+            this.shouldInterruptThread = shouldInterruptThread;
+        }
+
+        @Override
+        public void unsubscribe() {
+            if (shouldInterruptThread.call()) {
+                f.cancel(true);
+            } else {
+                f.cancel(false);
+            }
+        }
+
+        @Override
+        public boolean isUnsubscribed() {
+            return f.isCancelled();
+        }
     }
 
 }

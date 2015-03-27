@@ -141,5 +141,5 @@ public class HystrixRequestContext {
             // being held in ThreadLocals on threads that weren't cleaned up
             state = null;
         }
-    };
+    }
 }

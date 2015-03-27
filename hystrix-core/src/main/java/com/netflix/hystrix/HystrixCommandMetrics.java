@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.netflix.hystrix.exception.HystrixBadRequestException;
 import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
 import com.netflix.hystrix.util.HystrixRollingNumber;
@@ -34,7 +35,7 @@ import com.netflix.hystrix.util.HystrixRollingPercentile;
 /**
  * Used by {@link HystrixCommand} to record metrics.
  */
-public class HystrixCommandMetrics {
+public class HystrixCommandMetrics extends HystrixMetrics {
 
     @SuppressWarnings("unused")
     private static final Logger logger = LoggerFactory.getLogger(HystrixCommandMetrics.class);
@@ -102,7 +103,6 @@ public class HystrixCommandMetrics {
     }
 
     private final HystrixCommandProperties properties;
-    private final HystrixRollingNumber counter;
     private final HystrixRollingPercentile percentileExecution;
     private final HystrixRollingPercentile percentileTotal;
     private final HystrixCommandKey key;
@@ -111,10 +111,10 @@ public class HystrixCommandMetrics {
     private final HystrixEventNotifier eventNotifier;
 
     /* package */HystrixCommandMetrics(HystrixCommandKey key, HystrixCommandGroupKey commandGroup, HystrixCommandProperties properties, HystrixEventNotifier eventNotifier) {
+        super(new HystrixRollingNumber(properties.metricsRollingStatisticalWindowInMilliseconds(), properties.metricsRollingStatisticalWindowBuckets()));
         this.key = key;
         this.group = commandGroup;
         this.properties = properties;
-        this.counter = new HystrixRollingNumber(properties.metricsRollingStatisticalWindowInMilliseconds(), properties.metricsRollingStatisticalWindowBuckets());
         this.percentileExecution = new HystrixRollingPercentile(properties.metricsRollingPercentileWindowInMilliseconds(), properties.metricsRollingPercentileWindowBuckets(), properties.metricsRollingPercentileBucketSize(), properties.metricsRollingPercentileEnabled());
         this.percentileTotal = new HystrixRollingPercentile(properties.metricsRollingPercentileWindowInMilliseconds(), properties.metricsRollingPercentileWindowBuckets(), properties.metricsRollingPercentileBucketSize(), properties.metricsRollingPercentileEnabled());
         this.eventNotifier = eventNotifier;
@@ -145,30 +145,6 @@ public class HystrixCommandMetrics {
      */
     public HystrixCommandProperties getProperties() {
         return properties;
-    }
-
-    /**
-     * Get the cumulative count since the start of the application for the given {@link HystrixRollingNumberEvent}.
-     * 
-     * @param event
-     *            {@link HystrixRollingNumberEvent} of the event to retrieve a sum for
-     * @return long cumulative count
-     */
-    public long getCumulativeCount(HystrixRollingNumberEvent event) {
-        return counter.getCumulativeSum(event);
-    }
-
-    /**
-     * Get the rolling count for the given {@link HystrixRollingNumberEvent}.
-     * <p>
-     * The rolling window is defined by {@link HystrixCommandProperties#metricsRollingStatisticalWindowInMilliseconds()}.
-     * 
-     * @param event
-     *            {@link HystrixRollingNumberEvent} of the event to retrieve a sum for
-     * @return long rolling count
-     */
-    public long getRollingCount(HystrixRollingNumberEvent event) {
-        return counter.getRollingSum(event);
     }
 
     /**
@@ -250,7 +226,7 @@ public class HystrixCommandMetrics {
     /**
      * When a {@link HystrixCommand} successfully completes it will call this method to report its success along with how long the execution took.
      * 
-     * @param duration
+     * @param duration command duration
      */
     /* package */void markSuccess(long duration) {
         eventNotifier.markEvent(HystrixEventType.SUCCESS, key);
@@ -260,7 +236,7 @@ public class HystrixCommandMetrics {
     /**
      * When a {@link HystrixCommand} fails to complete it will call this method to report its failure along with how long the execution took.
      * 
-     * @param duration
+     * @param duration command duration
      */
     /* package */void markFailure(long duration) {
         eventNotifier.markEvent(HystrixEventType.FAILURE, key);
@@ -271,7 +247,7 @@ public class HystrixCommandMetrics {
      * When a {@link HystrixCommand} times out (fails to complete) it will call this method to report its failure along with how long the command waited (this time should equal or be very close to the
      * timeout value).
      * 
-     * @param duration
+     * @param duration command duration
      */
     /* package */void markTimeout(long duration) {
         eventNotifier.markEvent(HystrixEventType.TIMEOUT, key);
@@ -303,21 +279,30 @@ public class HystrixCommandMetrics {
     }
 
     /**
+     * When a {@link HystrixCommand} is executed and triggers a {@link HystrixBadRequestException} during its execution
+     */
+    /* package */void markBadRequest(long duration) {
+        eventNotifier.markEvent(HystrixEventType.BAD_REQUEST, key);
+        counter.increment(HystrixRollingNumberEvent.BAD_REQUEST);
+    }
+
+    /**
      * Increment concurrent requests counter.
-     * 
-     * @param numberOfPermitsUsed
      */
     /* package */void incrementConcurrentExecutionCount() {
-        concurrentExecutionCount.incrementAndGet();
+        int numConcurrent = concurrentExecutionCount.incrementAndGet();
+        counter.updateRollingMax(HystrixRollingNumberEvent.COMMAND_MAX_ACTIVE, (long) numConcurrent);
     }
     
     /**
-     * Increment concurrent requests counter.
-     * 
-     * @param numberOfPermitsUsed
+     * Decrement concurrent requests counter.
      */
     /* package */void decrementConcurrentExecutionCount() {
         concurrentExecutionCount.decrementAndGet();
+    }
+
+    public long getRollingMaxConcurrentExecutions() {
+        return counter.getRollingMaxValue(HystrixRollingNumberEvent.COMMAND_MAX_ACTIVE);
     }
 
     /**
@@ -345,7 +330,8 @@ public class HystrixCommandMetrics {
     }
 
     /**
-     * When a {@link HystrixCommand} throws an exception (this will occur every time {@link #markFallbackFailure} occurs and whenever {@link #markFailure} occurs without a fallback implemented)
+     * When a {@link HystrixCommand} throws an exception (this will occur every time {@link #markFallbackFailure} occurs,
+     * whenever {@link #markFailure} occurs without a fallback implemented, or whenever a {@link #markBadRequest(long)} occurs)
      */
     /* package */void markExceptionThrown() {
         eventNotifier.markEvent(HystrixEventType.EXCEPTION_THROWN, key);
@@ -355,7 +341,7 @@ public class HystrixCommandMetrics {
     /**
      * When a command is fronted by an {@link HystrixCollapser} then this marks how many requests are collapsed into the single command execution.
      * 
-     * @param numRequestsCollapsedToBatch
+     * @param numRequestsCollapsedToBatch number of requests which got batched
      */
     /* package */void markCollapsed(int numRequestsCollapsedToBatch) {
         eventNotifier.markEvent(HystrixEventType.COLLAPSED, key);
@@ -370,6 +356,22 @@ public class HystrixCommandMetrics {
     /* package */void markResponseFromCache() {
         eventNotifier.markEvent(HystrixEventType.RESPONSE_FROM_CACHE, key);
         counter.increment(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE);
+    }
+
+    /**
+     * When a {@link HystrixObservableCommand} emits a value during execution
+     */
+    /* package */void markEmit() {
+        eventNotifier.markEvent(HystrixEventType.EMIT, getCommandKey());
+        counter.increment(HystrixRollingNumberEvent.EMIT);
+    }
+
+    /**
+     * When a {@link HystrixObservableCommand} emits a value during fallback
+     */
+    /* package */void markFallbackEmit() {
+        eventNotifier.markEvent(HystrixEventType.FALLBACK_EMIT, getCommandKey());
+        counter.increment(HystrixRollingNumberEvent.FALLBACK_EMIT);
     }
 
     /**
