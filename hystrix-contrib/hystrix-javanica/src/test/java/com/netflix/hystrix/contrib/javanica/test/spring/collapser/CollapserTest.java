@@ -21,7 +21,6 @@ import com.netflix.hystrix.HystrixRequestLog;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCollapser;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
-import com.netflix.hystrix.contrib.javanica.command.AsyncResult;
 import com.netflix.hystrix.contrib.javanica.test.spring.conf.AopCglibConfig;
 import com.netflix.hystrix.contrib.javanica.test.spring.domain.User;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
@@ -55,21 +54,21 @@ public class CollapserTest {
     private UserService userService;
 
     @Test
-    public void testCollapserAsync() throws ExecutionException, InterruptedException {
+    public void testGetUserById() throws ExecutionException, InterruptedException {
         HystrixRequestContext context = HystrixRequestContext.initializeContext();
         try {
-            Future<User> f1= userService.getUserById("1");
+            Future<User> f1 = userService.getUserById("1");
             Future<User> f2 = userService.getUserById("2");
             Future<User> f3 = userService.getUserById("3");
-            Future<User> f4 =userService.getUserById("4");
-            Future<User> f5 =userService.getUserById("5");
+            Future<User> f4 = userService.getUserById("4");
+            Future<User> f5 = userService.getUserById("5");
 
             assertEquals("name: 1", f1.get().getName());
             assertEquals("name: 2", f2.get().getName());
             assertEquals("name: 3", f3.get().getName());
             assertEquals("name: 4", f4.get().getName());
             assertEquals("name: 5", f5.get().getName());
-            // assert that the batch command 'GetUserCommand' was in fact
+            // assert that the batch command 'getUserByIds' was in fact
             // executed and that it executed only once
             assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
             HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest()
@@ -85,81 +84,77 @@ public class CollapserTest {
         }
     }
 
+    @Test
+    public void testGetUserByIdWithFallback() throws ExecutionException, InterruptedException {
+        HystrixRequestContext context = HystrixRequestContext.initializeContext();
+        try {
+            Future<User> f1 = userService.getUserByIdWithFallback("1");
+            Future<User> f2 = userService.getUserByIdWithFallback("2");
+            Future<User> f3 = userService.getUserByIdWithFallback("3");
+            Future<User> f4 = userService.getUserByIdWithFallback("4");
+            Future<User> f5 = userService.getUserByIdWithFallback("5");
 
+            assertEquals("name: 1", f1.get().getName());
+            assertEquals("name: 2", f2.get().getName());
+            assertEquals("name: 3", f3.get().getName());
+            assertEquals("name: 4", f4.get().getName());
+            assertEquals("name: 5", f5.get().getName());
+            // two command should be executed: "getUserByIdWithFallback" and "getUserByIdsWithFallback"
+            assertEquals(2, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+            HystrixInvokableInfo<?> getUserByIdsWithFallback = getHystrixCommandByKey("getUserByIdsWithFallback");
+            com.netflix.hystrix.HystrixInvokableInfo getUserByIdsFallback = getHystrixCommandByKey("getUserByIdsFallback");
+            // confirm that command has failed
+            assertTrue(getUserByIdsWithFallback.getExecutionEvents().contains(HystrixEventType.FAILURE));
+            assertTrue(getUserByIdsWithFallback.getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
+            // and that fallback was successful
+            assertTrue(getUserByIdsFallback.getExecutionEvents().contains(HystrixEventType.SUCCESS));
+        } finally {
+            context.shutdown();
+        }
+    }
 
 
     public static class UserService {
 
         public static final User DEFAULT_USER = new User("def", "def");
 
-//        @HystrixCommand(commandKey = "GetUserCommand", fallbackMethod = "fallback")
-//        @HystrixCollapser(collapserProperties = {@HystrixProperty(name = "timerDelayInMilliseconds", value = "200")})
-//        public Future<User> getUserAsync(final String id, final String name) {
-//            emulateNotFound(id);
-//            return new AsyncResult<User>() {
-//                @Override
-//                public User invoke() {
-//                    return new User(id, name + id); // it should be network call
-//                }
-//            };
-//        }
-//
-//        @HystrixCommand(fallbackMethod = "fallback")
-//        @HystrixCollapser(fallbackEnabled = true, collapserProperties = {@HystrixProperty(name = "timerDelayInMilliseconds", value = "200")})
-//        public Future<User> getUserAsyncWithFallback(final String id, final String name) {
-//            return getUserAsync(id, name);
-//        }
-//
-//        /**
-//         * Fallback for this command is also Hystrix command {@link #fallbackCommand(String, String)}.
-//         */
-//        @HystrixCommand(fallbackMethod = "fallbackCommand")
-//        @HystrixCollapser(fallbackEnabled = true, collapserProperties = {@HystrixProperty(name = "timerDelayInMilliseconds", value = "200")})
-//        public Future<User> getUserAsyncWithFallbackCommand(final String id, final String name) {
-//            return getUserAsync(id, name);
-//        }
 
-
-        @HystrixCollapser(commandKey = "getUserByIds", collapserProperties = {@HystrixProperty(name = "timerDelayInMilliseconds", value = "200")})
+        @HystrixCollapser(batchMethod = "getUserByIds",
+                collapserProperties = {@HystrixProperty(name = "timerDelayInMilliseconds", value = "200")})
         public Future<User> getUserById(String id) {
             return null;
         }
 
-        @HystrixCommand(
-                fallbackMethod = "getUserByIdsFallback",
-                commandProperties =
-                {@HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "100000")})
-       //
+        @HystrixCollapser(batchMethod = "getUserByIdsWithFallback",
+                collapserProperties = {@HystrixProperty(name = "timerDelayInMilliseconds", value = "200")})
+        public Future<User> getUserByIdWithFallback(String id) {
+            return null;
+        }
+
+
+        @HystrixCommand(commandProperties = {
+                @HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "10000")// for debug
+        })
         public List<User> getUserByIds(List<String> ids) {
-           throw new RuntimeException("");
-//            List<User> users = new ArrayList<User>();
-//            for (String id : ids) {
-//                users.add(new User(id, "name: " + id));
-//            }
-//            return users;
-        }
-
-        /**
-         * Emulates situation when a server returns NOT_FOUND if user id = 5.
-         *
-         * @param id user id
-         */
-        private void emulateNotFound(String id) throws RuntimeException {
-            if ("not found".equals(id)) {
-                throw new RuntimeException("not found");
+            List<User> users = new ArrayList<User>();
+            for (String id : ids) {
+                users.add(new User(id, "name: " + id));
             }
+            return users;
         }
 
-        /**
-         * Makes network call to a 'backup' server.
-         */
-        private User fallback(String id, String name) {
-            return DEFAULT_USER;
+        @HystrixCommand(fallbackMethod = "getUserByIdsFallback",
+                commandProperties = {
+                        @HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "10000")// for debug
+                })
+
+        public List<User> getUserByIdsWithFallback(List<String> ids) {
+            throw new RuntimeException("not found");
         }
+
 
         @HystrixCommand
         private List<User> getUserByIdsFallback(List<String> ids) {
-
             List<User> users = new ArrayList<User>();
             for (String id : ids) {
                 users.add(new User(id, "name: " + id));

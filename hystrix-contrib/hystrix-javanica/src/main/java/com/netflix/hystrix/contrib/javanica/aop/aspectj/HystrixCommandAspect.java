@@ -89,7 +89,6 @@ public class HystrixCommandAspect {
         return result;
     }
 
-
     /**
      * A factory to create MetaHolder depending on {@link HystrixPointcutType}.
      */
@@ -116,14 +115,18 @@ public class HystrixCommandAspect {
         @Override
         public MetaHolder create(Object proxy, Method collapserMethod, Object obj, Object[] args) {
             HystrixCollapser hystrixCollapser = collapserMethod.getAnnotation(HystrixCollapser.class);
-            Method batchCommandMethod = getDeclaredMethod(obj.getClass(), hystrixCollapser.commandKey(), List.class);
-            if (batchCommandMethod == null) {
+            Method batchCommandMethod = getDeclaredMethod(obj.getClass(), hystrixCollapser.batchMethod(), List.class);
+            if (batchCommandMethod == null || !batchCommandMethod.getReturnType().equals(List.class)) {
                 throw new IllegalStateException("required batch method for collapser is absent: "
                         + "(java.util.List) " + obj.getClass().getCanonicalName() + "." +
-                        hystrixCollapser.commandKey() + "(java.util.List)");
+                        hystrixCollapser.batchMethod() + "(java.util.List)");
             }
             HystrixCommand hystrixCommand = batchCommandMethod.getAnnotation(HystrixCommand.class);
-
+            if (hystrixCommand == null) {
+                throw new IllegalStateException("batch method must be annotated with HystrixCommand annotation");
+            }
+            // method of batch hystrix command must be passed to metaholder because basically collapser doesn't have any actions
+            // that should be invoked upon intercepted method, its required only for underlying batch command
             MetaHolder.Builder builder = metaHolderBuilder(proxy, batchCommandMethod, obj, args);
             builder.hystrixCollapser(hystrixCollapser);
             builder.defaultCollapserKey(collapserMethod.getName());

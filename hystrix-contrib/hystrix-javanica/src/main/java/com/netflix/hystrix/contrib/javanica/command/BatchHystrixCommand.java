@@ -34,8 +34,6 @@ public class BatchHystrixCommand extends AbstractHystrixCommand<List<Object>> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GenericCommand.class);
 
-
-
     protected BatchHystrixCommand(HystrixCommandBuilder builder) {
         super(builder);
     }
@@ -44,6 +42,7 @@ public class BatchHystrixCommand extends AbstractHystrixCommand<List<Object>> {
      * {@inheritDoc}
      */
     @Override
+    @SuppressWarnings("unchecked")
     protected List<Object> run() throws Exception {
         Object[] args = toArgs(getCollapsedRequests());
         return (List) process(args);
@@ -60,6 +59,7 @@ public class BatchHystrixCommand extends AbstractHystrixCommand<List<Object>> {
 
 
     @Override
+    @SuppressWarnings("unchecked")
     protected List<Object> getFallback() {
         if (getFallbackAction() != null) {
             final CommandAction commandAction = getFallbackAction();
@@ -81,11 +81,11 @@ public class BatchHystrixCommand extends AbstractHystrixCommand<List<Object>> {
         }
     }
 
-    Object[] toArgs(Collection<HystrixCollapser.CollapsedRequest<Object, Object>> requests) {
-        return new Object[]{collect(getCollapsedRequests())};
+    private Object[] toArgs(Collection<HystrixCollapser.CollapsedRequest<Object, Object>> requests) {
+        return new Object[]{collect(requests)};
     }
 
-    List<Object> collect(Collection<HystrixCollapser.CollapsedRequest<Object, Object>> requests) {
+    private List<Object> collect(Collection<HystrixCollapser.CollapsedRequest<Object, Object>> requests) {
         List<Object> commandArgs = new ArrayList<Object>();
         for (HystrixCollapser.CollapsedRequest<Object, Object> request : requests) {
             final Object[] args = (Object[]) request.getArgument();

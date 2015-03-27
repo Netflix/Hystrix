@@ -15,7 +15,6 @@
  */
 package com.netflix.hystrix.contrib.javanica.collapser;
 
-import com.google.common.base.Optional;
 import com.netflix.hystrix.HystrixCollapser;
 import com.netflix.hystrix.HystrixCollapserKey;
 import com.netflix.hystrix.HystrixCommand;
@@ -73,7 +72,6 @@ public class CommandCollapser extends HystrixCollapser<List<Object>, Object, Obj
     protected HystrixCommand<List<Object>> createCommand(
             Collection<CollapsedRequest<Object, Object>> collapsedRequests) {
         BatchHystrixCommand command = BatchHystrixCommandFactory.getInstance().create(metaHolder, collapsedRequests);
-        command.setFallbackEnabled(metaHolder.getHystrixCollapser().fallbackEnabled());
         return command;
     }
 
@@ -118,7 +116,8 @@ public class CommandCollapser extends HystrixCollapser<List<Object>, Object, Obj
 
     private String createMessage(Collection<CollapsedRequest<Object, Object>> requests,
                                  List<Object> response) {
-        return ERROR_MSG + arrayFormat(ERROR_MSF_TEMPLATE, new Object[]{getCollapserKey().name(), requests.size(), response.size()}).getMessage();
+        return ERROR_MSG + arrayFormat(ERROR_MSF_TEMPLATE, new Object[]{getCollapserKey().name(),
+                requests.size(), response.size()}).getMessage();
     }
 
 }
