@@ -71,8 +71,7 @@ public class CommandCollapser extends HystrixCollapser<List<Object>, Object, Obj
     @Override
     protected HystrixCommand<List<Object>> createCommand(
             Collection<CollapsedRequest<Object, Object>> collapsedRequests) {
-        BatchHystrixCommand command = BatchHystrixCommandFactory.getInstance().create(metaHolder, collapsedRequests);
-        return command;
+        return BatchHystrixCommandFactory.getInstance().create(metaHolder, collapsedRequests);
     }
 
     /**
