@@ -382,44 +382,46 @@ Suppose you have some command which calls should be collapsed in one backend cal
 
 Example:
 ```java
-        @HystrixCollapser(batchMethod = "getUserByIds")
-        public Future<User> getUserById(String id) {
-            return null;
-        }
+    @HystrixCollapser(batchMethod = "getUserByIds")
+    public Future<User> getUserById(String id) {
+        return null;
+    }
         
-        @HystrixCommand
-        public List<User> getUserByIds(List<String> ids) {
-            List<User> users = new ArrayList<User>();
-            for (String id : ids) {
-                users.add(new User(id, "name: " + id));
-            }
-            return users;
+    @HystrixCommand
+    public List<User> getUserByIds(List<String> ids) {
+        List<User> users = new ArrayList<User>();
+        for (String id : ids) {
+            users.add(new User(id, "name: " + id));
         }
+        return users;
+    }
         
 
-Future<User> f1 = userService.getUserById("1");
-Future<User> f2 = userService.getUserById("2");
-Future<User> f3 = userService.getUserById("3");
-Future<User> f4 = userService.getUserById("4");
-Future<User> f5 = userService.getUserById("5");
+    Future<User> f1 = userService.getUserById("1");
+    Future<User> f2 = userService.getUserById("2");
+    Future<User> f3 = userService.getUserById("3");
+    Future<User> f4 = userService.getUserById("4");
+    Future<User> f5 = userService.getUserById("5");
 ```
-A method annotated with {@link HystrixCollapser} annotation can return any value with compatible type, it does not affect the result of collapser execution, collapser method can even return {@code null} or another stub.
+A method annotated with ```@HystrixCollapser``` annotation can return any value with compatible type, it does not affect the result of collapser execution, collapser method can even return ```null``` or another stub.
 There are several rules applied for methods signatures.
+
 1. Collapser method must have one argument of any type, desired a wrapper of a primitive type like Integer, Long, String and etc. 
 2. A batch method must have one argument with type java.util.List parameterized with corresponding type, that's if a type of collapser argument is Integer then type of batch method argument must be List<Integer>.
-3. Return type of batch method must be java.util.List parameterized with corresponding type, that's if a return type of collapser method is ```User``` then a return type of batch command must be List<User>
+3. Return type of batch method must be java.util.List parameterized with corresponding type, that's if a return type of collapser method is ```User``` then a return type of batch command must be List<User>.
 
 **Convention for batch method behavior**
-1. The size of response collection must be equal to the size of request collection. 
+
+The size of response collection must be equal to the size of request collection.
+
 ```java
   @HystrixCommand
   public List<User> getUserByIds(List<String> ids); // batch method
   
   List<String> ids = List("1", "2", "3");
   getUserByIds(ids).size() == ids.size();
-  
 ```
-2. Order of elements in response collection must be same to order of elements in request collection.
+Order of elements in response collection must be same as in request collection.
 
 ```
  @HystrixCommand
@@ -434,10 +436,13 @@ There are several rules applied for methods signatures.
   User: id=3
 ```
 
-Why order of elements of request and response collections is important. The reason of this is in reducing logic, basically request elements are mapped one-to-one to response elements. Thus if order of elements of request collection is different then the result of execution can be unpredictable.
+**Why order of elements of request and response collections is important?**
+
+The reason of this is in reducing logic, basically request elements are mapped one-to-one to response elements. Thus if order of elements of request collection is different then the result of execution can be unpredictable.
 
 **Deduplication batch command request parameters**.
-In some cases your batch method can depend on behavior of third-party service or library that skips duplicates in a request. It can be a rest service that expects unique values. In this case the size of elements in request collection can be different from size of elements in response collection. It violates one of the behavior principle. To fix it you need to manually map request to response collection, for example:
+
+In some cases your batch method can depend on behavior of third-party service or library that skips duplicates in a request. It can be a rest service that expects unique values and ignores duplicates. In this case the size of elements in request collection can be different from size of elements in response collection. It violates one of the behavior principle. To fix it you need manually map request to response, for example:
 
 ```java
 // hava 8
@@ -479,29 +484,31 @@ Bath command can have a fallback method.
 Example:
 
 ```java
-        @HystrixCollapser(batchMethod = "getUserByIdsWithFallback")
-        public Future<User> getUserByIdWithFallback(String id) {
-            return null;
-        }
+    @HystrixCollapser(batchMethod = "getUserByIdsWithFallback")
+    public Future<User> getUserByIdWithFallback(String id) {
+        return null;
+    }
         
-        @HystrixCommand(fallbackMethod = "getUserByIdsFallback")
-        public List<User> getUserByIdsWithFallback(List<String> ids) {
-            throw new RuntimeException("not found");
-        }
+    @HystrixCommand(fallbackMethod = "getUserByIdsFallback")
+    public List<User> getUserByIdsWithFallback(List<String> ids) {
+        throw new RuntimeException("not found");
+    }
 
 
-        @HystrixCommand
-        private List<User> getUserByIdsFallback(List<String> ids) {
-            List<User> users = new ArrayList<User>();
-            for (String id : ids) {
-                users.add(new User(id, "name: " + id));
-            }
-            return users;
+    @HystrixCommand
+    private List<User> getUserByIdsFallback(List<String> ids) {
+        List<User> users = new ArrayList<User>();
+        for (String id : ids) {
+            users.add(new User(id, "name: " + id));
         }
+        return users;
+    }
 ```
 
 
 #Development Status and Future
 Please create an issue if you need a feature or you detected some bugs. Thanks
 
-**Note**: Javaniva 1.4.+ is more stable than 1.3.+ All fixes initially are added in 1.4.+ and after if it's not much efforts then merged to 1.3.  **It's recommended to use Javaniva 1.4.+** 
+**Note**: Javaniva 1.4.+ is updated more frequently than 1.3.+ hence 1.4+ is more stable. 
+
+**It's recommended to use Javaniva 1.4.+** 
