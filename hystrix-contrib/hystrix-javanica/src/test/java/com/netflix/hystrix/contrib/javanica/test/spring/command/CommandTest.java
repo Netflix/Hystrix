@@ -102,6 +102,15 @@ public class CommandTest {
         assertTrue(getCommand().getExecutionEvents().contains(HystrixEventType.SUCCESS));
     }
 
+    @Test
+    public void should_work_with_parameterized_asyncMethod() throws Exception {
+        assertEquals(Integer.valueOf(1), userService.echoAsync(1).get());
+
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+        assertTrue(getCommand().getExecutionEvents().contains(HystrixEventType.SUCCESS));
+    }
+
+
     private void assertGetUserSnycCommandExecuted(User u1) {
         assertEquals("name: 1", u1.getName());
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
@@ -136,6 +145,16 @@ public class CommandTest {
         @HystrixCommand
         public <T> T echo(T value) {
             return value;
+        }
+
+        @HystrixCommand
+        public <T> Future<T> echoAsync(final T value) {
+            return new AsyncResult<T>() {
+                @Override
+                public T invoke() {
+                    return value;
+                }
+            };
         }
 
     }

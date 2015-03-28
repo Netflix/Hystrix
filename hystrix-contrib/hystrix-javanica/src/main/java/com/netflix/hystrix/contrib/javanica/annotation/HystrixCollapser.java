@@ -45,7 +45,7 @@ import java.lang.annotation.Target;
  *
  * A method annotated with {@link HystrixCollapser} annotation can return any
  * value with compatible type, it does not affect the result of collapser execution,
- * collapser method can even return {@code null} or another stab.
+ * collapser method can even return {@code null} or another stub.
  * Pay attention that if a collapser method returns parametrized Future then generic type must be equal to generic type of List,
  * for instance:
  * <pre>
