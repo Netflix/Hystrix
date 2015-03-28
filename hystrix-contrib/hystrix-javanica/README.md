@@ -407,8 +407,8 @@ A method annotated with ```@HystrixCollapser``` annotation can return any value 
 There are several rules applied for methods signatures.
 
 1. Collapser method must have one argument of any type, desired a wrapper of a primitive type like Integer, Long, String and etc. 
-2. A batch method must have one argument with type java.util.List parameterized with corresponding type, that's if a type of collapser argument is Integer then type of batch method argument must be List<Integer>.
-3. Return type of batch method must be java.util.List parameterized with corresponding type, that's if a return type of collapser method is ```User``` then a return type of batch command must be List<User>.
+2. A batch method must have one argument with type java.util.List parameterized with corresponding type, that's if a type of collapser argument is ```Integer``` then type of batch method argument must be ```List<Integer>```.
+3. Return type of batch method must be java.util.List parameterized with corresponding type, that's if a return type of collapser method is ```User``` then a return type of batch command must be ```List<User>```.
 
 **Convention for batch method behavior**
 
