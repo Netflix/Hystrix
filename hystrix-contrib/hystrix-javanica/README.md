@@ -380,76 +380,135 @@ ThreadPoolProperties can be set using @HystrixCommand's 'threadPoolProperties' l
 
 Suppose you have some command which calls should be collapsed in one backend call. For this goal you can use ```@HystrixCollapser``` annotation.
 
-**Asynchronous call**
+Example:
 ```java
-        @HystrixCommand
-        @HystrixCollapser
-        public Future<User> getUserAsync(final String id, final String name) {
-            return new AsyncResult<User>() {
-                @Override
-                public User invoke() {
-                    return new User(id, name + id); // there should be a network call
-                }
-            };
+    @HystrixCollapser(batchMethod = "getUserByIds")
+    public Future<User> getUserById(String id) {
+        return null;
+    }
+        
+    @HystrixCommand
+    public List<User> getUserByIds(List<String> ids) {
+        List<User> users = new ArrayList<User>();
+        for (String id : ids) {
+            users.add(new User(id, "name: " + id));
         }
+        return users;
+    }
+        
+
+    Future<User> f1 = userService.getUserById("1");
+    Future<User> f2 = userService.getUserById("2");
+    Future<User> f3 = userService.getUserById("3");
+    Future<User> f4 = userService.getUserById("4");
+    Future<User> f5 = userService.getUserById("5");
+```
+A method annotated with ```@HystrixCollapser``` annotation can return any value with compatible type, it does not affect the result of collapser execution, collapser method can even return ```null``` or another stub.
+There are several rules applied for methods signatures.
+
+1. Collapser method must have one argument of any type, desired a wrapper of a primitive type like Integer, Long, String and etc. 
+2. A batch method must have one argument with type java.util.List parameterized with corresponding type, that's if a type of collapser argument is ```Integer``` then type of batch method argument must be ```List<Integer>```.
+3. Return type of batch method must be java.util.List parameterized with corresponding type, that's if a return type of collapser method is ```User``` then a return type of batch command must be ```List<User>```.
+
+**Convention for batch method behavior**
+
+The size of response collection must be equal to the size of request collection.
+
+```java
+  @HystrixCommand
+  public List<User> getUserByIds(List<String> ids); // batch method
+  
+  List<String> ids = List("1", "2", "3");
+  getUserByIds(ids).size() == ids.size();
+```
+Order of elements in response collection must be same as in request collection.
+
+```
+ @HystrixCommand
+  public List<User> getUserByIds(List<String> ids); // batch method
+  
+  List<String> ids = List("1", "2", "3");
+  List<User> users = getUserByIds(ids);
+  System.out.println(users);
+  // output
+  User: id=1
+  User: id=2
+  User: id=3
 ```
 
-**Synchronous call**
-_Note_ : Request collapsing on a single thread makes no sense, because if a single thread is invoking ```execute()``` or ```queue().get()``` synchronously it will block and wait for a response and thus not submit any further requests that will be collapsed inside the window. Doing requests on a separate threads (such as user requests with collapsing scope set to GLOBAL) would make sense:
+**Why order of elements of request and response collections is important?**
+
+The reason of this is in reducing logic, basically request elements are mapped one-to-one to response elements. Thus if order of elements of request collection is different then the result of execution can be unpredictable.
+
+**Deduplication batch command request parameters**.
+
+In some cases your batch method can depend on behavior of third-party service or library that skips duplicates in a request. It can be a rest service that expects unique values and ignores duplicates. In this case the size of elements in request collection can be different from size of elements in response collection. It violates one of the behavior principle. To fix it you need manually map request to response, for example:
 
 ```java
-        @HystrixCommand
-        @HystrixCollapser(scope = GLOBAL)
-        public User getUserSync(String id, String name) {
-            return new User(id, name + id); // there should be a network call
-        }
+// hava 8
+@HystrixCommand
+List<User> batchMethod(List<String> ids){
+// ids = [1, 2, 2, 3]
+List<User> users = restClient.getUsersByIds(ids);
+// users = [User{id='1', name='user1'}, User{id='2', name='user2'}, User{id='3', name='user3'}]
+List<User> response = ids.stream().map(it -> users.stream()
+                .filter(u -> u.getId().equals(it)).findFirst().get())
+                .collect(Collectors.toList());
+// response = [User{id='1', name='user1'}, User{id='2', name='user2'}, User{id='2', name='user2'}, User{id='3', name='user3'}]
+return response;
 ```
 
+Same case if you want to remove duplicate elements from request collection before a service call.
+Example:
+```java
+// hava 8
+@HystrixCommand
+List<User> batchMethod(List<String> ids){
+// ids = [1, 2, 2, 3]
+List<String> uniqueIds = ids.stream().distinct().collect(Collectors.toList());
+// uniqueIds = [1, 2, 3]
+List<User> users = restClient.getUsersByIds(uniqueIds);
+// users = [User{id='1', name='user1'}, User{id='2', name='user2'}, User{id='3', name='user3'}]
+List<User> response = ids.stream().map(it -> users.stream()
+                .filter(u -> u.getId().equals(it)).findFirst().get())
+                .collect(Collectors.toList());
+// response = [User{id='1', name='user1'}, User{id='2', name='user2'}, User{id='2', name='user2'}, User{id='3', name='user3'}]
+return response;
+```
 To set collapser [properties](https://github.com/Netflix/Hystrix/wiki/Configuration#Collapser) use `@HystrixCollapser#collapserProperties`
 
 Read more about Hystrix request collapsing [here] (https://github.com/Netflix/Hystrix/wiki/How-it-Works#wiki-RequestCollapsing)
 
 **Collapser error processing**
+Bath command can have a fallback method.
+Example:
 
-All commands are collapsed are instances of ```BatchHystrixCommand```. In BatchHystrixCommand the ```getFallback()``` isn't implemented, even if a collapsed command has fallback ``` @HystrixCommand(fallbackMethod = "fallbackCommand")``` then it never be processed in ```getFallback()```, below this moment is consecrated in detail.
-
-If the processing of a request fails then other requests will not be processed within this collapser and ```setException``` method will be automatically called on requests instances. Generally this is an all or nothing affair. For example, a timeout or rejection of the HystrixCommand would cause failure on all of the batched calls. Thus existence of fallback method does not eliminate the break of all requests and the collapser as a whole. Thus there are two scenarios that you can change using ```@HystrixCollapser#fallbackEnabled``` annotation property.
-
-When one of the requests has failed:
-
-**Scenario #1** (```@HystrixCollapser(fallbackEnabled = false)```):
-
-All requests that were processed successfully will be returned to an user and will be available from Future, other requests including one that failed will not. The fallback of collapsed command will not be executed in a case of any errors.
-Short example:
 ```java
+    @HystrixCollapser(batchMethod = "getUserByIdsWithFallback")
+    public Future<User> getUserByIdWithFallback(String id) {
+        return null;
+    }
+        
+    @HystrixCommand(fallbackMethod = "getUserByIdsFallback")
+    public List<User> getUserByIdsWithFallback(List<String> ids) {
+        throw new RuntimeException("not found");
+    }
 
- @HystrixCommand(fallbackMethod = "fallback")
-        @HystrixCollapser(fallbackEnabled = false)
-        public Future<User> getUserAsync(final String id, final String name) {
-            // some logic here
-            };
-            
-        // .......
 
-
-            Future<User> f1 = userService.getUserAsync("1", "name: ");
-            Future<User> f2 = userService.getUserAsync("2", "name: ");
-            Future<User> f3 = userService.getUserAsync("not found", "name"); // not found, exception here
-            Future<User> f4 = userService.getUserAsync("4", "name: "); // will not be processed
-            Future<User> f5 = userService.getUserAsync("5", "name: "); // will not be processed
-            System.out.println(f1.get().getName()); // this line will be executed
-            System.out.println(f2.get().getName()); // this line will be executed
-            System.out.println(f3.get().getName()); // this line will not be executed
-            System.out.println(f4.get().getName()); // this line will not be executed
-            System.out.println(f5.get().getName()); // this line will not be executed
+    @HystrixCommand
+    private List<User> getUserByIdsFallback(List<String> ids) {
+        List<User> users = new ArrayList<User>();
+        for (String id : ids) {
+            users.add(new User(id, "name: " + id));
+        }
+        return users;
+    }
 ```
-
-**Scenario #2** (```@HystrixCollapser(fallbackEnabled = true)```):
-
-All requests that were processed successfully or failed will be returned to an user and will be available from a Future instance. For failed requests the collapsed command's fallback method will be executed, of course if the name of fallback method was defined in ```@HystrixCommand```. The fallback of collapsed command will be used to process any exceptions during batch processing. If the fallback method hasn't ```@HystrixCommand``` annotation then this method will be processed in the a single thread with the BatchHystrixCommand in method _run()_, otherwise fallback will be process as Hystrix command in separate thread if fallback method was annotated with ```@HystrixCommand```. This is important point that you need to pay attention if you want to use fallback for your collapsed command. Thus fallback method will be processed in ```BatchHystrixCommand#run()``` not in ```BatchHystrixCommand#getFallback()```, but fallback can be process as Hystrix command therefore set the ```fallbackEnabled``` as true can be useful in some situations to avoid crash of whole collapser and continue to process requests, but I recommend to use ```@HystrixCollapser(fallbackEnabled = false)``` and give preference to the first scenario as this is the correct behavior in most cases.
 
 
 #Development Status and Future
 Please create an issue if you need a feature or you detected some bugs. Thanks
 
-**Note**: Javaniva 1.4.+ is more stable than 1.3.+ All fixes initially are added in 1.4.+ and after if it's not much efforts then merged to 1.3.  **It's recommended to use Javaniva 1.4.+** 
+**Note**: Javaniva 1.4.+ is updated more frequently than 1.3.+ hence 1.4+ is more stable. 
+
+**It's recommended to use Javaniva 1.4.+** 
