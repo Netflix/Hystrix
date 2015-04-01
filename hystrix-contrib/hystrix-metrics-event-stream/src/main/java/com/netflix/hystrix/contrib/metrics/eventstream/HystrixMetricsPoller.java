@@ -162,8 +162,10 @@ public class HystrixMetricsPoller {
                 }
 
                 for (HystrixThreadPoolMetrics threadPoolMetrics : HystrixThreadPoolMetrics.getInstances()) {
-                    String jsonString = getThreadPoolJson(threadPoolMetrics);
-                    listener.handleJsonMetric(jsonString);
+                    if (hasExecutedCommandsOnThread(threadPoolMetrics)) {
+                        String jsonString = getThreadPoolJson(threadPoolMetrics);
+                        listener.handleJsonMetric(jsonString);
+                    }
                 }
 
                 for (HystrixCollapserMetrics collapserMetrics : HystrixCollapserMetrics.getInstances()) {
@@ -290,6 +292,10 @@ public class HystrixMetricsPoller {
             json.close();
 
             return jsonString.getBuffer().toString();
+        }
+
+        private boolean hasExecutedCommandsOnThread(HystrixThreadPoolMetrics threadPoolMetrics) {
+            return threadPoolMetrics.getCurrentCompletedTaskCount().intValue() > 0;
         }
 
         private String getThreadPoolJson(HystrixThreadPoolMetrics threadPoolMetrics) throws IOException {
