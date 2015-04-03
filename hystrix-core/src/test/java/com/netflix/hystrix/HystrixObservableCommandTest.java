@@ -5713,9 +5713,12 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
             } else if (executionResult == AbstractTestHystrixCommand.ExecutionResult.HYSTRIX_FAILURE) {
                 addLatency(executionLatency);
                 throw new HystrixRuntimeException(HystrixRuntimeException.FailureType.COMMAND_EXCEPTION, FlexibleTestHystrixObservableCommand.class, "Execution Hystrix Failure for TestHystrixObservableCommand", new RuntimeException("Execution Failure for TestHystrixObservableCommand"), new RuntimeException("Fallback Failure for TestHystrixObservableCommand"));
-            } else if (executionResult == AbstractTestHystrixCommand.ExecutionResult.ERROR) {
+            } else if (executionResult == AbstractTestHystrixCommand.ExecutionResult.RECOVERABLE_ERROR) {
                 addLatency(executionLatency);
                 throw new java.lang.Error("Execution Sync Error for TestHystrixObservableCommand");
+            } else if (executionResult == AbstractTestHystrixCommand.ExecutionResult.UNRECOVERABLE_ERROR) {
+                addLatency(executionLatency);
+                throw new OutOfMemoryError("Execution Sync OOME for TestHystrixObservableCommand");
             } else if (executionResult == AbstractTestHystrixCommand.ExecutionResult.BAD_REQUEST) {
                 addLatency(executionLatency);
                 throw new HystrixBadRequestException("Execution Bad Request Exception for TestHystrixObservableCommand");
@@ -5744,8 +5747,10 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
                         subscriber.onError(new RuntimeException("Execution Async Failure for TestHystrixObservableCommand after 0 emits"));
                     } else if (executionResult == AbstractTestHystrixCommand.ExecutionResult.ASYNC_HYSTRIX_FAILURE) {
                         subscriber.onError(new HystrixRuntimeException(HystrixRuntimeException.FailureType.COMMAND_EXCEPTION, FlexibleTestHystrixObservableCommand.class, "Execution Hystrix Failure for TestHystrixObservableCommand", new RuntimeException("Execution Failure for TestHystrixObservableCommand"), new RuntimeException("Fallback Failure for TestHystrixObservableCommand")));
-                    } else if (executionResult == AbstractTestHystrixCommand.ExecutionResult.ASYNC_ERROR) {
-                       subscriber.onError(new java.lang.Error("Execution Sync Error for TestHystrixObservableCommand"));
+                    } else if (executionResult == AbstractTestHystrixCommand.ExecutionResult.ASYNC_RECOVERABLE_ERROR) {
+                       subscriber.onError(new java.lang.Error("Execution Async Error for TestHystrixObservableCommand"));
+                    } else if (executionResult == AbstractTestHystrixCommand.ExecutionResult.ASYNC_UNRECOVERABLE_ERROR) {
+                        subscriber.onError(new OutOfMemoryError("Execution Async OOME for TestHystrixObservableCommand"));
                     } else if (executionResult == AbstractTestHystrixCommand.ExecutionResult.ASYNC_BAD_REQUEST) {
                         subscriber.onError(new HystrixBadRequestException("Execution Async Bad Request Exception for TestHystrixObservableCommand"));
                     } else {

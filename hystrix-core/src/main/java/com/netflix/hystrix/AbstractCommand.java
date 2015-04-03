@@ -690,134 +690,182 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
     private Observable<R> getFallbackOrThrowException(final HystrixEventType eventType, final FailureType failureType, final String message, final Exception originalException) {
         final HystrixRequestContext currentRequestContext = HystrixRequestContext.getContextForCurrentThread();
 
-        if (properties.fallbackEnabled().get()) {
-            /* fallback behavior is permitted so attempt */
-            // record the executionResult
-            // do this before executing fallback so it can be queried from within getFallback (see See https://github.com/Netflix/Hystrix/pull/144)
-            executionResult = executionResult.addEvents(eventType);
-            final AbstractCommand<R> _cmd = this;
+        Observable<R> fallbackLogicApplied;
 
-            final TryableSemaphore fallbackSemaphore = getFallbackSemaphore();
-
-            Observable<R> fallbackExecutionChain;
-
-            // acquire a permit
-            if (fallbackSemaphore.tryAcquire()) {
-                executionHook.onFallbackStart(this);
-
-                try {
-                    fallbackExecutionChain = getFallbackObservable();
-                } catch (Throwable t) {
-                    // getFallback() is user provided and can throw so we catch it and turn it into Observable.error
-                    fallbackExecutionChain = Observable.error(t);
-                }
-
-                fallbackExecutionChain =  fallbackExecutionChain
-                        .lift(new FallbackHookApplication(_cmd))
-                        .lift(new DeprecatedOnFallbackHookApplication(_cmd))
-                        .doOnTerminate(new Action0() {
-
-                            @Override
-                            public void call() {
-                                fallbackSemaphore.release();
-                            }
-                        });
-            } else {
-                metrics.markFallbackRejection();
-                executionResult = executionResult.addEvents(HystrixEventType.FALLBACK_REJECTION);
-                logger.debug("HystrixCommand Fallback Rejection."); // debug only since we're throwing the exception and someone higher will do something with it
-                // if we couldn't acquire a permit, we "fail fast" by throwing an exception
-                return Observable.error(new HystrixRuntimeException(FailureType.REJECTED_SEMAPHORE_FALLBACK, this.getClass(), getLogMessagePrefix() + " fallback execution rejected.", null, null));
-            }
-
-            return fallbackExecutionChain.doOnNext(new Action1<R>() {
-                @Override
-                public void call(R r) {
-                    if (shouldOutputOnNextEvents()) {
-                        executionResult = executionResult.addEmission(HystrixEventType.FALLBACK_EMIT);
-                        metrics.markFallbackEmit();
-                    }
-                }
-            }).doOnCompleted(new Action0() {
-
-                @Override
-                public void call() {
-                    // mark fallback on counter
-                    metrics.markFallbackSuccess();
-                    // record the executionResult
-                    executionResult = executionResult.addEvents(HystrixEventType.FALLBACK_SUCCESS);
-                }
-
-            }).onErrorResumeNext(new Func1<Throwable, Observable<R>>() {
-
-                @Override
-                public Observable<R> call(Throwable t) {
-                    Exception e = originalException;
-                    Exception fe = getExceptionFromThrowable(t);
-
-
-                    if (fe instanceof UnsupportedOperationException) {
-                        logger.debug("No fallback for HystrixCommand. ", fe); // debug only since we're throwing the exception and someone higher will do something with it
-                        /* executionHook for all errors */
-                        e = wrapWithOnErrorHook(failureType, e);
-
-                        return Observable.error(new HystrixRuntimeException(failureType, _cmd.getClass(), getLogMessagePrefix() + " " + message + " and no fallback available.", e, fe));
-                    } else {
-                        logger.debug("HystrixCommand execution " + failureType.name() + " and fallback failed.", fe);
-                        metrics.markFallbackFailure();
-                        // record the executionResult
-                        executionResult = executionResult.addEvents(HystrixEventType.FALLBACK_FAILURE);
-
-                        /* executionHook for all errors */
-                        e = wrapWithOnErrorHook(failureType, e);
-
-                        return Observable.error(new HystrixRuntimeException(failureType, _cmd.getClass(), getLogMessagePrefix() + " " + message + " and fallback failed.", e, fe));
-                    }
-                }
-
-            }).doOnTerminate(new Action0() {
-
-                @Override
-                public void call() {
-                    // record that we're completed (to handle non-successful events we do it here as well as at the end of executeCommand
-                    isExecutionComplete.set(true);
-                }
-
-            }).doOnEach(new Action1<Notification<? super R>>() {
-
-                @Override
-                public void call(Notification<? super R> n) {
-                    setRequestContextIfNeeded(currentRequestContext);
-                }
-
-            });
-        } else {
-            /* fallback is disabled so throw HystrixRuntimeException */
+        if (isUnrecoverable(originalException)) {
             Exception e = originalException;
 
-            logger.debug("Fallback disabled for HystrixCommand so will throw HystrixRuntimeException. ", e); // debug only since we're throwing the exception and someone higher will do something with it
+            logger.error("Unrecoverable Error for HystrixCommand so will throw HystrixRuntimeException and not apply fallback. ", e);
             // record the executionResult
             executionResult = executionResult.addEvents(eventType);
 
             /* executionHook for all errors */
             e = wrapWithOnErrorHook(failureType, e);
-            return Observable.<R> error(new HystrixRuntimeException(failureType, this.getClass(), getLogMessagePrefix() + " " + message + " and fallback disabled.", e, null)).doOnTerminate(new Action0() {
+            fallbackLogicApplied = Observable.<R> error(new HystrixRuntimeException(failureType, this.getClass(), getLogMessagePrefix() + " " + message + " and encountered unrecoverable error.", e, null));
+        } else {
+            if (properties.fallbackEnabled().get()) {
+            /* fallback behavior is permitted so attempt */
+                // record the executionResult
+                // do this before executing fallback so it can be queried from within getFallback (see See https://github.com/Netflix/Hystrix/pull/144)
+                executionResult = executionResult.addEvents(eventType);
+                final AbstractCommand<R> _cmd = this;
 
-                @Override
-                public void call() {
-                    // record that we're completed (to handle non-successful events we do it here as well as at the end of executeCommand
-                    isExecutionComplete.set(true);
+
+                final TryableSemaphore fallbackSemaphore = getFallbackSemaphore();
+
+                Observable<R> fallbackExecutionChain;
+
+                // acquire a permit
+                if (fallbackSemaphore.tryAcquire()) {
+                    executionHook.onFallbackStart(this);
+
+                    try {
+                        fallbackExecutionChain = getFallbackObservable();
+                    } catch (Throwable t) {
+                        // getFallback() is user provided and can throw so we catch it and turn it into Observable.error
+                        fallbackExecutionChain = Observable.error(t);
+                    }
+
+                    fallbackExecutionChain =  fallbackExecutionChain
+                            .lift(new FallbackHookApplication(_cmd))
+                            .lift(new DeprecatedOnFallbackHookApplication(_cmd))
+                            .doOnTerminate(new Action0() {
+
+                                @Override
+                                public void call() {
+                                    fallbackSemaphore.release();
+                                }
+                            });
+                } else {
+                    metrics.markFallbackRejection();
+                    executionResult = executionResult.addEvents(HystrixEventType.FALLBACK_REJECTION);
+                    logger.debug("HystrixCommand Fallback Rejection."); // debug only since we're throwing the exception and someone higher will do something with it
+                    // if we couldn't acquire a permit, we "fail fast" by throwing an exception
+                    return Observable.error(new HystrixRuntimeException(FailureType.REJECTED_SEMAPHORE_FALLBACK, this.getClass(), getLogMessagePrefix() + " fallback execution rejected.", null, null));
                 }
 
-            }).doOnEach(new Action1<Notification<? super R>>() {
+                fallbackLogicApplied = fallbackExecutionChain.doOnNext(new Action1<R>() {
+                    @Override
+                    public void call(R r) {
+                        if (shouldOutputOnNextEvents()) {
+                            executionResult = executionResult.addEmission(HystrixEventType.FALLBACK_EMIT);
+                            metrics.markFallbackEmit();
+                        }
+                    }
+                }).doOnCompleted(new Action0() {
 
-                @Override
-                public void call(Notification<? super R> n) {
-                    setRequestContextIfNeeded(currentRequestContext);
-                }
+                    @Override
+                    public void call() {
+                        // mark fallback on counter
+                        metrics.markFallbackSuccess();
+                        // record the executionResult
+                        executionResult = executionResult.addEvents(HystrixEventType.FALLBACK_SUCCESS);
+                    }
 
-            });
+                }).onErrorResumeNext(new Func1<Throwable, Observable<R>>() {
+
+                    @Override
+                    public Observable<R> call(Throwable t) {
+                        Exception e = originalException;
+                        Exception fe = getExceptionFromThrowable(t);
+
+
+                        if (fe instanceof UnsupportedOperationException) {
+                            logger.debug("No fallback for HystrixCommand. ", fe); // debug only since we're throwing the exception and someone higher will do something with it
+                        /* executionHook for all errors */
+                            e = wrapWithOnErrorHook(failureType, e);
+
+                            return Observable.error(new HystrixRuntimeException(failureType, _cmd.getClass(), getLogMessagePrefix() + " " + message + " and no fallback available.", e, fe));
+                        } else {
+                            logger.debug("HystrixCommand execution " + failureType.name() + " and fallback failed.", fe);
+                            metrics.markFallbackFailure();
+                            // record the executionResult
+                            executionResult = executionResult.addEvents(HystrixEventType.FALLBACK_FAILURE);
+
+                        /* executionHook for all errors */
+                            e = wrapWithOnErrorHook(failureType, e);
+
+                            return Observable.error(new HystrixRuntimeException(failureType, _cmd.getClass(), getLogMessagePrefix() + " " + message + " and fallback failed.", e, fe));
+                        }
+                    }
+
+                }).doOnTerminate(new Action0() {
+
+                    @Override
+                    public void call() {
+                        // record that we're completed (to handle non-successful events we do it here as well as at the end of executeCommand
+                        isExecutionComplete.set(true);
+                    }
+
+                }).doOnEach(new Action1<Notification<? super R>>() {
+
+                    @Override
+                    public void call(Notification<? super R> n) {
+                        setRequestContextIfNeeded(currentRequestContext);
+                    }
+
+                });
+            } else {
+            /* fallback is disabled so throw HystrixRuntimeException */
+                Exception e = originalException;
+
+                logger.debug("Fallback disabled for HystrixCommand so will throw HystrixRuntimeException. ", e); // debug only since we're throwing the exception and someone higher will do something with it
+                // record the executionResult
+                executionResult = executionResult.addEvents(eventType);
+
+            /* executionHook for all errors */
+                e = wrapWithOnErrorHook(failureType, e);
+                fallbackLogicApplied = Observable.<R> error(new HystrixRuntimeException(failureType, this.getClass(), getLogMessagePrefix() + " " + message + " and fallback disabled.", e, null));
+            }
         }
+
+        return fallbackLogicApplied.doOnTerminate(new Action0() {
+
+            @Override
+            public void call() {
+                // record that we're completed (to handle non-successful events we do it here as well as at the end of executeCommand
+                isExecutionComplete.set(true);
+            }
+
+        }).doOnEach(new Action1<Notification<? super R>>() {
+
+            @Override
+            public void call(Notification<? super R> n) {
+                setRequestContextIfNeeded(currentRequestContext);
+            }
+        });
+    }
+
+    /**
+     * Returns true iff the t was caused by a java.lang.Error that is unrecoverable.  Note: not all java.lang.Errors are unrecoverable.
+     * @see <a href="https://github.com/Netflix/Hystrix/issues/713"></a> for more context
+     * Solution taken from <a href="https://github.com/ReactiveX/RxJava/issues/748"></a>
+     *
+     * The specific set of Error that are considered unrecoverable are:
+     * <ul>
+     * <li>{@code StackOverflowError}</li>
+     * <li>{@code VirtualMachineError}</li>
+     * <li>{@code ThreadDeath}</li>
+     * <li>{@code LinkageError}</li>
+     * </ul>
+     *
+     * @param t throwable to check
+     * @return true iff the t was caused by a java.lang.Error that is unrecoverable
+     */
+    private boolean isUnrecoverable(Throwable t) {
+        if (t != null && t.getCause() != null) {
+            Throwable cause = t.getCause();
+            if (cause instanceof StackOverflowError) {
+                return true;
+            } else if (t instanceof VirtualMachineError) {
+                return true;
+            } else if (t instanceof ThreadDeath) {
+                return true;
+            } else if (t instanceof LinkageError) {
+                return true;
+            }
+        }
+        return false;
     }
 
     protected void handleThreadEnd() {
