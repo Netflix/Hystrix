@@ -673,7 +673,10 @@ public abstract class HystrixCommandProperties {
             return this;
         }
 
-        @Deprecated //prefer {@link #withExecutionTimeoutInMilliseconds}
+        /**
+         * @deprecated As of 1.4.0, replaced with {@link #withExecutionTimeoutInMilliseconds(int)}.  Timeouts are no longer applied only to thread-isolated commands, so a thread-specific name is misleading
+         */
+        @Deprecated
         public Setter withExecutionIsolationThreadTimeoutInMilliseconds(int value) {
             this.executionTimeoutInMilliseconds = value;
             return this;
