@@ -253,6 +253,9 @@ public abstract class HystrixCommandProperties {
     }
 
     /**
+     *
+     * @deprecated  As of release 1.4.0, replaced by {@link #executionTimeoutInMilliseconds()}.  Timeout is no longer specific to thread-isolation commands, so the thread-specific name is misleading.
+     *
      * Time in milliseconds at which point the command will timeout and halt execution.
      * <p>
      * If {@link #executionIsolationThreadInterruptOnTimeout} == true and the command is thread-isolated, the executing thread will be interrupted.
