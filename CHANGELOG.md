@@ -1,5 +1,15 @@
 # Hystrix Releases #
 
+### Version 1.4.4 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.4%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.4/)) ###
+
+* [Pull 743](https://github.com/Netflix/Hystrix/pull/743) Proper Javadoc deprecation for command timeouts being thread-specific
+* [Pull 742](https://github.com/Netflix/Hystrix/pull/742) Add flag to disable command timeouts
+* [Pull 741](https://github.com/Netflix/Hystrix/pull/741) Bugfix to java.lang.Error handling
+* [Pull 735](https://github.com/Netflix/Hystrix/pull/735) (Javanica) BatchHystrixCommand
+* [Pull 739](https://github.com/Netflix/Hystrix/pull/739) Mark some java.lang.Errors as unrecoverable and never trigger fallback
+* [Pull 738](https://github.com/Netflix/Hystrix/pull/738) Filter out thread pools with no thread activity from hystrics-metrics-event-stream
+* [Pull 732](https://github.com/Netflix/Hystrix/pull/732) Comment out flaky unit test
+
 ### Version 1.4.3 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.3%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.3/)) ###
 
 * [Pull 731](https://github.com/Netflix/Hystrix/pull/731) Revert to Java 6
