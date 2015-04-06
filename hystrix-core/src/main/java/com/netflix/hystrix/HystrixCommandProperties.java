@@ -253,6 +253,9 @@ public abstract class HystrixCommandProperties {
     }
 
     /**
+     *
+     * @deprecated  As of release 1.4.0, replaced by {@link #executionTimeoutInMilliseconds()}.  Timeout is no longer specific to thread-isolation commands, so the thread-specific name is misleading.
+     *
      * Time in milliseconds at which point the command will timeout and halt execution.
      * <p>
      * If {@link #executionIsolationThreadInterruptOnTimeout} == true and the command is thread-isolated, the executing thread will be interrupted.
@@ -670,7 +673,10 @@ public abstract class HystrixCommandProperties {
             return this;
         }
 
-        @Deprecated //prefer {@link #withExecutionTimeoutInMilliseconds}
+        /**
+         * @deprecated As of 1.4.0, replaced with {@link #withExecutionTimeoutInMilliseconds(int)}.  Timeouts are no longer applied only to thread-isolated commands, so a thread-specific name is misleading
+         */
+        @Deprecated
         public Setter withExecutionIsolationThreadTimeoutInMilliseconds(int value) {
             this.executionTimeoutInMilliseconds = value;
             return this;
