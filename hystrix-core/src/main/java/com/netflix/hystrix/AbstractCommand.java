@@ -857,11 +857,11 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
             Throwable cause = t.getCause();
             if (cause instanceof StackOverflowError) {
                 return true;
-            } else if (t instanceof VirtualMachineError) {
+            } else if (cause instanceof VirtualMachineError) {
                 return true;
-            } else if (t instanceof ThreadDeath) {
+            } else if (cause instanceof ThreadDeath) {
                 return true;
-            } else if (t instanceof LinkageError) {
+            } else if (cause instanceof LinkageError) {
                 return true;
             }
         }
