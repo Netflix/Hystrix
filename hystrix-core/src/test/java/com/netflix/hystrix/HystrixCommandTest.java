@@ -1846,6 +1846,23 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
     }
 
     @Test
+    public void testDisabledTimeoutWorks() {
+        CommandWithDisabledTimeout cmd = new CommandWithDisabledTimeout(100, 900);
+        boolean result = false;
+        try {
+            result = cmd.execute();
+        } catch (Throwable ex) {
+            ex.printStackTrace();
+            fail("should not fail");
+        }
+
+        assertEquals(true, result);
+        assertFalse(cmd.isResponseTimedOut());
+        System.out.println("CMD : " + cmd.currentRequestLog.getExecutedCommandsAsString());
+        assertTrue(cmd.executionResult.getExecutionTime() >= 900);
+    }
+
+    @Test
     public void testFallbackSemaphore() {
         TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
         // single thread should work
@@ -4985,6 +5002,32 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
             }
 
             return hasBeenInterrupted;
+        }
+    }
+
+    private static class CommandWithDisabledTimeout extends TestHystrixCommand<Boolean> {
+        private final int latency;
+
+        public CommandWithDisabledTimeout(int timeout, int latency) {
+            super(testPropsBuilder().setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter()
+                    .withExecutionTimeoutInMilliseconds(timeout)
+                    .withExecutionTimeoutEnabled(false)));
+            this.latency = latency;
+        }
+
+        @Override
+        protected Boolean run() throws Exception {
+            try {
+                Thread.sleep(latency);
+                return true;
+            } catch (InterruptedException ex) {
+                return false;
+            }
+        }
+
+        @Override
+        protected Boolean getFallback() {
+            return false;
         }
     }
 }

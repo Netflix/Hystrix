@@ -542,7 +542,11 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
             }
 
 
-        }).lift(new HystrixObservableTimeoutOperator<R>(_self)).doOnNext(new Action1<R>() {
+        });
+        if (properties.executionTimeoutEnabled().get()) {
+            run = run.lift(new HystrixObservableTimeoutOperator<R>(_self));
+        }
+        run = run.doOnNext(new Action1<R>() {
             @Override
             public void call(R r) {
                 if (shouldOutputOnNextEvents()) {
