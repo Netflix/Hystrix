@@ -3472,12 +3472,11 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
     }
 
     /**
-     * Test a java.lang.Error being thrown
+     * Test a recoverable java.lang.Error being thrown with no fallback
      */
     @Test
-    public void testErrorThrownViaExecute() {
-        TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
-        CommandWithErrorThrown command = new CommandWithErrorThrown(circuitBreaker);
+    public void testRecoverableErrorThrownWithNoFallback() {
+        TestHystrixCommand<?> command = getRecoverableErrorCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.FallbackResult.UNIMPLEMENTED);
         try {
             command.execute();
             fail("we expect to receive a " + Error.class.getSimpleName());
@@ -3485,108 +3484,96 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
             // the actual error is an extra cause level deep because Hystrix needs to wrap Throwable/Error as it's public
             // methods only support Exception and it's not a strong enough reason to break backwards compatibility and jump to version 2.x
             // so HystrixRuntimeException -> wrapper Exception -> actual Error
-            assertEquals("simulated java.lang.Error message", e.getCause().getCause().getMessage());
+            assertEquals("Execution ERROR for TestHystrixCommand", e.getCause().getCause().getMessage());
         }
 
-        assertEquals("simulated java.lang.Error message", command.getFailedExecutionException().getCause().getMessage());
+        assertEquals("Execution ERROR for TestHystrixCommand", command.getFailedExecutionException().getCause().getMessage());
 
         assertTrue(command.getExecutionTimeInMilliseconds() > -1);
         assertTrue(command.isFailedExecution());
 
-        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
-        assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
-        assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
-        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.BAD_REQUEST));
+        assertEquals(0, command.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
+        assertEquals(1, command.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
+        assertEquals(1, command.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
+        assertEquals(0, command.metrics.getRollingCount(HystrixRollingNumberEvent.BAD_REQUEST));
 
-        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
+        assertEquals(0, command.metrics.getCurrentConcurrentExecutionCount());
     }
 
-    /**
-     * Test a java.lang.Error being thrown
-     */
     @Test
-    public void testErrorThrownViaQueue() {
-        TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
-        CommandWithErrorThrown command = new CommandWithErrorThrown(circuitBreaker);
+    public void testRecoverableErrorThrownWithFallback() {
+        TestHystrixCommand<?> command = getRecoverableErrorCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.FallbackResult.SUCCESS);
         try {
-            command.queue().get();
-            fail("we expect to receive an Exception");
+            assertEquals(FlexibleTestHystrixCommand.FALLBACK_VALUE, command.execute());
         } catch (Exception e) {
-            // one cause down from ExecutionException to HystrixRuntime
-            // then the actual error is an extra cause level deep because Hystrix needs to wrap Throwable/Error as it's public
+            fail("we expect to receive a valid fallback");
+        }
+
+        assertTrue(command.getExecutionTimeInMilliseconds() > -1);
+        assertTrue(command.isFailedExecution());
+
+        assertEquals(0, command.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
+        assertEquals(1, command.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
+        assertEquals(0, command.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
+        assertEquals(0, command.metrics.getRollingCount(HystrixRollingNumberEvent.BAD_REQUEST));
+        assertEquals(1, command.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+
+        assertEquals(0, command.metrics.getCurrentConcurrentExecutionCount());
+    }
+
+    @Test
+    public void testUnrecoverableErrorThrownWithNoFallback() {
+        TestHystrixCommand<?> command = getUnrecoverableErrorCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.FallbackResult.UNIMPLEMENTED);
+        try {
+            command.execute();
+            fail("we expect to receive a " + Error.class.getSimpleName());
+        } catch (Exception e) {
+            // the actual error is an extra cause level deep because Hystrix needs to wrap Throwable/Error as it's public
             // methods only support Exception and it's not a strong enough reason to break backwards compatibility and jump to version 2.x
-            // so ExecutionException -> HystrixRuntimeException -> wrapper Exception -> actual Error
-            assertEquals("simulated java.lang.Error message", e.getCause().getCause().getCause().getMessage());
+            // so HystrixRuntimeException -> wrapper Exception -> actual Error
+            assertEquals("Unrecoverable Error for TestHystrixCommand", e.getCause().getCause().getMessage());
         }
 
-        assertEquals("simulated java.lang.Error message", command.getFailedExecutionException().getCause().getMessage());
+        assertEquals("Unrecoverable Error for TestHystrixCommand", command.getFailedExecutionException().getCause().getMessage());
 
         assertTrue(command.getExecutionTimeInMilliseconds() > -1);
         assertTrue(command.isFailedExecution());
 
-        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
-        assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
-        assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
-        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.BAD_REQUEST));
+        assertEquals(0, command.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
+        assertEquals(1, command.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
+        assertEquals(1, command.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
+        assertEquals(0, command.metrics.getRollingCount(HystrixRollingNumberEvent.BAD_REQUEST));
 
-        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
+        assertEquals(0, command.metrics.getCurrentConcurrentExecutionCount());
     }
 
-    /**
-     * Test a java.lang.Error being thrown
-     * 
-     * @throws InterruptedException
-     */
-    @Test
-    public void testErrorThrownViaObserve() throws InterruptedException {
-        TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
-        CommandWithErrorThrown command = new CommandWithErrorThrown(circuitBreaker);
-        final AtomicReference<Throwable> t = new AtomicReference<Throwable>();
-        final CountDownLatch latch = new CountDownLatch(1);
+    @Test //even though fallback is implemented, that logic never fires, as this is an unrecoverable error and should be directly propagated to the caller
+    public void testUnrecoverableErrorThrownWithFallback() {
+        TestHystrixCommand<?> command = getUnrecoverableErrorCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.FallbackResult.SUCCESS);
         try {
-            command.observe().subscribe(new Observer<Boolean>() {
-
-                @Override
-                public void onCompleted() {
-                    latch.countDown();
-                }
-
-                @Override
-                public void onError(Throwable e) {
-                    t.set(e);
-                    latch.countDown();
-                }
-
-                @Override
-                public void onNext(Boolean args) {
-
-                }
-
-            });
+            command.execute();
+            fail("we expect to receive a " + Error.class.getSimpleName());
         } catch (Exception e) {
-            e.printStackTrace();
-            fail("we should not get anything thrown, it should be emitted via the Observer#onError method");
+            // the actual error is an extra cause level deep because Hystrix needs to wrap Throwable/Error as it's public
+            // methods only support Exception and it's not a strong enough reason to break backwards compatibility and jump to version 2.x
+            // so HystrixRuntimeException -> wrapper Exception -> actual Error
+            assertEquals("Unrecoverable Error for TestHystrixCommand", e.getCause().getCause().getMessage());
         }
 
-        latch.await(1, TimeUnit.SECONDS);
-        assertNotNull(t.get());
-        t.get().printStackTrace();
-
-        assertTrue(t.get() instanceof HystrixRuntimeException);
-        // the actual error is an extra cause level deep because Hystrix needs to wrap Throwable/Error as it's public
-        // methods only support Exception and it's not a strong enough reason to break backwards compatibility and jump to version 2.x
-        assertEquals("simulated java.lang.Error message", t.get().getCause().getCause().getMessage());
-        assertEquals("simulated java.lang.Error message", command.getFailedExecutionException().getCause().getMessage());
+        assertEquals("Unrecoverable Error for TestHystrixCommand", command.getFailedExecutionException().getCause().getMessage());
 
         assertTrue(command.getExecutionTimeInMilliseconds() > -1);
         assertTrue(command.isFailedExecution());
 
-        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
-        assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
-        assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
-        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.BAD_REQUEST));
+        assertEquals(0, command.metrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
+        assertEquals(1, command.metrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
+        assertEquals(1, command.metrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
+        assertEquals(0, command.metrics.getRollingCount(HystrixRollingNumberEvent.BAD_REQUEST));
+        assertEquals(0, command.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, command.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
+        assertEquals(0, command.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
 
-        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
+        assertEquals(0, command.metrics.getCurrentConcurrentExecutionCount());
     }
 
 //    @Test
@@ -4234,8 +4221,10 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
                 throw new RuntimeException("Execution Failure for TestHystrixCommand");
             } else if (executionResult == AbstractTestHystrixCommand.ExecutionResult.HYSTRIX_FAILURE) {
                 throw new HystrixRuntimeException(HystrixRuntimeException.FailureType.COMMAND_EXCEPTION, FlexibleTestHystrixCommand.class, "Execution Hystrix Failure for TestHystrixCommand", new RuntimeException("Execution Failure for TestHystrixCommand"), new RuntimeException("Fallback Failure for TestHystrixCommand"));
-            } else if (executionResult == AbstractTestHystrixCommand.ExecutionResult.ERROR) {
+            } else if (executionResult == AbstractTestHystrixCommand.ExecutionResult.RECOVERABLE_ERROR) {
                 throw new java.lang.Error("Execution ERROR for TestHystrixCommand");
+            } else if (executionResult == AbstractTestHystrixCommand.ExecutionResult.UNRECOVERABLE_ERROR) {
+                throw new StackOverflowError("Unrecoverable Error for TestHystrixCommand");
             } else if (executionResult == AbstractTestHystrixCommand.ExecutionResult.BAD_REQUEST) {
                 throw new HystrixBadRequestException("Execution BadRequestException for TestHystrixCommand");
             } else {
@@ -4952,20 +4941,6 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         protected String getCacheKey() {
             return "nein";
         }
-    }
-
-    private static class CommandWithErrorThrown extends TestHystrixCommand<Boolean> {
-
-        public CommandWithErrorThrown(TestCircuitBreaker circuitBreaker) {
-            super(testPropsBuilder()
-                    .setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics));
-        }
-
-        @Override
-        protected Boolean run() throws Exception {
-            throw new Error("simulated java.lang.Error message");
-        }
-
     }
 
     private static class CommandWithCheckedException extends TestHystrixCommand<Boolean> {

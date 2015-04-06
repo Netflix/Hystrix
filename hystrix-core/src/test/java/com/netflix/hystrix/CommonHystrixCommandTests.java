@@ -1509,4 +1509,12 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
     C getCircuitBreakerDisabledCommand(ExecutionIsolationStrategy isolationStrategy, ExecutionResult executionResult) {
         return getCommand(isolationStrategy, executionResult, 0, FallbackResult.UNIMPLEMENTED, 0, new HystrixCircuitBreakerTest.TestCircuitBreaker(), null, 100, CacheEnabled.NO, "foo", 10, 10, true);
     }
+
+    C getRecoverableErrorCommand(ExecutionIsolationStrategy isolationStrategy, FallbackResult fallbackResult) {
+        return getCommand(isolationStrategy, ExecutionResult.RECOVERABLE_ERROR, 0, fallbackResult);
+    }
+
+    C getUnrecoverableErrorCommand(ExecutionIsolationStrategy isolationStrategy, FallbackResult fallbackResult) {
+        return getCommand(isolationStrategy, ExecutionResult.UNRECOVERABLE_ERROR, 0, fallbackResult);
+    }
 }
