@@ -24,7 +24,6 @@ import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
 import com.netflix.hystrix.contrib.javanica.test.spring.conf.AopCglibConfig;
 import com.netflix.hystrix.contrib.javanica.test.spring.domain.User;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
-import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +32,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import static org.junit.Assert.assertEquals;
@@ -50,21 +51,19 @@ public class CollapserPropertiesTest {
     public void testCollapser() throws ExecutionException, InterruptedException {
         HystrixRequestContext context = HystrixRequestContext.initializeContext();
         try {
-            User u1 = userService.getUser("1", "name: ");
-            User u2 = userService.getUser("2", "name: ");
-            User u3 = userService.getUser("3", "name: ");
-            User u4 = userService.getUser("4", "name: ");
+            User u1 = userService.getUser("1");
+            User u2 = userService.getUser("2");
+            User u3 = userService.getUser("3");
+            User u4 = userService.getUser("4");
 
             assertEquals("name: 1", u1.getName());
             assertEquals("name: 2", u2.getName());
             assertEquals("name: 3", u3.getName());
             assertEquals("name: 4", u4.getName());
-
+            assertEquals(4, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
             HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest()
                     .getAllExecutedCommands().iterator().next();
-            assertEquals("getUser", command.getCommandKey().name());
-            //When a command is fronted by an HystrixCollapser then this marks how many requests are collapsed into the single command execution.
-            assertEquals(4, command.getMetrics().getCumulativeCount(HystrixRollingNumberEvent.COLLAPSED));
+            assertEquals("getUsers", command.getCommandKey().name());
             // confirm that it was a COLLAPSED command execution
             assertTrue(command.getExecutionEvents().contains(HystrixEventType.COLLAPSED));
             // and that it was successful
@@ -76,18 +75,23 @@ public class CollapserPropertiesTest {
 
     public static class UserService {
 
-        @HystrixCommand
-        @HystrixCollapser(collapserKey = "GetUserCollapser", collapserProperties = {
+        @HystrixCollapser(
+                batchMethod = "getUsers",
+                collapserKey = "GetUserCollapser", collapserProperties = {
                 @HystrixProperty(name = "maxRequestsInBatch", value = "1"),
                 @HystrixProperty(name = "timerDelayInMilliseconds", value = "200")
         })
-        public User getUser(String id, String name) {
-            return new User(id, name + id);
+        public User getUser(String id) {
+            return null;
         }
 
         @HystrixCommand
-        public User getUserDefProperties(String id, String name) {
-            return new User(id, name + id);
+        public List<User> getUsers(List<String> ids) {
+            List<User> users = new ArrayList<User>();
+            for (String id : ids) {
+                users.add(new User(id, "name: " + id));
+            }
+            return users;
         }
 
     }

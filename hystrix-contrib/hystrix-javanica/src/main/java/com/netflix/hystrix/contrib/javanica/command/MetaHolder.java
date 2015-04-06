@@ -42,6 +42,7 @@ public class MetaHolder {
     private final String defaultCommandKey;
     private final String defaultCollapserKey;
     private final ExecutionType executionType;
+    private final ExecutionType collapserExecutionType;
 
     private MetaHolder(Builder builder) {
         this.hystrixCommand = builder.hystrixCommand;
@@ -56,6 +57,7 @@ public class MetaHolder {
         this.defaultCollapserKey = builder.defaultCollapserKey;
         this.hystrixCollapser = builder.hystrixCollapser;
         this.executionType = builder.executionType;
+        this.collapserExecutionType = builder.collapserExecutionType;
     }
 
     public static Builder builder() {
@@ -94,6 +96,10 @@ public class MetaHolder {
         return executionType;
     }
 
+    public ExecutionType getCollapserExecutionType() {
+        return collapserExecutionType;
+    }
+
     public Object[] getArgs() {
         return args != null ? Arrays.copyOf(args, args.length) : new Object[]{};
     }
@@ -114,6 +120,10 @@ public class MetaHolder {
         return method.getParameterTypes();
     }
 
+    public boolean isCollapser(){
+        return hystrixCollapser!=null;
+    }
+
     public static final class Builder {
 
         private HystrixCollapser hystrixCollapser;
@@ -128,6 +138,7 @@ public class MetaHolder {
         private String defaultCommandKey;
         private String defaultCollapserKey;
         private ExecutionType executionType;
+        private ExecutionType collapserExecutionType;
 
         public Builder hystrixCollapser(HystrixCollapser hystrixCollapser) {
             this.hystrixCollapser = hystrixCollapser;
@@ -171,6 +182,11 @@ public class MetaHolder {
 
         public Builder executionType(ExecutionType executionType) {
             this.executionType = executionType;
+            return this;
+        }
+
+        public Builder collapserExecutionType(ExecutionType collapserExecutionType) {
+            this.collapserExecutionType = collapserExecutionType;
             return this;
         }
 
