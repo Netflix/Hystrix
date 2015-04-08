@@ -500,8 +500,8 @@ public abstract class HystrixCommandProperties {
      * <p>
      * <pre> {@code
      * HystrixCommandProperties.Setter()
-     *           .setExecutionTimeoutInMilliseconds(100)
-     *           .setExecuteCommandOnSeparateThread(true);
+     *           .withExecutionTimeoutInMilliseconds(100)
+     *           .withExecuteCommandOnSeparateThread(true);
      * } </pre>
      * 
      * @NotThreadSafe
@@ -571,7 +571,10 @@ public abstract class HystrixCommandProperties {
             return executionIsolationThreadInterruptOnTimeout;
         }
 
-        @Deprecated //prefer getExecutionTimeoutInMillisconds()
+        /**
+         * @deprecated As of 1.4.0, use {@link #getExecutionTimeoutInMilliseconds()}
+         */
+        @Deprecated
         public Integer getExecutionIsolationThreadTimeoutInMilliseconds() {
             return executionTimeoutInMilliseconds;
         }
