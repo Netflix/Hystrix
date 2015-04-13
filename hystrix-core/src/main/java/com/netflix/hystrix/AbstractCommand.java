@@ -16,6 +16,7 @@
 package com.netflix.hystrix;
 
 import java.lang.ref.Reference;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -120,6 +121,8 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
     // this is a micro-optimization but saves about 1-2microseconds (on 2011 MacBook Pro) 
     // on the repetitive string processing that will occur on the same classes over and over again
     private static ConcurrentHashMap<Class<?>, String> defaultNameCache = new ConcurrentHashMap<Class<?>, String>();
+
+    private static ConcurrentHashMap<HystrixCommandKey, Boolean> commandContainsFallback = new ConcurrentHashMap<HystrixCommandKey, Boolean>();
 
     /* package */static String getDefaultNameFromClass(Class<?> cls) {
         String fromCache = defaultNameCache.get(cls);
@@ -721,7 +724,9 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 
                 // acquire a permit
                 if (fallbackSemaphore.tryAcquire()) {
-                    executionHook.onFallbackStart(this);
+                    if (isFallbackUserSupplied(this)) {
+                        executionHook.onFallbackStart(this);
+                    }
 
                     try {
                         fallbackExecutionChain = getFallbackObservable();
@@ -1052,6 +1057,36 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         } else {
             // return NoOp implementation since we're not using SEMAPHORE isolation
             return TryableSemaphoreNoOp.DEFAULT;
+        }
+    }
+
+    /**
+     * Each concrete implementation of AbstractCommand should return the name of the fallback method as a String
+     * This will be used to determine if the fallback "exists" for firing the onFallbackStart/onFallbackError hooks
+     * @return method name of fallback
+     */
+    protected abstract String getFallbackMethodName();
+
+    /**
+     * For the given command instance, does it define an actual fallback method?
+     * @param cmd command instance
+     * @return true iff there is a user-supplied fallback method on the given command instance
+     */
+    /*package-private*/ static boolean isFallbackUserSupplied(final AbstractCommand<?> cmd) {
+        HystrixCommandKey commandKey = cmd.commandKey;
+        Boolean containsFromMap = commandContainsFallback.get(commandKey);
+        if (containsFromMap != null) {
+            return containsFromMap;
+        } else {
+            Boolean toInsertIntoMap;
+            try {
+                cmd.getClass().getDeclaredMethod(cmd.getFallbackMethodName());
+                toInsertIntoMap = true;
+            } catch (NoSuchMethodException nsme) {
+                toInsertIntoMap = false;
+            }
+            commandContainsFallback.put(commandKey, toInsertIntoMap);
+            return toInsertIntoMap;
         }
     }
 
@@ -1471,7 +1506,11 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
     private Exception wrapWithOnFallbackErrorHook(Throwable t) {
         Exception e = getExceptionFromThrowable(t);
         try {
-            return executionHook.onFallbackError(this, e);
+            if (isFallbackUserSupplied(this)) {
+                return executionHook.onFallbackError(this, e);
+            } else {
+                return e;
+            }
         } catch (Throwable hookEx) {
             logger.warn("Error calling ExecutionHook.onFallbackError", hookEx);
             return e;
