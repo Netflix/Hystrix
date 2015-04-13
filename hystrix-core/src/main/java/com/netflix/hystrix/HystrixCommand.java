@@ -405,4 +405,9 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
         return f;
     }
 
+    @Override
+    protected String getFallbackMethodName() {
+        return "getFallback";
+    }
+
 }
