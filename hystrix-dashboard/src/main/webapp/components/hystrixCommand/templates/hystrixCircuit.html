@@ -5,8 +5,8 @@
 		</div>
 		
 		<div class="cell borderRight">
+			<a href="javascript://" title="Timed-out Request Count" class="line tooltip timeout"><%= addCommas(rollingCountTimeout) %></a>
 			<% if(propertyValue_executionIsolationStrategy == 'THREAD') { %>
-				<a href="javascript://" title="Timed-out Request Count" class="line tooltip timeout"><%= addCommas(rollingCountTimeout) %></a>
 				<a href="javascript://" title="Threadpool Rejected Request Count" class="line tooltip rejected"><%= addCommas(rollingCountThreadPoolRejected) %></a>
 			<% } %>
 			<% if(propertyValue_executionIsolationStrategy == 'SEMAPHORE') { %>
