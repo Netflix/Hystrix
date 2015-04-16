@@ -76,7 +76,9 @@ public abstract class HystrixConcurrencyStrategy {
 
             @Override
             public Thread newThread(Runnable r) {
-                return new Thread(r, "hystrix-" + threadPoolKey.name() + "-" + threadNumber.incrementAndGet());
+                Thread thread = new Thread(r, "hystrix-" + threadPoolKey.name() + "-" + threadNumber.incrementAndGet());
+                thread.setDaemon(true);
+                return thread; 
             }
         });
     }
