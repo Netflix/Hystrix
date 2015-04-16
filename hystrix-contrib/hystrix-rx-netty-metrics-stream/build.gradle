@@ -1,6 +1,6 @@
 dependencies {
     compile project(':hystrix-core')
-    compile "com.netflix.rxnetty:rx-netty:0.3.8"
+    compile 'io.reactivex:rxnetty:0.4.7'
     compile 'org.codehaus.jackson:jackson-core-asl:1.9.2'
     compile 'org.codehaus.jackson:jackson-mapper-asl:1.9.2'
     testCompile 'junit:junit-dep:4.10'
