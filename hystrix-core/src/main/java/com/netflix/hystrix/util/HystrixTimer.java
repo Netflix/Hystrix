@@ -152,7 +152,9 @@ public class HystrixTimer {
 
                 @Override
                 public Thread newThread(Runnable r) {
-                    return new Thread(r, "HystrixTimer-" + counter.incrementAndGet());
+                    Thread thread = new Thread(r, "HystrixTimer-" + counter.incrementAndGet());
+                    thread.setDaemon(true);
+                    return thread;
                 }
 
             });
