@@ -1,5 +1,19 @@
 # Hystrix Releases #
 
+### Version 1.4.5 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.5%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.5/)) ###
+
+* [Pull 764](https://github.com/Netflix/Hystrix/pull/764) Upgrade RxJava from 1.0.7 to 1.0.9
+* [Pull 763](https://github.com/Netflix/Hystrix/pull/763) Upgrade Jackson for hystrix-metrics-event-stream from 1.9.2 to 2.5.2
+* [Pull 760](https://github.com/Netflix/Hystrix/pull/760) Set Hystrix-created threads to be daemon
+* [Pull 757](https://github.com/Netflix/Hystrix/pull/757) Update RxNetty version in hystrix-rx-netty-metrics-stream from 0.3.8 to 0.4.7
+* [Pull 755](https://github.com/Netflix/Hystrix/pull/755) Improve Javadoc for HystrixThreadPoolProperties.Setter
+* [Pull 754](https://github.com/Netflix/Hystrix/pull/754) Only fire onFallbackStart/onFallbackError hooks when a user-supplied fallback is invoked
+* [Pull 753](https://github.com/Netflix/Hystrix/pull/753) Add timeout to dashboard for semaphore commands
+* [Pull 750](https://github.com/Netflix/Hystrix/pull/750) First pass at jmh performance benchmarking
+* [Pull 748](https://github.com/Netflix/Hystrix/pull/748) Fix return value of HystrixCircuiBreakerImpl.isOpen when it loses a race to open a circuit
+* [Pull 746](https://github.com/Netflix/Hystrix/pull/746) Improve Javadoc for HystrixCommandProperties.Setter
+
+
 ### Version 1.4.4 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.4%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.4/)) ###
 
 * [Pull 743](https://github.com/Netflix/Hystrix/pull/743) Proper Javadoc deprecation for command timeouts being thread-specific
