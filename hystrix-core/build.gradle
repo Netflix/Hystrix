@@ -36,7 +36,7 @@ jar {
 
 jmh {
 	fork = 1
-	iterations = 5
+	iterations = 25
 	threads = 8
 	warmup = '1s'
 	warmupBatchSize = 1
