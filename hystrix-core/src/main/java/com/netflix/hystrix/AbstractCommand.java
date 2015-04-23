@@ -207,7 +207,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
          * Metrics initialization
          */
         if (metrics == null) {
-            this.metrics = HystrixCommandMetrics.getInstance(this.commandKey, this.commandGroup, this.properties);
+            this.metrics = HystrixCommandMetrics.getInstance(this.commandKey, this.commandGroup, this.threadPoolKey, this.properties);
         } else {
             this.metrics = metrics;
         }

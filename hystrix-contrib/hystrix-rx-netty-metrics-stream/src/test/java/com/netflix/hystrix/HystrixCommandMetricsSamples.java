@@ -42,6 +42,13 @@ public class HystrixCommandMetricsSamples {
         }
     }
 
+    private static class MyHystrixThreadPoolKey implements HystrixThreadPoolKey {
+        @Override
+        public String name() {
+            return "hystrixThreadPoolKey";
+        }
+    }
+
     private static class MyHystrixCommandProperties extends HystrixCommandProperties {
         protected MyHystrixCommandProperties(HystrixCommandKey key) {
             super(key);
@@ -50,7 +57,7 @@ public class HystrixCommandMetricsSamples {
 
     static {
         HystrixCommandKey key = new MyHystrixCommandKey();
-        SAMPLE_1 = new HystrixCommandMetrics(key, new MyHystrixCommandGroupKey(),
+        SAMPLE_1 = new HystrixCommandMetrics(key, new MyHystrixCommandGroupKey(), new MyHystrixThreadPoolKey(),
                 new MyHystrixCommandProperties(key), HystrixEventNotifierDefault.getInstance());
     }
 }

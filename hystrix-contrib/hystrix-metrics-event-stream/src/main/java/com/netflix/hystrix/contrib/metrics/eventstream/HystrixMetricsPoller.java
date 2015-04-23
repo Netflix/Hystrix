@@ -186,6 +186,7 @@ public class HystrixMetricsPoller {
             json.writeStringField("type", "HystrixCommand");
             json.writeStringField("name", key.name());
             json.writeStringField("group", commandMetrics.getCommandGroup().name());
+            json.writeStringField("threadPool", commandMetrics.getThreadPoolKey().name());
             json.writeNumberField("currentTime", System.currentTimeMillis());
 
             // circuit breaker

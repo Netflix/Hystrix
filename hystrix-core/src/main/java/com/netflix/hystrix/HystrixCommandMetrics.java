@@ -57,13 +57,38 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      * @return {@link HystrixCommandMetrics}
      */
     public static HystrixCommandMetrics getInstance(HystrixCommandKey key, HystrixCommandGroupKey commandGroup, HystrixCommandProperties properties) {
+        return getInstance(key, commandGroup, null, properties);
+    }
+
+    /**
+     * Get or create the {@link HystrixCommandMetrics} instance for a given {@link HystrixCommandKey}.
+     * <p>
+     * This is thread-safe and ensures only 1 {@link HystrixCommandMetrics} per {@link HystrixCommandKey}.
+     *
+     * @param key
+     *            {@link HystrixCommandKey} of {@link HystrixCommand} instance requesting the {@link HystrixCommandMetrics}
+     * @param commandGroup
+     *            Pass-thru to {@link HystrixCommandMetrics} instance on first time when constructed
+     * @param properties
+     *            Pass-thru to {@link HystrixCommandMetrics} instance on first time when constructed
+     * @return {@link HystrixCommandMetrics}
+     */
+    public static HystrixCommandMetrics getInstance(HystrixCommandKey key, HystrixCommandGroupKey commandGroup, HystrixThreadPoolKey threadPoolKey, HystrixCommandProperties properties) {
         // attempt to retrieve from cache first
         HystrixCommandMetrics commandMetrics = metrics.get(key.name());
         if (commandMetrics != null) {
             return commandMetrics;
         }
         // it doesn't exist so we need to create it
-        commandMetrics = new HystrixCommandMetrics(key, commandGroup, properties, HystrixPlugins.getInstance().getEventNotifier());
+
+        //now check to see if we need to create a synthetic threadPoolKey
+        HystrixThreadPoolKey nonNullThreadPoolKey;
+        if (threadPoolKey == null) {
+            nonNullThreadPoolKey = HystrixThreadPoolKey.Factory.asKey(commandGroup.name());
+        } else {
+            nonNullThreadPoolKey = threadPoolKey;
+        }
+        commandMetrics = new HystrixCommandMetrics(key, commandGroup, nonNullThreadPoolKey, properties, HystrixPlugins.getInstance().getEventNotifier());
         // attempt to store it (race other threads)
         HystrixCommandMetrics existing = metrics.putIfAbsent(key.name(), commandMetrics);
         if (existing == null) {
@@ -107,13 +132,15 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     private final HystrixRollingPercentile percentileTotal;
     private final HystrixCommandKey key;
     private final HystrixCommandGroupKey group;
+    private final HystrixThreadPoolKey threadPoolKey;
     private final AtomicInteger concurrentExecutionCount = new AtomicInteger();
     private final HystrixEventNotifier eventNotifier;
 
-    /* package */HystrixCommandMetrics(HystrixCommandKey key, HystrixCommandGroupKey commandGroup, HystrixCommandProperties properties, HystrixEventNotifier eventNotifier) {
+    /* package */HystrixCommandMetrics(HystrixCommandKey key, HystrixCommandGroupKey commandGroup, HystrixThreadPoolKey threadPoolKey, HystrixCommandProperties properties, HystrixEventNotifier eventNotifier) {
         super(new HystrixRollingNumber(properties.metricsRollingStatisticalWindowInMilliseconds(), properties.metricsRollingStatisticalWindowBuckets()));
         this.key = key;
         this.group = commandGroup;
+        this.threadPoolKey = threadPoolKey;
         this.properties = properties;
         this.percentileExecution = new HystrixRollingPercentile(properties.metricsRollingPercentileWindowInMilliseconds(), properties.metricsRollingPercentileWindowBuckets(), properties.metricsRollingPercentileBucketSize(), properties.metricsRollingPercentileEnabled());
         this.percentileTotal = new HystrixRollingPercentile(properties.metricsRollingPercentileWindowInMilliseconds(), properties.metricsRollingPercentileWindowBuckets(), properties.metricsRollingPercentileBucketSize(), properties.metricsRollingPercentileEnabled());
@@ -131,12 +158,22 @@ public class HystrixCommandMetrics extends HystrixMetrics {
 
     /**
      * {@link HystrixCommandGroupKey} of the {@link HystrixCommand} these metrics represent.
-     * 
+     *
      * @return HystrixCommandGroupKey
      */
     public HystrixCommandGroupKey getCommandGroup() {
         return group;
     }
+
+    /**
+     * {@link HystrixThreadPoolKey} used by {@link HystrixCommand} these metrics represent.
+     *
+     * @return HystrixThreadPoolKey
+     */
+    public HystrixThreadPoolKey getThreadPoolKey() {
+        return threadPoolKey;
+    }
+
 
     /**
      * {@link HystrixCommandProperties} of the {@link HystrixCommand} these metrics represent.
