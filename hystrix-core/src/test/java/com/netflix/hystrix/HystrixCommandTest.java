@@ -703,6 +703,30 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
     }
 
     /**
+     * Tests that the circuit-breaker reports itself as "CLOSED" if set as forced-closed
+     */
+    @Test
+    public void testCircuitBreakerReportsClosedIfForcedClosed() {
+        HystrixCommand<Boolean> cmd = new HystrixCommand<Boolean>(HystrixCommand.Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("GROUP")).andCommandPropertiesDefaults(
+                new HystrixCommandProperties.Setter().withCircuitBreakerForceOpen(false).withCircuitBreakerForceClosed(true))) {
+
+            @Override
+            protected Boolean run() throws Exception {
+                return true;
+            }
+
+            @Override
+            protected Boolean getFallback() {
+                return false;
+            }
+        };
+
+        assertTrue(cmd.execute());
+        System.out.println("RESULT : " + cmd.getExecutionEvents());
+        assertFalse(cmd.isCircuitBreakerOpen());
+    }
+
+    /**
      * Test that the circuit-breaker will 'trip' and prevent command execution on subsequent calls.
      */
     @Test
