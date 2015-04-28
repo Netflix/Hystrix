@@ -632,7 +632,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                             logger.warn("ExecutionHook.onError returned an exception that was not an instance of HystrixBadRequestException so will be ignored.", decorated);
                         }
                     } catch (Exception hookEx) {
-                        logger.warn("Error calling ExecutionHook.onError", hookEx);
+                        logger.warn("Error calling HystrixCommandExecutionHook.onError", hookEx);
                     }
                     /*
                      * HystrixBadRequestException is treated differently and allowed to propagate without any stats tracking or fallback logic
