@@ -186,7 +186,6 @@ public class HystrixMetricsPoller {
             json.writeStringField("type", "HystrixCommand");
             json.writeStringField("name", key.name());
             json.writeStringField("group", commandMetrics.getCommandGroup().name());
-            json.writeStringField("threadPool", commandMetrics.getThreadPoolKey().name());
             json.writeNumberField("currentTime", System.currentTimeMillis());
 
             // circuit breaker
@@ -282,6 +281,7 @@ public class HystrixMetricsPoller {
             json.writeBooleanField("propertyValue_requestLogEnabled", commandProperties.requestLogEnabled().get());
 
             json.writeNumberField("reportingHosts", 1); // this will get summed across all instances in a cluster
+            json.writeStringField("threadPool", commandMetrics.getThreadPoolKey().name());
 
             json.writeEndObject();
             json.close();
