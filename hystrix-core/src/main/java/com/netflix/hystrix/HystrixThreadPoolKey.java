@@ -69,5 +69,9 @@ public interface HystrixThreadPoolKey {
             }
 
         }
+
+        /* package-private */ static int getThreadPoolCount() {
+            return intern.size();
+        }
     }
 }
