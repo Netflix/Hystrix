@@ -2,7 +2,7 @@
 
 ### Version 1.4.6 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.6%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.6/)) ###
 
-* [Pull 772](https://github.com/Netflix/Hystrix/pull/772) Add try-catch to all command invocations
+* [Pull 772](https://github.com/Netflix/Hystrix/pull/772) Add try-catch to all hook invocations
 * [Pull 773](https://github.com/Netflix/Hystrix/pull/773) Move threadPool field to end of metrics stream
 * [Pull 770](https://github.com/Netflix/Hystrix/pull/770) Fix AbstractCommand.isCircuitBreakerOpen() return value when circuit is forced open or closed
 * [Pull 769](https://github.com/Netflix/Hystrix/pull/769) Add threadPool to command metrics in event stream
