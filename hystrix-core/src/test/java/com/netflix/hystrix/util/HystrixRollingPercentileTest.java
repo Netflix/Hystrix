@@ -31,13 +31,12 @@ public class HystrixRollingPercentileTest {
 
     private static final HystrixProperty<Integer> timeInMilliseconds = HystrixProperty.Factory.asProperty(60000);
     private static final HystrixProperty<Integer> numberOfBuckets = HystrixProperty.Factory.asProperty(12); // 12 buckets at 5000ms each
-    private static final HystrixProperty<Integer> bucketDataLength = HystrixProperty.Factory.asProperty(1000);
     private static final HystrixProperty<Boolean> enabled = HystrixProperty.Factory.asProperty(true);
 
     @Test
     public void testRolling() {
         MockedTime time = new MockedTime();
-        HystrixRollingPercentile p = new HystrixRollingPercentile(time, timeInMilliseconds, numberOfBuckets, bucketDataLength, enabled);
+        HystrixRollingPercentile p = new HystrixRollingPercentile(time, timeInMilliseconds, numberOfBuckets, enabled);
         p.addValue(1000);
         p.addValue(1000);
         p.addValue(1000);
@@ -100,7 +99,7 @@ public class HystrixRollingPercentileTest {
     @Test
     public void testValueIsZeroAfterRollingWindowPassesAndNoTraffic() {
         MockedTime time = new MockedTime();
-        HystrixRollingPercentile p = new HystrixRollingPercentile(time, timeInMilliseconds, numberOfBuckets, bucketDataLength, enabled);
+        HystrixRollingPercentile p = new HystrixRollingPercentile(time, timeInMilliseconds, numberOfBuckets, enabled);
         p.addValue(1000);
         p.addValue(1000);
         p.addValue(1000);
@@ -118,7 +117,11 @@ public class HystrixRollingPercentileTest {
         assertEquals(1, p.buckets.size());
 
         // a bucket has been created so we have a new percentile
-        assertEquals(1500, p.getPercentile(50));
+        assertEquals(1000, p.getPercentile(0));
+        assertEquals(1000, p.getPercentile(25));
+        assertEquals(1000, p.getPercentile(50));
+        assertEquals(2000, p.getPercentile(75));
+        assertEquals(4000, p.getPercentile(100));
 
         // let 1 minute pass
         time.increment(60000);
@@ -132,7 +135,7 @@ public class HystrixRollingPercentileTest {
         System.out.println("\n\n***************************** testSampleDataOverTime1 \n");
 
         MockedTime time = new MockedTime();
-        HystrixRollingPercentile p = new HystrixRollingPercentile(time, timeInMilliseconds, numberOfBuckets, bucketDataLength, enabled);
+        HystrixRollingPercentile p = new HystrixRollingPercentile(time, timeInMilliseconds, numberOfBuckets, enabled);
         int previousTime = 0;
         for (int i = 0; i < SampleDataHolder1.data.length; i++) {
             int timeInMillisecondsSinceStart = SampleDataHolder1.data[i][0];
@@ -172,7 +175,7 @@ public class HystrixRollingPercentileTest {
         System.out.println("\n\n***************************** testSampleDataOverTime2 \n");
         MockedTime time = new MockedTime();
         int previousTime = 0;
-        HystrixRollingPercentile p = new HystrixRollingPercentile(time, timeInMilliseconds, numberOfBuckets, bucketDataLength, enabled);
+        HystrixRollingPercentile p = new HystrixRollingPercentile(time, timeInMilliseconds, numberOfBuckets, enabled);
         for (int i = 0; i < SampleDataHolder2.data.length; i++) {
             int timeInMillisecondsSinceStart = SampleDataHolder2.data[i][0];
             int latency = SampleDataHolder2.data[i][1];
@@ -216,38 +219,13 @@ public class HystrixRollingPercentileTest {
     @Test
     public void testPercentileAlgorithm_Median3() {
         PercentileSnapshot list = new PercentileSnapshot(50, 75, 100, 125, 160, 170, 180, 200, 210, 300, 500);
-        //            list.addValue(50); // 1
-        //            list.addValue(75); // 2
-        //            list.addValue(100); // 3
-        //            list.addValue(125); // 4
-        //            list.addValue(160); // 5
-        //            list.addValue(170); // 6 
-        //            list.addValue(180); // 7
-        //            list.addValue(200); // 8
-        //            list.addValue(210); // 9
-        //            list.addValue(300); // 10
-        //            list.addValue(500); // 11
-
-        Assert.assertEquals(175, list.getPercentile(50));
+        Assert.assertEquals(170, list.getPercentile(50));
     }
 
     @Test
     public void testPercentileAlgorithm_Median4() {
         PercentileSnapshot list = new PercentileSnapshot(300, 75, 125, 500, 100, 160, 180, 200, 210, 50, 170);
-        // unsorted so it is expected to sort it for us
-        //            list.addValue(300); // 10
-        //            list.addValue(75); // 2
-        //            list.addValue(125); // 4
-        //            list.addValue(500); // 11
-        //            list.addValue(100); // 3
-        //            list.addValue(160); // 5
-        //            list.addValue(180); // 7
-        //            list.addValue(200); // 8
-        //            list.addValue(210); // 9
-        //            list.addValue(50); // 1
-        //            list.addValue(170); // 6 
-
-        Assert.assertEquals(175, list.getPercentile(50));
+        Assert.assertEquals(170, list.getPercentile(50));
     }
 
     @Test
@@ -276,8 +254,10 @@ public class HystrixRollingPercentileTest {
     @Test
     public void testPercentileAlgorithm_HighPercentile() {
         PercentileSnapshot p = getPercentileForValues(1, 2, 3);
+        Assert.assertEquals(1, p.getPercentile(0));
         Assert.assertEquals(2, p.getPercentile(50));
-        Assert.assertEquals(3, p.getPercentile(75));
+        Assert.assertEquals(2, p.getPercentile(75));
+        Assert.assertEquals(3, p.getPercentile(100));
     }
 
     @Test
@@ -290,21 +270,15 @@ public class HystrixRollingPercentileTest {
     @Test
     public void testPercentileAlgorithm_Percentiles() {
         PercentileSnapshot p = getPercentileForValues(10, 30, 20, 40);
-        Assert.assertEquals(22, p.getPercentile(30), 1.0e-5);
-        Assert.assertEquals(20, p.getPercentile(25), 1.0e-5);
-        Assert.assertEquals(40, p.getPercentile(75), 1.0e-5);
-        Assert.assertEquals(30, p.getPercentile(50), 1.0e-5);
+        Assert.assertEquals(10, p.getPercentile(30), 1.0e-5);
+        Assert.assertEquals(10, p.getPercentile(25), 1.0e-5);
+        Assert.assertEquals(30, p.getPercentile(75), 1.0e-5);
+        Assert.assertEquals(20, p.getPercentile(50), 1.0e-5);
+        Assert.assertEquals(40, p.getPercentile(90), 1.0e-5);
 
         // invalid percentiles
         Assert.assertEquals(10, p.getPercentile(-1));
         Assert.assertEquals(40, p.getPercentile(101));
-    }
-
-    @Test
-    public void testPercentileAlgorithm_NISTExample() {
-        PercentileSnapshot p = getPercentileForValues(951772, 951567, 951937, 951959, 951442, 950610, 951591, 951195, 951772, 950925, 951990, 951682);
-        Assert.assertEquals(951983, p.getPercentile(90));
-        Assert.assertEquals(951990, p.getPercentile(100));
     }
 
     /**
@@ -314,7 +288,7 @@ public class HystrixRollingPercentileTest {
     public void testDoesNothingWhenDisabled() {
         MockedTime time = new MockedTime();
         int previousTime = 0;
-        HystrixRollingPercentile p = new HystrixRollingPercentile(time, timeInMilliseconds, numberOfBuckets, bucketDataLength, HystrixProperty.Factory.asProperty(false));
+        HystrixRollingPercentile p = new HystrixRollingPercentile(time, timeInMilliseconds, numberOfBuckets, HystrixProperty.Factory.asProperty(false));
         for (int i = 0; i < SampleDataHolder2.data.length; i++) {
             int timeInMillisecondsSinceStart = SampleDataHolder2.data[i][0];
             int latency = SampleDataHolder2.data[i][1];

@@ -5,9 +5,9 @@ dependencies {
     compile 'com.netflix.archaius:archaius-core:0.4.1'
     compile 'io.reactivex:rxjava:1.0.9'
     compile 'org.slf4j:slf4j-api:1.7.0'
+	compile 'org.hdrhistogram:HdrHistogram:2.1.4'
     testCompile 'junit:junit-dep:4.10'
 }
-
 
 javadoc {
     // the exclude isn't working, nor is there a subPackages options as docs suggest there should be
