@@ -534,6 +534,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                         } catch (Throwable hookEx) {
                             logger.warn("Error calling HystrixCommandExecutionHook.onExecutionStart", hookEx);
                         }
+                        HystrixCounters.incrementGlobalConcurrentThreads();
                         threadPool.markThreadExecution();
                         // store the command that is being run
                         endCurrentThreadExecutingCommand.set(Hystrix.startCurrentThreadExecutingCommand(getCommandKey()));
@@ -914,6 +915,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
             endCurrentThreadExecutingCommand.get().call();
         }
         if (isExecutedInThread.get()) {
+            HystrixCounters.decrementGlobalConcurrentThreads();
             threadPool.markThreadCompletion();
             try {
                 executionHook.onThreadComplete(this);
