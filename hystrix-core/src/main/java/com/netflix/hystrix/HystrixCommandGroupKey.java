@@ -69,5 +69,9 @@ public interface HystrixCommandGroupKey {
             }
 
         }
+
+        /* package-private */ static int getGroupCount() {
+            return intern.size();
+        }
     }
 }
