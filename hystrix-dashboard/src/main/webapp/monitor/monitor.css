@@ -75,12 +75,15 @@ h3.sectionHeader {
 .success {
 	color: green;	
 }
+
 .shortCircuited {
 	color: blue;	
 }
+
 .timeout {
 	color: #FF9900;	 /* shade of orange */
 }
+
 .failure {
 	color: red;	
 }
@@ -91,6 +94,10 @@ h3.sectionHeader {
 	
 .exceptionsThrown {
 	color: brown;
+}
+
+.badRequest {
+	color: lightSeaGreen;
 }
 
 @media screen and (max-width: 1100px) {
