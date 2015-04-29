@@ -116,12 +116,15 @@
 .dependencies .success {
 	color: green;
 }
+
 .dependencies .shortCircuited {
 	color: blue;
 }
+
 .dependencies .timeout {
 	color: #FF9900;	 /* shade of orange */
 }
+
 .dependencies .failure {
 	color: red;
 }
@@ -132,6 +135,10 @@
 
 .dependencies .exceptionsThrown {
 	color: brown;
+}
+
+.dependencies .badRequest {
+	color: lightSeaGreen;
 }
 
 .dependencies div.monitor_data a.rate {
