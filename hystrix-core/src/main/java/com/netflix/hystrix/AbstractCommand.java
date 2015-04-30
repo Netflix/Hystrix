@@ -362,7 +362,11 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                 /* mark that we received this response from cache */
                 metrics.markResponseFromCache();
                 isExecutionComplete.set(true);
-                executionHook.onCacheHit(this);
+                try {
+                    executionHook.onCacheHit(this);
+                } catch (Throwable hookEx) {
+                    logger.warn("Error calling HystrixCommandExecutionHook.onCacheHit", hookEx);
+                }
                 return new CachedObservableResponse<R>((CachedObservableOriginal<R>) fromCache, this);
             }
         }
@@ -379,6 +383,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                 metrics.incrementConcurrentExecutionCount();
 
                 // mark that we're starting execution on the ExecutionHook
+                // if this hook throws an exception, then a fast-fail occurs with no fallback.  No state is left inconsistent
                 executionHook.onStart(_this);
 
                 /* determine if we're allowed to execute */
@@ -512,13 +517,20 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                     } else {
                         // not timed out so execute
                         HystrixCounters.incrementGlobalConcurrentThreads();
-                        executionHook.onThreadStart(_self);
-                        executionHook.onRunStart(_self);
-                        executionHook.onExecutionStart(_self);
                         threadPool.markThreadExecution();
                         // store the command that is being run
                         endCurrentThreadExecutingCommand.set(Hystrix.startCurrentThreadExecutingCommand(getCommandKey()));
                         isExecutedInThread.set(true);
+                        /**
+                         * If any of these hooks throw an exception, then it appears as if the actual execution threw an error
+                         */
+                        try {
+                            executionHook.onThreadStart(_self);
+                            executionHook.onRunStart(_self);
+                            executionHook.onExecutionStart(_self);
+                        } catch (Throwable ex) {
+                            s.onError(ex);
+                        }
                         getExecutionObservableWithLifecycle().unsafeSubscribe(s); //the getExecutionObservableWithLifecycle method already wraps sync exceptions, so no need to catch here
                     }
                 }
@@ -531,11 +543,16 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
             }));
         } else {
             // semaphore isolated
-            executionHook.onRunStart(_self);
-            executionHook.onExecutionStart(_self);
             // store the command that is being run
             endCurrentThreadExecutingCommand.set(Hystrix.startCurrentThreadExecutingCommand(getCommandKey()));
-            run = getExecutionObservableWithLifecycle();  //the getExecutionObservableWithLifecycle method already wraps sync exceptions, so no need to catch here
+            try {
+                executionHook.onRunStart(_self);
+                executionHook.onExecutionStart(_self);
+                run = getExecutionObservableWithLifecycle();  //the getExecutionObservableWithLifecycle method already wraps sync exceptions, so this shouldn't throw
+            } catch (Throwable ex) {
+                //If the above hooks throw, then use that as the result of the run method
+                run = Observable.error(ex);
+            }
         }
 
         run = run.doOnEach(new Action1<Notification<? super R>>() {
@@ -605,7 +622,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                             logger.warn("ExecutionHook.onError returned an exception that was not an instance of HystrixBadRequestException so will be ignored.", decorated);
                         }
                     } catch (Exception hookEx) {
-                        logger.warn("Error calling ExecutionHook.onError", hookEx);
+                        logger.warn("Error calling HystrixCommandExecutionHook.onError", hookEx);
                     }
                     /*
                      * HystrixBadRequestException is treated differently and allowed to propagate without any stats tracking or fallback logic
@@ -666,7 +683,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
             // so we catch it here and turn it into Observable.error
             userObservable = Observable.error(ex);
         }
-        return userObservable .lift(new ExecutionHookApplication(_self))
+        return userObservable.lift(new ExecutionHookApplication(_self))
                 .lift(new DeprecatedOnRunHookApplication(_self))
                 .doOnTerminate(new Action0() {
                     @Override
@@ -725,15 +742,17 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 
                 // acquire a permit
                 if (fallbackSemaphore.tryAcquire()) {
-                    if (isFallbackUserSupplied(this)) {
-                        executionHook.onFallbackStart(this);
-                    }
-
                     try {
-                        fallbackExecutionChain = getFallbackObservable();
-                    } catch (Throwable t) {
-                        // getFallback() is user provided and can throw so we catch it and turn it into Observable.error
-                        fallbackExecutionChain = Observable.error(t);
+                        if (isFallbackUserSupplied(this)) {
+                            executionHook.onFallbackStart(this);
+                            fallbackExecutionChain = getFallbackObservable();
+                        } else {
+                            //same logic as above without the hook invocation
+                            fallbackExecutionChain = getFallbackObservable();
+                        }
+                    } catch(Throwable ex) {
+                        //If hook or user-fallback throws, then use that as the result of the fallback lookup
+                        fallbackExecutionChain = Observable.error(ex);
                     }
 
                     fallbackExecutionChain =  fallbackExecutionChain
@@ -885,7 +904,11 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         if (isExecutedInThread.get()) {
             HystrixCounters.decrementGlobalConcurrentThreads();
             threadPool.markThreadCompletion();
-            executionHook.onThreadComplete(this);
+            try {
+                executionHook.onThreadComplete(this);
+            } catch (Throwable hookEx) {
+                logger.warn("Error calling HystrixCommandExecutionHook.onThreadComplete", hookEx);
+            }
         }
     }
 
@@ -1299,7 +1322,11 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
             return new Subscriber<R>(subscriber) {
                 @Override
                 public void onCompleted() {
-                    executionHook.onSuccess(cmd);
+                    try {
+                        executionHook.onSuccess(cmd);
+                    } catch (Throwable hookEx) {
+                        logger.warn("Error calling HystrixCommandExecutionHook.onSuccess", hookEx);
+                    }
                     subscriber.onCompleted();
                 }
 
@@ -1330,7 +1357,11 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
             return new Subscriber<R>(subscriber) {
                 @Override
                 public void onCompleted() {
-                    executionHook.onExecutionSuccess(cmd);
+                    try {
+                        executionHook.onExecutionSuccess(cmd);
+                    } catch (Throwable hookEx) {
+                        logger.warn("Error calling HystrixCommandExecutionHook.onError", hookEx);
+                    }
                     subscriber.onCompleted();
                 }
 
@@ -1361,7 +1392,11 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
             return new Subscriber<R>(subscriber) {
                 @Override
                 public void onCompleted() {
-                    executionHook.onFallbackSuccess(cmd);
+                    try {
+                        executionHook.onFallbackSuccess(cmd);
+                    } catch (Throwable hookEx) {
+                        logger.warn("Error calling HystrixCommandExecutionHook.onError", hookEx);
+                    }
                     subscriber.onCompleted();
                 }
 
@@ -1407,7 +1442,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                         R wrappedValue = executionHook.onComplete(cmd, r);
                         subscriber.onNext(wrappedValue);
                     } catch (Throwable hookEx) {
-                        logger.warn("Error calling ExecutionHook.onComplete", hookEx);
+                        logger.warn("Error calling HystrixCommandExecutionHook.onComplete", hookEx);
                         subscriber.onNext(r);
                     }
                 }
@@ -1439,7 +1474,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                         Exception wrappedEx = executionHook.onRunError(cmd, e);
                         subscriber.onError(wrappedEx);
                     } catch (Throwable hookEx) {
-                        logger.warn("Error calling ExecutionHook.onRunError", hookEx);
+                        logger.warn("Error calling HystrixCommandExecutionHook.onRunError", hookEx);
                         subscriber.onError(e);
                     }
                 }
@@ -1450,7 +1485,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                         R wrappedValue = executionHook.onRunSuccess(cmd, r);
                         subscriber.onNext(wrappedValue);
                     } catch (Throwable hookEx) {
-                        logger.warn("Error calling ExecutionHook.onRunSuccess", hookEx);
+                        logger.warn("Error calling HystrixCommandExecutionHook.onRunSuccess", hookEx);
                         subscriber.onNext(r);
                     }
                 }
@@ -1487,7 +1522,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                         R wrappedValue = executionHook.onFallbackSuccess(cmd, r);
                         subscriber.onNext(wrappedValue);
                     } catch (Throwable hookEx) {
-                        logger.warn("Error calling ExecutionHook.onFallbackSuccess", hookEx);
+                        logger.warn("Error calling HystrixCommandExecutionHook.onFallbackSuccess", hookEx);
                         subscriber.onNext(r);
                     }
                 }
@@ -1500,7 +1535,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         try {
             return executionHook.onExecutionError(this, e);
         } catch (Throwable hookEx) {
-            logger.warn("Error calling ExecutionHook.onExecutionError", hookEx);
+            logger.warn("Error calling HystrixCommandExecutionHook.onExecutionError", hookEx);
             return e;
         }
     }
@@ -1514,7 +1549,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                 return e;
             }
         } catch (Throwable hookEx) {
-            logger.warn("Error calling ExecutionHook.onFallbackError", hookEx);
+            logger.warn("Error calling HystrixCommandExecutionHook.onFallbackError", hookEx);
             return e;
         }
     }
@@ -1524,7 +1559,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         try {
             return executionHook.onError(this, failureType, e);
         } catch (Throwable hookEx) {
-            logger.warn("Error calling ExecutionHook.onError", hookEx);
+            logger.warn("Error calling HystrixCommandExecutionHook.onError", hookEx);
             return e;
         }
     }
@@ -1533,7 +1568,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         try {
             return executionHook.onExecutionEmit(this, r);
         } catch (Throwable hookEx) {
-            logger.warn("Error calling ExecutionHook.onExecutionEmit", hookEx);
+            logger.warn("Error calling HystrixCommandExecutionHook.onExecutionEmit", hookEx);
             return r;
         }
     }
@@ -1542,7 +1577,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         try {
             return executionHook.onFallbackEmit(this, r);
         } catch (Throwable hookEx) {
-            logger.warn("Error calling ExecutionHook.onFallbackEmit", hookEx);
+            logger.warn("Error calling HystrixCommandExecutionHook.onFallbackEmit", hookEx);
             return r;
         }
     }
@@ -1551,7 +1586,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         try {
             return executionHook.onEmit(this, r);
         } catch (Throwable hookEx) {
-            logger.warn("Error calling ExecutionHook.onEmit", hookEx);
+            logger.warn("Error calling HystrixCommandExecutionHook.onEmit", hookEx);
             return r;
         }
     }
