@@ -1360,7 +1360,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                     try {
                         executionHook.onExecutionSuccess(cmd);
                     } catch (Throwable hookEx) {
-                        logger.warn("Error calling HystrixCommandExecutionHook.onError", hookEx);
+                        logger.warn("Error calling HystrixCommandExecutionHook.onExecutionSuccess", hookEx);
                     }
                     subscriber.onCompleted();
                 }
@@ -1395,7 +1395,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                     try {
                         executionHook.onFallbackSuccess(cmd);
                     } catch (Throwable hookEx) {
-                        logger.warn("Error calling HystrixCommandExecutionHook.onError", hookEx);
+                        logger.warn("Error calling HystrixCommandExecutionHook.onFallbackSuccess", hookEx);
                     }
                     subscriber.onCompleted();
                 }
