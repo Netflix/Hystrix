@@ -383,11 +383,8 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                 metrics.incrementConcurrentExecutionCount();
 
                 // mark that we're starting execution on the ExecutionHook
-                try {
-                    executionHook.onStart(_this);
-                } catch (Throwable hookEx) {
-                    logger.warn("Error calling HystrixCommandExecutionHook.onStart", hookEx);
-                }
+                // if this hook throws an exception, then a fast-fail occurs with no fallback.  No state is left inconsistent
+                executionHook.onStart(_this);
 
                 /* determine if we're allowed to execute */
                 if (circuitBreaker.allowRequest()) {
@@ -519,26 +516,21 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                         s.onError(new RuntimeException("timed out before executing run()"));
                     } else {
                         // not timed out so execute
-                        try {
-                            executionHook.onThreadStart(_self);
-                        } catch (Throwable hookEx) {
-                            logger.warn("Error calling HystrixCommandExecutionHook.onThreadStart", hookEx);
-                        }
-                        try {
-                            executionHook.onRunStart(_self);
-                        } catch (Throwable hookEx) {
-                            logger.warn("Error calling HystrixCommandExecutionHook.onRunStart", hookEx);
-                        }
-                        try {
-                            executionHook.onExecutionStart(_self);
-                        } catch (Throwable hookEx) {
-                            logger.warn("Error calling HystrixCommandExecutionHook.onExecutionStart", hookEx);
-                        }
                         HystrixCounters.incrementGlobalConcurrentThreads();
                         threadPool.markThreadExecution();
                         // store the command that is being run
                         endCurrentThreadExecutingCommand.set(Hystrix.startCurrentThreadExecutingCommand(getCommandKey()));
                         isExecutedInThread.set(true);
+                        /**
+                         * If any of these hooks throw an exception, then it appears as if the actual execution threw an error
+                         */
+                        try {
+                            executionHook.onThreadStart(_self);
+                            executionHook.onRunStart(_self);
+                            executionHook.onExecutionStart(_self);
+                        } catch (Throwable ex) {
+                            s.onError(ex);
+                        }
                         getExecutionObservableWithLifecycle().unsafeSubscribe(s); //the getExecutionObservableWithLifecycle method already wraps sync exceptions, so no need to catch here
                     }
                 }
@@ -551,19 +543,16 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
             }));
         } else {
             // semaphore isolated
-            try {
-                executionHook.onRunStart(_self);
-            } catch (Throwable hookEx) {
-                logger.warn("Error calling HystrixCommandExecutionHook.onRunStart", hookEx);
-            }
-            try {
-                executionHook.onExecutionStart(_self);
-            } catch (Throwable hookEx) {
-                logger.warn("Error calling HystrixCommandExecutionHook.onExecutionStart", hookEx);
-            }
             // store the command that is being run
             endCurrentThreadExecutingCommand.set(Hystrix.startCurrentThreadExecutingCommand(getCommandKey()));
-            run = getExecutionObservableWithLifecycle();  //the getExecutionObservableWithLifecycle method already wraps sync exceptions, so no need to catch here
+            try {
+                executionHook.onRunStart(_self);
+                executionHook.onExecutionStart(_self);
+                run = getExecutionObservableWithLifecycle();  //the getExecutionObservableWithLifecycle method already wraps sync exceptions, so this shouldn't throw
+            } catch (Throwable ex) {
+                //If the above hooks throw, then use that as the result of the run method
+                run = Observable.error(ex);
+            }
         }
 
         run = run.doOnEach(new Action1<Notification<? super R>>() {
@@ -753,19 +742,17 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 
                 // acquire a permit
                 if (fallbackSemaphore.tryAcquire()) {
-                    if (isFallbackUserSupplied(this)) {
-                        try {
-                            executionHook.onFallbackStart(this);
-                        } catch (Throwable hookEx) {
-                            logger.warn("Error calling HystrixCommandExecutionHook.onFallbackStart", hookEx);
-                        }
-                    }
-
                     try {
-                        fallbackExecutionChain = getFallbackObservable();
-                    } catch (Throwable t) {
-                        // getFallback() is user provided and can throw so we catch it and turn it into Observable.error
-                        fallbackExecutionChain = Observable.error(t);
+                        if (isFallbackUserSupplied(this)) {
+                            executionHook.onFallbackStart(this);
+                            fallbackExecutionChain = getFallbackObservable();
+                        } else {
+                            //same logic as above without the hook invocation
+                            fallbackExecutionChain = getFallbackObservable();
+                        }
+                    } catch(Throwable ex) {
+                        //If hook or user-fallback throws, then use that as the result of the fallback lookup
+                        fallbackExecutionChain = Observable.error(ex);
                     }
 
                     fallbackExecutionChain =  fallbackExecutionChain
