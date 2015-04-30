@@ -80,7 +80,7 @@ public class HystrixObservableCollapserTest {
 
     @Test
     public void stressTestRequestCollapser() throws Exception {
-        for(int i = 0; i < 1000; i++) {
+        for(int i = 0; i < 100; i++) {
             init();
             testTwoRequests();
             cleanup();
