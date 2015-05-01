@@ -1,5 +1,16 @@
 # Hystrix Releases #
 
+### Version 1.4.7 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.7%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.7/)) ###
+
+* [Pull 783](https://github.com/Netflix/Hystrix/pull/783) Upgrade to RxJava 1.0.10
+* [Pull 781](https://github.com/Netflix/Hystrix/pull/781) Shorten collapser stress test to avoid OOM in Travis
+* [Pull 780](https://github.com/Netflix/Hystrix/pull/780) Allow hooks to throw exceptions and not ocrrupt internal Hystrix state
+* [Pull 779](https://github.com/Netflix/Hystrix/pull/779) Use HdrHistogram for capturing latencies
+* [Pull 778](https://github.com/Netflix/Hystrix/pull/778) Run jmh using more forks and fewer iterations/fork
+* [Pull 776](https://github.com/Netflix/Hystrix/pull/776) Add Bad requests to Hystrix dashboard
+* [Pull 775](https://github.com/Netflix/Hystrix/pull/775) Add counters for number of commands, thread pools, groups
+* [Pull 774](https://github.com/Netflix/Hystrix/pull/774) Add global concurrent Hystrix threads counter
+
 ### Version 1.4.6 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.6%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.6/)) ###
 
 * [Pull 772](https://github.com/Netflix/Hystrix/pull/772) Add try-catch to all hook invocations
