@@ -4,7 +4,7 @@
 
 * [Pull 783](https://github.com/Netflix/Hystrix/pull/783) Upgrade to RxJava 1.0.10
 * [Pull 781](https://github.com/Netflix/Hystrix/pull/781) Shorten collapser stress test to avoid OOM in Travis
-* [Pull 780](https://github.com/Netflix/Hystrix/pull/780) Allow hooks to throw exceptions and not ocrrupt internal Hystrix state
+* [Pull 780](https://github.com/Netflix/Hystrix/pull/780) Allow hooks to throw exceptions and not corrupt internal Hystrix state
 * [Pull 779](https://github.com/Netflix/Hystrix/pull/779) Use HdrHistogram for capturing latencies
 * [Pull 778](https://github.com/Netflix/Hystrix/pull/778) Run jmh using more forks and fewer iterations/fork
 * [Pull 776](https://github.com/Netflix/Hystrix/pull/776) Add Bad requests to Hystrix dashboard
