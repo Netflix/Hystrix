@@ -84,7 +84,11 @@ public class HystrixMetricsStreamServlet extends HttpServlet {
      */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        handleRequest(request, response);
+        if (isDestroyed) {
+            response.sendError(503, "Service has been shut down.");
+        } else {
+            handleRequest(request, response);
+        }
     }
     
     /**
