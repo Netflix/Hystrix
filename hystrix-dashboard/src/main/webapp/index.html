@@ -26,6 +26,13 @@
 				$('#message').html("The 'stream' value is required.");
 			}
 		}
+		$(document).ready(function() {
+			$('#stream').keypress(function(e) {
+				if(e.which == 13) {
+					sendToMonitor();
+				}
+			});
+		});
 	</script>
 </head>
 <body>
