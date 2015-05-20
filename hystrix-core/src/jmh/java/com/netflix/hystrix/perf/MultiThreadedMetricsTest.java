@@ -2,6 +2,7 @@ package com.netflix.hystrix.perf;
 
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandGroupKey;
+import com.netflix.hystrix.HystrixCommandMetrics;
 import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.HystrixThreadPoolProperties;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -72,7 +73,8 @@ public class MultiThreadedMetricsTest {
     @BenchmarkMode({Mode.Throughput})
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public Integer writeHeavyReadMetrics(CommandState state) {
-        return state.command.getMetrics().getCurrentConcurrentExecutionCount();
+        HystrixCommandMetrics metrics = state.command.getMetrics();
+        return metrics.getExecutionTimeMean() + metrics.getExecutionTimePercentile(50) + metrics.getExecutionTimePercentile(75) + metrics.getExecutionTimePercentile(99);
     }
 
     @Benchmark
@@ -90,7 +92,8 @@ public class MultiThreadedMetricsTest {
     @BenchmarkMode({Mode.Throughput})
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public Integer evenSplitOfWritesAndReadsReadMetrics(CommandState state) {
-        return state.command.getMetrics().getCurrentConcurrentExecutionCount();
+        HystrixCommandMetrics metrics = state.command.getMetrics();
+        return metrics.getExecutionTimeMean() + metrics.getExecutionTimePercentile(50) + metrics.getExecutionTimePercentile(75) + metrics.getExecutionTimePercentile(99);
     }
 
     @Benchmark
@@ -108,6 +111,7 @@ public class MultiThreadedMetricsTest {
     @BenchmarkMode({Mode.Throughput})
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public Integer readHeavyReadMetrics(CommandState state) {
-        return state.command.getMetrics().getCurrentConcurrentExecutionCount();
+        HystrixCommandMetrics metrics = state.command.getMetrics();
+        return metrics.getExecutionTimeMean() + metrics.getExecutionTimePercentile(50) + metrics.getExecutionTimePercentile(75) + metrics.getExecutionTimePercentile(99);
     }
 }

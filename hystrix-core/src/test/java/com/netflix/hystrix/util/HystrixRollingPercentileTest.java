@@ -18,9 +18,17 @@ package com.netflix.hystrix.util;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.netflix.hystrix.strategy.properties.HystrixProperty;
@@ -32,6 +40,23 @@ public class HystrixRollingPercentileTest {
     private static final HystrixProperty<Integer> timeInMilliseconds = HystrixProperty.Factory.asProperty(60000);
     private static final HystrixProperty<Integer> numberOfBuckets = HystrixProperty.Factory.asProperty(12); // 12 buckets at 5000ms each
     private static final HystrixProperty<Boolean> enabled = HystrixProperty.Factory.asProperty(true);
+
+    private static ExecutorService threadPool;
+
+    @BeforeClass
+    public static void setUp() {
+        threadPool = Executors.newFixedThreadPool(10);
+    }
+
+    @AfterClass
+    public static void tearDown() {
+        threadPool.shutdown();
+        try {
+            threadPool.awaitTermination(10, TimeUnit.SECONDS);
+        } catch (InterruptedException ie) {
+            System.out.println("Thread pool never terminated in HystrixRollingPercentileTest");
+        }
+    }
 
     @Test
     public void testRolling() {
@@ -78,7 +103,7 @@ public class HystrixRollingPercentileTest {
         time.increment(6000);
 
         // the rolling version should have the same data as creating a snapshot like this
-        PercentileSnapshot ps = new PercentileSnapshot(1000, 1000, 1000, 2000, 1000, 500, 200, 200, 1600, 200, 1600, 1600);
+        PercentileSnapshot ps = new PercentileSnapshot(System.currentTimeMillis(), 1000, 1000, 1000, 2000, 1000, 500, 200, 200, 1600, 200, 1600, 1600);
 
         assertEquals(ps.getPercentile(0.15), p.getPercentile(0.15));
         assertEquals(ps.getPercentile(0.50), p.getPercentile(0.50));
@@ -201,36 +226,36 @@ public class HystrixRollingPercentileTest {
     }
 
     public PercentileSnapshot getPercentileForValues(int... values) {
-        return new PercentileSnapshot(values);
+        return new PercentileSnapshot(System.currentTimeMillis(), values);
     }
 
     @Test
     public void testPercentileAlgorithm_Median1() {
-        PercentileSnapshot list = new PercentileSnapshot(100, 100, 100, 100, 200, 200, 200, 300, 300, 300, 300);
+        PercentileSnapshot list = new PercentileSnapshot(System.currentTimeMillis(), 100, 100, 100, 100, 200, 200, 200, 300, 300, 300, 300);
         Assert.assertEquals(200, list.getPercentile(50));
     }
 
     @Test
     public void testPercentileAlgorithm_Median2() {
-        PercentileSnapshot list = new PercentileSnapshot(100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 500);
+        PercentileSnapshot list = new PercentileSnapshot(System.currentTimeMillis(), 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 500);
         Assert.assertEquals(100, list.getPercentile(50));
     }
 
     @Test
     public void testPercentileAlgorithm_Median3() {
-        PercentileSnapshot list = new PercentileSnapshot(50, 75, 100, 125, 160, 170, 180, 200, 210, 300, 500);
+        PercentileSnapshot list = new PercentileSnapshot(System.currentTimeMillis(), 50, 75, 100, 125, 160, 170, 180, 200, 210, 300, 500);
         Assert.assertEquals(170, list.getPercentile(50));
     }
 
     @Test
     public void testPercentileAlgorithm_Median4() {
-        PercentileSnapshot list = new PercentileSnapshot(300, 75, 125, 500, 100, 160, 180, 200, 210, 50, 170);
+        PercentileSnapshot list = new PercentileSnapshot(System.currentTimeMillis(), 300, 75, 125, 500, 100, 160, 180, 200, 210, 50, 170);
         Assert.assertEquals(170, list.getPercentile(50));
     }
 
     @Test
     public void testPercentileAlgorithm_Extremes() {
-        PercentileSnapshot p = new PercentileSnapshot(2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 800, 768, 657, 700, 867);
+        PercentileSnapshot p = new PercentileSnapshot(System.currentTimeMillis(), 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 800, 768, 657, 700, 867);
 
         System.out.println("0.01: " + p.getPercentile(0.01));
         System.out.println("10th: " + p.getPercentile(10));
@@ -315,6 +340,65 @@ public class HystrixRollingPercentileTest {
             time.addAndGet(millis);
         }
 
+    }
+
+    @Test
+    public void testThreadSafety() {
+        final MockedTime time = new MockedTime();
+        final HystrixRollingPercentile p = new HystrixRollingPercentile(time, HystrixProperty.Factory.asProperty(100), HystrixProperty.Factory.asProperty(25), HystrixProperty.Factory.asProperty(true));
+
+        final int NUM_THREADS = 1000;
+        final int NUM_ITERATIONS = 1000000;
+
+        final CountDownLatch latch = new CountDownLatch(NUM_THREADS);
+
+        final AtomicInteger aggregateMetrics = new AtomicInteger(); //same as a blackhole
+
+        final Random r = new Random();
+
+        Future<?> metricsPoller = threadPool.submit(new Runnable() {
+            @Override
+            public void run() {
+                while(!Thread.currentThread().isInterrupted()) {
+                    aggregateMetrics.addAndGet(p.getMean() + p.getPercentile(10) + p.getPercentile(50) + p.getPercentile(90));
+                    //System.out.println("AGGREGATE : " + p.getPercentile(10) + " : " + p.getPercentile(50) + " : " + p.getPercentile(90));
+                }
+            }
+        });
+
+        for (int i = 0; i < NUM_THREADS; i++) {
+            final int threadId = i;
+            threadPool.submit(new Runnable() {
+                @Override
+                public void run() {
+                    for (int j = 1; j < NUM_ITERATIONS / NUM_THREADS + 1; j++) {
+                        int nextInt = r.nextInt(100);
+                        p.addValue(nextInt);
+                        if (threadId == 0) {
+                            time.increment(1);
+                        }
+                    }
+                    latch.countDown();
+                }
+            });
+        }
+
+        try {
+            latch.await(100, TimeUnit.SECONDS);
+            metricsPoller.cancel(true);
+        } catch (InterruptedException ex) {
+            fail("Timeout on all threads writing percentiles");
+        }
+
+        aggregateMetrics.addAndGet(p.getMean() + p.getPercentile(10) + p.getPercentile(50) + p.getPercentile(90));
+        System.out.println(p.getMean() + " : " + p.getPercentile(50) + " : " + p.getPercentile(75) + " : " + p.getPercentile(90) + " : " + p.getPercentile(95) + " : " + p.getPercentile(99));
+    }
+
+    @Test
+    public void testThreadSafetyMulti() {
+        for (int i = 0; i < 100; i++) {
+            testThreadSafety();
+        }
     }
 
     /* sub-class to avoid 65k limit of a single class */
