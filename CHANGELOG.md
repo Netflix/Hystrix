@@ -1,5 +1,12 @@
 # Hystrix Releases #
 
+### Version 1.4.8 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.8%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.8/)) ###
+
+* [Pull 797](https://github.com/Netflix/Hystrix/pull/797) Move all histogram reads to a single-threaded path.
+* [Pull 794](https://github.com/Netflix/Hystrix/pull/794) Allow dashboard connection on 'Enter' keypress
+* [Pull 787](https://github.com/Netflix/Hystrix/pull/787) Reject requests after metrics-event-stream servlet shutdown
+* [Pull 785](https://github.com/Netflix/Hystrix/pull/785) Update metrics package from com.codahale.metrics to io.dropwizard.metrics
+
 ### Version 1.4.7 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.7%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.7/)) ###
 
 * [Pull 783](https://github.com/Netflix/Hystrix/pull/783) Upgrade to RxJava 1.0.10
