@@ -110,7 +110,7 @@ public class HystrixRollingPercentile {
 
         for (int v : value) {
             try {
-                getCurrentBucket().data.addValue(v);
+                getCurrentBucket().bucketData.addValue(v);
             } catch (Exception e) {
                 logger.error("Failed to add value: " + v, e);
             }
@@ -285,7 +285,7 @@ public class HystrixRollingPercentile {
         private final IntCountsHistogram histogram;
 
         public PercentileBucketData() {
-            this.histogram = new IntCountsHistogram(3);
+            this.histogram = new IntCountsHistogram(4);
         }
 
         public void addValue(int... latency) {
@@ -304,36 +304,83 @@ public class HystrixRollingPercentile {
      */
     /* package for testing */ static class PercentileSnapshot {
         private final IntCountsHistogram aggregateHistogram;
+        private final long count;
+        private final int mean;
+        private final int p0;
+        private final int p5;
+        private final int p10;
+        private final int p25;
+        private final int p50;
+        private final int p75;
+        private final int p90;
+        private final int p95;
+        private final int p99;
+        private final int p995;
+        private final int p999;
+        private final int p100;
+
 
         /* package for testing */ PercentileSnapshot() {
              this(new Bucket[0]);
         }
 
-        /* package for testing */ PercentileSnapshot(int... data) {
-            aggregateHistogram = new IntCountsHistogram(4);
-            for (int latency: data) {
-                aggregateHistogram.recordValue(latency);
-            }
+        /* package for testing */ PercentileSnapshot(long startTime, int... data) {
+            this(new Bucket[]{new Bucket(startTime, data)});
         }
 
         /* package for testing */ PercentileSnapshot(Bucket[] buckets) {
             aggregateHistogram = new IntCountsHistogram(4);
             for (Bucket bucket: buckets) {
-                aggregateHistogram.add(bucket.data.histogram);
+                aggregateHistogram.add(bucket.bucketData.histogram);
             }
+
+            count = aggregateHistogram.getTotalCount();
+            mean = (int) aggregateHistogram.getMean();
+            p0 = (int) aggregateHistogram.getValueAtPercentile(0);
+            p5 = (int) aggregateHistogram.getValueAtPercentile(5);
+            p10 = (int) aggregateHistogram.getValueAtPercentile(10);
+            p25 = (int) aggregateHistogram.getValueAtPercentile(25);
+            p50 = (int) aggregateHistogram.getValueAtPercentile(50);
+            p75 = (int) aggregateHistogram.getValueAtPercentile(75);
+            p90 = (int) aggregateHistogram.getValueAtPercentile(90);
+            p95 = (int) aggregateHistogram.getValueAtPercentile(95);
+            p99 = (int) aggregateHistogram.getValueAtPercentile(99);
+            p995 = (int) aggregateHistogram.getValueAtPercentile(99.5);
+            p999 = (int) aggregateHistogram.getValueAtPercentile(99.9);
+            p100 = (int) aggregateHistogram.getValueAtPercentile(100);
         }
 
         /* package for testing */ int getMean() {
-            return (int) aggregateHistogram.getMean();
+            return mean;
         }
 
         /**
          * Provides percentile computation.
          */
         public int getPercentile(double percentile) {
-            if (aggregateHistogram.getTotalCount() == 0) {
+            if (count == 0) {
                 return 0;
             }
+
+            int permyriad = (int) (percentile * 100);
+            switch(permyriad) {
+                case 0   : return p0;
+                case 500 : return p5;
+                case 1000: return p10;
+                case 2500: return p25;
+                case 5000: return p50;
+                case 7500: return p75;
+                case 9000: return p90;
+                case 9500: return p95;
+                case 9900: return p99;
+                case 9950: return p995;
+                case 9990: return p999;
+                case 10000: return p100;
+                default: return getArbitraryPercentile(percentile);
+            }
+        }
+
+        private synchronized int getArbitraryPercentile(double percentile) {
             return (int) aggregateHistogram.getValueAtPercentile(percentile);
         }
     }
@@ -519,13 +566,19 @@ public class HystrixRollingPercentile {
      */
     /* package for testing */ static class Bucket {
         final long windowStart;
-        final PercentileBucketData data;
+        final PercentileBucketData bucketData;
 
         Bucket(long startTime) {
             this.windowStart = startTime;
-            this.data = new PercentileBucketData();
+            this.bucketData = new PercentileBucketData();
         }
 
+        public Bucket(long startTime, int[] data) {
+            this.windowStart = startTime;
+
+            this.bucketData = new PercentileBucketData();
+            bucketData.addValue(data);
+        }
     }
 
     /* package for testing */ static interface Time {
