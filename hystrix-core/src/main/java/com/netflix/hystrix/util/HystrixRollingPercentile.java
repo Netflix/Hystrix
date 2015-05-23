@@ -23,7 +23,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.HdrHistogram.Histogram;
 import org.HdrHistogram.IntCountsHistogram;
+import org.HdrHistogram.Recorder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -281,21 +283,18 @@ public class HystrixRollingPercentile {
         buckets.clear();
     }
 
-    private static class PercentileBucketData {
-        private final IntCountsHistogram histogram;
+    /*package-private*/ static class PercentileBucketData {
+        final Recorder recorder;
+        final AtomicReference<Histogram> stableHistogram = new AtomicReference<Histogram>(null);
 
         public PercentileBucketData() {
-            this.histogram = new IntCountsHistogram(4);
+            this.recorder = new Recorder(4);
         }
 
         public void addValue(int... latency) {
             for (int l: latency) {
-                histogram.recordValue(l);
+                recorder.recordValue(l);
             }
-        }
-
-        public int length() {
-            return (int) histogram.getTotalCount();
         }
     }
 
@@ -303,7 +302,7 @@ public class HystrixRollingPercentile {
      * @NotThreadSafe
      */
     /* package for testing */ static class PercentileSnapshot {
-        private final IntCountsHistogram aggregateHistogram;
+        /* package-private*/ final IntCountsHistogram aggregateHistogram;
         private final long count;
         private final int mean;
         private final int p0;
@@ -331,7 +330,10 @@ public class HystrixRollingPercentile {
         /* package for testing */ PercentileSnapshot(Bucket[] buckets) {
             aggregateHistogram = new IntCountsHistogram(4);
             for (Bucket bucket: buckets) {
-                aggregateHistogram.add(bucket.bucketData.histogram);
+                PercentileBucketData bucketData = bucket.bucketData;
+                //if stable snapshot not already generated, generate it now
+                bucketData.stableHistogram.compareAndSet(null, bucketData.recorder.getIntervalHistogram());
+                aggregateHistogram.add(bucket.bucketData.stableHistogram.get());
             }
 
             count = aggregateHistogram.getTotalCount();

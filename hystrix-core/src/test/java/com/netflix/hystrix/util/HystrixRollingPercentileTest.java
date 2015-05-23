@@ -162,9 +162,16 @@ public class HystrixRollingPercentileTest {
         MockedTime time = new MockedTime();
         HystrixRollingPercentile p = new HystrixRollingPercentile(time, timeInMilliseconds, numberOfBuckets, enabled);
         int previousTime = 0;
+
+        int maxSoFar = -1;
+
         for (int i = 0; i < SampleDataHolder1.data.length; i++) {
             int timeInMillisecondsSinceStart = SampleDataHolder1.data[i][0];
             int latency = SampleDataHolder1.data[i][1];
+            if (latency > maxSoFar) {
+                System.out.println("New MAX latency : " + latency);
+                maxSoFar = latency;
+            }
             time.increment(timeInMillisecondsSinceStart - previousTime);
             previousTime = timeInMillisecondsSinceStart;
             p.addValue(latency);
@@ -180,6 +187,8 @@ public class HystrixRollingPercentileTest {
         System.out.println("Median: " + p.getPercentile(50));
         System.out.println("Median: " + p.getPercentile(50));
         System.out.println("Median: " + p.getPercentile(50));
+
+        System.out.println("MAX : " + p.currentPercentileSnapshot.aggregateHistogram.getMaxValue());
 
         /*
          * In a loop as a use case was found where very different values were calculated in subsequent requests.
@@ -215,6 +224,8 @@ public class HystrixRollingPercentileTest {
         System.out.println("99th: " + p.getPercentile(99));
         System.out.println("99.5th: " + p.getPercentile(99.5));
         System.out.println("99.99: " + p.getPercentile(99.99));
+
+        System.out.println("MAX : " + p.currentPercentileSnapshot.aggregateHistogram.getMaxValue());
 
         if (p.getPercentile(50) > 90 || p.getPercentile(50) < 50) {
             fail("We expect around 60-70 but got: " + p.getPercentile(50));
@@ -392,6 +403,42 @@ public class HystrixRollingPercentileTest {
 
         aggregateMetrics.addAndGet(p.getMean() + p.getPercentile(10) + p.getPercentile(50) + p.getPercentile(90));
         System.out.println(p.getMean() + " : " + p.getPercentile(50) + " : " + p.getPercentile(75) + " : " + p.getPercentile(90) + " : " + p.getPercentile(95) + " : " + p.getPercentile(99));
+    }
+
+    @Test
+    public void testWriteThreadSafety() {
+        final MockedTime time = new MockedTime();
+        final HystrixRollingPercentile p = new HystrixRollingPercentile(time, HystrixProperty.Factory.asProperty(100), HystrixProperty.Factory.asProperty(25), HystrixProperty.Factory.asProperty(true));
+
+        final int NUM_THREADS = 1000;
+        final int NUM_ITERATIONS = 1000000;
+
+        final CountDownLatch latch = new CountDownLatch(NUM_THREADS);
+
+        final Random r = new Random();
+
+        final AtomicInteger added = new AtomicInteger(0);
+
+        for (int i = 0; i < NUM_THREADS; i++) {
+            threadPool.submit(new Runnable() {
+                @Override
+                public void run() {
+                    for (int j = 1; j < NUM_ITERATIONS / NUM_THREADS + 1; j++) {
+                        int nextInt = r.nextInt(100);
+                        p.addValue(nextInt);
+                        added.getAndIncrement();
+                    }
+                    latch.countDown();
+                }
+            });
+        }
+
+        try {
+            latch.await(100, TimeUnit.SECONDS);
+            assertEquals(added.get(), p.buckets.peekLast().bucketData.recorder.getIntervalHistogram().getTotalCount());
+        } catch (InterruptedException ex) {
+            fail("Timeout on all threads writing percentiles");
+        }
     }
 
     @Test
