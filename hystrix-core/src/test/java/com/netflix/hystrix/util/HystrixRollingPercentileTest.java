@@ -395,6 +395,42 @@ public class HystrixRollingPercentileTest {
     }
 
     @Test
+    public void testWriteThreadSafety() {
+        final MockedTime time = new MockedTime();
+        final HystrixRollingPercentile p = new HystrixRollingPercentile(time, HystrixProperty.Factory.asProperty(100), HystrixProperty.Factory.asProperty(25), HystrixProperty.Factory.asProperty(true));
+
+        final int NUM_THREADS = 1000;
+        final int NUM_ITERATIONS = 1000000;
+
+        final CountDownLatch latch = new CountDownLatch(NUM_THREADS);
+
+        final Random r = new Random();
+
+        final AtomicInteger added = new AtomicInteger(0);
+
+        for (int i = 0; i < NUM_THREADS; i++) {
+            threadPool.submit(new Runnable() {
+                @Override
+                public void run() {
+                    for (int j = 1; j < NUM_ITERATIONS / NUM_THREADS + 1; j++) {
+                        int nextInt = r.nextInt(100);
+                        p.addValue(nextInt);
+                        added.getAndIncrement();
+                    }
+                    latch.countDown();
+                }
+            });
+        }
+
+        try {
+            latch.await(100, TimeUnit.SECONDS);
+            assertEquals(added.get(), p.buckets.peekLast().bucketData.recorder.getIntervalHistogram().getTotalCount());
+        } catch (InterruptedException ex) {
+            fail("Timeout on all threads writing percentiles");
+        }
+    }
+
+    @Test
     public void testThreadSafetyMulti() {
         for (int i = 0; i < 100; i++) {
             testThreadSafety();
