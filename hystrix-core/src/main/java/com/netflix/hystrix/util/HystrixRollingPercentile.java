@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.HdrHistogram.Histogram;
 import org.HdrHistogram.IntCountsHistogram;
 import org.HdrHistogram.Recorder;
 import org.slf4j.Logger;
@@ -284,6 +285,7 @@ public class HystrixRollingPercentile {
 
     /*package-private*/ static class PercentileBucketData {
         final Recorder recorder;
+        final AtomicReference<Histogram> stableHistogram = new AtomicReference<Histogram>(null);
 
         public PercentileBucketData() {
             this.recorder = new Recorder(4);
@@ -300,7 +302,7 @@ public class HystrixRollingPercentile {
      * @NotThreadSafe
      */
     /* package for testing */ static class PercentileSnapshot {
-        private final IntCountsHistogram aggregateHistogram;
+        /* package-private*/ final IntCountsHistogram aggregateHistogram;
         private final long count;
         private final int mean;
         private final int p0;
@@ -328,7 +330,10 @@ public class HystrixRollingPercentile {
         /* package for testing */ PercentileSnapshot(Bucket[] buckets) {
             aggregateHistogram = new IntCountsHistogram(4);
             for (Bucket bucket: buckets) {
-                aggregateHistogram.add(bucket.bucketData.recorder.getIntervalHistogram());
+                PercentileBucketData bucketData = bucket.bucketData;
+                //if stable snapshot not already generated, generate it now
+                bucketData.stableHistogram.compareAndSet(null, bucketData.recorder.getIntervalHistogram());
+                aggregateHistogram.add(bucket.bucketData.stableHistogram.get());
             }
 
             count = aggregateHistogram.getTotalCount();
