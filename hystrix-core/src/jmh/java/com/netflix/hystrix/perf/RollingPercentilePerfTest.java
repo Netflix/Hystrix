@@ -1,11 +1,5 @@
 package com.netflix.hystrix.perf;
 
-import com.netflix.hystrix.Hystrix;
-import com.netflix.hystrix.HystrixCommand;
-import com.netflix.hystrix.HystrixCommandGroupKey;
-import com.netflix.hystrix.HystrixCommandMetrics;
-import com.netflix.hystrix.HystrixCommandProperties;
-import com.netflix.hystrix.HystrixThreadPoolProperties;
 import com.netflix.hystrix.strategy.properties.HystrixProperty;
 import com.netflix.hystrix.util.HystrixRollingPercentile;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -159,42 +153,4 @@ public class RollingPercentilePerfTest {
                 percentile.getPercentile(99) +
                 percentile.getPercentile(99.5);
     }
-
-//    @Benchmark
-//    @Group("evenSplit")
-//    @GroupThreads(4)
-//    @BenchmarkMode({Mode.Throughput})
-//    @OutputTimeUnit(TimeUnit.MILLISECONDS)
-//    public Integer evenSplitOfWritesAndReadsCommandExecution(CommandState state) {
-//        return state.command.observe().toBlocking().first();
-//    }
-//
-//    @Benchmark
-//    @Group("evenSplit")
-//    @GroupThreads(4)
-//    @BenchmarkMode({Mode.Throughput})
-//    @OutputTimeUnit(TimeUnit.MILLISECONDS)
-//    public Integer evenSplitOfWritesAndReadsReadMetrics(CommandState state) {
-//        HystrixCommandMetrics metrics = state.command.getMetrics();
-//        return metrics.getExecutionTimeMean() + metrics.getExecutionTimePercentile(50) + metrics.getExecutionTimePercentile(75) + metrics.getExecutionTimePercentile(99);
-//    }
-//
-//    @Benchmark
-//    @Group("readHeavy")
-//    @GroupThreads(1)
-//    @BenchmarkMode({Mode.Throughput})
-//    @OutputTimeUnit(TimeUnit.MILLISECONDS)
-//    public Integer readHeavyCommandExecution(CommandState state) {
-//        return state.command.observe().toBlocking().first();
-//    }
-//
-//    @Benchmark
-//    @Group("readHeavy")
-//    @GroupThreads(7)
-//    @BenchmarkMode({Mode.Throughput})
-//    @OutputTimeUnit(TimeUnit.MILLISECONDS)
-//    public Integer readHeavyReadMetrics(CommandState state) {
-//        HystrixCommandMetrics metrics = state.command.getMetrics();
-//        return metrics.getExecutionTimeMean() + metrics.getExecutionTimePercentile(50) + metrics.getExecutionTimePercentile(75) + metrics.getExecutionTimePercentile(99);
-//    }
 }
