@@ -37,9 +37,9 @@ import com.netflix.hystrix.util.HystrixRollingPercentile.Time;
 
 public class HystrixRollingPercentileTest {
 
-    private static final HystrixProperty<Integer> timeInMilliseconds = HystrixProperty.Factory.asProperty(60000);
-    private static final HystrixProperty<Integer> numberOfBuckets = HystrixProperty.Factory.asProperty(12); // 12 buckets at 5000ms each
-    private static final HystrixProperty<Boolean> enabled = HystrixProperty.Factory.asProperty(true);
+    private static final int timeInMilliseconds = 60000;
+    private static final int numberOfBuckets = 12; // 12 buckets at 5000ms each
+    private static final boolean enabled = true;
 
     private static ExecutorService threadPool;
 
@@ -324,7 +324,7 @@ public class HystrixRollingPercentileTest {
     public void testDoesNothingWhenDisabled() {
         MockedTime time = new MockedTime();
         int previousTime = 0;
-        HystrixRollingPercentile p = new HystrixRollingPercentile(time, timeInMilliseconds, numberOfBuckets, HystrixProperty.Factory.asProperty(false));
+        HystrixRollingPercentile p = new HystrixRollingPercentile(time, timeInMilliseconds, numberOfBuckets, false);
         for (int i = 0; i < SampleDataHolder2.data.length; i++) {
             int timeInMillisecondsSinceStart = SampleDataHolder2.data[i][0];
             int latency = SampleDataHolder2.data[i][1];
@@ -356,7 +356,7 @@ public class HystrixRollingPercentileTest {
     @Test
     public void testThreadSafety() {
         final MockedTime time = new MockedTime();
-        final HystrixRollingPercentile p = new HystrixRollingPercentile(time, HystrixProperty.Factory.asProperty(100), HystrixProperty.Factory.asProperty(25), HystrixProperty.Factory.asProperty(true));
+        final HystrixRollingPercentile p = new HystrixRollingPercentile(time, 100, 25, true);
 
         final int NUM_THREADS = 1000;
         final int NUM_ITERATIONS = 1000000;
@@ -408,7 +408,7 @@ public class HystrixRollingPercentileTest {
     @Test
     public void testWriteThreadSafety() {
         final MockedTime time = new MockedTime();
-        final HystrixRollingPercentile p = new HystrixRollingPercentile(time, HystrixProperty.Factory.asProperty(100), HystrixProperty.Factory.asProperty(25), HystrixProperty.Factory.asProperty(true));
+        final HystrixRollingPercentile p = new HystrixRollingPercentile(time, 100, 25, true);
 
         final int NUM_THREADS = 1000;
         final int NUM_ITERATIONS = 1000000;
