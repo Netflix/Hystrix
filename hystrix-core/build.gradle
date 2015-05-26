@@ -38,7 +38,7 @@ jmh {
 	fork = 10
 	iterations = 3
 	jmhVersion = '1.9.3'
-	profilers = ['gc']
+	//profilers = ['gc']
 	threads = 8
 	warmup = '1s'
 	warmupBatchSize = 1
