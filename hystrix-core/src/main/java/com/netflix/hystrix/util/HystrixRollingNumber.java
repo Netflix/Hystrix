@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.locks.ReentrantLock;
@@ -93,7 +92,7 @@ public class HystrixRollingNumber {
      *            HystrixRollingNumberEvent defining which counter to increment
      */
     public void increment(HystrixRollingNumberEvent type) {
-        getCurrentBucket().increment(type);
+        getCurrentBucket().getAdder(type).increment();
     }
 
     /**
@@ -107,7 +106,7 @@ public class HystrixRollingNumber {
      *            long value to be added to the current bucket
      */
     public void add(HystrixRollingNumberEvent type, long value) {
-        getCurrentBucket().add(type, value);
+        getCurrentBucket().getAdder(type).add(value);
     }
 
     /**
@@ -119,7 +118,7 @@ public class HystrixRollingNumber {
      * @param value long value to be given to the max updater
      */
     public void updateRollingMax(HystrixRollingNumberEvent type, long value) {
-        getCurrentBucket().updateMax(type, value);
+        getCurrentBucket().getMaxUpdater(type).update(value);
     }
 
     /**
@@ -172,7 +171,7 @@ public class HystrixRollingNumber {
 
         long sum = 0;
         for (Bucket b : buckets) {
-            sum += b.get(type);
+            sum += b.getAdder(type).sum();
         }
         return sum;
     }
@@ -218,7 +217,11 @@ public class HystrixRollingNumber {
         long values[] = new long[bucketArray.length];
         int i = 0;
         for (Bucket bucket : bucketArray) {
-            values[i++] = bucket.get(type);
+            if (type.isCounter()) {
+                values[i++] = bucket.getAdder(type).sum();
+            } else if (type.isMaxUpdater()) {
+                values[i++] = bucket.getMaxUpdater(type).max();
+            }
         }
         return values;
     }
@@ -358,54 +361,59 @@ public class HystrixRollingNumber {
      */
     /* package */static class Bucket {
         final long windowStart;
-        final AtomicLong[] values;
+        final LongAdder[] adderForCounterType;
+        final LongMaxUpdater[] updaterForCounterType;
 
         Bucket(long startTime) {
             this.windowStart = startTime;
 
             /*
-             * Put both sums and maxes in single array.  Each HystrixRollingNumberEvent is one or the other
+             * We support both LongAdder and LongMaxUpdater in a bucket but don't want the memory allocation
+             * of all types for each so we only allocate the objects if the HystrixRollingNumberEvent matches
+             * the correct type - though we still have the allocation of empty arrays to the given length
+             * as we want to keep using the type.ordinal() value for fast random access.
              */
 
-            values = new AtomicLong[HystrixRollingNumberEvent.values().length];
+            // initialize the array of LongAdders
+            adderForCounterType = new LongAdder[HystrixRollingNumberEvent.values().length];
+            for (HystrixRollingNumberEvent type : HystrixRollingNumberEvent.values()) {
+                if (type.isCounter()) {
+                    adderForCounterType[type.ordinal()] = new LongAdder();
+                }
+            }
 
-            for (HystrixRollingNumberEvent type: HystrixRollingNumberEvent.values()) {
-                values[type.ordinal()] = new AtomicLong(0L);
+            updaterForCounterType = new LongMaxUpdater[HystrixRollingNumberEvent.values().length];
+            for (HystrixRollingNumberEvent type : HystrixRollingNumberEvent.values()) {
+                if (type.isMaxUpdater()) {
+                    updaterForCounterType[type.ordinal()] = new LongMaxUpdater();
+                    // initialize to 0 otherwise it is Long.MIN_VALUE
+                    updaterForCounterType[type.ordinal()].update(0);
+                }
             }
         }
 
         long get(HystrixRollingNumberEvent type) {
-            return values[type.ordinal()].get();
-        }
-
-        /* package for testing */ void increment(HystrixRollingNumberEvent type) {
-            add(type, 1);
-        }
-
-        /* package for testing */ void add(HystrixRollingNumberEvent type, long value) {
             if (type.isCounter()) {
-                values[type.ordinal()].addAndGet(value);
-                return;
+                return adderForCounterType[type.ordinal()].sum();
             }
             if (type.isMaxUpdater()) {
-                throw new IllegalStateException("Cannot increment a max-updater");
+                return updaterForCounterType[type.ordinal()].max();
             }
             throw new IllegalStateException("Unknown type of event: " + type.name());
         }
 
-        /* package for testing */ void updateMax(HystrixRollingNumberEvent type, long value) {
-            if (type.isMaxUpdater()) {
-                long currentMax = values[type.ordinal()].get();
-                if (value > currentMax) {
-                    values[type.ordinal()].set(value);
-                }
-                return;
+        LongAdder getAdder(HystrixRollingNumberEvent type) {
+            if (!type.isCounter()) {
+                throw new IllegalStateException("Type is not a Counter: " + type.name());
             }
-            if (type.isCounter()) {
-                throw new IllegalStateException("Cannot update max on a counter");
-            }
+            return adderForCounterType[type.ordinal()];
+        }
 
-            throw new IllegalStateException("Unknown type of event: " + type.name());
+        LongMaxUpdater getMaxUpdater(HystrixRollingNumberEvent type) {
+            if (!type.isMaxUpdater()) {
+                throw new IllegalStateException("Type is not a MaxUpdater: " + type.name());
+            }
+            return updaterForCounterType[type.ordinal()];
         }
 
     }
@@ -414,44 +422,71 @@ public class HystrixRollingNumber {
      * Cumulative counters (from start of JVM) from each Type
      */
     /* package */static class CumulativeSum {
-        AtomicLong[] cumulativeValues;
+        final LongAdder[] adderForCounterType;
+        final LongMaxUpdater[] updaterForCounterType;
 
         CumulativeSum() {
 
             /*
-             * Put both sums and maxes in single array.  Each HystrixRollingNumberEvent is one or the other
+             * We support both LongAdder and LongMaxUpdater in a bucket but don't want the memory allocation
+             * of all types for each so we only allocate the objects if the HystrixRollingNumberEvent matches
+             * the correct type - though we still have the allocation of empty arrays to the given length
+             * as we want to keep using the type.ordinal() value for fast random access.
              */
 
-            cumulativeValues = new AtomicLong[HystrixRollingNumberEvent.values().length];
-            for (HystrixRollingNumberEvent type: HystrixRollingNumberEvent.values()) {
-                cumulativeValues[type.ordinal()] = new AtomicLong(0L);
+            // initialize the array of LongAdders
+            adderForCounterType = new LongAdder[HystrixRollingNumberEvent.values().length];
+            for (HystrixRollingNumberEvent type : HystrixRollingNumberEvent.values()) {
+                if (type.isCounter()) {
+                    adderForCounterType[type.ordinal()] = new LongAdder();
+                }
+            }
+
+            updaterForCounterType = new LongMaxUpdater[HystrixRollingNumberEvent.values().length];
+            for (HystrixRollingNumberEvent type : HystrixRollingNumberEvent.values()) {
+                if (type.isMaxUpdater()) {
+                    updaterForCounterType[type.ordinal()] = new LongMaxUpdater();
+                    // initialize to 0 otherwise it is Long.MIN_VALUE
+                    updaterForCounterType[type.ordinal()].update(0);
+                }
             }
         }
 
         public void addBucket(Bucket lastBucket) {
             for (HystrixRollingNumberEvent type : HystrixRollingNumberEvent.values()) {
                 if (type.isCounter()) {
-                    cumulativeValues[type.ordinal()].addAndGet(lastBucket.get(type));
+                    getAdder(type).add(lastBucket.getAdder(type).sum());
                 }
                 if (type.isMaxUpdater()) {
-                    long addedBucketMax = lastBucket.get(type);
-                    AtomicLong currentBucketMax = cumulativeValues[type.ordinal()];
-                    if (addedBucketMax > currentBucketMax.get()) {
-                        cumulativeValues[type.ordinal()].set(addedBucketMax);
-                    }
+                    getMaxUpdater(type).update(lastBucket.getMaxUpdater(type).max());
                 }
             }
         }
 
         long get(HystrixRollingNumberEvent type) {
             if (type.isCounter()) {
-                return cumulativeValues[type.ordinal()].get();
+                return adderForCounterType[type.ordinal()].sum();
             }
             if (type.isMaxUpdater()) {
-                return cumulativeValues[type.ordinal()].get();
+                return updaterForCounterType[type.ordinal()].max();
             }
             throw new IllegalStateException("Unknown type of event: " + type.name());
         }
+
+        LongAdder getAdder(HystrixRollingNumberEvent type) {
+            if (!type.isCounter()) {
+                throw new IllegalStateException("Type is not a Counter: " + type.name());
+            }
+            return adderForCounterType[type.ordinal()];
+        }
+
+        LongMaxUpdater getMaxUpdater(HystrixRollingNumberEvent type) {
+            if (!type.isMaxUpdater()) {
+                throw new IllegalStateException("Type is not a MaxUpdater: " + type.name());
+            }
+            return updaterForCounterType[type.ordinal()];
+        }
+
     }
 
     /**
