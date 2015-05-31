@@ -134,9 +134,9 @@ public class HystrixRollingNumberTest {
             assertEquals(1, counter.buckets.size());
 
             // the count should be 4
-            assertEquals(4, counter.buckets.getLast().get(HystrixRollingNumberEvent.SUCCESS));
-            assertEquals(2, counter.buckets.getLast().get(HystrixRollingNumberEvent.FAILURE));
-            assertEquals(1, counter.buckets.getLast().get(HystrixRollingNumberEvent.TIMEOUT));
+            assertEquals(4, counter.buckets.getLast().getAdder(HystrixRollingNumberEvent.SUCCESS).sum());
+            assertEquals(2, counter.buckets.getLast().getAdder(HystrixRollingNumberEvent.FAILURE).sum());
+            assertEquals(1, counter.buckets.getLast().getAdder(HystrixRollingNumberEvent.TIMEOUT).sum());
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -157,7 +157,7 @@ public class HystrixRollingNumberTest {
             assertEquals(1, counter.buckets.size());
 
             // the count should be 1
-            assertEquals(1, counter.buckets.getLast().get(HystrixRollingNumberEvent.TIMEOUT));
+            assertEquals(1, counter.buckets.getLast().getAdder(HystrixRollingNumberEvent.TIMEOUT).sum());
             assertEquals(1, counter.getRollingSum(HystrixRollingNumberEvent.TIMEOUT));
 
             // sleep to get to a new bucket
@@ -170,7 +170,7 @@ public class HystrixRollingNumberTest {
             assertEquals(4, counter.buckets.size());
 
             // the counts of the last bucket
-            assertEquals(1, counter.buckets.getLast().get(HystrixRollingNumberEvent.TIMEOUT));
+            assertEquals(1, counter.buckets.getLast().getAdder(HystrixRollingNumberEvent.TIMEOUT).sum());
 
             // the total counts
             assertEquals(2, counter.getRollingSum(HystrixRollingNumberEvent.TIMEOUT));
@@ -194,7 +194,7 @@ public class HystrixRollingNumberTest {
             assertEquals(1, counter.buckets.size());
 
             // the count should be 1
-            assertEquals(1, counter.buckets.getLast().get(HystrixRollingNumberEvent.SHORT_CIRCUITED));
+            assertEquals(1, counter.buckets.getLast().getAdder(HystrixRollingNumberEvent.SHORT_CIRCUITED).sum());
             assertEquals(1, counter.getRollingSum(HystrixRollingNumberEvent.SHORT_CIRCUITED));
 
             // sleep to get to a new bucket
@@ -207,7 +207,7 @@ public class HystrixRollingNumberTest {
             assertEquals(4, counter.buckets.size());
 
             // the counts of the last bucket
-            assertEquals(1, counter.buckets.getLast().get(HystrixRollingNumberEvent.SHORT_CIRCUITED));
+            assertEquals(1, counter.buckets.getLast().getAdder(HystrixRollingNumberEvent.SHORT_CIRCUITED).sum());
 
             // the total counts
             assertEquals(2, counter.getRollingSum(HystrixRollingNumberEvent.SHORT_CIRCUITED));
@@ -250,7 +250,7 @@ public class HystrixRollingNumberTest {
             assertEquals(1, counter.buckets.size());
 
             // the count should be 1
-            assertEquals(1, counter.buckets.getLast().get(type));
+            assertEquals(1, counter.buckets.getLast().getAdder(type).sum());
             assertEquals(1, counter.getRollingSum(type));
 
             // sleep to get to a new bucket
@@ -263,7 +263,7 @@ public class HystrixRollingNumberTest {
             assertEquals(4, counter.buckets.size());
 
             // the counts of the last bucket
-            assertEquals(1, counter.buckets.getLast().get(type));
+            assertEquals(1, counter.buckets.getLast().getAdder(type).sum());
 
             // the total counts
             assertEquals(2, counter.getRollingSum(type));
@@ -307,10 +307,10 @@ public class HystrixRollingNumberTest {
             assertEquals(4, counter.buckets.size());
 
             // the counts of the last bucket
-            assertEquals(2, counter.buckets.getLast().get(HystrixRollingNumberEvent.SUCCESS));
-            assertEquals(3, counter.buckets.getLast().get(HystrixRollingNumberEvent.FAILURE));
-            assertEquals(1, counter.buckets.getLast().get(HystrixRollingNumberEvent.TIMEOUT));
-            assertEquals(1, counter.buckets.getLast().get(HystrixRollingNumberEvent.SHORT_CIRCUITED));
+            assertEquals(2, counter.buckets.getLast().getAdder(HystrixRollingNumberEvent.SUCCESS).sum());
+            assertEquals(3, counter.buckets.getLast().getAdder(HystrixRollingNumberEvent.FAILURE).sum());
+            assertEquals(1, counter.buckets.getLast().getAdder(HystrixRollingNumberEvent.TIMEOUT).sum());
+            assertEquals(1, counter.buckets.getLast().getAdder(HystrixRollingNumberEvent.SHORT_CIRCUITED).sum());
 
             // the total counts
             assertEquals(6, counter.getRollingSum(HystrixRollingNumberEvent.SUCCESS));
@@ -395,7 +395,7 @@ public class HystrixRollingNumberTest {
             assertEquals(1, counter.buckets.size());
 
             // the count should be 10
-            assertEquals(10, counter.buckets.getLast().get(HystrixRollingNumberEvent.THREAD_MAX_ACTIVE));
+            assertEquals(10, counter.buckets.getLast().getMaxUpdater(HystrixRollingNumberEvent.THREAD_MAX_ACTIVE).max());
             assertEquals(10, counter.getRollingMaxValue(HystrixRollingNumberEvent.THREAD_MAX_ACTIVE));
 
             // sleep to get to a new bucket
@@ -408,7 +408,7 @@ public class HystrixRollingNumberTest {
             assertEquals(4, counter.buckets.size());
 
             // the max
-            assertEquals(20, counter.buckets.getLast().get(HystrixRollingNumberEvent.THREAD_MAX_ACTIVE));
+            assertEquals(20, counter.buckets.getLast().getMaxUpdater(HystrixRollingNumberEvent.THREAD_MAX_ACTIVE).max());
 
             // counts per bucket
             long values[] = counter.getValues(HystrixRollingNumberEvent.THREAD_MAX_ACTIVE);
@@ -438,7 +438,7 @@ public class HystrixRollingNumberTest {
             assertEquals(1, counter.buckets.size());
 
             // the count should be 30
-            assertEquals(30, counter.buckets.getLast().get(HystrixRollingNumberEvent.THREAD_MAX_ACTIVE));
+            assertEquals(30, counter.buckets.getLast().getMaxUpdater(HystrixRollingNumberEvent.THREAD_MAX_ACTIVE).max());
             assertEquals(30, counter.getRollingMaxValue(HystrixRollingNumberEvent.THREAD_MAX_ACTIVE));
 
             // sleep to get to a new bucket
@@ -452,7 +452,7 @@ public class HystrixRollingNumberTest {
             assertEquals(4, counter.buckets.size());
 
             // the count
-            assertEquals(50, counter.buckets.getLast().get(HystrixRollingNumberEvent.THREAD_MAX_ACTIVE));
+            assertEquals(50, counter.buckets.getLast().getMaxUpdater(HystrixRollingNumberEvent.THREAD_MAX_ACTIVE).max());
             assertEquals(50, counter.getValueOfLatestBucket(HystrixRollingNumberEvent.THREAD_MAX_ACTIVE));
 
             // values per bucket

@@ -19,13 +19,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.HdrHistogram.Histogram;
-import org.HdrHistogram.IntCountsHistogram;
-import org.HdrHistogram.Recorder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,16 +49,15 @@ public class HystrixRollingPercentile {
     private static final Time ACTUAL_TIME = new ActualTime();
     private final Time time;
     /* package for testing */ final BucketCircularArray buckets;
-    private final int timeInMilliseconds;
-    private final int numberOfBuckets;
-    private final boolean enabled;
-
-    private final int bucketSizeInMilliseconds;
+    private final HystrixProperty<Integer> timeInMilliseconds;
+    private final HystrixProperty<Integer> numberOfBuckets;
+    private final HystrixProperty<Integer> bucketDataLength;
+    private final HystrixProperty<Boolean> enabled;
 
     /*
      * This will get flipped each time a new bucket is created.
      */
-    /* package for testing */ volatile PercentileSnapshot currentPercentileSnapshot = new PercentileSnapshot();
+    /* package for testing */ volatile PercentileSnapshot currentPercentileSnapshot = new PercentileSnapshot(0);
 
     /**
      * 
@@ -71,36 +69,32 @@ public class HystrixRollingPercentile {
      *            {@code HystrixProperty<Integer>} for number of buckets that the time window should be divided into
      *            <p>
      *            Example: 12 for 5 second buckets in a 1 minute window
+     * @param bucketDataLength
+     *            {@code HystrixProperty<Integer>} for number of values stored in each bucket
+     *            <p>
+     *            Example: 1000 to store a max of 1000 values in each 5 second bucket
      * @param enabled
      *            {@code HystrixProperty<Boolean>} whether data should be tracked and percentiles calculated.
      *            <p>
      *            If 'false' methods will do nothing.
      */
-    public HystrixRollingPercentile(HystrixProperty<Integer> timeInMilliseconds, HystrixProperty<Integer> numberOfBuckets, HystrixProperty<Boolean> enabled) {
-        this(ACTUAL_TIME, timeInMilliseconds.get(), numberOfBuckets.get(), enabled.get());
-
-    }
-    /*
-     * @deprecated Use {@link HystrixRollingPercentile(HystrixProperty<Integer>, HystrixProperty<Integer>, HystrixProperty<Boolean>)} instead
-     */
-    @Deprecated
     public HystrixRollingPercentile(HystrixProperty<Integer> timeInMilliseconds, HystrixProperty<Integer> numberOfBuckets, HystrixProperty<Integer> bucketDataLength, HystrixProperty<Boolean> enabled) {
-        this(ACTUAL_TIME, timeInMilliseconds.get(), numberOfBuckets.get(), enabled.get());
+        this(ACTUAL_TIME, timeInMilliseconds, numberOfBuckets, bucketDataLength, enabled);
+
     }
 
-    /* package for testing */ HystrixRollingPercentile(Time time, int timeInMilliseconds, int numberOfBuckets, boolean enabled) {
+    /* package for testing */ HystrixRollingPercentile(Time time, HystrixProperty<Integer> timeInMilliseconds, HystrixProperty<Integer> numberOfBuckets, HystrixProperty<Integer> bucketDataLength, HystrixProperty<Boolean> enabled) {
         this.time = time;
         this.timeInMilliseconds = timeInMilliseconds;
         this.numberOfBuckets = numberOfBuckets;
+        this.bucketDataLength = bucketDataLength;
         this.enabled = enabled;
 
-        if (this.timeInMilliseconds % this.numberOfBuckets != 0) {
+        if (this.timeInMilliseconds.get() % this.numberOfBuckets.get() != 0) {
             throw new IllegalArgumentException("The timeInMilliseconds must divide equally into numberOfBuckets. For example 1000/10 is ok, 1000/11 is not.");
         }
 
-        this.bucketSizeInMilliseconds = timeInMilliseconds / numberOfBuckets;
-
-        buckets = new BucketCircularArray(this.numberOfBuckets);
+        buckets = new BucketCircularArray(this.numberOfBuckets.get());
     }
 
     /**
@@ -111,12 +105,12 @@ public class HystrixRollingPercentile {
      */
     public void addValue(int... value) {
         /* no-op if disabled */
-        if (!enabled)
+        if (!enabled.get())
             return;
 
         for (int v : value) {
             try {
-                getCurrentBucket().bucketData.addValue(v);
+                getCurrentBucket().data.addValue(v);
             } catch (Exception e) {
                 logger.error("Failed to add value: " + v, e);
             }
@@ -136,7 +130,7 @@ public class HystrixRollingPercentile {
      */
     public int getPercentile(double percentile) {
         /* no-op if disabled */
-        if (!enabled)
+        if (!enabled.get())
             return -1;
 
         // force logic to move buckets forward in case other requests aren't making it happen
@@ -152,7 +146,7 @@ public class HystrixRollingPercentile {
      */
     public int getMean() {
         /* no-op if disabled */
-        if (!enabled)
+        if (!enabled.get())
             return -1;
 
         // force logic to move buckets forward in case other requests aren't making it happen
@@ -172,6 +166,10 @@ public class HystrixRollingPercentile {
         return currentPercentileSnapshot;
     }
 
+    private int getBucketSizeInMilliseconds() {
+        return timeInMilliseconds.get() / numberOfBuckets.get();
+    }
+
     private ReentrantLock newBucketLock = new ReentrantLock();
 
     private Bucket getCurrentBucket() {
@@ -185,7 +183,7 @@ public class HystrixRollingPercentile {
          * NOTE: This is thread-safe because it's accessing 'buckets' which is a LinkedBlockingDeque
          */
         Bucket currentBucket = buckets.peekLast();
-        if (currentBucket != null && currentTime < currentBucket.windowStart + bucketSizeInMilliseconds) {
+        if (currentBucket != null && currentTime < currentBucket.windowStart + getBucketSizeInMilliseconds()) {
             // if we're within the bucket 'window of time' return the current one
             // NOTE: We do not worry if we are BEFORE the window in a weird case of where thread scheduling causes that to occur,
             // we'll just use the latest as long as we're not AFTER the window
@@ -220,21 +218,21 @@ public class HystrixRollingPercentile {
             try {
                 if (buckets.peekLast() == null) {
                     // the list is empty so create the first bucket
-                    Bucket newBucket = new Bucket(currentTime);
+                    Bucket newBucket = new Bucket(currentTime, bucketDataLength.get());
                     buckets.addLast(newBucket);
                     return newBucket;
                 } else {
                     // We go into a loop so that it will create as many buckets as needed to catch up to the current time
                     // as we want the buckets complete even if we don't have transactions during a period of time.
-                    for (int i = 0; i < numberOfBuckets; i++) {
+                    for (int i = 0; i < numberOfBuckets.get(); i++) {
                         // we have at least 1 bucket so retrieve it
                         Bucket lastBucket = buckets.peekLast();
-                        if (currentTime < lastBucket.windowStart + bucketSizeInMilliseconds) {
+                        if (currentTime < lastBucket.windowStart + getBucketSizeInMilliseconds()) {
                             // if we're within the bucket 'window of time' return the current one
                             // NOTE: We do not worry if we are BEFORE the window in a weird case of where thread scheduling causes that to occur,
                             // we'll just use the latest as long as we're not AFTER the window
                             return lastBucket;
-                        } else if (currentTime - (lastBucket.windowStart + bucketSizeInMilliseconds) > timeInMilliseconds) {
+                        } else if (currentTime - (lastBucket.windowStart + getBucketSizeInMilliseconds()) > timeInMilliseconds.get()) {
                             // the time passed is greater than the entire rolling counter so we want to clear it all and start from scratch
                             reset();
                             // recursively call getCurrentBucket which will create a new bucket and return it
@@ -242,7 +240,7 @@ public class HystrixRollingPercentile {
                         } else { // we're past the window so we need to create a new bucket
                             Bucket[] allBuckets = buckets.getArray();
                             // create a new bucket and add it as the new 'last' (once this is done other threads will start using it on subsequent retrievals)
-                            buckets.addLast(new Bucket(lastBucket.windowStart + bucketSizeInMilliseconds));
+                            buckets.addLast(new Bucket(lastBucket.windowStart + getBucketSizeInMilliseconds(), bucketDataLength.get()));
                             // we created a new bucket so let's re-generate the PercentileSnapshot (not including the new bucket)
                             currentPercentileSnapshot = new PercentileSnapshot(allBuckets);
                         }
@@ -276,80 +274,91 @@ public class HystrixRollingPercentile {
      */
     public void reset() {
         /* no-op if disabled */
-        if (!enabled)
+        if (!enabled.get())
             return;
 
         // clear buckets so we start over again
         buckets.clear();
     }
 
-    /*package-private*/ static class PercentileBucketData {
-        final Recorder recorder;
-        final AtomicReference<Histogram> stableHistogram = new AtomicReference<Histogram>(null);
+    /* package-private for testing */ static class PercentileBucketData {
+        private final int length;
+        private final AtomicIntegerArray list;
+        private final AtomicInteger index = new AtomicInteger();
 
-        public PercentileBucketData() {
-            this.recorder = new Recorder(4);
+        public PercentileBucketData(int dataLength) {
+            this.length = dataLength;
+            this.list = new AtomicIntegerArray(dataLength);
         }
 
         public void addValue(int... latency) {
-            for (int l: latency) {
-                recorder.recordValue(l);
+            for (int l : latency) {
+                /* We just wrap around the beginning and over-write if we go past 'dataLength' as that will effectively cause us to "sample" the most recent data */
+                list.set(index.getAndIncrement() % length, l);
+                // TODO Alternative to AtomicInteger? The getAndIncrement may be a source of contention on high throughput circuits on large multi-core systems.
+                // LongAdder isn't suited to this as it is not consistent. Perhaps a different data structure that doesn't need indexed adds?
+                // A threadlocal data storage that only aggregates when fetched would be ideal. Similar to LongAdder except for accumulating lists of data.
             }
         }
+
+        public int length() {
+            if (index.get() > list.length()) {
+                return list.length();
+            } else {
+                return index.get();
+            }
+        }
+
     }
 
     /**
      * @NotThreadSafe
      */
     /* package for testing */ static class PercentileSnapshot {
-        /* package-private*/ final IntCountsHistogram aggregateHistogram;
-        private final long count;
-        private final int mean;
-        private final int p0;
-        private final int p5;
-        private final int p10;
-        private final int p25;
-        private final int p50;
-        private final int p75;
-        private final int p90;
-        private final int p95;
-        private final int p99;
-        private final int p995;
-        private final int p999;
-        private final int p100;
-
-
-        /* package for testing */ PercentileSnapshot() {
-             this(new Bucket[0]);
-        }
-
-        /* package for testing */ PercentileSnapshot(long startTime, int... data) {
-            this(new Bucket[]{new Bucket(startTime, data)});
-        }
+        private final int[] data;
+        private final int length;
+        private int mean;
 
         /* package for testing */ PercentileSnapshot(Bucket[] buckets) {
-            aggregateHistogram = new IntCountsHistogram(4);
-            for (Bucket bucket: buckets) {
-                PercentileBucketData bucketData = bucket.bucketData;
-                //if stable snapshot not already generated, generate it now
-                bucketData.stableHistogram.compareAndSet(null, bucketData.recorder.getIntervalHistogram());
-                aggregateHistogram.add(bucket.bucketData.stableHistogram.get());
+            int lengthFromBuckets = 0;
+            // we need to calculate it dynamically as it could have been changed by properties (rare, but possible)
+            // also this way we capture the actual index size rather than the max so size the int[] to only what we need
+            for (Bucket bd : buckets) {
+                lengthFromBuckets += bd.data.length;
+            }
+            data = new int[lengthFromBuckets];
+            int index = 0;
+            int sum = 0;
+            for (Bucket bd : buckets) {
+                PercentileBucketData pbd = bd.data;
+                int length = pbd.length();
+                for (int i = 0; i < length; i++) {
+                    int v = pbd.list.get(i);
+                    this.data[index++] = v;
+                    sum += v;
+                }
+            }
+            this.length = index;
+            if (this.length == 0) {
+                this.mean = 0;
+            } else {
+                this.mean = sum / this.length;
             }
 
-            count = aggregateHistogram.getTotalCount();
-            mean = (int) aggregateHistogram.getMean();
-            p0 = (int) aggregateHistogram.getValueAtPercentile(0);
-            p5 = (int) aggregateHistogram.getValueAtPercentile(5);
-            p10 = (int) aggregateHistogram.getValueAtPercentile(10);
-            p25 = (int) aggregateHistogram.getValueAtPercentile(25);
-            p50 = (int) aggregateHistogram.getValueAtPercentile(50);
-            p75 = (int) aggregateHistogram.getValueAtPercentile(75);
-            p90 = (int) aggregateHistogram.getValueAtPercentile(90);
-            p95 = (int) aggregateHistogram.getValueAtPercentile(95);
-            p99 = (int) aggregateHistogram.getValueAtPercentile(99);
-            p995 = (int) aggregateHistogram.getValueAtPercentile(99.5);
-            p999 = (int) aggregateHistogram.getValueAtPercentile(99.9);
-            p100 = (int) aggregateHistogram.getValueAtPercentile(100);
+            Arrays.sort(this.data, 0, length);
+        }
+
+        /* package for testing */ PercentileSnapshot(int... data) {
+            this.data = data;
+            this.length = data.length;
+
+            int sum = 0;
+            for (int v : data) {
+                sum += v;
+            }
+            this.mean = sum / this.length;
+
+            Arrays.sort(this.data, 0, length);
         }
 
         /* package for testing */ int getMean() {
@@ -360,31 +369,48 @@ public class HystrixRollingPercentile {
          * Provides percentile computation.
          */
         public int getPercentile(double percentile) {
-            if (count == 0) {
+            if (length == 0) {
                 return 0;
             }
+            return computePercentile(percentile);
+        }
 
-            int permyriad = (int) (percentile * 100);
-            switch(permyriad) {
-                case 0   : return p0;
-                case 500 : return p5;
-                case 1000: return p10;
-                case 2500: return p25;
-                case 5000: return p50;
-                case 7500: return p75;
-                case 9000: return p90;
-                case 9500: return p95;
-                case 9900: return p99;
-                case 9950: return p995;
-                case 9990: return p999;
-                case 10000: return p100;
-                default: return getArbitraryPercentile(percentile);
+        /**
+         * @see <a href="http://en.wikipedia.org/wiki/Percentile">Percentile (Wikipedia)</a>
+         * @see <a href="http://cnx.org/content/m10805/latest/">Percentile</a>
+         * 
+         * @param percent percentile of data desired
+         * @return data at the asked-for percentile.  Interpolation is used if exactness is not possible
+         */
+        private int computePercentile(double percent) {
+            // Some just-in-case edge cases
+            if (length <= 0) {
+                return 0;
+            } else if (percent <= 0.0) {
+                return data[0];
+            } else if (percent >= 100.0) {
+                return data[length - 1];
+            }
+
+            // ranking (http://en.wikipedia.org/wiki/Percentile#Alternative_methods)
+            double rank = (percent / 100.0) * length;
+
+            // linear interpolation between closest ranks
+            int iLow = (int) Math.floor(rank);
+            int iHigh = (int) Math.ceil(rank);
+            assert 0 <= iLow && iLow <= rank && rank <= iHigh && iHigh <= length;
+            assert (iHigh - iLow) <= 1;
+            if (iHigh >= length) {
+                // Another edge case
+                return data[length - 1];
+            } else if (iLow == iHigh) {
+                return data[iLow];
+            } else {
+                // Interpolate between the two bounding values
+                return (int) (data[iLow] + (rank - iLow) * (data[iHigh] - data[iLow]));
             }
         }
 
-        private synchronized int getArbitraryPercentile(double percentile) {
-            return (int) aggregateHistogram.getValueAtPercentile(percentile);
-        }
     }
 
     /**
@@ -568,19 +594,13 @@ public class HystrixRollingPercentile {
      */
     /* package for testing */ static class Bucket {
         final long windowStart;
-        final PercentileBucketData bucketData;
+        final PercentileBucketData data;
 
-        Bucket(long startTime) {
+        Bucket(long startTime, int bucketDataLength) {
             this.windowStart = startTime;
-            this.bucketData = new PercentileBucketData();
+            this.data = new PercentileBucketData(bucketDataLength);
         }
 
-        public Bucket(long startTime, int[] data) {
-            this.windowStart = startTime;
-
-            this.bucketData = new PercentileBucketData();
-            bucketData.addValue(data);
-        }
     }
 
     /* package for testing */ static interface Time {
