@@ -301,6 +301,15 @@
   [a b]
   (+ a b))
 
+(defcommand my-overload-fn-command
+  "A doc string"
+  {:meta :data
+   :hystrix/fallback-fn (constantly 500)}
+  ([a b]
+     (+ a b))
+  ([a b c]
+     (+ a b c)))
+
 (deftest test-defcommand
   (let [hm (-> #'my-fn-command meta :hystrix)]
     (testing "defines a fn in a var"
@@ -318,7 +327,24 @@
       (is (= 105 (wait-for-observable (observe-later #'my-fn-command 91 14))))
       (is (= 107 (wait-for-observable (observe-later-on #'my-fn-command
                                                         (rx.schedulers.Schedulers/newThread)
-                                                        92 15)))))))
+                                                        92 15)))))
+    (testing "overload functioning command"
+      (is (= 99 (my-overload-fn-command 88 11)))
+      (is (= 100 (my-overload-fn-command 88 11 1)))
+      (is (= 100 (execute #'my-overload-fn-command 89 11)))
+      (is (= 100 (execute #'my-overload-fn-command 88 11 1)))
+      (is (= 101 (deref (queue #'my-overload-fn-command 89 12))))
+      (is (= 102 (deref (queue #'my-overload-fn-command 89 12 1))))
+      (is (= 103 (wait-for-observable (observe #'my-overload-fn-command 90 13))))
+      (is (= 104 (wait-for-observable (observe #'my-overload-fn-command 90 13 1))))
+      (is (= 105 (wait-for-observable (observe-later #'my-overload-fn-command 91 14))))
+      (is (= 106 (wait-for-observable (observe-later #'my-overload-fn-command 91 14 1))))
+      (is (= 107 (wait-for-observable (observe-later-on #'my-overload-fn-command
+                                                        (rx.schedulers.Schedulers/newThread)
+                                                        92 15))))
+      (is (= 108 (wait-for-observable (observe-later-on #'my-overload-fn-command
+                                                        (rx.schedulers.Schedulers/newThread)
+                                                        92 15 1)))))))
 
 (defcollapser my-collapser
   "a doc string"
