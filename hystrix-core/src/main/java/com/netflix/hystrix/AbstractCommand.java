@@ -728,6 +728,10 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
             e = wrapWithOnErrorHook(failureType, e);
             fallbackLogicApplied = Observable.<R> error(new HystrixRuntimeException(failureType, this.getClass(), getLogMessagePrefix() + " " + message + " and encountered unrecoverable error.", e, null));
         } else {
+            if (isRecoverableError(originalException)) {
+                logger.warn("Recovered from java.lang.Error by serving Hystrix fallback", originalException);
+            }
+
             if (properties.fallbackEnabled().get()) {
             /* fallback behavior is permitted so attempt */
                 // record the executionResult
@@ -892,6 +896,16 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                 return true;
             } else if (cause instanceof LinkageError) {
                 return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isRecoverableError(Throwable t) {
+        if (t != null && t.getCause() != null) {
+            Throwable cause = t.getCause();
+            if (cause instanceof java.lang.Error) {
+                return !isUnrecoverable(t);
             }
         }
         return false;

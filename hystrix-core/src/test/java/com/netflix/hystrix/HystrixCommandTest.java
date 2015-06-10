@@ -3513,7 +3513,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
      * Test a recoverable java.lang.Error being thrown with no fallback
      */
     @Test
-    public void testRecoverableErrorThrownWithNoFallback() {
+    public void testRecoverableErrorWithNoFallbackThrowsError() {
         TestHystrixCommand<?> command = getRecoverableErrorCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.FallbackResult.UNIMPLEMENTED);
         try {
             command.execute();
@@ -3539,7 +3539,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
     }
 
     @Test
-    public void testRecoverableErrorThrownWithFallback() {
+    public void testRecoverableErrorMaskedByFallbackButLogged() {
         TestHystrixCommand<?> command = getRecoverableErrorCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.FallbackResult.SUCCESS);
         try {
             assertEquals(FlexibleTestHystrixCommand.FALLBACK_VALUE, command.execute());
