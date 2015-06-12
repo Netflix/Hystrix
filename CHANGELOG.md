@@ -1,5 +1,12 @@
 # Hystrix Releases #
 
+### Version 1.4.11 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.11%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.11/)) ###
+
+* [Pull 814](https://github.com/Netflix/Hystrix/pull/814) Upgrade to RxJava 1.0.12
+* [Pull 813](https://github.com/Netflix/Hystrix/pull/813) Output something when Hystrix falls back on recoverable java.lang.Error
+* [Pull 812](https://github.com/Netflix/Hystrix/pull/812) Fixing overload functions in hystrix-clj
+* [Pull 808](https://github.com/Netflix/Hystrix/pull/808) Update Hystrix Metrics Stream README
+
 ### Version 1.4.10 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.10%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.10/)) ###
 
 * [Pull 804](https://github.com/Netflix/Hystrix/pull/804) Fix memory leak by switching back to AtomicIntegerArray for HystrixRollingPercentile
