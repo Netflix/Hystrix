@@ -161,11 +161,13 @@ public interface HystrixThreadPool {
         private final BlockingQueue<Runnable> queue;
         private final ThreadPoolExecutor threadPool;
         private final HystrixThreadPoolMetrics metrics;
+        private final int queueSize;
 
         public HystrixThreadPoolDefault(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolProperties.Setter propertiesDefaults) {
             this.properties = HystrixPropertiesFactory.getThreadPoolProperties(threadPoolKey, propertiesDefaults);
             HystrixConcurrencyStrategy concurrencyStrategy = HystrixPlugins.getInstance().getConcurrencyStrategy();
-            this.queue = concurrencyStrategy.getBlockingQueue(properties.maxQueueSize().get());
+            this.queueSize = properties.maxQueueSize().get();
+            this.queue = concurrencyStrategy.getBlockingQueue(queueSize);
             this.metrics = HystrixThreadPoolMetrics.getInstance(
                     threadPoolKey,
                     concurrencyStrategy.getThreadPool(threadPoolKey, properties.coreSize(), properties.coreSize(), properties.keepAliveTimeMinutes(), TimeUnit.MINUTES, queue),
@@ -223,12 +225,17 @@ public interface HystrixThreadPool {
 
         /**
          * Whether the threadpool queue has space available according to the <code>queueSizeRejectionThreshold</code> settings.
+         *
+         * Note that the <code>queueSize</code> is an final instance variable on HystrixThreadPoolDefault, and not looked up dynamically.
+         * The data structure is static, so this does not make sense as a dynamic lookup.
+         * The <code>queueSizeRejectionThreshold</code> can be dynamic (up to <code>queueSize</code>), so that should
+         * still get checked on each invocation.
          * <p>
          * If a SynchronousQueue implementation is used (<code>maxQueueSize</code> <= 0), it always returns 0 as the size so this would always return true.
          */
         @Override
         public boolean isQueueSpaceAvailable() {
-            if (properties.maxQueueSize().get() <= 0) {
+            if (queueSize <= 0) {
                 // we don't have a queue so we won't look for space but instead
                 // let the thread-pool reject or not
                 return true;
