@@ -27,11 +27,7 @@ public class RollingPercentilePerfTest {
 
 		@Setup(Level.Iteration)
 		public void setUp() {
-			percentile = new HystrixRollingPercentile(
-					HystrixProperty.Factory.asProperty(100),
-					HystrixProperty.Factory.asProperty(10),
-					HystrixProperty.Factory.asProperty(1000),
-					HystrixProperty.Factory.asProperty(percentileEnabled));
+			percentile = new HystrixRollingPercentile(100, 10, 1000, HystrixProperty.Factory.asProperty(percentileEnabled));
 		}
 	}
 
