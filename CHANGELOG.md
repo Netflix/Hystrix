@@ -1,5 +1,13 @@
 # Hystrix Releases #
 
+### Version 1.4.12 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.12%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.12/)) ###
+
+* [Pull 826](https://github.com/Netflix/Hystrix/pull/826) Safely handle negative input for delay parameter to metrics stream servlet
+* [Pull 825](https://github.com/Netflix/Hystrix/pull/825) Only check bucket properties at HystrixRollingNumber construction
+* [Pull 824](https://github.com/Netflix/Hystrix/pull/824) Only check bucket properties at HystrixRollingPercentile construction
+* [Pull 823](https://github.com/Netflix/Hystrix/pull/823) Fix half hidden mean metric in Hystrix Dashboard because of container height
+* [Pull 818](https://github.com/Netflix/Hystrix/pull/818) Only check maxQueueSize value at thread pool construction
+
 ### Version 1.4.11 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.11%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.11/)) ###
 
 * [Pull 814](https://github.com/Netflix/Hystrix/pull/814) Upgrade to RxJava 1.0.12
