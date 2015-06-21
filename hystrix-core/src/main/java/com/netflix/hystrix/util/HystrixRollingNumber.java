@@ -52,35 +52,41 @@ public class HystrixRollingNumber {
 
     private static final Time ACTUAL_TIME = new ActualTime();
     private final Time time;
-    final HystrixProperty<Integer> timeInMilliseconds;
-    final HystrixProperty<Integer> numberOfBuckets;
+    final int timeInMilliseconds;
+    final int numberOfBuckets;
+    final int bucketSizeInMillseconds;
 
     final BucketCircularArray buckets;
     private final CumulativeSum cumulativeSum = new CumulativeSum();
 
+    /**
+     * Construct a counter, with configurable properties for how many buckets, and how long of an interval to track
+     * @param timeInMilliseconds length of time to report metrics over
+     * @param numberOfBuckets number of buckets to use
+     *
+     * @deprecated Please use {@link HystrixRollingNumber(int, int) instead}.  These values are no longer allowed to
+     * be updated at runtime.
+     */
+    @Deprecated
     public HystrixRollingNumber(HystrixProperty<Integer> timeInMilliseconds, HystrixProperty<Integer> numberOfBuckets) {
+        this(timeInMilliseconds.get(), numberOfBuckets.get());
+    }
+
+    public HystrixRollingNumber(int timeInMilliseconds, int numberOfBuckets) {
         this(ACTUAL_TIME, timeInMilliseconds, numberOfBuckets);
     }
 
-    /* used for unit testing */
-    /* package for testing */HystrixRollingNumber(Time time, int timeInMilliseconds, int numberOfBuckets) {
-        this(time, HystrixProperty.Factory.asProperty(timeInMilliseconds), HystrixProperty.Factory.asProperty(numberOfBuckets));
-    }
-
-    private HystrixRollingNumber(Time time, HystrixProperty<Integer> timeInMilliseconds, HystrixProperty<Integer> numberOfBuckets) {
+    /* package for testing */ HystrixRollingNumber(Time time, int timeInMilliseconds, int numberOfBuckets) {
         this.time = time;
         this.timeInMilliseconds = timeInMilliseconds;
         this.numberOfBuckets = numberOfBuckets;
 
-        if (timeInMilliseconds.get() % numberOfBuckets.get() != 0) {
+        if (timeInMilliseconds % numberOfBuckets != 0) {
             throw new IllegalArgumentException("The timeInMilliseconds must divide equally into numberOfBuckets. For example 1000/10 is ok, 1000/11 is not.");
         }
+        this.bucketSizeInMillseconds = timeInMilliseconds / numberOfBuckets;
 
-        buckets = new BucketCircularArray(numberOfBuckets.get());
-    }
-
-    /* package for testing */int getBucketSizeInMilliseconds() {
-        return timeInMilliseconds.get() / numberOfBuckets.get();
+        buckets = new BucketCircularArray(numberOfBuckets);
     }
 
     /**
@@ -258,7 +264,7 @@ public class HystrixRollingNumber {
          * NOTE: This is thread-safe because it's accessing 'buckets' which is a LinkedBlockingDeque
          */
         Bucket currentBucket = buckets.peekLast();
-        if (currentBucket != null && currentTime < currentBucket.windowStart + getBucketSizeInMilliseconds()) {
+        if (currentBucket != null && currentTime < currentBucket.windowStart + this.bucketSizeInMillseconds) {
             // if we're within the bucket 'window of time' return the current one
             // NOTE: We do not worry if we are BEFORE the window in a weird case of where thread scheduling causes that to occur,
             // we'll just use the latest as long as we're not AFTER the window
@@ -299,22 +305,22 @@ public class HystrixRollingNumber {
                 } else {
                     // We go into a loop so that it will create as many buckets as needed to catch up to the current time
                     // as we want the buckets complete even if we don't have transactions during a period of time.
-                    for (int i = 0; i < numberOfBuckets.get(); i++) {
+                    for (int i = 0; i < numberOfBuckets; i++) {
                         // we have at least 1 bucket so retrieve it
                         Bucket lastBucket = buckets.peekLast();
-                        if (currentTime < lastBucket.windowStart + getBucketSizeInMilliseconds()) {
+                        if (currentTime < lastBucket.windowStart + this.bucketSizeInMillseconds) {
                             // if we're within the bucket 'window of time' return the current one
                             // NOTE: We do not worry if we are BEFORE the window in a weird case of where thread scheduling causes that to occur,
                             // we'll just use the latest as long as we're not AFTER the window
                             return lastBucket;
-                        } else if (currentTime - (lastBucket.windowStart + getBucketSizeInMilliseconds()) > timeInMilliseconds.get()) {
+                        } else if (currentTime - (lastBucket.windowStart + this.bucketSizeInMillseconds) > timeInMilliseconds) {
                             // the time passed is greater than the entire rolling counter so we want to clear it all and start from scratch
                             reset();
                             // recursively call getCurrentBucket which will create a new bucket and return it
                             return getCurrentBucket();
                         } else { // we're past the window so we need to create a new bucket
                             // create a new bucket and add it as the new 'last'
-                            buckets.addLast(new Bucket(lastBucket.windowStart + getBucketSizeInMilliseconds()));
+                            buckets.addLast(new Bucket(lastBucket.windowStart + this.bucketSizeInMillseconds));
                             // add the lastBucket values to the cumulativeSum
                             cumulativeSum.addBucket(lastBucket);
                         }

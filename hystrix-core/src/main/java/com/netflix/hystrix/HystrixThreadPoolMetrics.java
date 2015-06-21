@@ -103,7 +103,7 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
     private final HystrixThreadPoolProperties properties;
 
     private HystrixThreadPoolMetrics(HystrixThreadPoolKey threadPoolKey, ThreadPoolExecutor threadPool, HystrixThreadPoolProperties properties) {
-        super(new HystrixRollingNumber(properties.metricsRollingStatisticalWindowInMilliseconds(), properties.metricsRollingStatisticalWindowBuckets()));
+        super(new HystrixRollingNumber(properties.metricsRollingStatisticalWindowInMilliseconds().get(), properties.metricsRollingStatisticalWindowBuckets().get()));
         this.threadPoolKey = threadPoolKey;
         this.threadPool = threadPool;
         this.properties = properties;
