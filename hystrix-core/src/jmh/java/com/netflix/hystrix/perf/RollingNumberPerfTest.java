@@ -24,9 +24,7 @@ public class RollingNumberPerfTest {
 
         @Setup(Level.Iteration)
         public void setUp() {
-            counter = new HystrixRollingNumber(
-                    HystrixProperty.Factory.asProperty(100),
-                    HystrixProperty.Factory.asProperty(10));
+            counter = new HystrixRollingNumber(100, 10);
         }
     }
 
