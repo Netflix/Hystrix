@@ -124,7 +124,7 @@ public class HystrixMetricsStreamServlet extends HttpServlet {
                 try {
                     String d = request.getParameter("delay");
                     if (d != null) {
-                        delay = Integer.parseInt(d);
+                        delay = Math.max(Integer.parseInt(d), 1);
                     }
                 } catch (Exception e) {
                     // ignore if it's not a number
