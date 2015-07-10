@@ -86,12 +86,21 @@
 		 * e.g   Get Averages from sums, do rate calculation etc. 
 		 */
 		function preProcessData(data) {
+			// set defaults for values that may be missing from older streams
+			setIfMissing(data, "rollingCountBadRequests", 0);
+			// assert all the values we need
 			validateData(data);
 			// escape string used in jQuery & d3 selectors
 			data.escapedName = data.name.replace(/([ !"#$%&'()*+,./:;<=>?@[\]^`{|}~])/g,'\\$1');
 			// do math
 			converAllAvg(data);
 			calcRatePerSecond(data);
+		}
+
+		function setIfMissing(data, key, defaultValue) {
+			if(data[key] == undefined) {
+				data[key] = defaultValue;
+			}
 		}
 
 		/**
@@ -159,6 +168,7 @@
             assertNotNull(data,"rollingCountSuccess");
             assertNotNull(data,"rollingCountThreadPoolRejected");
             assertNotNull(data,"rollingCountTimeout");
+            assertNotNull(data,"rollingCountBadRequests");
             assertNotNull(data,"currentConcurrentExecutionCount");
             assertNotNull(data,"latencyExecute_mean");
             assertNotNull(data,"latencyExecute");
