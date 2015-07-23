@@ -93,7 +93,7 @@
 			// escape string used in jQuery & d3 selectors
 			data.escapedName = data.name.replace(/([ !"#$%&'()*+,./:;<=>?@[\]^`{|}~])/g,'\\$1');
 			// do math
-			converAllAvg(data);
+			convertAllAvg(data);
 			calcRatePerSecond(data);
 		}
 
@@ -110,7 +110,7 @@
 		 * 
 		 * We want to do this on any numerical values where we want per instance rather than cluster-wide sum.
 		 */
-		function converAllAvg(data) {
+		function convertAllAvg(data) {
 			convertAvg(data, "errorPercentage", true);
 			convertAvg(data, "latencyExecute_mean", false);
 			convertAvg(data, "latencyTotal_mean", false);
