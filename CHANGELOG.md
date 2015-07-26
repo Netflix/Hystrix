@@ -1,5 +1,12 @@
 # Hystrix Releases #
 
+### Version 1.4.13 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.12%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.13/)) ###
+
+* [Pull 839](https://github.com/Netflix/Hystrix/pull/839) Fix typo in hystrix-dashboard js
+* [Pull 838](https://github.com/Netflix/Hystrix/pull/838) Add back unit tests for Hystrix class and its reset() method in particular
+* [Pull 837](https://github.com/Netflix/Hystrix/pull/837) Upgrade to RxJava 1.0.13
+* [Pull 830](https://github.com/Netflix/Hystrix/pull/830) Add validation for rollingCountBadRequest in hystrix-dashboard
+
 ### Version 1.4.12 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.12%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.12/)) ###
 
 * [Pull 826](https://github.com/Netflix/Hystrix/pull/826) Safely handle negative input for delay parameter to metrics stream servlet
