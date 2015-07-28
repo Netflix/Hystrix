@@ -41,4 +41,12 @@ public abstract class HystrixMetrics {
      * @return long rolling count
      */
     public abstract long getRollingCount(HystrixRollingNumberEvent event);
+
+    protected abstract void addEvent(HystrixRollingNumberEvent event);
+
+    protected abstract void addEventWithValue(HystrixRollingNumberEvent event, long value);
+
+    protected abstract void updateRollingMax(HystrixRollingNumberEvent event, long value);
+
+    protected abstract long getRollingMax(HystrixRollingNumberEvent event);
 }

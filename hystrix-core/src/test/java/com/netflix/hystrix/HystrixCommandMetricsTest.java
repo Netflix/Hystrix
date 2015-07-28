@@ -18,6 +18,7 @@ package com.netflix.hystrix;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+import com.netflix.hystrix.strategy.metrics.HystrixCommandMetricsSummary;
 import org.junit.Test;
 
 import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifierDefault;

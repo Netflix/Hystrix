@@ -19,6 +19,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsCollection;
@@ -33,8 +34,7 @@ import com.netflix.hystrix.util.HystrixRollingNumberEvent;
  */
 public abstract class HystrixCommandMetrics extends HystrixMetrics {
 
-    /* strategy: HystrixMetricsCollection */
-    protected HystrixMetricsCollection metricsCollection;
+    private final AtomicInteger concurrentExecutionCount = new AtomicInteger();
 
     // String is HystrixCommandKey.name() (we can't use HystrixCommandKey directly as we can't guarantee it implements hashcode/equals correctly)
     private static final ConcurrentHashMap<String, HystrixCommandMetrics> metrics = new ConcurrentHashMap<String, HystrixCommandMetrics>();
@@ -131,7 +131,7 @@ public abstract class HystrixCommandMetrics extends HystrixMetrics {
     private final HystrixThreadPoolKey threadPoolKey;
     private final HystrixEventNotifier eventNotifier;
 
-    /* package */HystrixCommandMetrics(HystrixCommandKey key, HystrixCommandGroupKey commandGroup, HystrixThreadPoolKey threadPoolKey, HystrixCommandProperties properties, HystrixEventNotifier eventNotifier) {
+    protected HystrixCommandMetrics(HystrixCommandKey key, HystrixCommandGroupKey commandGroup, HystrixThreadPoolKey threadPoolKey, HystrixCommandProperties properties, HystrixEventNotifier eventNotifier) {
         this.key = key;
         this.group = commandGroup;
         this.threadPoolKey = threadPoolKey;
@@ -230,16 +230,31 @@ public abstract class HystrixCommandMetrics extends HystrixMetrics {
 
     /**
      * Current number of concurrent executions of {@link HystrixCommand#run()};
-     * 
+     *
      * @return int
      */
-    public abstract int getCurrentConcurrentExecutionCount();
+    public int getCurrentConcurrentExecutionCount() {
+        return concurrentExecutionCount.get();
+    }
 
-    protected abstract void addEvent(HystrixRollingNumberEvent event);
+    /**
+     * Increment concurrent requests counter.
+     */
+    /* package */ void incrementConcurrentExecutionCount() {
+        int numConcurrent = concurrentExecutionCount.incrementAndGet();
+        updateRollingMax(HystrixRollingNumberEvent.COMMAND_MAX_ACTIVE, (long) numConcurrent);
+    }
 
-    protected abstract void addEventWithValue(HystrixRollingNumberEvent event, int count);
+    /**
+     * Decrement concurrent requests counter.
+     */
+    /* package */ void decrementConcurrentExecutionCount() {
+        concurrentExecutionCount.decrementAndGet();
+    }
 
-    protected abstract long getRollingSum(HystrixRollingNumberEvent event);
+    public long getRollingMaxConcurrentExecutions() {
+        return getRollingMax(HystrixRollingNumberEvent.COMMAND_MAX_ACTIVE);
+    }
 
     /**
      * When a {@link HystrixCommand} successfully completes it will call this method to report its success along with how long the execution took.
@@ -373,24 +388,10 @@ public abstract class HystrixCommandMetrics extends HystrixMetrics {
         addEvent(HystrixRollingNumberEvent.FALLBACK_EMIT);
     }
 
-
-    /**
-     * Increment concurrent requests counter.
-     */
-    /* package */ abstract void incrementConcurrentExecutionCount();
-
-    /**
-     * Decrement concurrent requests counter.
-     */
-    /* package */ abstract void decrementConcurrentExecutionCount();
-
-    public abstract long getRollingMaxConcurrentExecutions();
-
-
     /**
      * Execution time of {@link HystrixCommand#run()}.
      */
-    /* package */abstract void addCommandExecutionTime(long duration);
+    protected abstract void addCommandExecutionTime(long duration);
 
     /**
      * Complete execution time of {@link HystrixCommand#execute()} or {@link HystrixCommand#queue()} (queue is considered complete once the work is finished and {@link Future#get} is capable of
@@ -398,7 +399,15 @@ public abstract class HystrixCommandMetrics extends HystrixMetrics {
      * <p>
      * This differs from {@link #addCommandExecutionTime} in that this covers all of the threading and scheduling overhead, not just the execution of the {@link HystrixCommand#run()} method.
      */
-    /* package */abstract void addUserThreadExecutionTime(long duration);
+    protected abstract void addUserThreadExecutionTime(long duration);
+
+    protected abstract void clear();
+
+    /* package */ void resetCounter() {
+        clear();
+        lastHealthCountsSnapshot.set(System.currentTimeMillis());
+        healthCountsSnapshot = new HealthCounts(0, 0, 0);
+    }
 
     private volatile HealthCounts healthCountsSnapshot = new HealthCounts(0, 0, 0);
     private volatile AtomicLong lastHealthCountsSnapshot = new AtomicLong(System.currentTimeMillis());
@@ -417,12 +426,12 @@ public abstract class HystrixCommandMetrics extends HystrixMetrics {
             if (lastHealthCountsSnapshot.compareAndSet(lastTime, currentTime)) {
                 // our thread won setting the snapshot time so we will proceed with generating a new snapshot
                 // losing threads will continue using the old snapshot
-                long success = getRollingSum(HystrixRollingNumberEvent.SUCCESS);
-                long failure = getRollingSum(HystrixRollingNumberEvent.FAILURE); // fallbacks occur on this
-                long timeout = getRollingSum(HystrixRollingNumberEvent.TIMEOUT); // fallbacks occur on this
-                long threadPoolRejected = getRollingSum(HystrixRollingNumberEvent.THREAD_POOL_REJECTED); // fallbacks occur on this
-                long semaphoreRejected = getRollingSum(HystrixRollingNumberEvent.SEMAPHORE_REJECTED); // fallbacks occur on this
-                long shortCircuited = getRollingSum(HystrixRollingNumberEvent.SHORT_CIRCUITED); // fallbacks occur on this
+                long success = getRollingCount(HystrixRollingNumberEvent.SUCCESS);
+                long failure = getRollingCount(HystrixRollingNumberEvent.FAILURE); // fallbacks occur on this
+                long timeout = getRollingCount(HystrixRollingNumberEvent.TIMEOUT); // fallbacks occur on this
+                long threadPoolRejected = getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED); // fallbacks occur on this
+                long semaphoreRejected = getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED); // fallbacks occur on this
+                long shortCircuited = getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED); // fallbacks occur on this
                 long totalCount = failure + success + timeout + threadPoolRejected + shortCircuited + semaphoreRejected;
                 long errorCount = failure + timeout + threadPoolRejected + shortCircuited + semaphoreRejected;
                 int errorPercentage = 0;
@@ -435,14 +444,6 @@ public abstract class HystrixCommandMetrics extends HystrixMetrics {
             }
         }
         return healthCountsSnapshot;
-    }
-
-    /* package */ abstract void clear();
-
-    /* package */ void resetCounter() {
-        clear();
-        lastHealthCountsSnapshot.set(System.currentTimeMillis());
-        healthCountsSnapshot = new HealthCounts(0, 0, 0);
     }
 
     /**

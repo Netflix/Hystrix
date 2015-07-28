@@ -21,6 +21,8 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadPoolExecutor;
 
+import com.netflix.hystrix.strategy.HystrixPlugins;
+import com.netflix.hystrix.strategy.metrics.HystrixMetricsCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,12 +32,7 @@ import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 /**
  * Used by {@link HystrixThreadPool} to record metrics.
  */
-public class HystrixThreadPoolMetrics extends HystrixMetrics {
-
-    private final HystrixRollingNumber counter;
-
-    @SuppressWarnings("unused")
-    private static final Logger logger = LoggerFactory.getLogger(HystrixThreadPoolMetrics.class);
+public abstract class HystrixThreadPoolMetrics extends HystrixMetrics {
 
     // String is HystrixThreadPoolKey.name() (we can't use HystrixThreadPoolKey directly as we can't guarantee it implements hashcode/equals correctly)
     private static final ConcurrentHashMap<String, HystrixThreadPoolMetrics> metrics = new ConcurrentHashMap<String, HystrixThreadPoolMetrics>();
@@ -60,7 +57,8 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
             return threadPoolMetrics;
         }
         // it doesn't exist so we need to create it
-        threadPoolMetrics = new HystrixThreadPoolMetrics(key, threadPool, properties);
+        HystrixMetricsCollection metricsCollectionStrategy = HystrixPlugins.getInstance().getMetricsCollection();
+        threadPoolMetrics = metricsCollectionStrategy.getThreadPoolMetricsInstance(key, threadPool, properties);
         // attempt to store it (race other threads)
         HystrixThreadPoolMetrics existing = metrics.putIfAbsent(key.name(), threadPoolMetrics);
         if (existing == null) {
@@ -104,8 +102,7 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
     private final ThreadPoolExecutor threadPool;
     private final HystrixThreadPoolProperties properties;
 
-    private HystrixThreadPoolMetrics(HystrixThreadPoolKey threadPoolKey, ThreadPoolExecutor threadPool, HystrixThreadPoolProperties properties) {
-        this.counter = new HystrixRollingNumber(properties.metricsRollingStatisticalWindowInMilliseconds().get(), properties.metricsRollingStatisticalWindowBuckets().get());
+    protected HystrixThreadPoolMetrics(HystrixThreadPoolKey threadPoolKey, ThreadPoolExecutor threadPool, HystrixThreadPoolProperties properties) {
         this.threadPoolKey = threadPoolKey;
         this.threadPool = threadPool;
         this.properties = properties;
@@ -215,7 +212,7 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
      */
     public void markThreadExecution() {
         // increment the count
-        counter.increment(HystrixRollingNumberEvent.THREAD_EXECUTION);
+        addEvent(HystrixRollingNumberEvent.THREAD_EXECUTION);
         setMaxActiveThreads();
     }
 
@@ -254,27 +251,17 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
      * @return rolling max active threads
      */
     public long getRollingMaxActiveThreads() {
-        return counter.getRollingMaxValue(HystrixRollingNumberEvent.THREAD_MAX_ACTIVE);
+        return getRollingMax(HystrixRollingNumberEvent.THREAD_MAX_ACTIVE);
     }
 
     private void setMaxActiveThreads() {
-        counter.updateRollingMax(HystrixRollingNumberEvent.THREAD_MAX_ACTIVE, threadPool.getActiveCount());
+        updateRollingMax(HystrixRollingNumberEvent.THREAD_MAX_ACTIVE, threadPool.getActiveCount());
     }
 
     /**
      * Invoked each time a command is rejected from the thread-pool
      */
     public void markThreadRejection() {
-        counter.increment(HystrixRollingNumberEvent.THREAD_POOL_REJECTED);
-    }
-
-    @Override
-    public long getCumulativeCount(HystrixRollingNumberEvent event) {
-        return 0;
-    }
-
-    @Override
-    public long getRollingCount(HystrixRollingNumberEvent event) {
-        return 0;
+        addEvent(HystrixRollingNumberEvent.THREAD_POOL_REJECTED);
     }
 }
