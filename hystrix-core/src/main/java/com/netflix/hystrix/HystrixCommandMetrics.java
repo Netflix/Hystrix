@@ -408,8 +408,7 @@ public abstract class HystrixCommandMetrics extends HystrixMetrics {
      * 
      * @return {@link HealthCounts}
      */
-    //TODO Should this be final?
-    public HealthCounts getHealthCounts() {
+    public final HealthCounts getHealthCounts() {
         // we put an interval between snapshots so high-volume commands don't 
         // spend too much unnecessary time calculating metrics in very small time periods
         long lastTime = lastHealthCountsSnapshot.get();
