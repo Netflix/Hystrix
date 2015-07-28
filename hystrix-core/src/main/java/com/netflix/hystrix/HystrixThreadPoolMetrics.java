@@ -32,6 +32,8 @@ import com.netflix.hystrix.util.HystrixRollingNumberEvent;
  */
 public class HystrixThreadPoolMetrics extends HystrixMetrics {
 
+    private final HystrixRollingNumber counter;
+
     @SuppressWarnings("unused")
     private static final Logger logger = LoggerFactory.getLogger(HystrixThreadPoolMetrics.class);
 
@@ -103,7 +105,7 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
     private final HystrixThreadPoolProperties properties;
 
     private HystrixThreadPoolMetrics(HystrixThreadPoolKey threadPoolKey, ThreadPoolExecutor threadPool, HystrixThreadPoolProperties properties) {
-        super(new HystrixRollingNumber(properties.metricsRollingStatisticalWindowInMilliseconds().get(), properties.metricsRollingStatisticalWindowBuckets().get()));
+        this.counter = new HystrixRollingNumber(properties.metricsRollingStatisticalWindowInMilliseconds().get(), properties.metricsRollingStatisticalWindowBuckets().get());
         this.threadPoolKey = threadPoolKey;
         this.threadPool = threadPool;
         this.properties = properties;
@@ -264,5 +266,15 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
      */
     public void markThreadRejection() {
         counter.increment(HystrixRollingNumberEvent.THREAD_POOL_REJECTED);
+    }
+
+    @Override
+    public long getCumulativeCount(HystrixRollingNumberEvent event) {
+        return 0;
+    }
+
+    @Override
+    public long getRollingCount(HystrixRollingNumberEvent event) {
+        return 0;
     }
 }

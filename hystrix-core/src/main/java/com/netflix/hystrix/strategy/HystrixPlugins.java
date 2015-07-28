@@ -26,6 +26,8 @@ import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
 import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifierDefault;
 import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
 import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHookDefault;
+import com.netflix.hystrix.strategy.metrics.HystrixMetricsCollection;
+import com.netflix.hystrix.strategy.metrics.HystrixMetricsCollectionDefault;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisher;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherDefault;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherFactory;
@@ -48,6 +50,7 @@ public class HystrixPlugins {
     /* package */ final AtomicReference<HystrixEventNotifier> notifier = new AtomicReference<HystrixEventNotifier>();
     /* package */ final AtomicReference<HystrixConcurrencyStrategy> concurrencyStrategy = new AtomicReference<HystrixConcurrencyStrategy>();
     /* package */ final AtomicReference<HystrixMetricsPublisher> metricsPublisher = new AtomicReference<HystrixMetricsPublisher>();
+    /* package */ final AtomicReference<HystrixMetricsCollection> metricsCollection = new AtomicReference<HystrixMetricsCollection>();
     /* package */ final AtomicReference<HystrixPropertiesStrategy> propertiesFactory = new AtomicReference<HystrixPropertiesStrategy>();
     /* package */ final AtomicReference<HystrixCommandExecutionHook> commandExecutionHook = new AtomicReference<HystrixCommandExecutionHook>();
 
@@ -71,6 +74,7 @@ public class HystrixPlugins {
         getInstance().notifier.set(null);
         getInstance().concurrencyStrategy.set(null);
         getInstance().metricsPublisher.set(null);
+        getInstance().metricsCollection.set(null);
         getInstance().propertiesFactory.set(null);
         getInstance().commandExecutionHook.set(null);
         HystrixMetricsPublisherFactory.reset();
@@ -187,6 +191,44 @@ public class HystrixPlugins {
     public void registerMetricsPublisher(HystrixMetricsPublisher impl) {
         if (!metricsPublisher.compareAndSet(null, impl)) {
             throw new IllegalStateException("Another strategy was already registered.");
+        }
+    }
+
+    /**
+     * Retrieve instance of {@link HystrixMetricsCollection} to use based on order of precedence as defined in {@link HystrixPlugins} class header.
+     * <p>
+     * Override default by using {@link #registerMetricsCollection(HystrixMetricsCollection)} or setting property (via Archaius):
+     * <code>hystrix.plugin.HystrixMetricsCollectionStrategy.implementation</code> with the full classname to load.
+     *
+     * @return {@link HystrixMetricsCollection} implementation to use
+     */
+    public HystrixMetricsCollection getMetricsCollection() {
+        if (metricsCollection.get() == null) {
+            // check for an implementation from Archaius first
+            Object impl = getPluginImplementationViaArchaius(HystrixMetricsCollection.class);
+            if (impl == null) {
+                // nothing set via Archaius so initialize with default
+                metricsCollection.compareAndSet(null, HystrixMetricsCollectionDefault.getInstance());
+                // we don't return from here but call get() again in case of thread-race so the winner will always get returned
+            } else {
+                // we received an implementation from Archaius so use it
+                metricsCollection.compareAndSet(null, (HystrixMetricsCollection) impl);
+            }
+        }
+        return metricsCollection.get();
+    }
+
+    /**
+     * Register a {@link HystrixMetricsCollection} implementation as a global override of any injected or default implementations.
+     *
+     * @param impl
+     *            {@link HystrixMetricsCollection} implementation
+     * @throws IllegalStateException
+     *             if called more than once or after the default was initialized (if usage occurs before trying to register)
+     */
+    public void registerMetricsCollection(HystrixMetricsCollection impl) {
+        if (!metricsCollection.compareAndSet(null, impl)) {
+            throw new IllegalStateException("Another HystrixMetricsCollectionStrategy was already registered.");
         }
     }
 
