@@ -48,6 +48,11 @@ public class HystrixThreadPoolMetricsSummary extends HystrixThreadPoolMetrics {
     }
 
     @Override
+    public long getRollingMax(HystrixRollingNumberEvent event) {
+        return counter.getRollingMaxValue(event);
+    }
+
+    @Override
     protected void addEvent(HystrixRollingNumberEvent event) {
         counter.increment(event);
     }
@@ -60,10 +65,5 @@ public class HystrixThreadPoolMetricsSummary extends HystrixThreadPoolMetrics {
     @Override
     protected void updateRollingMax(HystrixRollingNumberEvent event, long value) {
         counter.updateRollingMax(event, value);
-    }
-
-    @Override
-    protected long getRollingMax(HystrixRollingNumberEvent event) {
-        return counter.getRollingMaxValue(event);
     }
 }
