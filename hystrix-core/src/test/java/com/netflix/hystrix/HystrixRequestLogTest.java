@@ -110,24 +110,25 @@ public class HystrixRequestLogTest {
     public void testTimeout() {
         HystrixRequestContext context = HystrixRequestContext.initializeContext();
         try {
-            List<Observable<String>> results = new ArrayList<Observable<String>>();
+            Observable<String> result = null;
 
             // 1 timeout
             try {
-                for (int i = 0; i < 5; i++) {
-                    results.add(new TestCommand("A", false, false, true).observe());
+                for (int i = 0; i < 1; i++) {
+                    result = new TestCommand("A", false, false, true).observe();
                 }
             } catch (Exception e) {
             }
             try {
-                Observable.merge(results).toList().toBlocking().single();
+                result.toBlocking().single();
             } catch (Throwable ex) {
                 //ex.printStackTrace();
             }
+            System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis() + " -> done with awaiting all observables");
             String log = HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString();
             // strip the actual count so we can compare reliably
             log = log.replaceAll(DIGITS_REGEX, "[");
-            assertEquals("TestCommand[TIMEOUT][ms]x5", log);
+            assertEquals("TestCommand[TIMEOUT][ms]", log);
         } finally {
             context.shutdown();
         }
@@ -227,7 +228,7 @@ public class HystrixRequestLogTest {
         }
 
         public TestCommand(String value, boolean fail, boolean failOnFallback, boolean timeout) {
-            super(HystrixCommandGroupKey.Factory.asKey("RequestLogTestCommand"));
+            super(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("RequestLogTestCommand")).andCommandPropertiesDefaults(new HystrixCommandProperties.Setter().withExecutionTimeoutInMilliseconds(20)));
             this.value = value;
             this.fail = fail;
             this.failOnFallback = failOnFallback;
