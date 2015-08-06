@@ -413,7 +413,7 @@
                               (list (first body))
                               (map first body))
         m                   (if-not (contains? m :arglists)
-                              (assoc m :arglists `(quote ~params))
+                              (assoc m :arglists ('quote `(~params)))
                               m)]
     `(let [meta-options# (#'com.netflix.hystrix.core/extract-hystrix-command-options ~m)
            run-fn#       (fn ~name ~@body)
