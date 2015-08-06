@@ -1,6 +1,11 @@
 # Hystrix Releases #
 
-### Version 1.4.13 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.12%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.13/)) ###
+### Version 1.4.14 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.14%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.14/)) ###
+
+* [Pull 852](https://github.com/Netflix/Hystrix/pull/852) Fix hystrix-clj that was blocking http://dev.clojure.org/jira/browse/CLJ-1232
+* [Pull 849](https://github.com/Netflix/Hystrix/pull/849) Unit tests for HystrixCommands that are part of a class hierarchy with other HystrixCommands
+
+### Version 1.4.13 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.13%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.13/)) ###
 
 * [Pull 839](https://github.com/Netflix/Hystrix/pull/839) Fix typo in hystrix-dashboard js
 * [Pull 838](https://github.com/Netflix/Hystrix/pull/838) Add back unit tests for Hystrix class and its reset() method in particular
