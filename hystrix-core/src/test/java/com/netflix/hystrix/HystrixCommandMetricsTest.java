@@ -18,6 +18,7 @@ package com.netflix.hystrix;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+import com.netflix.hystrix.strategy.metrics.HystrixCommandMetricsSummary;
 import org.junit.Test;
 
 import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifierDefault;
@@ -129,7 +130,7 @@ public class HystrixCommandMetricsTest {
      * Utility method for creating {@link HystrixCommandMetrics} for unit tests.
      */
     private static HystrixCommandMetrics getMetrics(HystrixCommandProperties.Setter properties) {
-        return new HystrixCommandMetrics(InspectableBuilder.CommandKeyForUnitTest.KEY_ONE, InspectableBuilder.CommandGroupForUnitTest.OWNER_ONE, InspectableBuilder.ThreadPoolKeyForUnitTest.THREAD_POOL_ONE, HystrixCommandPropertiesTest.asMock(properties), HystrixEventNotifierDefault.getInstance());
+        return new HystrixCommandMetricsSummary(InspectableBuilder.CommandKeyForUnitTest.KEY_ONE, InspectableBuilder.CommandGroupForUnitTest.OWNER_ONE, InspectableBuilder.ThreadPoolKeyForUnitTest.THREAD_POOL_ONE, HystrixCommandPropertiesTest.asMock(properties), HystrixEventNotifierDefault.getInstance());
     }
 
 }
