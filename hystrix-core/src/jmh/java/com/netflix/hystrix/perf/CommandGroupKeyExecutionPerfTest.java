@@ -1,5 +1,5 @@
 /**
- * Copyright 2014 Netflix, Inc.
+ * Copyright 2015 Netflix, Inc.
  * <p/>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,46 +41,31 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-public class CommandExecutionPerfTest {
+public class CommandGroupKeyExecutionPerfTest {
 
     @State(Scope.Thread)
     public static class CommandState {
         HystrixCommand<Integer> command;
 
-        @Param({"true", "false"})
-        public boolean forceCircuitOpen;
+        static class TestCommand extends HystrixCommand<Integer> {
+            TestCommand() {
+                super(HystrixCommandGroupKey.Factory.asKey("PERF"));
+            }
 
-        @Param({"THREAD", "SEMAPHORE"})
-        public HystrixCommandProperties.ExecutionIsolationStrategy isolationStrategy;
+            @Override
+            protected Integer run() throws Exception {
+                return 1;
+            }
 
+            @Override
+            protected Integer getFallback() {
+                return 2;
+            }
+        }
 
         @Setup(Level.Invocation)
         public void setUp() {
-            command = new HystrixCommand<Integer>(
-                    HystrixCommand.Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("PERF"))
-                            .andCommandPropertiesDefaults(
-                                    HystrixCommandProperties.Setter()
-                                            .withExecutionIsolationStrategy(isolationStrategy)
-                                            .withRequestCacheEnabled(true)
-                                            .withRequestLogEnabled(true)
-                                            .withCircuitBreakerEnabled(true)
-                                            .withCircuitBreakerForceOpen(forceCircuitOpen)
-                            )
-                            .andThreadPoolPropertiesDefaults(
-                                    HystrixThreadPoolProperties.Setter()
-                                            .withCoreSize(100)
-                            )
-            ) {
-                @Override
-                protected Integer run() throws Exception {
-                    return 1;
-                }
-
-                @Override
-                protected Integer getFallback() {
-                    return 2;
-                }
-            };
+            command = new TestCommand();
         }
     }
 

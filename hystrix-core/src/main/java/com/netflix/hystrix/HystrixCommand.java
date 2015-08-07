@@ -15,6 +15,7 @@
  */
 package com.netflix.hystrix;
 
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -52,8 +53,7 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
      *            common business purpose etc.
      */
     protected HystrixCommand(HystrixCommandGroupKey group) {
-        // use 'null' to specify use the default
-        this(new Setter(group));
+        super(group, null, null, null, null, null, null, null, null, null, null, null);
     }
 
 
@@ -71,7 +71,7 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
      *            {@link HystrixThreadPoolKey} used to identify the thread pool in which a {@link HystrixCommand} executes.
      */
     protected HystrixCommand(HystrixCommandGroupKey group, HystrixThreadPoolKey threadPool) {
-        this(new Setter(group).andThreadPoolKey(threadPool));
+        super(group, null, threadPool, null, null, null, null, null, null, null, null, null);
     }
 
     /**
@@ -88,7 +88,7 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
      *            Time in milliseconds at which point the calling thread will timeout (using {@link Future#get}) and walk away from the executing thread.
      */
     protected HystrixCommand(HystrixCommandGroupKey group, int executionIsolationThreadTimeoutInMilliseconds) {
-        this(new Setter(group).andCommandPropertiesDefaults(HystrixCommandProperties.Setter().withExecutionTimeoutInMilliseconds(executionIsolationThreadTimeoutInMilliseconds)));
+        super(group, null, null, null, null, HystrixCommandProperties.Setter().withExecutionTimeoutInMilliseconds(executionIsolationThreadTimeoutInMilliseconds), null, null, null, null, null, null);
     }
 
     /**
@@ -102,12 +102,12 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
      *            The {@link HystrixCommandGroupKey} is used to represent a common relationship between commands. For example, a library or team name, the system all related commands interact with,
      *            common business purpose etc.
      * @param threadPool
-     *            {@link HystrixThreadPoolKey} used to identify the thread pool in which a {@link HystrixCommand} executes.
+     *            {@link HystrixThreadPool} used to identify the thread pool in which a {@link HystrixCommand} executes.
      * @param executionIsolationThreadTimeoutInMilliseconds
      *            Time in milliseconds at which point the calling thread will timeout (using {@link Future#get}) and walk away from the executing thread.
      */
     protected HystrixCommand(HystrixCommandGroupKey group, HystrixThreadPoolKey threadPool, int executionIsolationThreadTimeoutInMilliseconds) {
-        this(new Setter(group).andThreadPoolKey(threadPool).andCommandPropertiesDefaults(HystrixCommandProperties.Setter().withExecutionTimeoutInMilliseconds(executionIsolationThreadTimeoutInMilliseconds)));
+        super(group, null, threadPool, null, null, HystrixCommandProperties.Setter().withExecutionTimeoutInMilliseconds(executionIsolationThreadTimeoutInMilliseconds), null, null, null, null, null, null);
     }
 
     /**
