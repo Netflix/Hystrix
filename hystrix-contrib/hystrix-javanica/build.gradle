@@ -1,3 +1,5 @@
+apply plugin: 'osgi'
+
 ext {
     aspectjVersion = '1.7.4'
 }
