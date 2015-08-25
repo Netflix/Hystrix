@@ -613,6 +613,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                      */
                     try {
                         metrics.markBadRequest(System.currentTimeMillis() - invocationStartTime);
+                        executionResult = executionResult.addEvents(HystrixEventType.BAD_REQUEST);
                         Exception decorated = executionHook.onError(_self, FailureType.BAD_REQUEST_EXCEPTION, (Exception) t);
 
                         if (decorated instanceof HystrixBadRequestException) {
