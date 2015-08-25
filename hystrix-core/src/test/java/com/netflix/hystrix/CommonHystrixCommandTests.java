@@ -157,6 +157,20 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
         }
     }
 
+    protected void assertSaneHystrixRequestLog(final int numCommands) {
+        HystrixRequestLog currentRequestLog = HystrixRequestLog.getCurrentRequest();
+
+        try {
+            assertEquals(numCommands, currentRequestLog.getAllExecutedCommands().size());
+            assertFalse(currentRequestLog.getExecutedCommandsAsString().contains("Executed"));
+            assertTrue(currentRequestLog.getAllExecutedCommands().iterator().next().getExecutionEvents().size() >= 1);
+            //Most commands should have 1 execution event, but fallbacks / responses from cache can cause more than 1.  They should never have 0
+        } catch (Throwable ex) {
+            System.out.println("Problematic Request log : " + currentRequestLog.getExecutedCommandsAsString() + " , expected : " + numCommands);
+            throw new RuntimeException(ex);
+        }
+    }
+
     /**
      * Threadpool with 1 thread, queue of size 1
      */
