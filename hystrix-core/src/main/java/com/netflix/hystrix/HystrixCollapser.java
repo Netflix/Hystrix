@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import rx.Observable;
 import rx.Scheduler;
-import rx.functions.Func1;
+import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 import rx.subjects.ReplaySubject;
 
@@ -163,16 +163,13 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
 
             @Override
             public Observable<Void> mapResponseToRequests(Observable<BatchReturnType> batchResponse, final Collection<CollapsedRequest<ResponseType, RequestArgumentType>> requests) {
-                return batchResponse.single().flatMap(new Func1<BatchReturnType, Observable<Void>>() {
-
+                return batchResponse.single().doOnNext(new Action1<BatchReturnType>() {
                     @Override
-                    public Observable<Void> call(BatchReturnType response) {
+                    public void call(BatchReturnType batchReturnType) {
                         // this is a blocking call in HystrixCollapser
-                        self.mapResponseToRequests(response, requests);
-                        return Observable.empty();
+                        self.mapResponseToRequests(batchReturnType, requests);
                     }
-
-                });
+                }).ignoreElements().cast(Void.class);
             }
 
             @Override
@@ -507,8 +504,8 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
         public RequestArgumentType getArgument();
 
         /**
-         * When set any client thread blocking on get() will immediately be unblocked and receive the response.
-         * 
+         * This corresponds in a OnNext(Response); OnCompleted pair of emissions.  It represents a single-value usecase.
+         *
          * @throws IllegalStateException
          *             if called more than once or after setException.
          * @param response
@@ -517,13 +514,24 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
         public void setResponse(ResponseType response);
 
         /**
-         * When set any client thread blocking on get() will immediately be unblocked and receive the exception.
+         * When invoked, any Observer will be OnNExted this value
+         * @param response
+         */
+        public void emitResponse(ResponseType response);
+
+        /**
+         * When set, any Observer will be OnErrored this exception
          * 
          * @param exception exception to set on response
          * @throws IllegalStateException
          *             if called more than once or after setResponse.
          */
         public void setException(Exception exception);
+
+        /**
+         * When set, any Observer will have an OnCompleted emitted
+         */
+        public void setComplete();
     }
 
     /**
