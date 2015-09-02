@@ -507,14 +507,16 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
          * This corresponds in a OnNext(Response); OnCompleted pair of emissions.  It represents a single-value usecase.
          *
          * @throws IllegalStateException
-         *             if called more than once or after setException.
+         *             if called more than once or after setException/setComplete.
          * @param response
          *            ResponseType
          */
         public void setResponse(ResponseType response);
 
         /**
-         * When invoked, any Observer will be OnNExted this value
+         * When invoked, any Observer will be OnNexted this value
+         * @throws IllegalStateException
+         *             if called after setException/setResponse/setComplete.
          * @param response
          */
         public void emitResponse(ResponseType response);
@@ -524,12 +526,16 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
          * 
          * @param exception exception to set on response
          * @throws IllegalStateException
-         *             if called more than once or after setResponse.
+         *             if called more than once or after setResponse/setComplete.
          */
         public void setException(Exception exception);
 
         /**
-         * When set, any Observer will have an OnCompleted emitted
+         * When set, any Observer will have an OnCompleted emitted.
+         * The intent is to use if after a series of emitResponses
+         *
+         * Note that, unlike the other 3 methods above, this method does not throw an IllegalStateException.
+         * This allows Hystrix-core to unilaterally call it without knowing the internal state.
          */
         public void setComplete();
     }
