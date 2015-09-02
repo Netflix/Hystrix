@@ -79,7 +79,7 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
      */
     @Override
     public void setResponse(T response) {
-        if (!responseSubject.hasCompleted() && !responseSubject.hasThrowable()) {
+        if (!isTerminal()) {
             responseSubject.onNext(response);
             responseSubject.onCompleted();
         } else {
@@ -93,19 +93,15 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
      */
     @Override
     public void emitResponse(T response) {
-        if (!responseSubject.hasCompleted() && !responseSubject.hasThrowable()) {
+        if (!isTerminal()) {
             responseSubject.onNext(response);
-        } else {
-            throw new IllegalStateException("Response has already terminated so value can not be emitted : " + response);
         }
     }
 
     @Override
     public void setComplete() {
-        if (!responseSubject.hasCompleted() && !responseSubject.hasThrowable()) {
+        if (!isTerminal()) {
             responseSubject.onCompleted();
-        } else {
-            throw new IllegalStateException("Response has already terminated so completion can not be set");
         }
     }
 
@@ -115,7 +111,7 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
      * @param e synthetic error to set on initial command when no actual response is available
      */
     public void setExceptionIfResponseNotReceived(Exception e) {
-        if (!responseSubject.hasValue() && !responseSubject.hasCompleted() && !responseSubject.hasThrowable()) {
+        if (!responseSubject.hasValue() && !isTerminal()) {
             responseSubject.onError(e);
         }
     }
@@ -148,10 +144,14 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
      */
     @Override
     public void setException(Exception e) {
-        if (!responseSubject.hasCompleted() && !responseSubject.hasThrowable()) {
+        if (!isTerminal()) {
             responseSubject.onError(e);
         } else {
             throw new IllegalStateException("Response has already terminated so exception can not be set", e);
         }
+    }
+
+    private boolean isTerminal() {
+        return (responseSubject.hasCompleted() || responseSubject.hasThrowable());
     }
 }
