@@ -37,6 +37,34 @@ import org.openjdk.jmh.annotations.TearDown;
 import java.util.concurrent.TimeUnit;
 
 public class MultiThreadedMetricsTest {
+    private static HystrixCommand.Setter threadIsolatedSetter = HystrixCommand.Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("PERF"))
+            .andCommandPropertiesDefaults(
+                    HystrixCommandProperties.Setter()
+                            .withExecutionIsolationStrategy(HystrixCommandProperties.ExecutionIsolationStrategy.THREAD)
+                            .withRequestCacheEnabled(true)
+                            .withRequestLogEnabled(true)
+                            .withCircuitBreakerEnabled(true)
+                            .withCircuitBreakerForceOpen(false)
+            )
+            .andThreadPoolPropertiesDefaults(
+                    HystrixThreadPoolProperties.Setter()
+                            .withCoreSize(100)
+            );
+
+    private static HystrixCommand.Setter semaphoreIsolatedSetter = HystrixCommand.Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("PERF"))
+            .andCommandPropertiesDefaults(
+                    HystrixCommandProperties.Setter()
+                            .withExecutionIsolationStrategy(HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE)
+                            .withRequestCacheEnabled(true)
+                            .withRequestLogEnabled(true)
+                            .withCircuitBreakerEnabled(true)
+                            .withCircuitBreakerForceOpen(false)
+            )
+            .andThreadPoolPropertiesDefaults(
+                    HystrixThreadPoolProperties.Setter()
+                            .withCoreSize(100)
+            );
+
     @State(Scope.Thread)
     public static class CommandState {
         HystrixCommand<Integer> command;
@@ -49,21 +77,14 @@ public class MultiThreadedMetricsTest {
         @Setup(Level.Invocation)
         public void setUp() {
             reqContext = HystrixRequestContext.initializeContext();
-            command = new HystrixCommand<Integer>(
-                    HystrixCommand.Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("PERF"))
-                            .andCommandPropertiesDefaults(
-                                    HystrixCommandProperties.Setter()
-                                            .withExecutionIsolationStrategy(isolationStrategy)
-                                            .withRequestCacheEnabled(true)
-                                            .withRequestLogEnabled(true)
-                                            .withCircuitBreakerEnabled(true)
-                                            .withCircuitBreakerForceOpen(false)
-                            )
-                            .andThreadPoolPropertiesDefaults(
-                                    HystrixThreadPoolProperties.Setter()
-                                            .withCoreSize(100)
-                            )
-            ) {
+            HystrixCommand.Setter cachedSetter = null;
+            if (isolationStrategy.equals(HystrixCommandProperties.ExecutionIsolationStrategy.THREAD)) {
+                cachedSetter = threadIsolatedSetter;
+            } else {
+                cachedSetter = semaphoreIsolatedSetter;
+            }
+
+            command = new HystrixCommand<Integer>(cachedSetter) {
                 @Override
                 protected Integer run() throws Exception {
                     return 1;
