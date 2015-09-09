@@ -110,7 +110,6 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
     protected final AtomicBoolean isExecutedInThread = new AtomicBoolean(false);
     protected final AtomicReference<Action0> endCurrentThreadExecutingCommand = new AtomicReference<Action0>(); // don't like how this is being done
 
-
     /**
      * Instance of RequestCache logic
      */
@@ -354,8 +353,10 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
             throw new IllegalStateException("This instance can only be executed once. Please instantiate a new instance.");
         }
 
+        final boolean requestCacheEnabled = isRequestCachingEnabled();
+
         /* try from cache first */
-        if (isRequestCachingEnabled()) {
+        if (requestCacheEnabled) {
             Observable<R> fromCache = requestCache.get(getCacheKey());
             if (fromCache != null) {
                 /* mark that we received this response from cache */
@@ -475,7 +476,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         });
 
         // put in cache
-        if (isRequestCachingEnabled()) {
+        if (requestCacheEnabled) {
             // wrap it for caching
             o = new CachedObservableOriginal<R>(o.cache(), this);
             Observable<R> fromCache = requestCache.putIfAbsent(getCacheKey(), o);
