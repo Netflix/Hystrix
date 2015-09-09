@@ -21,6 +21,7 @@ import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.HystrixThreadPool;
 import com.netflix.hystrix.HystrixThreadPoolKey;
 import com.netflix.hystrix.HystrixThreadPoolProperties;
+import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Level;
@@ -46,6 +47,7 @@ public class CommandSetterExecutionPerfTest {
     @State(Scope.Thread)
     public static class CommandState {
         HystrixCommand<Integer> command;
+        HystrixRequestContext reqContext;
 
         @Param({"true", "false"})
         public boolean forceCircuitOpen;
@@ -56,6 +58,7 @@ public class CommandSetterExecutionPerfTest {
 
         @Setup(Level.Invocation)
         public void setUp() {
+            reqContext = HystrixRequestContext.initializeContext();
             command = new HystrixCommand<Integer>(
                     HystrixCommand.Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("PERF"))
                             .andCommandPropertiesDefaults(
@@ -81,6 +84,11 @@ public class CommandSetterExecutionPerfTest {
                     return 2;
                 }
             };
+        }
+
+        @TearDown(Level.Invocation)
+        public void tearDown() {
+            reqContext.shutdown();
         }
     }
 

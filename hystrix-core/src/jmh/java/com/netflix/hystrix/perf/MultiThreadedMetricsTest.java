@@ -20,6 +20,7 @@ import com.netflix.hystrix.HystrixCommandGroupKey;
 import com.netflix.hystrix.HystrixCommandMetrics;
 import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.HystrixThreadPoolProperties;
+import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Group;
@@ -31,6 +32,7 @@ import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.TearDown;
 
 import java.util.concurrent.TimeUnit;
 
@@ -38,6 +40,7 @@ public class MultiThreadedMetricsTest {
     @State(Scope.Thread)
     public static class CommandState {
         HystrixCommand<Integer> command;
+        HystrixRequestContext reqContext;
 
         @Param({"THREAD", "SEMAPHORE"})
         public HystrixCommandProperties.ExecutionIsolationStrategy isolationStrategy;
@@ -45,6 +48,7 @@ public class MultiThreadedMetricsTest {
 
         @Setup(Level.Invocation)
         public void setUp() {
+            reqContext = HystrixRequestContext.initializeContext();
             command = new HystrixCommand<Integer>(
                     HystrixCommand.Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("PERF"))
                             .andCommandPropertiesDefaults(
@@ -70,6 +74,11 @@ public class MultiThreadedMetricsTest {
                     return 2;
                 }
             };
+        }
+
+        @TearDown(Level.Invocation)
+        public void tearDown() {
+            reqContext.shutdown();
         }
     }
 
