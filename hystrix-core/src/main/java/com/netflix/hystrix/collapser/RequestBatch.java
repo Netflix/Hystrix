@@ -31,6 +31,7 @@ import rx.functions.Action1;
 import com.netflix.hystrix.HystrixCollapser;
 import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
 import com.netflix.hystrix.HystrixCollapserProperties;
+import rx.observers.Subscribers;
 
 /**
  * A batch of requests collapsed together by a RequestCollapser instance. When full or time has expired it will execute and stop accepting further submissions.
@@ -160,14 +161,14 @@ public class RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> {
                                 Exception e = null;
                                 for (CollapsedRequest<ResponseType, RequestArgumentType> request : shardRequests) {
                                     try {
-                                       e = ((CollapsedRequestObservableFunction<ResponseType, RequestArgumentType>) request).setExceptionIfResponseNotReceived(e,"No response set by " + commandCollapser.getCollapserKey().name() + " 'mapResponseToRequests' implementation.");
+                                        e = ((CollapsedRequestObservableFunction<ResponseType, RequestArgumentType>) request).setExceptionIfResponseNotReceived(e, "No response set by " + commandCollapser.getCollapserKey().name() + " 'mapResponseToRequests' implementation.");
                                     } catch (IllegalStateException e2) {
                                         logger.debug("Partial success of 'mapResponseToRequests' resulted in IllegalStateException while setting 'No response set' Exception. Continuing ... ", e2);
                                     }
                                 }
                             }
 
-                        }).subscribe();
+                        }).unsafeSubscribe(Subscribers.empty());
                         
                     } catch (Exception e) {
                         logger.error("Exception while creating and queueing command with batch.", e);
