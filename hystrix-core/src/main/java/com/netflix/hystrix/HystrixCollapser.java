@@ -377,8 +377,10 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
      */
     public Observable<ResponseType> toObservable(Scheduler observeOn) {
 
+        final boolean isRequestCacheEnabled = getProperties().requestCacheEnabled().get();
+
         /* try from cache first */
-        if (getProperties().requestCacheEnabled().get()) {
+        if (isRequestCacheEnabled) {
             Observable<ResponseType> fromCache = requestCache.get(getCacheKey());
             if (fromCache != null) {
                 metrics.markResponseFromCache();
@@ -389,7 +391,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
         RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType> requestCollapser = collapserFactory.getRequestCollapser(collapserInstanceWrapper);
         Observable<ResponseType> response = requestCollapser.submitRequest(getRequestArgument());
         metrics.markRequestBatched();
-        if (getProperties().requestCacheEnabled().get()) {
+        if (isRequestCacheEnabled) {
             /*
              * A race can occur here with multiple threads queuing but only one will be cached.
              * This means we can have some duplication of requests in a thread-race but we're okay
