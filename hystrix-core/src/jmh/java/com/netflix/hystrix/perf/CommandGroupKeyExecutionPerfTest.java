@@ -21,6 +21,7 @@ import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.HystrixThreadPool;
 import com.netflix.hystrix.HystrixThreadPoolKey;
 import com.netflix.hystrix.HystrixThreadPoolProperties;
+import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Level;
@@ -46,6 +47,7 @@ public class CommandGroupKeyExecutionPerfTest {
     @State(Scope.Thread)
     public static class CommandState {
         HystrixCommand<Integer> command;
+        HystrixRequestContext reqContext;
 
         static class TestCommand extends HystrixCommand<Integer> {
             TestCommand() {
@@ -65,7 +67,13 @@ public class CommandGroupKeyExecutionPerfTest {
 
         @Setup(Level.Invocation)
         public void setUp() {
+            reqContext = HystrixRequestContext.initializeContext();
             command = new TestCommand();
+        }
+
+        @TearDown(Level.Invocation)
+        public void tearDown() {
+            reqContext.shutdown();
         }
     }
 
