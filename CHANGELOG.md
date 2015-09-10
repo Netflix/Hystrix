@@ -1,5 +1,20 @@
 # Hystrix Releases #
 
+### Version 1.4.15 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.15%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.15/)) ###
+
+* [Pull 890](https://github.com/Netflix/Hystrix/pull/890) Allow multiple responses per collapser argument.  No semantic change for HystrixCollapser, but a bugfix to HystrixObservableCollapser
+* [Pull 892](https://github.com/Netflix/Hystrix/pull/892) Cache Setter in MultithreadedMetricsPerfTest
+* [Pull 891](https://github.com/Netflix/Hystrix/pull/891) Add request context to command JMH tests
+* [Pull 889](https://github.com/Netflix/Hystrix/pull/889) Replace subscribe() in RequestBatch with unsafeUnsubscribe()
+* [Pull 887](https://github.com/Netflix/Hystrix/pull/887) Only look up if HystrixRequestCache is enabled once per collapser-invocation
+* [Pull 885](https://github.com/Netflix/Hystrix/pull/885) Only look up if HystrixRequestCache is enabled once per command-invocation
+* [Pull 876](https://github.com/Netflix/Hystrix/pull/876) Report BAD_REQUEST to HystrixRequestLog
+* [Pull 861](https://github.com/Netflix/Hystrix/pull/861) Make hystrix-javanica OSGI-compliant
+* [Pull 856](https://github.com/Netflix/Hystrix/pull/856) Add missing licenses
+* [Pull 855](https://github.com/Netflix/Hystrix/pull/855) Save allocation if using a convenience constructor for HystrixCommand
+* [Pull 853](https://github.com/Netflix/Hystrix/pull/853) Run Travis build in a container
+* [Pull 848](https://github.com/Netflix/Hystrix/pull/848) Unit tests to demonstrate HystrixRequestLog was not experiencing data races
+
 ### Version 1.4.14 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.14%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.14/)) ###
 
 * [Pull 852](https://github.com/Netflix/Hystrix/pull/852) Fix hystrix-clj that was blocking http://dev.clojure.org/jira/browse/CLJ-1232
