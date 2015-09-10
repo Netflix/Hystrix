@@ -15,17 +15,26 @@
  */
 package com.netflix.hystrix.collapser;
 
-import java.util.concurrent.atomic.AtomicReference;
-
 import rx.Observable.OnSubscribe;
-import rx.Observer;
 import rx.Subscriber;
-import rx.subscriptions.BooleanSubscription;
+import rx.subjects.PublishSubject;
+import rx.subjects.Subject;
 
 import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 /**
- * The Observable that represents a collapsed request sent back to a user.
+ * The Observable that represents a collapsed request sent back to a user.  It gets used by Collapser implementations
+ * when receiving a batch response and emitting values/errors to collapsers.
+ *
+ * There are 4 methods that Collapser implementations may use:
+ *
+ * 1) {@link #setResponse(T)}: return a single-valued response.  equivalent to OnNext(T), OnCompleted()
+ * 2) {@link #emitResponse(T)}: emit a single value.  equivalent to OnNext(T)
+ * 3) {@link #setException(Exception)}: return an exception.  equivalent to OnError(Excception)
+ * 4) {@link #setComplete()}: mark that no more values will be emitted.  Should be used in conjunction with {@link #emitResponse(T)}.  equivalent to OnCompleted()
+ *
  * <p>
  * This is an internal implementation class that combines the Observable<T> and CollapsedRequest<T, R> functionality.
  * <p>
@@ -37,11 +46,21 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
  */
 /* package */class CollapsedRequestObservableFunction<T, R> implements CollapsedRequest<T, R>, OnSubscribe<T> {
     private final R argument;
-    private final AtomicReference<CollapsedRequestObservableFunction.ResponseHolder<T>> rh = new AtomicReference<ResponseHolder<T>>(new CollapsedRequestObservableFunction.ResponseHolder<T>());
-    private final BooleanSubscription subscription = new BooleanSubscription();
+    private AtomicBoolean valueSet = new AtomicBoolean(false);
+    private final Subject<T, T> responseSubject = PublishSubject.create();
 
     public CollapsedRequestObservableFunction(R arg) {
         this.argument = arg;
+    }
+
+    /**
+     * This is a passthrough that allows a Subscriber to receive values from the Subject that collapsers are writing values/errors into
+     * The one interesting bit is that they may do so in a completely unbounded way.  There's no way to express
+     * backpressure currently that makes sense other than to buffer this stream and allow it to grow unboundedly
+     */
+    @Override
+    public void call(Subscriber<? super T> observer) {
+        responseSubject.unsafeSubscribe(observer);
     }
 
     /**
@@ -55,7 +74,7 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
     }
 
     /**
-     * When set any client thread blocking on get() will immediately be unblocked and receive the response.
+     * When set any client thread blocking on get() will immediately be unblocked and receive the single-valued response.
      * 
      * @throws IllegalStateException
      *             if called more than once or after setException.
@@ -63,26 +82,33 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
      */
     @Override
     public void setResponse(T response) {
-        while (true) {
-            ResponseHolder<T> r = rh.get();
-            if (r.isResponseSet()) {
-                throw new IllegalStateException("setResponse can only be called once");
-            }
-            if (r.getException() != null) {
-                throw new IllegalStateException("Exception is already set so response can not be => Response: " + response + " subscription: " + subscription.isUnsubscribed() + "  observer: " + r.getObserver() + "  Exception: " + r.getException().getMessage(), r.getException());
-            }
+        if (!isTerminated()) {
+            responseSubject.onNext(response);
+            valueSet.set(true);
+            responseSubject.onCompleted();
+        } else {
+            throw new IllegalStateException("Response has already terminated so response can not be set : " + response);
+        }
+    }
 
-            if (subscription.isUnsubscribed()) {
-                return;
-            }
-            ResponseHolder<T> nr = r.setResponse(response);
-            if (rh.compareAndSet(r, nr)) {
-                // success
-                sendResponseIfRequired(subscription, nr);
-                break;
-            } else {
-                // we'll retry
-            }
+    /**
+     * Emit a response that should be OnNexted to an Observer
+     * @param response response to emit to initial command
+     */
+    @Override
+    public void emitResponse(T response) {
+        if (!isTerminated()) {
+            responseSubject.onNext(response);
+            valueSet.set(true);
+        } else {
+            throw new IllegalStateException("Response has already terminated so response can not be set : " + response);
+        }
+    }
+
+    @Override
+    public void setComplete() {
+        if (!isTerminated()) {
+            responseSubject.onCompleted();
         }
     }
 
@@ -92,25 +118,8 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
      * @param e synthetic error to set on initial command when no actual response is available
      */
     public void setExceptionIfResponseNotReceived(Exception e) {
-        while (true) {
-            if (subscription.isUnsubscribed()) {
-                return;
-            }
-            CollapsedRequestObservableFunction.ResponseHolder<T> r = rh.get();
-            // only proceed if neither response is set
-            if (!r.isResponseSet() && r.getException() == null) {
-                ResponseHolder<T> nr = r.setException(e);
-                if (rh.compareAndSet(r, nr)) {
-                    // success
-                    sendResponseIfRequired(subscription, nr);
-                    break;
-                } else {
-                    // we'll retry
-                }
-            } else {
-                // return quietly instead of throwing an exception
-                break;
-            }
+        if (!valueSet.get() && !isTerminated()) {
+            responseSubject.onError(e);
         }
     }
 
@@ -122,10 +131,9 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
      */
     public Exception setExceptionIfResponseNotReceived(Exception e, String exceptionMessage) {
         Exception exception = e;
-        CollapsedRequestObservableFunction.ResponseHolder<T> r = rh.get();
-        // only proceed if neither response is set
-        if (!r.isResponseSet() && r.getException() == null) {
-            if(e == null) {
+
+        if (!valueSet.get() && !isTerminated()) {
+            if (e == null) {
                 exception = new IllegalStateException(exceptionMessage);
             }
             setExceptionIfResponseNotReceived(exception);
@@ -143,118 +151,14 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
      */
     @Override
     public void setException(Exception e) {
-        while (true) {
-            CollapsedRequestObservableFunction.ResponseHolder<T> r = rh.get();
-            if (r.getException() != null) {
-                throw new IllegalStateException("setException can only be called once");
-            }
-            if (r.isResponseSet()) {
-                throw new IllegalStateException("Response is already set so exception can not be => Response: " + r.getResponse() + "  Exception: " + e.getMessage(), e);
-            }
-
-            if (subscription.isUnsubscribed()) {
-                return;
-            }
-            ResponseHolder<T> nr = r.setException(e);
-            if (rh.compareAndSet(r, nr)) {
-                // success
-                sendResponseIfRequired(subscription, nr);
-                break;
-            } else {
-                // we'll retry
-            }
+        if (!isTerminated()) {
+            responseSubject.onError(e);
+        } else {
+            throw new IllegalStateException("Response has already terminated so exception can not be set", e);
         }
     }
 
-    @Override
-    public void call(Subscriber<? super T> observer) {
-        observer.add(subscription);
-        while (true) {
-            CollapsedRequestObservableFunction.ResponseHolder<T> r = rh.get();
-            if (r.getObserver() != null) {
-                throw new IllegalStateException("Only 1 Observer can subscribe. Use multicast/publish/cache/etc for multiple subscribers.");
-            }
-            ResponseHolder<T> nr = r.setObserver(observer);
-            if (rh.compareAndSet(r, nr)) {
-                // success
-                sendResponseIfRequired(subscription, nr);
-                break;
-            } else {
-                // we'll retry
-            }
-        }
+    private boolean isTerminated() {
+        return (responseSubject.hasCompleted() || responseSubject.hasThrowable());
     }
-
-    private static <T> void sendResponseIfRequired(BooleanSubscription subscription, CollapsedRequestObservableFunction.ResponseHolder<T> r) {
-        if (!subscription.isUnsubscribed()) {
-            Observer<? super T> o = r.getObserver();
-            if (o == null || (r.getException() == null && !r.isResponseSet())) {
-                // not ready to send
-                return;
-            }
-
-            if (r.getException() != null) {
-                o.onError(r.getException());
-            } else {
-                o.onNext(r.getResponse());
-                o.onCompleted();
-            }
-        }
-    }
-
-    /**
-     * Used for atomic compound updates.
-     */
-    private static class ResponseHolder<T> {
-        // I'm using AtomicReference as if it's an Option monad instead of creating yet another object
-        // so I know if 'response' is null versus the value set being null so I can tell if a response is set
-        // even if the value set is null
-        private final AtomicReference<T> r;
-        private final Exception e;
-        private final Observer<? super T> o;
-
-        public ResponseHolder() {
-            this(null, null, null);
-        }
-
-        private ResponseHolder(AtomicReference<T> response, Exception exception, Observer<? super T> observer) {
-            this.o = observer;
-            this.r = response;
-            this.e = exception;
-        }
-
-        public ResponseHolder<T> setResponse(T response) {
-            return new ResponseHolder<T>(new AtomicReference<T>(response), e, o);
-        }
-
-        public ResponseHolder<T> setObserver(Observer<? super T> observer) {
-            return new ResponseHolder<T>(r, e, observer);
-        }
-
-        public ResponseHolder<T> setException(Exception exception) {
-            return new ResponseHolder<T>(r, exception, o);
-        }
-
-        public Observer<? super T> getObserver() {
-            return o;
-        }
-
-        public T getResponse() {
-            if (r == null) {
-                return null;
-            } else {
-                return r.get();
-            }
-        }
-
-        public boolean isResponseSet() {
-            return r != null;
-        }
-
-        public Exception getException() {
-            return e;
-        }
-
-    }
-
 }

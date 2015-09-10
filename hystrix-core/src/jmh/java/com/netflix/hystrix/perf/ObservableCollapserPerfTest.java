@@ -61,7 +61,7 @@ public class ObservableCollapserPerfTest {
         @Param({"1", "10", "100", "1000"})
         int numToCollapse;
 
-        @Param({"1"}) //until bugfix for https://github.com/Netflix/Hystrix/issues/865, 1 is only value that works as expected
+        @Param({"1", "10", "100"})
         int numResponsesPerArg;
 
         @Param({"1", "1000", "1000000"})
