@@ -58,7 +58,7 @@ public class HystrixCacheKeyGenerator {
                 StringBuilder cacheKeyBuilder = new StringBuilder();
                 for (CacheInvocationParameter parameter : cacheInvocationContext.getKeyParameters()) {
                     CacheKey cacheKey = parameter.getCacheKeyAnnotation();
-                    if (StringUtils.isNotBlank(cacheKey.value())) {
+                    if (cacheKey != null && StringUtils.isNotBlank(cacheKey.value())) {
                         appendPropertyValue(cacheKeyBuilder, Arrays.asList(StringUtils.split(cacheKey.value(), ".")), parameter.getValue());
                     } else {
                         cacheKeyBuilder.append(parameter.getValue());
