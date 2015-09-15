@@ -23,7 +23,6 @@ import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
 import java.text.MessageFormat;
 import java.util.Map;
-import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.Validate;
 
 /**
@@ -85,7 +84,7 @@ public final class HystrixPropertiesManager {
     }
 
     private static void setProperties(Map<String, Object> properties, String propTemplate, String commandKey) {
-        if(MapUtils.isNotEmpty(properties)) {
+        if(properties != null && !properties.isEmpty()) {
             for(Map.Entry<String, Object> property : properties.entrySet()) {
                 String propName = MessageFormat.format(propTemplate, commandKey, property.getKey());
                 ConfigurationManager.getConfigInstance().setProperty(propName, property.getValue());
