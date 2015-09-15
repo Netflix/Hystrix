@@ -11,7 +11,6 @@ dependencies {
     compile "org.aspectj:aspectjrt:$aspectjVersion"
 
     compile 'com.google.guava:guava:15.0'
-    compile 'commons-collections:commons-collections:3.2.1'
     compile 'org.apache.commons:commons-lang3:3.1'
     compile 'com.google.code.findbugs:jsr305:2.0.0'
     testCompile 'junit:junit-dep:4.10'
