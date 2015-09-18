@@ -167,20 +167,15 @@ public class HystrixObservableCollapserTest {
         HystrixObservableCollapser<String, String, String, String> collapser1 = new TestCollapserWithMultipleResponses(timer, 1, 3, false, prefixMapper, onMissingComplete);
         HystrixObservableCollapser<String, String, String, String> collapser2 = new TestCollapserWithMultipleResponses(timer, 2, 3, false, prefixMapper, onMissingComplete);
 
-        System.out.println("Starting to observe collapser1");
-        Observable<String> result1 = collapser1.observe();
-        Observable<String> result2 = collapser2.observe();
-        System.out.println("Done with collapser observe()s");
-
-        //timer.incrementTime(10); // let time pass that equals the default delay/period
-        Thread.sleep(10);
-
         TestSubscriber<String> testSubscriber1 = new TestSubscriber<String>();
-        result1.subscribe(testSubscriber1);
-
         TestSubscriber<String> testSubscriber2 = new TestSubscriber<String>();
-        result2.subscribe(testSubscriber2);
 
+        System.out.println(System.currentTimeMillis() + "Starting to observe collapser1");
+        collapser1.observe().subscribe(testSubscriber1);
+        collapser2.observe().subscribe(testSubscriber2);
+        System.out.println(System.currentTimeMillis() + "Done with collapser observe()s");
+
+        //Note that removing these awaits breaks the unit test.  That implies that the above subscribe does not wait for a terminal event
         testSubscriber1.awaitTerminalEvent();
         testSubscriber2.awaitTerminalEvent();
 
