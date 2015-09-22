@@ -83,6 +83,8 @@ public class ObservableCollapserGetWordForNumber extends HystrixObservableCollap
 	@Override
 	protected Func1<NumberWord, Integer> getBatchReturnTypeKeySelector()
 	{
+		// Java 8: (final NumberWord nw) -> nw.getNumber();
+
 		return new Func1<NumberWord, Integer>()
 		{
 			@Override
@@ -96,6 +98,8 @@ public class ObservableCollapserGetWordForNumber extends HystrixObservableCollap
 	@Override
 	protected Func1<Integer, Integer> getRequestArgumentKeySelector()
 	{
+		// Java 8: return (final Integer no) -> no;
+
 		return new Func1<Integer, Integer>()
 		{
 			@Override
@@ -110,6 +114,8 @@ public class ObservableCollapserGetWordForNumber extends HystrixObservableCollap
 	@Override
 	protected Func1<NumberWord, String> getBatchReturnTypeToResponseTypeMapper()
 	{
+		// Java 8: return (final NumberWord nw) -> nw.getWord();
+
 		return new Func1<NumberWord, String>()
 		{
 			@Override
