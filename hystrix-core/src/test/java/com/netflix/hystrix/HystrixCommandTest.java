@@ -23,6 +23,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -4306,6 +4307,46 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertTrue(semaphoreExceptionEncountered.get());
     }
 
+    @Test
+    public void testCommandConcurrencyExceedsQueueSizeButNotThreadPoolSize() {
+        List<Observable<Boolean>> cmdResults = new ArrayList<Observable<Boolean>>();
+
+        HystrixThreadPool threadPool = null;
+
+        //thread pool size is 20, so we have room for concurrent execution of all 20 commands
+        //but queue size is 2 - do we see any queue rejections? - we should not
+        for (int i = 0; i < 20; i++) {
+            HystrixCommand<Boolean> cmd = new CommandWithLargeThreadPoolSmallQueue();
+            if (threadPool == null) {
+                threadPool = cmd.threadPool;
+            }
+            cmdResults.add(cmd.toObservable());
+        }
+
+        Observable<Boolean> allObservables = Observable.merge(cmdResults);
+
+        TestSubscriber<Boolean> subscriber = new TestSubscriber<Boolean>();
+
+        allObservables.subscribe(subscriber);
+
+        subscriber.awaitTerminalEvent(1, TimeUnit.SECONDS);
+        if (subscriber.getOnErrorEvents().size() > 0) {
+            subscriber.getOnErrorEvents().get(0).printStackTrace();
+        }
+
+        subscriber.assertCompleted();
+        subscriber.assertNoErrors();
+        subscriber.assertValueCount(20);
+    }
+
+    @Test
+    public void stressTestLargeThreadPoolSmallQueue() {
+        for (int n = 0; n < 20; n++) {
+            testCommandConcurrencyExceedsQueueSizeButNotThreadPoolSize();
+            Hystrix.reset();
+        }
+    }
+
     /* ******************************************************************************** */
     /* ******************************************************************************** */
     /* private HystrixCommand class implementations for unit testing */
@@ -5174,6 +5215,18 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         @Override
         protected Boolean getFallback() {
             return false;
+        }
+    }
+
+    private static class CommandWithLargeThreadPoolSmallQueue extends TestHystrixCommand<Boolean> {
+
+        public CommandWithLargeThreadPoolSmallQueue() {
+            super(testPropsBuilder().setThreadPoolPropertiesDefaults(HystrixThreadPoolProperties.Setter().withMaxQueueSize(2).withCoreSize(20)));
+        }
+
+        @Override
+        protected Boolean run() throws Exception {
+            return true;
         }
     }
 }
