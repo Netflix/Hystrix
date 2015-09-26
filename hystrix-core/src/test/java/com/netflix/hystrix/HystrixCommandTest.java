@@ -4308,7 +4308,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
     }
 
     @Test
-    public void testCommandConcurrencyExceedsQueueSizeButNotThreadPoolSize() {
+    public void testCommandConcurrencyViaObserveExceedsQueueSizeButNotThreadPoolSize() {
         List<Observable<Boolean>> cmdResults = new ArrayList<Observable<Boolean>>();
 
         HystrixThreadPool threadPool = null;
@@ -4340,9 +4340,38 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
     }
 
     @Test
-    public void stressTestLargeThreadPoolSmallQueue() {
+    public void stressTestLargeThreadPoolSmallQueueUsingObserve() {
         for (int n = 0; n < 20; n++) {
-            testCommandConcurrencyExceedsQueueSizeButNotThreadPoolSize();
+            testCommandConcurrencyViaObserveExceedsQueueSizeButNotThreadPoolSize();
+            Hystrix.reset();
+        }
+    }
+
+    @Test
+    public void testCommandConcurrencyViaQueueExceedsQueueSizeButNotThreadPoolSize() throws Exception {
+        List<Future<Boolean>> cmdResults = new ArrayList<Future<Boolean>>();
+
+        HystrixThreadPool threadPool = null;
+
+        //thread pool size is 20, so we have room for concurrent execution of all 20 commands
+        //but queue size is 2 - do we see any queue rejections? - we should not
+        for (int i = 0; i < 20; i++) {
+            HystrixCommand<Boolean> cmd = new CommandWithLargeThreadPoolSmallQueue();
+            if (threadPool == null) {
+                threadPool = cmd.threadPool;
+            }
+            cmdResults.add(cmd.queue());
+        }
+
+        for (Future<Boolean> f: cmdResults) {
+            f.get(1, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void stressTestLargeThreadPoolSmallQueueUsingQueue() throws Exception {
+        for (int n = 0; n < 20; n++) {
+            testCommandConcurrencyViaQueueExceedsQueueSizeButNotThreadPoolSize();
             Hystrix.reset();
         }
     }
@@ -5221,7 +5250,8 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
     private static class CommandWithLargeThreadPoolSmallQueue extends TestHystrixCommand<Boolean> {
 
         public CommandWithLargeThreadPoolSmallQueue() {
-            super(testPropsBuilder().setThreadPoolPropertiesDefaults(HystrixThreadPoolProperties.Setter().withMaxQueueSize(2).withCoreSize(20)));
+            super(testPropsBuilder().setThreadPoolPropertiesDefaults(
+                    HystrixThreadPoolProperties.Setter().withMaxQueueSize(2).withQueueSizeRejectionThreshold(2).withCoreSize(20)));
         }
 
         @Override
