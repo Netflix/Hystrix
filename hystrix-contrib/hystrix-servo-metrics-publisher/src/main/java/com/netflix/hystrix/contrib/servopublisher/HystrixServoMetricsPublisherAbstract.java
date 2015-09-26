@@ -15,7 +15,6 @@
  */
 package com.netflix.hystrix.contrib.servopublisher;
 
-import com.netflix.hystrix.HystrixCommandMetrics;
 import com.netflix.hystrix.HystrixMetrics;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 import com.netflix.servo.annotations.DataSourceLevel;
