@@ -19,6 +19,7 @@ import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 
 /**
  * Provides common methods to retrieve information from JoinPoint and not only.
@@ -27,6 +28,33 @@ public final class AopUtils {
 
     private AopUtils() {
         throw new UnsupportedOperationException("It's prohibited to create instances of the class.");
+    }
+
+    public static Method getAjcMethodFromTarget(JoinPoint joinPoint) {
+        MethodSignature signature = (MethodSignature) joinPoint.getSignature();
+        for (Method method : joinPoint.getTarget().getClass().getDeclaredMethods()) {
+            if (method.getName().startsWith(signature.getName() + "_aroundBody") && Modifier.isFinal(method.getModifiers()) && Modifier.isStatic(method.getModifiers())) {
+                Class<?>[] parameterTypes = method.getParameterTypes();
+                if (signature.getParameterTypes().length == 0 && parameterTypes.length == 0) {
+                    return method;
+                }
+                if (signature.getParameterTypes().length == parameterTypes.length - 2) {
+                    boolean match = true;
+                    Class<?>[] origParamTypes = removeAspectjArgs(parameterTypes);
+                    int index = 0;
+                    for (Class<?> pType : origParamTypes) {
+                        Class<?> expected = signature.getParameterTypes()[index];
+                        if (pType != expected) {
+                            match = false;
+                        }
+                    }
+                    if (match) {
+                        return method;
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     /**
@@ -46,13 +74,19 @@ public final class AopUtils {
         return method;
     }
 
-    /**
-     * Gets a {@link Method} object from target object by specified method name.
-     *
-     * @param joinPoint  the {@link JoinPoint}
-     * @param methodName the method name
-     * @return a {@link Method} object or null if method with specified <code>methodName</code> doesn't exist
-     */
+    private static Class<?>[] removeAspectjArgs(Class<?>[] parameterTypes) {
+        Class<?>[] origParamTypes = new Class[parameterTypes.length - 2];
+        System.arraycopy(parameterTypes, 1, origParamTypes, 0, parameterTypes.length - 2);
+        return origParamTypes;
+    }
+
+        /**
+         * Gets a {@link Method} object from target object by specified method name.
+         *
+         * @param joinPoint  the {@link JoinPoint}
+         * @param methodName the method name
+         * @return a {@link Method} object or null if method with specified <code>methodName</code> doesn't exist
+         */
     public static Method getMethodFromTarget(JoinPoint joinPoint, String methodName) {
         return getDeclaredMethod(joinPoint.getTarget().getClass(), methodName,
                 getParameterTypes(joinPoint));

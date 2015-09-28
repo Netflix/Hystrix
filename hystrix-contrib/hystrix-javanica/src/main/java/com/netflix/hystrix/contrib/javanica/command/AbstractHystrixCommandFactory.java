@@ -62,7 +62,7 @@ public abstract class AbstractHystrixCommandFactory<T extends AbstractHystrixCom
         setterBuilder.groupKey(groupKey);
         setterBuilder.threadPoolKey(metaHolder.getHystrixCommand().threadPoolKey());
         Map<String, Object> commandProperties = getCommandProperties(metaHolder.getHystrixCommand());
-        CommandAction commandAction = new MethodExecutionAction(metaHolder.getObj(), metaHolder.getMethod(), metaHolder.getArgs());
+        CommandAction commandAction = new MethodExecutionAction(metaHolder.getObj(), metaHolder.getMethod(), metaHolder.getArgs(), metaHolder);
         CommandAction fallbackAction = createFallbackAction(metaHolder, collapsedRequests);
         CommandActions commandActions = CommandActions.builder().commandAction(commandAction)
                 .fallbackAction(fallbackAction).build();
@@ -99,7 +99,7 @@ public abstract class AbstractHystrixCommandFactory<T extends AbstractHystrixCom
                             .hystrixCommand(fallbackMethod.getAnnotation(HystrixCommand.class)).build();
                     fallbackAction = new LazyCommandExecutionAction(GenericHystrixCommandFactory.getInstance(), fmMetaHolder, collapsedRequests);
                 } else {
-                    fallbackAction = new MethodExecutionAction(metaHolder.getObj(), fallbackMethod, metaHolder.getArgs());
+                    fallbackAction = new MethodExecutionAction(metaHolder.getObj(), fallbackMethod, metaHolder.getArgs(), metaHolder);
                 }
             } catch (NoSuchMethodException e) {
                 throw Throwables.propagate(e);
@@ -114,7 +114,7 @@ public abstract class AbstractHystrixCommandFactory<T extends AbstractHystrixCom
     private CommandAction createCacheKeyAction(MetaHolder metaHolder) {
         CommandAction cacheKeyAction = null;
         if (metaHolder.getCacheKeyMethod() != null) {
-            cacheKeyAction = new MethodExecutionAction(metaHolder.getObj(), metaHolder.getCacheKeyMethod(), metaHolder.getArgs());
+            cacheKeyAction = new MethodExecutionAction(metaHolder.getObj(), metaHolder.getCacheKeyMethod(), metaHolder.getArgs(), metaHolder);
         }
         return cacheKeyAction;
     }

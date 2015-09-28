@@ -35,8 +35,10 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 
+import static com.netflix.hystrix.contrib.javanica.utils.AopUtils.getAjcMethodFromTarget;
 import static com.netflix.hystrix.contrib.javanica.utils.AopUtils.getDeclaredMethod;
 import static com.netflix.hystrix.contrib.javanica.utils.AopUtils.getMethodFromTarget;
+import static com.netflix.hystrix.contrib.javanica.utils.EnvUtils.getWeavingMode;
 
 /**
  * AspectJ aspect to process methods which annotated with {@link HystrixCommand} annotation.
@@ -98,22 +100,24 @@ public class HystrixCommandAspect {
             Object obj = joinPoint.getTarget();
             Object[] args = joinPoint.getArgs();
             Object proxy = joinPoint.getThis();
-            return create(proxy, method, obj, args);
+            return create(proxy, method, obj, args, joinPoint);
         }
 
-        public abstract MetaHolder create(Object proxy, Method method, Object obj, Object[] args);
+        public abstract MetaHolder create(Object proxy, Method method, Object obj, Object[] args, final ProceedingJoinPoint joinPoint);
 
-        MetaHolder.Builder metaHolderBuilder(Object proxy, Method method, Object obj, Object[] args) {
+        MetaHolder.Builder metaHolderBuilder(Object proxy, Method method, Object obj, Object[] args, final ProceedingJoinPoint joinPoint) {
             return MetaHolder.builder()
                     .args(args).method(method).obj(obj).proxyObj(proxy)
-                    .defaultGroupKey(obj.getClass().getSimpleName());
+                    .defaultGroupKey(obj.getClass().getSimpleName())
+                    .joinPoint(joinPoint).weavingMode(getWeavingMode())
+                    .ajcMethod(getAjcMethodFromTarget(joinPoint)); // todo: we don't need to call it everytime, only if weaving mode = compile
         }
     }
 
     private static class CollapserMetaHolderFactory extends MetaHolderFactory {
 
         @Override
-        public MetaHolder create(Object proxy, Method collapserMethod, Object obj, Object[] args) {
+        public MetaHolder create(Object proxy, Method collapserMethod, Object obj, Object[] args, final ProceedingJoinPoint joinPoint) {
             HystrixCollapser hystrixCollapser = collapserMethod.getAnnotation(HystrixCollapser.class);
             Method batchCommandMethod = getDeclaredMethod(obj.getClass(), hystrixCollapser.batchMethod(), List.class);
             if (batchCommandMethod == null || !batchCommandMethod.getReturnType().equals(List.class)) {
@@ -127,7 +131,7 @@ public class HystrixCommandAspect {
             }
             // method of batch hystrix command must be passed to metaholder because basically collapser doesn't have any actions
             // that should be invoked upon intercepted method, its required only for underlying batch command
-            MetaHolder.Builder builder = metaHolderBuilder(proxy, batchCommandMethod, obj, args);
+            MetaHolder.Builder builder = metaHolderBuilder(proxy, batchCommandMethod, obj, args, joinPoint);
             builder.hystrixCollapser(hystrixCollapser);
             builder.defaultCollapserKey(collapserMethod.getName());
             builder.collapserExecutionType(ExecutionType.getExecutionType(collapserMethod.getReturnType()));
@@ -141,9 +145,9 @@ public class HystrixCommandAspect {
 
     private static class CommandMetaHolderFactory extends MetaHolderFactory {
         @Override
-        public MetaHolder create(Object proxy, Method method, Object obj, Object[] args) {
+        public MetaHolder create(Object proxy, Method method, Object obj, Object[] args, final ProceedingJoinPoint joinPoint) {
             HystrixCommand hystrixCommand = method.getAnnotation(HystrixCommand.class);
-            MetaHolder.Builder builder = metaHolderBuilder(proxy, method, obj, args);
+            MetaHolder.Builder builder = metaHolderBuilder(proxy, method, obj, args, joinPoint);
             builder.defaultCommandKey(method.getName());
             builder.hystrixCommand(hystrixCommand);
             builder.executionType(ExecutionType.getExecutionType(method.getReturnType()));

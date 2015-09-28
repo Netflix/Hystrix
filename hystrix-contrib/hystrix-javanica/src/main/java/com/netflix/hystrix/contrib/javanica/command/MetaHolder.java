@@ -17,7 +17,9 @@ package com.netflix.hystrix.contrib.javanica.command;
 
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCollapser;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
+import com.netflix.hystrix.contrib.javanica.aop.aspectj.WeavingMode;
 import com.netflix.hystrix.contrib.javanica.command.closure.Closure;
+import org.aspectj.lang.JoinPoint;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -34,6 +36,7 @@ public class MetaHolder {
 
     private final Method method;
     private final Method cacheKeyMethod;
+    private final Method ajcMethod;
     private final Object obj;
     private final Object proxyObj;
     private final Object[] args;
@@ -43,11 +46,14 @@ public class MetaHolder {
     private final String defaultCollapserKey;
     private final ExecutionType executionType;
     private final ExecutionType collapserExecutionType;
+    private final WeavingMode weavingMode;
+    private final JoinPoint joinPoint;
 
     private MetaHolder(Builder builder) {
         this.hystrixCommand = builder.hystrixCommand;
         this.method = builder.method;
         this.cacheKeyMethod = builder.cacheKeyMethod;
+        this.ajcMethod = builder.ajcMethod;
         this.obj = builder.obj;
         this.proxyObj = builder.proxyObj;
         this.args = builder.args;
@@ -58,6 +64,8 @@ public class MetaHolder {
         this.hystrixCollapser = builder.hystrixCollapser;
         this.executionType = builder.executionType;
         this.collapserExecutionType = builder.collapserExecutionType;
+        this.weavingMode = builder.weavingMode;
+        this.joinPoint = builder.joinPoint;
     }
 
     public static Builder builder() {
@@ -78,6 +86,10 @@ public class MetaHolder {
 
     public Method getCacheKeyMethod() {
         return cacheKeyMethod;
+    }
+
+    public Method getAjcMethod() {
+        return ajcMethod;
     }
 
     public Object getObj() {
@@ -124,12 +136,21 @@ public class MetaHolder {
         return hystrixCollapser!=null;
     }
 
+    public WeavingMode getWeavingMode() {
+        return weavingMode;
+    }
+
+    public JoinPoint getJoinPoint() {
+        return joinPoint;
+    }
+
     public static final class Builder {
 
         private HystrixCollapser hystrixCollapser;
         private HystrixCommand hystrixCommand;
         private Method method;
         private Method cacheKeyMethod;
+        private Method ajcMethod;
         private Object obj;
         private Object proxyObj;
         private Closure closure;
@@ -139,6 +160,8 @@ public class MetaHolder {
         private String defaultCollapserKey;
         private ExecutionType executionType;
         private ExecutionType collapserExecutionType;
+        private WeavingMode weavingMode;
+        private JoinPoint joinPoint;
 
         public Builder hystrixCollapser(HystrixCollapser hystrixCollapser) {
             this.hystrixCollapser = hystrixCollapser;
@@ -157,6 +180,11 @@ public class MetaHolder {
 
         public Builder cacheKeyMethod(Method cacheKeyMethod) {
             this.cacheKeyMethod = cacheKeyMethod;
+            return this;
+        }
+
+        public Builder ajcMethod(Method ajcMethod) {
+            this.ajcMethod = ajcMethod;
             return this;
         }
 
@@ -202,6 +230,16 @@ public class MetaHolder {
 
         public Builder defaultCollapserKey(String defCollapserKey) {
             this.defaultCollapserKey = defCollapserKey;
+            return this;
+        }
+
+        public Builder weavingMode(WeavingMode weavingMode) {
+            this.weavingMode = weavingMode;
+            return this;
+        }
+
+        public Builder joinPoint(JoinPoint joinPoint) {
+            this.joinPoint = joinPoint;
             return this;
         }
 

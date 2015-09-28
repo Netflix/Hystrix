@@ -16,10 +16,12 @@
 package com.netflix.hystrix.contrib.javanica.command;
 
 
+import com.netflix.hystrix.contrib.javanica.aop.aspectj.WeavingMode;
 import com.netflix.hystrix.contrib.javanica.command.closure.Closure;
 import com.netflix.hystrix.contrib.javanica.command.closure.ClosureFactoryRegistry;
 import com.netflix.hystrix.contrib.javanica.exception.CommandActionExecutionException;
 import com.netflix.hystrix.contrib.javanica.exception.ExceptionUtils;
+import org.aspectj.lang.JoinPoint;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -36,18 +38,24 @@ public class MethodExecutionAction extends CommandAction {
     private final Object object;
     private final Method method;
     private final Object[] _args;
+    private final MetaHolder metaHolder;
 
-    public MethodExecutionAction(Object object, Method method) {
+
+    public MethodExecutionAction(Object object, Method method, MetaHolder metaHolder) {
         this.object = object;
         this.method = method;
         this._args = EMPTY_ARGS;
+        this.metaHolder = metaHolder;
     }
 
-    public MethodExecutionAction(Object object, Method method, Object[] args) {
+    public MethodExecutionAction(Object object, Method method, Object[] args, MetaHolder metaHolder){
         this.object = object;
         this.method = method;
         this._args = args;
+        this.metaHolder = metaHolder;
     }
+
+
 
     public Object getObject() {
         return object;
@@ -97,6 +105,14 @@ public class MethodExecutionAction extends CommandAction {
     private Object execute(Object o, Method m, Object... args) throws CommandActionExecutionException {
         Object result = null;
         try {
+            if (WeavingMode.COMPILE == metaHolder.getWeavingMode()) {
+                m = metaHolder.getAjcMethod();
+                Object[] extArgs = new Object[args.length + 2];
+                extArgs[0] = o;
+                System.arraycopy(args, 0, extArgs, 1, args.length);
+                extArgs[extArgs.length - 1] = metaHolder.getJoinPoint();
+                args = extArgs;
+            }
             m.setAccessible(true); // suppress Java language access
             result = m.invoke(o, args);
         } catch (IllegalAccessException e) {
