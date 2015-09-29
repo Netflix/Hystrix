@@ -128,7 +128,7 @@ public class HystrixRequestLogTest {
             String log = HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString();
             // strip the actual count so we can compare reliably
             log = log.replaceAll(DIGITS_REGEX, "[");
-            assertEquals("TestCommand[TIMEOUT][ms]", log);
+            assertEquals("TestCommand[TIMEOUT, FALLBACK_MISSING][ms]", log);
         } finally {
             context.shutdown();
         }
