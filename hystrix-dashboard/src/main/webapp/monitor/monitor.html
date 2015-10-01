@@ -85,7 +85,8 @@
 		 
 		 // commands
 		var hystrixMonitor = new HystrixCommandMonitor('dependencies', {includeDetailIcon:false});
-		
+		var dependencyThreadPoolMonitor = new HystrixThreadPoolMonitor('dependencyThreadPools');		
+
 		var stream = getUrlVars()["stream"];
 		
 		if(stream != undefined) {
@@ -104,25 +105,26 @@
                 stream = stream + "&authorization=" + getUrlVars()["authorization"];
             }
 
-            var commandStream = "../proxy.stream?origin=" + stream;
-            var poolStream = "../proxy.stream?origin=" + stream;
+            var proxyStream = "../proxy.stream?origin=" + stream;
 		}
 				
 		$(window).load(function() { // within load with a setTimeout to prevent the infinite spinner
 			setTimeout(function() {
-				if(commandStream == undefined) {
-						console.log("commandStream is undefined")
+				if(proxyStream == undefined) {
+						console.log("proxyStream is undefined")
 						$("#dependencies .loading").html("The 'stream' argument was not provided.");
 						$("#dependencies .loading").addClass("failed");
 				} else {
 					// sort by error+volume by default
 					hystrixMonitor.sortByErrorThenVolume();
+					dependencyThreadPoolMonitor.sortByVolume();
 					
 					// start the EventSource which will open a streaming connection to the server
-					var source = new EventSource(commandStream);
+					var source = new EventSource(proxyStream);
 					
 					// add the listener that will process incoming events
 					source.addEventListener('message', hystrixMonitor.eventSourceMessageListener, false);
+					source.addEventListener('message', dependencyThreadPoolMonitor.eventSourceMessageListener, false);
 
 					//	source.addEventListener('open', function(e) {
 					//		console.console.log(">>> opened connection, phase: " + e.eventPhase);
@@ -132,43 +134,6 @@
 					source.addEventListener('error', function(e) {
 						$("#dependencies .loading").html("Unable to connect to Command Metric Stream.");
 						$("#dependencies .loading").addClass("failed");
-					  if (e.eventPhase == EventSource.CLOSED) {
-					    // Connection was closed.
-						  console.log("Connection was closed on error: " + e);
-					  } else {
-						  console.log("Error occurred while streaming: " + e);
-					  }
-					}, false);
-				}
-			},0);
-		});
-		
-		// thread pool
-		var dependencyThreadPoolMonitor = new HystrixThreadPoolMonitor('dependencyThreadPools');
-
-		$(window).load(function() { // within load with a setTimeout to prevent the infinite spinner
-			setTimeout(function() {
-				if(poolStream == undefined) {
-						console.log("poolStream is undefined")
-						$("#dependencyThreadPools .loading").html("The 'stream' argument was not provided.");
-						$("#dependencyThreadPools .loading").addClass("failed");
-				} else {
-					dependencyThreadPoolMonitor.sortByVolume();
-					
-					// start the EventSource which will open a streaming connection to the server
-					var source = new EventSource(poolStream);
-					
-					// add the listener that will process incoming events
-					source.addEventListener('message', dependencyThreadPoolMonitor.eventSourceMessageListener, false);
-	
-					//	source.addEventListener('open', function(e) {
-					//		console.console.log(">>> opened connection, phase: " + e.eventPhase);
-					//	    // Connection was opened.
-					//	}, false);
-	
-					source.addEventListener('error', function(e) {
-						$("#dependencyThreadPools .loading").html("Unable to connect to Thread Pool Metric Stream.");
-						$("#dependencyThreadPools .loading").addClass("failed");
 					  if (e.eventPhase == EventSource.CLOSED) {
 					    // Connection was closed.
 						  console.log("Connection was closed on error: " + e);
