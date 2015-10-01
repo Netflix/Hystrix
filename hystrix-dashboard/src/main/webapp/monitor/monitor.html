@@ -76,19 +76,19 @@
 
 
 
-<script>
+	<script>
 		/**
 		 * Queue up the monitor to start once the page has finished loading.
 		 * 
 		 * This is an inline script and expects to execute once on page load.
 		 */ 
-		 
+	 
 		 // commands
 		var hystrixMonitor = new HystrixCommandMonitor('dependencies', {includeDetailIcon:false});
 		var dependencyThreadPoolMonitor = new HystrixThreadPoolMonitor('dependencyThreadPools');		
 
 		var stream = getUrlVars()["stream"];
-		
+	
 		if(stream != undefined) {
 			if(getUrlVars()["delay"] != undefined) {
 				stream = stream + "&delay=" + getUrlVars()["delay"];
@@ -100,14 +100,14 @@
 				$('#title_name').html("Hystrix Stream: " + decodeURIComponent(stream))
 			}
 
-            //do not show authorization in stream title
-            if(getUrlVars()["authorization"] != undefined) {
-                stream = stream + "&authorization=" + getUrlVars()["authorization"];
-            }
+			//do not show authorization in stream title
+			if(getUrlVars()["authorization"] != undefined) {
+				stream = stream + "&authorization=" + getUrlVars()["authorization"];
+			}
 
-            var proxyStream = "../proxy.stream?origin=" + stream;
+			var proxyStream = "../proxy.stream?origin=" + stream;
 		}
-				
+
 		$(window).load(function() { // within load with a setTimeout to prevent the infinite spinner
 			setTimeout(function() {
 				if(proxyStream == undefined) {
@@ -118,10 +118,10 @@
 					// sort by error+volume by default
 					hystrixMonitor.sortByErrorThenVolume();
 					dependencyThreadPoolMonitor.sortByVolume();
-					
+
 					// start the EventSource which will open a streaming connection to the server
 					var source = new EventSource(proxyStream);
-					
+
 					// add the listener that will process incoming events
 					source.addEventListener('message', hystrixMonitor.eventSourceMessageListener, false);
 					source.addEventListener('message', dependencyThreadPoolMonitor.eventSourceMessageListener, false);
@@ -144,22 +144,20 @@
 				}
 			},0);
 		});
-		
+
 		//Read a page's GET URL variables and return them as an associative array.
 		// from: http://jquery-howto.blogspot.com/2009/09/get-url-parameters-values-with-jquery.html
-		function getUrlVars()
-		{
-		    var vars = [], hash;
-		    var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
-		    for(var i = 0; i < hashes.length; i++)
-		    {
-		        hash = hashes[i].split('=');
-		        vars.push(hash[0]);
-		        vars[hash[0]] = hash[1];
-		    }
-		    return vars;
+		function getUrlVars() {
+			var vars = [], hash;
+			var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+			for(var i = 0; i < hashes.length; i++) {
+				hash = hashes[i].split('=');
+				vars.push(hash[0]);
+				vars[hash[0]] = hash[1];
+			}
+			return vars;
 		}
-		
+	
 	</script>
 
 
