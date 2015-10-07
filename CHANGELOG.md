@@ -1,5 +1,11 @@
 # Hystrix Releases #
 
+### Version 1.4.17 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.17%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.17/)) ###
+
+* [Pull 924](https://github.com/Netflix/Hystrix/pull/924) Dashboard protection against XSS
+* [Pull 923](https://github.com/Netflix/Hystrix/pull/923) Upgrade to RxJava 1.0.14
+* [Pull 922](https://github.com/Netflix/Hystrix/pull/922) Add DEBUG tag to Servo rolling counter and made it a GaugeMetric
+
 ### Version 1.4.16 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.16%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.16/)) ###
 
 * [Pull 917](https://github.com/Netflix/Hystrix/pull/917) Better version of making servo-metrics-publisher extension-friendly
