@@ -25,8 +25,8 @@ import com.netflix.hystrix.contrib.javanica.cache.annotation.CacheRemove;
 import com.netflix.hystrix.contrib.javanica.cache.annotation.CacheResult;
 import com.netflix.hystrix.contrib.javanica.exception.HystrixCachingException;
 import com.netflix.hystrix.contrib.javanica.test.spring.conf.AopCglibConfig;
-import com.netflix.hystrix.contrib.javanica.test.spring.domain.Profile;
-import com.netflix.hystrix.contrib.javanica.test.spring.domain.User;
+import com.netflix.hystrix.contrib.javanica.test.common.domain.Profile;
+import com.netflix.hystrix.contrib.javanica.test.common.domain.User;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import org.junit.Before;
 import org.junit.Test;
@@ -72,12 +72,12 @@ public class CacheTest {
      * <p/>
      * given:
      * command to get user by id, see {@link UserService#getUserById(String)}
-     * command to update user, see {@link UserService#update(com.netflix.hystrix.contrib.javanica.test.spring.domain.User)}
+     * command to update user, see {@link UserService#update(com.netflix.hystrix.contrib.javanica.test.common.domain.User)}
      * <p/>
      * when:
      * 1. call {@link UserService#getUserById(String)}
      * 2. call {@link UserService#getUserById(String)}
-     * 3. call {@link UserService#update(com.netflix.hystrix.contrib.javanica.test.spring.domain.User)}
+     * 3. call {@link UserService#update(com.netflix.hystrix.contrib.javanica.test.common.domain.User)}
      * 4. call {@link UserService#getUserById(String)}
      * <p/>
      * then:

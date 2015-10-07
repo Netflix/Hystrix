@@ -21,7 +21,7 @@ import com.netflix.hystrix.HystrixRequestLog;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.command.AsyncResult;
 import com.netflix.hystrix.contrib.javanica.test.spring.conf.AopCglibConfig;
-import com.netflix.hystrix.contrib.javanica.test.spring.domain.User;
+import com.netflix.hystrix.contrib.javanica.test.common.domain.User;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import org.apache.commons.lang3.Validate;
 import org.junit.Test;

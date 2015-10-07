@@ -1,10 +1,64 @@
+apply plugin: 'java'
+
+configurations {
+    ajtools
+    ajcTestCompile.extendsFrom testCompile
+    ajcTestRuntime.extendsFrom testRuntime
+}
+
+
+sourceSets {
+    ajcTest {
+        compileClasspath += main.output + test.output
+        runtimeClasspath += main.output + test.output
+    }
+}
+
+
+
+compileAjcTestJava {
+
+    sourceCompatibility = "1.6"
+    targetCompatibility = "1.6"
+
+    doLast {
+        ant.taskdef(resource: "org/aspectj/tools/ant/taskdefs/aspectjTaskdefs.properties", classpath: configurations.ajtools.asPath)
+        ant.iajc(source: "1.6", target: "1.6",
+                destDir: "${sourceSets.ajcTest.output.classesDir.absolutePath}", maxmem: "512m", fork: "true",
+                classpath: "${sourceSets.main.output.classesDir.absolutePath};${configurations.testCompile.asPath}")
+                {
+                    sourceroots {
+                        files("src/ajcTest/java/com/netflix/hystrix/contrib/javanica/test/aspectj", "src/test/java/com/netflix/hystrix/contrib/javanica/test/common", "src/main/java/com/netflix/hystrix/contrib/javanica/aop/aspectj").each {
+                            File file -> pathelement(location: file.absolutePath)
+                        }
+                    }
+                }
+    }
+
+}
+
+task ajcTest(type: Test) {
+    testClassesDir = sourceSets.ajcTest.output.classesDir
+    classpath = sourceSets.ajcTest.runtimeClasspath
+}
+
+ajcTest.dependsOn test
+check.dependsOn ajcTest
+
+repositories {
+    mavenCentral()
+}
+
 ext {
     aspectjVersion = '1.7.4'
 }
 
-dependencies {
-    compile project(':hystrix-core')
 
+dependencies {
+    //compile project(':hystrix-core')
+    ajtools "org.aspectj:aspectjtools:$aspectjVersion"
+    testRuntime "org.aspectj:aspectjrt:$aspectjVersion"
+    compile 'com.netflix.hystrix:hystrix-core:1.4.15'
     compile "org.aspectj:aspectjweaver:$aspectjVersion"
     compile "org.aspectj:aspectjrt:$aspectjVersion"
 

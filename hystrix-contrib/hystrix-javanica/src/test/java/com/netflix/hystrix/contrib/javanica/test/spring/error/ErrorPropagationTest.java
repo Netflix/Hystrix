@@ -20,7 +20,7 @@ import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.HystrixRequestLog;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.test.spring.conf.AopCglibConfig;
-import com.netflix.hystrix.contrib.javanica.test.spring.domain.User;
+import com.netflix.hystrix.contrib.javanica.test.common.domain.User;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import org.junit.Before;

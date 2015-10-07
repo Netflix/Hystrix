@@ -10,7 +10,6 @@ include 'hystrix-core', \
 'hystrix-contrib/hystrix-codahale-metrics-publisher', \
 'hystrix-contrib/hystrix-yammer-metrics-publisher', \
 'hystrix-contrib/hystrix-network-auditor-agent', \
-'hystrix-contrib/hystrix-javanica', \
 'hystrix-dashboard'
 
 project(':hystrix-contrib/hystrix-clj').name = 'hystrix-clj'
@@ -21,4 +20,3 @@ project(':hystrix-contrib/hystrix-rx-netty-metrics-stream').name = 'hystrix-rx-n
 project(':hystrix-contrib/hystrix-codahale-metrics-publisher').name = 'hystrix-codahale-metrics-publisher'
 project(':hystrix-contrib/hystrix-yammer-metrics-publisher').name = 'hystrix-yammer-metrics-publisher'
 project(':hystrix-contrib/hystrix-network-auditor-agent').name = 'hystrix-network-auditor-agent'
-project(':hystrix-contrib/hystrix-javanica').name = 'hystrix-javanica'
