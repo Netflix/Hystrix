@@ -6,7 +6,8 @@
 [![][maven img]][maven]
 [![][release img]][release]
 [![][license img]][license]
-
+[![Average time to resolve an issue](http://isitmaintained.com/badge/resolution/Netflix/Hystrix.svg)](http://isitmaintained.com/project/Netflix/Hystrix "Average time to resolve an issue")
+[![Percentage of issues still open](http://isitmaintained.com/badge/open/Netflix/Hystrix.svg)](http://isitmaintained.com/project/Netflix/Hystrix "Percentage of issues still open")
 
 Hystrix is a latency and fault tolerance library designed to isolate points of access to remote systems, services and 3rd party libraries, stop cascading failure and enable resilience in complex distributed systems where failure is inevitable.
 
