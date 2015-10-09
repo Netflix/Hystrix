@@ -40,9 +40,15 @@ compileAjcTestJava {
 task ajcTest(type: Test) {
     testClassesDir = sourceSets.ajcTest.output.classesDir
     classpath = sourceSets.ajcTest.runtimeClasspath
+    if (System.getProperty('DEBUG', 'false') == 'true') {
+        jvmArgs '-Xdebug',
+            '-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=9009'
+    }
 }
 
-ajcTest.dependsOn test
+ajcTestClasses.dependsOn testClasses
+
+//ajcTest.dependsOn test
 check.dependsOn ajcTest
 
 repositories {

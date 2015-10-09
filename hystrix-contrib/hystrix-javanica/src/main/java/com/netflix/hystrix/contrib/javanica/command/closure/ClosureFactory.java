@@ -15,6 +15,8 @@
  */
 package com.netflix.hystrix.contrib.javanica.command.closure;
 
+import com.netflix.hystrix.contrib.javanica.command.MetaHolder;
+
 import java.lang.reflect.Method;
 
 /**
@@ -30,5 +32,8 @@ public interface ClosureFactory {
      * @param args   the arguments used for the method call
      * @return new {@link Closure} instance
      */
+    @Deprecated
     Closure createClosure(final Method method, final Object o, final Object... args);
+
+    Closure createClosure(final MetaHolder metaHolder, final Method method, final Object o, final Object... args);
 }

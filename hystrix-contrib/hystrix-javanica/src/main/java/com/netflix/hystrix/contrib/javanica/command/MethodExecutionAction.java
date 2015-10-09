@@ -26,6 +26,8 @@ import org.aspectj.lang.JoinPoint;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
+import static com.netflix.hystrix.contrib.javanica.utils.ajc.AjcUtils.invokeAjcMethod;
+
 /**
  * This implementation invokes methods using java reflection.
  * If {@link Method#invoke(Object, Object...)} throws exception then this exception is wrapped to {@link CommandActionExecutionException}
@@ -84,8 +86,8 @@ public class MethodExecutionAction extends CommandAction {
         if (ExecutionType.SYNCHRONOUS.equals(executionType)) {
             return execute(object, method, args);
         } else {
-            Closure closure = ClosureFactoryRegistry.getFactory(executionType).createClosure(method, object, args);
-            return execute(closure.getClosureObj(), closure.getClosureMethod());
+            Closure closure = ClosureFactoryRegistry.getFactory(executionType).createClosure(metaHolder, method, object, args);
+            return executeClj(closure.getClosureObj(), closure.getClosureMethod());
         }
     }
 
@@ -105,14 +107,23 @@ public class MethodExecutionAction extends CommandAction {
     private Object execute(Object o, Method m, Object... args) throws CommandActionExecutionException {
         Object result = null;
         try {
+            m.setAccessible(true); // suppress Java language access
             if (WeavingMode.COMPILE == metaHolder.getWeavingMode()) {
-                m = metaHolder.getAjcMethod();
-                Object[] extArgs = new Object[args.length + 2];
-                extArgs[0] = o;
-                System.arraycopy(args, 0, extArgs, 1, args.length);
-                extArgs[extArgs.length - 1] = metaHolder.getJoinPoint();
-                args = extArgs;
+                result = invokeAjcMethod(metaHolder.getAjcMethod(), o, metaHolder, args);
+            } else {
+                result = m.invoke(o, args);
             }
+        } catch (IllegalAccessException e) {
+            propagateCause(e);
+        } catch (InvocationTargetException e) {
+            propagateCause(e);
+        }
+        return result;
+    }
+
+    private Object executeClj(Object o, Method m, Object... args){
+        Object result = null;
+        try {
             m.setAccessible(true); // suppress Java language access
             result = m.invoke(o, args);
         } catch (IllegalAccessException e) {

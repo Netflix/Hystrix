@@ -18,6 +18,7 @@ package com.netflix.hystrix.contrib.javanica.command.closure;
 
 import com.google.common.collect.ImmutableMap;
 import com.netflix.hystrix.contrib.javanica.command.ExecutionType;
+import com.netflix.hystrix.contrib.javanica.command.MetaHolder;
 
 import java.lang.reflect.Method;
 import java.util.Map;
@@ -34,6 +35,11 @@ public class ClosureFactoryRegistry {
             .put(ExecutionType.SYNCHRONOUS, new ClosureFactory() {
                 @Override
                 public Closure createClosure(Method method, Object o, Object... args) {
+                    return null;
+                }
+
+                @Override
+                public Closure createClosure(MetaHolder metaHolder, Method method, Object o, Object... args) {
                     return null;
                 }
             })

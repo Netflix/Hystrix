@@ -15,11 +15,11 @@
  */
 package com.netflix.hystrix.contrib.javanica.utils;
 
+import com.netflix.hystrix.contrib.javanica.utils.ajc.AjcUtils;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
 
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 
 /**
  * Provides common methods to retrieve information from JoinPoint and not only.
@@ -31,30 +31,7 @@ public final class AopUtils {
     }
 
     public static Method getAjcMethodFromTarget(JoinPoint joinPoint) {
-        MethodSignature signature = (MethodSignature) joinPoint.getSignature();
-        for (Method method : joinPoint.getTarget().getClass().getDeclaredMethods()) {
-            if (method.getName().startsWith(signature.getName() + "_aroundBody") && Modifier.isFinal(method.getModifiers()) && Modifier.isStatic(method.getModifiers())) {
-                Class<?>[] parameterTypes = method.getParameterTypes();
-                if (signature.getParameterTypes().length == 0 && parameterTypes.length == 0) {
-                    return method;
-                }
-                if (signature.getParameterTypes().length == parameterTypes.length - 2) {
-                    boolean match = true;
-                    Class<?>[] origParamTypes = removeAspectjArgs(parameterTypes);
-                    int index = 0;
-                    for (Class<?> pType : origParamTypes) {
-                        Class<?> expected = signature.getParameterTypes()[index];
-                        if (pType != expected) {
-                            match = false;
-                        }
-                    }
-                    if (match) {
-                        return method;
-                    }
-                }
-            }
-        }
-        return null;
+        return AjcUtils.getOriginalMethod(joinPoint.getTarget().getClass(), (MethodSignature) joinPoint.getSignature());
     }
 
     /**
