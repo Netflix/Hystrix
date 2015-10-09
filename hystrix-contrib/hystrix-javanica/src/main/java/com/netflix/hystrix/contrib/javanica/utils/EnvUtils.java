@@ -31,4 +31,8 @@ public final class EnvUtils {
             throw new IllegalArgumentException("wrong 'weavingMode' property, supported: " + Arrays.toString(WeavingMode.values()) + ", actual = " + wavingModeParam);
         return weavingMode;
     }
+
+    public static boolean isCompileWeaving() {
+        return WeavingMode.COMPILE == getWeavingMode();
+    }
 }

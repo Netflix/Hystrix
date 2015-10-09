@@ -43,7 +43,7 @@ import javax.annotation.PostConstruct;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static com.netflix.hystrix.contrib.javanica.CommonUtils.getLastExecutedCommand;
+import static com.netflix.hystrix.contrib.javanica.test.common.CommonUtils.getLastExecutedCommand;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;

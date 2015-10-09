@@ -108,7 +108,7 @@ public class MethodExecutionAction extends CommandAction {
         Object result = null;
         try {
             m.setAccessible(true); // suppress Java language access
-            if (WeavingMode.COMPILE == metaHolder.getWeavingMode()) {
+            if (WeavingMode.COMPILE == metaHolder.getWeavingMode() && metaHolder.getAjcMethod() != null) { // metaHolder.getAjcMethod() != null todo this is hack, refactor
                 result = invokeAjcMethod(metaHolder.getAjcMethod(), o, metaHolder, args);
             } else {
                 result = m.invoke(o, args);

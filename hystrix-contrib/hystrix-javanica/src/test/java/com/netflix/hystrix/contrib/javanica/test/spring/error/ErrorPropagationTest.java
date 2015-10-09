@@ -36,7 +36,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.netflix.hystrix.contrib.javanica.CommonUtils.getHystrixCommandByKey;
+import static com.netflix.hystrix.contrib.javanica.test.common.CommonUtils.getHystrixCommandByKey;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 

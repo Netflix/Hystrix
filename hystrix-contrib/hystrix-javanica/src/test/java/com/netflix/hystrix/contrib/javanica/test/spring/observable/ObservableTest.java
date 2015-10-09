@@ -35,7 +35,7 @@ import rx.Observable;
 import rx.Observer;
 import rx.functions.Action1;
 
-import static com.netflix.hystrix.contrib.javanica.CommonUtils.getHystrixCommandByKey;
+import static com.netflix.hystrix.contrib.javanica.test.common.CommonUtils.getHystrixCommandByKey;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 

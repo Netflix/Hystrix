@@ -57,6 +57,38 @@ public class AjcUtils {
         return null;
     }
 
+    // todo refactor it
+    public static Method getOriginalMethod(Class<?> target, Method signature) {
+        for (Method method : target.getDeclaredMethods()) {
+            if (method.getName().startsWith(signature.getName() + "_aroundBody") && Modifier.isFinal(method.getModifiers()) && Modifier.isStatic(method.getModifiers())) {
+                Class<?>[] parameterTypes = method.getParameterTypes();
+                if (signature.getParameterTypes().length == 0 && parameterTypes.length == 0) {
+                    return method;
+                }
+                if (signature.getParameterTypes().length == parameterTypes.length - 2) {
+                    boolean match = true;
+                    Class<?>[] origParamTypes = removeAspectjArgs(parameterTypes);
+                    int index = 0;
+                    for (Class<?> pType : origParamTypes) {
+                        Class<?> expected = signature.getParameterTypes()[index];
+                        if (pType != expected) {
+                            match = false;
+                        }
+                    }
+                    if (match) {
+                        return method;
+                    }
+                }
+            }
+        }
+        if(target.getSuperclass()!=null){
+            return getOriginalMethod(target.getSuperclass(), signature);
+        }
+
+        return null;
+    }
+
+
     public static Object invokeAjcMethod(Method method, Object target, MetaHolder metaHolder, Object... args) throws InvocationTargetException, IllegalAccessException {
         method.setAccessible(true);
         Object[] extArgs = new Object[args.length + 2];
