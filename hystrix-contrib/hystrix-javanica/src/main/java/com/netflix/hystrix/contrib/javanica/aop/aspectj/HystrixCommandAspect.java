@@ -39,6 +39,8 @@ import static com.netflix.hystrix.contrib.javanica.utils.AopUtils.getAjcMethodFr
 import static com.netflix.hystrix.contrib.javanica.utils.AopUtils.getDeclaredMethod;
 import static com.netflix.hystrix.contrib.javanica.utils.AopUtils.getMethodFromTarget;
 import static com.netflix.hystrix.contrib.javanica.utils.EnvUtils.getWeavingMode;
+import static com.netflix.hystrix.contrib.javanica.utils.EnvUtils.isCompileWeaving;
+import static com.netflix.hystrix.contrib.javanica.utils.ajc.AjcUtils.getOriginalBatchMethod;
 
 /**
  * AspectJ aspect to process methods which annotated with {@link HystrixCommand} annotation.
@@ -131,7 +133,16 @@ public class HystrixCommandAspect {
             }
             // method of batch hystrix command must be passed to metaholder because basically collapser doesn't have any actions
             // that should be invoked upon intercepted method, its required only for underlying batch command
-            MetaHolder.Builder builder = metaHolderBuilder(proxy, batchCommandMethod, obj, args, joinPoint);
+            MetaHolder.Builder builder = MetaHolder.builder()
+                    .args(args).method(batchCommandMethod).obj(obj).proxyObj(proxy)
+                    .defaultGroupKey(obj.getClass().getSimpleName())
+                    .joinPoint(joinPoint).weavingMode(getWeavingMode());
+
+
+            if(isCompileWeaving()){
+                builder.ajcMethod(getOriginalBatchMethod(obj.getClass(), batchCommandMethod.getName()));
+            }
+
             builder.hystrixCollapser(hystrixCollapser);
             builder.defaultCollapserKey(collapserMethod.getName());
             builder.collapserExecutionType(ExecutionType.getExecutionType(collapserMethod.getReturnType()));

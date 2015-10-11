@@ -21,6 +21,7 @@ import org.aspectj.lang.reflect.MethodSignature;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.List;
 
 /**
  * Created by dmgcodevil
@@ -88,6 +89,26 @@ public class AjcUtils {
         return null;
     }
 
+
+    public static Method getOriginalBatchMethod(Class<?> target, String batchMethod) {
+        final int batchMethodParamSize = 1;
+        for (Method method : target.getDeclaredMethods()) {
+            if (method.getName().startsWith(batchMethod + "_aroundBody") && Modifier.isFinal(method.getModifiers()) && Modifier.isStatic(method.getModifiers())) {
+                Class<?>[] parameterTypes = method.getParameterTypes();
+                if (batchMethodParamSize == parameterTypes.length - 2) {
+                    Class<?>[] origParamTypes = removeAspectjArgs(parameterTypes);
+                    if (origParamTypes[0] == List.class) {
+                        return method;
+                    }
+                }
+            }
+        }
+        if (target.getSuperclass() != null) {
+            return getOriginalBatchMethod(target.getSuperclass(), batchMethod);
+        }
+
+        return null;
+    }
 
     public static Object invokeAjcMethod(Method method, Object target, MetaHolder metaHolder, Object... args) throws InvocationTargetException, IllegalAccessException {
         method.setAccessible(true);

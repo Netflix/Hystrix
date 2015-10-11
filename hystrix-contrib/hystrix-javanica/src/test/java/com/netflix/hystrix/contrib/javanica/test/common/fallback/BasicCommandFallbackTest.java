@@ -32,7 +32,7 @@ public abstract class BasicCommandFallbackTest {
 
     }
 
-   // @Test
+    @Test
     public void testGetUserAsyncWithFallback() throws ExecutionException, InterruptedException {
         HystrixRequestContext context = HystrixRequestContext.initializeContext();
         try {
@@ -82,7 +82,7 @@ public abstract class BasicCommandFallbackTest {
      */
 
 
-    //@Test
+    @Test
     public void testGetUserAsyncWithFallbackCommand() throws ExecutionException, InterruptedException {
         HystrixRequestContext context = HystrixRequestContext.initializeContext();
         try {
@@ -108,7 +108,7 @@ public abstract class BasicCommandFallbackTest {
         }
     }
 
-    //@Test
+    @Test
     public void testGetUserSyncWithFallbackCommand() {
         HystrixRequestContext context = HystrixRequestContext.initializeContext();
         try {
