@@ -49,7 +49,7 @@ task ajcTest(type: Test) {
 ajcTestClasses.dependsOn testClasses
 
 //ajcTest.dependsOn test
-check.dependsOn ajcTest
+check.dependsOn test, ajcTest
 
 repositories {
     mavenCentral()
