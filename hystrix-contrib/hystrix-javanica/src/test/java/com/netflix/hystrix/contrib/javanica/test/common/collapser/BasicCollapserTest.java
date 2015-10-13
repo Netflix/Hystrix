@@ -102,6 +102,30 @@ public abstract class BasicCollapserTest {
         }
     }
 
+    @Test(expected = IllegalStateException.class)
+    public void testGetUserByIdWrongBatchMethodArgType() {
+        userService.getUserByIdWrongBatchMethodArgType("1");
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testGetUserByIdWrongBatchMethodReturnType() {
+        userService.getUserByIdWrongBatchMethodArgType("1");
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testGetUserByIdWrongCollapserMethodReturnType() {
+        userService.getUserByIdWrongCollapserMethodReturnType("1");
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testGetUserByIdWrongCollapserMultipleArgs() {
+        userService.getUserByIdWrongCollapserMultipleArgs("1", "2");
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testGetUserByIdWrongCollapserNoArgs() {
+        userService.getUserByIdWrongCollapserNoArgs();
+    }
 
     public static class UserService {
 
@@ -149,6 +173,44 @@ public abstract class BasicCollapserTest {
                 users.add(new User(id, "name: " + id));
             }
             return users;
+        }
+
+        // wrong return type, expected: Future<User> or User, because batch command getUserByIds returns List<User>
+        @HystrixCollapser(batchMethod = "getUserByIds")
+        public Long getUserByIdWrongCollapserMethodReturnType(String id) {
+            return null;
+        }
+
+        @HystrixCollapser(batchMethod = "getUserByIds")
+        public Future<User> getUserByIdWrongCollapserMultipleArgs(String id, String name) {
+            return null;
+        }
+
+        @HystrixCollapser(batchMethod = "getUserByIds")
+        public Future<User> getUserByIdWrongCollapserNoArgs() {
+            return null;
+        }
+
+        @HystrixCollapser(batchMethod = "getUserByIdsWrongBatchMethodArgType")
+        public Future<User> getUserByIdWrongBatchMethodArgType(String id) {
+            return null;
+        }
+
+        // wrong arg type, expected: List<String>
+        @HystrixCommand
+        public List<User> getUserByIdsWrongBatchMethodArgType(List<Integer> ids) {
+            return null;
+        }
+
+        @HystrixCollapser(batchMethod = "getUserByIdsWrongBatchMethodReturnType")
+        public Future<User> getUserByIdWrongBatchMethodReturnType(String id) {
+            return null;
+        }
+
+        // wrong return type, expected: List<User>
+        @HystrixCommand
+        public List<Integer> getUserByIdsWrongBatchMethodReturnType(List<String> ids) {
+            return null;
         }
 
     }

@@ -46,7 +46,6 @@ public class MetaHolder {
     private final String defaultCollapserKey;
     private final ExecutionType executionType;
     private final ExecutionType collapserExecutionType;
-    private final WeavingMode weavingMode;
     private final JoinPoint joinPoint;
 
     private MetaHolder(Builder builder) {
@@ -64,7 +63,6 @@ public class MetaHolder {
         this.hystrixCollapser = builder.hystrixCollapser;
         this.executionType = builder.executionType;
         this.collapserExecutionType = builder.collapserExecutionType;
-        this.weavingMode = builder.weavingMode;
         this.joinPoint = builder.joinPoint;
     }
 
@@ -136,10 +134,6 @@ public class MetaHolder {
         return hystrixCollapser!=null;
     }
 
-    public WeavingMode getWeavingMode() {
-        return weavingMode;
-    }
-
     public JoinPoint getJoinPoint() {
         return joinPoint;
     }
@@ -160,7 +154,6 @@ public class MetaHolder {
         private String defaultCollapserKey;
         private ExecutionType executionType;
         private ExecutionType collapserExecutionType;
-        private WeavingMode weavingMode;
         private JoinPoint joinPoint;
 
         public Builder hystrixCollapser(HystrixCollapser hystrixCollapser) {
@@ -230,11 +223,6 @@ public class MetaHolder {
 
         public Builder defaultCollapserKey(String defCollapserKey) {
             this.defaultCollapserKey = defCollapserKey;
-            return this;
-        }
-
-        public Builder weavingMode(WeavingMode weavingMode) {
-            this.weavingMode = weavingMode;
             return this;
         }
 

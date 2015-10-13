@@ -23,6 +23,9 @@ import java.util.Arrays;
  * Created by dmgcodevil
  */
 public final class EnvUtils {
+    private EnvUtils(){
+
+    }
 
     public static WeavingMode getWeavingMode() {
         String wavingModeParam = System.getProperty("weavingMode", WeavingMode.RUNTIME.name()).toUpperCase();

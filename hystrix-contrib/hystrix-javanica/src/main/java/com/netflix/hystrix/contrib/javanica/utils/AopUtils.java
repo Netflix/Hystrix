@@ -15,7 +15,6 @@
  */
 package com.netflix.hystrix.contrib.javanica.utils;
 
-import com.netflix.hystrix.contrib.javanica.utils.ajc.AjcUtils;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
 
@@ -28,10 +27,6 @@ public final class AopUtils {
 
     private AopUtils() {
         throw new UnsupportedOperationException("It's prohibited to create instances of the class.");
-    }
-
-    public static Method getAjcMethodFromTarget(JoinPoint joinPoint) {
-        return AjcUtils.getOriginalMethod(joinPoint.getTarget().getClass(), (MethodSignature) joinPoint.getSignature());
     }
 
     /**
@@ -51,19 +46,13 @@ public final class AopUtils {
         return method;
     }
 
-    private static Class<?>[] removeAspectjArgs(Class<?>[] parameterTypes) {
-        Class<?>[] origParamTypes = new Class[parameterTypes.length - 2];
-        System.arraycopy(parameterTypes, 1, origParamTypes, 0, parameterTypes.length - 2);
-        return origParamTypes;
-    }
-
-        /**
-         * Gets a {@link Method} object from target object by specified method name.
-         *
-         * @param joinPoint  the {@link JoinPoint}
-         * @param methodName the method name
-         * @return a {@link Method} object or null if method with specified <code>methodName</code> doesn't exist
-         */
+    /**
+     * Gets a {@link Method} object from target object by specified method name.
+     *
+     * @param joinPoint  the {@link JoinPoint}
+     * @param methodName the method name
+     * @return a {@link Method} object or null if method with specified <code>methodName</code> doesn't exist
+     */
     public static Method getMethodFromTarget(JoinPoint joinPoint, String methodName) {
         return getDeclaredMethod(joinPoint.getTarget().getClass(), methodName,
                 getParameterTypes(joinPoint));

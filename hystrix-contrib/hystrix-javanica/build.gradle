@@ -61,17 +61,16 @@ ext {
 
 
 dependencies {
-    //compile project(':hystrix-core')
+    compile project(':hystrix-core')
     ajtools "org.aspectj:aspectjtools:$aspectjVersion"
     testRuntime "org.aspectj:aspectjrt:$aspectjVersion"
-    compile 'com.netflix.hystrix:hystrix-core:1.4.15'
     compile "org.aspectj:aspectjweaver:$aspectjVersion"
     compile "org.aspectj:aspectjrt:$aspectjVersion"
-
     compile 'com.google.guava:guava:15.0'
     compile 'commons-collections:commons-collections:3.2.1'
     compile 'org.apache.commons:commons-lang3:3.1'
     compile 'com.google.code.findbugs:jsr305:2.0.0'
+
     testCompile 'junit:junit-dep:4.10'
     testCompile 'org.springframework:spring-core:4.0.0.RELEASE'
     testCompile 'org.springframework:spring-context:4.0.0.RELEASE'

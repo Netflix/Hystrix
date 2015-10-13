@@ -16,13 +16,13 @@
 package com.netflix.hystrix.contrib.javanica.command.closure;
 
 import com.google.common.base.Throwables;
-import com.netflix.hystrix.contrib.javanica.aop.aspectj.WeavingMode;
 import com.netflix.hystrix.contrib.javanica.command.ClosureCommand;
 import com.netflix.hystrix.contrib.javanica.command.MetaHolder;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
+import static com.netflix.hystrix.contrib.javanica.utils.EnvUtils.isCompileWeaving;
 import static com.netflix.hystrix.contrib.javanica.utils.ajc.AjcUtils.invokeAjcMethod;
 import static org.slf4j.helpers.MessageFormatter.format;
 
@@ -54,7 +54,7 @@ public abstract class AbstractClosureFactory implements ClosureFactory {
         try {
             Object closureObj;
             method.setAccessible(true);
-            if (WeavingMode.COMPILE == metaHolder.getWeavingMode()) {
+            if (isCompileWeaving()) {
                 closureObj = invokeAjcMethod(metaHolder.getAjcMethod(), o, metaHolder, args);
             } else {
                 closureObj = method.invoke(o, args); // creates instance of an anonymous class

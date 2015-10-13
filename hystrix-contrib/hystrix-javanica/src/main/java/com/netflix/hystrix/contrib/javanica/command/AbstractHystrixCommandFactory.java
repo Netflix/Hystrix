@@ -22,7 +22,6 @@ import com.netflix.hystrix.HystrixCollapser;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
 import com.netflix.hystrix.contrib.javanica.conf.HystrixPropertiesManager;
-import com.netflix.hystrix.contrib.javanica.utils.EnvUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 
@@ -34,7 +33,7 @@ import java.util.Map;
 import static com.netflix.hystrix.contrib.javanica.cache.CacheInvocationContextFactory.createCacheRemoveInvocationContext;
 import static com.netflix.hystrix.contrib.javanica.cache.CacheInvocationContextFactory.createCacheResultInvocationContext;
 import static com.netflix.hystrix.contrib.javanica.utils.EnvUtils.isCompileWeaving;
-import static com.netflix.hystrix.contrib.javanica.utils.ajc.AjcUtils.getOriginalMethod;
+import static com.netflix.hystrix.contrib.javanica.utils.ajc.AjcUtils.getAjcMethodAroundAdvice;
 
 /**
  * Base implementation of {@link HystrixCommandFactory} interface.
@@ -95,7 +94,6 @@ public abstract class AbstractHystrixCommandFactory<T extends AbstractHystrixCom
                             .obj(metaHolder.getObj())
                             .method(fallbackMethod)
                             .ajcMethod(getAjcMethod(metaHolder.getObj(), fallbackMethod))
-                            .weavingMode(EnvUtils.getWeavingMode())
                             .args(metaHolder.getArgs())
                             .defaultCollapserKey(metaHolder.getDefaultCollapserKey())
                             .defaultCommandKey(fallbackMethod.getName())
@@ -104,12 +102,11 @@ public abstract class AbstractHystrixCommandFactory<T extends AbstractHystrixCom
                             .hystrixCommand(fallbackMethod.getAnnotation(HystrixCommand.class)).build();
                     fallbackAction = new LazyCommandExecutionAction(GenericHystrixCommandFactory.getInstance(), fmMetaHolder, collapsedRequests);
                 } else {
-                    // if falback methid isn't annotated with command annotation then we don't need to get ajc method for this
+
                     MetaHolder fmMetaHolder = MetaHolder.builder()
                             .obj(metaHolder.getObj())
                             .method(fallbackMethod)
-                            .ajcMethod(null)
-                            .weavingMode(EnvUtils.getWeavingMode())
+                            .ajcMethod(null) // if fallback method isn't annotated with command annotation then we don't need to get ajc method for this
                             .args(metaHolder.getArgs()).build();
 
                     fallbackAction = new MethodExecutionAction(fmMetaHolder.getObj(), fallbackMethod, fmMetaHolder.getArgs(), fmMetaHolder);
@@ -126,7 +123,7 @@ public abstract class AbstractHystrixCommandFactory<T extends AbstractHystrixCom
 
     private Method getAjcMethod(Object target, Method fallback) {
         if (isCompileWeaving()) {
-            return getOriginalMethod(target.getClass(), fallback);
+            return getAjcMethodAroundAdvice(target.getClass(), fallback);
         }
         return null;
     }

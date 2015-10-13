@@ -16,16 +16,15 @@
 package com.netflix.hystrix.contrib.javanica.command;
 
 
-import com.netflix.hystrix.contrib.javanica.aop.aspectj.WeavingMode;
 import com.netflix.hystrix.contrib.javanica.command.closure.Closure;
 import com.netflix.hystrix.contrib.javanica.command.closure.ClosureFactoryRegistry;
 import com.netflix.hystrix.contrib.javanica.exception.CommandActionExecutionException;
 import com.netflix.hystrix.contrib.javanica.exception.ExceptionUtils;
-import org.aspectj.lang.JoinPoint;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
+import static com.netflix.hystrix.contrib.javanica.utils.EnvUtils.isCompileWeaving;
 import static com.netflix.hystrix.contrib.javanica.utils.ajc.AjcUtils.invokeAjcMethod;
 
 /**
@@ -56,8 +55,6 @@ public class MethodExecutionAction extends CommandAction {
         this._args = args;
         this.metaHolder = metaHolder;
     }
-
-
 
     public Object getObject() {
         return object;
@@ -108,7 +105,7 @@ public class MethodExecutionAction extends CommandAction {
         Object result = null;
         try {
             m.setAccessible(true); // suppress Java language access
-            if (WeavingMode.COMPILE == metaHolder.getWeavingMode() && metaHolder.getAjcMethod() != null) { // metaHolder.getAjcMethod() != null todo this is hack, refactor
+            if (isCompileWeaving() && metaHolder.getAjcMethod() != null) {
                 result = invokeAjcMethod(metaHolder.getAjcMethod(), o, metaHolder, args);
             } else {
                 result = m.invoke(o, args);
