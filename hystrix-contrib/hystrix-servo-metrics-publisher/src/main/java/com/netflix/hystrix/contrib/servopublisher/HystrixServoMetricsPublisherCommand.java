@@ -176,7 +176,7 @@ public class HystrixServoMetricsPublisherCommand extends HystrixServoMetricsPubl
     }
 
     protected Monitor<?> getRollingMonitor(final String name, final HystrixEventType event) {
-        return new CounterMetric(MonitorConfig.builder(name).withTag(getServoTypeTag()).withTag(getServoInstanceTag()).build()) {
+        return new GaugeMetric(MonitorConfig.builder(name).withTag(DataSourceLevel.DEBUG).withTag(getServoTypeTag()).withTag(getServoInstanceTag()).build()) {
             @Override
             public Long getValue() {
                 return metrics.getRollingCount(getRollingNumberTypeFromEventType(event));
