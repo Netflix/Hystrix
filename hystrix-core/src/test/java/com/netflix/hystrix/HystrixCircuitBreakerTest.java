@@ -21,7 +21,6 @@ import static org.junit.Assert.fail;
 
 import java.util.Random;
 
-import com.netflix.hystrix.strategy.metrics.HystrixCommandMetricsSummary;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -495,7 +494,7 @@ public class HystrixCircuitBreakerTest {
      * Utility method for creating {@link HystrixCommandMetrics} for unit tests.
      */
     private static HystrixCommandMetrics getMetrics(HystrixCommandProperties.Setter properties) {
-        return new HystrixCommandMetricsSummary(CommandKeyForUnitTest.KEY_ONE, CommandOwnerForUnitTest.OWNER_ONE, ThreadPoolKeyForUnitTest.THREAD_POOL_ONE, HystrixCommandPropertiesTest.asMock(properties), HystrixEventNotifierDefault.getInstance());
+        return new HystrixCommandMetrics(CommandKeyForUnitTest.KEY_ONE, CommandOwnerForUnitTest.OWNER_ONE, ThreadPoolKeyForUnitTest.THREAD_POOL_ONE, HystrixCommandPropertiesTest.asMock(properties), HystrixEventNotifierDefault.getInstance());
     }
 
     /**

@@ -19,27 +19,18 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.netflix.hystrix.strategy.HystrixPlugins;
-import com.netflix.hystrix.strategy.metrics.HystrixMetricsCollection;
+import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
+import com.netflix.hystrix.util.HystrixRollingNumber;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
+import com.netflix.hystrix.util.HystrixRollingPercentile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Used by {@link HystrixCollapser} to record metrics.
- * This is an abstract class that provides a home for statics that manage caching of HystrixCollapserMetrics instances.
- * It also provides a limited surface-area for concrete subclasses to implement.  This allows different data structures
- * to be used in the actual storage of metrics.
- *
- * For instance, you may drop all metrics.  You may also keep references to all collapser events that pass through
- * the JVM.  The default is to take a middle ground and summarize collapser metrics into counts of events and
- * percentiles of batch/shard size.
- *
- * Note that {@link com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier} is not hooked up yet.  It may be in the future.
- *
- * As in {@link HystrixMetrics}, all read methods are public and write methods are package-private or protected.
+ * {@link HystrixEventNotifier} not hooked up yet.  It may be in the future.
  */
-public abstract class HystrixCollapserMetrics extends HystrixMetrics {
+public class HystrixCollapserMetrics extends HystrixMetrics {
 
     @SuppressWarnings("unused")
     private static final Logger logger = LoggerFactory.getLogger(HystrixCollapserMetrics.class);
@@ -63,8 +54,7 @@ public abstract class HystrixCollapserMetrics extends HystrixMetrics {
             return collapserMetrics;
         }
         // it doesn't exist so we need to create it
-        HystrixMetricsCollection metricsCollectionStrategy = HystrixPlugins.getInstance().getMetricsCollection();
-        collapserMetrics = metricsCollectionStrategy.getCollapserMetricsInstance(key, properties);
+        collapserMetrics = new HystrixCollapserMetrics(key, properties);
         // attempt to store it (race other threads)
         HystrixCollapserMetrics existing = metrics.putIfAbsent(key.name(), collapserMetrics);
         if (existing == null) {
@@ -94,10 +84,16 @@ public abstract class HystrixCollapserMetrics extends HystrixMetrics {
 
     private final HystrixCollapserKey key;
     private final HystrixCollapserProperties properties;
+    private final HystrixRollingPercentile percentileBatchSize;
+    private final HystrixRollingPercentile percentileShardSize;
 
-    protected HystrixCollapserMetrics(HystrixCollapserKey key, HystrixCollapserProperties properties) {
+    /* package */HystrixCollapserMetrics(HystrixCollapserKey key, HystrixCollapserProperties properties) {
+        super(new HystrixRollingNumber(properties.metricsRollingStatisticalWindowInMilliseconds().get(), properties.metricsRollingStatisticalWindowBuckets().get()));
         this.key = key;
         this.properties = properties;
+
+        this.percentileBatchSize = new HystrixRollingPercentile(properties.metricsRollingPercentileWindowInMilliseconds().get(), properties.metricsRollingPercentileWindowBuckets().get(), properties.metricsRollingPercentileBucketSize().get(), properties.metricsRollingPercentileEnabled());
+        this.percentileShardSize = new HystrixRollingPercentile(properties.metricsRollingPercentileWindowInMilliseconds().get(), properties.metricsRollingPercentileWindowBuckets().get(), properties.metricsRollingPercentileBucketSize().get(), properties.metricsRollingPercentileEnabled());
     }
 
     /**
@@ -114,7 +110,7 @@ public abstract class HystrixCollapserMetrics extends HystrixMetrics {
     }
 
     /**
-     * Retrieve the batch size for the {@link HystrixCollapser} being invoked at a given percentile over a rolling window.
+     * Retrieve the batch size for the {@link HystrixCollapser} being invoked at a given percentile.
      * <p>
      * Percentile capture and calculation is configured via {@link HystrixCollapserProperties#metricsRollingStatisticalWindowInMilliseconds()} and other related properties.
      *
@@ -122,24 +118,16 @@ public abstract class HystrixCollapserMetrics extends HystrixMetrics {
      *            Percentile such as 50, 99, or 99.5.
      * @return batch size
      */
-    public abstract int getBatchSizePercentile(double percentile);
+    public int getBatchSizePercentile(double percentile) {
+        return percentileBatchSize.getPercentile(percentile);
+    }
+
+    public int getBatchSizeMean() {
+        return percentileBatchSize.getMean();
+    }
 
     /**
-     * Mean of batch size over rolling window.
-     *
-     * @return batch size mean
-     */
-    public abstract int getBatchSizeMean();
-
-    /**
-     * Add a batch size to the batch size metrics data structure
-     *
-     * @param batchSize batch size to add
-     */
-    protected abstract void addBatchSize(int batchSize);
-
-    /**
-     * Retrieve the shard size for the {@link HystrixCollapser} being invoked at a given percentile for a rolling window.
+     * Retrieve the shard size for the {@link HystrixCollapser} being invoked at a given percentile.
      * <p>
      * Percentile capture and calculation is configured via {@link HystrixCollapserProperties#metricsRollingStatisticalWindowInMilliseconds()} and other related properties.
      *
@@ -147,56 +135,30 @@ public abstract class HystrixCollapserMetrics extends HystrixMetrics {
      *            Percentile such as 50, 99, or 99.5.
      * @return batch size
      */
-    public abstract int getShardSizePercentile(double percentile);
-
-    /**
-     * Mean of shard size over rolling window.
-     *
-     * @return shard size mean
-     */
-    public abstract int getShardSizeMean();
-
-    /**
-     * Add a shard size to the shard size metrics data structure.
-     *
-     * @param shardSize shard size to add
-     */
-    protected abstract void addShardSize(int shardSize);
-
-    /**
-     * Called when a {@link HystrixCollapser} has been invoked.  This does not directly execute work, just places the
-     * args in a queue to be batched at a later point.  Keeping track of this value will allow us to determine
-     * the effectiveness of batching over executing each command individually.
-     */
-    /* package */ void markRequestBatched() {
-        addEvent(HystrixRollingNumberEvent.COLLAPSER_REQUEST_BATCHED);
+    public int getShardSizePercentile(double percentile) {
+        return percentileShardSize.getPercentile(percentile);
     }
 
-    /**
-     * Called when a {@link HystrixCollapser} has been invoked and the response is returned directly from the
-     * {@link HystrixRequestCache}.
-     */
-    /* package */ void markResponseFromCache() {
-        addEvent(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE);
+    public int getShardSizeMean() {
+        return percentileShardSize.getMean();
     }
 
-    /**
-     * Called when a batch {@link HystrixCommand} has been executed.  Tracking this event allows us to determine the
-     * effectiveness of collapsing by getting the distribution of batch sizes.
-     *
-     * @param batchSize number of request arguments in the batch
-     */
-    /* package */ void markBatch(int batchSize) {
-        addBatchSize(batchSize);
-        addEvent(HystrixRollingNumberEvent.COLLAPSER_BATCH);
+    public void markRequestBatched() {
+        counter.increment(HystrixRollingNumberEvent.COLLAPSER_REQUEST_BATCHED);
     }
 
-    /**
-     * Called when a batch of request arguments has been divided into shards for separate execution.
-     *
-     * @param numShards number of shards in the batch
-     */
-    /* package */ void markShards(int numShards) {
-        addShardSize(numShards);
+    public void markResponseFromCache() {
+        counter.increment(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE);
     }
+
+    public void markBatch(int batchSize) {
+        percentileBatchSize.addValue(batchSize);
+        counter.increment(HystrixRollingNumberEvent.COLLAPSER_BATCH);
+    }
+
+    public void markShards(int numShards) {
+        percentileShardSize.addValue(numShards);
+    }
+
+
 }

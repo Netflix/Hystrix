@@ -22,19 +22,23 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import com.netflix.hystrix.strategy.metrics.HystrixMetricsCollection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.netflix.hystrix.exception.HystrixBadRequestException;
 import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
+import com.netflix.hystrix.util.HystrixRollingNumber;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
+import com.netflix.hystrix.util.HystrixRollingPercentile;
 
 /**
  * Used by {@link HystrixCommand} to record metrics.
  */
-public abstract class HystrixCommandMetrics extends HystrixMetrics {
+public class HystrixCommandMetrics extends HystrixMetrics {
 
-    private final AtomicInteger concurrentExecutionCount = new AtomicInteger();
+    @SuppressWarnings("unused")
+    private static final Logger logger = LoggerFactory.getLogger(HystrixCommandMetrics.class);
 
     // String is HystrixCommandKey.name() (we can't use HystrixCommandKey directly as we can't guarantee it implements hashcode/equals correctly)
     private static final ConcurrentHashMap<String, HystrixCommandMetrics> metrics = new ConcurrentHashMap<String, HystrixCommandMetrics>();
@@ -76,6 +80,7 @@ public abstract class HystrixCommandMetrics extends HystrixMetrics {
             return commandMetrics;
         }
         // it doesn't exist so we need to create it
+
         //now check to see if we need to create a synthetic threadPoolKey
         HystrixThreadPoolKey nonNullThreadPoolKey;
         if (threadPoolKey == null) {
@@ -83,10 +88,7 @@ public abstract class HystrixCommandMetrics extends HystrixMetrics {
         } else {
             nonNullThreadPoolKey = threadPoolKey;
         }
-        HystrixMetricsCollection metricsCollectionStrategy = HystrixPlugins.getInstance().getMetricsCollection();
-        HystrixEventNotifier eventNotifier = HystrixPlugins.getInstance().getEventNotifier();
-        commandMetrics = metricsCollectionStrategy.getCommandMetricsInstance(key, commandGroup, nonNullThreadPoolKey, properties, eventNotifier);
-
+        commandMetrics = new HystrixCommandMetrics(key, commandGroup, nonNullThreadPoolKey, properties, HystrixPlugins.getInstance().getEventNotifier());
         // attempt to store it (race other threads)
         HystrixCommandMetrics existing = metrics.putIfAbsent(key.name(), commandMetrics);
         if (existing == null) {
@@ -126,16 +128,22 @@ public abstract class HystrixCommandMetrics extends HystrixMetrics {
     }
 
     private final HystrixCommandProperties properties;
+    private final HystrixRollingPercentile percentileExecution;
+    private final HystrixRollingPercentile percentileTotal;
     private final HystrixCommandKey key;
     private final HystrixCommandGroupKey group;
     private final HystrixThreadPoolKey threadPoolKey;
+    private final AtomicInteger concurrentExecutionCount = new AtomicInteger();
     private final HystrixEventNotifier eventNotifier;
 
-    protected HystrixCommandMetrics(HystrixCommandKey key, HystrixCommandGroupKey commandGroup, HystrixThreadPoolKey threadPoolKey, HystrixCommandProperties properties, HystrixEventNotifier eventNotifier) {
+    /* package */HystrixCommandMetrics(HystrixCommandKey key, HystrixCommandGroupKey commandGroup, HystrixThreadPoolKey threadPoolKey, HystrixCommandProperties properties, HystrixEventNotifier eventNotifier) {
+        super(new HystrixRollingNumber(properties.metricsRollingStatisticalWindowInMilliseconds().get(), properties.metricsRollingStatisticalWindowBuckets().get()));
         this.key = key;
         this.group = commandGroup;
         this.threadPoolKey = threadPoolKey;
         this.properties = properties;
+        this.percentileExecution = new HystrixRollingPercentile(properties.metricsRollingPercentileWindowInMilliseconds().get(), properties.metricsRollingPercentileWindowBuckets().get(), properties.metricsRollingPercentileBucketSize().get(), properties.metricsRollingPercentileEnabled());
+        this.percentileTotal = new HystrixRollingPercentile(properties.metricsRollingPercentileWindowInMilliseconds().get(), properties.metricsRollingPercentileWindowBuckets().get(), properties.metricsRollingPercentileBucketSize().get(), properties.metricsRollingPercentileEnabled());
         this.eventNotifier = eventNotifier;
     }
 
@@ -185,7 +193,9 @@ public abstract class HystrixCommandMetrics extends HystrixMetrics {
      *            Percentile such as 50, 99, or 99.5.
      * @return int time in milliseconds
      */
-    public abstract int getExecutionTimePercentile(double percentile);
+    public int getExecutionTimePercentile(double percentile) {
+        return percentileExecution.getPercentile(percentile);
+    }
 
     /**
      * The mean (average) execution time (in milliseconds) for the {@link HystrixCommand#run()}.
@@ -194,7 +204,9 @@ public abstract class HystrixCommandMetrics extends HystrixMetrics {
      * 
      * @return int time in milliseconds
      */
-    public abstract int getExecutionTimeMean();
+    public int getExecutionTimeMean() {
+        return percentileExecution.getMean();
+    }
 
     /**
      * Retrieve the total end-to-end execution time (in milliseconds) for {@link HystrixCommand#execute()} or {@link HystrixCommand#queue()} at a given percentile.
@@ -217,43 +229,35 @@ public abstract class HystrixCommandMetrics extends HystrixMetrics {
      *            Percentile such as 50, 99, or 99.5.
      * @return int time in milliseconds
      */
-    public abstract int getTotalTimePercentile(double percentile);
+    public int getTotalTimePercentile(double percentile) {
+        return percentileTotal.getPercentile(percentile);
+    }
 
     /**
-     * The mean (average) execution time (in milliseconds) for command execution.
+     * The mean (average) execution time (in milliseconds) for {@link HystrixCommand#execute()} or {@link HystrixCommand#queue()}.
      * <p>
      * This uses the same backing data as {@link #getTotalTimePercentile};
      * 
      * @return int time in milliseconds
      */
-    public abstract int getTotalTimeMean();
+    public int getTotalTimeMean() {
+        return percentileTotal.getMean();
+    }
+
+    /* package */void resetCounter() {
+        // TODO can we do without this somehow?
+        counter.reset();
+        lastHealthCountsSnapshot.set(System.currentTimeMillis());
+        healthCountsSnapshot = new HealthCounts(0, 0, 0);
+    }
 
     /**
      * Current number of concurrent executions of {@link HystrixCommand#run()};
-     *
+     * 
      * @return int
      */
     public int getCurrentConcurrentExecutionCount() {
         return concurrentExecutionCount.get();
-    }
-
-    /**
-     * Increment concurrent requests counter.
-     */
-    /* package */ void incrementConcurrentExecutionCount() {
-        int numConcurrent = concurrentExecutionCount.incrementAndGet();
-        updateRollingMax(HystrixRollingNumberEvent.COMMAND_MAX_ACTIVE, (long) numConcurrent);
-    }
-
-    /**
-     * Decrement concurrent requests counter.
-     */
-    /* package */ void decrementConcurrentExecutionCount() {
-        concurrentExecutionCount.decrementAndGet();
-    }
-
-    public long getRollingMaxConcurrentExecutions() {
-        return getRollingMax(HystrixRollingNumberEvent.COMMAND_MAX_ACTIVE);
     }
 
     /**
@@ -263,7 +267,7 @@ public abstract class HystrixCommandMetrics extends HystrixMetrics {
      */
     /* package */void markSuccess(long duration) {
         eventNotifier.markEvent(HystrixEventType.SUCCESS, key);
-        addEvent(HystrixRollingNumberEvent.SUCCESS);
+        counter.increment(HystrixRollingNumberEvent.SUCCESS);
     }
 
     /**
@@ -273,7 +277,7 @@ public abstract class HystrixCommandMetrics extends HystrixMetrics {
      */
     /* package */void markFailure(long duration) {
         eventNotifier.markEvent(HystrixEventType.FAILURE, key);
-        addEvent(HystrixRollingNumberEvent.FAILURE);
+        counter.increment(HystrixRollingNumberEvent.FAILURE);
     }
 
     /**
@@ -284,7 +288,7 @@ public abstract class HystrixCommandMetrics extends HystrixMetrics {
      */
     /* package */void markTimeout(long duration) {
         eventNotifier.markEvent(HystrixEventType.TIMEOUT, key);
-        addEvent(HystrixRollingNumberEvent.TIMEOUT);
+        counter.increment(HystrixRollingNumberEvent.TIMEOUT);
     }
 
     /**
@@ -292,7 +296,7 @@ public abstract class HystrixCommandMetrics extends HystrixMetrics {
      */
     /* package */void markShortCircuited() {
         eventNotifier.markEvent(HystrixEventType.SHORT_CIRCUITED, key);
-        addEvent(HystrixRollingNumberEvent.SHORT_CIRCUITED);
+        counter.increment(HystrixRollingNumberEvent.SHORT_CIRCUITED);
     }
 
     /**
@@ -300,7 +304,7 @@ public abstract class HystrixCommandMetrics extends HystrixMetrics {
      */
     /* package */void markThreadPoolRejection() {
         eventNotifier.markEvent(HystrixEventType.THREAD_POOL_REJECTED, key);
-        addEvent(HystrixRollingNumberEvent.THREAD_POOL_REJECTED);
+        counter.increment(HystrixRollingNumberEvent.THREAD_POOL_REJECTED);
     }
 
     /**
@@ -308,7 +312,7 @@ public abstract class HystrixCommandMetrics extends HystrixMetrics {
      */
     /* package */void markSemaphoreRejection() {
         eventNotifier.markEvent(HystrixEventType.SEMAPHORE_REJECTED, key);
-        addEvent(HystrixRollingNumberEvent.SEMAPHORE_REJECTED);
+        counter.increment(HystrixRollingNumberEvent.SEMAPHORE_REJECTED);
     }
 
     /**
@@ -316,7 +320,26 @@ public abstract class HystrixCommandMetrics extends HystrixMetrics {
      */
     /* package */void markBadRequest(long duration) {
         eventNotifier.markEvent(HystrixEventType.BAD_REQUEST, key);
-        addEvent(HystrixRollingNumberEvent.BAD_REQUEST);
+        counter.increment(HystrixRollingNumberEvent.BAD_REQUEST);
+    }
+
+    /**
+     * Increment concurrent requests counter.
+     */
+    /* package */void incrementConcurrentExecutionCount() {
+        int numConcurrent = concurrentExecutionCount.incrementAndGet();
+        counter.updateRollingMax(HystrixRollingNumberEvent.COMMAND_MAX_ACTIVE, (long) numConcurrent);
+    }
+    
+    /**
+     * Decrement concurrent requests counter.
+     */
+    /* package */void decrementConcurrentExecutionCount() {
+        concurrentExecutionCount.decrementAndGet();
+    }
+
+    public long getRollingMaxConcurrentExecutions() {
+        return counter.getRollingMaxValue(HystrixRollingNumberEvent.COMMAND_MAX_ACTIVE);
     }
 
     /**
@@ -324,7 +347,7 @@ public abstract class HystrixCommandMetrics extends HystrixMetrics {
      */
     /* package */void markFallbackSuccess() {
         eventNotifier.markEvent(HystrixEventType.FALLBACK_SUCCESS, key);
-        addEvent(HystrixRollingNumberEvent.FALLBACK_SUCCESS);
+        counter.increment(HystrixRollingNumberEvent.FALLBACK_SUCCESS);
     }
 
     /**
@@ -332,7 +355,7 @@ public abstract class HystrixCommandMetrics extends HystrixMetrics {
      */
     /* package */void markFallbackFailure() {
         eventNotifier.markEvent(HystrixEventType.FALLBACK_FAILURE, key);
-        addEvent(HystrixRollingNumberEvent.FALLBACK_FAILURE);
+        counter.increment(HystrixRollingNumberEvent.FALLBACK_FAILURE);
     }
 
     /**
@@ -340,7 +363,7 @@ public abstract class HystrixCommandMetrics extends HystrixMetrics {
      */
     /* package */void markFallbackRejection() {
         eventNotifier.markEvent(HystrixEventType.FALLBACK_REJECTION, key);
-        addEvent(HystrixRollingNumberEvent.FALLBACK_REJECTION);
+        counter.increment(HystrixRollingNumberEvent.FALLBACK_REJECTION);
     }
 
     /**
@@ -349,17 +372,17 @@ public abstract class HystrixCommandMetrics extends HystrixMetrics {
      */
     /* package */void markExceptionThrown() {
         eventNotifier.markEvent(HystrixEventType.EXCEPTION_THROWN, key);
-        addEvent(HystrixRollingNumberEvent.EXCEPTION_THROWN);
+        counter.increment(HystrixRollingNumberEvent.EXCEPTION_THROWN);
     }
 
     /**
      * When a command is fronted by an {@link HystrixCollapser} then this marks how many requests are collapsed into the single command execution.
-     *
+     * 
      * @param numRequestsCollapsedToBatch number of requests which got batched
      */
     /* package */void markCollapsed(int numRequestsCollapsedToBatch) {
         eventNotifier.markEvent(HystrixEventType.COLLAPSED, key);
-        addEventWithValue(HystrixRollingNumberEvent.COLLAPSED, numRequestsCollapsedToBatch);
+        counter.add(HystrixRollingNumberEvent.COLLAPSED, numRequestsCollapsedToBatch);
     }
 
     /**
@@ -369,7 +392,7 @@ public abstract class HystrixCommandMetrics extends HystrixMetrics {
      */
     /* package */void markResponseFromCache() {
         eventNotifier.markEvent(HystrixEventType.RESPONSE_FROM_CACHE, key);
-        addEvent(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE);
+        counter.increment(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE);
     }
 
     /**
@@ -377,7 +400,7 @@ public abstract class HystrixCommandMetrics extends HystrixMetrics {
      */
     /* package */void markEmit() {
         eventNotifier.markEvent(HystrixEventType.EMIT, getCommandKey());
-        addEvent(HystrixRollingNumberEvent.EMIT);
+        counter.increment(HystrixRollingNumberEvent.EMIT);
     }
 
     /**
@@ -385,13 +408,15 @@ public abstract class HystrixCommandMetrics extends HystrixMetrics {
      */
     /* package */void markFallbackEmit() {
         eventNotifier.markEvent(HystrixEventType.FALLBACK_EMIT, getCommandKey());
-        addEvent(HystrixRollingNumberEvent.FALLBACK_EMIT);
+        counter.increment(HystrixRollingNumberEvent.FALLBACK_EMIT);
     }
 
     /**
      * Execution time of {@link HystrixCommand#run()}.
      */
-    protected abstract void addCommandExecutionTime(long duration);
+    /* package */void addCommandExecutionTime(long duration) {
+        percentileExecution.addValue((int) duration);
+    }
 
     /**
      * Complete execution time of {@link HystrixCommand#execute()} or {@link HystrixCommand#queue()} (queue is considered complete once the work is finished and {@link Future#get} is capable of
@@ -399,14 +424,8 @@ public abstract class HystrixCommandMetrics extends HystrixMetrics {
      * <p>
      * This differs from {@link #addCommandExecutionTime} in that this covers all of the threading and scheduling overhead, not just the execution of the {@link HystrixCommand#run()} method.
      */
-    protected abstract void addUserThreadExecutionTime(long duration);
-
-    protected abstract void clear();
-
-    /* package */ void resetCounter() {
-        clear();
-        lastHealthCountsSnapshot.set(System.currentTimeMillis());
-        healthCountsSnapshot = new HealthCounts(0, 0, 0);
+    /* package */void addUserThreadExecutionTime(long duration) {
+        percentileTotal.addValue((int) duration);
     }
 
     private volatile HealthCounts healthCountsSnapshot = new HealthCounts(0, 0, 0);
@@ -414,13 +433,10 @@ public abstract class HystrixCommandMetrics extends HystrixMetrics {
 
     /**
      * Retrieve a snapshot of total requests, error count and error percentage.
-     *
-     * Marked final so that concrete implementation may vary how to implement {@link #getRollingCount(HystrixRollingNumberEvent)}
-     * and the health check (used for opening a {@link HystrixCircuitBreaker} is constant
      * 
      * @return {@link HealthCounts}
      */
-    public final HealthCounts getHealthCounts() {
+    public HealthCounts getHealthCounts() {
         // we put an interval between snapshots so high-volume commands don't 
         // spend too much unnecessary time calculating metrics in very small time periods
         long lastTime = lastHealthCountsSnapshot.get();
@@ -429,12 +445,12 @@ public abstract class HystrixCommandMetrics extends HystrixMetrics {
             if (lastHealthCountsSnapshot.compareAndSet(lastTime, currentTime)) {
                 // our thread won setting the snapshot time so we will proceed with generating a new snapshot
                 // losing threads will continue using the old snapshot
-                long success = getRollingCount(HystrixRollingNumberEvent.SUCCESS);
-                long failure = getRollingCount(HystrixRollingNumberEvent.FAILURE); // fallbacks occur on this
-                long timeout = getRollingCount(HystrixRollingNumberEvent.TIMEOUT); // fallbacks occur on this
-                long threadPoolRejected = getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED); // fallbacks occur on this
-                long semaphoreRejected = getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED); // fallbacks occur on this
-                long shortCircuited = getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED); // fallbacks occur on this
+                long success = counter.getRollingSum(HystrixRollingNumberEvent.SUCCESS);
+                long failure = counter.getRollingSum(HystrixRollingNumberEvent.FAILURE); // fallbacks occur on this
+                long timeout = counter.getRollingSum(HystrixRollingNumberEvent.TIMEOUT); // fallbacks occur on this
+                long threadPoolRejected = counter.getRollingSum(HystrixRollingNumberEvent.THREAD_POOL_REJECTED); // fallbacks occur on this
+                long semaphoreRejected = counter.getRollingSum(HystrixRollingNumberEvent.SEMAPHORE_REJECTED); // fallbacks occur on this
+                long shortCircuited = counter.getRollingSum(HystrixRollingNumberEvent.SHORT_CIRCUITED); // fallbacks occur on this
                 long totalCount = failure + success + timeout + threadPoolRejected + shortCircuited + semaphoreRejected;
                 long errorCount = failure + timeout + threadPoolRejected + shortCircuited + semaphoreRejected;
                 int errorPercentage = 0;
@@ -477,4 +493,5 @@ public abstract class HystrixCommandMetrics extends HystrixMetrics {
             return errorPercentage;
         }
     }
+
 }

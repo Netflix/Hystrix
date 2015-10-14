@@ -21,24 +21,19 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadPoolExecutor;
 
-import com.netflix.hystrix.strategy.HystrixPlugins;
-import com.netflix.hystrix.strategy.metrics.HystrixMetricsCollection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.netflix.hystrix.util.HystrixRollingNumber;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 
 /**
- * Metrics class to track usage of {@link HystrixThreadPool}s.
- *
- * This is an abstract class that provides a home for statics that manage caching of HystrixThreadPoolMetrics instances.
- * It also provides a limited surface-area for concrete subclasses to implement.  This allows different data structures
- * to be used in the actual storage of metrics.
- *
- * For instance, you may drop all metrics.  You may also keep references to all threadpool events that pass through
- * the JVM.  The default is to take a middle ground and summarize threadpool metrics into counts of events and
- * percentiles of batch/shard size.
- *
- * As in {@link HystrixMetrics}, all read methods are public and write methods are package-private or protected.
+ * Used by {@link HystrixThreadPool} to record metrics.
  */
-public abstract class HystrixThreadPoolMetrics extends HystrixMetrics {
+public class HystrixThreadPoolMetrics extends HystrixMetrics {
+
+    @SuppressWarnings("unused")
+    private static final Logger logger = LoggerFactory.getLogger(HystrixThreadPoolMetrics.class);
 
     // String is HystrixThreadPoolKey.name() (we can't use HystrixThreadPoolKey directly as we can't guarantee it implements hashcode/equals correctly)
     private static final ConcurrentHashMap<String, HystrixThreadPoolMetrics> metrics = new ConcurrentHashMap<String, HystrixThreadPoolMetrics>();
@@ -63,8 +58,7 @@ public abstract class HystrixThreadPoolMetrics extends HystrixMetrics {
             return threadPoolMetrics;
         }
         // it doesn't exist so we need to create it
-        HystrixMetricsCollection metricsCollectionStrategy = HystrixPlugins.getInstance().getMetricsCollection();
-        threadPoolMetrics = metricsCollectionStrategy.getThreadPoolMetricsInstance(key, threadPool, properties);
+        threadPoolMetrics = new HystrixThreadPoolMetrics(key, threadPool, properties);
         // attempt to store it (race other threads)
         HystrixThreadPoolMetrics existing = metrics.putIfAbsent(key.name(), threadPoolMetrics);
         if (existing == null) {
@@ -108,7 +102,8 @@ public abstract class HystrixThreadPoolMetrics extends HystrixMetrics {
     private final ThreadPoolExecutor threadPool;
     private final HystrixThreadPoolProperties properties;
 
-    protected HystrixThreadPoolMetrics(HystrixThreadPoolKey threadPoolKey, ThreadPoolExecutor threadPool, HystrixThreadPoolProperties properties) {
+    private HystrixThreadPoolMetrics(HystrixThreadPoolKey threadPoolKey, ThreadPoolExecutor threadPool, HystrixThreadPoolProperties properties) {
+        super(new HystrixRollingNumber(properties.metricsRollingStatisticalWindowInMilliseconds().get(), properties.metricsRollingStatisticalWindowBuckets().get()));
         this.threadPoolKey = threadPoolKey;
         this.threadPool = threadPool;
         this.properties = properties;
@@ -216,9 +211,9 @@ public abstract class HystrixThreadPoolMetrics extends HystrixMetrics {
     /**
      * Invoked each time a thread is executed.
      */
-    protected void markThreadExecution() {
+    public void markThreadExecution() {
         // increment the count
-        addEvent(HystrixRollingNumberEvent.THREAD_EXECUTION);
+        counter.increment(HystrixRollingNumberEvent.THREAD_EXECUTION);
         setMaxActiveThreads();
     }
 
@@ -245,7 +240,7 @@ public abstract class HystrixThreadPoolMetrics extends HystrixMetrics {
     /**
      * Invoked each time a thread completes.
      */
-    protected void markThreadCompletion() {
+    public void markThreadCompletion() {
         setMaxActiveThreads();
     }
 
@@ -257,21 +252,17 @@ public abstract class HystrixThreadPoolMetrics extends HystrixMetrics {
      * @return rolling max active threads
      */
     public long getRollingMaxActiveThreads() {
-        return getRollingMax(HystrixRollingNumberEvent.THREAD_MAX_ACTIVE);
+        return counter.getRollingMaxValue(HystrixRollingNumberEvent.THREAD_MAX_ACTIVE);
     }
 
-    /**
-     * Update the rolling max counter of active threads
-     *
-     */
     private void setMaxActiveThreads() {
-        updateRollingMax(HystrixRollingNumberEvent.THREAD_MAX_ACTIVE, threadPool.getActiveCount());
+        counter.updateRollingMax(HystrixRollingNumberEvent.THREAD_MAX_ACTIVE, threadPool.getActiveCount());
     }
 
     /**
      * Invoked each time a command is rejected from the thread-pool
      */
-    protected void markThreadRejection() {
-        addEvent(HystrixRollingNumberEvent.THREAD_POOL_REJECTED);
+    public void markThreadRejection() {
+        counter.increment(HystrixRollingNumberEvent.THREAD_POOL_REJECTED);
     }
 }
