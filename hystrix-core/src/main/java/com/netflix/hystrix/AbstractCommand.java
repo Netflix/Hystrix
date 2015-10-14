@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.netflix.hystrix.exception.HystrixTimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -602,7 +603,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                     threadPool.markThreadRejection();
                     // use a fallback instead (or throw exception if not implemented)
                     return getFallbackOrThrowException(HystrixEventType.THREAD_POOL_REJECTED, FailureType.REJECTED_THREAD_EXECUTION, "could not be queued for execution", e);
-                } else if (t instanceof HystrixObservableTimeoutOperator.HystrixTimeoutException) {
+                } else if (t instanceof HystrixTimeoutException) {
                     /**
                      * Timeout handling
                      *
@@ -944,12 +945,6 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 
         public HystrixObservableTimeoutOperator(final AbstractCommand<R> originalCommand) {
             this.originalCommand = originalCommand;
-        }
-
-        public static class HystrixTimeoutException extends Exception {
-
-            private static final long serialVersionUID = 7460860948388895401L;
-
         }
 
         @Override
