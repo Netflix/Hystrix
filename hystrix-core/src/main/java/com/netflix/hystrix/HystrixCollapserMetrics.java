@@ -32,8 +32,6 @@ import org.slf4j.LoggerFactory;
  */
 public class HystrixCollapserMetrics extends HystrixMetrics {
 
-    private final HystrixRollingNumber counter;
-
     @SuppressWarnings("unused")
     private static final Logger logger = LoggerFactory.getLogger(HystrixCollapserMetrics.class);
 
@@ -90,7 +88,7 @@ public class HystrixCollapserMetrics extends HystrixMetrics {
     private final HystrixRollingPercentile percentileShardSize;
 
     /* package */HystrixCollapserMetrics(HystrixCollapserKey key, HystrixCollapserProperties properties) {
-        counter = new HystrixRollingNumber(properties.metricsRollingStatisticalWindowInMilliseconds().get(), properties.metricsRollingStatisticalWindowBuckets().get());
+        super(new HystrixRollingNumber(properties.metricsRollingStatisticalWindowInMilliseconds().get(), properties.metricsRollingStatisticalWindowBuckets().get()));
         this.key = key;
         this.properties = properties;
 
@@ -163,13 +161,4 @@ public class HystrixCollapserMetrics extends HystrixMetrics {
     }
 
 
-    @Override
-    public long getCumulativeCount(HystrixRollingNumberEvent event) {
-        return counter.getCumulativeSum(event);
-    }
-
-    @Override
-    public long getRollingCount(HystrixRollingNumberEvent event) {
-        return counter.getRollingSum(event);
-    }
 }

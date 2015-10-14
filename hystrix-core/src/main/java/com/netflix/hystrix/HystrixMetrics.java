@@ -15,6 +15,7 @@
  */
 package com.netflix.hystrix;
 
+import com.netflix.hystrix.util.HystrixRollingNumber;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 
 /**
@@ -22,6 +23,11 @@ import com.netflix.hystrix.util.HystrixRollingNumberEvent;
  */
 public abstract class HystrixMetrics {
 
+    protected final HystrixRollingNumber counter;
+
+    protected HystrixMetrics(HystrixRollingNumber counter) {
+        this.counter = counter;
+    }
     /**
      * Get the cumulative count since the start of the application for the given {@link HystrixRollingNumberEvent}.
      * 
@@ -29,7 +35,9 @@ public abstract class HystrixMetrics {
      *            {@link HystrixRollingNumberEvent} of the event to retrieve a sum for
      * @return long cumulative count
      */
-    public abstract long getCumulativeCount(HystrixRollingNumberEvent event);
+    public long getCumulativeCount(HystrixRollingNumberEvent event) {
+        return counter.getCumulativeSum(event);
+    }
 
     /**
      * Get the rolling count for the given {@link HystrixRollingNumberEvent}.
@@ -40,5 +48,8 @@ public abstract class HystrixMetrics {
      *            {@link HystrixRollingNumberEvent} of the event to retrieve a sum for
      * @return long rolling count
      */
-    public abstract long getRollingCount(HystrixRollingNumberEvent event);
+    public long getRollingCount(HystrixRollingNumberEvent event) {
+        return counter.getRollingSum(event);
+    }
+
 }
