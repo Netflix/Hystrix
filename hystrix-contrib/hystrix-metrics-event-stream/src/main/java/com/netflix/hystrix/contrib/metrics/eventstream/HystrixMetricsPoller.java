@@ -208,6 +208,7 @@ public class HystrixMetricsPoller {
             json.writeNumberField("rollingCountFailure", commandMetrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
             json.writeNumberField("rollingCountEmit", commandMetrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_EMIT));
             json.writeNumberField("rollingCountFallbackFailure", commandMetrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
+            json.writeNumberField("rollingCountFallbackMissing", commandMetrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
             json.writeNumberField("rollingCountFallbackRejection", commandMetrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
             json.writeNumberField("rollingCountFallbackSuccess", commandMetrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
             json.writeNumberField("rollingCountResponsesFromCache", commandMetrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));

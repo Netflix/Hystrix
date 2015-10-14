@@ -114,6 +114,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
             assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
             assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
             assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+            assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
             assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
             assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
             assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -195,6 +196,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, command.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(0, command.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(0, command.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(1, command.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, command.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(0, command.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(0, command.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -236,6 +238,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(1, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -273,6 +276,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(1, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -311,6 +315,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(1, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -348,6 +353,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -391,6 +397,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, command.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(0, command.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(0, command.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(1, command.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, command.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(0, command.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(0, command.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -433,6 +440,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(1, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -470,6 +478,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(1, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -511,6 +520,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(1, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -548,6 +558,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
             assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
             assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
             assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+            assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
             assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
             assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
             assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -766,6 +777,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(4, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -824,6 +836,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
             assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
             assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
             assertEquals(4, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+            assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
             assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
             assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
             assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -897,6 +910,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(3, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -962,6 +976,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, circuitBreaker_one.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(0, circuitBreaker_one.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(3, circuitBreaker_one.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, circuitBreaker_one.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, circuitBreaker_one.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(0, circuitBreaker_one.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(0, circuitBreaker_one.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -978,6 +993,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, circuitBreaker_two.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(0, circuitBreaker_two.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(1, circuitBreaker_two.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, circuitBreaker_two.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, circuitBreaker_two.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(0, circuitBreaker_two.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(0, circuitBreaker_two.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -1011,6 +1027,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -1059,6 +1076,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(1, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -1097,6 +1115,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(1, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -1139,6 +1158,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(1, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -1191,6 +1211,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(1, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -1239,6 +1260,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(1, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -1274,6 +1296,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(1, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -1318,6 +1341,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(1, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -1366,6 +1390,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(1, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -1401,6 +1426,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(1, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -1445,6 +1471,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(1, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(0, command.getBuilder().metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -1494,6 +1521,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(2, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(2, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -1576,6 +1604,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -1637,6 +1666,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -1705,6 +1735,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -1787,6 +1818,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -1853,6 +1885,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, s1.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(0, s1.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(0, s1.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, s1.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, s1.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(0, s1.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(0, s1.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -1869,6 +1902,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, s2.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(0, s2.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(0, s2.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(1, s2.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, s2.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(0, s2.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(0, s2.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -1948,6 +1982,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         // whenever a fallback_rejection occurs it is also a fallback_failure
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(2, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         // we should not have rejected any via the "execution semaphore" but instead via the "fallback semaphore"
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         // the rest should not be involved in this test
@@ -2019,6 +2054,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         // we should have rejected via semaphore
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         // the rest should not be involved in this test
@@ -2099,6 +2135,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         // we rejected via semaphore
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         // the rest should not be involved in this test
@@ -2164,6 +2201,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         // the rest should not be involved in this test
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
@@ -2232,6 +2270,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         // the rest should not be involved in this test
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
@@ -2450,6 +2489,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -2504,6 +2544,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -2567,6 +2608,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -2636,6 +2678,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -2699,6 +2742,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -2764,6 +2808,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -2825,6 +2870,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -2882,6 +2928,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -2939,6 +2986,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -3006,6 +3054,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(4, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -3046,6 +3095,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -3131,6 +3181,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -3202,6 +3253,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+        assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
         assertEquals(0, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
         assertEquals(1, circuitBreaker.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -3524,6 +3576,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
             assertEquals(0, cmd.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
             assertEquals(0, cmd.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
             assertEquals(0, cmd.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
+            assertEquals(1, cmd.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
             assertEquals(0, cmd.metrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
             assertEquals(0, cmd.metrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
             assertEquals(0, cmd.metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
@@ -3645,6 +3698,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, command.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
         assertEquals(0, command.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
         assertEquals(0, command.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
+        assertEquals(0, command.metrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
 
         assertEquals(0, command.metrics.getCurrentConcurrentExecutionCount());
 

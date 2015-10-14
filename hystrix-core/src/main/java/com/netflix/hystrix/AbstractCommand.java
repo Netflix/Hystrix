@@ -808,7 +808,10 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 
                         if (fe instanceof UnsupportedOperationException) {
                             logger.debug("No fallback for HystrixCommand. ", fe); // debug only since we're throwing the exception and someone higher will do something with it
-                        /* executionHook for all errors */
+                            metrics.markFallbackMissing();
+                            executionResult = executionResult.addEvents(HystrixEventType.FALLBACK_MISSING);
+
+                            /* executionHook for all errors */
                             e = wrapWithOnErrorHook(failureType, e);
 
                             return Observable.error(new HystrixRuntimeException(failureType, _cmd.getClass(), getLogMessagePrefix() + " " + message + " and no fallback available.", e, fe));

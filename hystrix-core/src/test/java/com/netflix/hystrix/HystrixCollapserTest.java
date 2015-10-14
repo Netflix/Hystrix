@@ -743,9 +743,10 @@ public class HystrixCollapserTest {
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
 
         HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().toArray(new HystrixInvokableInfo<?>[1])[0];
-        assertEquals(2, command.getExecutionEvents().size());
+        assertEquals(3, command.getExecutionEvents().size());
         assertTrue(command.getExecutionEvents().contains(HystrixEventType.FAILURE));
         assertTrue(command.getExecutionEvents().contains(HystrixEventType.COLLAPSED));
+        assertTrue(command.getExecutionEvents().contains(HystrixEventType.FALLBACK_MISSING));
 
         HystrixCollapserMetrics metrics = command1.getMetrics();
         assertEquals(1L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_REQUEST_BATCHED));

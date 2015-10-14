@@ -365,6 +365,13 @@ public class HystrixCommandMetrics extends HystrixMetrics {
         eventNotifier.markEvent(HystrixEventType.FALLBACK_REJECTION, key);
         counter.increment(HystrixRollingNumberEvent.FALLBACK_REJECTION);
     }
+    /**
+     * When a {@link HystrixCommand} attempts to execute a user-defined fallback but none exist.
+     */
+    /* package */void markFallbackMissing() {
+        eventNotifier.markEvent(HystrixEventType.FALLBACK_MISSING, key);
+        counter.increment(HystrixRollingNumberEvent.FALLBACK_MISSING);
+    }
 
     /**
      * When a {@link HystrixCommand} throws an exception (this will occur every time {@link #markFallbackFailure} occurs,

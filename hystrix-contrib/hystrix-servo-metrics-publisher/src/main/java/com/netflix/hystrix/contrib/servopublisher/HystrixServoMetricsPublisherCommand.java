@@ -126,6 +126,7 @@ public class HystrixServoMetricsPublisherCommand extends HystrixServoMetricsPubl
             case FAILURE: return HystrixRollingNumberEvent.FAILURE;
             case FALLBACK_EMIT: return HystrixRollingNumberEvent.FALLBACK_EMIT;
             case FALLBACK_FAILURE: return HystrixRollingNumberEvent.FALLBACK_FAILURE;
+            case FALLBACK_MISSING: return HystrixRollingNumberEvent.FALLBACK_MISSING;
             case FALLBACK_REJECTION: return HystrixRollingNumberEvent.FALLBACK_REJECTION;
             case FALLBACK_SUCCESS: return HystrixRollingNumberEvent.FALLBACK_SUCCESS;
             case RESPONSE_FROM_CACHE: return HystrixRollingNumberEvent.RESPONSE_FROM_CACHE;
@@ -263,6 +264,7 @@ public class HystrixServoMetricsPublisherCommand extends HystrixServoMetricsPubl
         monitors.add(getCumulativeMonitor("countFailure", HystrixEventType.FAILURE));
         monitors.add(getCumulativeMonitor("countFallbackEmit", HystrixEventType.FALLBACK_EMIT));
         monitors.add(getCumulativeMonitor("countFallbackFailure", HystrixEventType.FALLBACK_FAILURE));
+        monitors.add(getCumulativeMonitor("countFallbackMissing", HystrixEventType.FALLBACK_MISSING));
         monitors.add(getCumulativeMonitor("countFallbackRejection", HystrixEventType.FALLBACK_REJECTION));
         monitors.add(getCumulativeMonitor("countFallbackSuccess", HystrixEventType.FALLBACK_SUCCESS));
         monitors.add(getCumulativeMonitor("countResponsesFromCache", HystrixEventType.RESPONSE_FROM_CACHE));
@@ -280,6 +282,7 @@ public class HystrixServoMetricsPublisherCommand extends HystrixServoMetricsPubl
         monitors.add(getRollingMonitor("rollingCountFailure", HystrixEventType.FAILURE));
         monitors.add(getRollingMonitor("rollingCountFallbackEmit", HystrixEventType.FALLBACK_EMIT));
         monitors.add(getRollingMonitor("rollingCountFallbackFailure", HystrixEventType.FALLBACK_FAILURE));
+        monitors.add(getRollingMonitor("rollingCountFallbackMissing", HystrixEventType.FALLBACK_MISSING));
         monitors.add(getRollingMonitor("rollingCountFallbackRejection", HystrixEventType.FALLBACK_REJECTION));
         monitors.add(getRollingMonitor("rollingCountFallbackSuccess", HystrixEventType.FALLBACK_SUCCESS));
         monitors.add(getRollingMonitor("rollingCountResponsesFromCache", HystrixEventType.RESPONSE_FROM_CACHE));
