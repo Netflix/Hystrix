@@ -19,17 +19,20 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.netflix.hystrix.strategy.HystrixPlugins;
-import com.netflix.hystrix.strategy.metrics.HystrixMetricsCollection;
+import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
+import com.netflix.hystrix.util.HystrixRollingNumber;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
+import com.netflix.hystrix.util.HystrixRollingPercentile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Used by {@link HystrixCollapser} to record metrics.
- * {@link com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier} not hooked up yet.  It may be in the future.
+ * {@link HystrixEventNotifier} not hooked up yet.  It may be in the future.
  */
-public abstract class HystrixCollapserMetrics extends HystrixMetrics {
+public class HystrixCollapserMetrics extends HystrixMetrics {
+
+    private final HystrixRollingNumber counter;
 
     @SuppressWarnings("unused")
     private static final Logger logger = LoggerFactory.getLogger(HystrixCollapserMetrics.class);
@@ -53,8 +56,7 @@ public abstract class HystrixCollapserMetrics extends HystrixMetrics {
             return collapserMetrics;
         }
         // it doesn't exist so we need to create it
-        HystrixMetricsCollection metricsCollectionStrategy = HystrixPlugins.getInstance().getMetricsCollection();
-        collapserMetrics = metricsCollectionStrategy.getCollapserMetricsInstance(key, properties);
+        collapserMetrics = new HystrixCollapserMetrics(key, properties);
         // attempt to store it (race other threads)
         HystrixCollapserMetrics existing = metrics.putIfAbsent(key.name(), collapserMetrics);
         if (existing == null) {
@@ -84,10 +86,16 @@ public abstract class HystrixCollapserMetrics extends HystrixMetrics {
 
     private final HystrixCollapserKey key;
     private final HystrixCollapserProperties properties;
+    private final HystrixRollingPercentile percentileBatchSize;
+    private final HystrixRollingPercentile percentileShardSize;
 
-    protected HystrixCollapserMetrics(HystrixCollapserKey key, HystrixCollapserProperties properties) {
+    /* package */HystrixCollapserMetrics(HystrixCollapserKey key, HystrixCollapserProperties properties) {
+        counter = new HystrixRollingNumber(properties.metricsRollingStatisticalWindowInMilliseconds().get(), properties.metricsRollingStatisticalWindowBuckets().get());
         this.key = key;
         this.properties = properties;
+
+        this.percentileBatchSize = new HystrixRollingPercentile(properties.metricsRollingPercentileWindowInMilliseconds().get(), properties.metricsRollingPercentileWindowBuckets().get(), properties.metricsRollingPercentileBucketSize().get(), properties.metricsRollingPercentileEnabled());
+        this.percentileShardSize = new HystrixRollingPercentile(properties.metricsRollingPercentileWindowInMilliseconds().get(), properties.metricsRollingPercentileWindowBuckets().get(), properties.metricsRollingPercentileBucketSize().get(), properties.metricsRollingPercentileEnabled());
     }
 
     /**
@@ -112,11 +120,13 @@ public abstract class HystrixCollapserMetrics extends HystrixMetrics {
      *            Percentile such as 50, 99, or 99.5.
      * @return batch size
      */
-    public abstract int getBatchSizePercentile(double percentile);
+    public int getBatchSizePercentile(double percentile) {
+        return percentileBatchSize.getPercentile(percentile);
+    }
 
-    public abstract int getBatchSizeMean();
-
-    protected abstract void addBatchSize(int batchSize);
+    public int getBatchSizeMean() {
+        return percentileBatchSize.getMean();
+    }
 
     /**
      * Retrieve the shard size for the {@link HystrixCollapser} being invoked at a given percentile.
@@ -127,26 +137,39 @@ public abstract class HystrixCollapserMetrics extends HystrixMetrics {
      *            Percentile such as 50, 99, or 99.5.
      * @return batch size
      */
-    public abstract int getShardSizePercentile(double percentile);
+    public int getShardSizePercentile(double percentile) {
+        return percentileShardSize.getPercentile(percentile);
+    }
 
-    public abstract int getShardSizeMean();
-
-    protected abstract void addShardSize(int shardSize);
+    public int getShardSizeMean() {
+        return percentileShardSize.getMean();
+    }
 
     public void markRequestBatched() {
-        addEvent(HystrixRollingNumberEvent.COLLAPSER_REQUEST_BATCHED);
+        counter.increment(HystrixRollingNumberEvent.COLLAPSER_REQUEST_BATCHED);
     }
 
     public void markResponseFromCache() {
-        addEvent(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE);
+        counter.increment(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE);
     }
 
     public void markBatch(int batchSize) {
-        addBatchSize(batchSize);
-        addEvent(HystrixRollingNumberEvent.COLLAPSER_BATCH);
+        percentileBatchSize.addValue(batchSize);
+        counter.increment(HystrixRollingNumberEvent.COLLAPSER_BATCH);
     }
 
     public void markShards(int numShards) {
-        addShardSize(numShards);
+        percentileShardSize.addValue(numShards);
+    }
+
+
+    @Override
+    public long getCumulativeCount(HystrixRollingNumberEvent event) {
+        return counter.getCumulativeSum(event);
+    }
+
+    @Override
+    public long getRollingCount(HystrixRollingNumberEvent event) {
+        return counter.getRollingSum(event);
     }
 }

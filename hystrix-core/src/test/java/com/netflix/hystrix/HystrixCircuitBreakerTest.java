@@ -21,7 +21,6 @@ import static org.junit.Assert.fail;
 
 import java.util.Random;
 
-import com.netflix.hystrix.strategy.metrics.HystrixCommandMetricsSummary;
 import org.junit.Ignore;
 import org.junit.Test;
 
