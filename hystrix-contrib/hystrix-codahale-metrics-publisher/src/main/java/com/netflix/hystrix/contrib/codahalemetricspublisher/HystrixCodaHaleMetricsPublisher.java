@@ -17,6 +17,9 @@ package com.netflix.hystrix.contrib.codahalemetricspublisher;
 
 import com.codahale.metrics.MetricRegistry;
 import com.netflix.hystrix.HystrixCircuitBreaker;
+import com.netflix.hystrix.HystrixCollapserKey;
+import com.netflix.hystrix.HystrixCollapserMetrics;
+import com.netflix.hystrix.HystrixCollapserProperties;
 import com.netflix.hystrix.HystrixCommandGroupKey;
 import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixCommandMetrics;
@@ -25,6 +28,7 @@ import com.netflix.hystrix.HystrixThreadPoolKey;
 import com.netflix.hystrix.HystrixThreadPoolMetrics;
 import com.netflix.hystrix.HystrixThreadPoolProperties;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisher;
+import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherCollapser;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherCommand;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherThreadPool;
 
@@ -46,5 +50,10 @@ public class HystrixCodaHaleMetricsPublisher extends HystrixMetricsPublisher {
     @Override
     public HystrixMetricsPublisherThreadPool getMetricsPublisherForThreadPool(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolMetrics metrics, HystrixThreadPoolProperties properties) {
         return new HystrixCodaHaleMetricsPublisherThreadPool(threadPoolKey, metrics, properties, metricRegistry);
+    }
+
+    @Override
+    public HystrixMetricsPublisherCollapser getMetricsPublisherForCollapser(HystrixCollapserKey collapserKey, HystrixCollapserMetrics metrics, HystrixCollapserProperties properties) {
+        return new HystrixCodaHaleMetricsPublisherCollapser(collapserKey, metrics, properties, metricRegistry);
     }
 }

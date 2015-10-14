@@ -16,6 +16,9 @@
 package com.netflix.hystrix.contrib.servopublisher;
 
 import com.netflix.hystrix.HystrixCircuitBreaker;
+import com.netflix.hystrix.HystrixCollapserKey;
+import com.netflix.hystrix.HystrixCollapserMetrics;
+import com.netflix.hystrix.HystrixCollapserProperties;
 import com.netflix.hystrix.HystrixCommandGroupKey;
 import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixCommandMetrics;
@@ -24,6 +27,7 @@ import com.netflix.hystrix.HystrixThreadPoolKey;
 import com.netflix.hystrix.HystrixThreadPoolMetrics;
 import com.netflix.hystrix.HystrixThreadPoolProperties;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisher;
+import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherCollapser;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherCommand;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherThreadPool;
 
@@ -65,4 +69,8 @@ public class HystrixServoMetricsPublisher extends HystrixMetricsPublisher {
         return new HystrixServoMetricsPublisherThreadPool(threadPoolKey, metrics, properties);
     }
 
+    @Override
+    public HystrixMetricsPublisherCollapser getMetricsPublisherForCollapser(HystrixCollapserKey collapserKey, HystrixCollapserMetrics metrics, HystrixCollapserProperties properties) {
+        return new HystrixServoMetricsPublisherCollapser(collapserKey, metrics, properties);
+    }
 }
