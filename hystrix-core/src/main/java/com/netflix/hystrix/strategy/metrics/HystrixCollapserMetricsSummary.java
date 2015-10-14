@@ -15,6 +15,7 @@
  */
 package com.netflix.hystrix.strategy.metrics;
 
+import com.netflix.hystrix.HystrixCollapser;
 import com.netflix.hystrix.HystrixCollapserKey;
 import com.netflix.hystrix.HystrixCollapserMetrics;
 import com.netflix.hystrix.HystrixCollapserProperties;
@@ -23,13 +24,8 @@ import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 import com.netflix.hystrix.util.HystrixRollingPercentile;
 
 /**
- * Concrete implementation of {@link HystrixCollapserMetrics}.
- *
- * It uses a {@link HystrixRollingNumber} to track the counts
- * of events (request batched, batch sent, cache hit).  It uses a {@link HystrixRollingPercentile} to track batch size
- * and shard size.
- *
- * These are accurate, but only allow for queries of properties of the distribution/counts.
+ * Used by {@link HystrixCollapser} to record metrics.
+ * {@link com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier} not hooked up yet.  It may be in the future.
  */
 public class HystrixCollapserMetricsSummary extends HystrixCollapserMetrics {
 
@@ -44,6 +40,15 @@ public class HystrixCollapserMetricsSummary extends HystrixCollapserMetrics {
         this.percentileShardSize = new HystrixRollingPercentile(properties.metricsRollingPercentileWindowInMilliseconds().get(), properties.metricsRollingPercentileWindowBuckets().get(), properties.metricsRollingPercentileBucketSize().get(), properties.metricsRollingPercentileEnabled());
     }
 
+    /**
+     * Retrieve the batch size for the {@link HystrixCollapser} being invoked at a given percentile.
+     * <p>
+     * Percentile capture and calculation is configured via {@link HystrixCollapserProperties#metricsRollingStatisticalWindowInMilliseconds()} and other related properties.
+     *
+     * @param percentile
+     *            Percentile such as 50, 99, or 99.5.
+     * @return batch size
+     */
     @Override
     public int getBatchSizePercentile(double percentile) {
         return percentileBatchSize.getPercentile(percentile);
@@ -59,6 +64,15 @@ public class HystrixCollapserMetricsSummary extends HystrixCollapserMetrics {
         percentileBatchSize.addValue(batchSize);
     }
 
+    /**
+     * Retrieve the shard size for the {@link HystrixCollapser} being invoked at a given percentile.
+     * <p>
+     * Percentile capture and calculation is configured via {@link HystrixCollapserProperties#metricsRollingStatisticalWindowInMilliseconds()} and other related properties.
+     *
+     * @param percentile
+     *            Percentile such as 50, 99, or 99.5.
+     * @return batch size
+     */
     @Override
     public int getShardSizePercentile(double percentile) {
         return percentileShardSize.getPercentile(percentile);
@@ -70,12 +84,12 @@ public class HystrixCollapserMetricsSummary extends HystrixCollapserMetrics {
     }
 
     @Override
-    protected void addShardSize(int numShards) {
-        percentileShardSize.addValue(numShards);
+    protected void addShardSize(int shardSize) {
+        percentileShardSize.addValue(shardSize);
     }
 
     public void markShards(int numShards) {
-        addShardSize(numShards);
+        percentileShardSize.addValue(numShards);
     }
 
     @Override
@@ -86,11 +100,6 @@ public class HystrixCollapserMetricsSummary extends HystrixCollapserMetrics {
     @Override
     public long getRollingCount(HystrixRollingNumberEvent event) {
         return counter.getRollingSum(event);
-    }
-
-    @Override
-    public long getRollingMax(HystrixRollingNumberEvent event) {
-        return counter.getRollingMaxValue(event);
     }
 
     @Override
@@ -108,5 +117,8 @@ public class HystrixCollapserMetricsSummary extends HystrixCollapserMetrics {
         counter.updateRollingMax(event, value);
     }
 
-
+    @Override
+    protected long getRollingMax(HystrixRollingNumberEvent event) {
+        return counter.getRollingMaxValue(event);
+    }
 }

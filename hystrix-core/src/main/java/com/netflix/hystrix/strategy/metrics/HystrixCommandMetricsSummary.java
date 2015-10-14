@@ -60,11 +60,6 @@ public class HystrixCommandMetricsSummary extends HystrixCommandMetrics {
     }
 
     @Override
-    public long getRollingMax(HystrixRollingNumberEvent event) {
-        return counter.getRollingMaxValue(event);
-    }
-
-    @Override
     protected void addEvent(HystrixRollingNumberEvent event) {
         counter.increment(event);
     }
@@ -77,6 +72,11 @@ public class HystrixCommandMetricsSummary extends HystrixCommandMetrics {
     @Override
     protected void updateRollingMax(HystrixRollingNumberEvent event, long value) {
         counter.updateRollingMax(event, value);
+    }
+
+    @Override
+    protected long getRollingMax(HystrixRollingNumberEvent event) {
+        return counter.getRollingMaxValue(event);
     }
 
     public long getRollingMaxConcurrentExecutions() {
