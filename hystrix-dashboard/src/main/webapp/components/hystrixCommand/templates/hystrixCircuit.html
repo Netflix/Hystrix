@@ -43,7 +43,7 @@
 			<% } else {
 				/* We have some circuits that are open */  
 			%>
-				Circuit <font color="orange"><%= isCircuitBreakerOpen.replace("true", "Open").replace("false", "Closed") %>)</font>
+				Circuit <font color="orange"><%= isCircuitBreakerOpen.toString().replace("true", "Open").replace("false", "Closed") %></font>
 			<% }  %>
 		<% } %>
 		</div>
