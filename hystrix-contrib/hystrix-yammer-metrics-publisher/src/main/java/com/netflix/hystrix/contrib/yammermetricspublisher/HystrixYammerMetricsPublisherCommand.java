@@ -75,6 +75,7 @@ public class HystrixYammerMetricsPublisherCommand implements HystrixMetricsPubli
         createCumulativeCountForEvent("countFailure", HystrixRollingNumberEvent.FAILURE);
         createCumulativeCountForEvent("countFallbackEmit", HystrixRollingNumberEvent.FALLBACK_EMIT);
         createCumulativeCountForEvent("countFallbackFailure", HystrixRollingNumberEvent.FALLBACK_FAILURE);
+        createCumulativeCountForEvent("countFallbackMissing", HystrixRollingNumberEvent.FALLBACK_MISSING);
         createCumulativeCountForEvent("countFallbackRejection", HystrixRollingNumberEvent.FALLBACK_REJECTION);
         createCumulativeCountForEvent("countFallbackSuccess", HystrixRollingNumberEvent.FALLBACK_SUCCESS);
         createCumulativeCountForEvent("countResponsesFromCache", HystrixRollingNumberEvent.RESPONSE_FROM_CACHE);
@@ -90,6 +91,7 @@ public class HystrixYammerMetricsPublisherCommand implements HystrixMetricsPubli
         createRollingCountForEvent("rollingCountExceptionsThrown", HystrixRollingNumberEvent.EXCEPTION_THROWN);
         createRollingCountForEvent("rollingCountFailure", HystrixRollingNumberEvent.FAILURE);
         createRollingCountForEvent("rollingCountFallbackFailure", HystrixRollingNumberEvent.FALLBACK_FAILURE);
+        createRollingCountForEvent("rollingCountFallbackMissing", HystrixRollingNumberEvent.FALLBACK_MISSING);
         createRollingCountForEvent("rollingCountFallbackRejection", HystrixRollingNumberEvent.FALLBACK_REJECTION);
         createRollingCountForEvent("rollingCountFallbackSuccess", HystrixRollingNumberEvent.FALLBACK_SUCCESS);
         createRollingCountForEvent("rollingCountResponsesFromCache", HystrixRollingNumberEvent.RESPONSE_FROM_CACHE);
