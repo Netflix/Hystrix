@@ -414,9 +414,6 @@ public abstract class HystrixCommandMetrics extends HystrixMetrics {
 
     /**
      * Retrieve a snapshot of total requests, error count and error percentage.
-     *
-     * Marked final so that concrete implementation may vary how to implement {@link #getRollingCount(HystrixRollingNumberEvent)}
-     * and the health check (used for opening a {@link HystrixCircuitBreaker} is constant
      * 
      * @return {@link HealthCounts}
      */

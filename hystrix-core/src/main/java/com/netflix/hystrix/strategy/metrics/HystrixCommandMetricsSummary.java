@@ -79,6 +79,10 @@ public class HystrixCommandMetricsSummary extends HystrixCommandMetrics {
         counter.updateRollingMax(event, value);
     }
 
+    public long getRollingMaxConcurrentExecutions() {
+        return counter.getRollingMaxValue(HystrixRollingNumberEvent.COMMAND_MAX_ACTIVE);
+    }
+
     /**
      * Execution time of {@link HystrixCommand#run()}.
      */
