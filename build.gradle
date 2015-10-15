@@ -39,11 +39,25 @@ subprojects {
         }
     }
 
-
     idea {
         module {
             // include 'provided' dependencies on the classpath
             scopes.COMPILE.plus += [configurations.provided]
         }
     }
+
+	publishing {
+		publications {
+			nebula(MavenPublication) {
+				pom.withXml {
+					configurations.compile.resolvedConfiguration.firstLevelModuleDependencies.each { dep ->
+						asNode().dependencies[0].dependency.find {
+							it.artifactId[0].text() == dep.moduleName &&
+							it.groupId[0].text() == dep.moduleGroup
+						}.scope[0].value = 'compile'
+					}
+				}
+			}
+		}
+	}
 }
