@@ -4421,14 +4421,14 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
 //            f.get(1, TimeUnit.SECONDS);
 //        }
 //    }
-
-    @Test
-    public void stressTestLargeThreadPoolSmallQueueUsingQueue() throws Exception {
-        for (int n = 0; n < 20; n++) {
-            testCommandConcurrencyViaQueueExceedsQueueSizeButNotThreadPoolSize();
-            Hystrix.reset();
-        }
-    }
+//
+//    @Test
+//    public void stressTestLargeThreadPoolSmallQueueUsingQueue() throws Exception {
+//        for (int n = 0; n < 20; n++) {
+//            testCommandConcurrencyViaQueueExceedsQueueSizeButNotThreadPoolSize();
+//            Hystrix.reset();
+//        }
+//    }
 
     /* ******************************************************************************** */
     /* ******************************************************************************** */
