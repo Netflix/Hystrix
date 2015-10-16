@@ -117,28 +117,6 @@ public class HystrixServoMetricsPublisherCommand extends HystrixServoMetricsPubl
         return servoInstanceTag;
     }
 
-    protected final HystrixRollingNumberEvent getRollingNumberTypeFromEventType(HystrixEventType event) {
-        switch (event) {
-            case BAD_REQUEST: return HystrixRollingNumberEvent.BAD_REQUEST;
-            case COLLAPSED: return HystrixRollingNumberEvent.COLLAPSED;
-            case EMIT: return HystrixRollingNumberEvent.EMIT;
-            case EXCEPTION_THROWN: return HystrixRollingNumberEvent.EXCEPTION_THROWN;
-            case FAILURE: return HystrixRollingNumberEvent.FAILURE;
-            case FALLBACK_EMIT: return HystrixRollingNumberEvent.FALLBACK_EMIT;
-            case FALLBACK_FAILURE: return HystrixRollingNumberEvent.FALLBACK_FAILURE;
-            case FALLBACK_MISSING: return HystrixRollingNumberEvent.FALLBACK_MISSING;
-            case FALLBACK_REJECTION: return HystrixRollingNumberEvent.FALLBACK_REJECTION;
-            case FALLBACK_SUCCESS: return HystrixRollingNumberEvent.FALLBACK_SUCCESS;
-            case RESPONSE_FROM_CACHE: return HystrixRollingNumberEvent.RESPONSE_FROM_CACHE;
-            case SEMAPHORE_REJECTED: return HystrixRollingNumberEvent.SEMAPHORE_REJECTED;
-            case SHORT_CIRCUITED: return HystrixRollingNumberEvent.SHORT_CIRCUITED;
-            case SUCCESS: return HystrixRollingNumberEvent.SUCCESS;
-            case THREAD_POOL_REJECTED: return HystrixRollingNumberEvent.THREAD_POOL_REJECTED;
-            case TIMEOUT: return HystrixRollingNumberEvent.TIMEOUT;
-            default: throw new RuntimeException("Unknown HystrixEventType : " + event);
-        }
-    }
-
     protected final Func0<Number> currentConcurrentExecutionCountThunk = new Func0<Number>() {
         @Override
         public Integer call() {
@@ -167,11 +145,22 @@ public class HystrixServoMetricsPublisherCommand extends HystrixServoMetricsPubl
         }
     };
 
+    /**
+     * Convert from HystrixEventType to HystrixRollingNumberEvent
+     * @param eventType HystrixEventType
+     * @return HystrixRollingNumberEvent
+     * @deprecated Instead, use {@link HystrixRollingNumberEvent#from(HystrixEventType)}
+     */
+    @Deprecated
+    protected final HystrixRollingNumberEvent getRollingNumberTypeFromEventType(HystrixEventType eventType) {
+        return HystrixRollingNumberEvent.from(eventType);
+    }
+
     protected Monitor<?> getCumulativeMonitor(final String name, final HystrixEventType event) {
         return new CounterMetric(MonitorConfig.builder(name).withTag(getServoTypeTag()).withTag(getServoInstanceTag()).build()) {
             @Override
             public Long getValue() {
-                return metrics.getCumulativeCount(getRollingNumberTypeFromEventType(event));
+                return metrics.getCumulativeCount(HystrixRollingNumberEvent.from(event));
             }
         };
     }
@@ -180,7 +169,7 @@ public class HystrixServoMetricsPublisherCommand extends HystrixServoMetricsPubl
         return new GaugeMetric(MonitorConfig.builder(name).withTag(DataSourceLevel.DEBUG).withTag(getServoTypeTag()).withTag(getServoInstanceTag()).build()) {
             @Override
             public Long getValue() {
-                return metrics.getRollingCount(getRollingNumberTypeFromEventType(event));
+                return metrics.getRollingCount(HystrixRollingNumberEvent.from(event));
             }
         };
     }
