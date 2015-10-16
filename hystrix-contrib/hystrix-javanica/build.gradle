@@ -96,6 +96,7 @@ task ajcJar(type: Jar) {
 assemble.dependsOn(jar, ajcJar)
 
 dependencies {
+    compile project(':hystrix-core')
     ajtools "org.aspectj:aspectjtools:$aspectjVersion"
     testRuntime "org.aspectj:aspectjrt:$aspectjVersion"
     compile "org.aspectj:aspectjweaver:$aspectjVersion"
