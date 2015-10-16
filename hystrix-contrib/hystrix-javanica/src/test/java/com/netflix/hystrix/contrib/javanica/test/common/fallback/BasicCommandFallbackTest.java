@@ -10,6 +10,7 @@ import com.netflix.hystrix.contrib.javanica.test.common.domain.User;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import org.apache.commons.lang3.Validate;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
@@ -133,6 +134,12 @@ public abstract class BasicCommandFallbackTest {
         }
     }
 
+    @Test
+    @Ignore // todo #929
+    public void testAsyncCommandWithAsyncFallback() throws ExecutionException, InterruptedException {
+        User user = userService.asyncCommandWithAsyncFallback("", "").get();
+        assertEquals("def", user.getId());
+    }
 
     public static class UserService {
 
@@ -189,6 +196,28 @@ public abstract class BasicCommandFallbackTest {
             validate(id, name);
             return new User(id, name + id); // it should be network call
         }
+
+        @HystrixCommand(fallbackMethod = "asyncFallbackCommand")
+        public Future<User> asyncCommandWithAsyncFallback(final String id, final String name){
+            return new AsyncResult<User>() {
+                @Override
+                public User invoke() {
+                    validate(id, name);
+                    return new User(id, name + id); // it should be network call
+                }
+            };
+        }
+
+        @HystrixCommand
+        public Future<User> asyncFallbackCommand(final String id, final String name){
+            return new AsyncResult<User>() {
+                @Override
+                public User invoke() {
+                    return  new User("def", "def"); // it should be network call
+                }
+            };
+        }
+
 
         private User staticFallback(String id, String name) {
             return new User("def", "def");

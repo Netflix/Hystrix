@@ -4,6 +4,7 @@ configurations {
     ajtools
     ajcTestCompile.extendsFrom testCompile
     ajcTestRuntime.extendsFrom testRuntime
+    ajc
 }
 
 
@@ -11,6 +12,14 @@ sourceSets {
     ajcTest {
         compileClasspath += main.output + test.output
         runtimeClasspath += main.output + test.output
+    }
+
+    ajc {
+        def main = sourceSets.main
+        java.srcDirs = main.java.srcDirs
+        resources.srcDirs = main.resources.srcDirs
+        compileClasspath = main.compileClasspath
+        runtimeClasspath = main.runtimeClasspath
     }
 }
 
@@ -37,18 +46,36 @@ compileAjcTestJava {
 
 }
 
+compileAjcJava {
+    sourceCompatibility = "1.6"
+    targetCompatibility = "1.6"
+
+    doLast {
+        ant.taskdef(resource: "org/aspectj/tools/ant/taskdefs/aspectjTaskdefs.properties", classpath: configurations.ajtools.asPath)
+        ant.iajc(source: "${sourceCompatibility}", target: "${targetCompatibility}",
+                destDir: "${sourceSets.ajc.output.classesDir.absolutePath}", maxmem: "512m", fork: "true", "showWeaveInfo": "true",
+                classpath: "${configurations.compile.asPath}")
+
+                {
+                    sourceroots {
+                        sourceSets.ajc.java.srcDirs.each {
+                            pathelement(location: it.absolutePath)
+
+                        }
+                    }
+                }
+    }
+}
+
 task ajcTest(type: Test) {
     testClassesDir = sourceSets.ajcTest.output.classesDir
     classpath = sourceSets.ajcTest.runtimeClasspath
     if (System.getProperty('DEBUG', 'false') == 'true') {
         jvmArgs '-Xdebug',
-            '-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=9009'
+                '-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=9009'
     }
 }
 
-ajcTestClasses.dependsOn testClasses
-
-//ajcTest.dependsOn test
 check.dependsOn test, ajcTest
 
 repositories {
@@ -60,17 +87,24 @@ ext {
 }
 
 
+task ajcJar(type: Jar) {
+    archiveName = "${project.name}" + "-ctw.jar"
+    destinationDir = file("${buildDir}/libs")
+    from sourceSets.ajc.output
+}
+
+assemble.dependsOn(jar, ajcJar)
+
 dependencies {
-    compile project(':hystrix-core')
     ajtools "org.aspectj:aspectjtools:$aspectjVersion"
     testRuntime "org.aspectj:aspectjrt:$aspectjVersion"
     compile "org.aspectj:aspectjweaver:$aspectjVersion"
     compile "org.aspectj:aspectjrt:$aspectjVersion"
+
     compile 'com.google.guava:guava:15.0'
     compile 'commons-collections:commons-collections:3.2.1'
     compile 'org.apache.commons:commons-lang3:3.1'
     compile 'com.google.code.findbugs:jsr305:2.0.0'
-
     testCompile 'junit:junit-dep:4.10'
     testCompile 'org.springframework:spring-core:4.0.0.RELEASE'
     testCompile 'org.springframework:spring-context:4.0.0.RELEASE'
