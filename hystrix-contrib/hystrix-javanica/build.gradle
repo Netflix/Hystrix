@@ -78,9 +78,6 @@ task ajcTest(type: Test) {
 
 check.dependsOn test, ajcTest
 
-repositories {
-    mavenCentral()
-}
 
 ext {
     aspectjVersion = '1.7.4'
