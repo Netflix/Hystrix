@@ -145,16 +145,7 @@ public abstract class HystrixConcurrencyStrategy {
      * @return {@code HystrixRequestVariable<T>}
      */
     public <T> HystrixRequestVariable<T> getRequestVariable(final HystrixRequestVariableLifecycle<T> rv) {
-        return new HystrixRequestVariableDefault<T>() {
-            @Override
-            public T initialValue() {
-                return rv.initialValue();
-            }
-
-            public void shutdown(T value) {
-                rv.shutdown(value);
-            }
-        };
+        return new HystrixLifecycleForwardingRequestVariable<T>(rv);
     }
     
 }
