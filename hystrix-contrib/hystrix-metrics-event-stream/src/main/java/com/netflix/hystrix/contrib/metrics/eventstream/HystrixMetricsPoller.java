@@ -15,8 +15,6 @@
  */
 package com.netflix.hystrix.contrib.metrics.eventstream;
 
-import static org.junit.Assert.*;
-
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.concurrent.Executors;
@@ -26,19 +24,15 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.netflix.hystrix.HystrixCollapserKey;
 import com.netflix.hystrix.HystrixCollapserMetrics;
-import org.codehaus.jackson.JsonFactory;
-import org.codehaus.jackson.JsonGenerator;
-import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.netflix.hystrix.HystrixCircuitBreaker;
-import com.netflix.hystrix.HystrixCommand;
-import com.netflix.hystrix.HystrixCommandGroupKey;
 import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixCommandMetrics;
 import com.netflix.hystrix.HystrixCommandMetrics.HealthCounts;
@@ -162,8 +156,10 @@ public class HystrixMetricsPoller {
                 }
 
                 for (HystrixThreadPoolMetrics threadPoolMetrics : HystrixThreadPoolMetrics.getInstances()) {
-                    String jsonString = getThreadPoolJson(threadPoolMetrics);
-                    listener.handleJsonMetric(jsonString);
+                    if (hasExecutedCommandsOnThread(threadPoolMetrics)) {
+                        String jsonString = getThreadPoolJson(threadPoolMetrics);
+                        listener.handleJsonMetric(jsonString);
+                    }
                 }
 
                 for (HystrixCollapserMetrics collapserMetrics : HystrixCollapserMetrics.getInstances()) {
@@ -184,7 +180,7 @@ public class HystrixMetricsPoller {
             HystrixCircuitBreaker circuitBreaker = HystrixCircuitBreaker.Factory.getInstance(key);
 
             StringWriter jsonString = new StringWriter();
-            JsonGenerator json = jsonFactory.createJsonGenerator(jsonString);
+            JsonGenerator json = jsonFactory.createGenerator(jsonString);
 
             json.writeStartObject();
             json.writeStringField("type", "HystrixCommand");
@@ -210,8 +206,9 @@ public class HystrixMetricsPoller {
             json.writeNumberField("rollingCountEmit", commandMetrics.getRollingCount(HystrixRollingNumberEvent.EMIT));
             json.writeNumberField("rollingCountExceptionsThrown", commandMetrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
             json.writeNumberField("rollingCountFailure", commandMetrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
-            json.writeNumberField("rollingCountEmit", commandMetrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_EMIT));
+            json.writeNumberField("rollingCountFallbackEmit", commandMetrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_EMIT));
             json.writeNumberField("rollingCountFallbackFailure", commandMetrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
+            json.writeNumberField("rollingCountFallbackMissing", commandMetrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
             json.writeNumberField("rollingCountFallbackRejection", commandMetrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
             json.writeNumberField("rollingCountFallbackSuccess", commandMetrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
             json.writeNumberField("rollingCountResponsesFromCache", commandMetrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
@@ -285,11 +282,16 @@ public class HystrixMetricsPoller {
             json.writeBooleanField("propertyValue_requestLogEnabled", commandProperties.requestLogEnabled().get());
 
             json.writeNumberField("reportingHosts", 1); // this will get summed across all instances in a cluster
+            json.writeStringField("threadPool", commandMetrics.getThreadPoolKey().name());
 
             json.writeEndObject();
             json.close();
 
             return jsonString.getBuffer().toString();
+        }
+
+        private boolean hasExecutedCommandsOnThread(HystrixThreadPoolMetrics threadPoolMetrics) {
+            return threadPoolMetrics.getCurrentCompletedTaskCount().intValue() > 0;
         }
 
         private String getThreadPoolJson(HystrixThreadPoolMetrics threadPoolMetrics) throws IOException {
@@ -388,76 +390,6 @@ public class HystrixMetricsPoller {
             Thread thread = defaultFactory.newThread(r);
             thread.setName(MetricsThreadName);
             return thread;
-        }
-    }
-
-    public static class UnitTest {
-
-        @Test
-        public void testStartStopStart() {
-            final AtomicInteger metricsCount = new AtomicInteger();
-
-            HystrixMetricsPoller poller = new HystrixMetricsPoller(new MetricsAsJsonPollerListener() {
-
-                @Override
-                public void handleJsonMetric(String json) {
-                    System.out.println("Received: " + json);
-                    metricsCount.incrementAndGet();
-                }
-            }, 100);
-            try {
-
-                HystrixCommand<Boolean> test = new HystrixCommand<Boolean>(HystrixCommandGroupKey.Factory.asKey("HystrixMetricsPollerTest")) {
-
-                    @Override
-                    protected Boolean run() {
-                        return true;
-                    }
-
-                };
-                test.execute();
-
-                poller.start();
-
-                try {
-                    Thread.sleep(500);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-
-                int v1 = metricsCount.get();
-
-                assertTrue(v1 > 0);
-
-                poller.pause();
-
-                try {
-                    Thread.sleep(500);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-
-                int v2 = metricsCount.get();
-
-                // they should be the same since we were paused
-                assertTrue(v2 == v1);
-
-                poller.start();
-
-                try {
-                    Thread.sleep(500);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-
-                int v3 = metricsCount.get();
-
-                // we should have more metrics again
-                assertTrue(v3 > v1);
-
-            } finally {
-                poller.shutdown();
-            }
         }
     }
 }

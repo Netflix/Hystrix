@@ -20,6 +20,10 @@ import static org.junit.Assert.assertEquals;
 import org.junit.Test;
 
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
+import rx.Observable;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class HystrixRequestLogTest {
 
@@ -103,6 +107,42 @@ public class HystrixRequestLogTest {
     }
 
     @Test
+    public void testTimeout() {
+        HystrixRequestContext context = HystrixRequestContext.initializeContext();
+        try {
+            Observable<String> result = null;
+
+            // 1 timeout
+            try {
+                for (int i = 0; i < 1; i++) {
+                    result = new TestCommand("A", false, false, true).observe();
+                }
+            } catch (Exception e) {
+            }
+            try {
+                result.toBlocking().single();
+            } catch (Throwable ex) {
+                //ex.printStackTrace();
+            }
+            System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis() + " -> done with awaiting all observables");
+            String log = HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString();
+            // strip the actual count so we can compare reliably
+            log = log.replaceAll(DIGITS_REGEX, "[");
+            assertEquals("TestCommand[TIMEOUT, FALLBACK_MISSING][ms]", log);
+        } finally {
+            context.shutdown();
+        }
+    }
+
+    @Test
+    public void testManyTimeouts() {
+        for (int i = 0; i < 100; i++) {
+            testTimeout();
+            Hystrix.reset();
+        }
+    }
+
+    @Test
     public void testMultipleCommands() {
 
         HystrixRequestContext context = HystrixRequestContext.initializeContext();
@@ -163,12 +203,18 @@ public class HystrixRequestLogTest {
         private final String value;
         private final boolean fail;
         private final boolean failOnFallback;
+        private final boolean timeout;
+        private final boolean useFallback;
+        private final boolean useCache;
 
         public TestCommand(String commandName, String value, boolean fail, boolean failOnFallback) {
             super(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("RequestLogTestCommand")).andCommandKey(HystrixCommandKey.Factory.asKey(commandName)));
             this.value = value;
             this.fail = fail;
             this.failOnFallback = failOnFallback;
+            this.timeout = false;
+            this.useFallback = true;
+            this.useCache = true;
         }
 
         public TestCommand(String value, boolean fail, boolean failOnFallback) {
@@ -176,29 +222,57 @@ public class HystrixRequestLogTest {
             this.value = value;
             this.fail = fail;
             this.failOnFallback = failOnFallback;
+            this.timeout = false;
+            this.useFallback = true;
+            this.useCache = true;
+        }
+
+        public TestCommand(String value, boolean fail, boolean failOnFallback, boolean timeout) {
+            super(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("RequestLogTestCommand")).andCommandPropertiesDefaults(new HystrixCommandProperties.Setter().withExecutionTimeoutInMilliseconds(20)));
+            this.value = value;
+            this.fail = fail;
+            this.failOnFallback = failOnFallback;
+            this.timeout = timeout;
+            this.useFallback = false;
+            this.useCache = false;
         }
 
         @Override
         protected String run() {
+            System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis());
             if (fail) {
                 throw new RuntimeException("forced failure");
-            } else {
-                return value;
+            } else if (timeout) {
+                try {
+                    Thread.sleep(10000);
+                    System.out.println("Woke up from sleep!");
+                } catch (InterruptedException ex) {
+                    System.out.println(Thread.currentThread().getName() + " Interrupted by timeout");
+                }
             }
+            return value;
         }
 
         @Override
         protected String getFallback() {
-            if (failOnFallback) {
-                throw new RuntimeException("forced fallback failure");
+            if (useFallback) {
+                if (failOnFallback) {
+                    throw new RuntimeException("forced fallback failure");
+                } else {
+                    return value + "-fallback";
+                }
             } else {
-                return value + "-fallback";
+                throw new UnsupportedOperationException("no fallback implemented");
             }
         }
 
         @Override
         protected String getCacheKey() {
-            return value;
+            if (useCache) {
+                return value;
+            } else {
+                return null;
+            }
         }
 
     }

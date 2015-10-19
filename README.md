@@ -2,6 +2,13 @@
 
 # Hystrix: Latency and Fault Tolerance for Distributed Systems
 
+[![][travis img]][travis]
+[![][maven img]][maven]
+[![][release img]][release]
+[![][license img]][license]
+[![Average time to resolve an issue](http://isitmaintained.com/badge/resolution/Netflix/Hystrix.svg)](http://isitmaintained.com/project/Netflix/Hystrix "Average time to resolve an issue")
+[![Percentage of issues still open](http://isitmaintained.com/badge/open/Netflix/Hystrix.svg)](http://isitmaintained.com/project/Netflix/Hystrix "Percentage of issues still open")
+
 Hystrix is a latency and fault tolerance library designed to isolate points of access to remote systems, services and 3rd party libraries, stop cascading failure and enable resilience in complex distributed systems where failure is inevitable.
 
 ## Full Documentation
@@ -195,3 +202,16 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
+
+[travis]:https://travis-ci.org/Netflix/Hystrix
+[travis img]:https://travis-ci.org/Netflix/Hystrix.svg?branch=master
+
+[maven]:http://search.maven.org/#search|gav|1|g:"com.netflix.hystrix"%20AND%20a:"hystrix-core"
+[maven img]:https://maven-badges.herokuapp.com/maven-central/com.netflix.hystrix/hystrix-core/badge.svg
+
+[release]:https://github.com/netflix/hystrix/releases
+[release img]:https://img.shields.io/github/release/netflix/hystrix.svg
+
+[license]:LICENSE-2.0.txt
+[license img]:https://img.shields.io/badge/License-Apache%202-blue.svg

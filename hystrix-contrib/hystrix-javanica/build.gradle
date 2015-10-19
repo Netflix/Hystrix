@@ -1,4 +1,4 @@
-apply plugin: 'java'
+apply plugin: 'osgi'
 
 configurations {
     ajtools

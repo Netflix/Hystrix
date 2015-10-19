@@ -110,18 +110,21 @@
 
 .dependencies div.monitor {
 	width: 245px; /* we want a fixed width instead of percentage as I want the boxes to be a set size and then fill in as many as can fit in each row ... this allows 3 columns on an iPad */
-	height: 150px;
+	height: 155px;
 }
 
 .dependencies .success {
 	color: green;
 }
+
 .dependencies .shortCircuited {
 	color: blue;
 }
+
 .dependencies .timeout {
 	color: #FF9900;	 /* shade of orange */
 }
+
 .dependencies .failure {
 	color: red;
 }
@@ -132,6 +135,10 @@
 
 .dependencies .exceptionsThrown {
 	color: brown;
+}
+
+.dependencies .badRequest {
+	color: lightSeaGreen;
 }
 
 .dependencies div.monitor_data a.rate {

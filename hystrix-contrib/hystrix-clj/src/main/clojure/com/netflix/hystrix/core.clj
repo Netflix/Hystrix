@@ -408,12 +408,15 @@
   [name & opts]
   (let [command-key         (str *ns* "/" name )
         group-key           (str *ns*)
-        [m [params & body]] (split-def-meta opts)
+        [m body]            (split-def-meta opts)
+        params              (if (vector? (first body))
+                              (list (first body))
+                              (map first body))
         m                   (if-not (contains? m :arglists)
-                              (assoc m :arglists `(list (quote ~params)))
+                              (assoc m :arglists ('quote `(~params)))
                               m)]
     `(let [meta-options# (#'com.netflix.hystrix.core/extract-hystrix-command-options ~m)
-           run-fn#       (fn ~name ~params ~@body)
+           run-fn#       (fn ~name ~@body)
            command-map#  (com.netflix.hystrix.core/command (merge {:command-key   ~command-key
                                                                    :group-key     ~group-key
                                                                    :run-fn        run-fn# }

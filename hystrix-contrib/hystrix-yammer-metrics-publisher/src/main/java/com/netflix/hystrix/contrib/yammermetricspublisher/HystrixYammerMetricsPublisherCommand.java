@@ -20,11 +20,13 @@ import com.netflix.hystrix.HystrixCommandGroupKey;
 import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixCommandMetrics;
 import com.netflix.hystrix.HystrixCommandProperties;
+import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherCommand;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 import com.yammer.metrics.core.Gauge;
 import com.yammer.metrics.core.MetricName;
 import com.yammer.metrics.core.MetricsRegistry;
+import rx.functions.Func0;
 
 /**
  * Implementation of {@link HystrixMetricsPublisherCommand} using Yammer Metrics (https://github.com/codahale/metrics)
@@ -68,151 +70,65 @@ public class HystrixYammerMetricsPublisherCommand implements HystrixMetricsPubli
         });
 
         // cumulative counts
-        createCumulativeCountForEvent("countBadRequests", HystrixRollingNumberEvent.BAD_REQUEST);
-        createCumulativeCountForEvent("countCollapsedRequests", HystrixRollingNumberEvent.COLLAPSED);
-        createCumulativeCountForEvent("countEmit", HystrixRollingNumberEvent.EMIT);
-        createCumulativeCountForEvent("countExceptionsThrown", HystrixRollingNumberEvent.EXCEPTION_THROWN);
-        createCumulativeCountForEvent("countFailure", HystrixRollingNumberEvent.FAILURE);
-        createCumulativeCountForEvent("countFallbackEmit", HystrixRollingNumberEvent.FALLBACK_EMIT);
-        createCumulativeCountForEvent("countFallbackFailure", HystrixRollingNumberEvent.FALLBACK_FAILURE);
-        createCumulativeCountForEvent("countFallbackRejection", HystrixRollingNumberEvent.FALLBACK_REJECTION);
-        createCumulativeCountForEvent("countFallbackSuccess", HystrixRollingNumberEvent.FALLBACK_SUCCESS);
-        createCumulativeCountForEvent("countResponsesFromCache", HystrixRollingNumberEvent.RESPONSE_FROM_CACHE);
-        createCumulativeCountForEvent("countSemaphoreRejected", HystrixRollingNumberEvent.SEMAPHORE_REJECTED);
-        createCumulativeCountForEvent("countShortCircuited", HystrixRollingNumberEvent.SHORT_CIRCUITED);
-        createCumulativeCountForEvent("countSuccess", HystrixRollingNumberEvent.SUCCESS);
-        createCumulativeCountForEvent("countThreadPoolRejected", HystrixRollingNumberEvent.THREAD_POOL_REJECTED);
-        createCumulativeCountForEvent("countTimeout", HystrixRollingNumberEvent.TIMEOUT);
+        createCumulativeGauge("countBadRequests", HystrixEventType.BAD_REQUEST);
+        createCumulativeGauge("countCollapsedRequests", HystrixEventType.COLLAPSED);
+        createCumulativeGauge("countEmit", HystrixEventType.EMIT);
+        createCumulativeGauge("countExceptionsThrown", HystrixEventType.EXCEPTION_THROWN);
+        createCumulativeGauge("countFailure", HystrixEventType.FAILURE);
+        createCumulativeGauge("countFallbackEmit", HystrixEventType.FALLBACK_EMIT);
+        createCumulativeGauge("countFallbackFailure", HystrixEventType.FALLBACK_FAILURE);
+        createCumulativeGauge("countFallbackMissing", HystrixEventType.FALLBACK_MISSING);
+        createCumulativeGauge("countFallbackRejection", HystrixEventType.FALLBACK_REJECTION);
+        createCumulativeGauge("countFallbackSuccess", HystrixEventType.FALLBACK_SUCCESS);
+        createCumulativeGauge("countResponsesFromCache", HystrixEventType.RESPONSE_FROM_CACHE);
+        createCumulativeGauge("countSemaphoreRejected", HystrixEventType.SEMAPHORE_REJECTED);
+        createCumulativeGauge("countShortCircuited", HystrixEventType.SHORT_CIRCUITED);
+        createCumulativeGauge("countSuccess", HystrixEventType.SUCCESS);
+        createCumulativeGauge("countThreadPoolRejected", HystrixEventType.THREAD_POOL_REJECTED);
+        createCumulativeGauge("countTimeout", HystrixEventType.TIMEOUT);
 
         // rolling counts
-        createRollingCountForEvent("rollingCountBadRequests", HystrixRollingNumberEvent.BAD_REQUEST);
-        createRollingCountForEvent("rollingCountCollapsedRequests", HystrixRollingNumberEvent.COLLAPSED);
-        createRollingCountForEvent("rollingCountExceptionsThrown", HystrixRollingNumberEvent.EXCEPTION_THROWN);
-        createRollingCountForEvent("rollingCountFailure", HystrixRollingNumberEvent.FAILURE);
-        createRollingCountForEvent("rollingCountFallbackFailure", HystrixRollingNumberEvent.FALLBACK_FAILURE);
-        createRollingCountForEvent("rollingCountFallbackRejection", HystrixRollingNumberEvent.FALLBACK_REJECTION);
-        createRollingCountForEvent("rollingCountFallbackSuccess", HystrixRollingNumberEvent.FALLBACK_SUCCESS);
-        createRollingCountForEvent("rollingCountResponsesFromCache", HystrixRollingNumberEvent.RESPONSE_FROM_CACHE);
-        createRollingCountForEvent("rollingCountSemaphoreRejected", HystrixRollingNumberEvent.SEMAPHORE_REJECTED);
-        createRollingCountForEvent("rollingCountShortCircuited", HystrixRollingNumberEvent.SHORT_CIRCUITED);
-        createRollingCountForEvent("rollingCountSuccess", HystrixRollingNumberEvent.SUCCESS);
-        createRollingCountForEvent("rollingCountThreadPoolRejected", HystrixRollingNumberEvent.THREAD_POOL_REJECTED);
-        createRollingCountForEvent("rollingCountTimeout", HystrixRollingNumberEvent.TIMEOUT);
+        createRollingGauge("rollingCountBadRequests", HystrixEventType.BAD_REQUEST);
+        createRollingGauge("rollingCountCollapsedRequests", HystrixEventType.COLLAPSED);
+        createRollingGauge("rollingCountExceptionsThrown", HystrixEventType.EXCEPTION_THROWN);
+        createRollingGauge("rollingCountFailure", HystrixEventType.FAILURE);
+        createRollingGauge("rollingCountFallbackFailure", HystrixEventType.FALLBACK_FAILURE);
+        createRollingGauge("rollingCountFallbackMissing", HystrixEventType.FALLBACK_MISSING);
+        createRollingGauge("rollingCountFallbackRejection", HystrixEventType.FALLBACK_REJECTION);
+        createRollingGauge("rollingCountFallbackSuccess", HystrixEventType.FALLBACK_SUCCESS);
+        createRollingGauge("rollingCountResponsesFromCache", HystrixEventType.RESPONSE_FROM_CACHE);
+        createRollingGauge("rollingCountSemaphoreRejected", HystrixEventType.SEMAPHORE_REJECTED);
+        createRollingGauge("rollingCountShortCircuited", HystrixEventType.SHORT_CIRCUITED);
+        createRollingGauge("rollingCountSuccess", HystrixEventType.SUCCESS);
+        createRollingGauge("rollingCountThreadPoolRejected", HystrixEventType.THREAD_POOL_REJECTED);
+        createRollingGauge("rollingCountTimeout", HystrixEventType.TIMEOUT);
 
         // the number of executionSemaphorePermits in use right now 
-        metricsRegistry.newGauge(createMetricName("executionSemaphorePermitsInUse"), new Gauge<Integer>() {
-            @Override
-            public Integer value() {
-                return metrics.getCurrentConcurrentExecutionCount();
-            }
-        });
-        
+        createCurrentValueGauge("executionSemaphorePermitsInUse", currentConcurrentExecutionCountThunk);
+
         // error percentage derived from current metrics 
-        metricsRegistry.newGauge(createMetricName("errorPercentage"), new Gauge<Integer>() {
-            @Override
-            public Integer value() {
-                return metrics.getHealthCounts().getErrorPercentage();
-            }
-        });
+        createCurrentValueGauge("errorPercentage", errorPercentageThunk);
 
         // latency metrics
-        metricsRegistry.newGauge(createMetricName("latencyExecute_mean"), new Gauge<Integer>() {
-            @Override
-            public Integer value() {
-                return metrics.getExecutionTimeMean();
-            }
-        });
-        metricsRegistry.newGauge(createMetricName("latencyExecute_percentile_5"), new Gauge<Integer>() {
-            @Override
-            public Integer value() {
-                return metrics.getExecutionTimePercentile(5);
-            }
-        });
-        metricsRegistry.newGauge(createMetricName("latencyExecute_percentile_25"), new Gauge<Integer>() {
-            @Override
-            public Integer value() {
-                return metrics.getExecutionTimePercentile(25);
-            }
-        });
-        metricsRegistry.newGauge(createMetricName("latencyExecute_percentile_50"), new Gauge<Integer>() {
-            @Override
-            public Integer value() {
-                return metrics.getExecutionTimePercentile(50);
-            }
-        });
-        metricsRegistry.newGauge(createMetricName("latencyExecute_percentile_75"), new Gauge<Integer>() {
-            @Override
-            public Integer value() {
-                return metrics.getExecutionTimePercentile(75);
-            }
-        });
-        metricsRegistry.newGauge(createMetricName("latencyExecute_percentile_90"), new Gauge<Integer>() {
-            @Override
-            public Integer value() {
-                return metrics.getExecutionTimePercentile(90);
-            }
-        });
-        metricsRegistry.newGauge(createMetricName("latencyExecute_percentile_99"), new Gauge<Integer>() {
-            @Override
-            public Integer value() {
-                return metrics.getExecutionTimePercentile(99);
-            }
-        });
-        metricsRegistry.newGauge(createMetricName("latencyExecute_percentile_995"), new Gauge<Integer>() {
-            @Override
-            public Integer value() {
-                return metrics.getExecutionTimePercentile(99.5);
-            }
-        });
+        createExecutionLatencyMeanGauge("latencyExecute_mean");
 
-        metricsRegistry.newGauge(createMetricName("latencyTotal_mean"), new Gauge<Integer>() {
-            @Override
-            public Integer value() {
-                return metrics.getTotalTimeMean();
-            }
-        });
-        metricsRegistry.newGauge(createMetricName("latencyTotal_percentile_5"), new Gauge<Integer>() {
-            @Override
-            public Integer value() {
-                return metrics.getTotalTimePercentile(5);
-            }
-        });
-        metricsRegistry.newGauge(createMetricName("latencyTotal_percentile_25"), new Gauge<Integer>() {
-            @Override
-            public Integer value() {
-                return metrics.getTotalTimePercentile(25);
-            }
-        });
-        metricsRegistry.newGauge(createMetricName("latencyTotal_percentile_50"), new Gauge<Integer>() {
-            @Override
-            public Integer value() {
-                return metrics.getTotalTimePercentile(50);
-            }
-        });
-        metricsRegistry.newGauge(createMetricName("latencyTotal_percentile_75"), new Gauge<Integer>() {
-            @Override
-            public Integer value() {
-                return metrics.getTotalTimePercentile(75);
-            }
-        });
-        metricsRegistry.newGauge(createMetricName("latencyTotal_percentile_90"), new Gauge<Integer>() {
-            @Override
-            public Integer value() {
-                return metrics.getTotalTimePercentile(90);
-            }
-        });
-        metricsRegistry.newGauge(createMetricName("latencyTotal_percentile_99"), new Gauge<Integer>() {
-            @Override
-            public Integer value() {
-                return metrics.getTotalTimePercentile(99);
-            }
-        });
-        metricsRegistry.newGauge(createMetricName("latencyTotal_percentile_995"), new Gauge<Integer>() {
-            @Override
-            public Integer value() {
-                return metrics.getTotalTimePercentile(99.5);
-            }
-        });
+        createExecutionLatencyPercentileGauge("latencyExecute_percentile_5", 5);
+        createExecutionLatencyPercentileGauge("latencyExecute_percentile_25", 25);
+        createExecutionLatencyPercentileGauge("latencyExecute_percentile_50", 50);
+        createExecutionLatencyPercentileGauge("latencyExecute_percentile_75", 75);
+        createExecutionLatencyPercentileGauge("latencyExecute_percentile_90", 90);
+        createExecutionLatencyPercentileGauge("latencyExecute_percentile_99", 99);
+        createExecutionLatencyPercentileGauge("latencyExecute_percentile_995", 99.5);
+
+        createTotalLatencyMeanGauge("latencyTotal_mean");
+
+        createTotalLatencyPercentileGauge("latencyTotal_percentile_5", 5);
+        createTotalLatencyPercentileGauge("latencyTotal_percentile_25", 25);
+        createTotalLatencyPercentileGauge("latencyTotal_percentile_50", 50);
+        createTotalLatencyPercentileGauge("latencyTotal_percentile_75", 75);
+        createTotalLatencyPercentileGauge("latencyTotal_percentile_90", 90);
+        createTotalLatencyPercentileGauge("latencyTotal_percentile_99", 99);
+        createTotalLatencyPercentileGauge("latencyTotal_percentile_995", 99.5);
 
         // group
         metricsRegistry.newGauge(createMetricName("commandGroup"), new Gauge<String>() {
@@ -313,6 +229,7 @@ public class HystrixYammerMetricsPublisherCommand implements HystrixMetricsPubli
         return new MetricName(metricGroup, metricType, name);
     }
 
+    @Deprecated
     protected void createCumulativeCountForEvent(String name, final HystrixRollingNumberEvent event) {
         metricsRegistry.newGauge(createMetricName(name), new Gauge<Long>() {
             @Override
@@ -322,11 +239,96 @@ public class HystrixYammerMetricsPublisherCommand implements HystrixMetricsPubli
         });
     }
 
-    protected void createRollingCountForEvent(String name, final HystrixRollingNumberEvent event) {
+    protected void createCumulativeGauge(final String name, final HystrixEventType eventType) {
+        metricsRegistry.newGauge(createMetricName(name), new Gauge<Long>() {
+            @Override
+            public Long value() {
+                return metrics.getCumulativeCount(HystrixRollingNumberEvent.from(eventType));
+            }
+        });
+    }
+
+    @Deprecated
+    protected void createRollingGauge(String name, final HystrixRollingNumberEvent event) {
         metricsRegistry.newGauge(createMetricName(name), new Gauge<Long>() {
             @Override
             public Long value() {
                 return metrics.getRollingCount(event);
+            }
+        });
+    }
+
+    protected void createRollingGauge(final String name, final HystrixEventType eventType) {
+        metricsRegistry.newGauge(createMetricName(name), new Gauge<Long>() {
+            @Override
+            public Long value() {
+                return metrics.getRollingCount(HystrixRollingNumberEvent.from(eventType));
+            }
+        });
+    }
+
+    protected void createExecutionLatencyMeanGauge(final String name) {
+        metricsRegistry.newGauge(createMetricName(name), new Gauge<Integer>() {
+            @Override
+            public Integer value() {
+                return metrics.getExecutionTimeMean();
+            }
+        });
+    }
+
+    protected void createExecutionLatencyPercentileGauge(final String name, final double percentile) {
+        metricsRegistry.newGauge(createMetricName(name), new Gauge<Integer>() {
+            @Override
+            public Integer value() {
+                return metrics.getExecutionTimePercentile(percentile);
+            }
+        });
+    }
+
+    protected void createTotalLatencyMeanGauge(final String name) {
+        metricsRegistry.newGauge(createMetricName(name), new Gauge<Integer>() {
+            @Override
+            public Integer value() {
+                return metrics.getTotalTimeMean();
+            }
+        });
+    }
+
+    protected void createTotalLatencyPercentileGauge(final String name, final double percentile) {
+        metricsRegistry.newGauge(createMetricName(name), new Gauge<Integer>() {
+            @Override
+            public Integer value() {
+                return metrics.getTotalTimePercentile(percentile);
+            }
+        });
+    }
+
+    protected final Func0<Integer> currentConcurrentExecutionCountThunk = new Func0<Integer>() {
+        @Override
+        public Integer call() {
+            return metrics.getCurrentConcurrentExecutionCount();
+        }
+    };
+
+    protected final Func0<Long> rollingMaxConcurrentExecutionCountThunk = new Func0<Long>() {
+        @Override
+        public Long call() {
+            return metrics.getRollingMaxConcurrentExecutions();
+        }
+    };
+
+    protected final Func0<Integer> errorPercentageThunk = new Func0<Integer>() {
+        @Override
+        public Integer call() {
+            return metrics.getHealthCounts().getErrorPercentage();
+        }
+    };
+
+    protected void createCurrentValueGauge(final String name, final Func0<Integer> metricToEvaluate) {
+        metricsRegistry.newGauge(createMetricName(name), new Gauge<Integer>() {
+            @Override
+            public Integer value() {
+                return metricToEvaluate.call();
             }
         });
     }

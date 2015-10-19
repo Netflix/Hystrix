@@ -21,5 +21,30 @@ package com.netflix.hystrix;
  * These are most often accessed via {@link HystrixRequestLog} or {@link HystrixCommand#getExecutionEvents()}.
  */
 public enum HystrixEventType {
-    EMIT, SUCCESS, FAILURE, TIMEOUT, SHORT_CIRCUITED, THREAD_POOL_REJECTED, SEMAPHORE_REJECTED, FALLBACK_EMIT, FALLBACK_SUCCESS, FALLBACK_FAILURE, FALLBACK_REJECTION, EXCEPTION_THROWN, RESPONSE_FROM_CACHE, COLLAPSED, BAD_REQUEST
+    EMIT(false),
+    SUCCESS(true),
+    FAILURE(false),
+    TIMEOUT(false),
+    SHORT_CIRCUITED(false),
+    THREAD_POOL_REJECTED(false),
+    SEMAPHORE_REJECTED(false),
+    FALLBACK_EMIT(false),
+    FALLBACK_SUCCESS(true),
+    FALLBACK_FAILURE(true),
+    FALLBACK_REJECTION(true),
+    FALLBACK_MISSING(true),
+    EXCEPTION_THROWN(false),
+    RESPONSE_FROM_CACHE(true),
+    COLLAPSED(false),
+    BAD_REQUEST(true);
+
+    private final boolean isTerminal;
+
+    HystrixEventType(boolean isTerminal) {
+        this.isTerminal = isTerminal;
+    }
+
+    public boolean isTerminal() {
+        return isTerminal;
+    }
 }

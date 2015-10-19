@@ -49,9 +49,10 @@ public class HystrixRollingPercentile {
     private static final Time ACTUAL_TIME = new ActualTime();
     private final Time time;
     /* package for testing */ final BucketCircularArray buckets;
-    private final HystrixProperty<Integer> timeInMilliseconds;
-    private final HystrixProperty<Integer> numberOfBuckets;
-    private final HystrixProperty<Integer> bucketDataLength;
+    private final int timeInMilliseconds;
+    private final int numberOfBuckets;
+    private final int bucketDataLength;
+    private final int bucketSizeInMilliseconds;
     private final HystrixProperty<Boolean> enabled;
 
     /*
@@ -62,15 +63,46 @@ public class HystrixRollingPercentile {
     /**
      * 
      * @param timeInMilliseconds
-     *            {@code HystrixProperty<Integer>} for nummber of milliseconds of data that should be tracked
+     *            {@code HystrixProperty<Integer>} for number of milliseconds of data that should be tracked
+     *            Note that this value is represented as a {@link HystrixProperty}, but can not actually be modified
+     *            at runtime, to avoid data loss
      *            <p>
      *            Example: 60000 for 1 minute
      * @param numberOfBuckets
      *            {@code HystrixProperty<Integer>} for number of buckets that the time window should be divided into
+     *            Note that this value is represented as a {@link HystrixProperty}, but can not actually be modified
+     *            at runtime, to avoid data loss
      *            <p>
      *            Example: 12 for 5 second buckets in a 1 minute window
      * @param bucketDataLength
      *            {@code HystrixProperty<Integer>} for number of values stored in each bucket
+     *            Note that this value is represented as a {@link HystrixProperty}, but can not actually be modified
+     *            at runtime, to avoid data loss
+     *            <p>
+     *            Example: 1000 to store a max of 1000 values in each 5 second bucket
+     * @param enabled
+     *            {@code HystrixProperty<Boolean>} whether data should be tracked and percentiles calculated.
+     *            <p>
+     *            If 'false' methods will do nothing.
+     * @deprecated Please use the constructor with non-configurable properties {@link HystrixRollingPercentile(Time, int, int, int, HystrixProperty<Boolean>}
+     */
+    @Deprecated
+    public HystrixRollingPercentile(HystrixProperty<Integer> timeInMilliseconds, HystrixProperty<Integer> numberOfBuckets, HystrixProperty<Integer> bucketDataLength, HystrixProperty<Boolean> enabled) {
+        this(timeInMilliseconds.get(), numberOfBuckets.get(), bucketDataLength.get(), enabled);
+    }
+
+    /**
+     *
+     * @param timeInMilliseconds
+     *            number of milliseconds of data that should be tracked
+     *            <p>
+     *            Example: 60000 for 1 minute
+     * @param numberOfBuckets
+     *            number of buckets that the time window should be divided into
+     *            <p>
+     *            Example: 12 for 5 second buckets in a 1 minute window
+     * @param bucketDataLength
+     *            number of values stored in each bucket
      *            <p>
      *            Example: 1000 to store a max of 1000 values in each 5 second bucket
      * @param enabled
@@ -78,23 +110,24 @@ public class HystrixRollingPercentile {
      *            <p>
      *            If 'false' methods will do nothing.
      */
-    public HystrixRollingPercentile(HystrixProperty<Integer> timeInMilliseconds, HystrixProperty<Integer> numberOfBuckets, HystrixProperty<Integer> bucketDataLength, HystrixProperty<Boolean> enabled) {
+    public HystrixRollingPercentile(int timeInMilliseconds, int numberOfBuckets, int bucketDataLength, HystrixProperty<Boolean> enabled) {
         this(ACTUAL_TIME, timeInMilliseconds, numberOfBuckets, bucketDataLength, enabled);
 
     }
 
-    /* package for testing */ HystrixRollingPercentile(Time time, HystrixProperty<Integer> timeInMilliseconds, HystrixProperty<Integer> numberOfBuckets, HystrixProperty<Integer> bucketDataLength, HystrixProperty<Boolean> enabled) {
+    /* package for testing */ HystrixRollingPercentile(Time time, int timeInMilliseconds, int numberOfBuckets, int bucketDataLength, HystrixProperty<Boolean> enabled) {
         this.time = time;
         this.timeInMilliseconds = timeInMilliseconds;
         this.numberOfBuckets = numberOfBuckets;
         this.bucketDataLength = bucketDataLength;
         this.enabled = enabled;
 
-        if (this.timeInMilliseconds.get() % this.numberOfBuckets.get() != 0) {
+        if (this.timeInMilliseconds % this.numberOfBuckets != 0) {
             throw new IllegalArgumentException("The timeInMilliseconds must divide equally into numberOfBuckets. For example 1000/10 is ok, 1000/11 is not.");
         }
+        this.bucketSizeInMilliseconds = this.timeInMilliseconds / this.numberOfBuckets;
 
-        buckets = new BucketCircularArray(this.numberOfBuckets.get());
+        buckets = new BucketCircularArray(this.numberOfBuckets);
     }
 
     /**
@@ -166,10 +199,6 @@ public class HystrixRollingPercentile {
         return currentPercentileSnapshot;
     }
 
-    private int getBucketSizeInMilliseconds() {
-        return timeInMilliseconds.get() / numberOfBuckets.get();
-    }
-
     private ReentrantLock newBucketLock = new ReentrantLock();
 
     private Bucket getCurrentBucket() {
@@ -183,7 +212,7 @@ public class HystrixRollingPercentile {
          * NOTE: This is thread-safe because it's accessing 'buckets' which is a LinkedBlockingDeque
          */
         Bucket currentBucket = buckets.peekLast();
-        if (currentBucket != null && currentTime < currentBucket.windowStart + getBucketSizeInMilliseconds()) {
+        if (currentBucket != null && currentTime < currentBucket.windowStart + this.bucketSizeInMilliseconds) {
             // if we're within the bucket 'window of time' return the current one
             // NOTE: We do not worry if we are BEFORE the window in a weird case of where thread scheduling causes that to occur,
             // we'll just use the latest as long as we're not AFTER the window
@@ -218,21 +247,21 @@ public class HystrixRollingPercentile {
             try {
                 if (buckets.peekLast() == null) {
                     // the list is empty so create the first bucket
-                    Bucket newBucket = new Bucket(currentTime, bucketDataLength.get());
+                    Bucket newBucket = new Bucket(currentTime, bucketDataLength);
                     buckets.addLast(newBucket);
                     return newBucket;
                 } else {
                     // We go into a loop so that it will create as many buckets as needed to catch up to the current time
                     // as we want the buckets complete even if we don't have transactions during a period of time.
-                    for (int i = 0; i < numberOfBuckets.get(); i++) {
+                    for (int i = 0; i < numberOfBuckets; i++) {
                         // we have at least 1 bucket so retrieve it
                         Bucket lastBucket = buckets.peekLast();
-                        if (currentTime < lastBucket.windowStart + getBucketSizeInMilliseconds()) {
+                        if (currentTime < lastBucket.windowStart + this.bucketSizeInMilliseconds) {
                             // if we're within the bucket 'window of time' return the current one
                             // NOTE: We do not worry if we are BEFORE the window in a weird case of where thread scheduling causes that to occur,
                             // we'll just use the latest as long as we're not AFTER the window
                             return lastBucket;
-                        } else if (currentTime - (lastBucket.windowStart + getBucketSizeInMilliseconds()) > timeInMilliseconds.get()) {
+                        } else if (currentTime - (lastBucket.windowStart + this.bucketSizeInMilliseconds) > timeInMilliseconds) {
                             // the time passed is greater than the entire rolling counter so we want to clear it all and start from scratch
                             reset();
                             // recursively call getCurrentBucket which will create a new bucket and return it
@@ -240,7 +269,7 @@ public class HystrixRollingPercentile {
                         } else { // we're past the window so we need to create a new bucket
                             Bucket[] allBuckets = buckets.getArray();
                             // create a new bucket and add it as the new 'last' (once this is done other threads will start using it on subsequent retrievals)
-                            buckets.addLast(new Bucket(lastBucket.windowStart + getBucketSizeInMilliseconds(), bucketDataLength.get()));
+                            buckets.addLast(new Bucket(lastBucket.windowStart + this.bucketSizeInMilliseconds, bucketDataLength));
                             // we created a new bucket so let's re-generate the PercentileSnapshot (not including the new bucket)
                             currentPercentileSnapshot = new PercentileSnapshot(allBuckets);
                         }
@@ -281,7 +310,7 @@ public class HystrixRollingPercentile {
         buckets.clear();
     }
 
-    private static class PercentileBucketData {
+    /* package-private for testing */ static class PercentileBucketData {
         private final int length;
         private final AtomicIntegerArray list;
         private final AtomicInteger index = new AtomicInteger();

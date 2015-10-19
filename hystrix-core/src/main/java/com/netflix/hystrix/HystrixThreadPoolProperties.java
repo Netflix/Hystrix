@@ -107,6 +107,9 @@ public abstract class HystrixThreadPoolProperties {
 
     /**
      * Max queue size that gets passed to {@link BlockingQueue} in {@link HystrixConcurrencyStrategy#getBlockingQueue(int)}
+     *
+     * This should only affect the instantiation of a threadpool - it is not eliglible to change a queue size on the fly.
+     * For that, use {@link #queueSizeRejectionThreshold()}.
      * 
      * @return {@code HystrixProperty<Integer>}
      */
@@ -161,7 +164,7 @@ public abstract class HystrixThreadPoolProperties {
      * <p>
      * <pre> {@code
      * HystrixThreadPoolProperties.Setter()
-     *           .setCoreSize(10)
+     *           .withCoreSize(10)
      *           .withQueueSizeRejectionThreshold(10);
      * } </pre>
      * 

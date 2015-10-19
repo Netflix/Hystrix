@@ -84,7 +84,11 @@ public class HystrixMetricsStreamServlet extends HttpServlet {
      */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        handleRequest(request, response);
+        if (isDestroyed) {
+            response.sendError(503, "Service has been shut down.");
+        } else {
+            handleRequest(request, response);
+        }
     }
     
     /**
@@ -120,7 +124,7 @@ public class HystrixMetricsStreamServlet extends HttpServlet {
                 try {
                     String d = request.getParameter("delay");
                     if (d != null) {
-                        delay = Integer.parseInt(d);
+                        delay = Math.max(Integer.parseInt(d), 1);
                     }
                 } catch (Exception e) {
                     // ignore if it's not a number

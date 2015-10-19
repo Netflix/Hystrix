@@ -18,6 +18,11 @@ package com.netflix.hystrix;
 import org.junit.Before;
 
 import com.netflix.hystrix.HystrixCommand.Setter;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class HystrixTest {
     @Before
@@ -25,7 +30,7 @@ public class HystrixTest {
         Hystrix.reset();
     }
 
-    /*@Test
+    @Test
     public void testNotInThread() {
         assertNull(Hystrix.getCurrentThreadExecutingCommand());
     }
@@ -100,7 +105,7 @@ public class HystrixTest {
 
         HystrixCommand<Boolean> command = new HystrixCommand<Boolean>(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("TestUtil"))
                 .andCommandKey(HystrixCommandKey.Factory.asKey("SemaphoreIsolatedCommandName"))
-                .andCommandPropertiesDefaults(HystrixCommandProperties.Setter().withExecutionIsolationStrategy(ExecutionIsolationStrategy.SEMAPHORE))) {
+                .andCommandPropertiesDefaults(HystrixCommandProperties.Setter().withExecutionIsolationStrategy(HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE))) {
 
             @Override
             protected Boolean run() {
@@ -122,7 +127,7 @@ public class HystrixTest {
 
         HystrixCommand<Boolean> command = new HystrixCommand<Boolean>(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("TestUtil"))
                 .andCommandKey(HystrixCommandKey.Factory.asKey("SemaphoreIsolatedCommandName"))
-                .andCommandPropertiesDefaults(HystrixCommandProperties.Setter().withExecutionIsolationStrategy(ExecutionIsolationStrategy.SEMAPHORE))) {
+                .andCommandPropertiesDefaults(HystrixCommandProperties.Setter().withExecutionIsolationStrategy(HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE))) {
 
             @Override
             protected Boolean run() {
@@ -145,7 +150,7 @@ public class HystrixTest {
         HystrixCommand<Boolean> command = new HystrixCommand<Boolean>(Setter
                 .withGroupKey(HystrixCommandGroupKey.Factory.asKey("TestUtil"))
                 .andCommandKey(HystrixCommandKey.Factory.asKey("OuterSemaphoreCommand"))
-                .andCommandPropertiesDefaults(HystrixCommandProperties.Setter().withExecutionIsolationStrategy(ExecutionIsolationStrategy.SEMAPHORE))) {
+                .andCommandPropertiesDefaults(HystrixCommandProperties.Setter().withExecutionIsolationStrategy(HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE))) {
 
             @Override
             protected Boolean run() {
@@ -186,22 +191,25 @@ public class HystrixTest {
     //see https://github.com/Netflix/Hystrix/issues/280
     @Test
     public void testResetCommandProperties() {
-        HystrixCommand<Boolean> cmd1 = new ResettableCommand(100, 10);
-        assertEquals(100L, (long) cmd1.getProperties().executionIsolationThreadTimeoutInMilliseconds().get());
+        HystrixCommand<Boolean> cmd1 = new ResettableCommand(100, 1, 10);
+        assertEquals(100L, (long) cmd1.getProperties().executionTimeoutInMilliseconds().get());
+        assertEquals(1L, (long) cmd1.getProperties().executionIsolationSemaphoreMaxConcurrentRequests().get());
         assertEquals(10L, (long) cmd1.threadPool.getExecutor().getCorePoolSize());
 
         Hystrix.reset();
 
-        HystrixCommand<Boolean> cmd2 = new ResettableCommand(700, 40);
-        assertEquals(700L, (long) cmd2.getProperties().executionIsolationThreadTimeoutInMilliseconds().get());
+        HystrixCommand<Boolean> cmd2 = new ResettableCommand(700, 2, 40);
+        assertEquals(700L, (long) cmd2.getProperties().executionTimeoutInMilliseconds().get());
+        assertEquals(2L, (long) cmd2.getProperties().executionIsolationSemaphoreMaxConcurrentRequests().get());
         assertEquals(40L, (long) cmd2.threadPool.getExecutor().getCorePoolSize());
-
-	}*/
+	}
 
     private static class ResettableCommand extends HystrixCommand<Boolean> {
-        ResettableCommand(int timeout, int poolCoreSize) {
+        ResettableCommand(int timeout, int semaphoreCount, int poolCoreSize) {
             super(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("GROUP"))
-                    .andCommandPropertiesDefaults(HystrixCommandProperties.Setter().withExecutionTimeoutInMilliseconds(timeout))
+                    .andCommandPropertiesDefaults(HystrixCommandProperties.Setter()
+                            .withExecutionTimeoutInMilliseconds(timeout)
+                    .withExecutionIsolationSemaphoreMaxConcurrentRequests(semaphoreCount))
                     .andThreadPoolPropertiesDefaults(HystrixThreadPoolProperties.Setter().withCoreSize(poolCoreSize)));
         }
 

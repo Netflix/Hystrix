@@ -1,8 +1,9 @@
 apply plugin: 'osgi'
+apply plugin: 'me.champeau.gradle.jmh'
 
 dependencies {
     compile 'com.netflix.archaius:archaius-core:0.4.1'
-    compile 'io.reactivex:rxjava:1.0.7'
+    compile 'io.reactivex:rxjava:1.0.14'
     compile 'org.slf4j:slf4j-api:1.7.0'
     testCompile 'junit:junit-dep:4.10'
 }
@@ -31,4 +32,15 @@ jar {
         instruction 'Eclipse-ExtensibleAPI', 'true'
         instruction 'Embed-Dependency', '*;scope=compile'
     }
+}
+
+jmh {
+	fork = 10
+	iterations = 3
+	jmhVersion = '1.10.3'
+	profilers = ['gc']
+	threads = 8
+	warmup = '1s'
+	warmupBatchSize = 1
+	warmupIterations = 5
 }

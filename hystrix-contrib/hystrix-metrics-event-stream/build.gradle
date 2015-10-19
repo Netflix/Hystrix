@@ -1,6 +1,7 @@
 dependencies {
     compile project(':hystrix-core')
-    compile 'org.codehaus.jackson:jackson-core-asl:1.9.2'
+    compile 'com.fasterxml.jackson.core:jackson-core:2.5.2'
     provided 'javax.servlet:servlet-api:2.5'
-    provided 'junit:junit-dep:4.10'
+    testCompile 'junit:junit-dep:4.10'
+    testCompile 'org.mockito:mockito-all:1.9.5'
 }

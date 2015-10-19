@@ -47,6 +47,7 @@ import static com.netflix.hystrix.contrib.rxnetty.metricsstream.JsonMappers.*;
  * (unless the client is shutdown).
  *
  * @author Tomasz Bak
+ * @author Christian Schmitt <c.schmitt@envisia.de>
  */
 public class HystrixMetricsStreamHandler<I, O> implements RequestHandler<I, O> {
 
@@ -89,7 +90,7 @@ public class HystrixMetricsStreamHandler<I, O> implements RequestHandler<I, O> {
                 .subscribe(new Action1<Long>() {
                     @Override
                     public void call(Long tick) {
-                        if (!response.getChannelHandlerContext().channel().isOpen()) {
+                        if (!response.getChannel().isOpen()) {
                             subscription.unsubscribe();
                             return;
                         }

@@ -67,6 +67,10 @@ public interface HystrixCommandKey {
             }
 
         }
+
+        /* package-private */ static int getCommandCount() {
+            return intern.size();
+        }
     }
 
 }

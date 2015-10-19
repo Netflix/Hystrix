@@ -5,8 +5,8 @@
 		</div>
 		
 		<div class="cell borderRight">
+			<a href="javascript://" title="Timed-out Request Count" class="line tooltip timeout"><%= addCommas(rollingCountTimeout) %></a>
 			<% if(propertyValue_executionIsolationStrategy == 'THREAD') { %>
-				<a href="javascript://" title="Timed-out Request Count" class="line tooltip timeout"><%= addCommas(rollingCountTimeout) %></a>
 				<a href="javascript://" title="Threadpool Rejected Request Count" class="line tooltip rejected"><%= addCommas(rollingCountThreadPoolRejected) %></a>
 			<% } %>
 			<% if(propertyValue_executionIsolationStrategy == 'SEMAPHORE') { %>
@@ -17,6 +17,7 @@
 		<div class="cell borderRight">
 			<a href="javascript://" title="Successful Request Count" class="line tooltip success"><%= addCommas(rollingCountSuccess) %></a>
 			<a href="javascript://" title="Short-circuited Request Count" class="line tooltip shortCircuited"><%= addCommas(rollingCountShortCircuited) %></a>
+			<a href="javascript://" title="Bad Request Count" class="line tooltip badRequest"><%= addCommas(rollingCountBadRequests) %></a>
 			<br>
 		</div>
 	</div>
@@ -42,7 +43,7 @@
 			<% } else {
 				/* We have some circuits that are open */  
 			%>
-				Circuit <font color="orange"><%= isCircuitBreakerOpen.replace("true", "Open").replace("false", "Closed") %>)</font>
+				Circuit <font color="orange"><%= isCircuitBreakerOpen.toString().replace("true", "Open").replace("false", "Closed") %></font>
 			<% }  %>
 		<% } %>
 		</div>

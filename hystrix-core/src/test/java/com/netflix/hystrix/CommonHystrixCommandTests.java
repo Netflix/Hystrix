@@ -157,6 +157,20 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
         }
     }
 
+    protected void assertSaneHystrixRequestLog(final int numCommands) {
+        HystrixRequestLog currentRequestLog = HystrixRequestLog.getCurrentRequest();
+
+        try {
+            assertEquals(numCommands, currentRequestLog.getAllExecutedCommands().size());
+            assertFalse(currentRequestLog.getExecutedCommandsAsString().contains("Executed"));
+            assertTrue(currentRequestLog.getAllExecutedCommands().iterator().next().getExecutionEvents().size() >= 1);
+            //Most commands should have 1 execution event, but fallbacks / responses from cache can cause more than 1.  They should never have 0
+        } catch (Throwable ex) {
+            System.out.println("Problematic Request log : " + currentRequestLog.getExecutedCommandsAsString() + " , expected : " + numCommands);
+            throw new RuntimeException(ex);
+        }
+    }
+
     /**
      * Threadpool with 1 thread, queue of size 1
      */
@@ -354,11 +368,11 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                         TestableExecutionHook hook = command.getBuilder().executionHook;
                         assertTrue(hook.commandEmissionsMatch(0, 1, 0));
                         assertTrue(hook.executionEventsMatch(0, 1, 0));
-                        assertTrue(hook.fallbackEventsMatch(0, 1, 0));
+                        assertTrue(hook.fallbackEventsMatch(0, 0, 0));
                         assertEquals(RuntimeException.class, hook.getCommandException().getClass());
                         assertEquals(RuntimeException.class, hook.getExecutionException().getClass());
-                        assertEquals(UnsupportedOperationException.class, hook.getFallbackException().getClass());
-                        assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onExecutionError - !onRunError - onFallbackStart - onFallbackError - onError - onThreadComplete - ", hook.executionSequence.toString());
+                        assertNull(hook.getFallbackException());
+                        assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onExecutionError - !onRunError - onError - onThreadComplete - ", hook.executionSequence.toString());
                     }
                 });
     }
@@ -451,10 +465,10 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                         TestableExecutionHook hook = command.getBuilder().executionHook;
                         assertTrue(hook.commandEmissionsMatch(0, 1, 0));
                         assertTrue(hook.executionEventsMatch(0, 0, 0));
-                        assertTrue(hook.fallbackEventsMatch(0, 1, 0));
+                        assertTrue(hook.fallbackEventsMatch(0, 0, 0));
                         assertEquals(TimeoutException.class, hook.getCommandException().getClass());
-                        assertEquals(UnsupportedOperationException.class, hook.getFallbackException().getClass());
-                        assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onFallbackStart - onFallbackError - onError - ", hook.executionSequence.toString());
+                        assertNull(hook.getFallbackException());
+                        assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onError - ", hook.executionSequence.toString());
 
                         try {
                             Thread.sleep(300);
@@ -464,8 +478,8 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
 
                         assertTrue(hook.commandEmissionsMatch(0, 1, 0));
                         assertTrue(hook.executionEventsMatch(1, 0, 1));
-                        assertTrue(hook.fallbackEventsMatch(0, 1, 0));
-                        assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onFallbackStart - onFallbackError - onError - onExecutionEmit - !onRunSuccess - onExecutionSuccess - onThreadComplete - ", hook.executionSequence.toString());
+                        assertTrue(hook.fallbackEventsMatch(0, 0, 0));
+                        assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onError - onExecutionEmit - !onRunSuccess - onExecutionSuccess - onThreadComplete - ", hook.executionSequence.toString());
 
                     }
                 });
@@ -580,10 +594,10 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                         TestableExecutionHook hook = command.getBuilder().executionHook;
                         assertTrue(hook.commandEmissionsMatch(0, 1, 0));
                         assertTrue(hook.executionEventsMatch(0, 0, 0));
-                        assertTrue(hook.fallbackEventsMatch(0, 1, 0));
+                        assertTrue(hook.fallbackEventsMatch(0, 0, 0));
                         assertEquals(TimeoutException.class, hook.getCommandException().getClass());
-                        assertEquals(UnsupportedOperationException.class, hook.getFallbackException().getClass());
-                        assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onFallbackStart - onFallbackError - onError - ", hook.executionSequence.toString());
+                        assertNull(hook.getFallbackException());
+                        assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onError - ", hook.executionSequence.toString());
 
                         try {
                             Thread.sleep(300);
@@ -592,9 +606,9 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                         }
                         assertTrue(hook.commandEmissionsMatch(0, 1, 0));
                         assertTrue(hook.executionEventsMatch(0, 1, 0));
-                        assertTrue(hook.fallbackEventsMatch(0, 1, 0));
+                        assertTrue(hook.fallbackEventsMatch(0, 0, 0));
                         assertEquals(RuntimeException.class, hook.getExecutionException().getClass());
-                        assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onFallbackStart - onFallbackError - onError - onExecutionError - !onRunError - onThreadComplete - ", hook.executionSequence.toString());
+                        assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onError - onExecutionError - !onRunError - onThreadComplete - ", hook.executionSequence.toString());
 
                     }
                 });
@@ -718,10 +732,10 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                         TestableExecutionHook hook = command.getBuilder().executionHook;
                         assertTrue(hook.commandEmissionsMatch(0, 1, 0));
                         assertTrue(hook.executionEventsMatch(0, 0, 0));
-                        assertTrue(hook.fallbackEventsMatch(0, 1, 0));
+                        assertTrue(hook.fallbackEventsMatch(0, 0, 0));
                         assertEquals(RejectedExecutionException.class, hook.getCommandException().getClass());
-                        assertEquals(UnsupportedOperationException.class, hook.getFallbackException().getClass());
-                        assertEquals("onStart - onFallbackStart - onFallbackError - onError - ", hook.executionSequence.toString());
+                        assertNull(hook.getFallbackException());
+                        assertEquals("onStart - onError - ", hook.executionSequence.toString());
                     }
                 });
     }
@@ -837,10 +851,10 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                         TestableExecutionHook hook = command.getBuilder().executionHook;
                         assertTrue(hook.commandEmissionsMatch(0, 1, 0));
                         assertTrue(hook.executionEventsMatch(0, 0, 0));
-                        assertTrue(hook.fallbackEventsMatch(0, 1, 0));
+                        assertTrue(hook.fallbackEventsMatch(0, 0, 0));
                         assertEquals(RejectedExecutionException.class, hook.getCommandException().getClass());
-                        assertEquals(UnsupportedOperationException.class, hook.getFallbackException().getClass());
-                        assertEquals("onStart - onFallbackStart - onFallbackError - onError - ", hook.executionSequence.toString());
+                        assertNull(hook.getFallbackException());
+                        assertEquals("onStart - onError - ", hook.executionSequence.toString());
                     }
                 });
     }
@@ -940,10 +954,10 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                         TestableExecutionHook hook = command.getBuilder().executionHook;
                         assertTrue(hook.commandEmissionsMatch(0, 1, 0));
                         assertTrue(hook.executionEventsMatch(0, 0, 0));
-                        assertTrue(hook.fallbackEventsMatch(0, 1, 0));
+                        assertTrue(hook.fallbackEventsMatch(0, 0, 0));
                         assertEquals(RuntimeException.class, hook.getCommandException().getClass());
-                        assertEquals(UnsupportedOperationException.class, hook.getFallbackException().getClass());
-                        assertEquals("onStart - onFallbackStart - onFallbackError - onError - ", hook.executionSequence.toString());
+                        assertNull(hook.getFallbackException());
+                        assertEquals("onStart - onError - ", hook.executionSequence.toString());
                     }
                 });
     }
@@ -1116,11 +1130,11 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                         TestableExecutionHook hook = command.getBuilder().executionHook;
                         assertTrue(hook.commandEmissionsMatch(0, 1, 0));
                         assertTrue(hook.executionEventsMatch(0, 1, 0));
-                        assertTrue(hook.fallbackEventsMatch(0, 1, 0));
+                        assertTrue(hook.fallbackEventsMatch(0, 0, 0));
                         assertEquals(RuntimeException.class, hook.getCommandException().getClass());
                         assertEquals(RuntimeException.class, hook.getExecutionException().getClass());
-                        assertEquals(UnsupportedOperationException.class, hook.getFallbackException().getClass());
-                        assertEquals("onStart - !onRunStart - onExecutionStart - onExecutionError - !onRunError - onFallbackStart - onFallbackError - onError - ", hook.executionSequence.toString());
+                        assertNull(hook.getFallbackException());
+                        assertEquals("onStart - !onRunStart - onExecutionStart - onExecutionError - !onRunError - onError - ", hook.executionSequence.toString());
                     }
                 });
     }
@@ -1232,10 +1246,10 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                         TestableExecutionHook hook = command.getBuilder().executionHook;
                         assertTrue(hook.commandEmissionsMatch(0, 1, 0));
                         assertTrue(hook.executionEventsMatch(0, 0, 0));
-                        assertTrue(hook.fallbackEventsMatch(0, 1, 0));
+                        assertTrue(hook.fallbackEventsMatch(0, 0, 0));
                         assertEquals(RuntimeException.class, hook.getCommandException().getClass());
-                        assertEquals(UnsupportedOperationException.class, hook.getFallbackException().getClass());
-                        assertEquals("onStart - onFallbackStart - onFallbackError - onError - ", hook.executionSequence.toString());
+                        assertNull(hook.getFallbackException());
+                        assertEquals("onStart - onError - ", hook.executionSequence.toString());
                     }
                 });
     }
@@ -1370,10 +1384,10 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                         TestableExecutionHook hook = command.getBuilder().executionHook;
                         assertTrue(hook.commandEmissionsMatch(0, 1, 0));
                         assertTrue(hook.executionEventsMatch(0, 0, 0));
-                        assertTrue(hook.fallbackEventsMatch(0, 1, 0));
+                        assertTrue(hook.fallbackEventsMatch(0, 0, 0));
                         assertEquals(RuntimeException.class, hook.getCommandException().getClass());
-                        assertEquals(UnsupportedOperationException.class, hook.getFallbackException().getClass());
-                        assertEquals("onStart - onFallbackStart - onFallbackError - onError - ", hook.executionSequence.toString());
+                        assertNull(hook.getFallbackException());
+                        assertEquals("onStart - onError - ", hook.executionSequence.toString());
                     }
                 });
     }
@@ -1508,5 +1522,13 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
 
     C getCircuitBreakerDisabledCommand(ExecutionIsolationStrategy isolationStrategy, ExecutionResult executionResult) {
         return getCommand(isolationStrategy, executionResult, 0, FallbackResult.UNIMPLEMENTED, 0, new HystrixCircuitBreakerTest.TestCircuitBreaker(), null, 100, CacheEnabled.NO, "foo", 10, 10, true);
+    }
+
+    C getRecoverableErrorCommand(ExecutionIsolationStrategy isolationStrategy, FallbackResult fallbackResult) {
+        return getCommand(isolationStrategy, ExecutionResult.RECOVERABLE_ERROR, 0, fallbackResult);
+    }
+
+    C getUnrecoverableErrorCommand(ExecutionIsolationStrategy isolationStrategy, FallbackResult fallbackResult) {
+        return getCommand(isolationStrategy, ExecutionResult.UNRECOVERABLE_ERROR, 0, fallbackResult);
     }
 }

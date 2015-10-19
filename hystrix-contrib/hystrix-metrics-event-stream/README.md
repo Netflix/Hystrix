@@ -97,19 +97,19 @@ data:
 
 Binaries and dependency information for Maven, Ivy, Gradle and others can be found at [http://search.maven.org](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22hystrix-metrics-event-stream%22).
 
-Example for Maven:
+Example for Maven ([lookup latest version](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22hystrix-metrics-event-stream%22)):
 
 ```xml
 <dependency>
     <groupId>com.netflix.hystrix</groupId>
     <artifactId>hystrix-metrics-event-stream</artifactId>
-    <version>1.1.2</version>
+    <version>1.4.10</version>
 </dependency>
 ```
 and for Ivy:
 
 ```xml
-<dependency org="com.netflix.hystrix" name="hystrix-metrics-event-stream" rev="1.1.2" />
+<dependency org="com.netflix.hystrix" name="hystrix-metrics-event-stream" rev="1.4.10" />
 ```
 
 # Installation
