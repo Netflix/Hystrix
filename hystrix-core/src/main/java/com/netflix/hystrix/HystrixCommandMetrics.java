@@ -22,6 +22,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.netflix.hystrix.metric.HystrixCommandEventStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -136,6 +137,8 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     private final AtomicInteger concurrentExecutionCount = new AtomicInteger();
     private final HystrixEventNotifier eventNotifier;
 
+    private final HystrixCommandEventStream commandEventStream;
+
     /* package */HystrixCommandMetrics(HystrixCommandKey key, HystrixCommandGroupKey commandGroup, HystrixThreadPoolKey threadPoolKey, HystrixCommandProperties properties, HystrixEventNotifier eventNotifier) {
         super(new HystrixRollingNumber(properties.metricsRollingStatisticalWindowInMilliseconds().get(), properties.metricsRollingStatisticalWindowBuckets().get()));
         this.key = key;
@@ -145,6 +148,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
         this.percentileExecution = new HystrixRollingPercentile(properties.metricsRollingPercentileWindowInMilliseconds().get(), properties.metricsRollingPercentileWindowBuckets().get(), properties.metricsRollingPercentileBucketSize().get(), properties.metricsRollingPercentileEnabled());
         this.percentileTotal = new HystrixRollingPercentile(properties.metricsRollingPercentileWindowInMilliseconds().get(), properties.metricsRollingPercentileWindowBuckets().get(), properties.metricsRollingPercentileBucketSize().get(), properties.metricsRollingPercentileEnabled());
         this.eventNotifier = eventNotifier;
+        this.commandEventStream = HystrixCommandEventStream.getInstance(key);
     }
 
     /**
@@ -416,6 +420,10 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     /* package */void markFallbackEmit() {
         eventNotifier.markEvent(HystrixEventType.FALLBACK_EMIT, getCommandKey());
         counter.increment(HystrixRollingNumberEvent.FALLBACK_EMIT);
+    }
+
+    /* package-private */ void markCommandCompletion(HystrixInvokableInfo<?> commandInstance, AbstractCommand.ExecutionResult executionResult) {
+        commandEventStream.write(commandInstance, executionResult.events, executionResult.getExecutionLatency(), executionResult.getUserThreadLatency());
     }
 
     /**
