@@ -1264,7 +1264,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertFalse(cmd.isResponseTimedOut());
         assertNull(cmd.getExecutionException());
         System.out.println("CMD : " + cmd.currentRequestLog.getExecutedCommandsAsString());
-        assertTrue(cmd.executionResult.getExecutionTime() >= 900);
+        assertTrue(cmd.executionResult.getExecutionLatency() >= 900);
         assertCommandExecutionEvents(cmd, HystrixEventType.SUCCESS);
     }
 
