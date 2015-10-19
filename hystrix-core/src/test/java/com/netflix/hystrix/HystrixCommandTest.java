@@ -23,7 +23,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -1929,7 +1928,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(true, result);
         assertFalse(cmd.isResponseTimedOut());
         System.out.println("CMD : " + cmd.currentRequestLog.getExecutedCommandsAsString());
-        assertTrue(cmd.executionResult.getExecutionTime() >= 900);
+        assertTrue(cmd.executionResult.getExecutionLatency() >= 900);
     }
 
     @Test

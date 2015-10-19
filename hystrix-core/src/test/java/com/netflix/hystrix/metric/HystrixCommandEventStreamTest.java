@@ -409,6 +409,11 @@ public class HystrixCommandEventStreamTest {
         Future<?> request = createRequestScopedTasks(task);
 
         request.get(1000, TimeUnit.MILLISECONDS);
+        //this waits on the OnNexts to show up.  there are no boundaries to unblock on, so we need to be a little lenient about when to expect values to show up in this thread
+        awaitOnNexts(subscriber1, 4, 100);
+        awaitOnNexts(subscriber2, 4, 100);
+        awaitOnNexts(subscriber3, 4, 100);
+
         System.out.println("TestSubscriber1 received : " + subscriber1.getOnNextEvents());
         System.out.println("TestSubscriber2 received : " + subscriber2.getOnNextEvents());
         System.out.println("TestSubscriber3 received : " + subscriber3.getOnNextEvents());
