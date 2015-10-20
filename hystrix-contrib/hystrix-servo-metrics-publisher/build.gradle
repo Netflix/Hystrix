@@ -1,4 +1,6 @@
 dependencies {
     compile project(':hystrix-core')
     compile 'com.netflix.servo:servo-core:0.7.5'
+	testCompile 'junit:junit-dep:4.10'
+	testCompile 'org.mockito:mockito-all:1.9.5'
 }
