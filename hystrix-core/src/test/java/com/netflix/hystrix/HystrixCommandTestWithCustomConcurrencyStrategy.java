@@ -62,8 +62,16 @@ public class HystrixCommandTestWithCustomConcurrencyStrategy {
         HystrixRequestContext.setContextOnCurrentThread(null);
         try {
             HystrixCommand<Boolean> cmd2 = new TestCommand(true, true);
-            assertTrue(cmd2.execute());
+            assertTrue(cmd2.execute()); //command execution throws with missing context
             fail("command should fail and throw (no fallback)");
+        } catch (IllegalStateException ise) {
+            //expected
+            ise.printStackTrace();
+        }
+
+        try {
+            printRequestLog();
+            fail("static access to HystrixRequestLog should fail and throw");
         } catch (IllegalStateException ise) {
             //expected
             ise.printStackTrace();
@@ -96,17 +104,12 @@ public class HystrixCommandTestWithCustomConcurrencyStrategy {
 
         //context is not set up
         HystrixRequestContext.setContextOnCurrentThread(null);
-        try {
-            HystrixCommand<Boolean> cmd2 = new TestCommand(true, true);
-            assertTrue(cmd2.execute());
-            printRequestLog();
-            assertNull(HystrixRequestLog.getCurrentRequest());
-            assertNull(HystrixRequestLog.getCurrentRequest(strategy));
-            assertNull(cmd2.currentRequestLog);
-        } catch (IllegalStateException ise) {
-            ise.printStackTrace();
-            fail("No exceptions expected");
-        }
+        HystrixCommand<Boolean> cmd2 = new TestCommand(true, true);
+        assertTrue(cmd2.execute()); //command execution not affected by missing context
+        printRequestLog();
+        assertNull(HystrixRequestLog.getCurrentRequest());
+        assertNull(HystrixRequestLog.getCurrentRequest(strategy));
+        assertNull(cmd2.currentRequestLog);
     }
 
     /**
@@ -135,9 +138,9 @@ public class HystrixCommandTestWithCustomConcurrencyStrategy {
 
         //context is not set up
         HystrixRequestContext.setContextOnCurrentThread(null);
+        HystrixCommand<Boolean> cmd2 = new TestCommand(false, false);
+        assertTrue(cmd2.execute()); //command execution not affected by missing context
         try {
-            HystrixCommand<Boolean> cmd2 = new TestCommand(false, false);
-            assertTrue(cmd2.execute());
             printRequestLog();
         } catch (IllegalStateException ise) {
             ise.printStackTrace();
@@ -170,17 +173,12 @@ public class HystrixCommandTestWithCustomConcurrencyStrategy {
 
         //context is not set up
         HystrixRequestContext.setContextOnCurrentThread(null);
-        try {
-            HystrixCommand<Boolean> cmd2 = new TestCommand(true, true);
-            assertTrue(cmd2.execute());
-            printRequestLog();
-            assertNull(HystrixRequestLog.getCurrentRequest());
-            assertNull(HystrixRequestLog.getCurrentRequest(strategy));
-            assertNull(cmd2.currentRequestLog);
-        } catch (IllegalStateException ise) {
-            ise.printStackTrace();
-            fail("No exceptions expected");
-        }
+        HystrixCommand<Boolean> cmd2 = new TestCommand(true, true);
+        assertTrue(cmd2.execute()); //command execution unaffected by missing context
+        printRequestLog();
+        assertNull(HystrixRequestLog.getCurrentRequest());
+        assertNull(HystrixRequestLog.getCurrentRequest(strategy));
+        assertNull(cmd2.currentRequestLog);
     }
 
 
