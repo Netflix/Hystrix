@@ -15,14 +15,19 @@
  */
 package com.netflix.hystrix;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.netflix.hystrix.metric.HystrixCommandEventStream;
+import com.netflix.hystrix.metric.HystrixCommandExecution;
+import com.netflix.hystrix.metric.HystrixEventCounter;
+import com.netflix.hystrix.metric.HystrixLatencyDistribution;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,6 +37,12 @@ import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
 import com.netflix.hystrix.util.HystrixRollingNumber;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 import com.netflix.hystrix.util.HystrixRollingPercentile;
+import rx.Observable;
+import rx.Subscription;
+import rx.functions.Func1;
+import rx.functions.Func2;
+import rx.subjects.BehaviorSubject;
+import rx.subjects.Subject;
 
 /**
  * Used by {@link HystrixCommand} to record metrics.
@@ -139,6 +150,32 @@ public class HystrixCommandMetrics extends HystrixMetrics {
 
     private final HystrixCommandEventStream commandEventStream;
 
+    private Subscription cumulativeCounterSubscription;
+    private final Subject<HystrixEventCounter, HystrixEventCounter> cumulativeCounter = BehaviorSubject.create(HystrixEventCounter.empty());
+
+    private Subscription rollingCounterSubscription;
+    private final Subject<HystrixEventCounter, HystrixEventCounter> rollingCounter = BehaviorSubject.create(HystrixEventCounter.empty());
+
+    private Subscription rollingLatencySubscription;
+    private final Subject<HystrixLatencyDistribution, HystrixLatencyDistribution> rollingLatencyDistribution = BehaviorSubject.create(HystrixLatencyDistribution.empty());
+
+    private static final Func2<HystrixEventCounter, List<HystrixCommandExecution>, HystrixEventCounter> counterAggregator = new Func2<HystrixEventCounter, List<HystrixCommandExecution>, HystrixEventCounter>() {
+        @Override
+        public HystrixEventCounter call(HystrixEventCounter cumulativeEvents, List<HystrixCommandExecution> newBucketOfExecutions) {
+            return cumulativeEvents.plus(newBucketOfExecutions);
+        }
+    };
+
+    private static final Func2<HystrixLatencyDistribution, List<HystrixCommandExecution>, HystrixLatencyDistribution> latencyAggregator = new Func2<HystrixLatencyDistribution, List<HystrixCommandExecution>, HystrixLatencyDistribution>() {
+        @Override
+        public HystrixLatencyDistribution call(HystrixLatencyDistribution distribution, List<HystrixCommandExecution> newBucketOfExecutions) {
+            for (HystrixCommandExecution execution: newBucketOfExecutions) {
+                distribution.recordLatencies(execution.getExecutionLatency(), execution.getTotalLatency());
+            }
+            return distribution;
+        }
+    };
+
     /* package */HystrixCommandMetrics(HystrixCommandKey key, HystrixCommandGroupKey commandGroup, HystrixThreadPoolKey threadPoolKey, HystrixCommandProperties properties, HystrixEventNotifier eventNotifier) {
         super(new HystrixRollingNumber(properties.metricsRollingStatisticalWindowInMilliseconds().get(), properties.metricsRollingStatisticalWindowBuckets().get()));
         this.key = key;
@@ -148,7 +185,44 @@ public class HystrixCommandMetrics extends HystrixMetrics {
         this.percentileExecution = new HystrixRollingPercentile(properties.metricsRollingPercentileWindowInMilliseconds().get(), properties.metricsRollingPercentileWindowBuckets().get(), properties.metricsRollingPercentileBucketSize().get(), properties.metricsRollingPercentileEnabled());
         this.percentileTotal = new HystrixRollingPercentile(properties.metricsRollingPercentileWindowInMilliseconds().get(), properties.metricsRollingPercentileWindowBuckets().get(), properties.metricsRollingPercentileBucketSize().get(), properties.metricsRollingPercentileEnabled());
         this.eventNotifier = eventNotifier;
+
         this.commandEventStream = HystrixCommandEventStream.getInstance(key);
+
+        final int counterMetricWindow = properties.metricsRollingStatisticalWindowInMilliseconds().get();
+        final int numCounterBuckets = properties.metricsRollingStatisticalWindowBuckets().get();
+        final int counterBucketSizeInMs = counterMetricWindow / numCounterBuckets;
+        final List<List<HystrixCommandExecution>> emptyCounterListsToStart = new ArrayList<List<HystrixCommandExecution>>();
+        for (int i = 0; i < numCounterBuckets; i++) {
+            emptyCounterListsToStart.add(new ArrayList<HystrixCommandExecution>());
+        }
+
+        Observable<List<HystrixCommandExecution>> bucketedCounterMetrics = HystrixCommandEventStream.getInstance(key).getBucketedStream(counterBucketSizeInMs).startWith(emptyCounterListsToStart);
+        cumulativeCounterSubscription = bucketedCounterMetrics.scan(HystrixEventCounter.empty(), counterAggregator).subscribe(cumulativeCounter);
+
+        rollingCounterSubscription = bucketedCounterMetrics.window(numCounterBuckets, 1).flatMap(new Func1<Observable<List<HystrixCommandExecution>>, Observable<HystrixEventCounter>>() {
+            @Override
+            public Observable<HystrixEventCounter> call(Observable<List<HystrixCommandExecution>> window) {
+                return window.scan(HystrixEventCounter.empty(), counterAggregator).skip(numCounterBuckets);
+            }
+        }).subscribe(rollingCounter);
+
+
+        final int percentileMetricWindow = properties.metricsRollingPercentileWindowInMilliseconds().get();
+        final int numPercentileBuckets = properties.metricsRollingPercentileWindowBuckets().get();
+        final int percentileBucketSizeInMs = percentileMetricWindow / numPercentileBuckets;
+
+        final List<List<HystrixCommandExecution>> emptyPercentileListsToStart = new ArrayList<List<HystrixCommandExecution>>();
+        for (int i = 0; i < numPercentileBuckets; i++) {
+            emptyPercentileListsToStart.add(new ArrayList<HystrixCommandExecution>());
+        }
+
+        Observable<List<HystrixCommandExecution>> bucketedPercentileMetrics = HystrixCommandEventStream.getInstance(key).getBucketedStream(percentileBucketSizeInMs).startWith(emptyPercentileListsToStart);
+        rollingLatencySubscription = bucketedPercentileMetrics.window(numPercentileBuckets, 1).flatMap(new Func1<Observable<List<HystrixCommandExecution>>, Observable<HystrixLatencyDistribution>>() {
+            @Override
+            public Observable<HystrixLatencyDistribution> call(Observable<List<HystrixCommandExecution>> window) {
+                return window.scan(HystrixLatencyDistribution.empty(), latencyAggregator).skip(numPercentileBuckets);
+            }
+        }).subscribe(rollingLatencyDistribution);
     }
 
     /**
@@ -178,7 +252,6 @@ public class HystrixCommandMetrics extends HystrixMetrics {
         return threadPoolKey;
     }
 
-
     /**
      * {@link HystrixCommandProperties} of the {@link HystrixCommand} these metrics represent.
      * 
@@ -186,6 +259,22 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      */
     public HystrixCommandProperties getProperties() {
         return properties;
+    }
+
+    public long getRollingCount(HystrixEventType eventType) {
+        if (rollingCounter.hasValue()) {
+            return rollingCounter.getValue().getCount(eventType);
+        } else {
+            return 0;
+        }
+    }
+
+    public long getCumulativeCount(HystrixEventType eventType) {
+        if (cumulativeCounter.hasValue()) {
+            return cumulativeCounter.getValue().getCount(eventType);
+        } else {
+            return 0;
+        }
     }
 
     /**
@@ -198,7 +287,12 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      * @return int time in milliseconds
      */
     public int getExecutionTimePercentile(double percentile) {
-        return percentileExecution.getPercentile(percentile);
+        if (rollingLatencyDistribution.hasValue()) {
+            return (int) rollingLatencyDistribution.getValue().getExecutionLatencyPercentile(percentile);
+        } else {
+            return 0;
+        }
+        //return percentileExecution.getPercentile(percentile);
     }
 
     /**
@@ -209,7 +303,12 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      * @return int time in milliseconds
      */
     public int getExecutionTimeMean() {
-        return percentileExecution.getMean();
+        if (rollingLatencyDistribution.hasValue()) {
+            return (int) rollingLatencyDistribution.getValue().getExecutionLatencyMean();
+        } else {
+            return 0;
+        }
+        //return percentileExecution.getMean();
     }
 
     /**
@@ -234,7 +333,12 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      * @return int time in milliseconds
      */
     public int getTotalTimePercentile(double percentile) {
-        return percentileTotal.getPercentile(percentile);
+        if (rollingLatencyDistribution.hasValue()) {
+            return (int) rollingLatencyDistribution.getValue().getTotalLatencyPercentile(percentile);
+        } else {
+            return 0;
+        }
+        //return percentileTotal.getPercentile(percentile);
     }
 
     /**
@@ -245,7 +349,16 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      * @return int time in milliseconds
      */
     public int getTotalTimeMean() {
-        return percentileTotal.getMean();
+        if (rollingLatencyDistribution.hasValue()) {
+            return (int) rollingLatencyDistribution.getValue().getTotalLatencyMean();
+        } else {
+            return 0;
+        }
+        //return percentileTotal.getMean();
+    }
+
+    public long getRollingMaxConcurrentExecutions() {
+        return counter.getRollingMaxValue(HystrixRollingNumberEvent.COMMAND_MAX_ACTIVE);
     }
 
     /* package */void resetCounter() {
@@ -262,6 +375,21 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      */
     public int getCurrentConcurrentExecutionCount() {
         return concurrentExecutionCount.get();
+    }
+
+    /**
+     * Increment concurrent requests counter.
+     */
+    /* package */void incrementConcurrentExecutionCount() {
+        int numConcurrent = concurrentExecutionCount.incrementAndGet();
+        counter.updateRollingMax(HystrixRollingNumberEvent.COMMAND_MAX_ACTIVE, (long) numConcurrent);
+    }
+
+    /**
+     * Decrement concurrent requests counter.
+     */
+    /* package */void decrementConcurrentExecutionCount() {
+        concurrentExecutionCount.decrementAndGet();
     }
 
     /**
@@ -325,25 +453,6 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     /* package */void markBadRequest(long duration) {
         eventNotifier.markEvent(HystrixEventType.BAD_REQUEST, key);
         counter.increment(HystrixRollingNumberEvent.BAD_REQUEST);
-    }
-
-    /**
-     * Increment concurrent requests counter.
-     */
-    /* package */void incrementConcurrentExecutionCount() {
-        int numConcurrent = concurrentExecutionCount.incrementAndGet();
-        counter.updateRollingMax(HystrixRollingNumberEvent.COMMAND_MAX_ACTIVE, (long) numConcurrent);
-    }
-    
-    /**
-     * Decrement concurrent requests counter.
-     */
-    /* package */void decrementConcurrentExecutionCount() {
-        concurrentExecutionCount.decrementAndGet();
-    }
-
-    public long getRollingMaxConcurrentExecutions() {
-        return counter.getRollingMaxValue(HystrixRollingNumberEvent.COMMAND_MAX_ACTIVE);
     }
 
     /**
