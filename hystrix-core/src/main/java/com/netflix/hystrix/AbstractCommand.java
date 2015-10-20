@@ -453,7 +453,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                 try {
                     long userThreadLatency = System.currentTimeMillis() - executionResult.startTimestamp;
                     // if we executed we will record the execution time
-                    executionResult = executionResult.markUserThreadCompletion(metrics, (int) userThreadLatency);
+                    executionResult = executionResult.markUserThreadCompletion((int) userThreadLatency);
                     metrics.markCommandCompletion(_invokableInfo, executionResult);
                 } finally {
                     metrics.decrementConcurrentExecutionCount();
@@ -570,7 +570,6 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
             @Override
             public void call() {
                 long latency = System.currentTimeMillis() - executionResult.startTimestamp;
-                metrics.addCommandExecutionTime(latency);
                 metrics.markSuccess(latency);
                 executionResult = executionResult.addEvents((int) latency, HystrixEventType.SUCCESS);
                 circuitBreaker.markSuccess();
@@ -1852,8 +1851,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
             return events.contains(HystrixEventType.THREAD_POOL_REJECTED) || events.contains(HystrixEventType.SEMAPHORE_REJECTED);
         }
 
-        public ExecutionResult markUserThreadCompletion(final HystrixCommandMetrics metrics, long userThreadLatency) {
-            metrics.addUserThreadExecutionTime(userThreadLatency);
+        public ExecutionResult markUserThreadCompletion(long userThreadLatency) {
             if (startTimestamp > 0 && !isResponseRejected()) {
                 /* execution time (must occur before terminal state otherwise a race condition can occur if requested by client) */
                 return new ExecutionResult(events, startTimestamp, executionLatency, (int) userThreadLatency, failedExecutionException, executionException, numEmissions, numFallbackEmissions);
