@@ -21,6 +21,8 @@ import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestVariable;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestVariableDefault;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestVariableLifecycle;
+import com.netflix.hystrix.strategy.properties.HystrixPropertiesFactory;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -31,8 +33,15 @@ import static org.junit.Assert.*;
 public class HystrixCommandTestWithCustomConcurrencyStrategy {
 
     @Before
-    public void resetPlugins() {
-        Hystrix.reset();
+    public void init() {
+        HystrixPlugins.reset();
+    }
+
+    @After
+    public void reset() {
+        HystrixRequestContext.setContextOnCurrentThread(null);
+        HystrixPropertiesFactory.reset();
+        HystrixPlugins.reset();
     }
 
     /**
