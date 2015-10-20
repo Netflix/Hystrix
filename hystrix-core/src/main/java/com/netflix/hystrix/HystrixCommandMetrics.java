@@ -140,8 +140,6 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     }
 
     private final HystrixCommandProperties properties;
-    private final HystrixRollingPercentile percentileExecution;
-    private final HystrixRollingPercentile percentileTotal;
     private final HystrixCommandKey key;
     private final HystrixCommandGroupKey group;
     private final HystrixThreadPoolKey threadPoolKey;
@@ -182,8 +180,6 @@ public class HystrixCommandMetrics extends HystrixMetrics {
         this.group = commandGroup;
         this.threadPoolKey = threadPoolKey;
         this.properties = properties;
-        this.percentileExecution = new HystrixRollingPercentile(properties.metricsRollingPercentileWindowInMilliseconds().get(), properties.metricsRollingPercentileWindowBuckets().get(), properties.metricsRollingPercentileBucketSize().get(), properties.metricsRollingPercentileEnabled());
-        this.percentileTotal = new HystrixRollingPercentile(properties.metricsRollingPercentileWindowInMilliseconds().get(), properties.metricsRollingPercentileWindowBuckets().get(), properties.metricsRollingPercentileBucketSize().get(), properties.metricsRollingPercentileEnabled());
         this.eventNotifier = eventNotifier;
 
         this.commandEventStream = HystrixCommandEventStream.getInstance(key);
@@ -533,23 +529,6 @@ public class HystrixCommandMetrics extends HystrixMetrics {
 
     /* package-private */ void markCommandCompletion(HystrixInvokableInfo<?> commandInstance, AbstractCommand.ExecutionResult executionResult) {
         commandEventStream.write(commandInstance, executionResult.events, executionResult.getExecutionLatency(), executionResult.getUserThreadLatency());
-    }
-
-    /**
-     * Execution time of {@link HystrixCommand#run()}.
-     */
-    /* package */void addCommandExecutionTime(long duration) {
-        percentileExecution.addValue((int) duration);
-    }
-
-    /**
-     * Complete execution time of {@link HystrixCommand#execute()} or {@link HystrixCommand#queue()} (queue is considered complete once the work is finished and {@link Future#get} is capable of
-     * retrieving the value.
-     * <p>
-     * This differs from {@link #addCommandExecutionTime} in that this covers all of the threading and scheduling overhead, not just the execution of the {@link HystrixCommand#run()} method.
-     */
-    /* package */void addUserThreadExecutionTime(long duration) {
-        percentileTotal.addValue((int) duration);
     }
 
     private volatile HealthCounts healthCountsSnapshot = new HealthCounts(0, 0, 0);
