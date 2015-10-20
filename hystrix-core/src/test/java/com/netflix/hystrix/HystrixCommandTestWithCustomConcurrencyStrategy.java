@@ -63,7 +63,7 @@ public class HystrixCommandTestWithCustomConcurrencyStrategy {
         try {
             HystrixCommand<Boolean> cmd2 = new TestCommand(true, true);
             assertTrue(cmd2.execute()); //command execution throws with missing context
-            //fail("command should fail and throw (no fallback)");
+            fail("command should fail and throw (no fallback)");
         } catch (IllegalStateException ise) {
             //expected
             ise.printStackTrace();
@@ -71,7 +71,7 @@ public class HystrixCommandTestWithCustomConcurrencyStrategy {
 
         try {
             printRequestLog();
-            //fail("static access to HystrixRequestLog should fail and throw");
+            fail("static access to HystrixRequestLog should fail and throw");
         } catch (IllegalStateException ise) {
             //expected
             ise.printStackTrace();
