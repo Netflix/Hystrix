@@ -85,7 +85,7 @@ ext {
 
 
 task ajcJar(type: Jar) {
-    archiveName = "${project.name}" + "-ctw.jar"
+    archiveName = "${project.name}" + "-ctw-${version}.jar"
     destinationDir = file("${buildDir}/libs")
     from sourceSets.ajc.output
 }
