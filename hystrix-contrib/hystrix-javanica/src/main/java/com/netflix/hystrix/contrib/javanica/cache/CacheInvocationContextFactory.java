@@ -78,7 +78,9 @@ public class CacheInvocationContextFactory {
                 throw new HystrixCachingException("return type of cacheKey method must be String. Method: '" + method + "', Class: '"
                         + metaHolder.getObj().getClass() + "'");
             }
-            cacheKeyAction = new MethodExecutionAction(metaHolder.getObj(), cacheKeyMethod, metaHolder.getArgs());
+
+            MetaHolder cMetaHolder = MetaHolder.builder().obj(metaHolder.getObj()).method(cacheKeyMethod).args(metaHolder.getArgs()).build();
+            cacheKeyAction = new MethodExecutionAction(cMetaHolder.getObj(), cacheKeyMethod, cMetaHolder.getArgs(), cMetaHolder);
         }
         return cacheKeyAction;
     }

@@ -31,6 +31,8 @@ import org.aspectj.lang.annotation.Pointcut;
 import java.lang.reflect.Method;
 
 import static com.netflix.hystrix.contrib.javanica.utils.AopUtils.getMethodFromTarget;
+import static com.netflix.hystrix.contrib.javanica.utils.EnvUtils.isCompileWeaving;
+import static com.netflix.hystrix.contrib.javanica.utils.ajc.AjcUtils.getAjcMethodAroundAdvice;
 
 /**
  * AspectJ aspect to process methods which annotated with annotations from
@@ -54,10 +56,13 @@ public class HystrixCacheAspect {
         MetaHolder metaHolder = MetaHolder.builder()
                 .args(args).method(method).obj(obj)
                 .executionType(ExecutionType.SYNCHRONOUS)
+                .ajcMethod(isCompileWeaving() ? getAjcMethodAroundAdvice(obj.getClass(), method) : null)
                 .build();
         CacheInvocationContext<CacheRemove> context = CacheInvocationContextFactory
                 .createCacheRemoveInvocationContext(metaHolder);
         HystrixRequestCacheManager.getInstance().clearCache(context);
         return joinPoint.proceed();
     }
+
+
 }

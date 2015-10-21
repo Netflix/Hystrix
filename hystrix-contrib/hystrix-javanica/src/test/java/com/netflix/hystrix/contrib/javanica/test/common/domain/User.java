@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.hystrix.contrib.javanica.test.spring.domain;
+package com.netflix.hystrix.contrib.javanica.test.common.domain;
 
 /**
  * Simple domain object for tests.
