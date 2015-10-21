@@ -2717,12 +2717,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
             fail("We received an exception => " + e.getMessage());
         }
 
-        try {
-            HystrixRequestLog.getCurrentRequest();
-            fail("Should not have a RequestLog when RequestContext not initialized");
-        } catch (IllegalStateException ise) {
-            //expected
-        }
+        assertNull(HystrixRequestLog.getCurrentRequest());
     }
 
     /**
@@ -2748,13 +2743,6 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
             assertFalse(command.isExecutedInThread());
         } catch (Exception e) {
             e.printStackTrace();
-        }
-
-        try {
-            HystrixRequestLog.getCurrentRequest();
-            fail("Should not have a RequestLog when RequestContext not initialized");
-        } catch (IllegalStateException ise) {
-            //expected
         }
     }
 

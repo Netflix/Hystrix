@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
  * <p>
  * This is used as a layer between the actual {@link HystrixRequestVariable} and calling code to allow injected implementations of {@link HystrixConcurrencyStrategy}.
  * <p>
- * Typically a {@link HystrixRequestVariable} would be statically references (similar to a ThreadLocal) but to allow dynamic injection we instead statically reference this class which can then
+ * Typically a {@link HystrixRequestVariable} would be statically referenced (similar to a ThreadLocal) but to allow dynamic injection we instead statically reference this class which can then
  * dynamically fetch the correct implementation and statically retain an instance across threads within a context (such as {@link HystrixRequestContext}.
  * 
  * @param <T>

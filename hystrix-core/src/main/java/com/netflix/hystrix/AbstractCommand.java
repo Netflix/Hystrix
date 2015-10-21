@@ -16,7 +16,6 @@
 package com.netflix.hystrix;
 
 import java.lang.ref.Reference;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -51,7 +50,6 @@ import com.netflix.hystrix.exception.HystrixRuntimeException;
 import com.netflix.hystrix.exception.HystrixRuntimeException.FailureType;
 import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
-import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategyDefault;
 import com.netflix.hystrix.strategy.concurrency.HystrixContextRunnable;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
@@ -262,21 +260,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 
         if (properties.requestLogEnabled().get()) {
             /* store reference to request log regardless of which thread later hits it */
-            if (concurrencyStrategy instanceof HystrixConcurrencyStrategyDefault) {
-              // if we're using the default we support only optionally using a request context
-              if (HystrixRequestContext.isCurrentThreadInitialized()) {
-                currentRequestLog = HystrixRequestLog.getCurrentRequest(concurrencyStrategy);
-              } else {
-                currentRequestLog = null;
-              }
-            } else {
-              // if it's a custom strategy it must ensure the context is initialized
-              if (HystrixRequestLog.getCurrentRequest(concurrencyStrategy) != null) {
-                currentRequestLog = HystrixRequestLog.getCurrentRequest(concurrencyStrategy);
-              } else {
-                currentRequestLog = null;
-              }
-            }
+            currentRequestLog = HystrixRequestLog.getCurrentRequest(concurrencyStrategy);
         } else {
             currentRequestLog = null;
         }
