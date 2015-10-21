@@ -29,7 +29,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.hystrix.exception.HystrixTimeoutException;
-import com.netflix.hystrix.metric.HystrixEventCounter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1798,6 +1797,14 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
             } else {
                 return addEvents(events);
             }
+        }
+
+        public long[] getEventCounts() {
+            long[] eventCounts = new long[HystrixEventType.values().length];
+            for (HystrixEventType eventType: events) {
+                eventCounts[eventType.ordinal()]++;
+            }
+            return eventCounts;
         }
 
         private static List<HystrixEventType> getUpdatedList(List<HystrixEventType> currentList, HystrixEventType... newEvents) {
