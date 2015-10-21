@@ -71,8 +71,8 @@ public class HystrixCommandEventStream {
         subscription = subject.unsafeSubscribe(Subscribers.empty());
     }
 
-    public void write(HystrixInvokableInfo<?> commandInstance, List<HystrixEventType> eventTypes, long executionLatency, long totalLatency) {
-        HystrixCommandExecution event = HystrixCommandExecution.from(commandInstance, commandKey, eventTypes, HystrixRequestContext.getContextForCurrentThread(), executionLatency, totalLatency);
+    public void write(HystrixInvokableInfo<?> commandInstance, long[] eventTypeCounts, long executionLatency, long totalLatency) {
+        HystrixCommandExecution event = HystrixCommandExecution.from(commandInstance, commandKey, eventTypeCounts, HystrixRequestContext.getContextForCurrentThread(), executionLatency, totalLatency);
         subject.onNext(event);
     }
 
@@ -84,8 +84,8 @@ public class HystrixCommandEventStream {
         return subject.onBackpressureBuffer().observeOn(Schedulers.computation());
     }
 
-    public Observable<List<HystrixCommandExecution>> getBucketedStream(int bucketSizeInMs) {
-        return observe().buffer(bucketSizeInMs, TimeUnit.MILLISECONDS);
+    public Observable<Observable<HystrixCommandExecution>> getBucketedStream(int bucketSizeInMs) {
+        return observe().window(bucketSizeInMs, TimeUnit.MILLISECONDS);
     }
 
     public void shutdown() {

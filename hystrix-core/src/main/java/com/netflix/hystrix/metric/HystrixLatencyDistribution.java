@@ -262,4 +262,10 @@ public class HystrixLatencyDistribution {
             }
         }
     }
+
+    public HystrixLatencyDistribution plus(HystrixLatencyDistribution distributionToAdd) {
+        executionLatencyDistribution.add(distributionToAdd.executionLatencyDistribution);
+        totalLatencyDistribution.add(distributionToAdd.totalLatencyDistribution);
+        return this;
+    }
 }
