@@ -25,9 +25,11 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.hystrix.exception.HystrixTimeoutException;
+import com.netflix.hystrix.metric.HystrixEventCounter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1730,7 +1732,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
     protected static class ExecutionResult {
         protected final List<HystrixEventType> events;
         private final long startTimestamp;
-        private final int executionLatency; //time spend in run() method
+        private final int executionLatency; //time spent in run() method
         private final int userThreadLatency; //time elapsed between caller thread submitting request and response being visible to it
         private final Exception exception;
         private final int numEmissions;
