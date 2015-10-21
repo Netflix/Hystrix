@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.netflix.hystrix.metric.HystrixCommandEventStream;
 import com.netflix.hystrix.metric.HystrixCommandExecution;
 import com.netflix.hystrix.metric.HystrixLatencyDistribution;
+import com.netflix.hystrix.metric.HystrixThreadEventStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +36,6 @@ import com.netflix.hystrix.util.HystrixRollingNumber;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 import rx.Observable;
 import rx.Subscription;
-import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.functions.Func2;
 import rx.subjects.BehaviorSubject;
@@ -631,7 +631,8 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     }
 
     /* package-private */ void markCommandCompletion(HystrixInvokableInfo<?> commandInstance, AbstractCommand.ExecutionResult executionResult) {
-        commandEventStream.write(commandInstance, executionResult.getEventCounts(), executionResult.getExecutionLatency(), executionResult.getUserThreadLatency());
+        HystrixThreadEventStream.getInstance().write(commandInstance, executionResult.getEventCounts(), executionResult.getExecutionLatency(), executionResult.getUserThreadLatency());
+        //commandEventStream.write(commandInstance, executionResult.getEventCounts(), executionResult.getExecutionLatency(), executionResult.getUserThreadLatency());
     }
 
     /**

@@ -44,4 +44,5 @@ jmh {
 	warmup = '1s'
 	warmupBatchSize = 1
 	warmupIterations = 5
+	include = '.*Multi.*'
 }
