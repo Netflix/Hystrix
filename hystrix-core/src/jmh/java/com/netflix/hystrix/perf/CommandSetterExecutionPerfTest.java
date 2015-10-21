@@ -47,7 +47,7 @@ public class CommandSetterExecutionPerfTest {
     public static class CommandState {
         HystrixCommand<Integer> command;
 
-        @Param({"false"})
+        @Param({"true", "false"})
         public boolean forceCircuitOpen;
 
         @Param({"THREAD", "SEMAPHORE"})
@@ -117,66 +117,66 @@ public class CommandSetterExecutionPerfTest {
     }
 
 
-//    @Benchmark
-//    @BenchmarkMode({Mode.Throughput})
-//    @OutputTimeUnit(TimeUnit.MILLISECONDS)
-//    public Integer baselineExecute() {
-//        return 1;
-//    }
-//
-//    @Benchmark
-//    @BenchmarkMode({Mode.Throughput})
-//    @OutputTimeUnit(TimeUnit.MILLISECONDS)
-//    public Integer baselineQueue(ExecutorState state) throws InterruptedException, ExecutionException{
-//        try {
-//            return state.executorService.submit(new Callable<Integer>() {
-//                @Override
-//                public Integer call() throws Exception {
-//                    return 1;
-//                }
-//            }).get();
-//        } catch (Throwable t) {
-//            return 2;
-//        }
-//    }
-//
-//    @Benchmark
-//    @BenchmarkMode({Mode.Throughput})
-//    @OutputTimeUnit(TimeUnit.MILLISECONDS)
-//    public Integer baselineSyncObserve() throws InterruptedException {
-//        Observable<Integer> syncObservable = Observable.just(1);
-//
-//        try {
-//            return syncObservable.toBlocking().first();
-//        } catch (Throwable t) {
-//            return 2;
-//        }
-//    }
-//
-//    @Benchmark
-//    @BenchmarkMode({Mode.Throughput})
-//    @OutputTimeUnit(TimeUnit.MILLISECONDS)
-//    public Integer baselineAsyncComputationObserve() throws InterruptedException {
-//        Observable<Integer> asyncObservable = Observable.just(1).subscribeOn(Schedulers.computation());
-//
-//        try {
-//            return asyncObservable.toBlocking().first();
-//        } catch (Throwable t) {
-//            return 2;
-//        }
-//    }
-//
-//    @Benchmark
-//    @BenchmarkMode({Mode.Throughput})
-//    @OutputTimeUnit(TimeUnit.MILLISECONDS)
-//    public Integer baselineAsyncCustomThreadPoolObserve(ThreadPoolState state) {
-//        Observable<Integer> asyncObservable = Observable.just(1).subscribeOn(state.hystrixThreadPool.getScheduler());
-//        try {
-//            return asyncObservable.toBlocking().first();
-//        } catch (Throwable t) {
-//            return 2;
-//        }
-//    }
+    @Benchmark
+    @BenchmarkMode({Mode.Throughput})
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    public Integer baselineExecute() {
+        return 1;
+    }
+
+    @Benchmark
+    @BenchmarkMode({Mode.Throughput})
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    public Integer baselineQueue(ExecutorState state) throws InterruptedException, ExecutionException{
+        try {
+            return state.executorService.submit(new Callable<Integer>() {
+                @Override
+                public Integer call() throws Exception {
+                    return 1;
+                }
+            }).get();
+        } catch (Throwable t) {
+            return 2;
+        }
+    }
+
+    @Benchmark
+    @BenchmarkMode({Mode.Throughput})
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    public Integer baselineSyncObserve() throws InterruptedException {
+        Observable<Integer> syncObservable = Observable.just(1);
+
+        try {
+            return syncObservable.toBlocking().first();
+        } catch (Throwable t) {
+            return 2;
+        }
+    }
+
+    @Benchmark
+    @BenchmarkMode({Mode.Throughput})
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    public Integer baselineAsyncComputationObserve() throws InterruptedException {
+        Observable<Integer> asyncObservable = Observable.just(1).subscribeOn(Schedulers.computation());
+
+        try {
+            return asyncObservable.toBlocking().first();
+        } catch (Throwable t) {
+            return 2;
+        }
+    }
+
+    @Benchmark
+    @BenchmarkMode({Mode.Throughput})
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    public Integer baselineAsyncCustomThreadPoolObserve(ThreadPoolState state) {
+        Observable<Integer> asyncObservable = Observable.just(1).subscribeOn(state.hystrixThreadPool.getScheduler());
+        try {
+            return asyncObservable.toBlocking().first();
+        } catch (Throwable t) {
+            return 2;
+        }
+    }
 
     @Benchmark
     @BenchmarkMode({Mode.Throughput})
