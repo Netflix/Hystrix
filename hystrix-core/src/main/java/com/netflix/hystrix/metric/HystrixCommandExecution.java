@@ -20,6 +20,7 @@ import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.HystrixInvokableInfo;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class HystrixCommandExecution {
@@ -70,15 +71,24 @@ public class HystrixCommandExecution {
     @Override
     public String toString() {
         StringBuffer sb = new StringBuffer();
+        List<HystrixEventType> foundEventTypes = new ArrayList<HystrixEventType>();
+
         sb.append(commandKey.name()).append("[");
         for (HystrixEventType eventType: HystrixEventType.values()) {
             if (eventTypeCounts[eventType.ordinal()] > 0) {
-                sb.append(eventType.name());
-                if (eventTypeCounts[eventType.ordinal()] > 1) {
-                    sb.append("x").append(eventTypeCounts[eventType.ordinal()]);
-                }
+                foundEventTypes.add(eventType);
+            }
+        }
+        int i = 0;
+        for (HystrixEventType eventType: foundEventTypes) {
+            sb.append(eventType.name());
+            if (eventTypeCounts[eventType.ordinal()] > 1) {
+                sb.append("x").append(eventTypeCounts[eventType.ordinal()]);
+            }
+            if (i < foundEventTypes.size() - 1) {
                 sb.append(", ");
             }
+            i++;
         }
         sb.append("][").append(executionLatency).append(" ms]");
         return sb.toString();
