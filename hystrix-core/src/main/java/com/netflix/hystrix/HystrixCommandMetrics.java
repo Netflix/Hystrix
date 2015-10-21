@@ -16,7 +16,6 @@
 package com.netflix.hystrix;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -25,7 +24,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.netflix.hystrix.metric.HystrixCommandEventStream;
 import com.netflix.hystrix.metric.HystrixCommandExecution;
-import com.netflix.hystrix.metric.HystrixEventCounter;
 import com.netflix.hystrix.metric.HystrixLatencyDistribution;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +35,7 @@ import com.netflix.hystrix.util.HystrixRollingNumber;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 import rx.Observable;
 import rx.Subscription;
+import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.functions.Func2;
 import rx.subjects.BehaviorSubject;
@@ -161,27 +160,51 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     private Subscription rollingLatencySubscription;
     private final Subject<HystrixLatencyDistribution, HystrixLatencyDistribution> rollingLatencyDistribution = BehaviorSubject.create(HystrixLatencyDistribution.empty());
 
-    private static final Func1<List<HystrixCommandExecution>, long[]> countEventTypes = new Func1<List<HystrixCommandExecution>, long[]>() {
+    private static final Func2<long[], HystrixCommandExecution, long[]> aggregateEventCounts = new Func2<long[], HystrixCommandExecution, long[]>() {
         @Override
-        public long[] call(List<HystrixCommandExecution> hystrixCommandExecutions) {
-            long[] eventCounts = new long[HystrixEventType.values().length];
-
-            for (HystrixCommandExecution execution: hystrixCommandExecutions) {
-                for (HystrixEventType eventType: execution.getEventTypes()) {
-                    eventCounts[eventType.ordinal()]++;
-                }
+        public long[] call(long[] initialCountArray, HystrixCommandExecution execution) {
+            //System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis() + " : summing event counts for : " + execution.hashCode());
+            long[] executionCount = execution.getEventTypeCounts();
+            for (int i = 0; i < initialCountArray.length; i++) {
+                initialCountArray[i] += executionCount[i];
             }
-//            StringBuffer b = new StringBuffer();
-//            b.append("[");
-//            for (int i = 0; i < HystrixEventType.values().length; i++) {
-//                long count = eventCounts[i];
-//                if (count > 0) {
-//                    b.append(HystrixEventType.values()[i].name()).append(" -> ").append(count).append(", ");
-//                }
-//            }
-//            b.append("]");
-//            System.out.println("Summarized as : " + b.toString());
-            return eventCounts;
+            return initialCountArray;
+        }
+    };
+
+    private static final Func1<Observable<HystrixCommandExecution>, Observable<long[]>> reduceBucketToSingleCountArray = new Func1<Observable<HystrixCommandExecution>, Observable<long[]>>() {
+        @Override
+        public Observable<long[]> call(Observable<HystrixCommandExecution> windowOfExecutions) {
+            return windowOfExecutions.reduce(new long[HystrixEventType.values().length], aggregateEventCounts);
+//                    .doOnNext(new Action1<long[]>() {
+//                        @Override
+//                        public void call(long[] eventCounts) {
+//                            StringBuffer sb = new StringBuffer();
+//                            sb.append("[");
+//                            for (HystrixEventType eventType : HystrixEventType.values()) {
+//                                if (eventCounts[eventType.ordinal()] > 0) {
+//                                    sb.append(eventType.name()).append(" -> ").append(eventCounts[eventType.ordinal()]).append(" : ");
+//                                }
+//                            }
+//                            sb.append("]");
+//                            System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis() + " : generated aggregated bucket : " + sb.toString());
+//                        }
+//                    });
+        }
+    };
+
+    private static final Func2<HystrixLatencyDistribution, HystrixCommandExecution, HystrixLatencyDistribution> aggregateEventLatencies = new Func2<HystrixLatencyDistribution, HystrixCommandExecution, HystrixLatencyDistribution>() {
+        @Override
+        public HystrixLatencyDistribution call(HystrixLatencyDistribution initialLatencyDistribution, HystrixCommandExecution execution) {
+            initialLatencyDistribution.recordLatencies(execution.getExecutionLatency(), execution.getTotalLatency());
+            return initialLatencyDistribution;
+        }
+    };
+
+    private static final Func1<Observable<HystrixCommandExecution>, Observable<HystrixLatencyDistribution>> reduceBucketToSingleLatencyDistribution = new Func1<Observable<HystrixCommandExecution>, Observable<HystrixLatencyDistribution>>() {
+        @Override
+        public Observable<HystrixLatencyDistribution> call(Observable<HystrixCommandExecution> windowOfExecutions) {
+            return windowOfExecutions.reduce(HystrixLatencyDistribution.empty(), aggregateEventLatencies);
         }
     };
 
@@ -202,13 +225,17 @@ public class HystrixCommandMetrics extends HystrixMetrics {
         }
     };
 
-    private static final Func2<HystrixLatencyDistribution, List<HystrixCommandExecution>, HystrixLatencyDistribution> latencyAggregator = new Func2<HystrixLatencyDistribution, List<HystrixCommandExecution>, HystrixLatencyDistribution>() {
+    private static final Func2<HystrixLatencyDistribution, HystrixLatencyDistribution, HystrixLatencyDistribution> latencyAggregator = new Func2<HystrixLatencyDistribution, HystrixLatencyDistribution, HystrixLatencyDistribution>() {
         @Override
-        public HystrixLatencyDistribution call(HystrixLatencyDistribution distribution, List<HystrixCommandExecution> newBucketOfExecutions) {
-            for (HystrixCommandExecution execution: newBucketOfExecutions) {
-                distribution.recordLatencies(execution.getExecutionLatency(), execution.getTotalLatency());
-            }
-            return distribution.availableForReads();
+        public HystrixLatencyDistribution call(HystrixLatencyDistribution initialDistribution, HystrixLatencyDistribution distributionToAdd) {
+            return initialDistribution.plus(distributionToAdd);
+        }
+    };
+
+    private static final Func1<HystrixLatencyDistribution, HystrixLatencyDistribution> makeAvailableToRead = new Func1<HystrixLatencyDistribution, HystrixLatencyDistribution>() {
+        @Override
+        public HystrixLatencyDistribution call(HystrixLatencyDistribution latencyDistribution) {
+            return latencyDistribution.availableForReads();
         }
     };
 
@@ -232,7 +259,11 @@ public class HystrixCommandMetrics extends HystrixMetrics {
             emptyEventCountsToStart.add(new long[HystrixEventType.values().length]);
         }
 
-        Observable<long[]> bucketedCounterMetrics = HystrixCommandEventStream.getInstance(key).getBucketedStream(counterBucketSizeInMs).map(countEventTypes).startWith(emptyEventCountsToStart);
+        Observable<long[]> bucketedCounterMetrics =
+                HystrixCommandEventStream.getInstance(key)
+                        .getBucketedStream(counterBucketSizeInMs)
+                        .flatMap(reduceBucketToSingleCountArray)
+                        .startWith(emptyEventCountsToStart);
         cumulativeCounterSubscription = bucketedCounterMetrics.scan(new long[HystrixEventType.values().length], counterAggregator).subscribe(cumulativeCounter);
 
         rollingCounterSubscription = bucketedCounterMetrics.window(numCounterBuckets, 1).flatMap(new Func1<Observable<long[]>, Observable<long[]>>() {
@@ -247,16 +278,20 @@ public class HystrixCommandMetrics extends HystrixMetrics {
         final int numPercentileBuckets = properties.metricsRollingPercentileWindowBuckets().get();
         final int percentileBucketSizeInMs = percentileMetricWindow / numPercentileBuckets;
 
-        final List<List<HystrixCommandExecution>> emptyPercentileListsToStart = new ArrayList<List<HystrixCommandExecution>>();
+        final List<HystrixLatencyDistribution> emptyLatencyDistributionsToStart = new ArrayList<HystrixLatencyDistribution>();
         for (int i = 0; i < numPercentileBuckets; i++) {
-            emptyPercentileListsToStart.add(new ArrayList<HystrixCommandExecution>());
+            emptyLatencyDistributionsToStart.add(HystrixLatencyDistribution.empty());
         }
 
-        Observable<List<HystrixCommandExecution>> bucketedPercentileMetrics = HystrixCommandEventStream.getInstance(key).getBucketedStream(percentileBucketSizeInMs).startWith(emptyPercentileListsToStart);
-        rollingLatencySubscription = bucketedPercentileMetrics.window(numPercentileBuckets, 1).flatMap(new Func1<Observable<List<HystrixCommandExecution>>, Observable<HystrixLatencyDistribution>>() {
+        Observable<HystrixLatencyDistribution> bucketedPercentileMetrics =
+                HystrixCommandEventStream.getInstance(key)
+                        .getBucketedStream(percentileBucketSizeInMs)
+                        .flatMap(reduceBucketToSingleLatencyDistribution)
+                        .startWith(emptyLatencyDistributionsToStart);
+        rollingLatencySubscription = bucketedPercentileMetrics.window(numPercentileBuckets, 1).flatMap(new Func1<Observable<HystrixLatencyDistribution>, Observable<HystrixLatencyDistribution>>() {
             @Override
-            public Observable<HystrixLatencyDistribution> call(Observable<List<HystrixCommandExecution>> window) {
-                return window.scan(HystrixLatencyDistribution.empty(), latencyAggregator).skip(numPercentileBuckets);
+            public Observable<HystrixLatencyDistribution> call(Observable<HystrixLatencyDistribution> window) {
+                return window.scan(HystrixLatencyDistribution.empty(), latencyAggregator).skip(numPercentileBuckets).map(makeAvailableToRead);
             }
         }).subscribe(rollingLatencyDistribution);
     }
@@ -280,13 +315,22 @@ public class HystrixCommandMetrics extends HystrixMetrics {
             emptyEventCountsToStart.add(new long[HystrixEventType.values().length]);
         }
 
-        return commandEventStream.getBucketedStream(bucketSizeInMs).map(countEventTypes).startWith(emptyEventCountsToStart).
-                window(numBuckets, 1).flatMap(new Func1<Observable<long[]>, Observable<HealthCounts>>() {
-            @Override
-            public Observable<HealthCounts> call(Observable<long[]> window) {
-                return window.scan(HealthCounts.empty(), healthCheckAccumulator).skip(numBuckets);
-            }
-        }).subscribe(healthCountsSubject);
+        return commandEventStream
+                .getBucketedStream(bucketSizeInMs)
+//                .doOnNext(new Action1<Observable<HystrixCommandExecution>>() {
+//                    @Override
+//                    public void call(Observable<HystrixCommandExecution> bucket) {
+//                        System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis() + " received new bucket : " + bucket);
+//                    }
+//                })
+                .flatMap(reduceBucketToSingleCountArray)
+                .startWith(emptyEventCountsToStart)
+                .window(numBuckets, 1).flatMap(new Func1<Observable<long[]>, Observable<HealthCounts>>() {
+                    @Override
+                    public Observable<HealthCounts> call(Observable<long[]> window) {
+                        return window.scan(HealthCounts.empty(), healthCheckAccumulator).skip(numBuckets);
+                    }
+                }).subscribe(healthCountsSubject);
     }
 
     /**
@@ -587,7 +631,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     }
 
     /* package-private */ void markCommandCompletion(HystrixInvokableInfo<?> commandInstance, AbstractCommand.ExecutionResult executionResult) {
-        commandEventStream.write(commandInstance, executionResult.events, executionResult.getExecutionLatency(), executionResult.getUserThreadLatency());
+        commandEventStream.write(commandInstance, executionResult.getEventCounts(), executionResult.getExecutionLatency(), executionResult.getUserThreadLatency());
     }
 
     /**

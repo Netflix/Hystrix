@@ -25,22 +25,22 @@ import java.util.List;
 public class HystrixCommandExecution {
     private final HystrixCommandKey commandKey;
     private final HystrixInvokableInfo<?> commandInstance;
-    private final List<HystrixEventType> eventTypes;
+    private final long[] eventTypeCounts;
     private final HystrixRequestContext requestContext;
     private final long executionLatency;
     private final long totalLatency;
 
-    HystrixCommandExecution(HystrixInvokableInfo<?> commandInstance, HystrixCommandKey commandKey, List<HystrixEventType> eventTypes, HystrixRequestContext requestContext, long executionLatency, long totalLatency) {
+    HystrixCommandExecution(HystrixInvokableInfo<?> commandInstance, HystrixCommandKey commandKey, long[] eventTypeCounts, HystrixRequestContext requestContext, long executionLatency, long totalLatency) {
         this.commandInstance = commandInstance;
         this.commandKey = commandKey;
-        this.eventTypes = eventTypes;
+        this.eventTypeCounts = eventTypeCounts;
         this.requestContext = requestContext;
         this.executionLatency = executionLatency;
         this.totalLatency = totalLatency;
     }
 
-    public static HystrixCommandExecution from(HystrixInvokableInfo<?> commandInstance, HystrixCommandKey commandKey, List<HystrixEventType> eventTypes, HystrixRequestContext requestContext, long executionLatency, long totalLatency) {
-        return new HystrixCommandExecution(commandInstance, commandKey, eventTypes, requestContext, executionLatency, totalLatency);
+    public static HystrixCommandExecution from(HystrixInvokableInfo<?> commandInstance, HystrixCommandKey commandKey, long[] eventTypeCounts, HystrixRequestContext requestContext, long executionLatency, long totalLatency) {
+        return new HystrixCommandExecution(commandInstance, commandKey, eventTypeCounts, requestContext, executionLatency, totalLatency);
     }
 
     public HystrixCommandKey getCommandKey() {
@@ -51,8 +51,8 @@ public class HystrixCommandExecution {
         return commandInstance;
     }
 
-    public List<HystrixEventType> getEventTypes() {
-        return eventTypes;
+    public long[] getEventTypeCounts() {
+        return eventTypeCounts;
     }
 
     public HystrixRequestContext getRequestContext() {
@@ -69,18 +69,18 @@ public class HystrixCommandExecution {
 
     @Override
     public String toString() {
-        StringBuilder s = new StringBuilder();
-        s.append(getCommandKey().name()).append("[");
-        int i = 0;
-        for (HystrixEventType eventType: getEventTypes()) {
-            s.append(eventType.name());
-            if (i < getEventTypes().size() - 1) {
-                s.append(", ");
+        StringBuffer sb = new StringBuffer();
+        sb.append(commandKey.name()).append("[");
+        for (HystrixEventType eventType: HystrixEventType.values()) {
+            if (eventTypeCounts[eventType.ordinal()] > 0) {
+                sb.append(eventType.name());
+                if (eventTypeCounts[eventType.ordinal()] > 1) {
+                    sb.append("x").append(eventTypeCounts[eventType.ordinal()]);
+                }
+                sb.append(", ");
             }
-            i++;
         }
-        s.append("][").append(getExecutionLatency()).append("ms] : ").append(getCommandInstance());
-
-        return s.toString();
+        sb.append("][").append(executionLatency).append(" ms]");
+        return sb.toString();
     }
 }

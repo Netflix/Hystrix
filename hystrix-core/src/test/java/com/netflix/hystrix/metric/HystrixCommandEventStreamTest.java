@@ -467,9 +467,9 @@ public class HystrixCommandEventStreamTest {
 
                         int latency = r.nextInt(3);
                         Thread.sleep(latency); //simulate some latency in the command execution
-                        List<HystrixEventType> eventTypes = new ArrayList<HystrixEventType>();
-                        eventTypes.add(event);
-                        stream.write(cmd, eventTypes, latency, latency);
+                        long[] eventTypeCounts = new long[HystrixEventType.values().length];
+                        eventTypeCounts[event.ordinal()]++;
+                        stream.write(cmd, eventTypeCounts, latency, latency);
                     }
                 } catch (InterruptedException ex) {
                     fail("InterruptedException : " + ex);
@@ -510,8 +510,8 @@ public class HystrixCommandEventStreamTest {
         Observable<HystrixCommandExecution> eventsObservable = Observable.from(events);
         return eventsObservable.filter(new Func1<HystrixCommandExecution, Boolean>() {
             @Override
-            public Boolean call(HystrixCommandExecution event) {
-                return event.getEventTypes().contains(eventType);
+            public Boolean call(HystrixCommandExecution execution) {
+                return execution.getEventTypeCounts()[eventType.ordinal()] > 0;
             }
         }).count().toBlocking().first().equals(expectedCount);
     }
@@ -520,11 +520,19 @@ public class HystrixCommandEventStreamTest {
         if (events.size() == expectedEvents.length) {
             int i = 0;
             for (HystrixCommandExecution event: events) {
-                if (event.getEventTypes().contains(expectedEvents[i])) {
-                    i++;
-                } else {
-                    return false;
+                long[] eventTypeCounts = event.getEventTypeCounts();
+                HystrixEventType lookingFor = expectedEvents[i];
+                for (HystrixEventType eventType: HystrixEventType.values()) {
+                    if (eventType != lookingFor && eventTypeCounts[eventType.ordinal()] != 0) {
+                        System.out.println("Found nonzero count for : " + eventType.name());
+                        return false;
+                    }
+                    if (eventType == lookingFor && eventTypeCounts[eventType.ordinal()] != 1) {
+                        System.out.println("Found non-1 count for : " + eventType.name());
+                        return false;
+                    }
                 }
+                i++;
             }
             return true;
         } else {
