@@ -28,14 +28,15 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertTrue;
 
-public class HystrixCommandEventStreamTest extends CommonEventStreamTest {
+public class HystrixGlobalEventStreamTest extends CommonEventStreamTest {
+
+    final HystrixGlobalEventStream globalStream = HystrixGlobalEventStream.getInstance();
 
     @Test
     public void noEvents() throws Exception {
-        HystrixCommandEventStream commandStream = new HystrixCommandEventStream(commandKey1);
         TestSubscriber<HystrixCommandExecution> subscriber = new TestSubscriber<HystrixCommandExecution>(loggingWrapper);
 
-        commandStream.observe().subscribe(subscriber);
+        globalStream.observe().subscribe(subscriber);
         //no writes
         Thread.sleep(100);
 
@@ -44,12 +45,12 @@ public class HystrixCommandEventStreamTest extends CommonEventStreamTest {
     }
 
     @Test
-    public void multipleEventsInSingleThreadNoRequestContextCommandMatches() throws Exception {
-        final HystrixCommandEventStream commandStream = new HystrixCommandEventStream(commandKey1);
+    public void multipleEventsInSingleThreadNoRequestContext() throws Exception {
+        final HystrixThreadEventStream threadStream = HystrixThreadEventStream.getInstance();
         TestSubscriber<HystrixCommandExecution> subscriber = new TestSubscriber<HystrixCommandExecution>(loggingWrapper);
-        commandStream.observe().subscribe(subscriber);
+        globalStream.observe().subscribe(subscriber);
 
-        Future<?> f = createSampleTaskOnThread(threadStream1, commandKey1, HystrixEventType.SUCCESS, HystrixEventType.SUCCESS, HystrixEventType.THREAD_POOL_REJECTED);
+        Future<?> f = createSampleTaskOnThread(threadStream, commandKey1, HystrixEventType.SUCCESS, HystrixEventType.SUCCESS, HystrixEventType.THREAD_POOL_REJECTED);
         f.get(1000, TimeUnit.MILLISECONDS);
 
         //this waits on the OnNexts to show up.  there are no boundaries to unblock on, so we need to be a little lenient about when to expect values to show up in this thread
@@ -62,32 +63,15 @@ public class HystrixCommandEventStreamTest extends CommonEventStreamTest {
     }
 
     @Test
-    public void multipleEventsInSingleThreadNoRequestContextCommandDoesNotMatch() throws Exception {
-        final HystrixCommandEventStream commandStream = new HystrixCommandEventStream(commandKey1);
+    public void multipleEventsInSingleThreadWithRequestContext() throws Exception {
+        final HystrixThreadEventStream threadStream = HystrixThreadEventStream.getInstance();
         TestSubscriber<HystrixCommandExecution> subscriber = new TestSubscriber<HystrixCommandExecution>(loggingWrapper);
-        commandStream.observe().subscribe(subscriber);
-
-        Future<?> f = createSampleTaskOnThread(threadStream1, commandKey2, HystrixEventType.SUCCESS, HystrixEventType.SUCCESS, HystrixEventType.THREAD_POOL_REJECTED);
-        f.get(1000, TimeUnit.MILLISECONDS);
-
-        //this waits on the OnNexts to show up.  there are no boundaries to unblock on, so we need to be a little lenient about when to expect values to show up in this thread
-        System.out.println("TestSubscriber received : " + subscriber.getOnNextEvents());
-
-        subscriber.assertNoTerminalEvent();
-        subscriber.assertValueCount(0);
-        assertNoRequestContext(subscriber);
-    }
-
-    @Test
-    public void multipleEventsInSingleThreadWithRequestContextCommandMatches() throws Exception {
-        final HystrixCommandEventStream commandStream = new HystrixCommandEventStream(commandKey1);
-        TestSubscriber<HystrixCommandExecution> subscriber = new TestSubscriber<HystrixCommandExecution>(loggingWrapper);
-        commandStream.observe().subscribe(subscriber);
+        globalStream.observe().subscribe(subscriber);
 
         Func0<Future<?>> task = new Func0<Future<?>>() {
             @Override
             public Future<?> call() {
-                return createSampleTaskOnThread(threadStream1, commandKey1, HystrixEventType.SUCCESS, HystrixEventType.SUCCESS, HystrixEventType.THREAD_POOL_REJECTED);
+                return createSampleTaskOnThread(threadStream, commandKey2, HystrixEventType.SUCCESS, HystrixEventType.SUCCESS, HystrixEventType.THREAD_POOL_REJECTED);
             }
         };
         Future<?> request = createRequestScopedTasks(task);
@@ -101,36 +85,13 @@ public class HystrixCommandEventStreamTest extends CommonEventStreamTest {
     }
 
     @Test
-    public void multipleEventsInSingleThreadWithRequestContextCommandDoesNotMatch() throws Exception {
-        final HystrixCommandEventStream commandStream = new HystrixCommandEventStream(commandKey1);
-        TestSubscriber<HystrixCommandExecution> subscriber = new TestSubscriber<HystrixCommandExecution>(loggingWrapper);
-        commandStream.observe().subscribe(subscriber);
-
-        Func0<Future<?>> task = new Func0<Future<?>>() {
-            @Override
-            public Future<?> call() {
-                return createSampleTaskOnThread(threadStream1, commandKey2, HystrixEventType.SUCCESS, HystrixEventType.SUCCESS, HystrixEventType.THREAD_POOL_REJECTED);
-            }
-        };
-        Future<?> request = createRequestScopedTasks(task);
-
-        request.get(1000, TimeUnit.MILLISECONDS);
-        System.out.println("TestSubscriber received : " + subscriber.getOnNextEvents());
-
-        subscriber.assertNoTerminalEvent();
-        subscriber.assertValueCount(0);
-        assertRequestContext(subscriber);
-    }
-
-    @Test
     public void multipleEventsInMultipleThreadsNoRequestContext() throws Exception {
-        final HystrixCommandEventStream commandStream = new HystrixCommandEventStream(commandKey1);
         TestSubscriber<HystrixCommandExecution> subscriber = new TestSubscriber<HystrixCommandExecution>(loggingWrapper);
-        commandStream.observe().subscribe(subscriber);
+        globalStream.observe().subscribe(subscriber);
 
-        Future<?> f1 = createSampleTaskOnThread(threadStream2, commandKey1, HystrixEventType.SUCCESS, HystrixEventType.SUCCESS, HystrixEventType.THREAD_POOL_REJECTED);
-        Future<?> f2 = createSampleTaskOnThread(threadStream3, commandKey2, HystrixEventType.FAILURE, HystrixEventType.FAILURE, HystrixEventType.SUCCESS);
-        Future<?> f3 = createSampleTaskOnThread(threadStream2, commandKey1, HystrixEventType.TIMEOUT, HystrixEventType.TIMEOUT);
+        Future<?> f1 = createSampleTaskOnThread(threadStream1, commandKey1, HystrixEventType.SUCCESS, HystrixEventType.SUCCESS, HystrixEventType.THREAD_POOL_REJECTED);
+        Future<?> f2 = createSampleTaskOnThread(threadStream2, commandKey2, HystrixEventType.FAILURE, HystrixEventType.FAILURE, HystrixEventType.SUCCESS);
+        Future<?> f3 = createSampleTaskOnThread(threadStream3, commandKey1, HystrixEventType.TIMEOUT, HystrixEventType.TIMEOUT);
 
         //this waits on the writes to complete
         f1.get(1000, TimeUnit.MILLISECONDS);
@@ -138,31 +99,29 @@ public class HystrixCommandEventStreamTest extends CommonEventStreamTest {
         f3.get(1000, TimeUnit.MILLISECONDS);
 
         //this waits on the OnNexts to show up.  there are no boundaries to unblock on, so we need to be a little lenient about when to expect values to show up in this thread
-        //5 Foo, 3 Bar
-        awaitOnNexts(subscriber, 5, 500);
+        awaitOnNexts(subscriber, 8, 500);
 
         System.out.println("TestSubscriber received : " + subscriber.getOnNextEvents());
         subscriber.assertNoTerminalEvent();
-        subscriber.assertValueCount(5);
+        subscriber.assertValueCount(8);
         assertNoRequestContext(subscriber);
     }
 
     @Test
     public void multipleEventsInMultipleThreadsSharedRequestContext() throws Exception {
-        final HystrixCommandEventStream commandStream = new HystrixCommandEventStream(commandKey1);
         TestSubscriber<HystrixCommandExecution> subscriber = new TestSubscriber<HystrixCommandExecution>(loggingWrapper);
-        commandStream.observe().subscribe(subscriber);
+        globalStream.observe().subscribe(subscriber);
 
         Func0<Future<?>> task1 = new Func0<Future<?>>() {
             @Override
             public Future<?> call() {
-                return createSampleTaskOnThread(threadStream2, commandKey2, HystrixEventType.SUCCESS, HystrixEventType.SUCCESS, HystrixEventType.THREAD_POOL_REJECTED);
+                return createSampleTaskOnThread(threadStream1, commandKey2, HystrixEventType.SUCCESS, HystrixEventType.SUCCESS, HystrixEventType.THREAD_POOL_REJECTED);
             }
         };
         Func0<Future<?>> task2 = new Func0<Future<?>>() {
             @Override
             public Future<?> call() {
-                return createSampleTaskOnThread(threadStream1, commandKey1, HystrixEventType.FAILURE, HystrixEventType.FAILURE, HystrixEventType.SUCCESS);
+                return createSampleTaskOnThread(threadStream2, commandKey1, HystrixEventType.FAILURE, HystrixEventType.FAILURE, HystrixEventType.SUCCESS);
             }
         };
         Func0<Future<?>> task3 = new Func0<Future<?>>() {
@@ -177,25 +136,23 @@ public class HystrixCommandEventStreamTest extends CommonEventStreamTest {
         request.get(1000, TimeUnit.MILLISECONDS);
 
         //this waits on the OnNexts to show up.  there are no boundaries to unblock on, so we need to be a little lenient about when to expect values to show up in this thread
-        //3 Foo, 5 Bar
-        awaitOnNexts(subscriber, 3, 500);
+        awaitOnNexts(subscriber, 8, 500);
 
         System.out.println("TestSubscriber received : " + subscriber.getOnNextEvents());
         subscriber.assertNoTerminalEvent();
-        subscriber.assertValueCount(3);
+        subscriber.assertValueCount(8);
         assertRequestContext(subscriber);
     }
 
     @Test
     public void multipleSingleThreadedRequests() throws Exception {
-        final HystrixCommandEventStream commandStream = new HystrixCommandEventStream(commandKey1);
         TestSubscriber<HystrixCommandExecution> subscriber = new TestSubscriber<HystrixCommandExecution>(loggingWrapper);
-        commandStream.observe().subscribe(subscriber);
+        globalStream.observe().subscribe(subscriber);
 
         Func0<Future<?>> task1 = new Func0<Future<?>>() {
             @Override
             public Future<?> call() {
-                return createSampleTaskOnThread(threadStream2, commandKey1, HystrixEventType.SUCCESS, HystrixEventType.SUCCESS, HystrixEventType.THREAD_POOL_REJECTED);
+                return createSampleTaskOnThread(threadStream1, commandKey1, HystrixEventType.SUCCESS, HystrixEventType.SUCCESS, HystrixEventType.THREAD_POOL_REJECTED);
             }
         };
         Future<?> request1 = createRequestScopedTasks(task1);
@@ -204,7 +161,7 @@ public class HystrixCommandEventStreamTest extends CommonEventStreamTest {
 
             @Override
             public Future<?> call() {
-                return createSampleTaskOnThread(threadStream3, commandKey2, HystrixEventType.FAILURE, HystrixEventType.FAILURE, HystrixEventType.SUCCESS);
+                return createSampleTaskOnThread(threadStream2, commandKey2, HystrixEventType.FAILURE, HystrixEventType.FAILURE, HystrixEventType.SUCCESS);
             }
         };
         Future<?> request2 = createRequestScopedTasks(task2);
@@ -212,7 +169,7 @@ public class HystrixCommandEventStreamTest extends CommonEventStreamTest {
         Func0<Future<?>> task3 = new Func0<Future<?>>() {
             @Override
             public Future<?> call() {
-                return createSampleTaskOnThread(threadStream1, commandKey1, HystrixEventType.TIMEOUT, HystrixEventType.TIMEOUT);
+                return createSampleTaskOnThread(threadStream3, commandKey1, HystrixEventType.TIMEOUT, HystrixEventType.TIMEOUT);
             }
         };
         Future<?> request3 = createRequestScopedTasks(task3);
@@ -223,15 +180,15 @@ public class HystrixCommandEventStreamTest extends CommonEventStreamTest {
         request3.get(1000, TimeUnit.MILLISECONDS);
 
         //this waits on the OnNexts to show up.  there are no boundaries to unblock on, so we need to be a little lenient about when to expect values to show up in this thread
-        //5 Foo, 3 Bar
-        awaitOnNexts(subscriber, 5, 500);
+        awaitOnNexts(subscriber, 8, 500);
 
         Map<HystrixRequestContext, List<HystrixCommandExecution>> perRequestMetrics = groupByRequest(subscriber);
         subscriber.assertNoTerminalEvent();
-        subscriber.assertValueCount(5);
+        subscriber.assertValueCount(8);
         assertRequestContext(subscriber);
 
         boolean foundRequest1 = false;
+        boolean foundRequest2 = false;
         boolean foundRequest3 = false;
 
         //this asserts both that request contexts were properly applied and that order is maintained within a single-threaded request
@@ -239,21 +196,20 @@ public class HystrixCommandEventStreamTest extends CommonEventStreamTest {
             if (eventListsEqual(events, HystrixEventType.SUCCESS, HystrixEventType.SUCCESS, HystrixEventType.THREAD_POOL_REJECTED)) {
                 foundRequest1 = true;
             }
-            //if (eventListsEqual(events, HystrixEventType.FAILURE, HystrixEventType.FAILURE, HystrixEventType.SUCCESS)) {
-            //    foundRequest2 = true;
-            //}
+            if (eventListsEqual(events, HystrixEventType.FAILURE, HystrixEventType.FAILURE, HystrixEventType.SUCCESS)) {
+                foundRequest2 = true;
+            }
             if (eventListsEqual(events, HystrixEventType.TIMEOUT, HystrixEventType.TIMEOUT)) {
                 foundRequest3 = true;
             }
         }
-        assertTrue(foundRequest1 && foundRequest3);
+        assertTrue(foundRequest1 && foundRequest2 && foundRequest3);
     }
 
     @Test
     public void multipleMultiThreadedRequests() throws Exception {
-        final HystrixCommandEventStream commandStream = new HystrixCommandEventStream(commandKey1);
         TestSubscriber<HystrixCommandExecution> subscriber = new TestSubscriber<HystrixCommandExecution>(loggingWrapper);
-        commandStream.observe().subscribe(subscriber);
+        globalStream.observe().subscribe(subscriber);
 
         Func0<Future<?>> req1Task1 = new Func0<Future<?>>() {
             @Override
@@ -280,14 +236,14 @@ public class HystrixCommandEventStreamTest extends CommonEventStreamTest {
 
             @Override
             public Future<?> call() {
-                return createSampleTaskOnThread(threadStream1, commandKey1, HystrixEventType.TIMEOUT);
+                return createSampleTaskOnThread(threadStream2, commandKey1, HystrixEventType.TIMEOUT);
             }
         };
         Func0<Future<?>> req2Task3 = new Func0<Future<?>>() {
 
             @Override
             public Future<?> call() {
-                return createSampleTaskOnThread(threadStream2, commandKey2, HystrixEventType.BAD_REQUEST);
+                return createSampleTaskOnThread(threadStream1, commandKey2, HystrixEventType.BAD_REQUEST);
             }
         };
         Future<?> request2 = createRequestScopedTasks(req2Task1, req2Task2, req2Task3);
@@ -295,13 +251,13 @@ public class HystrixCommandEventStreamTest extends CommonEventStreamTest {
         Func0<Future<?>> req3Task1 = new Func0<Future<?>>() {
             @Override
             public Future<?> call() {
-                return createSampleTaskOnThread(threadStream3, commandKey1, HystrixEventType.TIMEOUT, HystrixEventType.TIMEOUT);
+                return createSampleTaskOnThread(threadStream1, commandKey1, HystrixEventType.TIMEOUT, HystrixEventType.TIMEOUT);
             }
         };
         Func0<Future<?>> req3Task2 = new Func0<Future<?>>() {
             @Override
             public Future<?> call() {
-                return createSampleTaskOnThread(threadStream1, commandKey2, HystrixEventType.TIMEOUT, HystrixEventType.SHORT_CIRCUITED);
+                return createSampleTaskOnThread(threadStream3, commandKey2, HystrixEventType.TIMEOUT, HystrixEventType.SHORT_CIRCUITED);
             }
         };
         Future<?> request3 = createRequestScopedTasks(req3Task1, req3Task2);
@@ -312,12 +268,11 @@ public class HystrixCommandEventStreamTest extends CommonEventStreamTest {
         request3.get(1000, TimeUnit.MILLISECONDS);
 
         //this waits on the OnNexts to show up.  there are no boundaries to unblock on, so we need to be a little lenient about when to expect values to show up in this thread
-        //6 Foo, 9 Bar
-        awaitOnNexts(subscriber, 6, 500);
+        awaitOnNexts(subscriber, 15, 500);
 
         Map<HystrixRequestContext, List<HystrixCommandExecution>> perRequestMetrics = groupByRequest(subscriber);
         subscriber.assertNoTerminalEvent();
-        subscriber.assertValueCount(6);
+        subscriber.assertValueCount(15);
         assertRequestContext(subscriber);
 
         boolean foundRequest1 = false;
@@ -326,13 +281,13 @@ public class HystrixCommandEventStreamTest extends CommonEventStreamTest {
 
         //this asserts both that request contexts were properly applied and that order is maintained within a single-threaded request
         for (List<HystrixCommandExecution> events: perRequestMetrics.values()) {
-            if (events.size() == 3 && containsCount(events, HystrixEventType.SUCCESS, 3)) {
+            if (events.size() == 6 && containsCount(events, HystrixEventType.SUCCESS, 5) && containsCount(events, HystrixEventType.THREAD_POOL_REJECTED, 1)) {
                 foundRequest1 = true;
             }
-            if (events.size() == 1 && containsCount(events, HystrixEventType.TIMEOUT, 1)) {
+            if (events.size() == 5 && containsCount(events, HystrixEventType.FAILURE, 2) && containsCount(events, HystrixEventType.SUCCESS, 1) && containsCount(events, HystrixEventType.TIMEOUT, 1) && containsCount(events, HystrixEventType.BAD_REQUEST, 1)) {
                 foundRequest2 = true;
             }
-            if (events.size() == 2 && containsCount(events, HystrixEventType.TIMEOUT, 2)) {
+            if (events.size() == 4 && containsCount(events, HystrixEventType.TIMEOUT, 3) && containsCount(events, HystrixEventType.SHORT_CIRCUITED, 1)) {
                 foundRequest3 = true;
             }
         }
@@ -341,27 +296,26 @@ public class HystrixCommandEventStreamTest extends CommonEventStreamTest {
 
     @Test
     public void testMultipleSubscribers() throws Exception {
-        final HystrixCommandEventStream commandStream = new HystrixCommandEventStream(commandKey1);
         TestSubscriber<HystrixCommandExecution> subscriber1 = new TestSubscriber<HystrixCommandExecution>(loggingWrapper);
         TestSubscriber<HystrixCommandExecution> subscriber2 = new TestSubscriber<HystrixCommandExecution>(loggingWrapper);
         TestSubscriber<HystrixCommandExecution> subscriber3 = new TestSubscriber<HystrixCommandExecution>(loggingWrapper);
-        commandStream.observe().subscribe(subscriber1);
-        commandStream.observe().subscribe(subscriber2);
-        commandStream.observe().subscribe(subscriber3);
+        globalStream.observe().subscribe(subscriber1);
+        globalStream.observe().subscribe(subscriber2);
+        globalStream.observe().subscribe(subscriber3);
 
         Func0<Future<?>> task = new Func0<Future<?>>() {
             @Override
             public Future<?> call() {
-                return createSampleTaskOnThread(threadStream2, commandKey1, HystrixEventType.SUCCESS, HystrixEventType.SUCCESS, HystrixEventType.THREAD_POOL_REJECTED, HystrixEventType.SUCCESS);
+                return createSampleTaskOnThread(threadStream1, commandKey1, HystrixEventType.SUCCESS, HystrixEventType.SUCCESS, HystrixEventType.THREAD_POOL_REJECTED, HystrixEventType.SUCCESS);
             }
         };
         Future<?> request = createRequestScopedTasks(task);
 
         request.get(1000, TimeUnit.MILLISECONDS);
         //this waits on the OnNexts to show up.  there are no boundaries to unblock on, so we need to be a little lenient about when to expect values to show up in this thread
-        awaitOnNexts(subscriber1, 4, 100);
-        awaitOnNexts(subscriber2, 4, 100);
-        awaitOnNexts(subscriber3, 4, 100);
+        awaitOnNexts(subscriber1, 4, 500);
+        awaitOnNexts(subscriber2, 4, 500);
+        awaitOnNexts(subscriber3, 4, 500);
 
         System.out.println("TestSubscriber1 received : " + subscriber1.getOnNextEvents());
         System.out.println("TestSubscriber2 received : " + subscriber2.getOnNextEvents());
@@ -373,8 +327,5 @@ public class HystrixCommandEventStreamTest extends CommonEventStreamTest {
         subscriber2.assertValueCount(4);
         subscriber3.assertNoTerminalEvent();
         subscriber3.assertValueCount(4);
-        assertRequestContext(subscriber1);
-        assertRequestContext(subscriber2);
-        assertRequestContext(subscriber3);
     }
 }

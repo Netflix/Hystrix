@@ -16,33 +16,22 @@
 package com.netflix.hystrix.metric;
 
 import com.netflix.hystrix.HystrixCommandKey;
-import com.netflix.hystrix.HystrixEventType;
-import com.netflix.hystrix.HystrixInvokableInfo;
-import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import rx.Observable;
-import rx.Subscription;
-import rx.observers.Subscribers;
-import rx.schedulers.Schedulers;
-import rx.subjects.PublishSubject;
-import rx.subjects.SerializedSubject;
+import rx.functions.Func1;
 
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Right now, the threading model is that the thread executing the HystrixCommand performs the stream.write(), which synchronously invokes subject.onNext.
- * A subscriber to the metric stream provides the metric-handling logic.  Without any intervention, all such logic will be executed by the HystrixCommand thread.
+ * Using the primitive of {@link HystrixGlobalEventStream}, filter only the command key that is set in the constructor.
+ * This allows for a single place where this filtering is done, so that existing command-level metrics can be
+ * consumed as efficiently as possible.
  *
- * I am targeting async use cases first, so I will use insert a observeOn(Schedulers.computation()) in this class such that all consumers
- * receive events on a thread separate from the command execution thread.  This allows the Hystrix thread to
- * continue executing application-layer and Hystrix bookkeeping work while the provided computation thread handles the metrics.
+ * Note that {@link HystrixThreadEventStream} emits on an RxComputation thread, so all consumption is async.
  */
 public class HystrixCommandEventStream {
     private final HystrixCommandKey commandKey;
-    private final SerializedSubject<HystrixCommandExecution, HystrixCommandExecution> subject;
-    private final Subscription subscription;
 
     private static final ConcurrentMap<HystrixCommandKey, HystrixCommandEventStream> streams = new ConcurrentHashMap<HystrixCommandKey, HystrixCommandEventStream>();
 
@@ -59,7 +48,6 @@ public class HystrixCommandEventStream {
             } else {
                 //we lost the race, so a different thread already registered the stream
                 System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis() + " : Lost the thread race, so destroying this instance of " + commandKey.name() + " Command stream");
-                newStream.shutdown();
                 return existingStream;
             }
         }
@@ -67,13 +55,6 @@ public class HystrixCommandEventStream {
 
     HystrixCommandEventStream(HystrixCommandKey commandKey) {
         this.commandKey = commandKey;
-        subject = new SerializedSubject<HystrixCommandExecution, HystrixCommandExecution>(PublishSubject.<HystrixCommandExecution>create());
-        subscription = subject.unsafeSubscribe(Subscribers.empty());
-    }
-
-    public void write(HystrixInvokableInfo<?> commandInstance, long[] eventTypeCounts, long executionLatency, long totalLatency) {
-        HystrixCommandExecution event = HystrixCommandExecution.from(commandInstance, commandKey, eventTypeCounts, HystrixRequestContext.getContextForCurrentThread(), executionLatency, totalLatency);
-        subject.onNext(event);
     }
 
     public static void reset() {
@@ -81,15 +62,15 @@ public class HystrixCommandEventStream {
     }
 
     public Observable<HystrixCommandExecution> observe() {
-        return subject.onBackpressureBuffer().observeOn(Schedulers.computation());
+        return HystrixGlobalEventStream.getInstance().observe().filter(new Func1<HystrixCommandExecution, Boolean>() {
+            @Override
+            public Boolean call(HystrixCommandExecution hystrixCommandExecution) {
+                return hystrixCommandExecution.getCommandKey().equals(commandKey);
+            }
+        });
     }
 
     public Observable<Observable<HystrixCommandExecution>> getBucketedStream(int bucketSizeInMs) {
         return observe().window(bucketSizeInMs, TimeUnit.MILLISECONDS);
-    }
-
-    public void shutdown() {
-        subject.onCompleted();
-        subscription.unsubscribe();
     }
 }
