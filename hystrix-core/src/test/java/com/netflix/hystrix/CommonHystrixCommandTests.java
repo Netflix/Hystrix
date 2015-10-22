@@ -206,6 +206,11 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
         }
 
         @Override
+        public HystrixThreadPoolKey getKey() {
+            return HystrixThreadPoolKey.Factory.asKey("SingleWithQueue");
+        }
+
+        @Override
         public void markThreadExecution() {
             // not used for this test
         }
@@ -253,6 +258,11 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
         @Override
         public Scheduler getScheduler(Func0<Boolean> shouldInterruptThread) {
             return new HystrixContextScheduler(HystrixPlugins.getInstance().getConcurrencyStrategy(), this, shouldInterruptThread);
+        }
+
+        @Override
+        public HystrixThreadPoolKey getKey() {
+            return HystrixThreadPoolKey.Factory.asKey("SingleNoQueue");
         }
 
         @Override

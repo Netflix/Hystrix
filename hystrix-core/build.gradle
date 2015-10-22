@@ -38,8 +38,6 @@ jar {
 jmh {
 	fork = 10
 	iterations = 3
-	fork = 0
-	iterations = 100
 	jmhVersion = '1.11.1'
 	profilers = ['gc']
 	threads = 8

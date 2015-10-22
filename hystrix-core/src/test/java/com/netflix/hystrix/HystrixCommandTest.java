@@ -5145,6 +5145,11 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
                             return new HystrixContextScheduler(HystrixPlugins.getInstance().getConcurrencyStrategy(), this, shouldInterruptThread);
                         }
 
+                        @Override
+                        public HystrixThreadPoolKey getKey() {
+                            return HystrixThreadPoolKey.Factory.asKey("TestRejection");
+                        }
+
                     }));
             this.completionLatch = completionLatch;
         }
