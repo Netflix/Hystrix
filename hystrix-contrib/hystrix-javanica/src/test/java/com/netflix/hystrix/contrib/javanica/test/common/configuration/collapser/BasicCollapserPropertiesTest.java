@@ -6,8 +6,8 @@ import com.netflix.hystrix.HystrixRequestLog;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCollapser;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
+import com.netflix.hystrix.contrib.javanica.test.common.BasicHystrixTest;
 import com.netflix.hystrix.contrib.javanica.test.common.domain.User;
-import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -21,7 +21,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by dmgcodevil
  */
-public abstract class BasicCollapserPropertiesTest {
+public abstract class BasicCollapserPropertiesTest extends BasicHystrixTest {
 
     private UserService userService;
 
@@ -29,34 +29,30 @@ public abstract class BasicCollapserPropertiesTest {
 
     @Before
     public void setUp() throws Exception {
+        super.setUp();
         userService = createUserService();
-
     }
 
     @Test
     public void testCollapser() throws ExecutionException, InterruptedException {
-        HystrixRequestContext context = HystrixRequestContext.initializeContext();
-        try {
-            User u1 = userService.getUser("1");
-            User u2 = userService.getUser("2");
-            User u3 = userService.getUser("3");
-            User u4 = userService.getUser("4");
 
-            assertEquals("name: 1", u1.getName());
-            assertEquals("name: 2", u2.getName());
-            assertEquals("name: 3", u3.getName());
-            assertEquals("name: 4", u4.getName());
-            assertEquals(4, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-            HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest()
-                    .getAllExecutedCommands().iterator().next();
-            assertEquals("getUsers", command.getCommandKey().name());
-            // confirm that it was a COLLAPSED command execution
-            assertTrue(command.getExecutionEvents().contains(HystrixEventType.COLLAPSED));
-            // and that it was successful
-            assertTrue(command.getExecutionEvents().contains(HystrixEventType.SUCCESS));
-        } finally {
-            context.shutdown();
-        }
+        User u1 = userService.getUser("1");
+        User u2 = userService.getUser("2");
+        User u3 = userService.getUser("3");
+        User u4 = userService.getUser("4");
+
+        assertEquals("name: 1", u1.getName());
+        assertEquals("name: 2", u2.getName());
+        assertEquals("name: 3", u3.getName());
+        assertEquals("name: 4", u4.getName());
+        assertEquals(4, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+        HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest()
+                .getAllExecutedCommands().iterator().next();
+        assertEquals("getUsers", command.getCommandKey().name());
+        // confirm that it was a COLLAPSED command execution
+        assertTrue(command.getExecutionEvents().contains(HystrixEventType.COLLAPSED));
+        // and that it was successful
+        assertTrue(command.getExecutionEvents().contains(HystrixEventType.SUCCESS));
     }
 
     public static class UserService {

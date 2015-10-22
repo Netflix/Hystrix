@@ -7,8 +7,8 @@ import com.netflix.hystrix.HystrixThreadPool;
 import com.netflix.hystrix.HystrixThreadPoolProperties;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
+import com.netflix.hystrix.contrib.javanica.test.common.BasicHystrixTest;
 import com.netflix.hystrix.contrib.javanica.test.common.domain.User;
-import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -20,7 +20,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by dmgcodevil
  */
-public abstract class BasicCommandPropertiesTest {
+public abstract class BasicCommandPropertiesTest extends BasicHystrixTest {
 
     private UserService userService;
 
@@ -29,78 +29,64 @@ public abstract class BasicCommandPropertiesTest {
     @Before
     public void setUp() throws Exception {
         userService = createUserService();
+        super.setUp();
     }
 
     @Test
     public void testGetUser() throws NoSuchFieldException, IllegalAccessException {
-        HystrixRequestContext context = HystrixRequestContext.initializeContext();
-        try {
-            User u1 = userService.getUser("1", "name: ");
-            assertEquals("name: 1", u1.getName());
-            assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-            HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest()
-                    .getAllExecutedCommands().iterator().next();
-            assertEquals("GetUserCommand", command.getCommandKey().name());
-            assertEquals("UserGroupKey", command.getCommandGroup().name());
-            assertEquals("Test", command.getThreadPoolKey().name());
-            assertTrue(command.getExecutionEvents().contains(HystrixEventType.SUCCESS));
-            // assert properties
-            assertEquals(110, command.getProperties().executionTimeoutInMilliseconds().get().intValue());
-            assertEquals(false, command.getProperties().executionIsolationThreadInterruptOnTimeout().get());
+        User u1 = userService.getUser("1", "name: ");
+        assertEquals("name: 1", u1.getName());
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+        HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest()
+                .getAllExecutedCommands().iterator().next();
+        assertEquals("GetUserCommand", command.getCommandKey().name());
+        assertEquals("UserGroupKey", command.getCommandGroup().name());
+        assertEquals("Test", command.getThreadPoolKey().name());
+        assertTrue(command.getExecutionEvents().contains(HystrixEventType.SUCCESS));
+        // assert properties
+        assertEquals(110, command.getProperties().executionTimeoutInMilliseconds().get().intValue());
+        assertEquals(false, command.getProperties().executionIsolationThreadInterruptOnTimeout().get());
 
-            Field field = command.getClass().getSuperclass().getSuperclass().getSuperclass().getDeclaredField("threadPool");
-            field.setAccessible(true);
-            HystrixThreadPool threadPool = (HystrixThreadPool) field.get(command);
+        Field field = command.getClass().getSuperclass().getSuperclass().getSuperclass().getDeclaredField("threadPool");
+        field.setAccessible(true);
+        HystrixThreadPool threadPool = (HystrixThreadPool) field.get(command);
 
-            Field field2 = HystrixThreadPool.HystrixThreadPoolDefault.class.getDeclaredField("properties");
-            field2.setAccessible(true);
-            HystrixThreadPoolProperties properties = (HystrixThreadPoolProperties) field2.get(threadPool);
+        Field field2 = HystrixThreadPool.HystrixThreadPoolDefault.class.getDeclaredField("properties");
+        field2.setAccessible(true);
+        HystrixThreadPoolProperties properties = (HystrixThreadPoolProperties) field2.get(threadPool);
 
-            assertEquals(30, (int) properties.coreSize().get());
-            assertEquals(101, (int) properties.maxQueueSize().get());
-            assertEquals(2, (int) properties.keepAliveTimeMinutes().get());
-            assertEquals(15, (int) properties.queueSizeRejectionThreshold().get());
-            assertEquals(1440, (int) properties.metricsRollingStatisticalWindowInMilliseconds().get());
-            assertEquals(12, (int) properties.metricsRollingStatisticalWindowBuckets().get());
-        } finally {
-            context.shutdown();
-        }
+        assertEquals(30, (int) properties.coreSize().get());
+        assertEquals(101, (int) properties.maxQueueSize().get());
+        assertEquals(2, (int) properties.keepAliveTimeMinutes().get());
+        assertEquals(15, (int) properties.queueSizeRejectionThreshold().get());
+        assertEquals(1440, (int) properties.metricsRollingStatisticalWindowInMilliseconds().get());
+        assertEquals(12, (int) properties.metricsRollingStatisticalWindowBuckets().get());
     }
 
     @Test
     public void testGetUserDefaultPropertiesValues() {
-        HystrixRequestContext context = HystrixRequestContext.initializeContext();
-        try {
-            User u1 = userService.getUserDefProperties("1", "name: ");
-            assertEquals("name: 1", u1.getName());
-            assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-            HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest()
-                    .getAllExecutedCommands().iterator().next();
-            assertEquals("getUserDefProperties", command.getCommandKey().name());
-            assertEquals("UserService", command.getCommandGroup().name());
-            assertEquals("UserService", command.getThreadPoolKey().name());
-            assertTrue(command.getExecutionEvents().contains(HystrixEventType.SUCCESS));
-        } finally {
-            context.shutdown();
-        }
+        User u1 = userService.getUserDefProperties("1", "name: ");
+        assertEquals("name: 1", u1.getName());
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+        HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest()
+                .getAllExecutedCommands().iterator().next();
+        assertEquals("getUserDefProperties", command.getCommandKey().name());
+        assertEquals("UserService", command.getCommandGroup().name());
+        assertEquals("UserService", command.getThreadPoolKey().name());
+        assertTrue(command.getExecutionEvents().contains(HystrixEventType.SUCCESS));
     }
 
     @Test
-    public void testGetUserDefGroupKeyWithSpecificThreadPoolKey(){
-        HystrixRequestContext context = HystrixRequestContext.initializeContext();
-        try {
-            User u1 = userService.getUserDefGroupKeyWithSpecificThreadPoolKey("1", "name: ");
-            assertEquals("name: 1", u1.getName());
-            assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-            HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest()
-                    .getAllExecutedCommands().iterator().next();
-            assertEquals("getUserDefGroupKeyWithSpecificThreadPoolKey", command.getCommandKey().name());
-            assertEquals("UserService", command.getCommandGroup().name());
-            assertEquals("CustomThreadPool", command.getThreadPoolKey().name());
-            assertTrue(command.getExecutionEvents().contains(HystrixEventType.SUCCESS));
-        } finally {
-            context.shutdown();
-        }
+    public void testGetUserDefGroupKeyWithSpecificThreadPoolKey() {
+        User u1 = userService.getUserDefGroupKeyWithSpecificThreadPoolKey("1", "name: ");
+        assertEquals("name: 1", u1.getName());
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+        HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest()
+                .getAllExecutedCommands().iterator().next();
+        assertEquals("getUserDefGroupKeyWithSpecificThreadPoolKey", command.getCommandKey().name());
+        assertEquals("UserService", command.getCommandGroup().name());
+        assertEquals("CustomThreadPool", command.getThreadPoolKey().name());
+        assertTrue(command.getExecutionEvents().contains(HystrixEventType.SUCCESS));
     }
 
     public static class UserService {

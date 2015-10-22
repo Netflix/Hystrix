@@ -17,16 +17,17 @@ package com.netflix.hystrix.contrib.javanica.collapser;
 
 import com.netflix.hystrix.HystrixCollapser;
 import com.netflix.hystrix.HystrixCollapserKey;
+import com.netflix.hystrix.HystrixCollapserProperties;
 import com.netflix.hystrix.HystrixCommand;
-import com.netflix.hystrix.contrib.javanica.command.BatchHystrixCommand;
+import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
 import com.netflix.hystrix.contrib.javanica.command.BatchHystrixCommandFactory;
 import com.netflix.hystrix.contrib.javanica.command.MetaHolder;
-import com.netflix.hystrix.contrib.javanica.conf.HystrixPropertiesManager;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Collection;
 import java.util.List;
 
+import static com.netflix.hystrix.contrib.javanica.conf.HystrixPropertiesManager.initializeCollapserProperties;
 import static org.slf4j.helpers.MessageFormatter.arrayFormat;
 
 /**
@@ -51,9 +52,8 @@ public class CommandCollapser extends HystrixCollapser<List<Object>, Object, Obj
         super(new CollapserSetterBuilder()
                 .collapserKey(metaHolder.getHystrixCollapser().collapserKey(), metaHolder.getDefaultCollapserKey())
                 .scope(metaHolder.getHystrixCollapser().scope())
+                .properties(metaHolder.getHystrixCollapser().collapserProperties())
                 .build());
-        HystrixPropertiesManager.setCollapserProperties(metaHolder.getHystrixCollapser().collapserProperties(),
-                getCollapserKey().name());
         this.metaHolder = metaHolder;
     }
 
@@ -98,6 +98,8 @@ public class CommandCollapser extends HystrixCollapser<List<Object>, Object, Obj
 
         private Scope scope;
 
+        private HystrixProperty[] properties;
+
         private CollapserSetterBuilder collapserKey(String pCollapserKey, String def) {
             this.collapserKey = StringUtils.isNotEmpty(pCollapserKey) ? pCollapserKey : def;
             return this;
@@ -108,8 +110,15 @@ public class CommandCollapser extends HystrixCollapser<List<Object>, Object, Obj
             return this;
         }
 
+        private CollapserSetterBuilder properties(HystrixProperty[] properties) {
+            this.properties = properties;
+            return this;
+        }
+
         public Setter build() {
-            return Setter.withCollapserKey(HystrixCollapserKey.Factory.asKey(collapserKey)).andScope(scope);
+            HystrixCollapserProperties.Setter propSetter = initializeCollapserProperties(properties);
+            return Setter.withCollapserKey(HystrixCollapserKey.Factory.asKey(collapserKey)).andScope(scope)
+                    .andCollapserPropertiesDefaults(propSetter);
         }
     }
 

@@ -5,9 +5,8 @@ import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.HystrixRequestLog;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.command.AsyncResult;
+import com.netflix.hystrix.contrib.javanica.test.common.BasicHystrixTest;
 import com.netflix.hystrix.contrib.javanica.test.common.domain.User;
-import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -17,23 +16,17 @@ import java.util.concurrent.Future;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public abstract class BasicCommandTest {
-
+public abstract class BasicCommandTest extends BasicHystrixTest {
 
     private UserService userService;
     private AdvancedUserService advancedUserService;
-    private HystrixRequestContext context;
 
     @Before
     public void setUp() throws Exception {
+        super.setUp();
         userService = createUserService();
         advancedUserService = createAdvancedUserServiceService();
-        context = HystrixRequestContext.initializeContext();
-    }
 
-    @After
-    public void tearDown() throws Exception {
-        context.shutdown();
     }
 
     @Test

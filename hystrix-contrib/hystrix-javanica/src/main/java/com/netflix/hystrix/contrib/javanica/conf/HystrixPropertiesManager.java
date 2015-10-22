@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 Netflix, Inc.
+ * Copyright 2015 Netflix, Inc.
  * <p/>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,21 +16,17 @@
 package com.netflix.hystrix.contrib.javanica.conf;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
-import com.netflix.config.ConfigurationManager;
+import com.netflix.hystrix.HystrixCollapserProperties;
 import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.HystrixThreadPoolProperties;
-import com.netflix.hystrix.contrib.javanica.annotation.HystrixCollapser;
-import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
 import org.apache.commons.lang3.Validate;
 
-import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.Map;
 
 /**
- * This class provides methods to dynamically set Hystrix properties using {@link ConfigurationManager}.
+ * This class provides methods to set hystrix properties.
  */
 public final class HystrixPropertiesManager {
 
@@ -93,103 +89,50 @@ public final class HystrixPropertiesManager {
     public static final String MAX_REQUESTS_IN_BATCH = "maxRequestsInBatch";
     public static final String TIMER_DELAY_IN_MILLISECONDS = "timerDelayInMilliseconds";
 
-    private static final String COMMAND_PROPERTY_TEMPLATE = "hystrix.command.{0}.{1}";
-    private static final String COLLAPSER_PROPERTY_TEMPLATE = "hystrix.collapser.{0}.{1}";
-
     /**
-     * Sets Hystrix command properties.
+     * Creates and sets Hystrix command properties.
      *
-     * @param commandProperties the command properties
-     * @param commandKey        the command key
+     * @param properties the collapser properties
      */
-    @Deprecated
-    public static void setCommandProperties(Map<String, Object> commandProperties, String commandKey) {
-        setProperties(commandProperties, COMMAND_PROPERTY_TEMPLATE, commandKey);
+    public static HystrixCommandProperties.Setter initializeCommandProperties(HystrixProperty[] properties) throws IllegalArgumentException {
+        return initializeProperties(HystrixCommandProperties.Setter(), properties, CMD_PROP_MAP, "command");
     }
 
     /**
-     * Sets Hystrix collapser properties.
+     * Creates and sets Hystrix thread pool properties.
      *
-     * @param collapserProperties the collapser properties
-     * @param collapserKey        the collapser key
+     * @param properties the collapser properties
      */
-    @Deprecated
-    public static void setCollapserProperties(Map<String, Object> collapserProperties, String collapserKey) {
-        setProperties(collapserProperties, COLLAPSER_PROPERTY_TEMPLATE, collapserKey);
+    public static HystrixThreadPoolProperties.Setter initializeThreadPoolProperties(HystrixProperty[] properties) throws IllegalArgumentException {
+        return initializeProperties(HystrixThreadPoolProperties.Setter(), properties, TP_PROP_MAP, "thread pool");
     }
 
     /**
-     * Sets Hystrix collapser properties.
+     * Creates and sets Hystrix collapser properties.
      *
-     * @param collapserProperties the collapser properties
-     * @param collapserKey        the collapser key
+     * @param properties the collapser properties
      */
-    @Deprecated
-    public static void setCollapserProperties(HystrixProperty[] collapserProperties, String collapserKey) {
-        setCollapserProperties(toMap(collapserProperties), collapserKey);
+    public static HystrixCollapserProperties.Setter initializeCollapserProperties(HystrixProperty[] properties) {
+        return initializeProperties(HystrixCollapserProperties.Setter(), properties, COLLAPSER_PROP_MAP, "collapser");
     }
 
-    public static Map<String, Object> getPropertiesAsMap(HystrixCommand hystrixCommand) {
-        return toMap(hystrixCommand.commandProperties());
-    }
+    private static <S> S initializeProperties(S setter, HystrixProperty[] properties, Map<String, PropSetter<S, String>> propMap, String type) {
+        if (properties != null && properties.length > 0) {
+            for (HystrixProperty property : properties) {
+                validate(property);
+                if (!propMap.containsKey(property.name())) {
+                    throw new IllegalArgumentException("unknown " + type + " property: " + property.name());
+                }
 
-    public static Map<String, Object> getPropertiesAsMap(HystrixCollapser hystrixCollapser) {
-        return toMap(hystrixCollapser.collapserProperties());
-    }
-
-    public static Map<String, Object> toMap(HystrixProperty[] properties) {
-        Map<String, Object> propertiesMap = Maps.newHashMap();
-        for (HystrixProperty hystrixProperty : properties) {
-            validate(hystrixProperty);
-            propertiesMap.put(hystrixProperty.name(), hystrixProperty.value());
-        }
-        return propertiesMap;
-    }
-
-    @Deprecated
-    private static void setProperties(Map<String, Object> properties, String propTemplate, String commandKey) {
-        if (properties != null && !properties.isEmpty()) {
-            for (Map.Entry<String, Object> property : properties.entrySet()) {
-                String propName = MessageFormat.format(propTemplate, commandKey, property.getKey());
-                ConfigurationManager.getConfigInstance().setProperty(propName, property.getValue());
+                propMap.get(property.name()).set(setter, property.value());
             }
         }
+        return setter;
     }
 
     private static void validate(HystrixProperty hystrixProperty) throws IllegalArgumentException {
         Validate.notBlank(hystrixProperty.name(), "hystrix property name cannot be null or blank");
     }
-
-    public static HystrixCommandProperties.Setter initializeCommandProperties(HystrixProperty[] properties) throws IllegalArgumentException {
-        HystrixCommandProperties.Setter setter = HystrixCommandProperties.Setter();
-        if (properties != null && properties.length > 0) {
-            for (HystrixProperty property : properties) {
-                validate(property);
-                if (!CMD_PROP_MAP.containsKey(property.name())) {
-                    throw new IllegalArgumentException("unknown command property: " + property.name());
-                }
-
-                CMD_PROP_MAP.get(property.name()).set(setter, property.value());
-            }
-        }
-        return setter;
-    }
-
-    public static HystrixThreadPoolProperties.Setter initializeThreadPoolProperties(HystrixProperty[] properties) throws IllegalArgumentException {
-        HystrixThreadPoolProperties.Setter setter = HystrixThreadPoolProperties.Setter();
-        if (properties != null && properties.length > 0) {
-            for (HystrixProperty property : properties) {
-                validate(property);
-                if (!TP_PROP_MAP.containsKey(property.name())) {
-                    throw new IllegalArgumentException("unknown thread pool property: " + property.name());
-                }
-
-                TP_PROP_MAP.get(property.name()).set(setter, property.value());
-            }
-        }
-        return setter;
-    }
-
 
     private static final Map<String, PropSetter<HystrixCommandProperties.Setter, String>> CMD_PROP_MAP =
             ImmutableMap.<String, PropSetter<HystrixCommandProperties.Setter, String>>builder()
@@ -375,6 +318,66 @@ public final class HystrixPropertiesManager {
                     .build();
 
 
+    private static final Map<String, PropSetter<HystrixCollapserProperties.Setter, String>> COLLAPSER_PROP_MAP =
+            ImmutableMap.<String, PropSetter<HystrixCollapserProperties.Setter, String>>builder()
+                    .put(TIMER_DELAY_IN_MILLISECONDS, new PropSetter<HystrixCollapserProperties.Setter, String>() {
+                        @Override
+                        public void set(HystrixCollapserProperties.Setter setter, String value) {
+                            setter.withTimerDelayInMilliseconds(toInt(TIMER_DELAY_IN_MILLISECONDS, value));
+                        }
+                    })
+                    .put(MAX_REQUESTS_IN_BATCH, new PropSetter<HystrixCollapserProperties.Setter, String>() {
+                                @Override
+                                public void set(HystrixCollapserProperties.Setter setter, String value) {
+                                    setter.withMaxRequestsInBatch(toInt(MAX_REQUESTS_IN_BATCH, value));
+                                }
+                            }
+                    )
+                    .put(METRICS_ROLLING_STATS_TIME_IN_MILLISECONDS, new PropSetter<HystrixCollapserProperties.Setter, String>() {
+                        @Override
+                        public void set(HystrixCollapserProperties.Setter setter, String value) throws IllegalArgumentException {
+                            setter.withMetricsRollingStatisticalWindowInMilliseconds(toInt(METRICS_ROLLING_STATS_TIME_IN_MILLISECONDS, value));
+                        }
+                    })
+                    .put(METRICS_ROLLING_STATS_NUM_BUCKETS, new PropSetter<HystrixCollapserProperties.Setter, String>() {
+                        @Override
+                        public void set(HystrixCollapserProperties.Setter setter, String value) throws IllegalArgumentException {
+                            setter.withMetricsRollingStatisticalWindowBuckets(toInt(METRICS_ROLLING_STATS_NUM_BUCKETS, value));
+                        }
+                    })
+                    .put(METRICS_ROLLING_PERCENTILE_ENABLED, new PropSetter<HystrixCollapserProperties.Setter, String>() {
+                        @Override
+                        public void set(HystrixCollapserProperties.Setter setter, String value) throws IllegalArgumentException {
+                            setter.withMetricsRollingPercentileEnabled(toBoolean(value));
+                        }
+                    })
+                    .put(METRICS_ROLLING_PERCENTILE_TIME_IN_MILLISECONDS, new PropSetter<HystrixCollapserProperties.Setter, String>() {
+                        @Override
+                        public void set(HystrixCollapserProperties.Setter setter, String value) throws IllegalArgumentException {
+                            setter.withMetricsRollingPercentileWindowInMilliseconds(toInt(METRICS_ROLLING_PERCENTILE_TIME_IN_MILLISECONDS, value));
+                        }
+                    })
+                    .put(METRICS_ROLLING_PERCENTILE_NUM_BUCKETS, new PropSetter<HystrixCollapserProperties.Setter, String>() {
+                        @Override
+                        public void set(HystrixCollapserProperties.Setter setter, String value) throws IllegalArgumentException {
+                            setter.withMetricsRollingPercentileWindowBuckets(toInt(METRICS_ROLLING_PERCENTILE_NUM_BUCKETS, value));
+                        }
+                    })
+                    .put(METRICS_ROLLING_PERCENTILE_BUCKET_SIZE, new PropSetter<HystrixCollapserProperties.Setter, String>() {
+                        @Override
+                        public void set(HystrixCollapserProperties.Setter setter, String value) throws IllegalArgumentException {
+                            setter.withMetricsRollingPercentileBucketSize(toInt(METRICS_ROLLING_PERCENTILE_BUCKET_SIZE, value));
+                        }
+                    })
+                    .put(REQUEST_CACHE_ENABLED, new PropSetter<HystrixCollapserProperties.Setter, String>() {
+                        @Override
+                        public void set(HystrixCollapserProperties.Setter setter, String value) throws IllegalArgumentException {
+                            setter.withRequestCacheEnabled(toBoolean(value));
+                        }
+                    })
+                    .build();
+
+
     private interface PropSetter<S, V> {
         void set(S setter, V value) throws IllegalArgumentException;
     }
@@ -404,6 +407,5 @@ public final class HystrixPropertiesManager {
     private static IllegalArgumentException createBadEnumError(String propName, String propValue, Enum... values) {
         throw new IllegalArgumentException("bad property value. property name '" + propName + "'. Expected correct enum value, one of the [" + Arrays.toString(values) + "] , actual = " + propValue);
     }
-
 
 }
