@@ -93,6 +93,7 @@ public class HystrixCommandEventStreamTest extends CommonEventStreamTest {
         Future<?> request = createRequestScopedTasks(task);
 
         request.get(1000, TimeUnit.MILLISECONDS);
+        awaitOnNexts(subscriber, 3, 500);
         System.out.println("TestSubscriber received : " + subscriber.getOnNextEvents());
 
         subscriber.assertNoTerminalEvent();
