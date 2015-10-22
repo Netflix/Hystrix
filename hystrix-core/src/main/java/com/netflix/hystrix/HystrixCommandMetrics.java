@@ -36,8 +36,10 @@ import com.netflix.hystrix.util.HystrixRollingNumber;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 import rx.Observable;
 import rx.Subscription;
+import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.functions.Func2;
+import rx.schedulers.Schedulers;
 import rx.subjects.BehaviorSubject;
 import rx.subjects.Subject;
 
@@ -163,7 +165,6 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     private static final Func2<long[], HystrixCommandExecution, long[]> aggregateEventCounts = new Func2<long[], HystrixCommandExecution, long[]>() {
         @Override
         public long[] call(long[] initialCountArray, HystrixCommandExecution execution) {
-            //System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis() + " : summing event counts for : " + execution.hashCode());
             long[] executionCount = execution.getEventTypeCounts();
             for (int i = 0; i < initialCountArray.length; i++) {
                 initialCountArray[i] += executionCount[i];
@@ -176,20 +177,6 @@ public class HystrixCommandMetrics extends HystrixMetrics {
         @Override
         public Observable<long[]> call(Observable<HystrixCommandExecution> windowOfExecutions) {
             return windowOfExecutions.reduce(new long[HystrixEventType.values().length], aggregateEventCounts);
-//                    .doOnNext(new Action1<long[]>() {
-//                        @Override
-//                        public void call(long[] eventCounts) {
-//                            StringBuffer sb = new StringBuffer();
-//                            sb.append("[");
-//                            for (HystrixEventType eventType : HystrixEventType.values()) {
-//                                if (eventCounts[eventType.ordinal()] > 0) {
-//                                    sb.append(eventType.name()).append(" -> ").append(eventCounts[eventType.ordinal()]).append(" : ");
-//                                }
-//                            }
-//                            sb.append("]");
-//                            System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis() + " : generated aggregated bucket : " + sb.toString());
-//                        }
-//                    });
         }
     };
 
@@ -285,15 +272,34 @@ public class HystrixCommandMetrics extends HystrixMetrics {
 
         Observable<HystrixLatencyDistribution> bucketedPercentileMetrics =
                 HystrixCommandEventStream.getInstance(key)
-                        .getBucketedStream(percentileBucketSizeInMs)
-                        .flatMap(reduceBucketToSingleLatencyDistribution)
-                        .startWith(emptyLatencyDistributionsToStart);
-        rollingLatencySubscription = bucketedPercentileMetrics.window(numPercentileBuckets, 1).flatMap(new Func1<Observable<HystrixLatencyDistribution>, Observable<HystrixLatencyDistribution>>() {
+                        .getBucketedStream(percentileBucketSizeInMs) //stream of unaggregated buckets
+                        .flatMap(reduceBucketToSingleLatencyDistribution) //stream of aggregated HLDs
+                        .startWith(emptyLatencyDistributionsToStart); //stream of aggregated HLDs that starts with n empty
+        rollingLatencySubscription =
+                bucketedPercentileMetrics //stream of aggregated HLDs that starts with n empty
+                        .window(numPercentileBuckets, 1) //windowed stream: each OnNext is a stream of n HLDs
+                        .flatMap(new Func1<Observable<HystrixLatencyDistribution>, Observable<HystrixLatencyDistribution>>() {
+                            @Override
+                            public Observable<HystrixLatencyDistribution> call(Observable<HystrixLatencyDistribution> window) {
+                                return window.reduce(latencyAggregator).map(makeAvailableToRead);
+                            }
+                        })
+                        .subscribe(rollingLatencyDistribution);
+
+        //as soon as subject receives a new HystrixLatencyDistribution, old one may be released
+        rollingLatencyDistribution.window(2, 1).doOnNext(new Action1<Observable<HystrixLatencyDistribution>>() {
             @Override
-            public Observable<HystrixLatencyDistribution> call(Observable<HystrixLatencyDistribution> window) {
-                return window.scan(HystrixLatencyDistribution.empty(), latencyAggregator).skip(numPercentileBuckets).map(makeAvailableToRead);
+            public void call(Observable<HystrixLatencyDistribution> twoLatestDistributions) {
+                twoLatestDistributions.toList().doOnNext(new Action1<List<HystrixLatencyDistribution>>() {
+                    @Override
+                    public void call(List<HystrixLatencyDistribution> hystrixLatencyDistributions) {
+                        if (hystrixLatencyDistributions != null && hystrixLatencyDistributions.size() == 2) {
+                            HystrixLatencyDistribution.release(hystrixLatencyDistributions.get(0));
+                        }
+                    }
+                }).subscribe();
             }
-        }).subscribe(rollingLatencyDistribution);
+        }).subscribeOn(Schedulers.computation()).subscribe();
     }
 
     /* package */ void resetStream() {
@@ -317,12 +323,6 @@ public class HystrixCommandMetrics extends HystrixMetrics {
 
         return commandEventStream
                 .getBucketedStream(bucketSizeInMs)
-//                .doOnNext(new Action1<Observable<HystrixCommandExecution>>() {
-//                    @Override
-//                    public void call(Observable<HystrixCommandExecution> bucket) {
-//                        System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis() + " received new bucket : " + bucket);
-//                    }
-//                })
                 .flatMap(reduceBucketToSingleCountArray)
                 .startWith(emptyEventCountsToStart)
                 .window(numBuckets, 1).flatMap(new Func1<Observable<long[]>, Observable<HealthCounts>>() {
