@@ -31,6 +31,8 @@ import java.util.Map;
 
 import static com.netflix.hystrix.contrib.javanica.cache.CacheInvocationContextFactory.createCacheRemoveInvocationContext;
 import static com.netflix.hystrix.contrib.javanica.cache.CacheInvocationContextFactory.createCacheResultInvocationContext;
+import static com.netflix.hystrix.contrib.javanica.utils.EnvUtils.isCompileWeaving;
+import static com.netflix.hystrix.contrib.javanica.utils.ajc.AjcUtils.getAjcMethodAroundAdvice;
 
 /**
  * Base implementation of {@link HystrixCommandFactory} interface.
@@ -62,7 +64,7 @@ public abstract class AbstractHystrixCommandFactory<T extends AbstractHystrixCom
         setterBuilder.commandProperties(metaHolder.getHystrixCommand().commandProperties());
 
         Map<String, Object> commandProperties = getCommandProperties(metaHolder.getHystrixCommand());
-        CommandAction commandAction = new MethodExecutionAction(metaHolder.getObj(), metaHolder.getMethod(), metaHolder.getArgs());
+        CommandAction commandAction = new MethodExecutionAction(metaHolder.getObj(), metaHolder.getMethod(), metaHolder.getArgs(), metaHolder);
         CommandAction fallbackAction = createFallbackAction(metaHolder, collapsedRequests);
         CommandActions commandActions = CommandActions.builder().commandAction(commandAction)
                 .fallbackAction(fallbackAction).build();
@@ -91,6 +93,7 @@ public abstract class AbstractHystrixCommandFactory<T extends AbstractHystrixCom
                     MetaHolder fmMetaHolder = MetaHolder.builder()
                             .obj(metaHolder.getObj())
                             .method(fallbackMethod)
+                            .ajcMethod(getAjcMethod(metaHolder.getObj(), fallbackMethod))
                             .args(metaHolder.getArgs())
                             .defaultCollapserKey(metaHolder.getDefaultCollapserKey())
                             .defaultCommandKey(fallbackMethod.getName())
@@ -99,7 +102,14 @@ public abstract class AbstractHystrixCommandFactory<T extends AbstractHystrixCom
                             .hystrixCommand(fallbackMethod.getAnnotation(HystrixCommand.class)).build();
                     fallbackAction = new LazyCommandExecutionAction(GenericHystrixCommandFactory.getInstance(), fmMetaHolder, collapsedRequests);
                 } else {
-                    fallbackAction = new MethodExecutionAction(metaHolder.getObj(), fallbackMethod, metaHolder.getArgs());
+
+                    MetaHolder fmMetaHolder = MetaHolder.builder()
+                            .obj(metaHolder.getObj())
+                            .method(fallbackMethod)
+                            .ajcMethod(null) // if fallback method isn't annotated with command annotation then we don't need to get ajc method for this
+                            .args(metaHolder.getArgs()).build();
+
+                    fallbackAction = new MethodExecutionAction(fmMetaHolder.getObj(), fallbackMethod, fmMetaHolder.getArgs(), fmMetaHolder);
                 }
             } catch (NoSuchMethodException e) {
                 throw Throwables.propagate(e);
@@ -111,10 +121,17 @@ public abstract class AbstractHystrixCommandFactory<T extends AbstractHystrixCom
     abstract T create(HystrixCommandBuilder hystrixCommandBuilder);
 
 
+    private Method getAjcMethod(Object target, Method fallback) {
+        if (isCompileWeaving()) {
+            return getAjcMethodAroundAdvice(target.getClass(), fallback);
+        }
+        return null;
+    }
+
     private CommandAction createCacheKeyAction(MetaHolder metaHolder) {
         CommandAction cacheKeyAction = null;
         if (metaHolder.getCacheKeyMethod() != null) {
-            cacheKeyAction = new MethodExecutionAction(metaHolder.getObj(), metaHolder.getCacheKeyMethod(), metaHolder.getArgs());
+            cacheKeyAction = new MethodExecutionAction(metaHolder.getObj(), metaHolder.getCacheKeyMethod(), metaHolder.getArgs(), metaHolder);
         }
         return cacheKeyAction;
     }

@@ -24,6 +24,9 @@ import com.netflix.hystrix.contrib.javanica.exception.ExceptionUtils;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
+import static com.netflix.hystrix.contrib.javanica.utils.EnvUtils.isCompileWeaving;
+import static com.netflix.hystrix.contrib.javanica.utils.ajc.AjcUtils.invokeAjcMethod;
+
 /**
  * This implementation invokes methods using java reflection.
  * If {@link Method#invoke(Object, Object...)} throws exception then this exception is wrapped to {@link CommandActionExecutionException}
@@ -36,17 +39,21 @@ public class MethodExecutionAction extends CommandAction {
     private final Object object;
     private final Method method;
     private final Object[] _args;
+    private final MetaHolder metaHolder;
 
-    public MethodExecutionAction(Object object, Method method) {
+
+    public MethodExecutionAction(Object object, Method method, MetaHolder metaHolder) {
         this.object = object;
         this.method = method;
         this._args = EMPTY_ARGS;
+        this.metaHolder = metaHolder;
     }
 
-    public MethodExecutionAction(Object object, Method method, Object[] args) {
+    public MethodExecutionAction(Object object, Method method, Object[] args, MetaHolder metaHolder){
         this.object = object;
         this.method = method;
         this._args = args;
+        this.metaHolder = metaHolder;
     }
 
     public Object getObject() {
@@ -76,8 +83,8 @@ public class MethodExecutionAction extends CommandAction {
         if (ExecutionType.SYNCHRONOUS.equals(executionType)) {
             return execute(object, method, args);
         } else {
-            Closure closure = ClosureFactoryRegistry.getFactory(executionType).createClosure(method, object, args);
-            return execute(closure.getClosureObj(), closure.getClosureMethod());
+            Closure closure = ClosureFactoryRegistry.getFactory(executionType).createClosure(metaHolder, method, object, args);
+            return executeClj(closure.getClosureObj(), closure.getClosureMethod());
         }
     }
 
@@ -95,6 +102,23 @@ public class MethodExecutionAction extends CommandAction {
      * @return result of execution
      */
     private Object execute(Object o, Method m, Object... args) throws CommandActionExecutionException {
+        Object result = null;
+        try {
+            m.setAccessible(true); // suppress Java language access
+            if (isCompileWeaving() && metaHolder.getAjcMethod() != null) {
+                result = invokeAjcMethod(metaHolder.getAjcMethod(), o, metaHolder, args);
+            } else {
+                result = m.invoke(o, args);
+            }
+        } catch (IllegalAccessException e) {
+            propagateCause(e);
+        } catch (InvocationTargetException e) {
+            propagateCause(e);
+        }
+        return result;
+    }
+
+    private Object executeClj(Object o, Method m, Object... args){
         Object result = null;
         try {
             m.setAccessible(true); // suppress Java language access
