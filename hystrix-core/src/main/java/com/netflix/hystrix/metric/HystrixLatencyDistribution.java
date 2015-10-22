@@ -17,11 +17,23 @@ package com.netflix.hystrix.metric;
 
 import org.HdrHistogram.Histogram;
 
+import java.util.concurrent.ConcurrentLinkedQueue;
+
 /**
  * Wrapper around 2 histograms: 1 for execution latency, 1 for total latency.  Supports an API where you can record
  * both values at once and manage them together
  */
 public class HystrixLatencyDistribution {
+
+    private final static int POOLSIZE = 1000;
+    private final static ConcurrentLinkedQueue<HystrixLatencyDistribution> POOL = new ConcurrentLinkedQueue<HystrixLatencyDistribution>();
+
+    static {
+        //fill the pool
+        for (int i = 0; i < POOLSIZE; i++) {
+            POOL.add(new HystrixLatencyDistribution());
+        }
+    }
 
     private final Histogram executionLatencyDistribution;
     private final Histogram totalLatencyDistribution;
@@ -86,7 +98,7 @@ public class HystrixLatencyDistribution {
     private long totalLatencyPercentile100 = -1L;
 
     public static HystrixLatencyDistribution empty() {
-        return new HystrixLatencyDistribution();
+        return acquire();
     }
 
     private HystrixLatencyDistribution() {
@@ -267,5 +279,27 @@ public class HystrixLatencyDistribution {
         executionLatencyDistribution.add(distributionToAdd.executionLatencyDistribution);
         totalLatencyDistribution.add(distributionToAdd.totalLatencyDistribution);
         return this;
+    }
+
+    //get an object from the pool
+    public static HystrixLatencyDistribution acquire() {
+        HystrixLatencyDistribution fromPool = POOL.poll();
+        if (fromPool != null) {
+            return fromPool;
+        } else {
+            System.out.println("!!! No HystrixLatencyDistribution available in pool - allocating an object post-startup");
+            return new HystrixLatencyDistribution();
+        }
+    }
+
+    // return the object to the pool
+    public static void release(HystrixLatencyDistribution distributionToRelease) {
+        distributionToRelease.clear();
+        POOL.offer(distributionToRelease);
+    }
+
+    private void clear() {
+        executionLatencyDistribution.reset();
+        totalLatencyDistribution.reset();
     }
 }
