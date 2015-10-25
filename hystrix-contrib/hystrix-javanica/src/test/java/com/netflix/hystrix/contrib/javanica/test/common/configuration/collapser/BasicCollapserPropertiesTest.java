@@ -15,6 +15,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
+import static com.netflix.hystrix.contrib.javanica.conf.HystrixPropertiesManager.MAX_REQUESTS_IN_BATCH;
+import static com.netflix.hystrix.contrib.javanica.conf.HystrixPropertiesManager.TIMER_DELAY_IN_MILLISECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -60,8 +62,8 @@ public abstract class BasicCollapserPropertiesTest extends BasicHystrixTest {
         @HystrixCollapser(
                 batchMethod = "getUsers",
                 collapserKey = "GetUserCollapser", collapserProperties = {
-                @HystrixProperty(name = "maxRequestsInBatch", value = "1"),
-                @HystrixProperty(name = "timerDelayInMilliseconds", value = "200")
+                @HystrixProperty(name = TIMER_DELAY_IN_MILLISECONDS, value = "200"),
+                @HystrixProperty(name = MAX_REQUESTS_IN_BATCH, value = "1"),
         })
         public User getUser(String id) {
             return null;

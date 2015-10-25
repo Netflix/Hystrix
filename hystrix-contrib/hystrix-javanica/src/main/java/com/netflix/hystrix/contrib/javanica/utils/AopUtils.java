@@ -15,9 +15,11 @@
  */
 package com.netflix.hystrix.contrib.javanica.utils;
 
+import com.google.common.base.Throwables;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
 
+import java.io.IOException;
 import java.lang.reflect.Method;
 
 /**
@@ -83,11 +85,18 @@ public final class AopUtils {
         Method method = null;
         try {
             method = type.getDeclaredMethod(methodName, parameterTypes);
+            if(method.isBridge()){
+                method = MethodProvider.getInstance().unbride(method, type);
+            }
         } catch (NoSuchMethodException e) {
             Class<?> superclass = type.getSuperclass();
             if (superclass != null) {
                 method = getDeclaredMethod(superclass, methodName, parameterTypes);
             }
+        } catch (ClassNotFoundException e) {
+            Throwables.propagate(e);
+        } catch (IOException e) {
+            Throwables.propagate(e);
         }
         return method;
     }

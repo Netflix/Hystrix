@@ -45,7 +45,7 @@ public final class AjcUtils {
                     Class<?>[] origParamTypes = removeAspectjArgs(parameterTypes);
                     int index = 0;
                     for (Class<?> pType : origParamTypes) {
-                        Class<?> expected = pTypes[index];
+                        Class<?> expected = pTypes[index++];
                         if (pType != expected) {
                             match = false;
                         }
