@@ -21,7 +21,6 @@ import com.google.common.collect.Maps;
 import com.netflix.hystrix.HystrixCollapser;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
-import com.netflix.hystrix.contrib.javanica.conf.HystrixPropertiesManager;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 
@@ -57,12 +56,13 @@ public abstract class AbstractHystrixCommandFactory<T extends AbstractHystrixCom
                 metaHolder.getHystrixCommand().commandKey()
                 : metaHolder.getDefaultCommandKey();
 
-        HystrixPropertiesManager.initializeThreadPoolProperties(metaHolder.getHystrixCommand());
-
         CommandSetterBuilder setterBuilder = new CommandSetterBuilder();
         setterBuilder.commandKey(commandKey);
         setterBuilder.groupKey(groupKey);
         setterBuilder.threadPoolKey(metaHolder.getHystrixCommand().threadPoolKey());
+        setterBuilder.threadPoolProperties(metaHolder.getHystrixCommand().threadPoolProperties());
+        setterBuilder.commandProperties(metaHolder.getHystrixCommand().commandProperties());
+
         Map<String, Object> commandProperties = getCommandProperties(metaHolder.getHystrixCommand());
         CommandAction commandAction = new MethodExecutionAction(metaHolder.getObj(), metaHolder.getMethod(), metaHolder.getArgs(), metaHolder);
         CommandAction fallbackAction = createFallbackAction(metaHolder, collapsedRequests);

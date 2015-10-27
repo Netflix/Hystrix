@@ -3,9 +3,9 @@ package com.netflix.hystrix.contrib.javanica.test.common.error;
 import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.HystrixRequestLog;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
+import com.netflix.hystrix.contrib.javanica.test.common.BasicHystrixTest;
 import com.netflix.hystrix.contrib.javanica.test.common.domain.User;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
-import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.MockitoAnnotations;
@@ -24,8 +24,7 @@ import static org.mockito.Mockito.verify;
 /**
  * Created by dmgcodevil
  */
-public abstract class BasicErrorPropagationTest {
-
+public abstract class BasicErrorPropagationTest extends BasicHystrixTest {
 
     private static final String COMMAND_KEY = "getUserById";
 
@@ -47,6 +46,7 @@ public abstract class BasicErrorPropagationTest {
 
     @Before
     public void setUp() throws Exception {
+        super.setUp();
         MockitoAnnotations.initMocks(this);
         userService = createUserService();
         userService.setFailoverService(failoverService);
@@ -54,7 +54,6 @@ public abstract class BasicErrorPropagationTest {
 
     @Test(expected = BadRequestException.class)
     public void testGetUserByBadId() throws NotFoundException {
-        HystrixRequestContext context = HystrixRequestContext.initializeContext();
         try {
             String badId = "";
             userService.getUserById(badId);
@@ -65,13 +64,11 @@ public abstract class BasicErrorPropagationTest {
             assertFalse(getUserCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
             // and will not trigger fallback logic
             verify(failoverService, never()).getDefUser();
-            context.shutdown();
         }
     }
 
     @Test(expected = NotFoundException.class)
     public void testGetNonExistentUser() throws NotFoundException {
-        HystrixRequestContext context = HystrixRequestContext.initializeContext();
         try {
             userService.getUserById("4"); // user with id 4 doesn't exist
         } finally {
@@ -81,13 +78,11 @@ public abstract class BasicErrorPropagationTest {
             assertFalse(getUserCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
             // and will not trigger fallback logic
             verify(failoverService, never()).getDefUser();
-            context.shutdown();
         }
     }
 
     @Test // don't expect any exceptions because fallback must be triggered
     public void testActivateUser() throws NotFoundException, ActivationException {
-        HystrixRequestContext context = HystrixRequestContext.initializeContext();
         try {
             userService.activateUser("1"); // this method always throws ActivationException
         } finally {
@@ -98,13 +93,11 @@ public abstract class BasicErrorPropagationTest {
             assertTrue(activateUserCommand.getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
             // and will not trigger fallback logic
             verify(failoverService, atLeastOnce()).activate();
-            context.shutdown();
         }
     }
 
     @Test(expected = HystrixRuntimeException.class)
     public void testBlockUser() throws NotFoundException, ActivationException, OperationException {
-        HystrixRequestContext context = HystrixRequestContext.initializeContext();
         try {
             userService.blockUser("1"); // this method always throws ActivationException
         } finally {
@@ -113,7 +106,6 @@ public abstract class BasicErrorPropagationTest {
             // will not affect metrics
             assertTrue(activateUserCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
             assertTrue(activateUserCommand.getExecutionEvents().contains(HystrixEventType.FALLBACK_FAILURE));
-            context.shutdown();
         }
     }
 

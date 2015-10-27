@@ -6,8 +6,8 @@ import com.netflix.hystrix.HystrixInvokableInfo;
 import com.netflix.hystrix.HystrixRequestLog;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.command.AsyncResult;
+import com.netflix.hystrix.contrib.javanica.test.common.BasicHystrixTest;
 import com.netflix.hystrix.contrib.javanica.test.common.domain.User;
-import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import org.apache.commons.lang3.Validate;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -20,8 +20,7 @@ import static com.netflix.hystrix.contrib.javanica.test.common.CommonUtils.getHy
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public abstract class BasicCommandFallbackTest {
-
+public abstract class BasicCommandFallbackTest extends BasicHystrixTest {
 
     private UserService userService;
 
@@ -29,14 +28,12 @@ public abstract class BasicCommandFallbackTest {
 
     @Before
     public void setUp() throws Exception {
+        super.setUp();
         userService = createUserService();
-
     }
 
     @Test
     public void testGetUserAsyncWithFallback() throws ExecutionException, InterruptedException {
-        HystrixRequestContext context = HystrixRequestContext.initializeContext();
-        try {
             Future<User> f1 = userService.getUserAsync(" ", "name: ");
 
             assertEquals("def", f1.get().getName());
@@ -49,15 +46,11 @@ public abstract class BasicCommandFallbackTest {
             assertTrue(command.getExecutionEvents().contains(HystrixEventType.FAILURE));
             // and that fallback waw successful
             assertTrue(command.getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
-        } finally {
-            context.shutdown();
-        }
+
     }
 
     @Test
     public void testGetUserSyncWithFallback() {
-        HystrixRequestContext context = HystrixRequestContext.initializeContext();
-        try {
             User u1 = userService.getUserSync(" ", "name: ");
 
             assertEquals("def", u1.getName());
@@ -70,9 +63,7 @@ public abstract class BasicCommandFallbackTest {
             assertTrue(command.getExecutionEvents().contains(HystrixEventType.FAILURE));
             // and that fallback was successful
             assertTrue(command.getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
-        } finally {
-            context.shutdown();
-        }
+
     }
 
 
@@ -81,12 +72,8 @@ public abstract class BasicCommandFallbackTest {
      * * * TEST FALLBACK COMMANDS * *
      * * **************************** *
      */
-
-
     @Test
     public void testGetUserAsyncWithFallbackCommand() throws ExecutionException, InterruptedException {
-        HystrixRequestContext context = HystrixRequestContext.initializeContext();
-        try {
             Future<User> f1 = userService.getUserAsyncFallbackCommand(" ", "name: ");
 
             assertEquals("def", f1.get().getName());
@@ -104,15 +91,10 @@ public abstract class BasicCommandFallbackTest {
             assertTrue(firstFallbackCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
             // and that second fallback was successful
             assertTrue(secondFallbackCommand.getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
-        } finally {
-            context.shutdown();
-        }
     }
 
     @Test
     public void testGetUserSyncWithFallbackCommand() {
-        HystrixRequestContext context = HystrixRequestContext.initializeContext();
-        try {
             User u1 = userService.getUserSyncFallbackCommand(" ", "name: ");
 
             assertEquals("def", u1.getName());
@@ -129,9 +111,6 @@ public abstract class BasicCommandFallbackTest {
             assertTrue(firstFallbackCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
             // and that second fallback was successful
             assertTrue(secondFallbackCommand.getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
-        } finally {
-            context.shutdown();
-        }
     }
 
     @Test

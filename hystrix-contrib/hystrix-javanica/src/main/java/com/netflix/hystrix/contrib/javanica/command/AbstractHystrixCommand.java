@@ -24,13 +24,11 @@ import com.netflix.hystrix.contrib.javanica.cache.HystrixGeneratedCacheKey;
 import com.netflix.hystrix.contrib.javanica.cache.HystrixRequestCacheManager;
 import com.netflix.hystrix.contrib.javanica.cache.annotation.CacheRemove;
 import com.netflix.hystrix.contrib.javanica.cache.annotation.CacheResult;
-import com.netflix.hystrix.contrib.javanica.conf.HystrixPropertiesManager;
 import com.netflix.hystrix.contrib.javanica.exception.CommandActionExecutionException;
 import com.netflix.hystrix.exception.HystrixBadRequestException;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
 
 import javax.annotation.concurrent.ThreadSafe;
-
 import java.util.Collection;
 import java.util.Map;
 
@@ -60,7 +58,6 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
         this.cacheRemoveInvocationContext = builder.getCacheRemoveInvocationContext();
         this.ignoreExceptions = builder.getIgnoreExceptions();
         this.executionType = builder.getExecutionType();
-        HystrixPropertiesManager.setCommandProperties(commandProperties, getCommandKey().name());
     }
 
     /**
