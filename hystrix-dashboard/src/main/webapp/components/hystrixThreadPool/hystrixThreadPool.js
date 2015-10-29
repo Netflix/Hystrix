@@ -19,10 +19,11 @@
 	 * 
 	 * Publish this externally as "HystrixThreadPoolMonitor"
 	 */
-	window.HystrixThreadPoolMonitor = function(containerId) {
+	window.HystrixThreadPoolMonitor = function(index, containerId) {
 		
 		var self = this; // keep scope under control
 		
+		this.index = index;
 		this.containerId = containerId;
 		
 		/**
@@ -61,6 +62,7 @@
 		/* public */ self.eventSourceMessageListener = function(e) {
 			var data = JSON.parse(e.data);
 			if(data) {
+				data.index = self.index;
 				// check for reportingHosts (if not there, set it to 1 for singleHost vs cluster)
 				if(!data.reportingHosts) {
 					data.reportingHosts = 1;
@@ -83,7 +85,7 @@
 		function preProcessData(data) {
 			validateData(data);
 			// escape string used in jQuery & d3 selectors
-			data.escapedName = data.name.replace(/([ !"#$%&'()*+,./:;<=>?@[\]^`{|}~])/g,'\\$1');
+			data.escapedName = data.name.replace(/([ !"#$%&'()*+,./:;<=>?@[\]^`{|}~])/g,'\\$1') + '_' + data.index;
 			// do math
 			converAllAvg(data);
 			calcRatePerSecond(data);
