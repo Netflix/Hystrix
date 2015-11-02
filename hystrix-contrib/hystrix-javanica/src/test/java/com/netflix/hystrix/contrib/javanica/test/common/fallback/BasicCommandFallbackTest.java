@@ -5,13 +5,16 @@ import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.HystrixInvokableInfo;
 import com.netflix.hystrix.HystrixRequestLog;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
+import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
 import com.netflix.hystrix.contrib.javanica.command.AsyncResult;
+import com.netflix.hystrix.contrib.javanica.exception.FallbackDefinitionException;
 import com.netflix.hystrix.contrib.javanica.test.common.BasicHystrixTest;
+import com.netflix.hystrix.contrib.javanica.test.common.domain.Domain;
 import com.netflix.hystrix.contrib.javanica.test.common.domain.User;
 import org.apache.commons.lang3.Validate;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
+import rx.Observable;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -34,35 +37,35 @@ public abstract class BasicCommandFallbackTest extends BasicHystrixTest {
 
     @Test
     public void testGetUserAsyncWithFallback() throws ExecutionException, InterruptedException {
-            Future<User> f1 = userService.getUserAsync(" ", "name: ");
+        Future<User> f1 = userService.getUserAsync(" ", "name: ");
 
-            assertEquals("def", f1.get().getName());
-            assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-            HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest()
-                    .getAllExecutedCommands().iterator().next();
-            assertEquals("getUserAsync", command.getCommandKey().name());
+        assertEquals("def", f1.get().getName());
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+        HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest()
+                .getAllExecutedCommands().iterator().next();
+        assertEquals("getUserAsync", command.getCommandKey().name());
 
-            // confirm that 'getUserAsync' command has failed
-            assertTrue(command.getExecutionEvents().contains(HystrixEventType.FAILURE));
-            // and that fallback waw successful
-            assertTrue(command.getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
+        // confirm that 'getUserAsync' command has failed
+        assertTrue(command.getExecutionEvents().contains(HystrixEventType.FAILURE));
+        // and that fallback waw successful
+        assertTrue(command.getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
 
     }
 
     @Test
     public void testGetUserSyncWithFallback() {
-            User u1 = userService.getUserSync(" ", "name: ");
+        User u1 = userService.getUserSync(" ", "name: ");
 
-            assertEquals("def", u1.getName());
-            assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-            HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest()
-                    .getAllExecutedCommands().iterator().next();
+        assertEquals("def", u1.getName());
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+        HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest()
+                .getAllExecutedCommands().iterator().next();
 
-            assertEquals("getUserSync", command.getCommandKey().name());
-            // confirm that command has failed
-            assertTrue(command.getExecutionEvents().contains(HystrixEventType.FAILURE));
-            // and that fallback was successful
-            assertTrue(command.getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
+        assertEquals("getUserSync", command.getCommandKey().name());
+        // confirm that command has failed
+        assertTrue(command.getExecutionEvents().contains(HystrixEventType.FAILURE));
+        // and that fallback was successful
+        assertTrue(command.getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
 
     }
 
@@ -74,50 +77,119 @@ public abstract class BasicCommandFallbackTest extends BasicHystrixTest {
      */
     @Test
     public void testGetUserAsyncWithFallbackCommand() throws ExecutionException, InterruptedException {
-            Future<User> f1 = userService.getUserAsyncFallbackCommand(" ", "name: ");
+        Future<User> f1 = userService.getUserAsyncFallbackCommand(" ", "name: ");
 
-            assertEquals("def", f1.get().getName());
+        assertEquals("def", f1.get().getName());
 
-            assertEquals(3, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-            HystrixInvokableInfo<?> getUserAsyncFallbackCommand = getHystrixCommandByKey(
-                    "getUserAsyncFallbackCommand");
-            com.netflix.hystrix.HystrixInvokableInfo firstFallbackCommand = getHystrixCommandByKey("firstFallbackCommand");
-            com.netflix.hystrix.HystrixInvokableInfo secondFallbackCommand = getHystrixCommandByKey("secondFallbackCommand");
+        assertEquals(3, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+        HystrixInvokableInfo<?> getUserAsyncFallbackCommand = getHystrixCommandByKey(
+                "getUserAsyncFallbackCommand");
+        com.netflix.hystrix.HystrixInvokableInfo firstFallbackCommand = getHystrixCommandByKey("firstFallbackCommand");
+        com.netflix.hystrix.HystrixInvokableInfo secondFallbackCommand = getHystrixCommandByKey("secondFallbackCommand");
 
-            assertEquals("getUserAsyncFallbackCommand", getUserAsyncFallbackCommand.getCommandKey().name());
-            // confirm that command has failed
-            assertTrue(getUserAsyncFallbackCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
-            // confirm that first fallback has failed
-            assertTrue(firstFallbackCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
-            // and that second fallback was successful
-            assertTrue(secondFallbackCommand.getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
+        assertEquals("getUserAsyncFallbackCommand", getUserAsyncFallbackCommand.getCommandKey().name());
+        // confirm that command has failed
+        assertTrue(getUserAsyncFallbackCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
+        // confirm that first fallback has failed
+        assertTrue(firstFallbackCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
+        // and that second fallback was successful
+        assertTrue(secondFallbackCommand.getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
+    }
+
+    @Test
+    public void testGetUserAsyncFallbackAsyncCommand() throws ExecutionException, InterruptedException {
+        Future<User> f1 = userService.getUserAsyncFallbackAsyncCommand(" ", "name: ");
+
+        assertEquals("def", f1.get().getName());
+
+        assertEquals(4, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+        HystrixInvokableInfo<?> getUserAsyncFallbackAsyncCommand = getHystrixCommandByKey(
+                "getUserAsyncFallbackAsyncCommand");
+        com.netflix.hystrix.HystrixInvokableInfo firstAsyncFallbackCommand = getHystrixCommandByKey("firstAsyncFallbackCommand");
+        com.netflix.hystrix.HystrixInvokableInfo secondAsyncFallbackCommand = getHystrixCommandByKey("secondAsyncFallbackCommand");
+        com.netflix.hystrix.HystrixInvokableInfo thirdAsyncFallbackCommand = getHystrixCommandByKey("thirdAsyncFallbackCommand");
+        assertEquals("getUserAsyncFallbackAsyncCommand", getUserAsyncFallbackAsyncCommand.getCommandKey().name());
+        // confirm that command has failed
+        assertTrue(getUserAsyncFallbackAsyncCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
+        // confirm that first fallback has failed
+        assertTrue(firstAsyncFallbackCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
+        // and that second fallback was successful
+        assertTrue(secondAsyncFallbackCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
+
+        assertTrue(thirdAsyncFallbackCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
+        assertTrue(thirdAsyncFallbackCommand.getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
     }
 
     @Test
     public void testGetUserSyncWithFallbackCommand() {
-            User u1 = userService.getUserSyncFallbackCommand(" ", "name: ");
+        User u1 = userService.getUserSyncFallbackCommand(" ", "name: ");
 
-            assertEquals("def", u1.getName());
-            assertEquals(3, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-            HystrixInvokableInfo<?> getUserSyncFallbackCommand = getHystrixCommandByKey(
-                    "getUserSyncFallbackCommand");
-            com.netflix.hystrix.HystrixInvokableInfo firstFallbackCommand = getHystrixCommandByKey("firstFallbackCommand");
-            com.netflix.hystrix.HystrixInvokableInfo secondFallbackCommand = getHystrixCommandByKey("secondFallbackCommand");
+        assertEquals("def", u1.getName());
+        assertEquals(3, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+        HystrixInvokableInfo<?> getUserSyncFallbackCommand = getHystrixCommandByKey(
+                "getUserSyncFallbackCommand");
+        com.netflix.hystrix.HystrixInvokableInfo firstFallbackCommand = getHystrixCommandByKey("firstFallbackCommand");
+        com.netflix.hystrix.HystrixInvokableInfo secondFallbackCommand = getHystrixCommandByKey("secondFallbackCommand");
 
-            assertEquals("getUserSyncFallbackCommand", getUserSyncFallbackCommand.getCommandKey().name());
-            // confirm that command has failed
-            assertTrue(getUserSyncFallbackCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
-            // confirm that first fallback has failed
-            assertTrue(firstFallbackCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
-            // and that second fallback was successful
-            assertTrue(secondFallbackCommand.getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
+        assertEquals("getUserSyncFallbackCommand", getUserSyncFallbackCommand.getCommandKey().name());
+        // confirm that command has failed
+        assertTrue(getUserSyncFallbackCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
+        // confirm that first fallback has failed
+        assertTrue(firstFallbackCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
+        // and that second fallback was successful
+        assertTrue(secondFallbackCommand.getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
     }
 
     @Test
-    @Ignore // todo #929
-    public void testAsyncCommandWithAsyncFallback() throws ExecutionException, InterruptedException {
-        User user = userService.asyncCommandWithAsyncFallback("", "").get();
+    public void testAsyncCommandWithAsyncFallbackCommand() throws ExecutionException, InterruptedException {
+        Future<User> userFuture = userService.asyncCommandWithAsyncFallbackCommand("", "");
+        User user = userFuture.get();
         assertEquals("def", user.getId());
+        assertEquals(2, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+        HystrixInvokableInfo<?> asyncCommandWithAsyncFallbackCommand = getHystrixCommandByKey("asyncCommandWithAsyncFallbackCommand");
+        com.netflix.hystrix.HystrixInvokableInfo asyncFallbackCommand = getHystrixCommandByKey("asyncFallbackCommand");
+        // confirm that command has failed
+        assertTrue(asyncCommandWithAsyncFallbackCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
+        assertTrue(asyncCommandWithAsyncFallbackCommand.getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
+        // and that second fallback was successful
+        assertTrue(asyncFallbackCommand.getExecutionEvents().contains(HystrixEventType.SUCCESS));
+    }
+
+    @Test(expected = FallbackDefinitionException.class)
+    public void testAsyncCommandWithAsyncFallback() {
+        userService.asyncCommandWithAsyncFallback("", "");
+    }
+
+    @Test(expected = FallbackDefinitionException.class)
+    public void testCommandWithWrongFallbackReturnType() {
+        userService.commandWithWrongFallbackReturnType("", "");
+    }
+
+    @Test(expected = FallbackDefinitionException.class)
+    public void testAsyncCommandWithWrongFallbackReturnType() {
+        userService.asyncCommandWithWrongFallbackReturnType("", "");
+    }
+
+    @Test(expected = FallbackDefinitionException.class)
+    public void testCommandWithWrongFallbackParams() {
+        userService.commandWithWrongFallbackParams("1", "2");
+    }
+
+    @Test(expected = FallbackDefinitionException.class)
+    public void testCommandWithFallbackReturnSuperType() {
+        userService.commandWithFallbackReturnSuperType("", "");
+    }
+
+    @Test
+    public void testCommandWithFallbackReturnSubType() {
+        User user = (User) userService.commandWithFallbackReturnSubType("", "");
+        assertEquals("def", user.getName());
+    }
+
+    @Test
+    public void testCommandWithFallbackWithAdditionalParameter() {
+        User user = userService.commandWithFallbackWithAdditionalParameter("", "");
+        assertEquals("def", user.getName());
     }
 
     public static class UserService {
@@ -155,6 +227,7 @@ public abstract class BasicCommandFallbackTest extends BasicHystrixTest {
             };
         }
 
+
         @HystrixCommand(fallbackMethod = "firstFallbackCommand")
         public User getUserSyncFallbackCommand(String id, String name) {
             validate(id, name);
@@ -176,8 +249,60 @@ public abstract class BasicCommandFallbackTest extends BasicHystrixTest {
             return new User(id, name + id); // it should be network call
         }
 
-        @HystrixCommand(fallbackMethod = "asyncFallbackCommand")
-        public Future<User> asyncCommandWithAsyncFallback(final String id, final String name){
+        @HystrixCommand(fallbackMethod = "firstAsyncFallbackCommand")
+        public Future<User> getUserAsyncFallbackAsyncCommand(final String id, final String name) {
+            return new AsyncResult<User>() {
+                @Override
+                public User invoke() {
+                    throw new RuntimeException("getUserAsyncFallbackAsyncCommand failed");
+                }
+            };
+        }
+
+        @HystrixCommand(fallbackMethod = "secondAsyncFallbackCommand")
+        private Future<User> firstAsyncFallbackCommand(final String id, final String name) {
+            return new AsyncResult<User>() {
+                @Override
+                public User invoke() {
+                    throw new RuntimeException("firstAsyncFallbackCommand failed");
+                }
+            };
+        }
+
+        @HystrixCommand(fallbackMethod = "thirdAsyncFallbackCommand")
+        private Future<User> secondAsyncFallbackCommand(final String id, final String name, final Throwable e) {
+            return new AsyncResult<User>() {
+                @Override
+                public User invoke() {
+                    if ("firstAsyncFallbackCommand failed".equals(e.getMessage())) {
+                        throw new RuntimeException("secondAsyncFallbackCommand failed");
+                    }
+                    return new User(id, name + id);
+                }
+            };
+        }
+
+        @HystrixCommand(fallbackMethod = "fallbackWithAdditionalParam")
+        private Future<User> thirdAsyncFallbackCommand(final String id, final String name) {
+            return new AsyncResult<User>() {
+                @Override
+                public User invoke() {
+                    throw new RuntimeException("thirdAsyncFallbackCommand failed");
+                }
+            };
+        }
+
+        private User fallbackWithAdditionalParam(final String id, final String name, final Throwable e) {
+            if (!"thirdAsyncFallbackCommand failed".equals(e.getMessage())) {
+                throw new RuntimeException("fallbackWithAdditionalParam failed");
+            }
+            return new User("def", "def");
+        }
+
+        @HystrixCommand(fallbackMethod = "asyncFallbackCommand", commandProperties = {
+                @HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "100000")
+        })
+        public Future<User> asyncCommandWithAsyncFallbackCommand(final String id, final String name) {
             return new AsyncResult<User>() {
                 @Override
                 public User invoke() {
@@ -187,16 +312,94 @@ public abstract class BasicCommandFallbackTest extends BasicHystrixTest {
             };
         }
 
-        @HystrixCommand
-        public Future<User> asyncFallbackCommand(final String id, final String name){
+        @HystrixCommand(fallbackMethod = "asyncFallback", commandProperties = {
+                @HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "100000")
+        })
+        public Future<User> asyncCommandWithAsyncFallback(final String id, final String name) {
             return new AsyncResult<User>() {
                 @Override
                 public User invoke() {
-                    return  new User("def", "def"); // it should be network call
+                    validate(id, name);
+                    return new User(id, name + id); // it should be network call
                 }
             };
         }
 
+        public Future<User> asyncFallback(final String id, final String name) {
+            return Observable.just(new User("def", "def")).toBlocking().toFuture();
+        }
+
+        @HystrixCommand
+        public Future<User> asyncFallbackCommand(final String id, final String name) {
+            return new AsyncResult<User>() {
+                @Override
+                public User invoke() {
+                    return new User("def", "def"); // it should be network call
+                }
+            };
+        }
+
+        @HystrixCommand(fallbackMethod = "fallbackWithAdditionalParameter")
+        public User commandWithFallbackWithAdditionalParameter(final String id, final String name) {
+            validate(id, name);
+            return new User(id, name + id);
+        }
+
+        public User fallbackWithAdditionalParameter(final String id, final String name, Throwable e) {
+            if (e == null) {
+                throw new RuntimeException("exception should be not null");
+            }
+            return new User("def", "def");
+        }
+
+        @HystrixCommand(fallbackMethod = "fallbackWithStringReturnType")
+        public User commandWithWrongFallbackReturnType(final String id, final String name) {
+            validate(id, name);
+            return new User(id, name);
+        }
+
+        @HystrixCommand(fallbackMethod = "fallbackWithStringReturnType")
+        public Future<User> asyncCommandWithWrongFallbackReturnType(final String id, final String name) {
+            return new AsyncResult<User>() {
+                @Override
+                public User invoke() {
+                    return new User("def", "def"); // it should be network call
+                }
+            };
+        }
+
+        @HystrixCommand(fallbackMethod = "fallbackWithoutParameters")
+        public User commandWithWrongFallbackParams(final String id, final String name) {
+            return new User(id, name);
+        }
+
+        @HystrixCommand(fallbackMethod = "fallbackReturnSubTypeOfDomain")
+        public Domain commandWithFallbackReturnSubType(final String id, final String name) {
+            validate(id, name);
+            return new User(id, name);
+        }
+
+        @HystrixCommand(fallbackMethod = "fallbackReturnSuperTypeOfDomain")
+        public User commandWithFallbackReturnSuperType(final String id, final String name) {
+            validate(id, name);
+            return new User(id, name);
+        }
+
+        private User fallbackReturnSubTypeOfDomain(final String id, final String name) {
+            return new User("def", "def");
+        }
+
+        private Domain fallbackReturnSuperTypeOfDomain(final String id, final String name) {
+            return new User("def", "def");
+        }
+
+        private String fallbackWithStringReturnType(final String id, final String name) {
+            return null;
+        }
+
+        private User fallbackWithoutParameters() {
+            return null;
+        }
 
         private User staticFallback(String id, String name) {
             return new User("def", "def");

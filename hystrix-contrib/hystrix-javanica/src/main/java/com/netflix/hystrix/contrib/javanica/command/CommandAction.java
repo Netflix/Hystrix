@@ -22,6 +22,8 @@ import com.netflix.hystrix.contrib.javanica.exception.CommandActionExecutionExce
  */
 public abstract class CommandAction {
 
+    public abstract MetaHolder getMetaHolder();
+
     /**
      * Executes action in accordance with the given execution type.
      *

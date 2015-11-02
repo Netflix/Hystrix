@@ -1,12 +1,12 @@
 /**
  * Copyright 2015 Netflix, Inc.
- *
+ * <p/>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * <p/>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p/>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,12 +15,18 @@
  */
 package com.netflix.hystrix.contrib.javanica.utils;
 
+import com.google.common.base.Optional;
+import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
+import com.netflix.hystrix.contrib.javanica.exception.FallbackDefinitionException;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -33,7 +39,7 @@ import static org.objectweb.asm.Opcodes.ASM5;
  */
 public final class MethodProvider {
 
-    private MethodProvider(){
+    private MethodProvider() {
 
     }
 
@@ -44,6 +50,41 @@ public final class MethodProvider {
     }
 
     private Map<Method, Method> cache = new ConcurrentHashMap<Method, Method>();
+
+    public FallbackMethod getFallbackMethod(Class<?> type, Method commandMethod) {
+        return getFallbackMethod(type, commandMethod, false);
+    }
+
+    public FallbackMethod getFallbackMethod(Class<?> type, Method commandMethod, boolean extended) {
+        if (commandMethod.isAnnotationPresent(HystrixCommand.class)) {
+            HystrixCommand hystrixCommand = commandMethod.getAnnotation(HystrixCommand.class);
+            if (StringUtils.isNotBlank(hystrixCommand.fallbackMethod())) {
+                Class<?>[] parameterTypes = commandMethod.getParameterTypes();
+                if (extended && parameterTypes[parameterTypes.length - 1] == Throwable.class) {
+                    parameterTypes = ArrayUtils.remove(parameterTypes, parameterTypes.length - 1);
+                }
+                Class<?>[] exParameterTypes = Arrays.copyOf(parameterTypes, parameterTypes.length + 1);
+                exParameterTypes[parameterTypes.length] = Throwable.class;
+                Optional<Method> exFallbackMethod = getMethod(type, hystrixCommand.fallbackMethod(), exParameterTypes);
+                Optional<Method> fMethod = getMethod(type, hystrixCommand.fallbackMethod(),
+                        parameterTypes);
+                Method method = exFallbackMethod.or(fMethod).orNull();
+                if (method == null) {
+                    throw new FallbackDefinitionException("fallback method wasn't found: " + hystrixCommand.fallbackMethod() + "(" + Arrays.toString(parameterTypes) + ")");
+                }
+                return new FallbackMethod(method, exFallbackMethod.isPresent());
+            }
+        }
+        return FallbackMethod.ABSENT;
+    }
+
+    public Optional<Method> getMethod(Class<?> type, String name, Class<?>... parameterTypes) {
+        try {
+            return Optional.of(type.getDeclaredMethod(name, parameterTypes));
+        } catch (NoSuchMethodException e) {
+            return Optional.absent();
+        }
+    }
 
     public Method unbride(final Method bridgeMethod, Class<?> aClass) throws IOException, NoSuchMethodException, ClassNotFoundException {
         if (bridgeMethod.isBridge() && bridgeMethod.isSynthetic()) {

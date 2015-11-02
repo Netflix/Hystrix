@@ -37,6 +37,7 @@ public class MetaHolder {
     private final Method method;
     private final Method cacheKeyMethod;
     private final Method ajcMethod;
+    private final Method fallbackMethod;
     private final Object obj;
     private final Object proxyObj;
     private final Object[] args;
@@ -45,13 +46,18 @@ public class MetaHolder {
     private final String defaultCommandKey;
     private final String defaultCollapserKey;
     private final ExecutionType executionType;
+    private final boolean extendedFallback;
     private final ExecutionType collapserExecutionType;
+    private final ExecutionType fallbackExecutionType;
+    private final boolean fallback;
+    private boolean extendedParentFallback;
     private final JoinPoint joinPoint;
 
     private MetaHolder(Builder builder) {
         this.hystrixCommand = builder.hystrixCommand;
         this.method = builder.method;
         this.cacheKeyMethod = builder.cacheKeyMethod;
+        this.fallbackMethod = builder.fallbackMethod;
         this.ajcMethod = builder.ajcMethod;
         this.obj = builder.obj;
         this.proxyObj = builder.proxyObj;
@@ -63,7 +69,11 @@ public class MetaHolder {
         this.hystrixCollapser = builder.hystrixCollapser;
         this.executionType = builder.executionType;
         this.collapserExecutionType = builder.collapserExecutionType;
+        this.fallbackExecutionType = builder.fallbackExecutionType;
         this.joinPoint = builder.joinPoint;
+        this.extendedFallback = builder.extendedFallback;
+        this.fallback = builder.fallback;
+        this.extendedParentFallback = builder.extendedParentFallback;
     }
 
     public static Builder builder() {
@@ -138,12 +148,41 @@ public class MetaHolder {
         return joinPoint;
     }
 
+    public Method getFallbackMethod() {
+        return fallbackMethod;
+    }
+
+    public boolean hasFallbackMethod() {
+        return fallbackMethod != null;
+    }
+
+    public boolean isExtendedParentFallback() {
+        return extendedParentFallback;
+    }
+
+    public boolean hasFallbackMethodCommand() {
+        return fallbackMethod != null && fallbackMethod.isAnnotationPresent(HystrixCommand.class);
+    }
+
+    public boolean isFallback() {
+        return fallback;
+    }
+
+    public boolean isExtendedFallback() {
+        return extendedFallback;
+    }
+
+    public ExecutionType getFallbackExecutionType() {
+        return fallbackExecutionType;
+    }
+
     public static final class Builder {
 
         private HystrixCollapser hystrixCollapser;
         private HystrixCommand hystrixCommand;
         private Method method;
         private Method cacheKeyMethod;
+        private Method fallbackMethod;
         private Method ajcMethod;
         private Object obj;
         private Object proxyObj;
@@ -154,7 +193,12 @@ public class MetaHolder {
         private String defaultCollapserKey;
         private ExecutionType executionType;
         private ExecutionType collapserExecutionType;
+        private ExecutionType fallbackExecutionType;
+        private boolean extendedFallback;
+        private boolean fallback;
+        private boolean extendedParentFallback;
         private JoinPoint joinPoint;
+
 
         public Builder hystrixCollapser(HystrixCollapser hystrixCollapser) {
             this.hystrixCollapser = hystrixCollapser;
@@ -173,6 +217,26 @@ public class MetaHolder {
 
         public Builder cacheKeyMethod(Method cacheKeyMethod) {
             this.cacheKeyMethod = cacheKeyMethod;
+            return this;
+        }
+
+        public Builder fallbackMethod(Method fallbackMethod) {
+            this.fallbackMethod = fallbackMethod;
+            return this;
+        }
+
+        public Builder fallbackExecutionType(ExecutionType fallbackExecutionType) {
+            this.fallbackExecutionType = fallbackExecutionType;
+            return this;
+        }
+
+        public Builder fallback(boolean fallback) {
+            this.fallback = fallback;
+            return this;
+        }
+
+        public Builder extendedParentFallback(boolean extendedParentFallback) {
+            this.extendedParentFallback = extendedParentFallback;
             return this;
         }
 
@@ -228,6 +292,11 @@ public class MetaHolder {
 
         public Builder joinPoint(JoinPoint joinPoint) {
             this.joinPoint = joinPoint;
+            return this;
+        }
+
+        public Builder extendedFallback(boolean extendedFallback) {
+            this.extendedFallback = extendedFallback;
             return this;
         }
 
