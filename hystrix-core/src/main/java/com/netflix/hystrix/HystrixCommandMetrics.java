@@ -235,7 +235,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     };
 
     /* package */HystrixCommandMetrics(HystrixCommandKey key, HystrixCommandGroupKey commandGroup, HystrixThreadPoolKey threadPoolKey, HystrixCommandProperties properties, HystrixEventNotifier eventNotifier) {
-        super(new HystrixRollingNumber(properties.metricsRollingStatisticalWindowInMilliseconds().get(), properties.metricsRollingStatisticalWindowBuckets().get()));
+        super(null);
         this.key = key;
         this.group = commandGroup;
         this.threadPoolKey = threadPoolKey;
@@ -503,7 +503,8 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     }
 
     public long getRollingMaxConcurrentExecutions() {
-        return counter.getRollingMaxValue(HystrixRollingNumberEvent.COMMAND_MAX_ACTIVE);
+        return 0;
+        //return counter.getRollingMaxValue(HystrixRollingNumberEvent.COMMAND_MAX_ACTIVE);
     }
 
     /**
@@ -520,7 +521,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      */
     /* package */void incrementConcurrentExecutionCount() {
         int numConcurrent = concurrentExecutionCount.incrementAndGet();
-        counter.updateRollingMax(HystrixRollingNumberEvent.COMMAND_MAX_ACTIVE, (long) numConcurrent);
+        //counter.updateRollingMax(HystrixRollingNumberEvent.COMMAND_MAX_ACTIVE, (long) numConcurrent);
     }
 
     /**
@@ -528,129 +529,6 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      */
     /* package */void decrementConcurrentExecutionCount() {
         concurrentExecutionCount.decrementAndGet();
-    }
-
-    /**
-     * When a {@link HystrixCommand} successfully completes it will call this method to report its success along with how long the execution took.
-     * 
-     * @param duration command duration
-     */
-    /* package */void markSuccess(long duration) {
-        eventNotifier.markEvent(HystrixEventType.SUCCESS, key);
-    }
-
-    /**
-     * When a {@link HystrixCommand} fails to complete it will call this method to report its failure along with how long the execution took.
-     * 
-     * @param duration command duration
-     */
-    /* package */void markFailure(long duration) {
-        eventNotifier.markEvent(HystrixEventType.FAILURE, key);
-    }
-
-    /**
-     * When a {@link HystrixCommand} times out (fails to complete) it will call this method to report its failure along with how long the command waited (this time should equal or be very close to the
-     * timeout value).
-     * 
-     * @param duration command duration
-     */
-    /* package */void markTimeout(long duration) {
-        eventNotifier.markEvent(HystrixEventType.TIMEOUT, key);
-    }
-
-    /**
-     * When a {@link HystrixCommand} performs a short-circuited fallback it will call this method to report its occurrence.
-     */
-    /* package */void markShortCircuited() {
-        eventNotifier.markEvent(HystrixEventType.SHORT_CIRCUITED, key);
-    }
-
-    /**
-     * When a {@link HystrixCommand} is unable to queue up (threadpool rejection) it will call this method to report its occurrence.
-     */
-    /* package */void markThreadPoolRejection() {
-        eventNotifier.markEvent(HystrixEventType.THREAD_POOL_REJECTED, key);
-    }
-
-    /**
-     * When a {@link HystrixCommand} is unable to execute due to reaching the semaphore limit it will call this method to report its occurrence.
-     */
-    /* package */void markSemaphoreRejection() {
-        eventNotifier.markEvent(HystrixEventType.SEMAPHORE_REJECTED, key);
-    }
-
-    /**
-     * When a {@link HystrixCommand} is executed and triggers a {@link HystrixBadRequestException} during its execution
-     */
-    /* package */void markBadRequest(long duration) {
-        eventNotifier.markEvent(HystrixEventType.BAD_REQUEST, key);
-    }
-
-    /**
-     * When a {@link HystrixCommand} returns a Fallback successfully.
-     */
-    /* package */void markFallbackSuccess() {
-        eventNotifier.markEvent(HystrixEventType.FALLBACK_SUCCESS, key);
-    }
-
-    /**
-     * When a {@link HystrixCommand} attempts to retrieve a fallback but fails.
-     */
-    /* package */void markFallbackFailure() {
-        eventNotifier.markEvent(HystrixEventType.FALLBACK_FAILURE, key);
-    }
-
-    /**
-     * When a {@link HystrixCommand} attempts to retrieve a fallback but it is rejected due to too many concurrent executing fallback requests.
-     */
-    /* package */void markFallbackRejection() {
-        eventNotifier.markEvent(HystrixEventType.FALLBACK_REJECTION, key);
-    }
-    /**
-     * When a {@link HystrixCommand} attempts to execute a user-defined fallback but none exist.
-     */
-    /* package */void markFallbackMissing() {
-        eventNotifier.markEvent(HystrixEventType.FALLBACK_MISSING, key);
-    }
-
-    /**
-     * When a {@link HystrixCommand} throws an exception (this will occur every time {@link #markFallbackFailure} occurs,
-     * whenever {@link #markFailure} occurs without a fallback implemented, or whenever a {@link #markBadRequest(long)} occurs)
-     */
-    /* package */void markExceptionThrown() {
-        eventNotifier.markEvent(HystrixEventType.EXCEPTION_THROWN, key);
-    }
-
-    /**
-     * When a command is fronted by an {@link HystrixCollapser} then this marks how many requests are collapsed into the single command execution.
-     * 
-     * @param numRequestsCollapsedToBatch number of requests which got batched
-     */
-    /* package */void markCollapsed(int numRequestsCollapsedToBatch) {
-        eventNotifier.markEvent(HystrixEventType.COLLAPSED, key);
-    }
-
-    /**
-     * When a response is coming from a cache.
-     * <p>
-     * The cache-hit ratio can be determined by dividing this number by the total calls.
-     */
-    /* package */void markResponseFromCache() {
-        eventNotifier.markEvent(HystrixEventType.RESPONSE_FROM_CACHE, key);
-    }
-
-    /**
-     * When a {@link HystrixObservableCommand} emits a value during execution
-     */
-    /* package */void markEmit() {
-        eventNotifier.markEvent(HystrixEventType.EMIT, getCommandKey());
-    }
-
-    /**
-     * When a {@link HystrixObservableCommand} emits a value during fallback
-     */
-    /* package */void markFallbackEmit() {
-        eventNotifier.markEvent(HystrixEventType.FALLBACK_EMIT, getCommandKey());
     }
 
     /* package-private */ void markCommandCompletion(HystrixInvokableInfo<?> commandInstance, AbstractCommand.ExecutionResult executionResult) {

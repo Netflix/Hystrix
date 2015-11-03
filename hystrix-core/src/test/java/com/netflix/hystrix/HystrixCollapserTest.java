@@ -72,6 +72,7 @@ public class HystrixCollapserTest {
         Future<String> response1 = collapser1.queue();
         HystrixCollapser<List<String>, String, String> collapser2 = new TestRequestCollapser(timer, 2);
         Future<String> response2 = collapser2.queue();
+
         timer.incrementTime(10); // let time pass that equals the default delay/period
 
         assertEquals("1", response1.get());
