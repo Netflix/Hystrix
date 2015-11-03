@@ -106,7 +106,8 @@ public class HystrixCommandMetrics extends HystrixMetrics {
             // we won the thread-race to store the instance we created
             return commandMetrics;
         } else {
-            // we lost so return 'existing' and let the one we created be garbage collected
+            // we lost so return 'existing' and let the one we created be garbage collected after shutting down all of its subscriptions
+            existing.unsubscribeAllStreams();
             return existing;
         }
     }
@@ -139,6 +140,13 @@ public class HystrixCommandMetrics extends HystrixMetrics {
             metricsInstance.healthCountsSubscription.unsubscribe();
         }
         metrics.clear();
+    }
+
+    private void unsubscribeAllStreams() {
+        healthCountsSubscription.unsubscribe();
+        cumulativeCounterSubscription.unsubscribe();
+        rollingCounterSubscription.unsubscribe();
+        rollingLatencySubscription.unsubscribe();
     }
 
     private final HystrixCommandProperties properties;
@@ -324,13 +332,34 @@ public class HystrixCommandMetrics extends HystrixMetrics {
         return commandEventStream
                 .getBucketedStream(bucketSizeInMs)
                 .flatMap(reduceBucketToSingleCountArray)
+//                .doOnNext(new Action1<long[]>() {
+//                    @Override
+//                    public void call(long[] bucket) {
+//                        StringBuffer bucketStr = new StringBuffer();
+//                        bucketStr.append("BUCKET(");
+//                        for (HystrixEventType eventType: HystrixEventType.values()) {
+//                            if (bucket[eventType.ordinal()] > 0) {
+//                                bucketStr.append(eventType.name()).append(" -> ").append(bucket[eventType.ordinal()]).append(", ");
+//                            }
+//                        }
+//                        bucketStr.append(")");
+//                        System.out.println("Generated bucket : " + bucketStr.toString());
+//                    }
+//                })
                 .startWith(emptyEventCountsToStart)
                 .window(numBuckets, 1).flatMap(new Func1<Observable<long[]>, Observable<HealthCounts>>() {
                     @Override
                     public Observable<HealthCounts> call(Observable<long[]> window) {
                         return window.scan(HealthCounts.empty(), healthCheckAccumulator).skip(numBuckets);
                     }
-                }).subscribe(healthCountsSubject);
+                })
+//                .doOnNext(new Action1<HealthCounts>() {
+//                    @Override
+//                    public void call(HealthCounts healthCounts) {
+//                        System.out.println(System.currentTimeMillis() + " Publishing HealthCounts for : " + key + " : " + healthCounts);
+//                    }
+//                })
+                .subscribe(healthCountsSubject);
     }
 
     /**
@@ -383,6 +412,16 @@ public class HystrixCommandMetrics extends HystrixMetrics {
         } else {
             return 0;
         }
+    }
+
+    @Override
+    public long getCumulativeCount(HystrixRollingNumberEvent event) {
+        return getCumulativeCount(HystrixEventType.from(event));
+    }
+
+    @Override
+    public long getRollingCount(HystrixRollingNumberEvent event) {
+        return getRollingCount(HystrixEventType.from(event));
     }
 
     /**
@@ -498,7 +537,6 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      */
     /* package */void markSuccess(long duration) {
         eventNotifier.markEvent(HystrixEventType.SUCCESS, key);
-        counter.increment(HystrixRollingNumberEvent.SUCCESS);
     }
 
     /**
@@ -508,7 +546,6 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      */
     /* package */void markFailure(long duration) {
         eventNotifier.markEvent(HystrixEventType.FAILURE, key);
-        counter.increment(HystrixRollingNumberEvent.FAILURE);
     }
 
     /**
@@ -519,7 +556,6 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      */
     /* package */void markTimeout(long duration) {
         eventNotifier.markEvent(HystrixEventType.TIMEOUT, key);
-        counter.increment(HystrixRollingNumberEvent.TIMEOUT);
     }
 
     /**
@@ -527,7 +563,6 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      */
     /* package */void markShortCircuited() {
         eventNotifier.markEvent(HystrixEventType.SHORT_CIRCUITED, key);
-        counter.increment(HystrixRollingNumberEvent.SHORT_CIRCUITED);
     }
 
     /**
@@ -535,7 +570,6 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      */
     /* package */void markThreadPoolRejection() {
         eventNotifier.markEvent(HystrixEventType.THREAD_POOL_REJECTED, key);
-        counter.increment(HystrixRollingNumberEvent.THREAD_POOL_REJECTED);
     }
 
     /**
@@ -543,7 +577,6 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      */
     /* package */void markSemaphoreRejection() {
         eventNotifier.markEvent(HystrixEventType.SEMAPHORE_REJECTED, key);
-        counter.increment(HystrixRollingNumberEvent.SEMAPHORE_REJECTED);
     }
 
     /**
@@ -551,7 +584,6 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      */
     /* package */void markBadRequest(long duration) {
         eventNotifier.markEvent(HystrixEventType.BAD_REQUEST, key);
-        counter.increment(HystrixRollingNumberEvent.BAD_REQUEST);
     }
 
     /**
@@ -559,7 +591,6 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      */
     /* package */void markFallbackSuccess() {
         eventNotifier.markEvent(HystrixEventType.FALLBACK_SUCCESS, key);
-        counter.increment(HystrixRollingNumberEvent.FALLBACK_SUCCESS);
     }
 
     /**
@@ -567,7 +598,6 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      */
     /* package */void markFallbackFailure() {
         eventNotifier.markEvent(HystrixEventType.FALLBACK_FAILURE, key);
-        counter.increment(HystrixRollingNumberEvent.FALLBACK_FAILURE);
     }
 
     /**
@@ -575,14 +605,12 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      */
     /* package */void markFallbackRejection() {
         eventNotifier.markEvent(HystrixEventType.FALLBACK_REJECTION, key);
-        counter.increment(HystrixRollingNumberEvent.FALLBACK_REJECTION);
     }
     /**
      * When a {@link HystrixCommand} attempts to execute a user-defined fallback but none exist.
      */
     /* package */void markFallbackMissing() {
         eventNotifier.markEvent(HystrixEventType.FALLBACK_MISSING, key);
-        counter.increment(HystrixRollingNumberEvent.FALLBACK_MISSING);
     }
 
     /**
@@ -591,7 +619,6 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      */
     /* package */void markExceptionThrown() {
         eventNotifier.markEvent(HystrixEventType.EXCEPTION_THROWN, key);
-        counter.increment(HystrixRollingNumberEvent.EXCEPTION_THROWN);
     }
 
     /**
@@ -601,7 +628,6 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      */
     /* package */void markCollapsed(int numRequestsCollapsedToBatch) {
         eventNotifier.markEvent(HystrixEventType.COLLAPSED, key);
-        counter.add(HystrixRollingNumberEvent.COLLAPSED, numRequestsCollapsedToBatch);
     }
 
     /**
@@ -611,7 +637,6 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      */
     /* package */void markResponseFromCache() {
         eventNotifier.markEvent(HystrixEventType.RESPONSE_FROM_CACHE, key);
-        counter.increment(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE);
     }
 
     /**
@@ -619,7 +644,6 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      */
     /* package */void markEmit() {
         eventNotifier.markEvent(HystrixEventType.EMIT, getCommandKey());
-        counter.increment(HystrixRollingNumberEvent.EMIT);
     }
 
     /**
@@ -627,12 +651,10 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      */
     /* package */void markFallbackEmit() {
         eventNotifier.markEvent(HystrixEventType.FALLBACK_EMIT, getCommandKey());
-        counter.increment(HystrixRollingNumberEvent.FALLBACK_EMIT);
     }
 
     /* package-private */ void markCommandCompletion(HystrixInvokableInfo<?> commandInstance, AbstractCommand.ExecutionResult executionResult) {
         HystrixThreadEventStream.getInstance().write(commandInstance, executionResult.getEventCounts(), executionResult.getExecutionLatency(), executionResult.getUserThreadLatency());
-        //commandEventStream.write(commandInstance, executionResult.getEventCounts(), executionResult.getExecutionLatency(), executionResult.getUserThreadLatency());
     }
 
     /**
