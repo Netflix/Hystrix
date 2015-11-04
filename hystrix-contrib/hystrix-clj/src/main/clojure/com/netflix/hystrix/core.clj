@@ -294,7 +294,7 @@
 
 ;################################################################################
 
-(def ^:dynamic *command*
+(def ^{:dynamic true :tag HystrixCommand} *command*
   "A dynamic var which is bound to the HystrixCommand instance during execution of
   :run-fn and :fallback-fn.
 
