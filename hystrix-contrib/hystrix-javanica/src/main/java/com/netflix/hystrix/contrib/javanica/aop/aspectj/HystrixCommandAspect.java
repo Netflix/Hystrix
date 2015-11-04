@@ -195,6 +195,13 @@ public class HystrixCommandAspect {
             builder.defaultCommandKey(batchCommandMethod.getName());
             builder.hystrixCommand(hystrixCommand);
             builder.executionType(ExecutionType.getExecutionType(batchCommandMethod.getReturnType()));
+            FallbackMethod fallbackMethod = MethodProvider.getInstance().getFallbackMethod(obj.getClass(), batchCommandMethod);
+            if (fallbackMethod.isPresent()) {
+                fallbackMethod.validateReturnType(batchCommandMethod);
+                builder
+                        .fallbackMethod(fallbackMethod.getMethod())
+                        .fallbackExecutionType(ExecutionType.getExecutionType(fallbackMethod.getMethod().getReturnType()));
+            }
             return builder.build();
         }
     }
