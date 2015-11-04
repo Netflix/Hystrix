@@ -136,7 +136,7 @@ Graceful degradation can be achieved by declaring name of fallback method in `@H
     }
 ```
 
-**_Its important to remember that Hystrix command and fallback should be placed in the same class and have same method signature (optional parameter for failed execution exception_**.
+**_Its important to remember that Hystrix command and fallback should be placed in the same class and have same method signature (optional parameter for failed execution exception)_**.
 
 Fallback method can have any access modifier. Method `defaultUser` will be used to process fallback logic in a case of any errors. If you need to run fallback method `defaultUser` as separate Hystrix command then you need to annotate it with `HystrixCommand` annotation as below:
 ```java
@@ -173,8 +173,6 @@ Javanica provides an ability to get execution exception (exception thrown that c
 
 Example:
 
-Command
-
 ```java
         @HystrixCommand(fallbackMethod = "fallback1")
         User getUserById(String id) {
@@ -202,6 +200,12 @@ Command
             assert "fallback3 failed".equals(e.getMessage());
             return new User("def", "def");
         }
+        
+        // test
+        @Test
+        public void test() {
+        assertEquals("def", getUserById("1").getName());
+        }
 ```
 As you can see, the additional ```Throwable``` parameter is not mandatory and can be omitted or specified.
 A fallback gets an exception thrown that caused a failure of parent, thus the ```fallback3``` gets exception thrown by ```fallback2```, no by ```getUserById``` command.
@@ -209,7 +213,7 @@ A fallback gets an exception thrown that caused a failure of parent, thus the ``
 ### Async command and async fallback.
 A fallback can be async or sync, at certain cases it depends on command execution type, below listed all possible uses :
 
-_Supported_
+**Supported**
 
 case 1: sync command, sync fallback
 
@@ -257,7 +261,7 @@ case 3: async command, async fallback
         }
 ```
 
-_Unsupported(prohibitted)_
+**Unsupported(prohibited)**
 
 case 1: sync command, async fallback. This case isn't supported because in the essence a caller does not get a future buy calling ```getUserById``` command and future is provided by fallback isn't available for a caller anyway, thus execution of a command forces to complete ```fallbackAsync``` before a caller gets a result, having said it turns out there is no benefits of async fallback execution. Such case makes async fallback useless. But it can be convenient if a fallback is used for both sync and async commands, if you see this case is very helpful and will be nice to have then create issue to add support for this case.
 
