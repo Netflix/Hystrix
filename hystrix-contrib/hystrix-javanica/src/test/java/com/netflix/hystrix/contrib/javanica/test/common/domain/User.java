@@ -18,7 +18,7 @@ package com.netflix.hystrix.contrib.javanica.test.common.domain;
 /**
  * Simple domain object for tests.
  */
-public class User {
+public class User extends Domain{
 
     private String id;
     private String name;

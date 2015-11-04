@@ -25,6 +25,8 @@ import com.netflix.hystrix.contrib.javanica.command.CommandExecutor;
 import com.netflix.hystrix.contrib.javanica.command.ExecutionType;
 import com.netflix.hystrix.contrib.javanica.command.GenericHystrixCommandFactory;
 import com.netflix.hystrix.contrib.javanica.command.MetaHolder;
+import com.netflix.hystrix.contrib.javanica.utils.FallbackMethod;
+import com.netflix.hystrix.contrib.javanica.utils.MethodProvider;
 import com.netflix.hystrix.exception.HystrixBadRequestException;
 import org.apache.commons.lang3.Validate;
 import org.aspectj.lang.JoinPoint;
@@ -91,7 +93,7 @@ public class HystrixCommandAspect {
         }
         Object result;
         try {
-            result = CommandExecutor.execute(executable, executionType);
+            result = CommandExecutor.execute(executable, executionType, metaHolder);
         } catch (HystrixBadRequestException e) {
             throw e.getCause();
         }
@@ -119,6 +121,14 @@ public class HystrixCommandAspect {
                     .joinPoint(joinPoint);
             if (isCompileWeaving()) {
                 builder.ajcMethod(getAjcMethodFromTarget(joinPoint));
+            }
+
+            FallbackMethod fallbackMethod = MethodProvider.getInstance().getFallbackMethod(obj.getClass(), method);
+            if (fallbackMethod.isPresent()) {
+                fallbackMethod.validateReturnType(method);
+                builder
+                        .fallbackMethod(fallbackMethod.getMethod())
+                        .fallbackExecutionType(ExecutionType.getExecutionType(fallbackMethod.getMethod().getReturnType()));
             }
             return builder;
         }
@@ -185,6 +195,13 @@ public class HystrixCommandAspect {
             builder.defaultCommandKey(batchCommandMethod.getName());
             builder.hystrixCommand(hystrixCommand);
             builder.executionType(ExecutionType.getExecutionType(batchCommandMethod.getReturnType()));
+            FallbackMethod fallbackMethod = MethodProvider.getInstance().getFallbackMethod(obj.getClass(), batchCommandMethod);
+            if (fallbackMethod.isPresent()) {
+                fallbackMethod.validateReturnType(batchCommandMethod);
+                builder
+                        .fallbackMethod(fallbackMethod.getMethod())
+                        .fallbackExecutionType(ExecutionType.getExecutionType(fallbackMethod.getMethod().getReturnType()));
+            }
             return builder.build();
         }
     }

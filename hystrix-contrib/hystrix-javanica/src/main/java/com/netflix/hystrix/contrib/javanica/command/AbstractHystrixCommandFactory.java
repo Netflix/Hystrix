@@ -16,11 +16,12 @@
 package com.netflix.hystrix.contrib.javanica.command;
 
 
-import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 import com.netflix.hystrix.HystrixCollapser;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
+import com.netflix.hystrix.contrib.javanica.utils.FallbackMethod;
+import com.netflix.hystrix.contrib.javanica.utils.MethodProvider;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 
@@ -82,38 +83,44 @@ public abstract class AbstractHystrixCommandFactory<T extends AbstractHystrixCom
 
     CommandAction createFallbackAction(MetaHolder metaHolder,
                                        Collection<HystrixCollapser.CollapsedRequest<Object, Object>> collapsedRequests) {
-        String fallbackMethodName = metaHolder.getHystrixCommand().fallbackMethod();
+
+        FallbackMethod fallbackMethod = MethodProvider.getInstance().getFallbackMethod(metaHolder.getObj().getClass(), metaHolder.getMethod(), metaHolder.isExtendedFallback());
+        fallbackMethod.validateReturnType(metaHolder.getMethod());
         CommandAction fallbackAction = null;
-        if (StringUtils.isNotEmpty(fallbackMethodName)) {
-            try {
-                Method fallbackMethod = metaHolder.getObj().getClass()
-                        .getDeclaredMethod(fallbackMethodName, metaHolder.getParameterTypes());
-                if (fallbackMethod.isAnnotationPresent(HystrixCommand.class)) {
-                    fallbackMethod.setAccessible(true);
-                    MetaHolder fmMetaHolder = MetaHolder.builder()
-                            .obj(metaHolder.getObj())
-                            .method(fallbackMethod)
-                            .ajcMethod(getAjcMethod(metaHolder.getObj(), fallbackMethod))
-                            .args(metaHolder.getArgs())
-                            .defaultCollapserKey(metaHolder.getDefaultCollapserKey())
-                            .defaultCommandKey(fallbackMethod.getName())
-                            .defaultGroupKey(metaHolder.getDefaultGroupKey())
-                            .hystrixCollapser(metaHolder.getHystrixCollapser())
-                            .hystrixCommand(fallbackMethod.getAnnotation(HystrixCommand.class)).build();
-                    fallbackAction = new LazyCommandExecutionAction(GenericHystrixCommandFactory.getInstance(), fmMetaHolder, collapsedRequests);
-                } else {
+        if (fallbackMethod.isPresent()) {
 
-                    MetaHolder fmMetaHolder = MetaHolder.builder()
-                            .obj(metaHolder.getObj())
-                            .method(fallbackMethod)
-                            .ajcMethod(null) // if fallback method isn't annotated with command annotation then we don't need to get ajc method for this
-                            .args(metaHolder.getArgs()).build();
+            Method fMethod = fallbackMethod.getMethod();
+            if (fallbackMethod.isCommand()) {
+                fMethod.setAccessible(true);
+                MetaHolder fmMetaHolder = MetaHolder.builder()
+                        .obj(metaHolder.getObj())
+                        .method(fMethod)
+                        .ajcMethod(getAjcMethod(metaHolder.getObj(), fMethod))
+                        .args(metaHolder.getArgs())
+                        .fallback(true)
+                        .defaultCollapserKey(metaHolder.getDefaultCollapserKey())
+                        .fallbackMethod(fMethod)
+                        .extendedFallback(fallbackMethod.isExtended())
+                        .fallbackExecutionType(fallbackMethod.getExecutionType())
+                        .extendedParentFallback(metaHolder.isExtendedFallback())
+                        .defaultCommandKey(fMethod.getName())
+                        .defaultGroupKey(metaHolder.getDefaultGroupKey())
+                        .hystrixCollapser(metaHolder.getHystrixCollapser())
+                        .hystrixCommand(fMethod.getAnnotation(HystrixCommand.class)).build();
+                fallbackAction = new LazyCommandExecutionAction(GenericHystrixCommandFactory.getInstance(), fmMetaHolder, collapsedRequests);
+            } else {
+                MetaHolder fmMetaHolder = MetaHolder.builder()
+                        .obj(metaHolder.getObj())
+                        .method(fMethod)
+                        .fallbackExecutionType(ExecutionType.SYNCHRONOUS)
+                        .extendedFallback(fallbackMethod.isExtended())
+                        .extendedParentFallback(metaHolder.isExtendedFallback())
+                        .ajcMethod(null) // if fallback method isn't annotated with command annotation then we don't need to get ajc method for this
+                        .args(metaHolder.getArgs()).build();
 
-                    fallbackAction = new MethodExecutionAction(fmMetaHolder.getObj(), fallbackMethod, fmMetaHolder.getArgs(), fmMetaHolder);
-                }
-            } catch (NoSuchMethodException e) {
-                throw Throwables.propagate(e);
+                fallbackAction = new MethodExecutionAction(fmMetaHolder.getObj(), fMethod, fmMetaHolder.getArgs(), fmMetaHolder);
             }
+
         }
         return fallbackAction;
     }

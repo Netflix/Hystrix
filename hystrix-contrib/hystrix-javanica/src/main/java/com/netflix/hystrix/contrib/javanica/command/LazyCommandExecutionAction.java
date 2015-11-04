@@ -41,13 +41,18 @@ public class LazyCommandExecutionAction extends CommandAction {
         this.collapsedRequests = collapsedRequests;
     }
 
+    @Override
+    public MetaHolder getMetaHolder() {
+        return metaHolder;
+    }
+
     /**
      * {@inheritDoc}
      */
     @Override
     public Object execute(ExecutionType executionType) throws CommandActionExecutionException {
         AbstractHystrixCommand abstractHystrixCommand = commandFactory.create(createHolder(executionType), collapsedRequests);
-        return new CommandExecutionAction(abstractHystrixCommand).execute(executionType);
+        return new CommandExecutionAction(abstractHystrixCommand, metaHolder).execute(executionType);
     }
 
     /**
@@ -56,7 +61,7 @@ public class LazyCommandExecutionAction extends CommandAction {
     @Override
     public Object executeWithArgs(ExecutionType executionType, Object[] args) throws CommandActionExecutionException {
         AbstractHystrixCommand abstractHystrixCommand = commandFactory.create(createHolder(executionType, args), collapsedRequests);
-        return new CommandExecutionAction(abstractHystrixCommand).execute(executionType);
+        return new CommandExecutionAction(abstractHystrixCommand, metaHolder).execute(executionType);
     }
 
     /**
@@ -74,6 +79,9 @@ public class LazyCommandExecutionAction extends CommandAction {
                 .obj(metaHolder.getObj())
                 .method(metaHolder.getMethod())
                 .ajcMethod(metaHolder.getAjcMethod())
+                .fallbackExecutionType(metaHolder.getFallbackExecutionType())
+                .extendedFallback(metaHolder.isExtendedFallback())
+                .extendedParentFallback(metaHolder.isExtendedParentFallback())
                 .executionType(executionType)
                 .args(metaHolder.getArgs())
                 .defaultCollapserKey(metaHolder.getDefaultCollapserKey())
@@ -89,6 +97,9 @@ public class LazyCommandExecutionAction extends CommandAction {
                 .method(metaHolder.getMethod())
                 .executionType(executionType)
                 .ajcMethod(metaHolder.getAjcMethod())
+                .fallbackExecutionType(metaHolder.getFallbackExecutionType())
+                .extendedParentFallback(metaHolder.isExtendedParentFallback())
+                .extendedFallback(metaHolder.isExtendedFallback())
                 .args(args)
                 .defaultCollapserKey(metaHolder.getDefaultCollapserKey())
                 .defaultCommandKey(metaHolder.getDefaultCommandKey())

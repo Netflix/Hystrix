@@ -16,6 +16,7 @@
 package com.netflix.hystrix.contrib.javanica.command;
 
 import com.netflix.hystrix.HystrixExecutable;
+import com.netflix.hystrix.contrib.javanica.utils.FutureDecorator;
 import org.apache.commons.lang3.Validate;
 
 /**
@@ -31,18 +32,23 @@ public class CommandExecutor {
      * Calls a method of {@link HystrixExecutable} in accordance with specified execution type.
      *
      * @param executable    {@link HystrixExecutable}
-     * @param executionType {@link ExecutionType}
+     * @param metaHolder {@link MetaHolder}
      * @return the result of invocation of specific method.
      * @throws RuntimeException
      */
-    public static Object execute(HystrixExecutable executable, ExecutionType executionType) throws RuntimeException {
+    public static Object execute(HystrixExecutable executable, ExecutionType executionType, MetaHolder metaHolder) throws RuntimeException {
         Validate.notNull(executable);
-        Validate.notNull(executionType);
+        Validate.notNull(metaHolder);
+
         switch (executionType) {
             case SYNCHRONOUS: {
                 return executable.execute();
             }
             case ASYNCHRONOUS: {
+                if(metaHolder.hasFallbackMethodCommand()
+                        && ExecutionType.ASYNCHRONOUS == metaHolder.getFallbackExecutionType()){
+                    return new FutureDecorator(executable.queue());
+                }
                 return executable.queue();
             }
             case OBSERVABLE: {

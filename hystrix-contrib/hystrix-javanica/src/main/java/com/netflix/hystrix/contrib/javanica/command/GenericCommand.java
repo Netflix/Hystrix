@@ -16,10 +16,12 @@
 package com.netflix.hystrix.contrib.javanica.command;
 
 import com.netflix.hystrix.contrib.javanica.exception.FallbackInvocationException;
+import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.concurrent.ThreadSafe;
+import java.util.Arrays;
 
 /**
  * Implementation of AbstractHystrixCommand which returns an Object as result.
@@ -68,7 +70,20 @@ public class GenericCommand extends AbstractHystrixCommand<Object> {
                 return process(new Action() {
                     @Override
                     Object execute() {
-                        return commandAction.execute(ExecutionType.SYNCHRONOUS);
+                        Object[] args = commandAction.getMetaHolder().getArgs();
+                        if (commandAction.getMetaHolder().isExtendedFallback()) {
+                            if (commandAction.getMetaHolder().isExtendedParentFallback()) {
+                                args[args.length - 1] = getFailedExecutionException();
+                            } else {
+                                args = Arrays.copyOf(args, args.length + 1);
+                                args[args.length - 1] = getFailedExecutionException();
+                            }
+                        } else {
+                            if (commandAction.getMetaHolder().isExtendedParentFallback()) {
+                                args = ArrayUtils.remove(args, args.length - 1);
+                            }
+                        }
+                        return commandAction.executeWithArgs(commandAction.getMetaHolder().getFallbackExecutionType(), args);
                     }
                 });
             } catch (Throwable e) {

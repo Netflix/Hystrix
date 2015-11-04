@@ -69,6 +69,11 @@ public class MethodExecutionAction extends CommandAction {
     }
 
     @Override
+    public MetaHolder getMetaHolder() {
+        return metaHolder;
+    }
+
+    @Override
     public Object execute(ExecutionType executionType) throws CommandActionExecutionException {
         return executeWithArgs(executionType, _args);
     }

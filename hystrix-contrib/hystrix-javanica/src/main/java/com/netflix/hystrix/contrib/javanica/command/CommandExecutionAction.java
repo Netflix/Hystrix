@@ -23,14 +23,16 @@ import com.netflix.hystrix.contrib.javanica.exception.CommandActionExecutionExce
 public class CommandExecutionAction extends CommandAction {
 
     private AbstractHystrixCommand hystrixCommand;
+    private  MetaHolder metaHolder;
 
     /**
      * Constructor with parameters.
      *
      * @param hystrixCommand the hystrix command to execute.
      */
-    public CommandExecutionAction(AbstractHystrixCommand hystrixCommand) {
+    public CommandExecutionAction(AbstractHystrixCommand hystrixCommand, MetaHolder metaHolder) {
         this.hystrixCommand = hystrixCommand;
+        this.metaHolder = metaHolder;
     }
 
     public AbstractHystrixCommand getHystrixCommand() {
@@ -38,13 +40,18 @@ public class CommandExecutionAction extends CommandAction {
     }
 
     @Override
+    public MetaHolder getMetaHolder() {
+        return metaHolder;
+    }
+
+    @Override
     public Object execute(ExecutionType executionType) throws CommandActionExecutionException {
-        return CommandExecutor.execute(hystrixCommand, executionType);
+        return CommandExecutor.execute(hystrixCommand, executionType, metaHolder);
     }
 
     @Override
     public Object executeWithArgs(ExecutionType executionType, Object[] args) throws CommandActionExecutionException {
-        return CommandExecutor.execute(hystrixCommand, executionType);
+        return CommandExecutor.execute(hystrixCommand, executionType, metaHolder);
     }
 
     /**
