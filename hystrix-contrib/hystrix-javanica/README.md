@@ -210,7 +210,7 @@ Example:
 As you can see, the additional ```Throwable``` parameter is not mandatory and can be omitted or specified.
 A fallback gets an exception thrown that caused a failure of parent, thus the ```fallback3``` gets exception thrown by ```fallback2```, no by ```getUserById``` command.
 
-### Async command and async fallback.
+### Async/Sync fallback.
 A fallback can be async or sync, at certain cases it depends on command execution type, below listed all possible uses :
 
 **Supported**
@@ -632,6 +632,6 @@ Example:
 #Development Status and Future
 Please create an issue if you need a feature or you detected some bugs. Thanks
 
-**Note**: Javaniva 1.4.+ is updated more frequently than 1.3.+ hence 1.4+ is more stable. 
+**Note**: Javanica 1.4.+ is updated more frequently than 1.3.+ hence 1.4+ is more stable. 
 
 **It's recommended to use Javaniva 1.4.+** 
