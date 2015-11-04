@@ -136,7 +136,7 @@ Graceful degradation can be achieved by declaring name of fallback method in `@H
     }
 ```
 
-**_Its important to remember that Hystrix command and fallback should be placed in the same class and have same method signature_**.
+**_Its important to remember that Hystrix command and fallback should be placed in the same class and have same method signature (optional parameter for failed execution exception_**.
 
 Fallback method can have any access modifier. Method `defaultUser` will be used to process fallback logic in a case of any errors. If you need to run fallback method `defaultUser` as separate Hystrix command then you need to annotate it with `HystrixCommand` annotation as below:
 ```java
@@ -168,6 +168,117 @@ If fallback method was marked with `@HystrixCommand` then this fallback method (
         return new User("def", "def");
     }
 ```
+
+Javanica provides an ability to get execution exception (exception thrown that caused the failure of a command) within a fallback is being executed. A fallback method signature can be extended with an additional parameter in order to get an exception thrown by a command. Javanica exposes execution exception through additional parameter of fallback method. Execution exception is derived by calling  method getFailedExecutionException() as in vanilla hystrix.
+
+Example:
+
+Command
+
+```java
+        @HystrixCommand(fallbackMethod = "fallback1")
+        User getUserById(String id) {
+            throw new RuntimeException("getUserById command failed");
+        }
+
+        @HystrixCommand(fallbackMethod = "fallback2")
+        User fallback1(String id, Throwable e) {
+            assert "getUserById command failed".equals(e.getMessage());
+            throw new RuntimeException("fallback1 failed");
+        }
+
+        @HystrixCommand(fallbackMethod = "fallback3")
+        User fallback2(String id) {
+            throw new RuntimeException("fallback2 failed");
+        }
+
+        @HystrixCommand(fallbackMethod = "staticFallback")
+        User fallback3(String id, Throwable e) {
+            assert "fallback2 failed".equals(e.getMessage());
+            throw new RuntimeException("fallback3 failed");
+        }
+
+        User staticFallback(String id, Throwable e) {
+            assert "fallback3 failed".equals(e.getMessage());
+            return new User("def", "def");
+        }
+```
+As you can see, the additional ```Throwable``` parameter is not mandatory and can be omitted or specified.
+A fallback gets an exception thrown that caused a failure of parent, thus the ```fallback3``` gets exception thrown by ```fallback2```, no by ```getUserById``` command.
+
+### Async command and async fallback.
+A fallback can be async or sync, at certain cases it depends on command execution type, below listed all possible uses :
+
+_Supported_
+
+case 1: sync command, sync fallback
+
+```java
+        @HystrixCommand(fallbackMethod = "fallbackAsync")
+        User getUserById(String id) {
+            throw new RuntimeException("getUserById command failed");
+        }
+
+        @HystrixCommand
+        User fallbackAsync(String id) {
+            return new User("def", "def");
+        }
+```
+
+case 2: async command, sync fallback
+
+```java
+        @HystrixCommand(fallbackMethod = "fallbackAsync")
+        Future<User> getUserById(String id) {
+            throw new RuntimeException("getUserById command failed");
+        }
+
+        @HystrixCommand
+        User fallbackAsync(String id) {
+            return new User("def", "def");
+        }
+```
+
+case 3: async command, async fallback
+```java
+        @HystrixCommand(fallbackMethod = "fallbackAsync")
+        Future<User> getUserById(String id) {
+            throw new RuntimeException("getUserById command failed");
+        }
+
+        @HystrixCommand
+        Future<User> fallbackAsync(String id) {
+            return new AsyncResult<User>() {
+                @Override
+                public User invoke() {
+                    return new User("def", "def");
+                }
+            };
+        }
+```
+
+_Unsupported(prohibitted)_
+
+case 1: sync command, async fallback. This case isn't supported because in the essence a caller does not get a future buy calling ```getUserById``` command and future is provided by fallback isn't available for a caller anyway, thus execution of a command forces to complete ```fallbackAsync``` before a caller gets a result, having said it turns out there is no benefits of async fallback execution. Such case makes async fallback useless. But it can be convenient if a fallback is used for both sync and async commands, if you see this case is very helpful and will be nice to have then create issue to add support for this case.
+
+```java
+        @HystrixCommand(fallbackMethod = "fallbackAsync")
+        User getUserById(String id) {
+            throw new RuntimeException("getUserById command failed");
+        }
+
+        @HystrixCommand
+        Future<User> fallbackAsync(String id) {
+            return new AsyncResult<User>() {
+                @Override
+                public User invoke() {
+                    return new User("def", "def");
+                }
+            };
+        }
+```
+
+
 
 ## Error Propagation
 Based on [this](https://github.com/Netflix/Hystrix/wiki/How-To-Use#ErrorPropagation) description, `@HystrixCommand` has an ability to specify exceptions types which should be ignored and wrapped to throw in `HystrixBadRequestException`.
