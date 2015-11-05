@@ -29,10 +29,8 @@ import com.netflix.hystrix.metric.HystrixThreadEventStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.netflix.hystrix.exception.HystrixBadRequestException;
 import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
-import com.netflix.hystrix.util.HystrixRollingNumber;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 import rx.Observable;
 import rx.Subscription;
@@ -154,7 +152,6 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     private final HystrixCommandGroupKey group;
     private final HystrixThreadPoolKey threadPoolKey;
     private final AtomicInteger concurrentExecutionCount = new AtomicInteger();
-    private final HystrixEventNotifier eventNotifier;
 
     private final HystrixCommandEventStream commandEventStream;
 
@@ -240,7 +237,6 @@ public class HystrixCommandMetrics extends HystrixMetrics {
         this.group = commandGroup;
         this.threadPoolKey = threadPoolKey;
         this.properties = properties;
-        this.eventNotifier = eventNotifier;
 
         this.commandEventStream = HystrixCommandEventStream.getInstance(key);
 

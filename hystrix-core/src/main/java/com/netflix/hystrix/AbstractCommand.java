@@ -1807,6 +1807,9 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                 } else if (eventType.equals(HystrixEventType.FALLBACK_EMIT)) {
                     eventCounts[eventType.ordinal()] += numFallbackEmissions;
                 } else {
+                    if (eventType.equals(HystrixEventType.FALLBACK_FAILURE) || eventType.equals(HystrixEventType.FALLBACK_REJECTION) || eventType.equals(HystrixEventType.FALLBACK_MISSING)) {
+                        eventCounts[HystrixEventType.EXCEPTION_THROWN.ordinal()]++;
+                    }
                     eventCounts[eventType.ordinal()]++;
                 }
             }
