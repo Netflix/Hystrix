@@ -344,7 +344,9 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         if (requestCacheEnabled) {
             Observable<R> fromCache = requestCache.get(getCacheKey());
             if (fromCache != null) {
+                executionResult = executionResult.addEvents(HystrixEventType.RESPONSE_FROM_CACHE);
                 eventNotifier.markEvent(HystrixEventType.RESPONSE_FROM_CACHE, commandKey);
+                metrics.markCommandCompletion(this, executionResult);
                 isExecutionComplete.set(true);
                 try {
                     executionHook.onCacheHit(this);
