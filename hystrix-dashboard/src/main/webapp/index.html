@@ -26,6 +26,8 @@
 				$('#streams').html('<table>' + _.reduce(streams, function(html, s) {
 					return html + '<tr><td>' + s.name + '</td><td>' + s.stream + '</td></tr>';
 				}, '') + '</table>');
+
+				$('#message').html("");
 			} else {
 				$('#message').html("The 'stream' value is required.");
 			}
