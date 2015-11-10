@@ -17,7 +17,6 @@ package com.netflix.hystrix.metric;
 
 import com.netflix.hystrix.HystrixCommandKey;
 import rx.Observable;
-import rx.functions.Action1;
 import rx.functions.Func1;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,22 +33,23 @@ import java.util.concurrent.TimeUnit;
 public class HystrixCommandEventStream {
     private final HystrixCommandKey commandKey;
 
-    private static final ConcurrentMap<HystrixCommandKey, HystrixCommandEventStream> streams = new ConcurrentHashMap<HystrixCommandKey, HystrixCommandEventStream>();
+    private static final ConcurrentMap<String, HystrixCommandEventStream> streams = new ConcurrentHashMap<String, HystrixCommandEventStream>();
 
     public static HystrixCommandEventStream getInstance(HystrixCommandKey commandKey) {
-        if (streams.containsKey(commandKey)) {
-            return streams.get(commandKey);
+        HystrixCommandEventStream initialStream = streams.get(commandKey.name());
+        if (initialStream != null) {
+            return initialStream;
         } else {
-            HystrixCommandEventStream newStream = new HystrixCommandEventStream(commandKey);
-            HystrixCommandEventStream existingStream = streams.putIfAbsent(commandKey, newStream);
-            if (existingStream == null) {
-                //we won the race, so register the newly-created stream
-                System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis() + " : Created new metrics stream for " + commandKey.name());
-                return newStream;
-            } else {
-                //we lost the race, so a different thread already registered the stream
-                System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis() + " : Lost the thread race, so destroying this instance of " + commandKey.name() + " Command stream");
-                return existingStream;
+            synchronized (HystrixCommandEventStream.class) {
+                HystrixCommandEventStream existingStream = streams.get(commandKey.name());
+                if (existingStream == null) {
+                    HystrixCommandEventStream newStream = new HystrixCommandEventStream(commandKey);
+                    System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis() + " : Created new metrics stream for " + commandKey.name());
+                    streams.putIfAbsent(commandKey.name(), newStream);
+                    return newStream;
+                } else {
+                    return existingStream;
+                }
             }
         }
     }
