@@ -87,26 +87,23 @@ public class HystrixCommandMetrics extends HystrixMetrics {
         HystrixCommandMetrics commandMetrics = metrics.get(key.name());
         if (commandMetrics != null) {
             return commandMetrics;
-        }
-        // it doesn't exist so we need to create it
-
-        //now check to see if we need to create a synthetic threadPoolKey
-        HystrixThreadPoolKey nonNullThreadPoolKey;
-        if (threadPoolKey == null) {
-            nonNullThreadPoolKey = HystrixThreadPoolKey.Factory.asKey(commandGroup.name());
         } else {
-            nonNullThreadPoolKey = threadPoolKey;
-        }
-        commandMetrics = new HystrixCommandMetrics(key, commandGroup, nonNullThreadPoolKey, properties, HystrixPlugins.getInstance().getEventNotifier());
-        // attempt to store it (race other threads)
-        HystrixCommandMetrics existing = metrics.putIfAbsent(key.name(), commandMetrics);
-        if (existing == null) {
-            // we won the thread-race to store the instance we created
-            return commandMetrics;
-        } else {
-            // we lost so return 'existing' and let the one we created be garbage collected after shutting down all of its subscriptions
-            existing.unsubscribeAllStreams();
-            return existing;
+            synchronized (HystrixCommandMetrics.class) {
+                HystrixCommandMetrics existingMetrics = metrics.get(key.name());
+                if (existingMetrics != null) {
+                    return existingMetrics;
+                } else {
+                    HystrixThreadPoolKey nonNullThreadPoolKey;
+                    if (threadPoolKey == null) {
+                        nonNullThreadPoolKey = HystrixThreadPoolKey.Factory.asKey(commandGroup.name());
+                    } else {
+                        nonNullThreadPoolKey = threadPoolKey;
+                    }
+                    HystrixCommandMetrics newCommandMetrics = new HystrixCommandMetrics(key, commandGroup, nonNullThreadPoolKey, properties, HystrixPlugins.getInstance().getEventNotifier());
+                    metrics.putIfAbsent(key.name(), newCommandMetrics);
+                    return newCommandMetrics;
+                }
+            }
         }
     }
 
