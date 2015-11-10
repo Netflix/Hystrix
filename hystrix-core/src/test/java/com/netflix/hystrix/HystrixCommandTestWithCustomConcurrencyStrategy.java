@@ -41,6 +41,7 @@ public class HystrixCommandTestWithCustomConcurrencyStrategy {
     public void reset() {
         HystrixRequestContext.setContextOnCurrentThread(null);
         HystrixPropertiesFactory.reset();
+        HystrixPlugins.reset();
     }
 
     /**
