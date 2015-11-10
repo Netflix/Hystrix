@@ -2054,7 +2054,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
      * @return boolean
      */
     public boolean isResponseRejected() {
-        return executionResult.events.contains(HystrixEventType.THREAD_POOL_REJECTED) || executionResult.events.contains(HystrixEventType.SEMAPHORE_REJECTED);
+        return executionResult.isResponseRejected();
     }
 
     /**
