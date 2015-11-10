@@ -41,7 +41,6 @@ public class HystrixCommandTestWithCustomConcurrencyStrategy {
     public void reset() {
         HystrixRequestContext.setContextOnCurrentThread(null);
         HystrixPropertiesFactory.reset();
-        HystrixPlugins.reset();
     }
 
     /**
@@ -51,31 +50,45 @@ public class HystrixCommandTestWithCustomConcurrencyStrategy {
      ** useRequestCache   : true
      ** useRequestLog     : true
      *
-     * OUTCOME: RequestLog set up properly in command if context initialized, static access depends on context initialization
-     * and will throw if not initialized
+     * OUTCOME: RequestLog set up properly in command
      */
     @Test
-    public void testCommandRequiresContextConcurrencyStrategyProvidesIt() {
+    public void testCommandRequiresContextConcurrencyStrategyProvidesItContextSetUpCorrectly() {
         HystrixConcurrencyStrategy strategy = new CustomConcurrencyStrategy(true);
         HystrixPlugins.getInstance().registerConcurrencyStrategy(strategy);
 
         //context is set up properly
         HystrixRequestContext context = HystrixRequestContext.initializeContext();
-        HystrixCommand<Boolean> cmd1 = new TestCommand(true, true);
-        assertTrue(cmd1.execute());
+        HystrixCommand<Boolean> cmd = new TestCommand(true, true);
+        assertTrue(cmd.execute());
         printRequestLog();
         assertNotNull(HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
-        assertNotNull(cmd1.currentRequestLog);
+        assertNotNull(cmd.currentRequestLog);
         context.shutdown();
+    }
+
+    /**
+     * HystrixConcurrencyStrategy
+     ** useDefaultRequestContext : true
+     * HystrixCommand
+     ** useRequestCache   : true
+     ** useRequestLog     : true
+     *
+     * OUTCOME: RequestLog not set up properly in command, static access is null
+     */
+    @Test
+    public void testCommandRequiresContextConcurrencyStrategyProvidesItContextLeftUninitialized() {
+        HystrixConcurrencyStrategy strategy = new CustomConcurrencyStrategy(true);
+        HystrixPlugins.getInstance().registerConcurrencyStrategy(strategy);
 
         //context is not set up
         HystrixRequestContext.setContextOnCurrentThread(null);
-        HystrixCommand<Boolean> cmd2 = new TestCommand(true, true);
-        assertTrue(cmd2.execute()); //command execution not affected by missing context
+        HystrixCommand<Boolean> cmd = new TestCommand(true, true);
+        assertTrue(cmd.execute()); //command execution not affected by missing context
         printRequestLog();
         assertNull(HystrixRequestLog.getCurrentRequest());
         assertNull(HystrixRequestLog.getCurrentRequest(strategy));
-        assertNull(cmd2.currentRequestLog);
+        assertNull(cmd.currentRequestLog);
     }
 
     /**
@@ -88,28 +101,43 @@ public class HystrixCommandTestWithCustomConcurrencyStrategy {
      * OUTCOME: RequestLog not set up in command, not available statically
      */
     @Test
-    public void testCommandRequiresContextConcurrencyStrategyDoesNotProvideIt() {
+    public void testCommandRequiresContextConcurrencyStrategyDoesNotProvideItContextSetUpCorrectly() {
         HystrixConcurrencyStrategy strategy = new CustomConcurrencyStrategy(false);
         HystrixPlugins.getInstance().registerConcurrencyStrategy(strategy);
 
         //context is set up properly
         HystrixRequestContext context = HystrixRequestContext.initializeContext();
-        HystrixCommand<Boolean> cmd1 = new TestCommand(true, true);
-        assertTrue(cmd1.execute());
+        HystrixCommand<Boolean> cmd = new TestCommand(true, true);
+        assertTrue(cmd.execute());
         printRequestLog();
         assertNull(HystrixRequestLog.getCurrentRequest());
         assertNull(HystrixRequestLog.getCurrentRequest(strategy));
-        assertNull(cmd1.currentRequestLog);
+        assertNull(cmd.currentRequestLog);
         context.shutdown();
+    }
+
+    /**
+     * HystrixConcurrencyStrategy
+     ** useDefaultRequestContext : false
+     * HystrixCommand
+     ** useRequestCache   : true
+     ** useRequestLog     : true
+     *
+     * OUTCOME: RequestLog not set up in command, not available statically
+     */
+    @Test
+    public void testCommandRequiresContextConcurrencyStrategyDoesNotProvideItContextLeftUninitialized() {
+        HystrixConcurrencyStrategy strategy = new CustomConcurrencyStrategy(false);
+        HystrixPlugins.getInstance().registerConcurrencyStrategy(strategy);
 
         //context is not set up
         HystrixRequestContext.setContextOnCurrentThread(null);
-        HystrixCommand<Boolean> cmd2 = new TestCommand(true, true);
-        assertTrue(cmd2.execute()); //command execution not affected by missing context
+        HystrixCommand<Boolean> cmd = new TestCommand(true, true);
+        assertTrue(cmd.execute()); //command execution not affected by missing context
         printRequestLog();
         assertNull(HystrixRequestLog.getCurrentRequest());
         assertNull(HystrixRequestLog.getCurrentRequest(strategy));
-        assertNull(cmd2.currentRequestLog);
+        assertNull(cmd.currentRequestLog);
     }
 
     /**
@@ -119,31 +147,72 @@ public class HystrixCommandTestWithCustomConcurrencyStrategy {
      ** useRequestCache   : false
      ** useRequestLog     : false
      *
-     * OUTCOME: RequestLog not set up in command, static access depends on context initialization and will throw if not initialized
+     * OUTCOME: RequestLog not set up in command, static access works properly
      */
     @Test
-    public void testCommandDoesNotRequireContextConcurrencyStrategyProvidesIt() {
+    public void testCommandDoesNotRequireContextConcurrencyStrategyProvidesItContextSetUpCorrectly() {
         HystrixConcurrencyStrategy strategy = new CustomConcurrencyStrategy(true);
         HystrixPlugins.getInstance().registerConcurrencyStrategy(strategy);
 
         //context is set up properly
         HystrixRequestContext context = HystrixRequestContext.initializeContext();
-        HystrixCommand<Boolean> cmd1 = new TestCommand(false, false);
-        assertTrue(cmd1.execute());
+        HystrixCommand<Boolean> cmd = new TestCommand(false, false);
+        assertTrue(cmd.execute());
         printRequestLog();
         assertNotNull(HystrixRequestLog.getCurrentRequest());
         assertNotNull(HystrixRequestLog.getCurrentRequest(strategy));
-        assertNull(cmd1.currentRequestLog);
+        assertNull(cmd.currentRequestLog);
         context.shutdown();
+    }
+
+    /**
+     * HystrixConcurrencyStrategy
+     ** useDefaultRequestContext : true
+     * HystrixCommand
+     ** useRequestCache   : false
+     ** useRequestLog     : false
+     *
+     * OUTCOME: RequestLog not set up in command, static access is null
+     */
+    @Test
+    public void testCommandDoesNotRequireContextConcurrencyStrategyProvidesItContextLeftUninitialized() {
+        HystrixConcurrencyStrategy strategy = new CustomConcurrencyStrategy(true);
+        HystrixPlugins.getInstance().registerConcurrencyStrategy(strategy);
 
         //context is not set up
         HystrixRequestContext.setContextOnCurrentThread(null);
-        HystrixCommand<Boolean> cmd2 = new TestCommand(false, false);
-        assertTrue(cmd2.execute()); //command execution not affected by missing context
+        HystrixCommand<Boolean> cmd = new TestCommand(false, false);
+        assertTrue(cmd.execute()); //command execution not affected by missing context
         printRequestLog();
         assertNull(HystrixRequestLog.getCurrentRequest());
         assertNull(HystrixRequestLog.getCurrentRequest(strategy));
-        assertNull(cmd1.currentRequestLog);
+        assertNull(cmd.currentRequestLog);
+    }
+
+
+    /**
+     * HystrixConcurrencyStrategy
+     ** useDefaultRequestContext : false
+     * HystrixCommand
+     ** useRequestCache   : false
+     ** useRequestLog     : false
+     *
+     * OUTCOME: RequestLog not set up in command, not available statically
+     */
+    @Test
+    public void testCommandDoesNotRequireContextConcurrencyStrategyDoesNotProvideItContextSetUpCorrectly() {
+        HystrixConcurrencyStrategy strategy = new CustomConcurrencyStrategy(false);
+        HystrixPlugins.getInstance().registerConcurrencyStrategy(strategy);
+
+        //context is set up properly
+        HystrixRequestContext context = HystrixRequestContext.initializeContext();
+        HystrixCommand<Boolean> cmd = new TestCommand(true, true);
+        assertTrue(cmd.execute());
+        printRequestLog();
+        assertNull(HystrixRequestLog.getCurrentRequest());
+        assertNull(HystrixRequestLog.getCurrentRequest(strategy));
+        assertNull(cmd.currentRequestLog);
+        context.shutdown();
     }
 
     /**
@@ -156,28 +225,18 @@ public class HystrixCommandTestWithCustomConcurrencyStrategy {
      * OUTCOME: RequestLog not set up in command, not available statically
      */
     @Test
-    public void testCommandDoesNotRequireContextConcurrencyStrategyDoesNotProvideIt() {
+    public void testCommandDoesNotRequireContextConcurrencyStrategyDoesNotProvideItContextLeftUninitialized() {
         HystrixConcurrencyStrategy strategy = new CustomConcurrencyStrategy(false);
         HystrixPlugins.getInstance().registerConcurrencyStrategy(strategy);
 
-        //context is set up properly
-        HystrixRequestContext context = HystrixRequestContext.initializeContext();
-        HystrixCommand<Boolean> cmd1 = new TestCommand(true, true);
-        assertTrue(cmd1.execute());
-        printRequestLog();
-        assertNull(HystrixRequestLog.getCurrentRequest());
-        assertNull(HystrixRequestLog.getCurrentRequest(strategy));
-        assertNull(cmd1.currentRequestLog);
-        context.shutdown();
-
         //context is not set up
         HystrixRequestContext.setContextOnCurrentThread(null);
-        HystrixCommand<Boolean> cmd2 = new TestCommand(true, true);
-        assertTrue(cmd2.execute()); //command execution unaffected by missing context
+        HystrixCommand<Boolean> cmd = new TestCommand(true, true);
+        assertTrue(cmd.execute()); //command execution unaffected by missing context
         printRequestLog();
         assertNull(HystrixRequestLog.getCurrentRequest());
         assertNull(HystrixRequestLog.getCurrentRequest(strategy));
-        assertNull(cmd2.currentRequestLog);
+        assertNull(cmd.currentRequestLog);
     }
 
 
