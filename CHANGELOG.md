@@ -1,5 +1,26 @@
 # Hystrix Releases #
 
+### Version 1.4.20 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.20%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.20/)) ###
+
+* [Pull 965](https://github.com/Netflix/Hystrix/pull/965) Upgrade Nebula Gradle plugin
+* [Pull 962](https://github.com/Netflix/Hystrix/pull/962) Javanica: Support for async commands
+* [Pull 960](https://github.com/Netflix/Hystrix/pull/960) Avoid Clojure reflection in hystrix-clj
+* [Pull 957](https://github.com/Netflix/Hystrix/pull/957) Javanica: Fix threadpool properties
+* [Pull 956](https://github.com/Netflix/Hystrix/pull/956) Upgrade JMH from 1.10.3 to 1.11.1
+* [Pull 945](https://github.com/Netflix/Hystrix/pull/945) Javanica: Compile-time weaving support
+* [Pull 952](https://github.com/Netflix/Hystrix/pull/952) Tolerate lack of RequestContext better for custom concurrency strategies
+* [Pull 947](https://github.com/Netflix/Hystrix/pull/947) Upgrade RxNetty to 0.4.12 for RxNetty metrics stream
+* [Pull 946](https://github.com/Netflix/Hystrix/pull/946) More extension-friendly Yammer metrics publisher
+* [Pull 944](https://github.com/Netflix/Hystrix/pull/944) Fix generated POM to include dependencies in 'compile' scope
+* [Pull 942](https://github.com/Netflix/Hystrix/pull/942) Fix metrics stream fallbackEmit metric
+* [Pull 941](https://github.com/Netflix/Hystrix/pull/941) Add FALLBACK_MISSING event type and metric
+
+Artifacts: [Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.20%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.20/)
+
+### Version 1.4.19 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.19%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.19/)) ###
+
+This version should be the exact same as 1.4.20, but suffered problems during the publishing process.  Please use 1.4.20 instead.
+
 ### Version 1.4.18 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.18%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.18/)) ###
 
 * [Pull 934](https://github.com/Netflix/Hystrix/pull/934) Remove duplicate EventSource from dashboard
