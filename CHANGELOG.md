@@ -15,8 +15,6 @@
 * [Pull 942](https://github.com/Netflix/Hystrix/pull/942) Fix metrics stream fallbackEmit metric
 * [Pull 941](https://github.com/Netflix/Hystrix/pull/941) Add FALLBACK_MISSING event type and metric
 
-Artifacts: [Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.20%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.20/)
-
 ### Version 1.4.19 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.19%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.19/)) ###
 
 This version should be the exact same as 1.4.20, but suffered problems during the publishing process.  Please use 1.4.20 instead.
