@@ -26,6 +26,7 @@ import rx.Subscriber;
  *
  * @param <T> command result type
  */
+@Deprecated
 public abstract class ObservableResult<T> extends Observable<T> implements ClosureCommand<T> {
 
     public ObservableResult() {
