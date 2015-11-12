@@ -36,7 +36,7 @@ public class BatchHystrixCommand extends AbstractHystrixCommand<List<Object>> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GenericCommand.class);
 
-    protected BatchHystrixCommand(HystrixCommandBuilder builder) {
+    public BatchHystrixCommand(HystrixCommandBuilder builder) {
         super(builder);
     }
 

@@ -11,6 +11,7 @@ import org.junit.Before;
 import org.junit.Test;
 import rx.Observable;
 import rx.Observer;
+import rx.Subscriber;
 import rx.functions.Action1;
 
 import static com.netflix.hystrix.contrib.javanica.test.common.CommonUtils.getHystrixCommandByKey;
@@ -102,6 +103,23 @@ public abstract class BasicObservableTest extends BasicHystrixTest {
 
         private User staticFallback(String id, String name) {
             return new User("def", "def");
+        }
+
+        @HystrixCommand
+        public Observable<User> getUserRX(final String id, final String name) {
+            return Observable.create(new Observable.OnSubscribe<User>() {
+                @Override
+                public void call(Subscriber<? super User> observer) {
+                    try {
+                        if (!observer.isUnsubscribed()) {
+                            observer.onNext(new User(id, name));
+                            observer.onCompleted();
+                        }
+                    } catch (Exception e) {
+                        observer.onError(e);
+                    }
+                }
+            });
         }
 
         private void validate(String id, String name) {

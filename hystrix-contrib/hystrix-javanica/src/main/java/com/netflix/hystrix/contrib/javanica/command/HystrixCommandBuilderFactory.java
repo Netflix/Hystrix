@@ -1,12 +1,12 @@
 /**
- * Copyright 2012 Netflix, Inc.
- *
+ * Copyright 2015 Netflix, Inc.
+ * <p/>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * <p/>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p/>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,11 +15,8 @@
  */
 package com.netflix.hystrix.contrib.javanica.command;
 
-
-import com.google.common.collect.Maps;
 import com.netflix.hystrix.HystrixCollapser;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
-import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
 import com.netflix.hystrix.contrib.javanica.utils.FallbackMethod;
 import com.netflix.hystrix.contrib.javanica.utils.MethodProvider;
 import org.apache.commons.lang3.StringUtils;
@@ -28,7 +25,6 @@ import org.apache.commons.lang3.Validate;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Map;
 
 import static com.netflix.hystrix.contrib.javanica.cache.CacheInvocationContextFactory.createCacheRemoveInvocationContext;
 import static com.netflix.hystrix.contrib.javanica.cache.CacheInvocationContextFactory.createCacheResultInvocationContext;
@@ -36,53 +32,97 @@ import static com.netflix.hystrix.contrib.javanica.utils.EnvUtils.isCompileWeavi
 import static com.netflix.hystrix.contrib.javanica.utils.ajc.AjcUtils.getAjcMethodAroundAdvice;
 
 /**
- * Base implementation of {@link HystrixCommandFactory} interface.
- *
- * @param <T> the type of Hystrix command
+ * Created by dmgcodevil.
  */
-public abstract class AbstractHystrixCommandFactory<T extends AbstractHystrixCommand>
-        implements HystrixCommandFactory<T> {
+public class HystrixCommandBuilderFactory {
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public T create(MetaHolder metaHolder,
-                    Collection<HystrixCollapser.CollapsedRequest<Object, Object>> collapsedRequests) {
-        Validate.notNull(metaHolder.getHystrixCommand(), "hystrixCommand cannot be null");
-        String groupKey = StringUtils.isNotEmpty(metaHolder.getHystrixCommand().groupKey()) ?
-                metaHolder.getHystrixCommand().groupKey()
-                : metaHolder.getDefaultGroupKey();
-        String commandKey = StringUtils.isNotEmpty(metaHolder.getHystrixCommand().commandKey()) ?
-                metaHolder.getHystrixCommand().commandKey()
-                : metaHolder.getDefaultCommandKey();
+    // todo Add Cache
 
-        CommandSetterBuilder setterBuilder = new CommandSetterBuilder();
-        setterBuilder.commandKey(commandKey);
-        setterBuilder.groupKey(groupKey);
-        setterBuilder.threadPoolKey(metaHolder.getHystrixCommand().threadPoolKey());
-        setterBuilder.threadPoolProperties(metaHolder.getHystrixCommand().threadPoolProperties());
-        setterBuilder.commandProperties(metaHolder.getHystrixCommand().commandProperties());
+    private static final HystrixCommandBuilderFactory INSTANCE = new HystrixCommandBuilderFactory();
 
-        Map<String, Object> commandProperties = getCommandProperties(metaHolder.getHystrixCommand());
-        CommandAction commandAction = new MethodExecutionAction(metaHolder.getObj(), metaHolder.getMethod(), metaHolder.getArgs(), metaHolder);
-        CommandAction fallbackAction = createFallbackAction(metaHolder, collapsedRequests);
-        CommandActions commandActions = CommandActions.builder().commandAction(commandAction)
-                .fallbackAction(fallbackAction).build();
+    public static HystrixCommandBuilderFactory getInstance() {
+        return INSTANCE;
+    }
 
-        HystrixCommandBuilder hystrixCommandBuilder = new HystrixCommandBuilder().setterBuilder(setterBuilder)
-                .commandActions(commandActions)
-                .commandProperties(commandProperties)
+    private HystrixCommandBuilderFactory() {
+
+    }
+
+    public HystrixCommandBuilder create(MetaHolder metaHolder) {
+        return create(metaHolder, Collections.<HystrixCollapser.CollapsedRequest<Object, Object>>emptyList());
+    }
+
+    public HystrixCommandBuilder create(MetaHolder metaHolder, Collection<HystrixCollapser.CollapsedRequest<Object, Object>> collapsedRequests) {
+        validateMetaHolder(metaHolder);
+
+        return HystrixCommandBuilder.builder()
+                .setterBuilder(createGenericSetterBuilder(metaHolder))
+                .commandActions(createCommandActions(metaHolder))
                 .collapsedRequests(collapsedRequests)
                 .cacheResultInvocationContext(createCacheResultInvocationContext(metaHolder))
                 .cacheRemoveInvocationContext(createCacheRemoveInvocationContext(metaHolder))
                 .ignoreExceptions(metaHolder.getHystrixCommand().ignoreExceptions())
-                .executionType(metaHolder.getExecutionType());
-        return create(hystrixCommandBuilder);
+                .executionType(metaHolder.getExecutionType())
+                .build();
     }
 
-    CommandAction createFallbackAction(MetaHolder metaHolder,
-                                       Collection<HystrixCollapser.CollapsedRequest<Object, Object>> collapsedRequests) {
+    private void validateMetaHolder(MetaHolder metaHolder) {
+        Validate.notNull(metaHolder, "metaHolder is required parameter and cannot be null");
+        Validate.isTrue(metaHolder.isCommandAnnotationPresent(), "hystrixCommand annotation is absent");
+    }
+
+    private GenericSetterBuilder createGenericSetterBuilder(MetaHolder metaHolder) {
+        GenericSetterBuilder.Builder setterBuilder = GenericSetterBuilder.builder()
+                .groupKey(createGroupKey(metaHolder))
+                .threadPoolKey(createThreadPoolKey(metaHolder))
+                .commandKey(createCommandKey(metaHolder))
+                .collapserKey(createCollapserKey(metaHolder))
+                .commandProperties(metaHolder.getCommandProperties())
+                .threadPoolProperties(metaHolder.getThreadPoolProperties())
+                .collapserProperties(metaHolder.getCollapserProperties());
+        if (metaHolder.isCollapserAnnotationPresent()) {
+            setterBuilder.scope(metaHolder.getHystrixCollapser().scope());
+        }
+        return setterBuilder.build();
+    }
+
+    private String createGroupKey(MetaHolder metaHolder) {
+        return createKey(metaHolder.getHystrixCommand().groupKey(), metaHolder.getDefaultGroupKey());
+    }
+
+    private String createThreadPoolKey(MetaHolder metaHolder) {
+        // this key is created without default value because intrinsically Hystrix knows how to derive this key properly if it's absent
+        return metaHolder.getHystrixCommand().threadPoolKey();
+    }
+
+    private String createCommandKey(MetaHolder metaHolder) {
+        return createKey(metaHolder.getHystrixCommand().commandKey(), metaHolder.getDefaultCommandKey());
+    }
+
+    private String createCollapserKey(MetaHolder metaHolder) {
+        if (metaHolder.isCollapserAnnotationPresent()) {
+            return createKey(metaHolder.getHystrixCollapser().collapserKey(), metaHolder.getDefaultCollapserKey());
+        }
+        return null;
+    }
+
+    private String createKey(String key, String defKey) {
+        return StringUtils.isNotBlank(key) ? key : defKey;
+    }
+
+
+    private CommandActions createCommandActions(MetaHolder metaHolder) {
+        CommandAction commandAction = createCommandAction(metaHolder);
+        CommandAction fallbackAction = createFallbackAction(metaHolder);
+        return CommandActions.builder().commandAction(commandAction)
+                .fallbackAction(fallbackAction).build();
+    }
+
+    private CommandAction createCommandAction(MetaHolder metaHolder) {
+        return new MethodExecutionAction(metaHolder.getObj(), metaHolder.getMethod(), metaHolder.getArgs(), metaHolder);
+    }
+
+    private CommandAction createFallbackAction(MetaHolder metaHolder) {
 
         FallbackMethod fallbackMethod = MethodProvider.getInstance().getFallbackMethod(metaHolder.getObj().getClass(), metaHolder.getMethod(), metaHolder.isExtendedFallback());
         fallbackMethod.validateReturnType(metaHolder.getMethod());
@@ -107,7 +147,7 @@ public abstract class AbstractHystrixCommandFactory<T extends AbstractHystrixCom
                         .defaultGroupKey(metaHolder.getDefaultGroupKey())
                         .hystrixCollapser(metaHolder.getHystrixCollapser())
                         .hystrixCommand(fMethod.getAnnotation(HystrixCommand.class)).build();
-                fallbackAction = new LazyCommandExecutionAction(GenericHystrixCommandFactory.getInstance(), fmMetaHolder, collapsedRequests);
+                fallbackAction = new LazyCommandExecutionAction(fmMetaHolder);
             } else {
                 MetaHolder fmMetaHolder = MetaHolder.builder()
                         .obj(metaHolder.getObj())
@@ -125,33 +165,11 @@ public abstract class AbstractHystrixCommandFactory<T extends AbstractHystrixCom
         return fallbackAction;
     }
 
-    abstract T create(HystrixCommandBuilder hystrixCommandBuilder);
-
-
     private Method getAjcMethod(Object target, Method fallback) {
         if (isCompileWeaving()) {
             return getAjcMethodAroundAdvice(target.getClass(), fallback);
         }
         return null;
-    }
-
-    private CommandAction createCacheKeyAction(MetaHolder metaHolder) {
-        CommandAction cacheKeyAction = null;
-        if (metaHolder.getCacheKeyMethod() != null) {
-            cacheKeyAction = new MethodExecutionAction(metaHolder.getObj(), metaHolder.getCacheKeyMethod(), metaHolder.getArgs(), metaHolder);
-        }
-        return cacheKeyAction;
-    }
-
-    private Map<String, Object> getCommandProperties(HystrixCommand hystrixCommand) {
-        if (hystrixCommand.commandProperties() == null || hystrixCommand.commandProperties().length == 0) {
-            return Collections.emptyMap();
-        }
-        Map<String, Object> commandProperties = Maps.newHashMap();
-        for (HystrixProperty commandProperty : hystrixCommand.commandProperties()) {
-            commandProperties.put(commandProperty.name(), commandProperty.value());
-        }
-        return commandProperties;
     }
 
 }

@@ -23,7 +23,8 @@ import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.collapser.CommandCollapser;
 import com.netflix.hystrix.contrib.javanica.command.CommandExecutor;
 import com.netflix.hystrix.contrib.javanica.command.ExecutionType;
-import com.netflix.hystrix.contrib.javanica.command.GenericHystrixCommandFactory;
+import com.netflix.hystrix.contrib.javanica.command.GenericCommand;
+import com.netflix.hystrix.contrib.javanica.command.HystrixCommandBuilderFactory;
 import com.netflix.hystrix.contrib.javanica.command.MetaHolder;
 import com.netflix.hystrix.contrib.javanica.utils.FallbackMethod;
 import com.netflix.hystrix.contrib.javanica.utils.MethodProvider;
@@ -84,13 +85,14 @@ public class HystrixCommandAspect {
         MetaHolderFactory metaHolderFactory = META_HOLDER_FACTORY_MAP.get(HystrixPointcutType.of(method));
         MetaHolder metaHolder = metaHolderFactory.create(joinPoint);
         HystrixExecutable executable;
-        ExecutionType executionType = metaHolder.isCollapser() ?
+        ExecutionType executionType = metaHolder.isCollapserAnnotationPresent() ?
                 metaHolder.getCollapserExecutionType() : metaHolder.getExecutionType();
-        if (metaHolder.isCollapser()) {
+        if (metaHolder.isCollapserAnnotationPresent()) {
             executable = new CommandCollapser(metaHolder);
         } else {
-            executable = GenericHystrixCommandFactory.getInstance().create(metaHolder, null);
+            executable = new GenericCommand(HystrixCommandBuilderFactory.getInstance().create(metaHolder));
         }
+        // todo add case for observable command
         Object result;
         try {
             result = CommandExecutor.execute(executable, executionType, metaHolder);
@@ -218,7 +220,7 @@ public class HystrixCommandAspect {
         }
     }
 
-    private static enum HystrixPointcutType {
+    private enum HystrixPointcutType {
         COMMAND,
         COLLAPSER;
 

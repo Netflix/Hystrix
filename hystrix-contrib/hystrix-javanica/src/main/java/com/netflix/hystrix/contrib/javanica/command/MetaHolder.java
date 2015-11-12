@@ -15,15 +15,18 @@
  */
 package com.netflix.hystrix.contrib.javanica.command;
 
+import com.google.common.collect.ImmutableList;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCollapser;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
-import com.netflix.hystrix.contrib.javanica.aop.aspectj.WeavingMode;
+import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
 import com.netflix.hystrix.contrib.javanica.command.closure.Closure;
 import org.aspectj.lang.JoinPoint;
 
+import javax.annotation.concurrent.Immutable;
 import java.lang.reflect.Method;
 import java.util.Arrays;
-import javax.annotation.concurrent.Immutable;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Simple immutable holder to keep all necessary information about current method to build Hystrix command.
@@ -140,8 +143,12 @@ public class MetaHolder {
         return method.getParameterTypes();
     }
 
-    public boolean isCollapser(){
-        return hystrixCollapser!=null;
+    public boolean isCollapserAnnotationPresent() {
+        return hystrixCollapser != null;
+    }
+
+    public boolean isCommandAnnotationPresent() {
+        return hystrixCommand != null;
     }
 
     public JoinPoint getJoinPoint() {
@@ -174,6 +181,18 @@ public class MetaHolder {
 
     public ExecutionType getFallbackExecutionType() {
         return fallbackExecutionType;
+    }
+
+    public List<HystrixProperty> getCommandProperties() {
+        return isCommandAnnotationPresent() ? ImmutableList.copyOf(hystrixCommand.commandProperties()) : Collections.<HystrixProperty>emptyList();
+    }
+
+    public List<HystrixProperty> getCollapserProperties() {
+        return isCollapserAnnotationPresent() ? ImmutableList.copyOf(hystrixCollapser.collapserProperties()) : Collections.<HystrixProperty>emptyList();
+    }
+
+    public List<HystrixProperty> getThreadPoolProperties() {
+        return isCommandAnnotationPresent() ? ImmutableList.copyOf(hystrixCommand.threadPoolProperties()) : Collections.<HystrixProperty>emptyList();
     }
 
     public static final class Builder {

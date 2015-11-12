@@ -42,6 +42,10 @@ public class CommandActions {
         return fallbackAction;
     }
 
+    public boolean hasFallbackAction() {
+        return fallbackAction != null;
+    }
+
     public static class Builder {
         private CommandAction commandAction;
         private CommandAction fallbackAction;
