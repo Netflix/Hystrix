@@ -1,4 +1,4 @@
-<div class="monitor" id="CIRCUIT_<%= name %>" style="position:relative;">
+<div class="monitor" id="CIRCUIT_<%= name + '_' + index %>" style="position:relative;">
 	<%
 		var displayName = name;
 		var toolTip = "";
@@ -8,12 +8,12 @@
 		}
 	%>
 	
-	<div id="chart_CIRCUIT_<%= name %>" class="chart" style="position:absolute;top:0px;left:0; float:left; width:100%; height:100%;"></div>
+	<div id="chart_CIRCUIT_<%= name + '_' + index %>" class="chart" style="position:absolute;top:0px;left:0; float:left; width:100%; height:100%;"></div>
     <div style="position:absolute;top:0;width:100%;height:15px;opacity:0.8; background:white;">
     	<% if(includeDetailIcon) { %>
     	<p class="name" <%= toolTip %> style="padding-right:16px">
     		<%= displayName %>
-    		<a href="../dependencies/command.jsp?name=<%= name %>"><img src="../components/hystrixCommand/magnifying-glass-icon-20.png" height="14px" width="14px" border="0" style="position: absolute; right:0px;"></a>
+    		<a href="../dependencies/command.jsp?name=<%= name + '_' + index %>"><img src="../components/hystrixCommand/magnifying-glass-icon-20.png" height="14px" width="14px" border="0" style="position: absolute; right:0px;"></a>
     	</p>
     	<% }  else { %>
     	<p class="name" <%= toolTip %>><%= displayName %></p>
@@ -22,12 +22,12 @@
 	<div style="position:absolute;top:15px;; opacity:0.8; background:white; width:100%; height:95%;">
 		<div class="monitor_data"></div>
 	</div>
-	<div id="graph_CIRCUIT_<%= name %>" class="graph" style="position:absolute;top:25px;left:0; float:left; width:140px; height:62px;"></div>
+	<div id="graph_CIRCUIT_<%= name + '_' + index %>" class="graph" style="position:absolute;top:25px;left:0; float:left; width:140px; height:62px;"></div>
 
 	<script>
 		var y = 200;
 		/* escape with two backslashes */
-		var vis = d3.select("#chart_CIRCUIT_<%= name.replace(/([ !"#$%&'()*+,./:;<=>?@[\]^`{|}~])/g,'\\\\$1') %>").append("svg:svg").attr("width", "100%").attr("height", "100%");
+		var vis = d3.select("#chart_CIRCUIT_<%= name.replace(/([ !"#$%&'()*+,./:;<=>?@[\]^`{|}~])/g,'\\\\$1') + '_' + index %>").append("svg:svg").attr("width", "100%").attr("height", "100%");
 		/* add a circle -- we don't use the data point, we set it manually, so just passing in [1] */
 		var circle = vis.selectAll("circle").data([1]).enter().append("svg:circle");
 		/* setup the initial styling and sizing of the circle */
@@ -35,6 +35,6 @@
 		
 		/* add the line graph - it will be populated by javascript, no default to show here */
 		/* escape with two backslashes */
-		var graph = d3.select("#graph_CIRCUIT_<%= name.replace(/([ !"#$%&'()*+,./:;<=>?@[\]^`{|}~])/g,'\\\\$1') %>").append("svg:svg").attr("width", "100%").attr("height", "100%");
+		var graph = d3.select("#graph_CIRCUIT_<%= name.replace(/([ !"#$%&'()*+,./:;<=>?@[\]^`{|}~])/g,'\\\\$1') + '_' + index %>").append("svg:svg").attr("width", "100%").attr("height", "100%");
 	</script>
 </div>

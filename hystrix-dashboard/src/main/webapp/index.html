@@ -4,32 +4,43 @@
 <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
 <title>Hystrix Dashboard</title>
 
+	<!-- Our custom CSS -->
+	<link rel="stylesheet" type="text/css" href="./index.css" />
+
 	<!-- Javascript to monitor and display -->
 	<script src="./js/jquery.min.js" type="text/javascript"></script>
-	
+	<script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
+
 	<script>
-		function sendToMonitor() {
-			
+		var streams = [];
+		function addStream() {
 			if($('#stream').val().length > 0) {
-				var url = "./monitor/monitor.html?stream=" + encodeURIComponent($('#stream').val()) + "";
-				if($('#delay').val().length > 0) {	
-					url += "&delay=" + $('#delay').val();
-				}
-				if($('#title').val().length > 0) {	
-					url += "&title=" + encodeURIComponent($('#title').val());
-				}
-                if($('#authorization').val().length > 0) {
-                    url += "&authorization=" + encodeURIComponent($('#authorization').val());
-                }
-				location.href= url;
+				var s = {
+					name: $('#title').val(),
+					stream: $('#stream').val(),
+					auth: $('#authorization').val(),
+					delay: $('#delay').val()
+				};
+
+				streams.push(s);
+				$('#streams').html('<table>' + _.reduce(streams, function(html, s) {
+					return html + '<tr><td>' + s.name + '</td><td>' + s.stream + '</td></tr>';
+				}, '') + '</table>');
 			} else {
 				$('#message').html("The 'stream' value is required.");
+			}
+		}
+		function monitorStreams() {
+			if (streams.length) {
+				location.href= './monitor/monitor.html?streams=' + encodeURIComponent(JSON.stringify(streams));
+			} else {
+				$('#message').html("Add Streams to monitor, before starting to monitor.");
 			}
 		}
 		$(document).ready(function() {
 			$('#stream').keypress(function(e) {
 				if(e.which == 13) {
-					sendToMonitor();
+					monitorStreams();
 				}
 			});
 		});
@@ -57,7 +68,11 @@
 	Title: <input id="title" type="textfield" size="60" placeholder="Example Hystrix App"></input><br><br>
     Authorization: <input id="authorization" type="textfield" size="60" placeholder="Basic Zm9vOmJhcg=="></input><br>
 	<br>
-	<button onclick="sendToMonitor()">Monitor Stream</button>
+	<button onclick="addStream()">Add Stream</button>
+	<br><br>
+	<ol id='streams'></ol>
+	<br><br>
+	<button onclick="monitorStreams()">Monitor Streams</button>
 	<br><br>
 	<div id="message" style="color:red"></div>
 	

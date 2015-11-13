@@ -110,7 +110,7 @@
 
 .dependencies div.monitor {
 	width: 245px; /* we want a fixed width instead of percentage as I want the boxes to be a set size and then fill in as many as can fit in each row ... this allows 3 columns on an iPad */
-	height: 155px;
+	height: 160px;
 }
 
 .dependencies .success {

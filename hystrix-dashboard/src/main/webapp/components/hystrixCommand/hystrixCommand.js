@@ -19,7 +19,7 @@
 	 * 
 	 * Publish this externally as "HystrixCommandMonitor"
 	 */
-	window.HystrixCommandMonitor = function(containerId, args) {
+	window.HystrixCommandMonitor = function(index, containerId, args) {
 		
 		var self = this; // keep scope under control
 		self.args = args;
@@ -27,6 +27,7 @@
 			self.args = {};
 		}
 		
+		this.index = index;
 		this.containerId = containerId;
 		
 		/**
@@ -66,6 +67,7 @@
 		/* public */ self.eventSourceMessageListener = function(e) {
 			var data = JSON.parse(e.data);
 			if(data) {
+				data.index = self.index;
 				// check for reportingHosts (if not there, set it to 1 for singleHost vs cluster)
 				if(!data.reportingHosts) {
 					data.reportingHosts = 1;
@@ -91,7 +93,7 @@
 			// assert all the values we need
 			validateData(data);
 			// escape string used in jQuery & d3 selectors
-			data.escapedName = data.name.replace(/([ !"#$%&'()*+,./:;<=>?@[\]^`{|}~])/g,'\\$1');
+			data.escapedName = data.name.replace(/([ !"#$%&'()*+,./:;<=>?@[\]^`{|}~])/g,'\\$1') + '_' + data.index;
 			// do math
 			convertAllAvg(data);
 			calcRatePerSecond(data);
