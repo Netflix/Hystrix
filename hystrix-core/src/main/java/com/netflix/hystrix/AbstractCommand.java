@@ -514,10 +514,10 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                             executionHook.onThreadStart(_self);
                             executionHook.onRunStart(_self);
                             executionHook.onExecutionStart(_self);
+                            getExecutionObservableWithLifecycle().unsafeSubscribe(s);
                         } catch (Throwable ex) {
                             s.onError(ex);
                         }
-                        getExecutionObservableWithLifecycle().unsafeSubscribe(s); //the getExecutionObservableWithLifecycle method already wraps sync exceptions, so no need to catch here
                     }
                 }
             }).subscribeOn(threadPool.getScheduler(new Func0<Boolean>() {

@@ -4300,11 +4300,11 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
     }
 
     @Test
-    public void testOnRunStartHookThrows() {
-        final AtomicBoolean threadExceptionEncountered = new AtomicBoolean(false);
-        final AtomicBoolean semaphoreExceptionEncountered = new AtomicBoolean(false);
+    public void testOnRunStartHookThrowsSemaphoreIsolated() {
+        final AtomicBoolean exceptionEncountered = new AtomicBoolean(false);
         final AtomicBoolean onThreadStartInvoked = new AtomicBoolean(false);
         final AtomicBoolean onThreadCompleteInvoked = new AtomicBoolean(false);
+        final AtomicBoolean executionAttempted = new AtomicBoolean(false);
 
         class FailureInjectionHook extends HystrixCommandExecutionHook {
             @Override
@@ -4334,6 +4334,61 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
 
             @Override
             protected Integer run() throws Exception {
+                executionAttempted.set(true);
+                return 3;
+            }
+        }
+
+        TestHystrixCommand<Integer> semaphoreCmd = new FailureInjectedCommand(ExecutionIsolationStrategy.SEMAPHORE);
+        try {
+            int result = semaphoreCmd.execute();
+            System.out.println("RESULT : " + result);
+        } catch (Throwable ex) {
+            ex.printStackTrace();
+            exceptionEncountered.set(true);
+        }
+        assertTrue(exceptionEncountered.get());
+        assertFalse(onThreadStartInvoked.get());
+        assertFalse(onThreadCompleteInvoked.get());
+        assertFalse(executionAttempted.get());
+    }
+
+    @Test
+    public void testOnRunStartHookThrowsThreadIsolated() {
+        final AtomicBoolean exceptionEncountered = new AtomicBoolean(false);
+        final AtomicBoolean onThreadStartInvoked = new AtomicBoolean(false);
+        final AtomicBoolean onThreadCompleteInvoked = new AtomicBoolean(false);
+        final AtomicBoolean executionAttempted = new AtomicBoolean(false);
+
+        class FailureInjectionHook extends HystrixCommandExecutionHook {
+            @Override
+            public <T> void onExecutionStart(HystrixInvokable<T> commandInstance) {
+                throw new HystrixRuntimeException(HystrixRuntimeException.FailureType.COMMAND_EXCEPTION, commandInstance.getClass(), "Injected Failure", null, null);
+            }
+
+            @Override
+            public <T> void onThreadStart(HystrixInvokable<T> commandInstance) {
+                onThreadStartInvoked.set(true);
+                super.onThreadStart(commandInstance);
+            }
+
+            @Override
+            public <T> void onThreadComplete(HystrixInvokable<T> commandInstance) {
+                onThreadCompleteInvoked.set(true);
+                super.onThreadComplete(commandInstance);
+            }
+        }
+
+        final FailureInjectionHook failureInjectionHook = new FailureInjectionHook();
+
+        class FailureInjectedCommand extends TestHystrixCommand<Integer> {
+            public FailureInjectedCommand(ExecutionIsolationStrategy isolationStrategy) {
+                super(testPropsBuilder().setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionIsolationStrategy(isolationStrategy)), failureInjectionHook);
+            }
+
+            @Override
+            protected Integer run() throws Exception {
+                executionAttempted.set(true);
                 return 3;
             }
         }
@@ -4344,21 +4399,12 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
             System.out.println("RESULT : " + result);
         } catch (Throwable ex) {
             ex.printStackTrace();
-            threadExceptionEncountered.set(true);
+            exceptionEncountered.set(true);
         }
-        assertTrue(threadExceptionEncountered.get());
+        assertTrue(exceptionEncountered.get());
         assertTrue(onThreadStartInvoked.get());
         assertTrue(onThreadCompleteInvoked.get());
-
-        TestHystrixCommand<Integer> semaphoreCmd = new FailureInjectedCommand(ExecutionIsolationStrategy.SEMAPHORE);
-        try {
-            int result = semaphoreCmd.execute();
-            System.out.println("RESULT : " + result);
-        } catch (Throwable ex) {
-            ex.printStackTrace();
-            semaphoreExceptionEncountered.set(true);
-        }
-        assertTrue(semaphoreExceptionEncountered.get());
+        assertFalse(executionAttempted.get());
     }
 
 //    @Test
