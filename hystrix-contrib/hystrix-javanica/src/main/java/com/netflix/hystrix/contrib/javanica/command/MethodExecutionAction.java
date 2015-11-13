@@ -32,7 +32,7 @@ import static com.netflix.hystrix.contrib.javanica.utils.ajc.AjcUtils.invokeAjcM
  * If {@link Method#invoke(Object, Object...)} throws exception then this exception is wrapped to {@link CommandActionExecutionException}
  * for further unwrapping and processing.
  */
-public class MethodExecutionAction extends CommandAction {
+public class MethodExecutionAction implements CommandAction {
 
     private static final Object[] EMPTY_ARGS = new Object[]{};
 
@@ -85,12 +85,12 @@ public class MethodExecutionAction extends CommandAction {
      */
     @Override
     public Object executeWithArgs(ExecutionType executionType, Object[] args) throws CommandActionExecutionException {
-        if (ExecutionType.SYNCHRONOUS.equals(executionType)) {
-            return execute(object, method, args);
-        } else {
+        if(ExecutionType.ASYNCHRONOUS == executionType){
             Closure closure = ClosureFactoryRegistry.getFactory(executionType).createClosure(metaHolder, method, object, args);
             return executeClj(closure.getClosureObj(), closure.getClosureMethod());
         }
+
+        return execute(object, method, args);
     }
 
     /**

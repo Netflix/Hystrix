@@ -31,7 +31,6 @@ public class ClosureFactoryRegistry {
     private static final Map<ExecutionType, ClosureFactory> CLOSURE_FACTORY_MAP = ImmutableMap
             .<ExecutionType, ClosureFactory>builder()
             .put(ExecutionType.ASYNCHRONOUS, new AsyncClosureFactory())
-            .put(ExecutionType.OBSERVABLE, new ObservableClosureFactory())
             .put(ExecutionType.SYNCHRONOUS, new ClosureFactory() {
                 @Override
                 public Closure createClosure(Method method, Object o, Object... args) {

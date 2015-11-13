@@ -1,12 +1,12 @@
 /**
  * Copyright 2012 Netflix, Inc.
- *
+ * <p/>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * <p/>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p/>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,13 +16,14 @@
 package com.netflix.hystrix.contrib.javanica.command;
 
 
+import com.netflix.hystrix.HystrixExecutable;
 import com.netflix.hystrix.contrib.javanica.exception.CommandActionExecutionException;
 import org.apache.commons.lang3.StringUtils;
 
 /**
  * This action creates related hystrix commands on demand when command creation can be postponed.
  */
-public class LazyCommandExecutionAction extends CommandAction {
+public class LazyCommandExecutionAction implements CommandAction {
 
     private MetaHolder originalMetaHolder;
 
@@ -41,8 +42,7 @@ public class LazyCommandExecutionAction extends CommandAction {
      */
     @Override
     public Object execute(ExecutionType executionType) throws CommandActionExecutionException {
-        AbstractHystrixCommand command = new GenericCommand(HystrixCommandBuilderFactory.getInstance()
-                .create(createCopy(originalMetaHolder, executionType)));
+        HystrixExecutable command = HystrixCommandFactory.getInstance().createDelayed(createCopy(originalMetaHolder, executionType));
         return new CommandExecutionAction(command, originalMetaHolder).execute(executionType);
     }
 
@@ -51,8 +51,7 @@ public class LazyCommandExecutionAction extends CommandAction {
      */
     @Override
     public Object executeWithArgs(ExecutionType executionType, Object[] args) throws CommandActionExecutionException {
-        AbstractHystrixCommand command = new GenericCommand(HystrixCommandBuilderFactory.getInstance()
-                .create(createCopy(originalMetaHolder, executionType, args)));
+        HystrixExecutable command = HystrixCommandFactory.getInstance().createDelayed(createCopy(originalMetaHolder, executionType, args));
         return new CommandExecutionAction(command, originalMetaHolder).execute(executionType);
     }
 
@@ -77,6 +76,7 @@ public class LazyCommandExecutionAction extends CommandAction {
                 .extendedParentFallback(source.isExtendedParentFallback())
                 .executionType(executionType)
                 .args(source.getArgs())
+                .observable(source.isObservable())
                 .defaultCollapserKey(source.getDefaultCollapserKey())
                 .defaultCommandKey(source.getDefaultCommandKey())
                 .defaultGroupKey(source.getDefaultGroupKey())
@@ -94,6 +94,7 @@ public class LazyCommandExecutionAction extends CommandAction {
                 .extendedParentFallback(source.isExtendedParentFallback())
                 .extendedFallback(source.isExtendedFallback())
                 .args(args)
+                .observable(source.isObservable())
                 .defaultCollapserKey(source.getDefaultCollapserKey())
                 .defaultCommandKey(source.getDefaultCommandKey())
                 .defaultGroupKey(source.getDefaultGroupKey())

@@ -1,12 +1,12 @@
 /**
  * Copyright 2012 Netflix, Inc.
- *
+ * <p/>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * <p/>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p/>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,15 +18,15 @@ package com.netflix.hystrix.contrib.javanica.command;
 
 import com.netflix.hystrix.HystrixCollapser;
 import com.netflix.hystrix.contrib.javanica.exception.FallbackInvocationException;
-import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+
+import static com.netflix.hystrix.contrib.javanica.utils.CommonUtils.createArgsForFallback;
 
 /**
  * This command is used in collapser.
@@ -70,19 +70,9 @@ public class BatchHystrixCommand extends AbstractHystrixCommand<List<Object>> {
                 return (List<Object>) process(new Action() {
                     @Override
                     Object execute() {
-                         Object[] args = toArgs(getCollapsedRequests());
-                        if (commandAction.getMetaHolder().isExtendedFallback()) {
-                            if (commandAction.getMetaHolder().isExtendedParentFallback()) {
-                                args[args.length - 1] = getFailedExecutionException();
-                            } else {
-                                args = Arrays.copyOf(args, args.length + 1);
-                                args[args.length - 1] = getFailedExecutionException();
-                            }
-                        } else {
-                            if (commandAction.getMetaHolder().isExtendedParentFallback()) {
-                                args = ArrayUtils.remove(args, args.length - 1);
-                            }
-                        }
+                        MetaHolder metaHolder = commandAction.getMetaHolder();
+                        Object[] args = toArgs(getCollapsedRequests());
+                        args = createArgsForFallback(args, metaHolder, getFailedExecutionException());
                         return commandAction.executeWithArgs(commandAction.getMetaHolder().getFallbackExecutionType(), args);
                     }
                 });

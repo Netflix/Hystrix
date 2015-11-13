@@ -21,6 +21,7 @@ import com.netflix.hystrix.contrib.javanica.command.ObservableResult;
 /**
  * Specific implementation of {@link ClosureFactory}.
  */
+@Deprecated
 public class ObservableClosureFactory extends AbstractClosureFactory {
 
     /**

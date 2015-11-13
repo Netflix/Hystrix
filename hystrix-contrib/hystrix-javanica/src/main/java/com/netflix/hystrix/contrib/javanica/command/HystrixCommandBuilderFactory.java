@@ -124,7 +124,8 @@ public class HystrixCommandBuilderFactory {
 
     private CommandAction createFallbackAction(MetaHolder metaHolder) {
 
-        FallbackMethod fallbackMethod = MethodProvider.getInstance().getFallbackMethod(metaHolder.getObj().getClass(), metaHolder.getMethod(), metaHolder.isExtendedFallback());
+        FallbackMethod fallbackMethod = MethodProvider.getInstance().getFallbackMethod(metaHolder.getObj().getClass(),
+                metaHolder.getMethod(), metaHolder.isExtendedFallback());
         fallbackMethod.validateReturnType(metaHolder.getMethod());
         CommandAction fallbackAction = null;
         if (fallbackMethod.isPresent()) {
@@ -143,6 +144,7 @@ public class HystrixCommandBuilderFactory {
                         .extendedFallback(fallbackMethod.isExtended())
                         .fallbackExecutionType(fallbackMethod.getExecutionType())
                         .extendedParentFallback(metaHolder.isExtendedFallback())
+                        .observable(ExecutionType.OBSERVABLE == fallbackMethod.getExecutionType())
                         .defaultCommandKey(fMethod.getName())
                         .defaultGroupKey(metaHolder.getDefaultGroupKey())
                         .hystrixCollapser(metaHolder.getHystrixCollapser())

@@ -55,6 +55,7 @@ public class MetaHolder {
     private final boolean fallback;
     private boolean extendedParentFallback;
     private final JoinPoint joinPoint;
+    private final boolean observable;
 
     private MetaHolder(Builder builder) {
         this.hystrixCommand = builder.hystrixCommand;
@@ -77,6 +78,7 @@ public class MetaHolder {
         this.extendedFallback = builder.extendedFallback;
         this.fallback = builder.fallback;
         this.extendedParentFallback = builder.extendedParentFallback;
+        this.observable = builder.observable;
     }
 
     public static Builder builder() {
@@ -195,6 +197,10 @@ public class MetaHolder {
         return isCommandAnnotationPresent() ? ImmutableList.copyOf(hystrixCommand.threadPoolProperties()) : Collections.<HystrixProperty>emptyList();
     }
 
+    public boolean isObservable() {
+        return observable;
+    }
+
     public static final class Builder {
 
         private HystrixCollapser hystrixCollapser;
@@ -216,6 +222,7 @@ public class MetaHolder {
         private boolean extendedFallback;
         private boolean fallback;
         private boolean extendedParentFallback;
+        private boolean observable;
         private JoinPoint joinPoint;
 
 
@@ -316,6 +323,11 @@ public class MetaHolder {
 
         public Builder extendedFallback(boolean extendedFallback) {
             this.extendedFallback = extendedFallback;
+            return this;
+        }
+
+        public Builder observable(boolean observable) {
+            this.observable = observable;
             return this;
         }
 

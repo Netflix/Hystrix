@@ -1,12 +1,12 @@
 /**
  * Copyright 2012 Netflix, Inc.
- *
+ * <p/>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * <p/>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p/>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,9 +20,9 @@ import com.netflix.hystrix.contrib.javanica.exception.CommandActionExecutionExce
 /**
  * Simple action to encapsulate some logic to process it in a Hystrix command.
  */
-public abstract class CommandAction {
+public interface CommandAction {
 
-    public abstract MetaHolder getMetaHolder();
+    MetaHolder getMetaHolder();
 
     /**
      * Executes action in accordance with the given execution type.
@@ -31,7 +31,7 @@ public abstract class CommandAction {
      * @return result of execution
      * @throws com.netflix.hystrix.contrib.javanica.exception.CommandActionExecutionException
      */
-    public abstract Object execute(ExecutionType executionType) throws CommandActionExecutionException;
+    Object execute(ExecutionType executionType) throws CommandActionExecutionException;
 
     /**
      * Executes action with parameters in accordance with the given execution ty
@@ -41,13 +41,13 @@ public abstract class CommandAction {
      * @return result of execution
      * @throws com.netflix.hystrix.contrib.javanica.exception.CommandActionExecutionException
      */
-    public abstract Object executeWithArgs(ExecutionType executionType, Object[] args) throws CommandActionExecutionException;
+    Object executeWithArgs(ExecutionType executionType, Object[] args) throws CommandActionExecutionException;
 
     /**
      * Gets action name. Useful for debugging.
      *
      * @return the action name
      */
-    public abstract String getActionName();
+    String getActionName();
 
 }

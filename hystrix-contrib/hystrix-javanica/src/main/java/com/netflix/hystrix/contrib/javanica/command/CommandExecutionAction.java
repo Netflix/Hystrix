@@ -1,12 +1,12 @@
 /**
  * Copyright 2012 Netflix, Inc.
- *
+ * <p/>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * <p/>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p/>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,27 +15,29 @@
  */
 package com.netflix.hystrix.contrib.javanica.command;
 
+import com.netflix.hystrix.HystrixExecutable;
+import com.netflix.hystrix.HystrixInvokableInfo;
 import com.netflix.hystrix.contrib.javanica.exception.CommandActionExecutionException;
 
 /**
  * Action to execute a Hystrix command.
  */
-public class CommandExecutionAction extends CommandAction {
+public class CommandExecutionAction implements CommandAction {
 
-    private AbstractHystrixCommand hystrixCommand;
-    private  MetaHolder metaHolder;
+    private HystrixExecutable hystrixCommand;
+    private MetaHolder metaHolder;
 
     /**
      * Constructor with parameters.
      *
      * @param hystrixCommand the hystrix command to execute.
      */
-    public CommandExecutionAction(AbstractHystrixCommand hystrixCommand, MetaHolder metaHolder) {
+    public CommandExecutionAction(HystrixExecutable hystrixCommand, MetaHolder metaHolder) {
         this.hystrixCommand = hystrixCommand;
         this.metaHolder = metaHolder;
     }
 
-    public AbstractHystrixCommand getHystrixCommand() {
+    public HystrixExecutable getHystrixCommand() {
         return hystrixCommand;
     }
 
@@ -59,8 +61,9 @@ public class CommandExecutionAction extends CommandAction {
      */
     @Override
     public String getActionName() {
-        if (hystrixCommand != null) {
-            return hystrixCommand.getCommandKey().name();
+        if (hystrixCommand != null && hystrixCommand instanceof HystrixInvokableInfo) {
+            HystrixInvokableInfo info = (HystrixInvokableInfo) hystrixCommand;
+            return info.getCommandKey().name();
         }
         return "";
     }
