@@ -46,15 +46,24 @@ subprojects {
         }
     }
 
+	//mark all first-level dependencies as 'compile' in generated POM
+	//except for 'servlet-api', which should be 'provided'
 	publishing {
 		publications {
 			nebula(MavenPublication) {
 				pom.withXml {
 					configurations.compile.resolvedConfiguration.firstLevelModuleDependencies.each { dep ->
-						asNode().dependencies[0].dependency.find {
-							it.artifactId[0].text() == dep.moduleName &&
-							it.groupId[0].text() == dep.moduleGroup
-						}.scope[0].value = 'compile'
+						if (dep.moduleName == "servlet-api") {
+							asNode().dependencies[0].dependency.find {
+								it.artifactId[0].text() == dep.moduleName &&
+								it.groupId[0].text() == dep.moduleGroup
+							}.scope[0].value = 'provided'
+						} else {
+							asNode().dependencies[0].dependency.find {
+								it.artifactId[0].text() == dep.moduleName &&
+								it.groupId[0].text() == dep.moduleGroup
+							}.scope[0].value = 'compile'
+						}
 					}
 				}
 			}
