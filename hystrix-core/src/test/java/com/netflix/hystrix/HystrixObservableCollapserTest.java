@@ -161,6 +161,15 @@ public class HystrixObservableCollapserTest {
     }
 
     @Test
+    public void stressTestRequestCollapser() throws Exception {
+        for(int i = 0; i < 100; i++) {
+            init();
+            testTwoRequests();
+            cleanup();
+        }
+    }
+
+    @Test
     public void testTwoRequestsWhichShouldEachEmitTwice() throws Exception {
         //TestCollapserTimer timer = new TestCollapserTimer();
         CollapserTimer timer = new RealCollapserTimer();
