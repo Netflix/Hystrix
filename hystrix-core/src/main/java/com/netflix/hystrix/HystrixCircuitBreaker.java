@@ -137,11 +137,12 @@ public interface HystrixCircuitBreaker {
 
         public void markSuccess() {
             if (circuitOpen.get()) {
-                //Unsubscribe from the current stream to reset the health counts stream.  This only affects the health counts view,
-                //and all other metric consumers are unaffected by the reset
-                metrics.resetStream();
-                // If we have been 'open' and have a success then we want to close the circuit. This handles the 'singleTest' logic
-                circuitOpen.set(false);
+                if (circuitOpen.compareAndSet(true, false)) {
+                    //win the thread race to reset metrics
+                    //Unsubscribe from the current stream to reset the health counts stream.  This only affects the health counts view,
+                    //and all other metric consumers are unaffected by the reset
+                    metrics.resetStream();
+                }
             }
         }
 
