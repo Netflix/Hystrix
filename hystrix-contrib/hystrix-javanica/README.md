@@ -105,21 +105,34 @@ The return type of command method should be Future that indicates that a command
 
 ## Reactive Execution
 
-To performe "Reactive Execution" you should return an instance of `ObservableResult` in your command method as in the exapmple below:
+To performe "Reactive Execution" you should return an instance of `Observable` in your command method as in the exapmple below:
 
 ```java
     @HystrixCommand
     public Observable<User> getUserById(final String id) {
-        return new ObservableResult<User>() {
-            @Override
-            public User invoke() {
-                return userResource.getUserById(id);
-            }
-        };
+        return Observable.create(new Observable.OnSubscribe<User>() {
+                @Override
+                public void call(Subscriber<? super User> observer) {
+                    try {
+                        if (!observer.isUnsubscribed()) {
+                            observer.onNext(new User(id, name + id));
+                            observer.onCompleted();
+                        }
+                    } catch (Exception e) {
+                        observer.onError(e);
+                    }
+                }
+            });
     }
 ```
 
 The return type of command method should be `Observable`.
+
+HystrixObservable interface provides two methods: ```observe()``` - eagerly starts execution of the command the same as ``` HystrixCommand#queue()``` and ```HystrixCommand#execute()```; ```toObservable()``` - lazily starts execution of the command only once the {@link Observable} is subscribed to. To control this behaviour and swith between two modes @HystrixCommand provides specific parameter called ```observableExecutionMode```.
+@HystrixCommand(observableExecutionMode = EAGER) indicates that ```observe()``` method should be used to execute observable command
+@HystrixCommand(observableExecutionMode = LAZY) indicates that ```toObservable()``` should be used to execute observable command
+
+**NOTE: EAGER mode is used by default**
 
 ## Fallback
 
@@ -218,13 +231,13 @@ A fallback can be async or sync, at certain cases it depends on command executio
 case 1: sync command, sync fallback
 
 ```java
-        @HystrixCommand(fallbackMethod = "fallbackAsync")
+        @HystrixCommand(fallbackMethod = "fallback")
         User getUserById(String id) {
             throw new RuntimeException("getUserById command failed");
         }
 
         @HystrixCommand
-        User fallbackAsync(String id) {
+        User fallback(String id) {
             return new User("def", "def");
         }
 ```
@@ -232,13 +245,13 @@ case 1: sync command, sync fallback
 case 2: async command, sync fallback
 
 ```java
-        @HystrixCommand(fallbackMethod = "fallbackAsync")
+        @HystrixCommand(fallbackMethod = "fallback")
         Future<User> getUserById(String id) {
             throw new RuntimeException("getUserById command failed");
         }
 
         @HystrixCommand
-        User fallbackAsync(String id) {
+        User fallback(String id) {
             return new User("def", "def");
         }
 ```
@@ -298,6 +311,8 @@ case 2: sync command, async fallback. This case isn't supported for the same rea
             };
         }
 ```
+
+Same restrictions are imposed on using observable feature in javanica.
 
 ## Error Propagation
 Based on [this](https://github.com/Netflix/Hystrix/wiki/How-To-Use#ErrorPropagation) description, `@HystrixCommand` has an ability to specify exceptions types which should be ignored and wrapped to throw in `HystrixBadRequestException`.
