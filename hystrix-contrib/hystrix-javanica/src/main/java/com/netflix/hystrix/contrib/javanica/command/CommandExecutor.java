@@ -23,11 +23,15 @@ import com.netflix.hystrix.contrib.javanica.utils.FutureDecorator;
 import org.apache.commons.lang3.Validate;
 
 /**
- * Invokes necessary method of {@link HystrixExecutable} for specified execution type:
+ * Invokes necessary method of {@link HystrixExecutable} or {@link HystrixObservable} for specified execution type:
  * <p/>
  * {@link ExecutionType#SYNCHRONOUS} -> {@link com.netflix.hystrix.HystrixExecutable#execute()}
+ * <p/>
  * {@link ExecutionType#ASYNCHRONOUS} -> {@link com.netflix.hystrix.HystrixExecutable#queue()}
- * {@link ExecutionType#OBSERVABLE} -> {@link com.netflix.hystrix.HystrixExecutable#observe()}.
+ * <p/>
+ * {@link ExecutionType#OBSERVABLE} -> depends on specify observable execution mode:
+ * {@link ObservableExecutionMode#EAGER} - {@link HystrixObservable#observe()},
+ * {@link ObservableExecutionMode#LAZY} -  {@link HystrixObservable#toObservable()}.
  */
 public class CommandExecutor {
 

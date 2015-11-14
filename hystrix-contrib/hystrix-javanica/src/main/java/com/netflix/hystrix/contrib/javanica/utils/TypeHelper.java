@@ -28,6 +28,8 @@ import java.util.Collections;
 import java.util.List;
 
 /**
+ * Helper class that provides convenient methods to work with java types.
+ * <p/>
  * Created by dmgcodevil.
  */
 public final class TypeHelper {
@@ -35,15 +37,31 @@ public final class TypeHelper {
     }
 
 
+    /**
+     * Check whether return type of the given method is parametrized or not.
+     *
+     * @param method the method
+     * @return true - if return type is {@link ParameterizedType}, otherwise - false
+     */
     public static boolean isReturnTypeParametrized(Method method) {
         return method.getGenericReturnType() instanceof ParameterizedType;
     }
 
 
     /**
-     * todo
-     * @param type
-     * @return
+     * Unwinds parametrized type into plain list that contains all parameters for the given type including nested parameterized types,
+     * for example calling the method for the following type
+     * <code>
+     * GType<GType<GDoubleType<GType<GDoubleType<Parent, Parent>>, Parent>>>
+     * </code>
+     * will return list of 8 elements:
+     * <code>
+     * [GType, GType, GDoubleType, GType, GDoubleType, Parent, Parent, Parent]
+     * </code>
+     * if the given type is not parametrized then returns list with one element which is given type passed into method.
+     *
+     * @param type the parameterized type
+     * @return list of {@link Type}
      */
     @ParametersAreNonnullByDefault
     public static List<Type> getAllParameterizedTypes(Type type) {
