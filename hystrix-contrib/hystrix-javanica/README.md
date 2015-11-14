@@ -263,7 +263,7 @@ case 3: async command, async fallback
 
 **Unsupported(prohibited)**
 
-case 1: sync command, async fallback. This case isn't supported because in the essence a caller does not get a future buy calling ```getUserById``` command and future is provided by fallback isn't available for a caller anyway, thus execution of a command forces to complete ```fallbackAsync``` before a caller gets a result, having said it turns out there is no benefits of async fallback execution. Such case makes async fallback useless. But it can be convenient if a fallback is used for both sync and async commands, if you see this case is very helpful and will be nice to have then create issue to add support for this case.
+case 1: sync command, async fallback command. This case isn't supported because in the essence a caller does not get a future buy calling ```getUserById``` and future is provided by fallback isn't available for a caller anyway, thus execution of a command forces to complete ```fallbackAsync``` before a caller gets a result, having said it turns out there is no benefits of async fallback execution. But it can be convenient if a fallback is used for both sync and async commands, if you see this case is very helpful and will be nice to have then create issue to add support for this case.
 
 ```java
         @HystrixCommand(fallbackMethod = "fallbackAsync")
@@ -281,8 +281,23 @@ case 1: sync command, async fallback. This case isn't supported because in the e
             };
         }
 ```
+case 2: sync command, async fallback. This case isn't supported for the same reason as for the case 1.
 
+```java
+        @HystrixCommand(fallbackMethod = "fallbackAsync")
+        User getUserById(String id) {
+            throw new RuntimeException("getUserById command failed");
+        }
 
+        Future<User> fallbackAsync(String id) {
+            return new AsyncResult<User>() {
+                @Override
+                public User invoke() {
+                    return new User("def", "def");
+                }
+            };
+        }
+```
 
 ## Error Propagation
 Based on [this](https://github.com/Netflix/Hystrix/wiki/How-To-Use#ErrorPropagation) description, `@HystrixCommand` has an ability to specify exceptions types which should be ignored and wrapped to throw in `HystrixBadRequestException`.
