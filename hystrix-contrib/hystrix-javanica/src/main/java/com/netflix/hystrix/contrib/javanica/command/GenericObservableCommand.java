@@ -16,7 +16,6 @@
 package com.netflix.hystrix.contrib.javanica.command;
 
 
-import com.google.common.base.Throwables;
 import com.netflix.hystrix.HystrixExecutable;
 import com.netflix.hystrix.HystrixObservableCommand;
 import com.netflix.hystrix.contrib.javanica.cache.CacheInvocationContext;
@@ -41,9 +40,9 @@ public class GenericObservableCommand extends HystrixObservableCommand implement
     private final CommandActions commandActions;
     private final CacheInvocationContext<CacheResult> cacheResultInvocationContext;
     private final CacheInvocationContext<CacheRemove> cacheRemoveInvocationContext;
-    private final List<Class<? extends Throwable>> ignoreExceptions; // todo implement
+    private final List<Class<? extends Throwable>> ignoreExceptions;
     private final ExecutionType executionType;
-    private final HystrixCacheKeyGenerator defaultCacheKeyGenerator = HystrixCacheKeyGenerator.getInstance(); // todo implement
+    private final HystrixCacheKeyGenerator defaultCacheKeyGenerator = HystrixCacheKeyGenerator.getInstance();
 
     public GenericObservableCommand(HystrixCommandBuilder builder) {
         super(builder.getSetterBuilder().buildObservableCommandSetter());

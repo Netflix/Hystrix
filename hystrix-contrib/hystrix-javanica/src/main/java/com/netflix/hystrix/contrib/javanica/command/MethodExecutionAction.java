@@ -16,8 +16,8 @@
 package com.netflix.hystrix.contrib.javanica.command;
 
 
+import com.netflix.hystrix.contrib.javanica.command.closure.AsyncClosureFactory;
 import com.netflix.hystrix.contrib.javanica.command.closure.Closure;
-import com.netflix.hystrix.contrib.javanica.command.closure.ClosureFactoryRegistry;
 import com.netflix.hystrix.contrib.javanica.exception.CommandActionExecutionException;
 import com.netflix.hystrix.contrib.javanica.exception.ExceptionUtils;
 
@@ -86,7 +86,7 @@ public class MethodExecutionAction implements CommandAction {
     @Override
     public Object executeWithArgs(ExecutionType executionType, Object[] args) throws CommandActionExecutionException {
         if(ExecutionType.ASYNCHRONOUS == executionType){
-            Closure closure = ClosureFactoryRegistry.getFactory(executionType).createClosure(metaHolder, method, object, args);
+            Closure closure = AsyncClosureFactory.getInstance().createClosure(metaHolder, method, object, args);
             return executeClj(closure.getClosureObj(), closure.getClosureMethod());
         }
 

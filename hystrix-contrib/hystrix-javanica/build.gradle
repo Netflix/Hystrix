@@ -113,4 +113,5 @@ dependencies {
     testCompile 'org.mockito:mockito-all:1.9.5'
     testCompile 'log4j:log4j:1.2.17'
     testCompile 'org.slf4j:slf4j-log4j12:1.7.7'
+    testCompile 'com.tngtech.java:junit-dataprovider:1.10.2'
 }
