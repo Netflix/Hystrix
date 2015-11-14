@@ -9,6 +9,7 @@ import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import rx.Observable;
 
 import java.lang.reflect.Method;
 import java.util.concurrent.Future;
@@ -39,6 +40,15 @@ public class FallbackMethodValidationTest {
                 {getMethod("commandReturnFutureParent"), getMethod("fallbackReturnChild")},
                 {getMethod("commandReturnParent"), getMethod("fallbackReturnFutureParent")},
                 {getMethod("commandReturnParent"), getMethod("fallbackCommandReturnFutureParent")},
+
+                // observable execution
+                {getMethod("fallbackReturnObservableParent"), getMethod("fallbackReturnObservableChild")},
+                {getMethod("fallbackReturnObservableParent"), getMethod("fallbackCommandReturnObservableChild")},
+                {getMethod("fallbackReturnObservableParent"), getMethod("fallbackReturnChild")},
+                {getMethod("commandReturnParent"), getMethod("fallbackReturnObservableParent")},
+                {getMethod("commandReturnParent"), getMethod("fallbackCommandReturnObservableParent")},
+                {getMethod("commandReturnParent"), getMethod("fallbackReturnObservableChild")},
+                {getMethod("commandReturnParent"), getMethod("fallbackCommandReturnObservableChild")},
         };
         // @formatter:on
     }
@@ -59,6 +69,11 @@ public class FallbackMethodValidationTest {
                 {getMethod("commandReturnFutureParent"), getMethod("fallbackCommandReturnFutureParent")},
                 {getMethod("commandReturnFutureParent"), getMethod("fallbackCommandReturnParent")},
                 {getMethod("commandReturnFutureParent"), getMethod("fallbackReturnParent")},
+
+                // observable execution
+                {getMethod("commandReturnObservableParent"), getMethod("fallbackReturnObservableParent")},
+                {getMethod("commandReturnObservableParent"), getMethod("fallbackCommandReturnObservableParent")},
+                {getMethod("commandReturnObservableParent"), getMethod("fallbackReturnParent")},
 
         };
         // @formatter:on
@@ -118,6 +133,15 @@ public class FallbackMethodValidationTest {
         @HystrixCommand Child fallbackCommandReturnChild() {return null;}
         @HystrixCommand Future<Parent> fallbackCommandReturnFutureParent() {return null;}
         @HystrixCommand Future<Child> fallbackCommandReturnFutureChild() {return null;}
+
+        // Observable execution
+        Observable<Parent> commandReturnObservableParent() {return null;}
+
+        Observable<Parent> fallbackReturnObservableParent() {return null;}
+        Observable<Child> fallbackReturnObservableChild() {return null;}
+
+        @HystrixCommand Observable<Parent> fallbackCommandReturnObservableParent() {return null;}
+        @HystrixCommand Observable<Child> fallbackCommandReturnObservableChild() {return null;}
     }
     // @formatter:on
 
