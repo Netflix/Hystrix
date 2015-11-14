@@ -128,9 +128,9 @@ To performe "Reactive Execution" you should return an instance of `Observable` i
 
 The return type of command method should be `Observable`.
 
-HystrixObservable interface provides two methods: ```observe()``` - eagerly starts execution of the command the same as ``` HystrixCommand#queue()``` and ```HystrixCommand#execute()```; ```toObservable()``` - lazily starts execution of the command only once the {@link Observable} is subscribed to. To control this behaviour and swith between two modes @HystrixCommand provides specific parameter called ```observableExecutionMode```.
-@HystrixCommand(observableExecutionMode = EAGER) indicates that ```observe()``` method should be used to execute observable command
-@HystrixCommand(observableExecutionMode = LAZY) indicates that ```toObservable()``` should be used to execute observable command
+HystrixObservable interface provides two methods: ```observe()``` - eagerly starts execution of the command the same as ``` HystrixCommand#queue()``` and ```HystrixCommand#execute()```; ```toObservable()``` - lazily starts execution of the command only once the Observable is subscribed to. To control this behaviour and swith between two modes ```@HystrixCommand``` provides specific parameter called ```observableExecutionMode```.
+```@HystrixCommand(observableExecutionMode = EAGER)``` indicates that ```observe()``` method should be used to execute observable command
+```@HystrixCommand(observableExecutionMode = LAZY)``` indicates that ```toObservable()``` should be used to execute observable command
 
 **NOTE: EAGER mode is used by default**
 
