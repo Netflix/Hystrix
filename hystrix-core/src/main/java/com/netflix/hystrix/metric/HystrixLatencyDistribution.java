@@ -287,7 +287,7 @@ public class HystrixLatencyDistribution {
         if (fromPool != null) {
             return fromPool;
         } else {
-            System.out.println("!!! No HystrixLatencyDistribution available in pool - allocating an object post-startup");
+            //System.out.println("!!! No HystrixLatencyDistribution available in pool - allocating an object post-startup");
             return new HystrixLatencyDistribution();
         }
     }
