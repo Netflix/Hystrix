@@ -16,6 +16,7 @@
 package com.netflix.hystrix.contrib.javanica.command;
 
 import com.netflix.hystrix.HystrixExecutable;
+import com.netflix.hystrix.HystrixInvokable;
 import com.netflix.hystrix.contrib.javanica.collapser.CommandCollapser;
 
 /**
@@ -33,8 +34,8 @@ public class HystrixCommandFactory {
         return INSTANCE;
     }
 
-    public HystrixExecutable create(MetaHolder metaHolder) {
-        HystrixExecutable executable;
+    public HystrixInvokable create(MetaHolder metaHolder) {
+        HystrixInvokable executable;
         if (metaHolder.isCollapserAnnotationPresent()) {
             executable = new CommandCollapser(metaHolder);
         } else if (metaHolder.isObservable()) {
@@ -45,8 +46,8 @@ public class HystrixCommandFactory {
         return executable;
     }
 
-    public HystrixExecutable createDelayed(MetaHolder metaHolder) {
-        HystrixExecutable executable;
+    public HystrixInvokable createDelayed(MetaHolder metaHolder) {
+        HystrixInvokable executable;
         if (metaHolder.isObservable()) {
             executable = new GenericObservableCommand(HystrixCommandBuilderFactory.getInstance().create(metaHolder));
         } else {

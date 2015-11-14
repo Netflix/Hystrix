@@ -15,7 +15,7 @@
  */
 package com.netflix.hystrix.contrib.javanica.command;
 
-import com.netflix.hystrix.HystrixExecutable;
+import com.netflix.hystrix.HystrixInvokable;
 import com.netflix.hystrix.HystrixInvokableInfo;
 import com.netflix.hystrix.contrib.javanica.exception.CommandActionExecutionException;
 
@@ -24,7 +24,7 @@ import com.netflix.hystrix.contrib.javanica.exception.CommandActionExecutionExce
  */
 public class CommandExecutionAction implements CommandAction {
 
-    private HystrixExecutable hystrixCommand;
+    private HystrixInvokable hystrixCommand;
     private MetaHolder metaHolder;
 
     /**
@@ -32,13 +32,9 @@ public class CommandExecutionAction implements CommandAction {
      *
      * @param hystrixCommand the hystrix command to execute.
      */
-    public CommandExecutionAction(HystrixExecutable hystrixCommand, MetaHolder metaHolder) {
+    public CommandExecutionAction(HystrixInvokable hystrixCommand, MetaHolder metaHolder) {
         this.hystrixCommand = hystrixCommand;
         this.metaHolder = metaHolder;
-    }
-
-    public HystrixExecutable getHystrixCommand() {
-        return hystrixCommand;
     }
 
     @Override

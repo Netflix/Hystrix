@@ -19,6 +19,7 @@ import com.google.common.collect.ImmutableList;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCollapser;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
+import com.netflix.hystrix.contrib.javanica.annotation.ObservableExecutionMode;
 import com.netflix.hystrix.contrib.javanica.command.closure.Closure;
 import org.aspectj.lang.JoinPoint;
 
@@ -56,6 +57,7 @@ public class MetaHolder {
     private boolean extendedParentFallback;
     private final JoinPoint joinPoint;
     private final boolean observable;
+    private final ObservableExecutionMode observableExecutionMode;
 
     private MetaHolder(Builder builder) {
         this.hystrixCommand = builder.hystrixCommand;
@@ -79,6 +81,7 @@ public class MetaHolder {
         this.fallback = builder.fallback;
         this.extendedParentFallback = builder.extendedParentFallback;
         this.observable = builder.observable;
+        this.observableExecutionMode = builder.observableExecutionMode;
     }
 
     public static Builder builder() {
@@ -201,6 +204,10 @@ public class MetaHolder {
         return observable;
     }
 
+    public ObservableExecutionMode getObservableExecutionMode() {
+        return observableExecutionMode;
+    }
+
     public static final class Builder {
 
         private HystrixCollapser hystrixCollapser;
@@ -224,7 +231,7 @@ public class MetaHolder {
         private boolean extendedParentFallback;
         private boolean observable;
         private JoinPoint joinPoint;
-
+        private ObservableExecutionMode observableExecutionMode;
 
         public Builder hystrixCollapser(HystrixCollapser hystrixCollapser) {
             this.hystrixCollapser = hystrixCollapser;
@@ -328,6 +335,11 @@ public class MetaHolder {
 
         public Builder observable(boolean observable) {
             this.observable = observable;
+            return this;
+        }
+
+        public Builder observableExecutionMode(ObservableExecutionMode observableExecutionMode) {
+            this.observableExecutionMode = observableExecutionMode;
             return this;
         }
 

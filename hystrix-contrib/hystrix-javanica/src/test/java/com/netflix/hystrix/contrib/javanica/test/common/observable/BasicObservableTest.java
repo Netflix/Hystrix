@@ -3,6 +3,7 @@ package com.netflix.hystrix.contrib.javanica.test.common.observable;
 import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.HystrixRequestLog;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
+import com.netflix.hystrix.contrib.javanica.annotation.ObservableExecutionMode;
 import com.netflix.hystrix.contrib.javanica.test.common.BasicHystrixTest;
 import com.netflix.hystrix.contrib.javanica.test.common.domain.User;
 import org.apache.commons.lang3.StringUtils;
@@ -12,6 +13,7 @@ import rx.Observable;
 import rx.Observer;
 import rx.Subscriber;
 import rx.functions.Action1;
+import rx.subjects.ReplaySubject;
 
 import static com.netflix.hystrix.contrib.javanica.test.common.CommonUtils.getHystrixCommandByKey;
 import static org.junit.Assert.assertEquals;
@@ -36,7 +38,9 @@ public abstract class BasicObservableTest extends BasicHystrixTest {
     @Test
     public void testGetUserByIdSuccess() {
         // blocking
-        assertEquals("name: 1", userService.getUser("1", "name: ").toBlocking().single().getName());
+        Observable<User> observable = userService.getUser("1", "name: ");
+        assertObservableExecutionMode(observable, ObservableExecutionMode.EAGER);
+        assertEquals("name: 1", observable.toBlocking().single().getName());
 
         // non-blocking
         // - this is a verbose anonymous inner-class approach and doesn't do assertions
@@ -77,9 +81,10 @@ public abstract class BasicObservableTest extends BasicHystrixTest {
     @Test
     public void testGetUserWithRegularFallback() {
         final User exUser = new User("def", "def");
-
+        Observable<User> userObservable = userService.getUserRegularFallback(" ", "");
+        assertObservableExecutionMode(userObservable, ObservableExecutionMode.LAZY);
         // blocking
-        assertEquals(exUser, userService.getUserRegularFallback(" ", "").toBlocking().single());
+        assertEquals(exUser, userObservable.toBlocking().single());
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
         com.netflix.hystrix.HystrixInvokableInfo getUserCommand = getHystrixCommandByKey("getUserRegularFallback");
         // confirm that command has failed
@@ -107,9 +112,9 @@ public abstract class BasicObservableTest extends BasicHystrixTest {
         final User exUser = new User("def", "def");
 
         // blocking
-        Observable<User> result = userService.getUserRxCommandFallback(" ", "");
-        Object res =  result.toBlocking().single();
-        assertEquals(exUser, result.toBlocking().single());
+        Observable<User> userObservable = userService.getUserRxCommandFallback(" ", "");
+        assertObservableExecutionMode(userObservable, ObservableExecutionMode.LAZY);
+        assertEquals(exUser, userObservable.toBlocking().single());
         assertEquals(2, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
         com.netflix.hystrix.HystrixInvokableInfo getUserRxCommandFallback = getHystrixCommandByKey("getUserRxCommandFallback");
         com.netflix.hystrix.HystrixInvokableInfo rxCommandFallback = getHystrixCommandByKey("rxCommandFallback");
@@ -118,6 +123,21 @@ public abstract class BasicObservableTest extends BasicHystrixTest {
         assertTrue(getUserRxCommandFallback.getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
         // and that fallback command was successful
         assertTrue(rxCommandFallback.getExecutionEvents().contains(HystrixEventType.SUCCESS));
+    }
+
+
+    private static void assertObservableExecutionMode(Observable observable, ObservableExecutionMode mode) {
+        // todo find better way to figure it out
+        boolean eager = observable instanceof ReplaySubject;
+        if (ObservableExecutionMode.EAGER == mode) {
+            if (!eager) {
+                throw new AssertionError("observable must be instance of ReplaySubject");
+            }
+        } else {
+            if (eager) {
+                throw new AssertionError("observable must not be instance of ReplaySubject");
+            }
+        }
     }
 
     public static class UserService {
@@ -130,7 +150,7 @@ public abstract class BasicObservableTest extends BasicHystrixTest {
             return Observable.just(new User("def", "def"));
         }
 
-        @HystrixCommand
+        @HystrixCommand(observableExecutionMode = ObservableExecutionMode.EAGER)
         private Observable<User> rxCommandFallback(String id, String name, Throwable throwable) {
             if (throwable instanceof GetUserException && "getUserRxCommandFallback has failed".equals(throwable.getMessage())) {
                 return Observable.just(new User("def", "def"));
@@ -146,7 +166,7 @@ public abstract class BasicObservableTest extends BasicHystrixTest {
             return createObservable(id, name);
         }
 
-        @HystrixCommand(fallbackMethod = "regularFallback")
+        @HystrixCommand(fallbackMethod = "regularFallback", observableExecutionMode = ObservableExecutionMode.LAZY)
         public Observable<User> getUserRegularFallback(final String id, final String name) {
             validate(id, name, "getUser has failed");
             return createObservable(id, name);
@@ -158,7 +178,7 @@ public abstract class BasicObservableTest extends BasicHystrixTest {
             return createObservable(id, name);
         }
 
-        @HystrixCommand(fallbackMethod = "rxCommandFallback")
+        @HystrixCommand(fallbackMethod = "rxCommandFallback", observableExecutionMode = ObservableExecutionMode.LAZY)
         public Observable<User> getUserRxCommandFallback(final String id, final String name) {
             validate(id, name, "getUserRxCommandFallback has failed");
             return createObservable(id, name);

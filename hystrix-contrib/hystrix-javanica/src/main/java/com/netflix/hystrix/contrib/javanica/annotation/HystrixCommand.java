@@ -105,5 +105,8 @@ public @interface HystrixCommand {
      * @return exceptions to ignore
      */
     Class<? extends Throwable>[] ignoreExceptions() default {};
+
+    // todo dmgcodevil: add doc
+    ObservableExecutionMode observableExecutionMode() default ObservableExecutionMode.EAGER;
 }
 

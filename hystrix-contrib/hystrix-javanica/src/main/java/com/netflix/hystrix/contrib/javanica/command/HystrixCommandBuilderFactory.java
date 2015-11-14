@@ -133,6 +133,7 @@ public class HystrixCommandBuilderFactory {
             Method fMethod = fallbackMethod.getMethod();
             if (fallbackMethod.isCommand()) {
                 fMethod.setAccessible(true);
+                HystrixCommand hystrixCommand = fMethod.getAnnotation(HystrixCommand.class);
                 MetaHolder fmMetaHolder = MetaHolder.builder()
                         .obj(metaHolder.getObj())
                         .method(fMethod)
@@ -148,7 +149,8 @@ public class HystrixCommandBuilderFactory {
                         .defaultCommandKey(fMethod.getName())
                         .defaultGroupKey(metaHolder.getDefaultGroupKey())
                         .hystrixCollapser(metaHolder.getHystrixCollapser())
-                        .hystrixCommand(fMethod.getAnnotation(HystrixCommand.class)).build();
+                        .observableExecutionMode(hystrixCommand.observableExecutionMode())
+                        .hystrixCommand(hystrixCommand).build();
                 fallbackAction = new LazyCommandExecutionAction(fmMetaHolder);
             } else {
                 MetaHolder fmMetaHolder = MetaHolder.builder()

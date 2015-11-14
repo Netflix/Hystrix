@@ -16,7 +16,7 @@
 package com.netflix.hystrix.contrib.javanica.command;
 
 
-import com.netflix.hystrix.HystrixExecutable;
+import com.netflix.hystrix.HystrixInvokable;
 import com.netflix.hystrix.contrib.javanica.exception.CommandActionExecutionException;
 import org.apache.commons.lang3.StringUtils;
 
@@ -42,7 +42,7 @@ public class LazyCommandExecutionAction implements CommandAction {
      */
     @Override
     public Object execute(ExecutionType executionType) throws CommandActionExecutionException {
-        HystrixExecutable command = HystrixCommandFactory.getInstance().createDelayed(createCopy(originalMetaHolder, executionType));
+        HystrixInvokable command = HystrixCommandFactory.getInstance().createDelayed(createCopy(originalMetaHolder, executionType));
         return new CommandExecutionAction(command, originalMetaHolder).execute(executionType);
     }
 
@@ -51,7 +51,7 @@ public class LazyCommandExecutionAction implements CommandAction {
      */
     @Override
     public Object executeWithArgs(ExecutionType executionType, Object[] args) throws CommandActionExecutionException {
-        HystrixExecutable command = HystrixCommandFactory.getInstance().createDelayed(createCopy(originalMetaHolder, executionType, args));
+        HystrixInvokable command = HystrixCommandFactory.getInstance().createDelayed(createCopy(originalMetaHolder, executionType, args));
         return new CommandExecutionAction(command, originalMetaHolder).execute(executionType);
     }
 
@@ -77,6 +77,7 @@ public class LazyCommandExecutionAction implements CommandAction {
                 .executionType(executionType)
                 .args(source.getArgs())
                 .observable(source.isObservable())
+                .observableExecutionMode(source.getObservableExecutionMode())
                 .defaultCollapserKey(source.getDefaultCollapserKey())
                 .defaultCommandKey(source.getDefaultCommandKey())
                 .defaultGroupKey(source.getDefaultGroupKey())
@@ -95,6 +96,7 @@ public class LazyCommandExecutionAction implements CommandAction {
                 .extendedFallback(source.isExtendedFallback())
                 .args(args)
                 .observable(source.isObservable())
+                .observableExecutionMode(source.getObservableExecutionMode())
                 .defaultCollapserKey(source.getDefaultCollapserKey())
                 .defaultCommandKey(source.getDefaultCommandKey())
                 .defaultGroupKey(source.getDefaultGroupKey())

@@ -18,6 +18,7 @@ package com.netflix.hystrix.contrib.javanica.aop.aspectj;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.netflix.hystrix.HystrixExecutable;
+import com.netflix.hystrix.HystrixInvokable;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCollapser;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.command.CommandExecutor;
@@ -81,12 +82,12 @@ public class HystrixCommandAspect {
         }
         MetaHolderFactory metaHolderFactory = META_HOLDER_FACTORY_MAP.get(HystrixPointcutType.of(method));
         MetaHolder metaHolder = metaHolderFactory.create(joinPoint);
-        HystrixExecutable executable = HystrixCommandFactory.getInstance().create(metaHolder);
+        HystrixInvokable invokable = HystrixCommandFactory.getInstance().create(metaHolder);
         ExecutionType executionType = metaHolder.isCollapserAnnotationPresent() ?
                 metaHolder.getCollapserExecutionType() : metaHolder.getExecutionType();
         Object result;
         try {
-            result = CommandExecutor.execute(executable, executionType, metaHolder);
+            result = CommandExecutor.execute(invokable, executionType, metaHolder);
         } catch (HystrixBadRequestException e) {
             throw e.getCause();
         }
@@ -205,11 +206,12 @@ public class HystrixCommandAspect {
             HystrixCommand hystrixCommand = method.getAnnotation(HystrixCommand.class);
             ExecutionType executionType = ExecutionType.getExecutionType(method.getReturnType());
             MetaHolder.Builder builder = metaHolderBuilder(proxy, method, obj, args, joinPoint);
-            builder.defaultCommandKey(method.getName());
-            builder.hystrixCommand(hystrixCommand);
-            builder.executionType(executionType);
-            builder.observable(ExecutionType.OBSERVABLE == executionType);
-            return builder.build();
+            return builder.defaultCommandKey(method.getName())
+                            .hystrixCommand(hystrixCommand)
+                            .observableExecutionMode(hystrixCommand.observableExecutionMode())
+                            .executionType(executionType)
+                            .observable(ExecutionType.OBSERVABLE == executionType)
+                            .build();
         }
     }
 

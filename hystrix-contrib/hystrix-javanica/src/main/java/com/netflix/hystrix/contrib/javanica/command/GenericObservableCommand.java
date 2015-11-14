@@ -16,7 +16,6 @@
 package com.netflix.hystrix.contrib.javanica.command;
 
 
-import com.netflix.hystrix.HystrixExecutable;
 import com.netflix.hystrix.HystrixObservableCommand;
 import com.netflix.hystrix.contrib.javanica.cache.CacheInvocationContext;
 import com.netflix.hystrix.contrib.javanica.cache.HystrixCacheKeyGenerator;
@@ -30,12 +29,11 @@ import rx.Observable;
 
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.List;
-import java.util.concurrent.Future;
 
 import static com.netflix.hystrix.contrib.javanica.utils.CommonUtils.createArgsForFallback;
 
 @ThreadSafe
-public class GenericObservableCommand extends HystrixObservableCommand implements HystrixExecutable {
+public class GenericObservableCommand extends HystrixObservableCommand {
 
     private final CommandActions commandActions;
     private final CacheInvocationContext<CacheResult> cacheResultInvocationContext;
@@ -128,15 +126,5 @@ public class GenericObservableCommand extends HystrixObservableCommand implement
             }
         }
         return false;
-    }
-
-    @Override
-    public Object execute() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Future queue() {
-        throw new UnsupportedOperationException();
     }
 }
