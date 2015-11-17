@@ -44,7 +44,6 @@ public class HystrixCommandEventStream {
                 HystrixCommandEventStream existingStream = streams.get(commandKey.name());
                 if (existingStream == null) {
                     HystrixCommandEventStream newStream = new HystrixCommandEventStream(commandKey);
-                    System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis() + " : Created new metrics stream for " + commandKey.name());
                     streams.putIfAbsent(commandKey.name(), newStream);
                     return newStream;
                 } else {

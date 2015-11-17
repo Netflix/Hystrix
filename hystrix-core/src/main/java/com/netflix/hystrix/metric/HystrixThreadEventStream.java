@@ -39,7 +39,8 @@ import rx.subjects.Subject;
  *
  * Also note that any observers of this stream do so on an RxComputation thread.  This allows all processing of
  * events to happen off the main thread executing the {@link HystrixCommand}.  It also implies that event consumers
- * should not expect synchronous invocation.
+ * should not expect synchronous invocation.  Each HystrixThreadEventStream will use a dedicated RxComputation thread
+ * for the duration of the application's uptime.
  */
 public class HystrixThreadEventStream {
     private final long threadId;
