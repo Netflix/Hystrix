@@ -1,5 +1,13 @@
 # Hystrix Releases #
 
+### Version 1.4.21 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.21%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.21/)) ###
+
+* [Pull 978](https://github.com/Netflix/Hystrix/pull/978) Upgrade commons-collections to 3.2.2
+* [Pull 959](https://github.com/Netflix/Hystrix/pull/959) Support multiple metric streams in hystrix-dashboard
+* [Pull 976](https://github.com/Netflix/Hystrix/pull/976) Prevent execution observable from running when hook throws an error in onXXXStart 
+* [Pull 972](https://github.com/Netflix/Hystrix/pull/972) Mark servlet-api dependency as 'provided'
+* [Pull 968](https://github.com/Netflix/Hystrix/pull/968) Add defaultSetter() to properties classes to workaround GROOVY-6286
+
 ### Version 1.4.20 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.20%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.20/)) ###
 
 * [Pull 965](https://github.com/Netflix/Hystrix/pull/965) Upgrade Nebula Gradle plugin
