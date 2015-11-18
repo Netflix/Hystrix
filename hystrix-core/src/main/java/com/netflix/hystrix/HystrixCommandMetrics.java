@@ -488,12 +488,12 @@ public class HystrixCommandMetrics extends HystrixMetrics {
         } else {
             return 0;
         }
-        //return percentileTotal.getMean();
     }
 
     public long getRollingMaxConcurrentExecutions() {
+        //TODO This should get fixed, either by adding a metric stream that can produce this value, or by
+        //changing the problem into getting the whole distribution via sampling (not just the max as in this method)
         return 0;
-        //return counter.getRollingMaxValue(HystrixRollingNumberEvent.COMMAND_MAX_ACTIVE);
     }
 
     /**
