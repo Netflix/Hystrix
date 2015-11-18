@@ -15,7 +15,7 @@
  */
 package com.netflix.hystrix.metric;
 
-import com.netflix.hystrix.HystrixCommandKey;
+import com.netflix.hystrix.HystrixThreadPoolKey;
 import rx.Observable;
 import rx.functions.Func1;
 
@@ -24,27 +24,27 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Using the primitive of {@link HystrixGlobalEventStream}, filter only the command key that is set in the constructor.
+ * Using the primitive of {@link HystrixGlobalEventStream}, filter only the threadpool key that is set in the constructor.
  * This allows for a single place where this filtering is done, so that existing command-level metrics can be
  * consumed as efficiently as possible.
  *
  * Note that {@link HystrixThreadEventStream} emits on an RxComputation thread, so all consumption is async.
  */
-public class HystrixCommandEventStream {
+public class HystrixThreadPoolEventStream {
     private final Func1<HystrixCommandExecution, Boolean> filterFunc;
 
-    private static final ConcurrentMap<String, HystrixCommandEventStream> streams = new ConcurrentHashMap<String, HystrixCommandEventStream>();
+    private static final ConcurrentMap<String, HystrixThreadPoolEventStream> streams = new ConcurrentHashMap<String, HystrixThreadPoolEventStream>();
 
-    public static HystrixCommandEventStream getInstance(HystrixCommandKey commandKey) {
-        HystrixCommandEventStream initialStream = streams.get(commandKey.name());
+    public static HystrixThreadPoolEventStream getInstance(HystrixThreadPoolKey threadPoolKey) {
+        HystrixThreadPoolEventStream initialStream = streams.get(threadPoolKey.name());
         if (initialStream != null) {
             return initialStream;
         } else {
-            synchronized (HystrixCommandEventStream.class) {
-                HystrixCommandEventStream existingStream = streams.get(commandKey.name());
+            synchronized (HystrixThreadPoolEventStream.class) {
+                HystrixThreadPoolEventStream existingStream = streams.get(threadPoolKey.name());
                 if (existingStream == null) {
-                    HystrixCommandEventStream newStream = new HystrixCommandEventStream(commandKey);
-                    streams.putIfAbsent(commandKey.name(), newStream);
+                    HystrixThreadPoolEventStream newStream = new HystrixThreadPoolEventStream(threadPoolKey);
+                    streams.putIfAbsent(threadPoolKey.name(), newStream);
                     return newStream;
                 } else {
                     return existingStream;
@@ -53,11 +53,16 @@ public class HystrixCommandEventStream {
         }
     }
 
-    HystrixCommandEventStream(final HystrixCommandKey commandKey) {
+    HystrixThreadPoolEventStream(final HystrixThreadPoolKey threadPoolKey) {
         this.filterFunc = new Func1<HystrixCommandExecution, Boolean>() {
             @Override
             public Boolean call(HystrixCommandExecution hystrixCommandExecution) {
-                return hystrixCommandExecution.getCommandKey().equals(commandKey);
+                HystrixThreadPoolKey executionThreadPoolKey = hystrixCommandExecution.getThreadPoolKey();
+                if (executionThreadPoolKey != null) {
+                    return executionThreadPoolKey.equals(threadPoolKey);
+                } else {
+                    return false;
+                }
             }
         };
     }
