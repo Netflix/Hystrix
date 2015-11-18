@@ -67,7 +67,7 @@ public class HystrixThreadEventStream {
     }
 
     public void write(HystrixInvokableInfo<?> commandInstance, long[] eventTypeCounts, long executionLatency, long totalLatency) {
-        HystrixCommandExecution event = HystrixCommandExecution.from(commandInstance, commandInstance.getCommandKey(), eventTypeCounts, HystrixRequestContext.getContextForCurrentThread(), executionLatency, totalLatency);
+        HystrixCommandExecution event = HystrixCommandExecution.from(commandInstance, eventTypeCounts, HystrixRequestContext.getContextForCurrentThread(), executionLatency, totalLatency);
         subject.onNext(event);
     }
 
