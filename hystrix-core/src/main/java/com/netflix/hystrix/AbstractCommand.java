@@ -1871,8 +1871,16 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
             return new ExecutionResult(getUpdatedList(this.events, HystrixEventType.COLLAPSED), startTimestamp, executionLatency, userThreadLatency, failedExecutionException, executionException, numEmissions, numFallbackEmissions, numCollapsed);
         }
 
+        public boolean isResponseSemaphoreRejected() {
+            return events.contains(HystrixEventType.SEMAPHORE_REJECTED);
+        }
+
+        public boolean isResponseThreadPoolRejected() {
+            return events.contains(HystrixEventType.THREAD_POOL_REJECTED);
+        }
+
         public boolean isResponseRejected() {
-            return events.contains(HystrixEventType.THREAD_POOL_REJECTED) || events.contains(HystrixEventType.SEMAPHORE_REJECTED);
+            return isResponseThreadPoolRejected() || isResponseSemaphoreRejected();
         }
 
         public ExecutionResult markUserThreadCompletion(long userThreadLatency) {
@@ -2048,9 +2056,26 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
     }
 
     /**
-     * Whether the response received was a fallback as result of being
-     * rejected (from thread-pool or semaphore) and <code>getFallback()</code> being called.
-     * 
+     * Whether the response received was a fallback as result of being rejected via sempahore
+     *
+     * @return boolean
+     */
+    public boolean isResponseSemaphoreRejected() {
+        return executionResult.isResponseSemaphoreRejected();
+    }
+
+    /**
+     * Whether the response received was a fallback as result of being rejected via threadpool
+     *
+     * @return boolean
+     */
+    public boolean isResponseThreadPoolRejected() {
+        return executionResult.isResponseThreadPoolRejected();
+    }
+
+    /**
+     * Whether the response received was a fallback as result of being rejected (either via threadpool or semaphore)
+     *
      * @return boolean
      */
     public boolean isResponseRejected() {
