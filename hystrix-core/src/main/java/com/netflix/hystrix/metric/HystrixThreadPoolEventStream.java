@@ -57,9 +57,13 @@ public class HystrixThreadPoolEventStream {
         this.filterFunc = new Func1<HystrixCommandExecution, Boolean>() {
             @Override
             public Boolean call(HystrixCommandExecution hystrixCommandExecution) {
-                HystrixThreadPoolKey executionThreadPoolKey = hystrixCommandExecution.getThreadPoolKey();
-                if (executionThreadPoolKey != null) {
-                    return executionThreadPoolKey.equals(threadPoolKey);
+                if (hystrixCommandExecution.getCommandInstance().isExecutedInThread() || hystrixCommandExecution.getCommandInstance().isResponseThreadPoolRejected()) {
+                    HystrixThreadPoolKey executionThreadPoolKey = hystrixCommandExecution.getThreadPoolKey();
+                    if (executionThreadPoolKey != null) {
+                        return executionThreadPoolKey.equals(threadPoolKey);
+                    } else {
+                        return false;
+                    }
                 } else {
                     return false;
                 }
