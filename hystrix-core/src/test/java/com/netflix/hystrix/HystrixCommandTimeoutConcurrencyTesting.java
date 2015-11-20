@@ -17,24 +17,44 @@ package com.netflix.hystrix;
 import org.junit.Test;
 
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
+import rx.Observable;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class HystrixCommandTimeoutConcurrencyTesting {
 
+    private final static int NUM_CONCURRENT_COMMANDS = 25;
+
     @Test
     public void testTimeoutRace() {
-        for (int i = 0; i < 2000; i++) {
-            String a = null;
-            String b = null;
+        final int NUM_TRIALS = 10;
+
+        for (int i = 0; i < NUM_TRIALS; i++) {
+            List<Observable<String>> observables = new ArrayList<Observable<String>>();
+
             try {
                 HystrixRequestContext.initializeContext();
-                a = new TestCommand().execute();
-                b = new TestCommand().execute();
-                if (a == null || b == null) {
-                    System.err.println("Received NULL!");
-                    throw new RuntimeException("Received NULL");
+                for (int j = 0; j < NUM_CONCURRENT_COMMANDS; j++) {
+                    observables.add(new TestCommand().observe());
+                }
+
+                Observable<String> overall = Observable.merge(observables);
+
+                List<String> results = overall.toList().toBlocking().first(); //wait for all commands to complete
+
+                for (String s: results) {
+                    if (s == null) {
+                        System.err.println("Received NULL!");
+                        throw new RuntimeException("Received NULL");
+                    }
                 }
 
                 for (HystrixInvokableInfo<?> hi : HystrixRequestLog.getCurrentRequest().getAllExecutedCommands()) {
+                    if (!hi.isResponseTimedOut()) {
+                        System.err.println("Timeout not found in executed command");
+                        throw new RuntimeException("Timeout not found in executed command");
+                    }
                     if (hi.isResponseTimedOut() && hi.getExecutionEvents().size() == 1) {
                         System.err.println("Missing fallback status!");
                         throw new RuntimeException("Missing fallback status on timeout.");
@@ -46,7 +66,7 @@ public class HystrixCommandTimeoutConcurrencyTesting {
                 e.printStackTrace();
                 throw new RuntimeException(e);
             } finally {
-                System.out.println(a + " " + b + " ==> " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
+                System.out.println(HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
                 HystrixRequestContext.getContextForCurrentThread().shutdown();
             }
         }
@@ -60,13 +80,15 @@ public class HystrixCommandTimeoutConcurrencyTesting {
             super(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("testTimeoutConcurrency"))
                     .andCommandKey(HystrixCommandKey.Factory.asKey("testTimeoutConcurrencyCommand"))
                     .andCommandPropertiesDefaults(HystrixCommandProperties.Setter()
-                            .withExecutionTimeoutInMilliseconds(1)));
+                            .withExecutionTimeoutInMilliseconds(1)
+                            .withCircuitBreakerEnabled(false))
+                    .andThreadPoolPropertiesDefaults(HystrixThreadPoolProperties.Setter()
+                            .withCoreSize(NUM_CONCURRENT_COMMANDS)));
         }
 
         @Override
         protected String run() throws Exception {
-            //            throw new RuntimeException("test");
-            //            Thread.sleep(5);
+            Thread.sleep(5);
             return "hello";
         }
 
