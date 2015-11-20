@@ -91,7 +91,9 @@ public class HystrixCommandTimeoutConcurrencyTesting {
                             .withCircuitBreakerEnabled(false)
                             .withFallbackIsolationSemaphoreMaxConcurrentRequests(NUM_CONCURRENT_COMMANDS))
                     .andThreadPoolPropertiesDefaults(HystrixThreadPoolProperties.Setter()
-                            .withCoreSize(NUM_CONCURRENT_COMMANDS)));
+                            .withCoreSize(NUM_CONCURRENT_COMMANDS)
+                            .withMaxQueueSize(NUM_CONCURRENT_COMMANDS)
+                            .withQueueSizeRejectionThreshold(NUM_CONCURRENT_COMMANDS)));
         }
 
         @Override
