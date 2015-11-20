@@ -24,17 +24,18 @@ import java.util.List;
 
 public class HystrixCommandTimeoutConcurrencyTesting {
 
-    private final static int NUM_CONCURRENT_COMMANDS = 25;
+    private final static int NUM_CONCURRENT_COMMANDS = 30;
 
     @Test
-    public void testTimeoutRace() {
-        final int NUM_TRIALS = 10;
+    public void testTimeoutRace() throws InterruptedException {
+        final int NUM_TRIALS = 1000;
 
         for (int i = 0; i < NUM_TRIALS; i++) {
             List<Observable<String>> observables = new ArrayList<Observable<String>>();
+            HystrixRequestContext context = null;
 
             try {
-                HystrixRequestContext.initializeContext();
+                context = HystrixRequestContext.initializeContext();
                 for (int j = 0; j < NUM_CONCURRENT_COMMANDS; j++) {
                     observables.add(new TestCommand().observe());
                 }
@@ -43,7 +44,7 @@ public class HystrixCommandTimeoutConcurrencyTesting {
 
                 List<String> results = overall.toList().toBlocking().first(); //wait for all commands to complete
 
-                for (String s: results) {
+                for (String s : results) {
                     if (s == null) {
                         System.err.println("Received NULL!");
                         throw new RuntimeException("Received NULL");
@@ -67,8 +68,14 @@ public class HystrixCommandTimeoutConcurrencyTesting {
                 throw new RuntimeException(e);
             } finally {
                 System.out.println(HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
-                HystrixRequestContext.getContextForCurrentThread().shutdown();
+                if (context != null) {
+                    context.shutdown();
+                }
             }
+
+            System.out.println("*************** TRIAL " + i + " ******************");
+            System.out.println();
+            Thread.sleep(50);
         }
 
         Hystrix.reset();
@@ -80,7 +87,7 @@ public class HystrixCommandTimeoutConcurrencyTesting {
             super(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("testTimeoutConcurrency"))
                     .andCommandKey(HystrixCommandKey.Factory.asKey("testTimeoutConcurrencyCommand"))
                     .andCommandPropertiesDefaults(HystrixCommandProperties.Setter()
-                            .withExecutionTimeoutInMilliseconds(1)
+                            .withExecutionTimeoutInMilliseconds(3)
                             .withCircuitBreakerEnabled(false))
                     .andThreadPoolPropertiesDefaults(HystrixThreadPoolProperties.Setter()
                             .withCoreSize(NUM_CONCURRENT_COMMANDS)));
@@ -88,7 +95,9 @@ public class HystrixCommandTimeoutConcurrencyTesting {
 
         @Override
         protected String run() throws Exception {
-            Thread.sleep(5);
+            //System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " sleeping");
+            Thread.sleep(100);
+            //System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " awake and returning");
             return "hello";
         }
 
