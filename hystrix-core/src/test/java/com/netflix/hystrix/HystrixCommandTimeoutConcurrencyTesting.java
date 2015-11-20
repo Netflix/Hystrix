@@ -88,7 +88,8 @@ public class HystrixCommandTimeoutConcurrencyTesting {
                     .andCommandKey(HystrixCommandKey.Factory.asKey("testTimeoutConcurrencyCommand"))
                     .andCommandPropertiesDefaults(HystrixCommandProperties.Setter()
                             .withExecutionTimeoutInMilliseconds(3)
-                            .withCircuitBreakerEnabled(false))
+                            .withCircuitBreakerEnabled(false)
+                            .withFallbackIsolationSemaphoreMaxConcurrentRequests(NUM_CONCURRENT_COMMANDS))
                     .andThreadPoolPropertiesDefaults(HystrixThreadPoolProperties.Setter()
                             .withCoreSize(NUM_CONCURRENT_COMMANDS)));
         }
