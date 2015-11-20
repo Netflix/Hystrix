@@ -180,40 +180,53 @@ public abstract class HystrixObservableCollapser<K, BatchReturnType, ResponseTyp
                 final Set<K> seenKeys = new HashSet<K>();
 
                 // observe the responses and join with the requests by key
-                return batchResponse.doOnNext(new Action1<BatchReturnType>() {
-                    @Override
-                    public void call(BatchReturnType batchReturnType) {
-                        try {
-                            K responseKey = batchResponseKeySelector.call(batchReturnType);
-                            CollapsedRequest<ResponseType, RequestArgumentType> requestForResponse = requestsByKey.get(responseKey);
-                            if (requestForResponse != null) {
-                                requestForResponse.emitResponse(mapBatchTypeToResponseType.call(batchReturnType));
-                                // now add this to seenKeys, so we can later check what was seen, and what was unseen
-                                seenKeys.add(responseKey);
-                            } else {
-                                logger.warn("Batch Response contained a response key not in request batch : " + responseKey);
-                            }
-                        } catch (Throwable ex) {
-                            logger.warn("Uncaught error during demultiplexing of BatchResponse", ex);
-                        }
-                    }
-                }).doOnTerminate(new Action0() {
-                    @Override
-                    public void call() {
-                        for (K key: requestsByKey.keySet()) {
-                            CollapsedRequest<ResponseType, RequestArgumentType> collapsedReq = requestsByKey.get(key);
-                            if (!seenKeys.contains(key)) {
+                return batchResponse
+                        .doOnNext(new Action1<BatchReturnType>() {
+                            @Override
+                            public void call(BatchReturnType batchReturnType) {
                                 try {
-                                    onMissingResponse(collapsedReq);
+                                    K responseKey = batchResponseKeySelector.call(batchReturnType);
+                                    CollapsedRequest<ResponseType, RequestArgumentType> requestForResponse = requestsByKey.get(responseKey);
+                                    if (requestForResponse != null) {
+                                        requestForResponse.emitResponse(mapBatchTypeToResponseType.call(batchReturnType));
+                                        // now add this to seenKeys, so we can later check what was seen, and what was unseen
+                                        seenKeys.add(responseKey);
+                                    } else {
+                                        logger.warn("Batch Response contained a response key not in request batch : " + responseKey);
+                                    }
                                 } catch (Throwable ex) {
-                                    collapsedReq.setException(new RuntimeException("Error in HystrixObservableCollapser.onMissingResponse handler", ex));
+                                    logger.warn("Uncaught error during demultiplexing of BatchResponse", ex);
                                 }
                             }
-                            //then unconditionally issue an onCompleted. this ensures the downstream gets a terminal, regardless of how onMissingResponse was implemented
-                            collapsedReq.setComplete();
-                        }
-                    }
-                }).ignoreElements().cast(Void.class);
+                        })
+                        .doOnError(new Action1<Throwable>() {
+                            @Override
+                            public void call(Throwable t) {
+                                Exception ex = getExceptionFromThrowable(t);
+                                for (K key: requestsByKey.keySet()) {
+                                    CollapsedRequest<ResponseType, RequestArgumentType> collapsedReq = requestsByKey.get(key);
+                                    collapsedReq.setException(ex);
+                                }
+                            }
+                        })
+                        .doOnCompleted(new Action0() {
+                            @Override
+                            public void call() {
+
+                                for (K key : requestsByKey.keySet()) {
+                                    CollapsedRequest<ResponseType, RequestArgumentType> collapsedReq = requestsByKey.get(key);
+                                    if (!seenKeys.contains(key)) {
+                                        try {
+                                            onMissingResponse(collapsedReq);
+                                        } catch (Throwable ex) {
+                                            collapsedReq.setException(new RuntimeException("Error in HystrixObservableCollapser.onMissingResponse handler", ex));
+                                        }
+                                    }
+                                    //then unconditionally issue an onCompleted. this ensures the downstream gets a terminal, regardless of how onMissingResponse was implemented
+                                    collapsedReq.setComplete();
+                                }
+                            }
+                        }).ignoreElements().cast(Void.class);
             }
 
             @Override
@@ -223,6 +236,18 @@ public abstract class HystrixObservableCollapser<K, BatchReturnType, ResponseTyp
 
         };
     }
+
+    protected Exception getExceptionFromThrowable(Throwable t) {
+        Exception e;
+        if (t instanceof Exception) {
+            e = (Exception) t;
+        } else {
+            // Hystrix 1.x uses Exception, not Throwable so to prevent a breaking change Throwable will be wrapped in Exception
+            e = new Exception("Throwable caught while executing.", t);
+        }
+        return e;
+    }
+
 
     private HystrixCollapserProperties getProperties() {
         return collapserFactory.getProperties();

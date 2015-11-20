@@ -17,6 +17,8 @@ package com.netflix.hystrix.collapser;
 
 import rx.Observable.OnSubscribe;
 import rx.Subscriber;
+import rx.functions.Action0;
+import rx.functions.Action1;
 import rx.subjects.PublishSubject;
 
 import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
