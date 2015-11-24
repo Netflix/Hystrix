@@ -1,12 +1,12 @@
 /**
  * Copyright 2012 Netflix, Inc.
- *
+ * <p/>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * <p/>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p/>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,34 +16,25 @@
 package com.netflix.hystrix.contrib.javanica.command;
 
 
-import com.netflix.hystrix.HystrixCollapser;
+import com.netflix.hystrix.HystrixInvokable;
 import com.netflix.hystrix.contrib.javanica.exception.CommandActionExecutionException;
 import org.apache.commons.lang3.StringUtils;
-
-import java.util.Collection;
 
 /**
  * This action creates related hystrix commands on demand when command creation can be postponed.
  */
-public class LazyCommandExecutionAction extends CommandAction {
+public class LazyCommandExecutionAction implements CommandAction {
 
-    private MetaHolder metaHolder;
+    private MetaHolder originalMetaHolder;
 
-    private Collection<HystrixCollapser.CollapsedRequest<Object, Object>> collapsedRequests;
 
-    private HystrixCommandFactory<?> commandFactory;
-
-    public LazyCommandExecutionAction(HystrixCommandFactory<?> commandFactory,
-                                      MetaHolder metaHolder,
-                                      Collection<HystrixCollapser.CollapsedRequest<Object, Object>> collapsedRequests) {
-        this.commandFactory = commandFactory;
-        this.metaHolder = metaHolder;
-        this.collapsedRequests = collapsedRequests;
+    public LazyCommandExecutionAction(MetaHolder metaHolder) {
+        this.originalMetaHolder = metaHolder;
     }
 
     @Override
     public MetaHolder getMetaHolder() {
-        return metaHolder;
+        return originalMetaHolder;
     }
 
     /**
@@ -51,8 +42,8 @@ public class LazyCommandExecutionAction extends CommandAction {
      */
     @Override
     public Object execute(ExecutionType executionType) throws CommandActionExecutionException {
-        AbstractHystrixCommand abstractHystrixCommand = commandFactory.create(createHolder(executionType), collapsedRequests);
-        return new CommandExecutionAction(abstractHystrixCommand, metaHolder).execute(executionType);
+        HystrixInvokable command = HystrixCommandFactory.getInstance().createDelayed(createCopy(originalMetaHolder, executionType));
+        return new CommandExecutionAction(command, originalMetaHolder).execute(executionType);
     }
 
     /**
@@ -60,8 +51,8 @@ public class LazyCommandExecutionAction extends CommandAction {
      */
     @Override
     public Object executeWithArgs(ExecutionType executionType, Object[] args) throws CommandActionExecutionException {
-        AbstractHystrixCommand abstractHystrixCommand = commandFactory.create(createHolder(executionType, args), collapsedRequests);
-        return new CommandExecutionAction(abstractHystrixCommand, metaHolder).execute(executionType);
+        HystrixInvokable command = HystrixCommandFactory.getInstance().createDelayed(createCopy(originalMetaHolder, executionType, args));
+        return new CommandExecutionAction(command, originalMetaHolder).execute(executionType);
     }
 
     /**
@@ -69,43 +60,48 @@ public class LazyCommandExecutionAction extends CommandAction {
      */
     @Override
     public String getActionName() {
-        return StringUtils.isNotEmpty(metaHolder.getHystrixCommand().commandKey()) ?
-                metaHolder.getHystrixCommand().commandKey()
-                : metaHolder.getDefaultCommandKey();
+        return StringUtils.isNotEmpty(originalMetaHolder.getHystrixCommand().commandKey()) ?
+                originalMetaHolder.getHystrixCommand().commandKey()
+                : originalMetaHolder.getDefaultCommandKey();
     }
 
-    private MetaHolder createHolder(ExecutionType executionType) {
+    // todo dmgcodevil: move it to MetaHolder class ?
+    private MetaHolder createCopy(MetaHolder source, ExecutionType executionType) {
         return MetaHolder.builder()
-                .obj(metaHolder.getObj())
-                .method(metaHolder.getMethod())
-                .ajcMethod(metaHolder.getAjcMethod())
-                .fallbackExecutionType(metaHolder.getFallbackExecutionType())
-                .extendedFallback(metaHolder.isExtendedFallback())
-                .extendedParentFallback(metaHolder.isExtendedParentFallback())
+                .obj(source.getObj())
+                .method(source.getMethod())
+                .ajcMethod(source.getAjcMethod())
+                .fallbackExecutionType(source.getFallbackExecutionType())
+                .extendedFallback(source.isExtendedFallback())
+                .extendedParentFallback(source.isExtendedParentFallback())
                 .executionType(executionType)
-                .args(metaHolder.getArgs())
-                .defaultCollapserKey(metaHolder.getDefaultCollapserKey())
-                .defaultCommandKey(metaHolder.getDefaultCommandKey())
-                .defaultGroupKey(metaHolder.getDefaultGroupKey())
-                .hystrixCollapser(metaHolder.getHystrixCollapser())
-                .hystrixCommand(metaHolder.getHystrixCommand()).build();
+                .args(source.getArgs())
+                .observable(source.isObservable())
+                .observableExecutionMode(source.getObservableExecutionMode())
+                .defaultCollapserKey(source.getDefaultCollapserKey())
+                .defaultCommandKey(source.getDefaultCommandKey())
+                .defaultGroupKey(source.getDefaultGroupKey())
+                .hystrixCollapser(source.getHystrixCollapser())
+                .hystrixCommand(source.getHystrixCommand()).build();
     }
 
-    private MetaHolder createHolder(ExecutionType executionType, Object[] args) {
+    private MetaHolder createCopy(MetaHolder source, ExecutionType executionType, Object[] args) {
         return MetaHolder.builder()
-                .obj(metaHolder.getObj())
-                .method(metaHolder.getMethod())
+                .obj(source.getObj())
+                .method(source.getMethod())
                 .executionType(executionType)
-                .ajcMethod(metaHolder.getAjcMethod())
-                .fallbackExecutionType(metaHolder.getFallbackExecutionType())
-                .extendedParentFallback(metaHolder.isExtendedParentFallback())
-                .extendedFallback(metaHolder.isExtendedFallback())
+                .ajcMethod(source.getAjcMethod())
+                .fallbackExecutionType(source.getFallbackExecutionType())
+                .extendedParentFallback(source.isExtendedParentFallback())
+                .extendedFallback(source.isExtendedFallback())
                 .args(args)
-                .defaultCollapserKey(metaHolder.getDefaultCollapserKey())
-                .defaultCommandKey(metaHolder.getDefaultCommandKey())
-                .defaultGroupKey(metaHolder.getDefaultGroupKey())
-                .hystrixCollapser(metaHolder.getHystrixCollapser())
-                .hystrixCommand(metaHolder.getHystrixCommand()).build();
+                .observable(source.isObservable())
+                .observableExecutionMode(source.getObservableExecutionMode())
+                .defaultCollapserKey(source.getDefaultCollapserKey())
+                .defaultCommandKey(source.getDefaultCommandKey())
+                .defaultGroupKey(source.getDefaultGroupKey())
+                .hystrixCollapser(source.getHystrixCollapser())
+                .hystrixCommand(source.getHystrixCommand()).build();
     }
 
 }

@@ -34,21 +34,6 @@ public abstract class AbstractClosureFactory implements ClosureFactory {
     static final String ERROR_TYPE_MESSAGE = "return type of '{}' method should be {}.";
     static final String INVOKE_METHOD = "invoke";
 
-    /**
-     * {@inheritDoc}.
-     */
-    @Override
-    public Closure createClosure(final Method method, final Object o, final Object... args) {
-        try {
-            Object closureObj = method.invoke(o, args); // creates instance of an anonymous class
-            return createClosure(method.getName(), closureObj);
-        } catch (InvocationTargetException e) {
-            throw Throwables.propagate(e.getCause());
-        } catch (Exception e) {
-            throw Throwables.propagate(e);
-        }
-    }
-
     @Override
     public Closure createClosure(MetaHolder metaHolder, Method method, Object o, Object... args) {
         try {

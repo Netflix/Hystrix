@@ -23,6 +23,7 @@ import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
 import org.apache.commons.lang3.Validate;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -94,7 +95,7 @@ public final class HystrixPropertiesManager {
      *
      * @param properties the collapser properties
      */
-    public static HystrixCommandProperties.Setter initializeCommandProperties(HystrixProperty[] properties) throws IllegalArgumentException {
+    public static HystrixCommandProperties.Setter initializeCommandProperties(List<HystrixProperty> properties) throws IllegalArgumentException {
         return initializeProperties(HystrixCommandProperties.Setter(), properties, CMD_PROP_MAP, "command");
     }
 
@@ -103,7 +104,7 @@ public final class HystrixPropertiesManager {
      *
      * @param properties the collapser properties
      */
-    public static HystrixThreadPoolProperties.Setter initializeThreadPoolProperties(HystrixProperty[] properties) throws IllegalArgumentException {
+    public static HystrixThreadPoolProperties.Setter initializeThreadPoolProperties(List<HystrixProperty> properties) throws IllegalArgumentException {
         return initializeProperties(HystrixThreadPoolProperties.Setter(), properties, TP_PROP_MAP, "thread pool");
     }
 
@@ -112,12 +113,12 @@ public final class HystrixPropertiesManager {
      *
      * @param properties the collapser properties
      */
-    public static HystrixCollapserProperties.Setter initializeCollapserProperties(HystrixProperty[] properties) {
+    public static HystrixCollapserProperties.Setter initializeCollapserProperties(List<HystrixProperty> properties) {
         return initializeProperties(HystrixCollapserProperties.Setter(), properties, COLLAPSER_PROP_MAP, "collapser");
     }
 
-    private static <S> S initializeProperties(S setter, HystrixProperty[] properties, Map<String, PropSetter<S, String>> propMap, String type) {
-        if (properties != null && properties.length > 0) {
+    private static <S> S initializeProperties(S setter, List<HystrixProperty> properties, Map<String, PropSetter<S, String>> propMap, String type) {
+        if (properties != null && properties.size() > 0) {
             for (HystrixProperty property : properties) {
                 validate(property);
                 if (!propMap.containsKey(property.name())) {

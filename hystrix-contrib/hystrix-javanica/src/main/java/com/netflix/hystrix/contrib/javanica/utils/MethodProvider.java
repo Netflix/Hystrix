@@ -55,6 +55,15 @@ public final class MethodProvider {
         return getFallbackMethod(type, commandMethod, false);
     }
 
+    /**
+     * Gets fallback method for command method.
+     *
+     * @param type          type
+     * @param commandMethod the command method. in the essence it can be a fallback
+     *                      method annotated with HystrixCommand annotation that has a fallback as well.
+     * @param extended      true if the given commandMethod was derived using additional parameter, otherwise - false
+     * @return new instance of {@link FallbackMethod} or {@link FallbackMethod#ABSENT} if there is no suitable fallback method for the given command
+     */
     public FallbackMethod getFallbackMethod(Class<?> type, Method commandMethod, boolean extended) {
         if (commandMethod.isAnnotationPresent(HystrixCommand.class)) {
             HystrixCommand hystrixCommand = commandMethod.getAnnotation(HystrixCommand.class);
@@ -86,6 +95,16 @@ public final class MethodProvider {
         }
     }
 
+    /**
+     * Finds generic method for the given bridge method.
+     *
+     * @param bridgeMethod the bridge method
+     * @param aClass       the type where the bridge method is declared
+     * @return generic method
+     * @throws IOException
+     * @throws NoSuchMethodException
+     * @throws ClassNotFoundException
+     */
     public Method unbride(final Method bridgeMethod, Class<?> aClass) throws IOException, NoSuchMethodException, ClassNotFoundException {
         if (bridgeMethod.isBridge() && bridgeMethod.isSynthetic()) {
             if (cache.containsKey(bridgeMethod)) {

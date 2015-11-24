@@ -27,13 +27,11 @@ public interface ClosureFactory {
     /**
      * Creates closure in accordance with method return type.
      *
+     * @param metaHolder the meta holder
      * @param method the external method within which closure is created
      * @param o      the object the underlying method is invoked from
      * @param args   the arguments used for the method call
      * @return new {@link Closure} instance
      */
-    @Deprecated
-    Closure createClosure(final Method method, final Object o, final Object... args);
-
     Closure createClosure(final MetaHolder metaHolder, final Method method, final Object o, final Object... args);
 }

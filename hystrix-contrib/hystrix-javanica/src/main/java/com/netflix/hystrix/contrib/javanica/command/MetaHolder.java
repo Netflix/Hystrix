@@ -15,15 +15,19 @@
  */
 package com.netflix.hystrix.contrib.javanica.command;
 
+import com.google.common.collect.ImmutableList;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCollapser;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
-import com.netflix.hystrix.contrib.javanica.aop.aspectj.WeavingMode;
+import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
+import com.netflix.hystrix.contrib.javanica.annotation.ObservableExecutionMode;
 import com.netflix.hystrix.contrib.javanica.command.closure.Closure;
 import org.aspectj.lang.JoinPoint;
 
+import javax.annotation.concurrent.Immutable;
 import java.lang.reflect.Method;
 import java.util.Arrays;
-import javax.annotation.concurrent.Immutable;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Simple immutable holder to keep all necessary information about current method to build Hystrix command.
@@ -52,6 +56,8 @@ public class MetaHolder {
     private final boolean fallback;
     private boolean extendedParentFallback;
     private final JoinPoint joinPoint;
+    private final boolean observable;
+    private final ObservableExecutionMode observableExecutionMode;
 
     private MetaHolder(Builder builder) {
         this.hystrixCommand = builder.hystrixCommand;
@@ -74,6 +80,8 @@ public class MetaHolder {
         this.extendedFallback = builder.extendedFallback;
         this.fallback = builder.fallback;
         this.extendedParentFallback = builder.extendedParentFallback;
+        this.observable = builder.observable;
+        this.observableExecutionMode = builder.observableExecutionMode;
     }
 
     public static Builder builder() {
@@ -140,8 +148,12 @@ public class MetaHolder {
         return method.getParameterTypes();
     }
 
-    public boolean isCollapser(){
-        return hystrixCollapser!=null;
+    public boolean isCollapserAnnotationPresent() {
+        return hystrixCollapser != null;
+    }
+
+    public boolean isCommandAnnotationPresent() {
+        return hystrixCommand != null;
     }
 
     public JoinPoint getJoinPoint() {
@@ -176,6 +188,26 @@ public class MetaHolder {
         return fallbackExecutionType;
     }
 
+    public List<HystrixProperty> getCommandProperties() {
+        return isCommandAnnotationPresent() ? ImmutableList.copyOf(hystrixCommand.commandProperties()) : Collections.<HystrixProperty>emptyList();
+    }
+
+    public List<HystrixProperty> getCollapserProperties() {
+        return isCollapserAnnotationPresent() ? ImmutableList.copyOf(hystrixCollapser.collapserProperties()) : Collections.<HystrixProperty>emptyList();
+    }
+
+    public List<HystrixProperty> getThreadPoolProperties() {
+        return isCommandAnnotationPresent() ? ImmutableList.copyOf(hystrixCommand.threadPoolProperties()) : Collections.<HystrixProperty>emptyList();
+    }
+
+    public boolean isObservable() {
+        return observable;
+    }
+
+    public ObservableExecutionMode getObservableExecutionMode() {
+        return observableExecutionMode;
+    }
+
     public static final class Builder {
 
         private HystrixCollapser hystrixCollapser;
@@ -197,8 +229,9 @@ public class MetaHolder {
         private boolean extendedFallback;
         private boolean fallback;
         private boolean extendedParentFallback;
+        private boolean observable;
         private JoinPoint joinPoint;
-
+        private ObservableExecutionMode observableExecutionMode;
 
         public Builder hystrixCollapser(HystrixCollapser hystrixCollapser) {
             this.hystrixCollapser = hystrixCollapser;
@@ -297,6 +330,16 @@ public class MetaHolder {
 
         public Builder extendedFallback(boolean extendedFallback) {
             this.extendedFallback = extendedFallback;
+            return this;
+        }
+
+        public Builder observable(boolean observable) {
+            this.observable = observable;
+            return this;
+        }
+
+        public Builder observableExecutionMode(ObservableExecutionMode observableExecutionMode) {
+            this.observableExecutionMode = observableExecutionMode;
             return this;
         }
 

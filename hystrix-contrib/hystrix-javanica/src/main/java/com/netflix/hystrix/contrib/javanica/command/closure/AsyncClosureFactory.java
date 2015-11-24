@@ -23,6 +23,15 @@ import com.netflix.hystrix.contrib.javanica.command.ClosureCommand;
  */
 public class AsyncClosureFactory extends AbstractClosureFactory {
 
+    private static final AsyncClosureFactory INSTANCE = new AsyncClosureFactory();
+
+    private AsyncClosureFactory() {
+    }
+
+    public static AsyncClosureFactory getInstance() {
+        return INSTANCE;
+    }
+
     /**
      * {@inheritDoc}.
      */

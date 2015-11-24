@@ -18,12 +18,12 @@ package com.netflix.hystrix.contrib.javanica.aop.aspectj;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.netflix.hystrix.HystrixExecutable;
+import com.netflix.hystrix.HystrixInvokable;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCollapser;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
-import com.netflix.hystrix.contrib.javanica.collapser.CommandCollapser;
 import com.netflix.hystrix.contrib.javanica.command.CommandExecutor;
 import com.netflix.hystrix.contrib.javanica.command.ExecutionType;
-import com.netflix.hystrix.contrib.javanica.command.GenericHystrixCommandFactory;
+import com.netflix.hystrix.contrib.javanica.command.HystrixCommandFactory;
 import com.netflix.hystrix.contrib.javanica.command.MetaHolder;
 import com.netflix.hystrix.contrib.javanica.utils.FallbackMethod;
 import com.netflix.hystrix.contrib.javanica.utils.MethodProvider;
@@ -42,7 +42,6 @@ import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
-
 
 import static com.netflix.hystrix.contrib.javanica.utils.AopUtils.getDeclaredMethod;
 import static com.netflix.hystrix.contrib.javanica.utils.AopUtils.getMethodFromTarget;
@@ -83,17 +82,12 @@ public class HystrixCommandAspect {
         }
         MetaHolderFactory metaHolderFactory = META_HOLDER_FACTORY_MAP.get(HystrixPointcutType.of(method));
         MetaHolder metaHolder = metaHolderFactory.create(joinPoint);
-        HystrixExecutable executable;
-        ExecutionType executionType = metaHolder.isCollapser() ?
+        HystrixInvokable invokable = HystrixCommandFactory.getInstance().create(metaHolder);
+        ExecutionType executionType = metaHolder.isCollapserAnnotationPresent() ?
                 metaHolder.getCollapserExecutionType() : metaHolder.getExecutionType();
-        if (metaHolder.isCollapser()) {
-            executable = new CommandCollapser(metaHolder);
-        } else {
-            executable = GenericHystrixCommandFactory.getInstance().create(metaHolder, null);
-        }
         Object result;
         try {
-            result = CommandExecutor.execute(executable, executionType, metaHolder);
+            result = CommandExecutor.execute(invokable, executionType, metaHolder);
         } catch (HystrixBadRequestException e) {
             throw e.getCause();
         }
@@ -210,15 +204,18 @@ public class HystrixCommandAspect {
         @Override
         public MetaHolder create(Object proxy, Method method, Object obj, Object[] args, final ProceedingJoinPoint joinPoint) {
             HystrixCommand hystrixCommand = method.getAnnotation(HystrixCommand.class);
+            ExecutionType executionType = ExecutionType.getExecutionType(method.getReturnType());
             MetaHolder.Builder builder = metaHolderBuilder(proxy, method, obj, args, joinPoint);
-            builder.defaultCommandKey(method.getName());
-            builder.hystrixCommand(hystrixCommand);
-            builder.executionType(ExecutionType.getExecutionType(method.getReturnType()));
-            return builder.build();
+            return builder.defaultCommandKey(method.getName())
+                            .hystrixCommand(hystrixCommand)
+                            .observableExecutionMode(hystrixCommand.observableExecutionMode())
+                            .executionType(executionType)
+                            .observable(ExecutionType.OBSERVABLE == executionType)
+                            .build();
         }
     }
 
-    private static enum HystrixPointcutType {
+    private enum HystrixPointcutType {
         COMMAND,
         COLLAPSER;
 

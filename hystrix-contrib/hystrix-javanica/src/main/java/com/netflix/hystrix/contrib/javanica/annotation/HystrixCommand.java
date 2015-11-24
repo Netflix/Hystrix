@@ -105,5 +105,13 @@ public @interface HystrixCommand {
      * @return exceptions to ignore
      */
     Class<? extends Throwable>[] ignoreExceptions() default {};
+
+    /**
+     * Specifies the mode that should be used to execute hystrix observable command.
+     * For more information see {@link ObservableExecutionMode}.
+     *
+     * @return observable execution mode
+     */
+    ObservableExecutionMode observableExecutionMode() default ObservableExecutionMode.EAGER;
 }
 
