@@ -15,7 +15,6 @@
  */
 package com.netflix.hystrix;
 
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
