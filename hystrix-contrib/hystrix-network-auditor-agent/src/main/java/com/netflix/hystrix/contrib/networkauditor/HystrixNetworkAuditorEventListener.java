@@ -36,6 +36,7 @@ public interface HystrixNetworkAuditorEventListener {
      *      // this event is not inside a Hystrix context (according to ThreadLocal variables)
      *      StackTraceElement[] stack = Thread.currentThread().getStackTrace();
      *      // increment counters, fire alerts, log stack traces etc
+     * }
      * } </pre>
      * 
      */
