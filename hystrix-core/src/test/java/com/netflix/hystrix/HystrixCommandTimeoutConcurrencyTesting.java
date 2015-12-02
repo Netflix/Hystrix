@@ -28,7 +28,7 @@ public class HystrixCommandTimeoutConcurrencyTesting {
 
     @Test
     public void testTimeoutRace() throws InterruptedException {
-        final int NUM_TRIALS = 1000;
+        final int NUM_TRIALS = 10;
 
         for (int i = 0; i < NUM_TRIALS; i++) {
             List<Observable<String>> observables = new ArrayList<Observable<String>>();
