@@ -49,6 +49,8 @@ public interface HystrixCircuitBreaker {
      */
     /* package */void markSuccess();
 
+    int getCurrentSleepWindowInMilliseconds();
+
     /**
      * @ExcludeFromJavadoc
      * @ThreadSafe
@@ -145,6 +147,11 @@ public interface HystrixCircuitBreaker {
         }
 
         @Override
+        public int getCurrentSleepWindowInMilliseconds() {
+            return properties.circuitBreakerSleepWindowInMilliseconds().get();
+        }
+
+        @Override
         public boolean allowRequest() {
             if (properties.circuitBreakerForceOpen().get()) {
                 // properties have asked us to force the circuit open so we will allow NO requests
@@ -230,6 +237,11 @@ public interface HystrixCircuitBreaker {
         @Override
         public void markSuccess() {
 
+        }
+
+        @Override
+        public int getCurrentSleepWindowInMilliseconds() {
+            return 0;
         }
 
     }
