@@ -91,6 +91,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
             assertEquals(FlexibleTestHystrixCommand.EXECUTE_VALUE, command.execute());
 
             assertEquals(null, command.getFailedExecutionException());
+            assertNull(command.getExecutionException());
             assertTrue(command.getExecutionTimeInMilliseconds() > -1);
             assertTrue(command.isSuccessfulExecution());
 
@@ -116,6 +117,8 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertTrue(command.isExecutedInThread());
         assertTrue(command.getExecutionTimeInMilliseconds() > -1);
         assertTrue(command.isSuccessfulExecution());
+        assertNull(command.getExecutionException());
+
         try {
             // second should fail
             command.execute();
@@ -158,6 +161,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertTrue(command.getExecutionTimeInMilliseconds() > -1);
         assertTrue(command.isFailedExecution());
         assertCommandExecutionEvents(command, HystrixEventType.FAILURE, HystrixEventType.FALLBACK_MISSING);
+        assertNotNull(command.getExecutionException());
         assertEquals(0, command.getBuilder().metrics.getCurrentConcurrentExecutionCount());
         assertSaneHystrixRequestLog(1);
     }
@@ -184,6 +188,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertTrue(command.getExecutionTimeInMilliseconds() > -1);
         assertTrue(command.isFailedExecution());
         assertCommandExecutionEvents(command, HystrixEventType.FAILURE, HystrixEventType.FALLBACK_MISSING);
+        assertNotNull(command.getExecutionException());
         assertEquals(0, command.getBuilder().metrics.getCurrentConcurrentExecutionCount());
         assertSaneHystrixRequestLog(1);
     }
@@ -206,6 +211,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertTrue(command.getExecutionTimeInMilliseconds() > -1);
         assertTrue(command.isFailedExecution());
         assertCommandExecutionEvents(command, HystrixEventType.FAILURE, HystrixEventType.FALLBACK_SUCCESS);
+        assertNotNull(command.getExecutionException());
         assertEquals(0, command.getBuilder().metrics.getCurrentConcurrentExecutionCount());
         assertSaneHystrixRequestLog(1);
     }
@@ -229,6 +235,8 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertTrue(command.getExecutionTimeInMilliseconds() > -1);
         assertTrue(command.isFailedExecution());
         assertCommandExecutionEvents(command, HystrixEventType.FAILURE, HystrixEventType.FALLBACK_FAILURE);
+        assertNotNull(command.getExecutionException());
+
         assertEquals(0, command.getBuilder().metrics.getCurrentConcurrentExecutionCount());
         assertSaneHystrixRequestLog(1);
     }
@@ -239,7 +247,6 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
     @Test
     public void testQueueSuccess() {
         TestHystrixCommand<?> command = getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.SUCCESS);
-                new SuccessfulTestCommand();
         try {
             Future<?> future = command.queue();
             assertEquals(FlexibleTestHystrixCommand.EXECUTE_VALUE, future.get());
@@ -251,6 +258,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertTrue(command.getExecutionTimeInMilliseconds() > -1);
         assertTrue(command.isSuccessfulExecution());
         assertCommandExecutionEvents(command, HystrixEventType.SUCCESS);
+        assertNull(command.getExecutionException());
         assertEquals(0, command.getBuilder().metrics.getCurrentConcurrentExecutionCount());
         assertSaneHystrixRequestLog(1);
     }
@@ -279,6 +287,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertTrue(command.getExecutionTimeInMilliseconds() > -1);
         assertTrue(command.isFailedExecution());
         assertCommandExecutionEvents(command, HystrixEventType.FAILURE, HystrixEventType.FALLBACK_MISSING);
+        assertNotNull(command.getExecutionException());
         assertEquals(0, command.getBuilder().metrics.getCurrentConcurrentExecutionCount());
         assertSaneHystrixRequestLog(1);
     }
@@ -306,6 +315,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertTrue(command.getExecutionTimeInMilliseconds() > -1);
         assertTrue(command.isFailedExecution());
         assertCommandExecutionEvents(command, HystrixEventType.FAILURE, HystrixEventType.FALLBACK_MISSING);
+        assertNotNull(command.getExecutionException());
         assertEquals(0, command.getBuilder().metrics.getCurrentConcurrentExecutionCount());
         assertSaneHystrixRequestLog(1);
     }
@@ -316,7 +326,6 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
     @Test
     public void testQueueFailureWithFallback() {
         TestHystrixCommand<?> command = getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.FAILURE, AbstractTestHystrixCommand.FallbackResult.SUCCESS);
-                new KnownFailureTestCommandWithFallback(new TestCircuitBreaker());
         try {
             Future<?> future = command.queue();
             assertEquals(FlexibleTestHystrixCommand.FALLBACK_VALUE, future.get());
@@ -328,6 +337,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertTrue(command.getExecutionTimeInMilliseconds() > -1);
         assertTrue(command.isFailedExecution());
         assertCommandExecutionEvents(command, HystrixEventType.FAILURE, HystrixEventType.FALLBACK_SUCCESS);
+        assertNotNull(command.getExecutionException());
         assertEquals(0, command.getBuilder().metrics.getCurrentConcurrentExecutionCount());
         assertSaneHystrixRequestLog(1);
     }
@@ -354,6 +364,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertTrue(command.getExecutionTimeInMilliseconds() > -1);
         assertTrue(command.isFailedExecution());
         assertCommandExecutionEvents(command, HystrixEventType.FAILURE, HystrixEventType.FALLBACK_FAILURE);
+        assertNotNull(command.getExecutionException());
         assertEquals(0, command.getBuilder().metrics.getCurrentConcurrentExecutionCount());
         assertSaneHystrixRequestLog(1);
     }
@@ -372,6 +383,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
             assertTrue(command.getExecutionTimeInMilliseconds() > -1);
             assertTrue(command.isSuccessfulExecution());
             assertCommandExecutionEvents(command, HystrixEventType.SUCCESS);
+            assertNull(command.getExecutionException());
             assertEquals(0, command.getBuilder().metrics.getCurrentConcurrentExecutionCount());
             assertSaneHystrixRequestLog(1);
         } catch (Exception e) {
@@ -643,6 +655,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertFalse(command.isResponseFromFallback());
         assertFalse(command.isResponseRejected());
         assertCommandExecutionEvents(command, HystrixEventType.TIMEOUT, HystrixEventType.FALLBACK_MISSING);
+        assertNotNull(command.getExecutionException());
         assertEquals(0, command.getBuilder().metrics.getCurrentConcurrentExecutionCount());
         assertSaneHystrixRequestLog(1);
     }
@@ -667,6 +680,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         }
 
         assertCommandExecutionEvents(command, HystrixEventType.TIMEOUT, HystrixEventType.FALLBACK_SUCCESS);
+        assertNotNull(command.getExecutionException());
         assertEquals(0, command.getBuilder().metrics.getCurrentConcurrentExecutionCount());
         assertSaneHystrixRequestLog(1);
     }
@@ -692,6 +706,9 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
                 fail("the exception should be HystrixRuntimeException");
             }
         }
+
+        assertNotNull(command.getExecutionException());
+
         // the time should be 50+ since we timeout at 50ms
         assertTrue("Execution Time is: " + command.getExecutionTimeInMilliseconds(), command.getExecutionTimeInMilliseconds() >= 50);
         assertCommandExecutionEvents(command, HystrixEventType.TIMEOUT, HystrixEventType.FALLBACK_FAILURE);
@@ -719,6 +736,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
             assertTrue(command.getExecutionTimeInMilliseconds() > -1);
             assertTrue(command.isResponseTimedOut());
             assertFalse(command.isSuccessfulExecution());
+            assertNotNull(command.getExecutionException());
         } catch (Exception e) {
             e.printStackTrace();
             fail("We should have received a response from the fallback.");
@@ -758,6 +776,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertTrue(command.getExecutionTimeInMilliseconds() > -1);
         assertTrue(command.isResponseTimedOut());
         assertCommandExecutionEvents(command, HystrixEventType.TIMEOUT, HystrixEventType.FALLBACK_MISSING);
+        assertNotNull(command.getExecutionException());
         assertEquals(0, command.getBuilder().metrics.getCurrentConcurrentExecutionCount());
         assertSaneHystrixRequestLog(1);
     }
@@ -779,6 +798,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         }
 
         assertCommandExecutionEvents(command, HystrixEventType.TIMEOUT, HystrixEventType.FALLBACK_SUCCESS);
+        assertNotNull(command.getExecutionException());
         assertEquals(0, command.getBuilder().metrics.getCurrentConcurrentExecutionCount());
         assertSaneHystrixRequestLog(1);
     }
@@ -809,6 +829,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         }
 
         assertCommandExecutionEvents(command, HystrixEventType.TIMEOUT, HystrixEventType.FALLBACK_FAILURE);
+        assertNotNull(command.getExecutionException());
         assertEquals(0, command.getBuilder().metrics.getCurrentConcurrentExecutionCount());
         assertSaneHystrixRequestLog(1);
     }
@@ -842,6 +863,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertTrue(command.getExecutionTimeInMilliseconds() > -1);
         assertTrue(command.isResponseTimedOut());
         assertCommandExecutionEvents(command, HystrixEventType.TIMEOUT, HystrixEventType.FALLBACK_MISSING);
+        assertNotNull(command.getExecutionException());
         assertEquals(0, command.getBuilder().metrics.getCurrentConcurrentExecutionCount());
         assertSaneHystrixRequestLog(1);
     }
@@ -863,6 +885,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         }
 
         assertCommandExecutionEvents(command, HystrixEventType.TIMEOUT, HystrixEventType.FALLBACK_SUCCESS);
+        assertNotNull(command.getExecutionException());
         assertEquals(0, command.getBuilder().metrics.getCurrentConcurrentExecutionCount());
         assertSaneHystrixRequestLog(1);
     }
@@ -893,6 +916,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         }
 
         assertCommandExecutionEvents(command, HystrixEventType.TIMEOUT, HystrixEventType.FALLBACK_FAILURE);
+        assertNotNull(command.getExecutionException());
         assertEquals(0, command.getBuilder().metrics.getCurrentConcurrentExecutionCount());
         assertSaneHystrixRequestLog(1);
     }
@@ -910,6 +934,8 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertTrue(command1.getExecutionTimeInMilliseconds() == -1);
         assertTrue(command1.isResponseShortCircuited());
         assertFalse(command1.isResponseTimedOut());
+        assertNotNull(command1.getExecutionException());
+
 
         assertCommandExecutionEvents(command1, HystrixEventType.SHORT_CIRCUITED, HystrixEventType.FALLBACK_SUCCESS);
         assertCommandExecutionEvents(command2, HystrixEventType.SHORT_CIRCUITED, HystrixEventType.FALLBACK_SUCCESS);
@@ -958,6 +984,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
             assertTrue(command2.isResponseRejected());
             assertFalse(command2.isResponseShortCircuited());
             assertFalse(command2.isResponseTimedOut());
+            assertNotNull(command2.getExecutionException());
 
             if (e instanceof HystrixRuntimeException && e.getCause() instanceof RejectedExecutionException) {
                 HystrixRuntimeException de = (HystrixRuntimeException) e;
@@ -1017,8 +1044,10 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
             assertEquals(false, command2.queue().get());
             assertFalse(command1.isResponseRejected());
             assertFalse(command1.isResponseFromFallback());
+            assertNull(command1.getExecutionException());
             assertTrue(command2.isResponseRejected());
             assertTrue(command2.isResponseFromFallback());
+            assertNotNull(command2.getExecutionException());
         } catch (Exception e) {
             e.printStackTrace();
             fail("We should have received a response from the fallback.");
@@ -1144,6 +1173,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
             assertTrue(command.isResponseRejected());
             assertFalse(command.isResponseShortCircuited());
             assertFalse(command.isResponseTimedOut());
+            assertNotNull(command.getExecutionException());
 
             if (e instanceof HystrixRuntimeException && e.getCause() instanceof RejectedExecutionException) {
                 HystrixRuntimeException de = (HystrixRuntimeException) e;
@@ -1230,6 +1260,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
 
         assertEquals(true, result);
         assertFalse(cmd.isResponseTimedOut());
+        assertNull(cmd.getExecutionException());
         System.out.println("CMD : " + cmd.currentRequestLog.getExecutedCommandsAsString());
         assertTrue(cmd.executionResult.getExecutionTime() >= 900);
         assertCommandExecutionEvents(cmd, HystrixEventType.SUCCESS);
@@ -1791,6 +1822,9 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertFalse(command2.isResponseFromCache());
         assertCommandExecutionEvents(command1, HystrixEventType.SUCCESS);
         assertCommandExecutionEvents(command2, HystrixEventType.SUCCESS);
+        assertNull(command1.getExecutionException());
+        assertFalse(command2.isResponseFromCache());
+        assertNull(command2.getExecutionException());
         assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
         assertSaneHystrixRequestLog(2);
     }
@@ -2138,6 +2172,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertTrue(command5.isResponseTimedOut());
         assertFalse(command5.isFailedExecution());
         assertFalse(command5.isResponseShortCircuited());
+        assertNotNull(command5.getExecutionException());
 
         assertCommandExecutionEvents(command1, HystrixEventType.TIMEOUT, HystrixEventType.FALLBACK_SUCCESS);
         assertCommandExecutionEvents(command2, HystrixEventType.TIMEOUT, HystrixEventType.FALLBACK_SUCCESS, HystrixEventType.RESPONSE_FROM_CACHE);
@@ -2362,6 +2397,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         }
 
         assertCommandExecutionEvents(command1, HystrixEventType.BAD_REQUEST);
+        assertNotNull(command1.getExecutionException());
         assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
         assertSaneHystrixRequestLog(1);
     }
@@ -2447,6 +2483,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertTrue(command.getExecutionTimeInMilliseconds() > -1);
         assertTrue(command.isFailedExecution());
         assertCommandExecutionEvents(command, HystrixEventType.FAILURE, HystrixEventType.FALLBACK_MISSING);
+        assertNotNull(command.getExecutionException());
         assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
         assertSaneHystrixRequestLog(1);
     }
@@ -2497,6 +2534,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertTrue(command.getExecutionTimeInMilliseconds() > -1);
         assertTrue(command.isFailedExecution());
         assertCommandExecutionEvents(command, HystrixEventType.FAILURE, HystrixEventType.FALLBACK_MISSING);
+        assertNotNull(command.getExecutionException());
         assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
         assertSaneHystrixRequestLog(1);
     }
@@ -2511,6 +2549,8 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
             cmd.execute();
             fail("Should throw");
         } catch (Throwable t) {
+            assertNotNull(cmd.getExecutionException());
+
             System.out.println("Unsuccessful Execution took : " + (System.currentTimeMillis() - timeMillis));
             assertCommandExecutionEvents(cmd, HystrixEventType.TIMEOUT, HystrixEventType.FALLBACK_MISSING);
             assertEquals(0, cmd.metrics.getCurrentConcurrentExecutionCount());
@@ -2539,6 +2579,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertTrue(command.getExecutionTimeInMilliseconds() > -1);
         assertTrue(command.isFailedExecution());
         assertCommandExecutionEvents(command, HystrixEventType.FAILURE, HystrixEventType.FALLBACK_MISSING);
+        assertNotNull(command.getExecutionException());
         assertEquals(0, command.metrics.getCurrentConcurrentExecutionCount());
         assertSaneHystrixRequestLog(1);
     }
@@ -2555,6 +2596,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertTrue(command.getExecutionTimeInMilliseconds() > -1);
         assertTrue(command.isFailedExecution());
         assertCommandExecutionEvents(command, HystrixEventType.FAILURE, HystrixEventType.FALLBACK_SUCCESS);
+        assertNotNull(command.getExecutionException());
         assertEquals(0, command.metrics.getCurrentConcurrentExecutionCount());
         assertSaneHystrixRequestLog(1);
     }
@@ -2577,6 +2619,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertTrue(command.getExecutionTimeInMilliseconds() > -1);
         assertTrue(command.isFailedExecution());
         assertCommandExecutionEvents(command, HystrixEventType.FAILURE);
+        assertNotNull(command.getExecutionException());
         assertEquals(0, command.metrics.getCurrentConcurrentExecutionCount());
         assertSaneHystrixRequestLog(1);
     }
@@ -2599,6 +2642,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertTrue(command.getExecutionTimeInMilliseconds() > -1);
         assertTrue(command.isFailedExecution());
         assertCommandExecutionEvents(command, HystrixEventType.FAILURE);
+        assertNotNull(command.getExecutionException());
         assertEquals(0, command.metrics.getCurrentConcurrentExecutionCount());
         assertSaneHystrixRequestLog(1);
     }
@@ -2821,6 +2865,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertTrue(commandDisabled.isFailedExecution());
         assertCommandExecutionEvents(commandEnabled, HystrixEventType.FAILURE, HystrixEventType.FALLBACK_SUCCESS);
         assertCommandExecutionEvents(commandDisabled, HystrixEventType.FAILURE);
+        assertNotNull(commandDisabled.getExecutionException());
         assertEquals(0, commandDisabled.getBuilder().metrics.getCurrentConcurrentExecutionCount());
         assertSaneHystrixRequestLog(2);
     }
@@ -2902,6 +2947,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertTrue(command.getExecutionTimeInMilliseconds() > -1);
         assertTrue(command.isResponseTimedOut());
         assertCommandExecutionEvents(command, HystrixEventType.TIMEOUT, HystrixEventType.FALLBACK_MISSING);
+        assertNotNull(command.getExecutionException());
         assertEquals(0, command.getBuilder().metrics.getCurrentConcurrentExecutionCount());
         assertSaneHystrixRequestLog(1);
     }
