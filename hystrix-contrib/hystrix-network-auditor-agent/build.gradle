@@ -1,5 +1,5 @@
 dependencies {
-    compile 'org.javassist:javassist:3.18.1-GA'
+    compile 'org.javassist:javassist:3.19+'
 
     jar {
         // make a fatjar otherwise it's painful getting the boot-class-path correct when deploying
