@@ -80,7 +80,7 @@ check.dependsOn test, ajcTest
 
 
 ext {
-    aspectjVersion = '1.7.4'
+    aspectjVersion = '1.8.6'
 }
 
 
