@@ -89,6 +89,7 @@ class TestableExecutionHook extends HystrixCommandExecutionHook {
     private Throwable getException(List<Notification<?>> l) {
         for (Notification<?> n: l) {
             if (n.isOnError()) {
+                n.getThrowable().printStackTrace();
                 return n.getThrowable();
             }
         }
