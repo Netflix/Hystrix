@@ -43,6 +43,10 @@ abstract public class TestHystrixCommand<T> extends HystrixCommand<T> implements
         return new TestCommandBuilder(HystrixCommandProperties.ExecutionIsolationStrategy.THREAD);
     }
 
+    static TestCommandBuilder testPropsBuilder(HystrixCircuitBreakerTest.TestCircuitBreaker circuitBreaker) {
+        return new TestCommandBuilder(HystrixCommandProperties.ExecutionIsolationStrategy.THREAD).setCircuitBreaker(circuitBreaker);
+    }
+
     static TestCommandBuilder testPropsBuilder(HystrixCommandProperties.ExecutionIsolationStrategy isolationStrategy) {
         return new TestCommandBuilder(isolationStrategy);
     }

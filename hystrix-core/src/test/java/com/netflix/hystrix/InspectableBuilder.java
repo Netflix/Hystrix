@@ -31,15 +31,14 @@ public interface InspectableBuilder {
     }
 
     public static class TestCommandBuilder {
-        HystrixCircuitBreakerTest.TestCircuitBreaker _cb = new HystrixCircuitBreakerTest.TestCircuitBreaker();
         HystrixCommandGroupKey owner = CommandGroupForUnitTest.OWNER_ONE;
         HystrixCommandKey dependencyKey = null;
         HystrixThreadPoolKey threadPoolKey = null;
-        HystrixCircuitBreaker circuitBreaker = _cb;
+        HystrixCircuitBreaker circuitBreaker;
         HystrixThreadPool threadPool = null;
         HystrixCommandProperties.Setter commandPropertiesDefaults = HystrixCommandPropertiesTest.getUnitTestPropertiesSetter();
         HystrixThreadPoolProperties.Setter threadPoolPropertiesDefaults = HystrixThreadPoolProperties.Setter.getUnitTestPropertiesBuilder();
-        HystrixCommandMetrics metrics = _cb.metrics;
+        HystrixCommandMetrics metrics;
         AbstractCommand.TryableSemaphore fallbackSemaphore = null;
         AbstractCommand.TryableSemaphore executionSemaphore = null;
         TestableExecutionHook executionHook = new TestableExecutionHook();
@@ -63,8 +62,11 @@ public interface InspectableBuilder {
             return this;
         }
 
-        TestCommandBuilder setCircuitBreaker(HystrixCircuitBreaker circuitBreaker) {
+        TestCommandBuilder setCircuitBreaker(HystrixCircuitBreakerTest.TestCircuitBreaker circuitBreaker) {
             this.circuitBreaker = circuitBreaker;
+            if (circuitBreaker != null) {
+                this.metrics = circuitBreaker.metrics;
+            }
             return this;
         }
 

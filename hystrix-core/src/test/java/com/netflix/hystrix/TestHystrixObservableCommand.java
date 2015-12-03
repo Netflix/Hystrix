@@ -34,7 +34,11 @@ abstract public class TestHystrixObservableCommand<T> extends HystrixObservableC
         return new TestCommandBuilder(HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE);
     }
 
-    static TestCommandBuilder testPropsBuilder(HystrixCommandProperties.ExecutionIsolationStrategy isolationStrategy) {
-        return new TestCommandBuilder(isolationStrategy);
+    static TestCommandBuilder testPropsBuilder(HystrixCircuitBreakerTest.TestCircuitBreaker circuitBreaker) {
+        return new TestCommandBuilder(HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE).setCircuitBreaker(circuitBreaker);
+    }
+
+    static TestCommandBuilder testPropsBuilder(HystrixCommandProperties.ExecutionIsolationStrategy isolationStrategy, HystrixCircuitBreakerTest.TestCircuitBreaker circuitBreaker) {
+        return new TestCommandBuilder(isolationStrategy).setCircuitBreaker(circuitBreaker);
     }
 }

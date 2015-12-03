@@ -47,6 +47,12 @@ public class HystrixCircuitBreakerTest {
             forceShortCircuit = false;
         }
 
+        public TestCircuitBreaker(HystrixCommandKey commandKey) {
+            this.metrics = getMetrics(commandKey, HystrixCommandPropertiesTest.getUnitTestPropertiesSetter());
+            forceShortCircuit = false;
+        }
+
+
         public TestCircuitBreaker setForceShortCircuit(boolean value) {
             this.forceShortCircuit = value;
             return this;
@@ -57,7 +63,7 @@ public class HystrixCircuitBreakerTest {
             if (forceShortCircuit) {
                 return true;
             } else {
-                return metrics.getCumulativeCount(HystrixRollingNumberEvent.FAILURE) >= 3;
+                return metrics.getHealthCounts().getErrorCount() >= 3;
             }
         }
 
@@ -495,6 +501,14 @@ public class HystrixCircuitBreakerTest {
      */
     private static HystrixCommandMetrics getMetrics(HystrixCommandProperties.Setter properties) {
         return new HystrixCommandMetrics(CommandKeyForUnitTest.KEY_ONE, CommandOwnerForUnitTest.OWNER_ONE, ThreadPoolKeyForUnitTest.THREAD_POOL_ONE, HystrixCommandPropertiesTest.asMock(properties), HystrixEventNotifierDefault.getInstance());
+    }
+
+
+    /**
+     * Utility method for creating {@link HystrixCommandMetrics} for unit tests.
+     */
+    private static HystrixCommandMetrics getMetrics(HystrixCommandKey commandKey, HystrixCommandProperties.Setter properties) {
+        return new HystrixCommandMetrics(commandKey, CommandOwnerForUnitTest.OWNER_ONE, ThreadPoolKeyForUnitTest.THREAD_POOL_ONE, HystrixCommandPropertiesTest.asMock(properties), HystrixEventNotifierDefault.getInstance());
     }
 
     /**
