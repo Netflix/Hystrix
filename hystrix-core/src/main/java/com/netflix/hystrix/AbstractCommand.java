@@ -398,10 +398,12 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                         }
                     } else {
                         metrics.markSemaphoreRejection();
+                        Exception semaphoreRejectionException = new RuntimeException("could not acquire a semaphore for execution");
+                        executionResult = executionResult.setExecutionException(semaphoreRejectionException);
                         logger.debug("HystrixCommand Execution Rejection by Semaphore."); // debug only since we're throwing the exception and someone higher will do something with it
                         // retrieve a fallback or throw an exception if no fallback available
                         getFallbackOrThrowException(HystrixEventType.SEMAPHORE_REJECTED, FailureType.REJECTED_SEMAPHORE_EXECUTION,
-                                "could not acquire a semaphore for execution", new RuntimeException("could not acquire a semaphore for execution"))
+                                "could not acquire a semaphore for execution", semaphoreRejectionException)
                                 .lift(new DeprecatedOnCompleteWithValueHookApplication(_this))
                                 .unsafeSubscribe(observer);
                     }
@@ -409,9 +411,11 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                     // record that we are returning a short-circuited fallback
                     metrics.markShortCircuited();
                     // short-circuit and go directly to fallback (or throw an exception if no fallback implemented)
+                    Exception shortCircuitException = new RuntimeException("Hystrix circuit short-circuited and is OPEN");
+                    executionResult = executionResult.setExecutionException(shortCircuitException);
                     try {
                         getFallbackOrThrowException(HystrixEventType.SHORT_CIRCUITED, FailureType.SHORTCIRCUIT,
-                                "short-circuited", new RuntimeException("Hystrix circuit short-circuited and is OPEN"))
+                                "short-circuited", shortCircuitException)
                                 .lift(new DeprecatedOnCompleteWithValueHookApplication(_this))
                                 .unsafeSubscribe(observer);
                     } catch (Exception e) {
@@ -579,6 +583,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
             @Override
             public Observable<R> call(Throwable t) {
                 Exception e = getExceptionFromThrowable(t);
+                executionResult = executionResult.setExecutionException(e);
                 if (e instanceof RejectedExecutionException) {
                     /**
                      * Rejection handling
@@ -1749,24 +1754,29 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
     protected static class ExecutionResult {
         protected final List<HystrixEventType> events;
         private final int executionTime;
-        private final Exception exception;
+        private final Exception failedExecutionException;
+        private final Exception executionException;
         private final long commandRunStartTimeInNanos;
         private final int numEmissions;
         private final int numFallbackEmissions;
 
         private ExecutionResult(HystrixEventType... events) {
-            this(Arrays.asList(events), -1, null, 0, 0);
+            this(Arrays.asList(events), -1, null, null, 0, 0);
         }
 
         public ExecutionResult setExecutionTime(int executionTime) {
-            return new ExecutionResult(events, executionTime, exception, numEmissions, numFallbackEmissions);
+            return new ExecutionResult(events, executionTime, failedExecutionException, executionException, numEmissions, numFallbackEmissions);
         }
 
         public ExecutionResult setException(Exception e) {
-            return new ExecutionResult(events, executionTime, e, numEmissions, numFallbackEmissions);
+            return new ExecutionResult(events, executionTime, e, executionException, numEmissions, numFallbackEmissions);
         }
 
-        private ExecutionResult(List<HystrixEventType> events, int executionTime, Exception e, int numEmissions, int numFallbackEmissions) {
+        public ExecutionResult setExecutionException(Exception executionException) {
+            return new ExecutionResult(events, executionTime, failedExecutionException, executionException, numEmissions, numFallbackEmissions);
+        }
+
+        private ExecutionResult(List<HystrixEventType> events, int executionTime, Exception failedExecutionException, Exception executionException, int numEmissions, int numFallbackEmissions) {
             // we are safe assigning the List reference instead of deep-copying
             // because we control the original list in 'newEvent'
             this.events = events;
@@ -1777,8 +1787,8 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
             else {
                 this.commandRunStartTimeInNanos = -1;
             }
-            this.exception = e;
-
+            this.failedExecutionException = failedExecutionException;
+            this.executionException = executionException;
             this.numEmissions = numEmissions;
             this.numFallbackEmissions = numFallbackEmissions;
         }
@@ -1793,7 +1803,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
          * @return new {@link com.netflix.hystrix.AbstractCommand.ExecutionResult} with events added
          */
         public ExecutionResult addEvents(HystrixEventType... events) {
-            return new ExecutionResult(getUpdatedList(this.events, events), executionTime, exception, numEmissions, numFallbackEmissions);
+            return new ExecutionResult(getUpdatedList(this.events, events), executionTime, failedExecutionException, executionException, numEmissions, numFallbackEmissions);
         }
 
         private static List<HystrixEventType> getUpdatedList(List<HystrixEventType> currentList, HystrixEventType... newEvents) {
@@ -1808,10 +1818,12 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         }
         public long getCommandRunStartTimeInNanos() {return commandRunStartTimeInNanos; }
 
-
-
         public Exception getException() {
-            return exception;
+            return failedExecutionException;
+        }
+
+        public Exception getExecutionException() {
+            return executionException;
         }
 
         /**
@@ -1823,14 +1835,14 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         public ExecutionResult addEmission(HystrixEventType eventType) {
             switch (eventType) {
                 case EMIT: if (events.contains(HystrixEventType.EMIT)) {
-                    return new ExecutionResult(events, executionTime, exception, numEmissions + 1, numFallbackEmissions);
+                    return new ExecutionResult(events, executionTime, failedExecutionException, executionException, numEmissions + 1, numFallbackEmissions);
                 } else {
-                    return new ExecutionResult(getUpdatedList(this.events, HystrixEventType.EMIT), executionTime, exception, numEmissions +1, numFallbackEmissions);
+                    return new ExecutionResult(getUpdatedList(this.events, HystrixEventType.EMIT), executionTime, failedExecutionException, executionException, numEmissions +1, numFallbackEmissions);
                 }
                 case FALLBACK_EMIT: if (events.contains(HystrixEventType.FALLBACK_EMIT)) {
-                    return new ExecutionResult(events, executionTime, exception, numEmissions, numFallbackEmissions + 1);
+                    return new ExecutionResult(events, executionTime, failedExecutionException, executionException, numEmissions, numFallbackEmissions + 1);
                 } else {
-                    return new ExecutionResult(getUpdatedList(this.events, HystrixEventType.FALLBACK_EMIT), executionTime, exception, numEmissions, numFallbackEmissions + 1);
+                    return new ExecutionResult(getUpdatedList(this.events, HystrixEventType.FALLBACK_EMIT), executionTime, failedExecutionException, executionException, numEmissions, numFallbackEmissions + 1);
                 }
                 default: return this;
             }
@@ -1938,6 +1950,26 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
      */
     public Throwable getFailedExecutionException() {
         return executionResult.getException();
+    }
+
+    /**
+     * Get the Throwable/Exception emitted by this command instance prior to checking the fallback.
+     * This exception instance may have been generated via a number of mechanisms:
+     * 1) failed execution (in this case, same result as {@link #getFailedExecutionException()}.
+     * 2) timeout
+     * 3) short-circuit
+     * 4) rejection
+     * 5) bad request
+     *
+     * If the command execution was successful, then this exception instance is null (there was no exception)
+     *
+     * Note that the caller of the command may not receive this exception, as fallbacks may be served as a response to
+     * the exception.
+     *
+     * @return Throwable or null
+     */
+    public Throwable getExecutionException() {
+        return executionResult.getExecutionException();
     }
 
     /**
