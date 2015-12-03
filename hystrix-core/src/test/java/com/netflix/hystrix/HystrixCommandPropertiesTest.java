@@ -53,7 +53,7 @@ public class HystrixCommandPropertiesTest {
                 .withMetricsRollingPercentileWindowInMilliseconds(60000)
                 .withMetricsRollingPercentileWindowBuckets(12)
                 .withMetricsRollingPercentileBucketSize(1000)
-                .withMetricsHealthSnapshotIntervalInMilliseconds(0);
+                .withMetricsHealthSnapshotIntervalInMilliseconds(100);
     }
 
     /**

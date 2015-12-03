@@ -105,20 +105,18 @@ public class HystrixMetricsPublisherFactory {
         HystrixMetricsPublisherCommand publisher = commandPublishers.get(commandKey.name());
         if (publisher != null) {
             return publisher;
-        }
-        // it doesn't exist so we need to create it
-        publisher = HystrixPlugins.getInstance().getMetricsPublisher().getMetricsPublisherForCommand(commandKey, commandOwner, metrics, circuitBreaker, properties);
-        // attempt to store it (race other threads)
-        HystrixMetricsPublisherCommand existing = commandPublishers.putIfAbsent(commandKey.name(), publisher);
-        if (existing == null) {
-            // we won the thread-race to store the instance we created so initialize it
-            publisher.initialize();
-            // done registering, return instance that got cached
-            return publisher;
         } else {
-            // we lost so return 'existing' and let the one we created be garbage collected
-            // without calling initialize() on it
-            return existing;
+            synchronized (this) {
+                HystrixMetricsPublisherCommand existingPublisher = commandPublishers.get(commandKey.name());
+                if (existingPublisher != null) {
+                    return existingPublisher;
+                } else {
+                    HystrixMetricsPublisherCommand newPublisher = HystrixPlugins.getInstance().getMetricsPublisher().getMetricsPublisherForCommand(commandKey, commandOwner, metrics, circuitBreaker, properties);
+                    commandPublishers.putIfAbsent(commandKey.name(), newPublisher);
+                    newPublisher.initialize();
+                    return newPublisher;
+                }
+            }
         }
     }
 

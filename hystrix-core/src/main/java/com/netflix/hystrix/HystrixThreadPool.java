@@ -15,6 +15,9 @@
  */
 package com.netflix.hystrix;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -55,6 +58,8 @@ public interface HystrixThreadPool {
 
     public Scheduler getScheduler(Func0<Boolean> shouldInterruptThread);
 
+    HystrixThreadPoolKey getKey();
+
     /**
      * Mark when a thread begins executing a command.
      */
@@ -79,6 +84,7 @@ public interface HystrixThreadPool {
      * @return boolean whether there is space on the queue
      */
     public boolean isQueueSpaceAvailable();
+
 
     /**
      * @ExcludeFromJavadoc
@@ -150,6 +156,10 @@ public interface HystrixThreadPool {
             }
             threadPools.clear();
         }
+
+        public static Collection<HystrixThreadPool> getAllThreadPools() {
+            return Collections.unmodifiableCollection(threadPools.values());
+        }
     }
 
     /**
@@ -157,6 +167,7 @@ public interface HystrixThreadPool {
      * @ThreadSafe
      */
     /* package */static class HystrixThreadPoolDefault implements HystrixThreadPool {
+        private final HystrixThreadPoolKey threadPoolKey;
         private final HystrixThreadPoolProperties properties;
         private final BlockingQueue<Runnable> queue;
         private final ThreadPoolExecutor threadPool;
@@ -164,6 +175,7 @@ public interface HystrixThreadPool {
         private final int queueSize;
 
         public HystrixThreadPoolDefault(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolProperties.Setter propertiesDefaults) {
+            this.threadPoolKey = threadPoolKey;
             this.properties = HystrixPropertiesFactory.getThreadPoolProperties(threadPoolKey, propertiesDefaults);
             HystrixConcurrencyStrategy concurrencyStrategy = HystrixPlugins.getInstance().getConcurrencyStrategy();
             this.queueSize = properties.maxQueueSize().get();
@@ -199,6 +211,11 @@ public interface HystrixThreadPool {
         public Scheduler getScheduler(Func0<Boolean> shouldInterruptThread) {
             touchConfig();
             return new HystrixContextScheduler(HystrixPlugins.getInstance().getConcurrencyStrategy(), this, shouldInterruptThread);
+        }
+
+        @Override
+        public HystrixThreadPoolKey getKey() {
+            return this.threadPoolKey;
         }
 
         // allow us to change things via fast-properties by setting it each time

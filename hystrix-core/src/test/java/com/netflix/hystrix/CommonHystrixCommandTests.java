@@ -30,6 +30,8 @@ import rx.Subscriber;
 import rx.functions.Action1;
 import rx.functions.Func0;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
@@ -171,6 +173,40 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
         }
     }
 
+    protected void assertCommandExecutionEvents(HystrixInvokableInfo<?> command, HystrixEventType... expectedEventTypes) {
+        boolean emitExpected = false;
+        int expectedEmitCount = 0;
+
+        boolean fallbackEmitExpected = false;
+        int expectedFallbackEmitCount = 0;
+
+        List<HystrixEventType> condensedEmitExpectedEventTypes = new ArrayList<HystrixEventType>();
+
+        for (HystrixEventType expectedEventType: expectedEventTypes) {
+            if (expectedEventType.equals(HystrixEventType.EMIT)) {
+                if (!emitExpected) {
+                    //first EMIT encountered, add it to condensedEmitExpectedEventTypes
+                    condensedEmitExpectedEventTypes.add(HystrixEventType.EMIT);
+                }
+                emitExpected = true;
+                expectedEmitCount++;
+            } else if (expectedEventType.equals(HystrixEventType.FALLBACK_EMIT)) {
+                if (!fallbackEmitExpected) {
+                    //first FALLBACK_EMIT encountered, add it to condensedEmitExpectedEventTypes
+                    condensedEmitExpectedEventTypes.add(HystrixEventType.FALLBACK_EMIT);
+                }
+                fallbackEmitExpected = true;
+                expectedFallbackEmitCount++;
+            } else {
+                condensedEmitExpectedEventTypes.add(expectedEventType);
+            }
+        }
+        List<HystrixEventType> actualEventTypes = command.getExecutionEvents();
+        assertEquals(expectedEmitCount, command.getNumberEmissions());
+        assertEquals(expectedFallbackEmitCount, command.getNumberFallbackEmissions());
+        assertEquals(condensedEmitExpectedEventTypes, actualEventTypes);
+    }
+
     /**
      * Threadpool with 1 thread, queue of size 1
      */
@@ -203,6 +239,11 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
         @Override
         public Scheduler getScheduler(Func0<Boolean> shouldInterruptThread) {
             return new HystrixContextScheduler(HystrixPlugins.getInstance().getConcurrencyStrategy(), this, shouldInterruptThread);
+        }
+
+        @Override
+        public HystrixThreadPoolKey getKey() {
+            return HystrixThreadPoolKey.Factory.asKey("SingleWithQueue");
         }
 
         @Override
@@ -253,6 +294,11 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
         @Override
         public Scheduler getScheduler(Func0<Boolean> shouldInterruptThread) {
             return new HystrixContextScheduler(HystrixPlugins.getInstance().getConcurrencyStrategy(), this, shouldInterruptThread);
+        }
+
+        @Override
+        public HystrixThreadPoolKey getKey() {
+            return HystrixThreadPoolKey.Factory.asKey("SingleNoQueue");
         }
 
         @Override
