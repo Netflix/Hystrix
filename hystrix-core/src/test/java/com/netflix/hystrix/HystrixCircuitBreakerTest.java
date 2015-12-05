@@ -66,7 +66,6 @@ public class HystrixCircuitBreakerTest {
             forceShortCircuit = false;
         }
 
-
         public TestCircuitBreaker setForceShortCircuit(boolean value) {
             this.forceShortCircuit = value;
             return this;
@@ -538,7 +537,7 @@ public class HystrixCircuitBreakerTest {
      * Utility method for creating {@link HystrixCommandMetrics} for unit tests.
      */
     private static HystrixCommandMetrics getMetrics(HystrixCommandProperties.Setter properties) {
-        return new HystrixCommandMetrics(CommandKeyForUnitTest.KEY_ONE, CommandOwnerForUnitTest.OWNER_ONE, ThreadPoolKeyForUnitTest.THREAD_POOL_ONE, HystrixCommandPropertiesTest.asMock(properties), HystrixPlugins.getInstance().getEventNotifier());
+        return HystrixCommandMetrics.getInstance(CommandKeyForUnitTest.KEY_ONE, CommandOwnerForUnitTest.OWNER_ONE, ThreadPoolKeyForUnitTest.THREAD_POOL_ONE, HystrixCommandPropertiesTest.asMock(properties));
     }
 
 
@@ -546,7 +545,7 @@ public class HystrixCircuitBreakerTest {
      * Utility method for creating {@link HystrixCommandMetrics} for unit tests.
      */
     private static HystrixCommandMetrics getMetrics(HystrixCommandKey commandKey, HystrixCommandProperties.Setter properties) {
-        return new HystrixCommandMetrics(commandKey, CommandOwnerForUnitTest.OWNER_ONE, ThreadPoolKeyForUnitTest.THREAD_POOL_ONE, HystrixCommandPropertiesTest.asMock(properties), HystrixEventNotifierDefault.getInstance());
+        return HystrixCommandMetrics.getInstance(commandKey, CommandOwnerForUnitTest.OWNER_ONE, ThreadPoolKeyForUnitTest.THREAD_POOL_ONE, HystrixCommandPropertiesTest.asMock(properties));
     }
 
     /**

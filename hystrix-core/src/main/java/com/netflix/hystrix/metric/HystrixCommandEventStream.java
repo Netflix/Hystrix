@@ -17,6 +17,7 @@ package com.netflix.hystrix.metric;
 
 import com.netflix.hystrix.HystrixCommandKey;
 import rx.Observable;
+import rx.functions.Action1;
 import rx.functions.Func1;
 
 import java.util.concurrent.ConcurrentHashMap;
