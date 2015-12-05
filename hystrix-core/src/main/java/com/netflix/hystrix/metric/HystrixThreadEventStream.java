@@ -17,6 +17,7 @@ package com.netflix.hystrix.metric;
 
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandKey;
+import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.HystrixInvokableInfo;
 import com.netflix.hystrix.HystrixThreadPool;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
@@ -80,5 +81,17 @@ public class HystrixThreadEventStream {
     @Override
     public String toString() {
         return "HystrixThreadEventStream (" + threadId + " - " + threadName + ")";
+    }
+
+    private static String bucketToString(long[] bucket) {
+        StringBuffer bucketStr = new StringBuffer();
+        bucketStr.append("BUCKET(");
+        for (HystrixEventType eventType: HystrixEventType.values()) {
+            if (bucket[eventType.ordinal()] > 0) {
+                bucketStr.append(eventType.name()).append(" -> ").append(bucket[eventType.ordinal()]).append(", ");
+            }
+        }
+        bucketStr.append(")");
+        return bucketStr.toString();
     }
 }
