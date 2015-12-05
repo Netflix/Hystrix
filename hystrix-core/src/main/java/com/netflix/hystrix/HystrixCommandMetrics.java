@@ -16,13 +16,12 @@
 package com.netflix.hystrix;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 import com.netflix.hystrix.metric.HystrixCommandEventStream;
 import com.netflix.hystrix.metric.HystrixCommandExecution;
@@ -36,7 +35,6 @@ import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
 import com.netflix.hystrix.util.HystrixRollingNumber;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
-import com.netflix.hystrix.util.HystrixRollingPercentile;
 import rx.Observable;
 import rx.Subscription;
 import rx.functions.Func1;
@@ -136,6 +134,9 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      * Clears all state from metrics. If new requests come in instances will be recreated and metrics started from scratch.
      */
     /* package */ static void reset() {
+        for (HystrixCommandMetrics metricsInstance: getInstances()) {
+            metricsInstance.healthCountsSubscription.unsubscribe();
+        }
         metrics.clear();
     }
 
@@ -148,19 +149,56 @@ public class HystrixCommandMetrics extends HystrixMetrics {
 
     private final HystrixCommandEventStream commandEventStream;
 
+    private Subscription healthCountsSubscription;
+    private final Subject<HealthCounts, HealthCounts> healthCountsSubject = BehaviorSubject.create(HealthCounts.empty());
+
     private Subscription cumulativeCounterSubscription;
-    private final Subject<HystrixEventCounter, HystrixEventCounter> cumulativeCounter = BehaviorSubject.create(HystrixEventCounter.empty());
+    private final Subject<long[], long[]> cumulativeCounter = BehaviorSubject.create(new long[HystrixEventType.values().length]);
 
     private Subscription rollingCounterSubscription;
-    private final Subject<HystrixEventCounter, HystrixEventCounter> rollingCounter = BehaviorSubject.create(HystrixEventCounter.empty());
+    private final Subject<long[], long[]> rollingCounter = BehaviorSubject.create(new long[HystrixEventType.values().length]);
 
     private Subscription rollingLatencySubscription;
     private final Subject<HystrixLatencyDistribution, HystrixLatencyDistribution> rollingLatencyDistribution = BehaviorSubject.create(HystrixLatencyDistribution.empty());
 
-    private static final Func2<HystrixEventCounter, List<HystrixCommandExecution>, HystrixEventCounter> counterAggregator = new Func2<HystrixEventCounter, List<HystrixCommandExecution>, HystrixEventCounter>() {
+    private static final Func1<List<HystrixCommandExecution>, long[]> countEventTypes = new Func1<List<HystrixCommandExecution>, long[]>() {
         @Override
-        public HystrixEventCounter call(HystrixEventCounter cumulativeEvents, List<HystrixCommandExecution> newBucketOfExecutions) {
-            return cumulativeEvents.plus(newBucketOfExecutions);
+        public long[] call(List<HystrixCommandExecution> hystrixCommandExecutions) {
+            long[] eventCounts = new long[HystrixEventType.values().length];
+
+            for (HystrixCommandExecution execution: hystrixCommandExecutions) {
+                for (HystrixEventType eventType: execution.getEventTypes()) {
+                    eventCounts[eventType.ordinal()]++;
+                }
+            }
+//            StringBuffer b = new StringBuffer();
+//            b.append("[");
+//            for (int i = 0; i < HystrixEventType.values().length; i++) {
+//                long count = eventCounts[i];
+//                if (count > 0) {
+//                    b.append(HystrixEventType.values()[i].name()).append(" -> ").append(count).append(", ");
+//                }
+//            }
+//            b.append("]");
+//            System.out.println("Summarized as : " + b.toString());
+            return eventCounts;
+        }
+    };
+
+    private static final Func2<HealthCounts, long[], HealthCounts> healthCheckAccumulator = new Func2<HealthCounts, long[], HealthCounts>() {
+        @Override
+        public HealthCounts call(HealthCounts healthCounts, long[] bucketEventCounts) {
+            return healthCounts.plus(bucketEventCounts);
+        }
+    };
+
+    private static final Func2<long[], long[], long[]> counterAggregator = new Func2<long[], long[], long[]>() {
+        @Override
+        public long[] call(long[] cumulativeEvents, long[] bucketEventCounts) {
+            for (HystrixEventType eventType: HystrixEventType.values()) {
+                cumulativeEvents[eventType.ordinal()] += bucketEventCounts[eventType.ordinal()];
+            }
+            return cumulativeEvents;
         }
     };
 
@@ -170,7 +208,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
             for (HystrixCommandExecution execution: newBucketOfExecutions) {
                 distribution.recordLatencies(execution.getExecutionLatency(), execution.getTotalLatency());
             }
-            return distribution;
+            return distribution.availableForReads();
         }
     };
 
@@ -184,21 +222,23 @@ public class HystrixCommandMetrics extends HystrixMetrics {
 
         this.commandEventStream = HystrixCommandEventStream.getInstance(key);
 
+        this.healthCountsSubscription = establishHealthCountsStream();
+
         final int counterMetricWindow = properties.metricsRollingStatisticalWindowInMilliseconds().get();
         final int numCounterBuckets = properties.metricsRollingStatisticalWindowBuckets().get();
         final int counterBucketSizeInMs = counterMetricWindow / numCounterBuckets;
-        final List<List<HystrixCommandExecution>> emptyCounterListsToStart = new ArrayList<List<HystrixCommandExecution>>();
+        final List<long[]> emptyEventCountsToStart = new ArrayList<long[]>();
         for (int i = 0; i < numCounterBuckets; i++) {
-            emptyCounterListsToStart.add(new ArrayList<HystrixCommandExecution>());
+            emptyEventCountsToStart.add(new long[HystrixEventType.values().length]);
         }
 
-        Observable<List<HystrixCommandExecution>> bucketedCounterMetrics = HystrixCommandEventStream.getInstance(key).getBucketedStream(counterBucketSizeInMs).startWith(emptyCounterListsToStart);
-        cumulativeCounterSubscription = bucketedCounterMetrics.scan(HystrixEventCounter.empty(), counterAggregator).subscribe(cumulativeCounter);
+        Observable<long[]> bucketedCounterMetrics = HystrixCommandEventStream.getInstance(key).getBucketedStream(counterBucketSizeInMs).map(countEventTypes).startWith(emptyEventCountsToStart);
+        cumulativeCounterSubscription = bucketedCounterMetrics.scan(new long[HystrixEventType.values().length], counterAggregator).subscribe(cumulativeCounter);
 
-        rollingCounterSubscription = bucketedCounterMetrics.window(numCounterBuckets, 1).flatMap(new Func1<Observable<List<HystrixCommandExecution>>, Observable<HystrixEventCounter>>() {
+        rollingCounterSubscription = bucketedCounterMetrics.window(numCounterBuckets, 1).flatMap(new Func1<Observable<long[]>, Observable<long[]>>() {
             @Override
-            public Observable<HystrixEventCounter> call(Observable<List<HystrixCommandExecution>> window) {
-                return window.scan(HystrixEventCounter.empty(), counterAggregator).skip(numCounterBuckets);
+            public Observable<long[]> call(Observable<long[]> window) {
+                return window.scan(new long[HystrixEventType.values().length], counterAggregator).skip(numCounterBuckets);
             }
         }).subscribe(rollingCounter);
 
@@ -219,6 +259,34 @@ public class HystrixCommandMetrics extends HystrixMetrics {
                 return window.scan(HystrixLatencyDistribution.empty(), latencyAggregator).skip(numPercentileBuckets);
             }
         }).subscribe(rollingLatencyDistribution);
+    }
+
+    /* package */ void resetStream() {
+        healthCountsSubscription.unsubscribe();
+        healthCountsSubscription = establishHealthCountsStream();
+    }
+
+    /* package */ Subscription establishHealthCountsStream() {
+        final int bucketSizeInMs = properties.metricsHealthSnapshotIntervalInMilliseconds().get();
+        if (bucketSizeInMs == 0) {
+            throw new RuntimeException("You have set the bucket size to 0ms.  Please set a positive number, so that the metric stream can be properly consumed");
+        }
+        final int numBuckets = properties.metricsRollingStatisticalWindowInMilliseconds().get() / bucketSizeInMs;
+
+        System.out.println("Health Counts stream for : " + key.name() + " using bucket size of " + bucketSizeInMs + "ms and " + numBuckets + " buckets");
+
+        final List<long[]> emptyEventCountsToStart = new ArrayList<long[]>();
+        for (int i = 0; i < numBuckets; i++) {
+            emptyEventCountsToStart.add(new long[HystrixEventType.values().length]);
+        }
+
+        return commandEventStream.getBucketedStream(bucketSizeInMs).map(countEventTypes).startWith(emptyEventCountsToStart).
+                window(numBuckets, 1).flatMap(new Func1<Observable<long[]>, Observable<HealthCounts>>() {
+            @Override
+            public Observable<HealthCounts> call(Observable<long[]> window) {
+                return window.scan(HealthCounts.empty(), healthCheckAccumulator).skip(numBuckets);
+            }
+        }).subscribe(healthCountsSubject);
     }
 
     /**
@@ -259,7 +327,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
 
     public long getRollingCount(HystrixEventType eventType) {
         if (rollingCounter.hasValue()) {
-            return rollingCounter.getValue().getCount(eventType);
+            return rollingCounter.getValue()[eventType.ordinal()];
         } else {
             return 0;
         }
@@ -267,7 +335,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
 
     public long getCumulativeCount(HystrixEventType eventType) {
         if (cumulativeCounter.hasValue()) {
-            return cumulativeCounter.getValue().getCount(eventType);
+            return cumulativeCounter.getValue()[eventType.ordinal()];
         } else {
             return 0;
         }
@@ -288,7 +356,6 @@ public class HystrixCommandMetrics extends HystrixMetrics {
         } else {
             return 0;
         }
-        //return percentileExecution.getPercentile(percentile);
     }
 
     /**
@@ -304,7 +371,6 @@ public class HystrixCommandMetrics extends HystrixMetrics {
         } else {
             return 0;
         }
-        //return percentileExecution.getMean();
     }
 
     /**
@@ -355,13 +421,6 @@ public class HystrixCommandMetrics extends HystrixMetrics {
 
     public long getRollingMaxConcurrentExecutions() {
         return counter.getRollingMaxValue(HystrixRollingNumberEvent.COMMAND_MAX_ACTIVE);
-    }
-
-    /* package */void resetCounter() {
-        // TODO can we do without this somehow?
-        counter.reset();
-        lastHealthCountsSnapshot.set(System.currentTimeMillis());
-        healthCountsSnapshot = new HealthCounts(0, 0, 0);
     }
 
     /**
@@ -531,9 +590,6 @@ public class HystrixCommandMetrics extends HystrixMetrics {
         commandEventStream.write(commandInstance, executionResult.events, executionResult.getExecutionLatency(), executionResult.getUserThreadLatency());
     }
 
-    private volatile HealthCounts healthCountsSnapshot = new HealthCounts(0, 0, 0);
-    private volatile AtomicLong lastHealthCountsSnapshot = new AtomicLong(System.currentTimeMillis());
-
     /**
      * Retrieve a snapshot of total requests, error count and error percentage.
      *
@@ -557,7 +613,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      * @return {@link HealthCounts}
      */
     public HealthCounts getHealthCounts() {
-        // we put an interval between snapshots so high-volume commands don't 
+        // we put an interval between snapshots so high-volume commands don't
         // spend too much unnecessary time calculating metrics in very small time periods
         long lastTime = lastHealthCountsSnapshot.get();
         long currentTime = System.currentTimeMillis();
@@ -581,7 +637,6 @@ public class HystrixCommandMetrics extends HystrixMetrics {
                 healthCountsSnapshot = new HealthCounts(totalCount, errorCount, errorPercentage);
             }
         }
-        return healthCountsSnapshot;
     }
 
     /**
@@ -594,11 +649,17 @@ public class HystrixCommandMetrics extends HystrixMetrics {
         private final long errorCount;
         private final int errorPercentage;
 
-        HealthCounts(long total, long error, int errorPercentage) {
+        HealthCounts(long total, long error) {
             this.totalCount = total;
             this.errorCount = error;
-            this.errorPercentage = errorPercentage;
+            if (totalCount > 0) {
+                this.errorPercentage = (int) ((double) errorCount / totalCount * 100);
+            } else {
+                this.errorPercentage = 0;
+            }
         }
+
+        private static final HealthCounts EMPTY = new HealthCounts(0, 0);
 
         public long getTotalRequests() {
             return totalCount;
@@ -611,6 +672,29 @@ public class HystrixCommandMetrics extends HystrixMetrics {
         public int getErrorPercentage() {
             return errorPercentage;
         }
-    }
 
+        public HealthCounts plus(long[] eventTypeCounts) {
+            long updatedTotalCount = totalCount;
+            long updatedErrorCount = errorCount;
+
+            long successCount = eventTypeCounts[HystrixEventType.SUCCESS.ordinal()];
+            long failureCount = eventTypeCounts[HystrixEventType.FAILURE.ordinal()];
+            long timeoutCount = eventTypeCounts[HystrixEventType.TIMEOUT.ordinal()];
+            long threadPoolRejectedCount = eventTypeCounts[HystrixEventType.THREAD_POOL_REJECTED.ordinal()];
+            long semaphoreRejectedCount = eventTypeCounts[HystrixEventType.SEMAPHORE_REJECTED.ordinal()];
+            long shortCircuitedCount = eventTypeCounts[HystrixEventType.SHORT_CIRCUITED.ordinal()];
+
+            updatedTotalCount += (successCount + failureCount + timeoutCount + threadPoolRejectedCount + semaphoreRejectedCount + shortCircuitedCount);
+            updatedErrorCount += (failureCount + timeoutCount + threadPoolRejectedCount + semaphoreRejectedCount + shortCircuitedCount);
+            return new HealthCounts(updatedTotalCount, updatedErrorCount);
+        }
+
+        public static HealthCounts empty() {
+            return EMPTY;
+        }
+
+        public String toString() {
+            return "HealthCounts[" + errorCount + " / " + totalCount + " : " + getErrorPercentage() + "%]";
+        }
+    }
 }
