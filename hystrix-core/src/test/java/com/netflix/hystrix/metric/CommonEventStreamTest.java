@@ -24,7 +24,6 @@ import com.netflix.hystrix.HystrixThreadPoolKey;
 import com.netflix.hystrix.HystrixThreadPoolProperties;
 import com.netflix.hystrix.strategy.concurrency.HystrixContextRunnable;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
-import org.junit.Test;
 import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Func0;
@@ -48,7 +47,7 @@ public abstract class CommonEventStreamTest {
     protected static final HystrixCommandKey commandKey1 = HystrixCommandKey.Factory.asKey("Foo");
     protected static final HystrixCommandKey commandKey2 = HystrixCommandKey.Factory.asKey("Bar");
 
-    protected static Subscriber<HystrixCommandExecution> loggingWrapper = new Subscriber<HystrixCommandExecution>() {
+    protected static Subscriber<HystrixCommandCompletion> loggingWrapper = new Subscriber<HystrixCommandCompletion>() {
         @Override
         public void onCompleted() {
             System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis() + " : OnCompleted");
@@ -60,7 +59,7 @@ public abstract class CommonEventStreamTest {
         }
 
         @Override
-        public void onNext(HystrixCommandExecution event) {
+        public void onNext(HystrixCommandCompletion event) {
             System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis() + " : OnNext : " + event);
         }
     };
@@ -133,7 +132,7 @@ public abstract class CommonEventStreamTest {
                         Thread.sleep(latency); //simulate some latency in the command execution
                         long[] eventTypeCounts = new long[HystrixEventType.values().length];
                         eventTypeCounts[event.ordinal()]++;
-                        stream.write(cmd, eventTypeCounts, latency, latency);
+                        stream.commandEnd(cmd, eventTypeCounts, latency, latency);
                     }
                 } catch (InterruptedException ex) {
                     fail("InterruptedException : " + ex);
@@ -152,17 +151,17 @@ public abstract class CommonEventStreamTest {
         }
     }
 
-    protected static Map<HystrixRequestContext, List<HystrixCommandExecution>> groupByRequest(TestSubscriber<HystrixCommandExecution> subscriber) {
-        Map<HystrixRequestContext, List<HystrixCommandExecution>> perRequestMetrics = new HashMap<HystrixRequestContext, List<HystrixCommandExecution>>();
+    protected static Map<HystrixRequestContext, List<HystrixCommandCompletion>> groupByRequest(TestSubscriber<HystrixCommandCompletion> subscriber) {
+        Map<HystrixRequestContext, List<HystrixCommandCompletion>> perRequestMetrics = new HashMap<HystrixRequestContext, List<HystrixCommandCompletion>>();
         System.out.println("TestSubscriber received : " + subscriber.getOnNextEvents());
-        for (HystrixCommandExecution event: subscriber.getOnNextEvents()) {
+        for (HystrixCommandCompletion event: subscriber.getOnNextEvents()) {
             HystrixRequestContext reqContext = event.getRequestContext();
             if (perRequestMetrics.containsKey(reqContext)) {
-                List<HystrixCommandExecution> eventsSoFar = perRequestMetrics.get(reqContext);
+                List<HystrixCommandCompletion> eventsSoFar = perRequestMetrics.get(reqContext);
                 eventsSoFar.add(event);
                 perRequestMetrics.put(reqContext, eventsSoFar);
             } else {
-                List<HystrixCommandExecution> newMetricList = new ArrayList<HystrixCommandExecution>();
+                List<HystrixCommandCompletion> newMetricList = new ArrayList<HystrixCommandCompletion>();
                 newMetricList.add(event);
                 perRequestMetrics.put(reqContext, newMetricList);
             }
@@ -170,20 +169,20 @@ public abstract class CommonEventStreamTest {
         return perRequestMetrics;
     }
 
-    protected static boolean containsCount(List<HystrixCommandExecution> events, final HystrixEventType eventType, int expectedCount) {
-        Observable<HystrixCommandExecution> eventsObservable = Observable.from(events);
-        return eventsObservable.filter(new Func1<HystrixCommandExecution, Boolean>() {
+    protected static boolean containsCount(List<HystrixCommandCompletion> events, final HystrixEventType eventType, int expectedCount) {
+        Observable<HystrixCommandCompletion> eventsObservable = Observable.from(events);
+        return eventsObservable.filter(new Func1<HystrixCommandCompletion, Boolean>() {
             @Override
-            public Boolean call(HystrixCommandExecution execution) {
+            public Boolean call(HystrixCommandCompletion execution) {
                 return execution.getEventTypeCounts()[eventType.ordinal()] > 0;
             }
         }).count().toBlocking().first().equals(expectedCount);
     }
 
-    protected static boolean eventListsEqual(List<HystrixCommandExecution> events, HystrixEventType... expectedEvents) {
+    protected static boolean eventListsEqual(List<HystrixCommandCompletion> events, HystrixEventType... expectedEvents) {
         if (events.size() == expectedEvents.length) {
             int i = 0;
-            for (HystrixCommandExecution event: events) {
+            for (HystrixCommandCompletion event: events) {
                 long[] eventTypeCounts = event.getEventTypeCounts();
                 HystrixEventType lookingFor = expectedEvents[i];
                 for (HystrixEventType eventType: HystrixEventType.values()) {
@@ -204,16 +203,16 @@ public abstract class CommonEventStreamTest {
         }
     }
 
-    protected static void assertNoRequestContext(TestSubscriber<HystrixCommandExecution> subscriber) {
+    protected static void assertNoRequestContext(TestSubscriber<HystrixCommandCompletion> subscriber) {
         //these have already been awaited, so just iterate through the list
-        for (HystrixCommandExecution onNext: subscriber.getOnNextEvents()) {
+        for (HystrixCommandCompletion onNext: subscriber.getOnNextEvents()) {
             assertNull(onNext.getRequestContext());
         }
     }
 
-    protected static void assertRequestContext(TestSubscriber<HystrixCommandExecution> subscriber) {
+    protected static void assertRequestContext(TestSubscriber<HystrixCommandCompletion> subscriber) {
         //these have already been awaited, so just iterate through the list
-        for (HystrixCommandExecution onNext: subscriber.getOnNextEvents()) {
+        for (HystrixCommandCompletion onNext: subscriber.getOnNextEvents()) {
             assertNotNull(onNext.getRequestContext());
         }
     }

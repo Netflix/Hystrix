@@ -23,7 +23,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadPoolExecutor;
 
-import com.netflix.hystrix.metric.HystrixCommandExecution;
+import com.netflix.hystrix.metric.HystrixCommandCompletion;
 import com.netflix.hystrix.metric.HystrixThreadPoolEventStream;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 import org.slf4j.Logger;
@@ -109,9 +109,9 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
         }
     };
 
-    private static final Func2<long[], HystrixCommandExecution, long[]> aggregateEventCounts = new Func2<long[], HystrixCommandExecution, long[]>() {
+    private static final Func2<long[], HystrixCommandCompletion, long[]> aggregateEventCounts = new Func2<long[], HystrixCommandCompletion, long[]>() {
         @Override
-        public long[] call(long[] initialCountArray, HystrixCommandExecution execution) {
+        public long[] call(long[] initialCountArray, HystrixCommandCompletion execution) {
             long[] executionCount = execution.getEventTypeCounts();
             for (HystrixEventType eventType: HystrixEventType.values()) {
                 long eventCount = executionCount[eventType.ordinal()];
@@ -135,9 +135,9 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
         }
     };
 
-    private static final Func1<Observable<HystrixCommandExecution>, Observable<long[]>> reduceBucketToSingleCountArray = new Func1<Observable<HystrixCommandExecution>, Observable<long[]>>() {
+    private static final Func1<Observable<HystrixCommandCompletion>, Observable<long[]>> reduceBucketToSingleCountArray = new Func1<Observable<HystrixCommandCompletion>, Observable<long[]>>() {
         @Override
-        public Observable<long[]> call(Observable<HystrixCommandExecution> windowOfExecutions) {
+        public Observable<long[]> call(Observable<HystrixCommandCompletion> windowOfExecutions) {
             return windowOfExecutions.reduce(new long[2], aggregateEventCounts);
         }
     };
@@ -185,10 +185,10 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
         }
 
         Observable<long[]> bucketedCounterMetrics =
-                HystrixThreadPoolEventStream.getInstance(threadPoolKey) //get the event stream for the threadpool we're interested in
-                        .getBucketedStream(counterBucketSizeInMs)       //bucket it by the counter window so we can emit to the next operator in time chunks, not on every OnNext
-                        .flatMap(reduceBucketToSingleCountArray)        //for a given bucket, turn it into a long array containing counts of event types
-                        .startWith(emptyEventCountsToStart);            //start it with empty arrays to make consumer logic as generic as possible (windows are always full)
+                HystrixThreadPoolEventStream.getInstance(threadPoolKey)               //get the event stream for the threadpool we're interested in
+                        .getBucketedStreamOfCommandCompletions(counterBucketSizeInMs) //bucket it by the counter window so we can emit to the next operator in time chunks, not on every OnNext
+                        .flatMap(reduceBucketToSingleCountArray)                      //for a given bucket, turn it into a long array containing counts of event types
+                        .startWith(emptyEventCountsToStart);                          //start it with empty arrays to make consumer logic as generic as possible (windows are always full)
 
         cumulativeCounterSubscription = bucketedCounterMetrics
                 .scan(new long[2], counterAggregator) //take the bucket accumulations and produce a cumulative sum every time a bucket is emitted

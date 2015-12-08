@@ -337,6 +337,8 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         if (!started.compareAndSet(false, true)) {
             throw new IllegalStateException("This instance can only be executed once. Please instantiate a new instance.");
         }
+        final HystrixInvokable<R> _this = this;
+        final HystrixInvokableInfo<R> _invokableInfo = this;
 
         final boolean requestCacheEnabled = isRequestCachingEnabled();
 
@@ -346,7 +348,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
             if (fromCache != null) {
                 executionResult = executionResult.addEvents(HystrixEventType.RESPONSE_FROM_CACHE);
                 eventNotifier.markEvent(HystrixEventType.RESPONSE_FROM_CACHE, commandKey);
-                metrics.markCommandCompletion(this, executionResult);
+                metrics.markResponseFromCache(_invokableInfo);
                 isExecutionComplete.set(true);
                 try {
                     executionHook.onCacheHit(this);
@@ -357,9 +359,6 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
             }
         }
 
-        final HystrixInvokable<R> _this = this;
-        final HystrixInvokableInfo<R> _invokableInfo = this;
-
         // create an Observable that will lazily execute when subscribed to
         Observable<R> o = Observable.create(new OnSubscribe<R>() {
 
@@ -368,6 +367,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                 // async record keeping
                 recordExecutedCommand();
                 metrics.incrementConcurrentExecutionCount();
+                metrics.markCommandStart(_invokableInfo);
 
                 // mark that we're starting execution on the ExecutionHook
                 // if this hook throws an exception, then a fast-fail occurs with no fallback.  No state is left inconsistent
@@ -455,9 +455,9 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                     long userThreadLatency = System.currentTimeMillis() - executionResult.startTimestamp;
                     // if we executed we will record the execution time
                     executionResult = executionResult.markUserThreadCompletion((int) userThreadLatency);
-                    metrics.markCommandCompletion(_invokableInfo, executionResult);
                 } finally {
                     metrics.decrementConcurrentExecutionCount();
+                    metrics.markCommandCompletion(_invokableInfo, executionResult);
                     // record that we're completed
                     isExecutionComplete.set(true);
                 }
