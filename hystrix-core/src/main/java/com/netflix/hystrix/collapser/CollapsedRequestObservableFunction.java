@@ -18,7 +18,6 @@ package com.netflix.hystrix.collapser;
 import rx.Observable.OnSubscribe;
 import rx.Subscriber;
 import rx.subjects.PublishSubject;
-import rx.subjects.Subject;
 
 import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
 
@@ -47,7 +46,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /* package */class CollapsedRequestObservableFunction<T, R> implements CollapsedRequest<T, R>, OnSubscribe<T> {
     private final R argument;
     private AtomicBoolean valueSet = new AtomicBoolean(false);
-    private final Subject<T, T> responseSubject = PublishSubject.create();
+    private final PublishSubject<T> responseSubject = PublishSubject.create();
 
     public CollapsedRequestObservableFunction(R arg) {
         this.argument = arg;
