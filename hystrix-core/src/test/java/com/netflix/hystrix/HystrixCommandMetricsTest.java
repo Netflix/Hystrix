@@ -19,11 +19,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import com.netflix.hystrix.exception.HystrixBadRequestException;
-import com.netflix.hystrix.strategy.HystrixPlugins;
 import org.junit.Before;
 import org.junit.Test;
-
-import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifierDefault;
 
 
 public class HystrixCommandMetricsTest {
@@ -147,6 +144,109 @@ public class HystrixCommandMetricsTest {
 
         assertEquals(NUM_CMDS, metrics.getCurrentConcurrentExecutionCount());
     }
+
+//    @Test
+//    public void testCommandConcurrencyStream() throws InterruptedException {
+//        /**
+//         *     0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20
+//         * A   |-----------------------|
+//         * B      |--------|
+//         * C      |--------------------------------------|
+//         * D                     |-----------------|
+//         * E                                                   |--------|
+//         * Sum 1  3  3  3  3  2  3  3  3  2  2  2  2  1  1  0  1  1  1  1  0
+//         *
+//         * Expected distribution:
+//         * 0 : 2
+//         * 1 : 7
+//         * 2 : 5
+//         * 3 : 7
+//         */
+//
+//        final HystrixCommandKey key = HystrixCommandKey.Factory.asKey("COMMAND");
+//        final HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("GROUP");
+//        final HystrixThreadPoolKey tpKey = HystrixThreadPoolKey.Factory.asKey("THREADPOOL");
+//        HystrixCommandMetrics metrics = HystrixCommandMetrics.getInstance(key, groupKey, tpKey,
+//                new HystrixPropertiesCommandDefault(key, HystrixCommandProperties.Setter()));
+//
+//        final Func1<HystrixConcurrencyDistribution, Boolean> notAllZeros = new Func1<HystrixConcurrencyDistribution, Boolean>() {
+//            @Override
+//            public Boolean call(HystrixConcurrencyDistribution concurrencyDistribution) {
+//                Map<Integer, Integer> concurrencyMap = concurrencyDistribution.getSampleDistribution();
+//                int numberOfSamples = 0;
+//                for (Integer v: concurrencyMap.values()) {
+//                    numberOfSamples += v;
+//                }
+//                if (concurrencyMap.containsKey(0)) {
+//                    return (numberOfSamples - concurrencyMap.get(0)) > 0;
+//                } else {
+//                    return false;
+//                }
+//            }
+//        };
+//
+//        final CountDownLatch latch = new CountDownLatch(1);
+//        metrics.concurrencyDistribution.filter(notAllZeros).take(1).subscribe(new Subscriber<HystrixConcurrencyDistribution>() {
+//            @Override
+//            public void onCompleted() {
+//                latch.countDown();
+//            }
+//
+//            @Override
+//            public void onError(Throwable e) {
+//                fail("Did not expect error from concurrency distribution");
+//            }
+//
+//            @Override
+//            public void onNext(HystrixConcurrencyDistribution concurrencyDistribution) {
+//                System.out.println("Received histogram : " + concurrencyDistribution);
+//                assertTrue(concurrencyDistribution.getSampleDistribution().get(3) > 0);
+//                assertTrue(concurrencyDistribution.getMaxConcurrency() == 3);
+//            }
+//        });
+//
+//        final long[] successCount = new long[HystrixEventType.values().length];
+//        successCount[HystrixEventType.SUCCESS.ordinal()] = 1;
+//
+//        class Command extends HystrixCommand<String> {
+//            Command() {
+//                super(Setter.withGroupKey(groupKey).andCommandKey(key).andThreadPoolKey(tpKey));
+//            }
+//
+//            @Override
+//            protected String run() throws Exception {
+//                return "foo";
+//            }
+//        }
+//
+//        Command cmdA = new Command();
+//        Command cmdB = new Command();
+//        Command cmdC = new Command();
+//        Command cmdD = new Command();
+//        Command cmdE = new Command();
+//
+//        HystrixThreadEventStream threadStream = HystrixThreadEventStream.getInstance();
+//        threadStream.commandStart(cmdA);
+//        Thread.sleep(1);
+//        threadStream.commandStart(cmdB);
+//        threadStream.commandStart(cmdC);
+//        Thread.sleep(3);
+//        threadStream.commandEnd(cmdB, successCount, 3, 3);
+//        Thread.sleep(2);
+//        threadStream.commandStart(cmdD);
+//        Thread.sleep(2);
+//        threadStream.commandEnd(cmdA, successCount, 8, 8);
+//        Thread.sleep(4);
+//        threadStream.commandEnd(cmdD, successCount, 6, 6);
+//        Thread.sleep(2);
+//        threadStream.commandEnd(cmdC, successCount, 13, 13);
+//        Thread.sleep(2);
+//        threadStream.commandStart(cmdE);
+//        Thread.sleep(3);
+//        threadStream.commandEnd(cmdE, successCount, 3, 3);
+//
+//        latch.await();
+//    }
 
     private class Command extends HystrixCommand<Boolean> {
 
