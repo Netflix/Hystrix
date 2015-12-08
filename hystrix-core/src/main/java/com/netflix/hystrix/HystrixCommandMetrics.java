@@ -15,31 +15,24 @@
  */
 package com.netflix.hystrix;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.netflix.hystrix.metric.CumulativeCommandEventCounterStream;
+import com.netflix.hystrix.metric.HealthCountsStream;
 import com.netflix.hystrix.metric.HystrixCommandEventStream;
-import com.netflix.hystrix.metric.HystrixCommandExecution;
-import com.netflix.hystrix.metric.HystrixLatencyDistribution;
 import com.netflix.hystrix.metric.HystrixThreadEventStream;
+import com.netflix.hystrix.metric.RollingCommandConcurrencyStream;
+import com.netflix.hystrix.metric.RollingCommandEventCounterStream;
+import com.netflix.hystrix.metric.RollingCommandLatencyStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
-import rx.Observable;
-import rx.Subscription;
-import rx.functions.Action1;
-import rx.functions.Func1;
-import rx.functions.Func2;
-import rx.schedulers.Schedulers;
-import rx.subjects.BehaviorSubject;
-import rx.subjects.Subject;
 
 /**
  * Used by {@link HystrixCommand} to record metrics.
@@ -132,16 +125,17 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      */
     /* package */ static void reset() {
         for (HystrixCommandMetrics metricsInstance: getInstances()) {
-            metricsInstance.healthCountsSubscription.unsubscribe();
+            metricsInstance.unsubscribeAll();
         }
         metrics.clear();
     }
 
-    private void unsubscribeAllStreams() {
-        healthCountsSubscription.unsubscribe();
-        cumulativeCounterSubscription.unsubscribe();
-        rollingCounterSubscription.unsubscribe();
-        rollingLatencySubscription.unsubscribe();
+    private void unsubscribeAll() {
+        healthCountsStream.unsubscribe();
+        rollingCommandEventCounterStream.unsubscribe();
+        cumulativeCommandEventCounterStream.unsubscribe();
+        rollingCommandLatencyStream.unsubscribe();
+        rollingCommandConcurrencyStream.unsubscribe();
     }
 
     private final HystrixCommandProperties properties;
@@ -151,204 +145,36 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     private final AtomicInteger concurrentExecutionCount = new AtomicInteger();
 
     private final HystrixCommandEventStream commandEventStream;
+    private HealthCountsStream healthCountsStream;
+    private final RollingCommandEventCounterStream rollingCommandEventCounterStream;
+    private final CumulativeCommandEventCounterStream cumulativeCommandEventCounterStream;
+    private final RollingCommandLatencyStream rollingCommandLatencyStream;
+    private final RollingCommandConcurrencyStream rollingCommandConcurrencyStream;
 
-    private Subscription healthCountsSubscription;
-    private final Subject<HealthCounts, HealthCounts> healthCountsSubject = BehaviorSubject.create(HealthCounts.empty());
-
-    private Subscription cumulativeCounterSubscription;
-    private final Subject<long[], long[]> cumulativeCounter = BehaviorSubject.create(new long[HystrixEventType.values().length]);
-
-    private Subscription rollingCounterSubscription;
-    private final Subject<long[], long[]> rollingCounter = BehaviorSubject.create(new long[HystrixEventType.values().length]);
-
-    private Subscription rollingLatencySubscription;
-    private final Subject<HystrixLatencyDistribution, HystrixLatencyDistribution> rollingLatencyDistribution = BehaviorSubject.create(HystrixLatencyDistribution.empty());
-
-    private static final Func2<long[], HystrixCommandExecution, long[]> aggregateEventCounts = new Func2<long[], HystrixCommandExecution, long[]>() {
-        @Override
-        public long[] call(long[] initialCountArray, HystrixCommandExecution execution) {
-            long[] executionCount = execution.getEventTypeCounts();
-            for (int i = 0; i < initialCountArray.length; i++) {
-                initialCountArray[i] += executionCount[i];
-            }
-            return initialCountArray;
-        }
-    };
-
-    private static final Func1<Observable<HystrixCommandExecution>, Observable<long[]>> reduceBucketToSingleCountArray = new Func1<Observable<HystrixCommandExecution>, Observable<long[]>>() {
-        @Override
-        public Observable<long[]> call(Observable<HystrixCommandExecution> windowOfExecutions) {
-            return windowOfExecutions.reduce(new long[HystrixEventType.values().length], aggregateEventCounts);
-        }
-    };
-
-    private static final Func2<HystrixLatencyDistribution, HystrixCommandExecution, HystrixLatencyDistribution> aggregateEventLatencies = new Func2<HystrixLatencyDistribution, HystrixCommandExecution, HystrixLatencyDistribution>() {
-        @Override
-        public HystrixLatencyDistribution call(HystrixLatencyDistribution initialLatencyDistribution, HystrixCommandExecution execution) {
-            initialLatencyDistribution.recordLatencies(execution.getExecutionLatency(), execution.getTotalLatency());
-            return initialLatencyDistribution;
-        }
-    };
-
-    private static final Func1<Observable<HystrixCommandExecution>, Observable<HystrixLatencyDistribution>> reduceBucketToSingleLatencyDistribution = new Func1<Observable<HystrixCommandExecution>, Observable<HystrixLatencyDistribution>>() {
-        @Override
-        public Observable<HystrixLatencyDistribution> call(Observable<HystrixCommandExecution> windowOfExecutions) {
-            return windowOfExecutions.reduce(HystrixLatencyDistribution.empty(), aggregateEventLatencies);
-        }
-    };
-
-    private static final Func2<HealthCounts, long[], HealthCounts> healthCheckAccumulator = new Func2<HealthCounts, long[], HealthCounts>() {
-        @Override
-        public HealthCounts call(HealthCounts healthCounts, long[] bucketEventCounts) {
-            return healthCounts.plus(bucketEventCounts);
-        }
-    };
-
-    private static final Func2<long[], long[], long[]> counterAggregator = new Func2<long[], long[], long[]>() {
-        @Override
-        public long[] call(long[] cumulativeEvents, long[] bucketEventCounts) {
-            for (HystrixEventType eventType: HystrixEventType.values()) {
-                cumulativeEvents[eventType.ordinal()] += bucketEventCounts[eventType.ordinal()];
-            }
-            return cumulativeEvents;
-        }
-    };
-
-    private static final Func2<HystrixLatencyDistribution, HystrixLatencyDistribution, HystrixLatencyDistribution> latencyAggregator = new Func2<HystrixLatencyDistribution, HystrixLatencyDistribution, HystrixLatencyDistribution>() {
-        @Override
-        public HystrixLatencyDistribution call(HystrixLatencyDistribution initialDistribution, HystrixLatencyDistribution distributionToAdd) {
-            return initialDistribution.plus(distributionToAdd);
-        }
-    };
-
-    private static final Func1<HystrixLatencyDistribution, HystrixLatencyDistribution> makeAvailableToRead = new Func1<HystrixLatencyDistribution, HystrixLatencyDistribution>() {
-        @Override
-        public HystrixLatencyDistribution call(HystrixLatencyDistribution latencyDistribution) {
-            return latencyDistribution.availableForReads();
-        }
-    };
-
-    private static final Func1<Observable<HystrixLatencyDistribution>, Observable<HystrixLatencyDistribution>> reduceWindowToSingleDistribution = new Func1<Observable<HystrixLatencyDistribution>, Observable<HystrixLatencyDistribution>>() {
-        @Override
-        public Observable<HystrixLatencyDistribution> call(Observable<HystrixLatencyDistribution> window) {
-            return window.reduce(latencyAggregator).map(makeAvailableToRead);
-        }
-    };
-
-    private static final Action1<List<HystrixLatencyDistribution>> releaseOlderOfTwoDistributions = new Action1<List<HystrixLatencyDistribution>>() {
-        @Override
-        public void call(List<HystrixLatencyDistribution> hystrixLatencyDistributions) {
-            if (hystrixLatencyDistributions != null && hystrixLatencyDistributions.size() == 2) {
-                HystrixLatencyDistribution.release(hystrixLatencyDistributions.get(0));
-            }
-        }
-    };
-
-    private static final Action1<Observable<HystrixLatencyDistribution>> releaseDistributionsAsTheyFallOutOfWindow = new Action1<Observable<HystrixLatencyDistribution>>() {
-        @Override
-        public void call(Observable<HystrixLatencyDistribution> twoLatestDistributions) {
-            twoLatestDistributions.toList().doOnNext(releaseOlderOfTwoDistributions).subscribe();
-        }
-    };
-
-    /* package */HystrixCommandMetrics(HystrixCommandKey key, HystrixCommandGroupKey commandGroup, HystrixThreadPoolKey threadPoolKey, HystrixCommandProperties properties, HystrixEventNotifier eventNotifier) {
+    /* package */HystrixCommandMetrics(final HystrixCommandKey key, HystrixCommandGroupKey commandGroup, HystrixThreadPoolKey threadPoolKey, HystrixCommandProperties properties, HystrixEventNotifier eventNotifier) {
         super(null);
         this.key = key;
         this.group = commandGroup;
         this.threadPoolKey = threadPoolKey;
         this.properties = properties;
 
-        this.commandEventStream = HystrixCommandEventStream.getInstance(key);
+        commandEventStream = HystrixCommandEventStream.getInstance(key);
 
-        this.healthCountsSubscription = establishHealthCountsStream();
+        //TODO Put this in properties
+        final int sampleFrequencyInMs = 100;
 
-        final int counterMetricWindow = properties.metricsRollingStatisticalWindowInMilliseconds().get();
-        final int numCounterBuckets = properties.metricsRollingStatisticalWindowBuckets().get();
-        final int counterBucketSizeInMs = counterMetricWindow / numCounterBuckets;
+        //TODO Should these 3 streams come from same object.  Counter-argument: healthcounts needs to be cleared periodically
+        healthCountsStream = HealthCountsStream.from(commandEventStream, properties);
+        rollingCommandEventCounterStream = RollingCommandEventCounterStream.from(commandEventStream, properties);
+        cumulativeCommandEventCounterStream = CumulativeCommandEventCounterStream.from(commandEventStream, properties);
 
-        final Func1<Observable<long[]>, Observable<long[]>> reduceWindowToSingleSum = new Func1<Observable<long[]>, Observable<long[]>>() {
-            @Override
-            public Observable<long[]> call(Observable<long[]> window) {
-                return window.scan(new long[HystrixEventType.values().length], counterAggregator).skip(numCounterBuckets);
-            }
-        };
-
-        final List<long[]> emptyEventCountsToStart = new ArrayList<long[]>();
-        for (int i = 0; i < numCounterBuckets; i++) {
-            emptyEventCountsToStart.add(new long[HystrixEventType.values().length]);
-        }
-
-        final int percentileMetricWindow = properties.metricsRollingPercentileWindowInMilliseconds().get();
-        final int numPercentileBuckets = properties.metricsRollingPercentileWindowBuckets().get();
-        final int percentileBucketSizeInMs = percentileMetricWindow / numPercentileBuckets;
-
-        final List<HystrixLatencyDistribution> emptyLatencyDistributionsToStart = new ArrayList<HystrixLatencyDistribution>();
-        for (int i = 0; i < numPercentileBuckets; i++) {
-            emptyLatencyDistributionsToStart.add(HystrixLatencyDistribution.empty());
-        }
-
-        Observable<long[]> bucketedCounterMetrics =
-                HystrixCommandEventStream.getInstance(key)        //get the event stream for the command we're interested in
-                        .getBucketedStream(counterBucketSizeInMs) //bucket it by the counter window so we can emit to the next operator in time chunks, not on every OnNext
-                        .flatMap(reduceBucketToSingleCountArray)  //for a given bucket, turn it into a long array containing counts of event types
-                        .startWith(emptyEventCountsToStart);      //start it with empty arrays to make consumer logic as generic as possible (windows are always full)
-
-        cumulativeCounterSubscription = bucketedCounterMetrics
-                .scan(new long[HystrixEventType.values().length], counterAggregator) //take the bucket accumulations and produce a cumulative sum every time a bucket is emitted
-                .subscribe(cumulativeCounter);                                       //sink this value into the cumulative counter
-
-        rollingCounterSubscription = bucketedCounterMetrics
-                .window(numCounterBuckets, 1)     //take the bucket accumulations and window them to only look at n-at-a-time
-                .flatMap(reduceWindowToSingleSum) //for those n buckets, emit a rolling sum of them on every bucket emission
-                .subscribe(rollingCounter);       //sink this value into the rolling counter
-
-        rollingLatencySubscription = HystrixCommandEventStream.getInstance(key)
-                .getBucketedStream(percentileBucketSizeInMs)      //stream of unaggregated buckets
-                .flatMap(reduceBucketToSingleLatencyDistribution) //stream of aggregated HLDs
-                .startWith(emptyLatencyDistributionsToStart)      //stream of aggregated HLDs that starts with n empty
-                .window(numPercentileBuckets, 1)                  //windowed stream: each OnNext is a stream of n HLDs
-                .flatMap(reduceWindowToSingleDistribution)        //reduced stream: each OnNext is a single HLD which values cached for reading
-                .subscribe(rollingLatencyDistribution);           //when a bucket rolls (via an OnNext), write it to the Subject, for external synchronous access
-
-        //as soon as subject receives a new HystrixLatencyDistribution, old one may be released
-        rollingLatencyDistribution
-                .window(2, 1)                                         //subject is used as a single-value, but can be viewed as a stream.  Here, get the latest 2 values of the subject
-                .doOnNext(releaseDistributionsAsTheyFallOutOfWindow)  //if there are 2, then the oldest one will never be read, so we can reclaim its memory
-                .subscribeOn(Schedulers.computation())                //do this on a RxComputation thread
-                .subscribe();                                         //no need to emit anywhere, this is side-effect only (release the memory of old HystrixLatencyDistribution)
+        rollingCommandLatencyStream = RollingCommandLatencyStream.from(commandEventStream, properties);
+        rollingCommandConcurrencyStream = RollingCommandConcurrencyStream.from(commandEventStream, sampleFrequencyInMs, properties);
     }
 
     /* package */ void resetStream() {
-        healthCountsSubscription.unsubscribe();
-        healthCountsSubscription = establishHealthCountsStream();
-    }
-
-    /* package */ Subscription establishHealthCountsStream() {
-        final int bucketSizeInMs = properties.metricsHealthSnapshotIntervalInMilliseconds().get();
-        if (bucketSizeInMs == 0) {
-            throw new RuntimeException("You have set the bucket size to 0ms.  Please set a positive number, so that the metric stream can be properly consumed");
-        }
-        final int numBuckets = properties.metricsRollingStatisticalWindowInMilliseconds().get() / bucketSizeInMs;
-        final Func1<Observable<long[]>, Observable<HealthCounts>> eventBucketAccumulator = new Func1<Observable<long[]>, Observable<HealthCounts>>() {
-            @Override
-            public Observable<HealthCounts> call(Observable<long[]> window) {
-                return window.scan(HealthCounts.empty(), healthCheckAccumulator).skip(numBuckets);
-            }
-        };
-
-        final List<long[]> emptyEventCountsToStart = new ArrayList<long[]>();
-        for (int i = 0; i < numBuckets; i++) {
-            emptyEventCountsToStart.add(new long[HystrixEventType.values().length]);
-        }
-
-        //TODO We can share streams if health bucket size in ms is the same as the counter bucket size in ms
-        return commandEventStream
-                .getBucketedStream(bucketSizeInMs)       //stream of unaggregated event buckets
-                .flatMap(reduceBucketToSingleCountArray) //stream of bucket sums
-                .startWith(emptyEventCountsToStart)      //stream of bucket sums that starts with n empty
-                .window(numBuckets, 1)                   //stream of n-bucket streams
-                .flatMap(eventBucketAccumulator)         //reduce each window of buckets to a sum of event types
-                .subscribe(healthCountsSubject);         //sink this sum into the health counts subject
+        healthCountsStream.unsubscribe();
+        healthCountsStream = HealthCountsStream.from(commandEventStream, properties);
     }
 
     /**
@@ -388,19 +214,11 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     }
 
     public long getRollingCount(HystrixEventType eventType) {
-        if (rollingCounter.hasValue()) {
-            return rollingCounter.getValue()[eventType.ordinal()];
-        } else {
-            return 0;
-        }
+        return rollingCommandEventCounterStream.getLatest(eventType);
     }
 
     public long getCumulativeCount(HystrixEventType eventType) {
-        if (cumulativeCounter.hasValue()) {
-            return cumulativeCounter.getValue()[eventType.ordinal()];
-        } else {
-            return 0;
-        }
+        return cumulativeCommandEventCounterStream.getLatest(eventType);
     }
 
     @Override
@@ -423,11 +241,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      * @return int time in milliseconds
      */
     public int getExecutionTimePercentile(double percentile) {
-        if (rollingLatencyDistribution.hasValue()) {
-            return (int) rollingLatencyDistribution.getValue().getExecutionLatencyPercentile(percentile);
-        } else {
-            return 0;
-        }
+        return rollingCommandLatencyStream.getExecutionLatencyPercentile(percentile);
     }
 
     /**
@@ -438,11 +252,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      * @return int time in milliseconds
      */
     public int getExecutionTimeMean() {
-        if (rollingLatencyDistribution.hasValue()) {
-            return (int) rollingLatencyDistribution.getValue().getExecutionLatencyMean();
-        } else {
-            return 0;
-        }
+        return rollingCommandLatencyStream.getExecutionLatencyMean();
     }
 
     /**
@@ -467,12 +277,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      * @return int time in milliseconds
      */
     public int getTotalTimePercentile(double percentile) {
-        if (rollingLatencyDistribution.hasValue()) {
-            return (int) rollingLatencyDistribution.getValue().getTotalLatencyPercentile(percentile);
-        } else {
-            return 0;
-        }
-        //return percentileTotal.getPercentile(percentile);
+        return rollingCommandLatencyStream.getTotalLatencyPercentile(percentile);
     }
 
     /**
@@ -483,17 +288,11 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      * @return int time in milliseconds
      */
     public int getTotalTimeMean() {
-        if (rollingLatencyDistribution.hasValue()) {
-            return (int) rollingLatencyDistribution.getValue().getTotalLatencyMean();
-        } else {
-            return 0;
-        }
+        return rollingCommandLatencyStream.getTotalLatencyMean();
     }
 
     public long getRollingMaxConcurrentExecutions() {
-        //TODO This should get fixed, either by adding a metric stream that can produce this value, or by
-        //changing the problem into getting the whole distribution via sampling (not just the max as in this method)
-        return 0;
+        return rollingCommandConcurrencyStream.getRollingMax();
     }
 
     /**
@@ -510,7 +309,6 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      */
     /* package */void incrementConcurrentExecutionCount() {
         int numConcurrent = concurrentExecutionCount.incrementAndGet();
-        //counter.updateRollingMax(HystrixRollingNumberEvent.COMMAND_MAX_ACTIVE, (long) numConcurrent);
     }
 
     /**
@@ -520,8 +318,16 @@ public class HystrixCommandMetrics extends HystrixMetrics {
         concurrentExecutionCount.decrementAndGet();
     }
 
+    /* package-private*/ void markCommandStart(HystrixInvokableInfo<?> commandInstance) {
+        HystrixThreadEventStream.getInstance().commandStart(commandInstance);
+    }
+
+    /* package-private*/ void markResponseFromCache(HystrixInvokableInfo<?> commandInstance) {
+        HystrixThreadEventStream.getInstance().commandResponseFromCache(commandInstance);
+    }
+
     /* package-private */ void markCommandCompletion(HystrixInvokableInfo<?> commandInstance, AbstractCommand.ExecutionResult executionResult) {
-        HystrixThreadEventStream.getInstance().write(commandInstance, executionResult.getEventCounts(), executionResult.getExecutionLatency(), executionResult.getUserThreadLatency());
+        HystrixThreadEventStream.getInstance().commandEnd(commandInstance, executionResult.getEventCounts(), executionResult.getExecutionLatency(), executionResult.getUserThreadLatency());
     }
 
     /**
@@ -547,30 +353,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      * @return {@link HealthCounts}
      */
     public HealthCounts getHealthCounts() {
-        // we put an interval between snapshots so high-volume commands don't
-        // spend too much unnecessary time calculating metrics in very small time periods
-        long lastTime = lastHealthCountsSnapshot.get();
-        long currentTime = System.currentTimeMillis();
-        if (currentTime - lastTime >= properties.metricsHealthSnapshotIntervalInMilliseconds().get() || healthCountsSnapshot == null) {
-            if (lastHealthCountsSnapshot.compareAndSet(lastTime, currentTime)) {
-                // our thread won setting the snapshot time so we will proceed with generating a new snapshot
-                // losing threads will continue using the old snapshot
-                long success = counter.getRollingSum(HystrixRollingNumberEvent.SUCCESS);
-                long failure = counter.getRollingSum(HystrixRollingNumberEvent.FAILURE); // fallbacks occur on this
-                long timeout = counter.getRollingSum(HystrixRollingNumberEvent.TIMEOUT); // fallbacks occur on this
-                long threadPoolRejected = counter.getRollingSum(HystrixRollingNumberEvent.THREAD_POOL_REJECTED); // fallbacks occur on this
-                long semaphoreRejected = counter.getRollingSum(HystrixRollingNumberEvent.SEMAPHORE_REJECTED); // fallbacks occur on this
-                long totalCount = failure + success + timeout + threadPoolRejected + semaphoreRejected;
-                long errorCount = failure + timeout + threadPoolRejected + semaphoreRejected;
-                int errorPercentage = 0;
-
-                if (totalCount > 0) {
-                    errorPercentage = (int) ((double) errorCount / totalCount * 100);
-                }
-
-                healthCountsSnapshot = new HealthCounts(totalCount, errorCount, errorPercentage);
-            }
-        }
+        return healthCountsStream.getLatest();
     }
 
     /**

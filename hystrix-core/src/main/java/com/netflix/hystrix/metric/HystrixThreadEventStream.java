@@ -22,6 +22,7 @@ import com.netflix.hystrix.HystrixInvokableInfo;
 import com.netflix.hystrix.HystrixThreadPool;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import rx.Observable;
+import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 import rx.subjects.PublishSubject;
 import rx.subjects.Subject;
@@ -45,7 +46,7 @@ import rx.subjects.Subject;
 public class HystrixThreadEventStream {
     private final long threadId;
     private final String threadName;
-    private final Subject<HystrixCommandExecution, HystrixCommandExecution> subject;
+    private final Subject<HystrixCommandEvent, HystrixCommandEvent> subject;
 
     private static final ThreadLocal<HystrixThreadEventStream> threadLocalStreams = new ThreadLocal<HystrixThreadEventStream>() {
         @Override
@@ -53,6 +54,17 @@ public class HystrixThreadEventStream {
             HystrixThreadEventStream newThreadEventStream = new HystrixThreadEventStream(Thread.currentThread());
             HystrixGlobalEventStream.registerThreadStream(newThreadEventStream);
             return newThreadEventStream;
+        }
+    };
+
+    private static final Func1<HystrixCommandEvent, Boolean> filterCommandCompletions = new Func1<HystrixCommandEvent, Boolean>() {
+        @Override
+        public Boolean call(HystrixCommandEvent commandEvent) {
+            switch (commandEvent.executionState()) {
+                case RESPONSE_FROM_CACHE: return true;
+                case END: return true;
+                default: return false;
+            }
         }
     };
 
@@ -66,13 +78,25 @@ public class HystrixThreadEventStream {
         return threadLocalStreams.get();
     }
 
-    public void write(HystrixInvokableInfo<?> commandInstance, long[] eventTypeCounts, long executionLatency, long totalLatency) {
+    public void commandStart(HystrixInvokableInfo<?> commandInstance) {
+        subject.onNext(new HystrixCommandStart(commandInstance));
+    }
+
+    public void commandResponseFromCache(HystrixInvokableInfo<?> commandInstance) {
+        subject.onNext(HystrixCommandResponseFromCache.from(commandInstance, HystrixRequestContext.getContextForCurrentThread()));
+    }
+
+    public void commandEnd(HystrixInvokableInfo<?> commandInstance, long[] eventTypeCounts, long executionLatency, long totalLatency) {
         HystrixCommandExecution event = HystrixCommandExecution.from(commandInstance, eventTypeCounts, HystrixRequestContext.getContextForCurrentThread(), executionLatency, totalLatency);
         subject.onNext(event);
     }
 
-    public Observable<HystrixCommandExecution> observe() {
+    public Observable<HystrixCommandEvent> observe() {
         return subject.onBackpressureBuffer().observeOn(Schedulers.computation());
+    }
+
+    public Observable observeCommandCompletions() {
+        return subject.onBackpressureBuffer().filter(filterCommandCompletions).cast(HystrixCommandCompletion.class).observeOn(Schedulers.computation());
     }
 
     public void shutdown() {
@@ -82,17 +106,5 @@ public class HystrixThreadEventStream {
     @Override
     public String toString() {
         return "HystrixThreadEventStream (" + threadId + " - " + threadName + ")";
-    }
-
-    private static String bucketToString(long[] bucket) {
-        StringBuffer bucketStr = new StringBuffer();
-        bucketStr.append("BUCKET(");
-        for (HystrixEventType eventType: HystrixEventType.values()) {
-            if (bucket[eventType.ordinal()] > 0) {
-                bucketStr.append(eventType.name()).append(" -> ").append(bucket[eventType.ordinal()]).append(", ");
-            }
-        }
-        bucketStr.append(")");
-        return bucketStr.toString();
     }
 }

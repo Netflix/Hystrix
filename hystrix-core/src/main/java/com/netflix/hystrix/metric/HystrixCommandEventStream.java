@@ -17,6 +17,7 @@ package com.netflix.hystrix.metric;
 
 import com.netflix.hystrix.HystrixCommandKey;
 import rx.Observable;
+import rx.Subscription;
 import rx.functions.Func1;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,7 +32,7 @@ import java.util.concurrent.TimeUnit;
  * Note that {@link HystrixThreadEventStream} emits on an RxComputation thread, so all consumption is async.
  */
 public class HystrixCommandEventStream {
-    private final Func1<HystrixCommandExecution, Boolean> filterFunc;
+    private final Func1<HystrixCommandEvent, Boolean> filterByCommandKey;
 
     private static final ConcurrentMap<String, HystrixCommandEventStream> streams = new ConcurrentHashMap<String, HystrixCommandEventStream>();
 
@@ -54,10 +55,10 @@ public class HystrixCommandEventStream {
     }
 
     HystrixCommandEventStream(final HystrixCommandKey commandKey) {
-        this.filterFunc = new Func1<HystrixCommandExecution, Boolean>() {
+        this.filterByCommandKey = new Func1<HystrixCommandEvent, Boolean>() {
             @Override
-            public Boolean call(HystrixCommandExecution hystrixCommandExecution) {
-                return hystrixCommandExecution.getCommandKey().equals(commandKey);
+            public Boolean call(HystrixCommandEvent commandEvent) {
+                return commandEvent.getCommandKey().equals(commandKey);
             }
         };
     }
@@ -66,11 +67,19 @@ public class HystrixCommandEventStream {
         streams.clear();
     }
 
-    public Observable<HystrixCommandExecution> observe() {
-        return HystrixGlobalEventStream.getInstance().observe().filter(filterFunc);
+    public Observable<HystrixCommandEvent> observe() {
+        return HystrixGlobalEventStream.getInstance().observe().filter(filterByCommandKey);
     }
 
-    public Observable<Observable<HystrixCommandExecution>> getBucketedStream(int bucketSizeInMs) {
+    public Observable<HystrixCommandCompletion> observeCommandCompletions() {
+        return HystrixGlobalEventStream.getInstance().observeCommandCompletions().filter(filterByCommandKey);
+    }
+
+    public Observable<Observable<HystrixCommandEvent>> getBucketedStream(int bucketSizeInMs) {
         return observe().window(bucketSizeInMs, TimeUnit.MILLISECONDS);
+    }
+
+    public Observable<Observable<HystrixCommandCompletion>> getBucketedStreamOfCommandCompletions(int bucketSizeInMs) {
+        return observeCommandCompletions().window(bucketSizeInMs, TimeUnit.MILLISECONDS);
     }
 }

@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
  * Note that {@link HystrixThreadEventStream} emits on an RxComputation thread, so all consumption is async.
  */
 public class HystrixThreadPoolEventStream {
-    private final Func1<HystrixCommandExecution, Boolean> filterFunc;
+    private final Func1<HystrixCommandEvent, Boolean> filterByThreadPoolKey;
 
     private static final ConcurrentMap<String, HystrixThreadPoolEventStream> streams = new ConcurrentHashMap<String, HystrixThreadPoolEventStream>();
 
@@ -54,11 +54,11 @@ public class HystrixThreadPoolEventStream {
     }
 
     HystrixThreadPoolEventStream(final HystrixThreadPoolKey threadPoolKey) {
-        this.filterFunc = new Func1<HystrixCommandExecution, Boolean>() {
+        this.filterByThreadPoolKey = new Func1<HystrixCommandEvent, Boolean>() {
             @Override
-            public Boolean call(HystrixCommandExecution hystrixCommandExecution) {
-                if (hystrixCommandExecution.getCommandInstance().isExecutedInThread() || hystrixCommandExecution.getCommandInstance().isResponseThreadPoolRejected()) {
-                    HystrixThreadPoolKey executionThreadPoolKey = hystrixCommandExecution.getThreadPoolKey();
+            public Boolean call(HystrixCommandEvent commandEvent) {
+                if (commandEvent.getCommandInstance().isExecutedInThread() || commandEvent.getCommandInstance().isResponseThreadPoolRejected()) {
+                    HystrixThreadPoolKey executionThreadPoolKey = commandEvent.getThreadPoolKey();
                     if (executionThreadPoolKey != null) {
                         return executionThreadPoolKey.equals(threadPoolKey);
                     } else {
@@ -75,11 +75,15 @@ public class HystrixThreadPoolEventStream {
         streams.clear();
     }
 
-    public Observable<HystrixCommandExecution> observe() {
-        return HystrixGlobalEventStream.getInstance().observe().filter(filterFunc);
+    public Observable<HystrixCommandEvent> observe() {
+        return HystrixGlobalEventStream.getInstance().observe().filter(filterByThreadPoolKey);
     }
 
-    public Observable<Observable<HystrixCommandExecution>> getBucketedStream(int bucketSizeInMs) {
-        return observe().window(bucketSizeInMs, TimeUnit.MILLISECONDS);
+    public Observable<HystrixCommandCompletion> observeCommandCompletions() {
+        return HystrixGlobalEventStream.getInstance().observeCommandCompletions().filter(filterByThreadPoolKey);
+    }
+
+    public Observable<Observable<HystrixCommandCompletion>> getBucketedStreamOfCommandCompletions(int bucketSizeInMs) {
+        return observeCommandCompletions().window(bucketSizeInMs, TimeUnit.MILLISECONDS);
     }
 }

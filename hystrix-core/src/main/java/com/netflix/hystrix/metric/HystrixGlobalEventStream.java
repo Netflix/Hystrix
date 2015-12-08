@@ -17,6 +17,7 @@ package com.netflix.hystrix.metric;
 
 import rx.Observable;
 import rx.functions.Action1;
+import rx.functions.Func1;
 import rx.observers.Subscribers;
 import rx.subjects.PublishSubject;
 import rx.subjects.SerializedSubject;
@@ -26,12 +27,24 @@ import rx.subjects.SerializedSubject;
  * and writes to the serialized subject this object wraps.
  */
 public class HystrixGlobalEventStream {
-    private static final SerializedSubject<HystrixCommandExecution, HystrixCommandExecution> globalStream = new SerializedSubject<HystrixCommandExecution, HystrixCommandExecution>(PublishSubject.<HystrixCommandExecution>create());
+    private static final SerializedSubject<HystrixCommandEvent, HystrixCommandEvent> globalStream =
+            new SerializedSubject<HystrixCommandEvent, HystrixCommandEvent>(PublishSubject.<HystrixCommandEvent>create());
 
-    private static final Action1<HystrixCommandExecution> writeToGlobalStream = new Action1<HystrixCommandExecution>() {
+    private static final Action1<HystrixCommandEvent> writeToGlobalStream = new Action1<HystrixCommandEvent>() {
         @Override
-        public void call(HystrixCommandExecution hystrixCommandExecution) {
-            globalStream.onNext(hystrixCommandExecution);
+        public void call(HystrixCommandEvent commandEvent) {
+            globalStream.onNext(commandEvent);
+        }
+    };
+
+    private static final Func1<HystrixCommandEvent, Boolean> filterCommandCompletions = new Func1<HystrixCommandEvent, Boolean>() {
+        @Override
+        public Boolean call(HystrixCommandEvent commandEvent) {
+            switch (commandEvent.executionState()) {
+                case RESPONSE_FROM_CACHE: return true;
+                case END: return true;
+                default: return false;
+            }
         }
     };
 
@@ -45,8 +58,12 @@ public class HystrixGlobalEventStream {
         globalStream.onCompleted();
     }
 
-    public Observable<HystrixCommandExecution> observe() {
+    public Observable<HystrixCommandEvent> observe() {
         return globalStream;
+    }
+
+    public Observable<HystrixCommandCompletion> observeCommandCompletions() {
+        return globalStream.filter(filterCommandCompletions).cast(HystrixCommandCompletion.class);
     }
 
     public static void registerThreadStream(HystrixThreadEventStream threadEventStream) {
