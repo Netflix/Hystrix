@@ -34,7 +34,6 @@ import rx.Subscription;
 import rx.functions.Func1;
 import rx.functions.Func2;
 import rx.subjects.BehaviorSubject;
-import rx.subjects.Subject;
 
 /**
  * Used by {@link HystrixThreadPool} to record metrics.
@@ -156,11 +155,11 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
 
     private Subscription cumulativeCounterSubscription;
     //2 possibilities: accepted/rejected
-    private final Subject<long[], long[]> cumulativeCounter = BehaviorSubject.create(new long[2]);
+    private final BehaviorSubject<long[]> cumulativeCounter = BehaviorSubject.create(new long[2]);
 
     private Subscription rollingCounterSubscription;
     //2 possibilities: accepted/rejected
-    private final Subject<long[], long[]> rollingCounter = BehaviorSubject.create(new long[2]);
+    private final BehaviorSubject<long[]> rollingCounter = BehaviorSubject.create(new long[2]);
 
     private HystrixThreadPoolMetrics(HystrixThreadPoolKey threadPoolKey, ThreadPoolExecutor threadPool, HystrixThreadPoolProperties properties) {
         super(null);

@@ -17,7 +17,6 @@
 package com.netflix.hystrix.metric;
 
 import com.netflix.hystrix.HystrixCommandProperties;
-import com.netflix.hystrix.HystrixEventType;
 import rx.Observable;
 import rx.Subscription;
 import rx.functions.Action1;
@@ -25,7 +24,6 @@ import rx.functions.Func1;
 import rx.functions.Func2;
 import rx.schedulers.Schedulers;
 import rx.subjects.BehaviorSubject;
-import rx.subjects.Subject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -48,7 +46,7 @@ import java.util.List;
  */
 public class RollingCommandLatencyStream {
     private Subscription rollingLatencySubscription;
-    private final Subject<HystrixLatencyDistribution, HystrixLatencyDistribution> rollingLatencyDistribution =
+    private final BehaviorSubject<HystrixLatencyDistribution> rollingLatencyDistribution =
             BehaviorSubject.create(HystrixLatencyDistribution.empty());
 
     private static final Func2<HystrixLatencyDistribution, HystrixCommandCompletion, HystrixLatencyDistribution> aggregateEventLatencies = new Func2<HystrixLatencyDistribution, HystrixCommandCompletion, HystrixLatencyDistribution>() {
