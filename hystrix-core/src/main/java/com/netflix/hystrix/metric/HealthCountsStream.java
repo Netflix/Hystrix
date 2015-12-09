@@ -23,7 +23,6 @@ import rx.Subscription;
 import rx.functions.Func1;
 import rx.functions.Func2;
 import rx.subjects.BehaviorSubject;
-import rx.subjects.Subject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,7 +41,7 @@ import java.util.List;
  */
 public class HealthCountsStream extends CommandEventCounterStream {
     private Subscription healthCountsSubscription;
-    private final Subject<HystrixCommandMetrics.HealthCounts, HystrixCommandMetrics.HealthCounts> healthCountsSubject =
+    private final BehaviorSubject<HystrixCommandMetrics.HealthCounts> healthCountsSubject =
             BehaviorSubject.create(HystrixCommandMetrics.HealthCounts.empty());
 
     private static final Func2<HystrixCommandMetrics.HealthCounts, long[], HystrixCommandMetrics.HealthCounts> healthCheckAccumulator = new Func2<HystrixCommandMetrics.HealthCounts, long[], HystrixCommandMetrics.HealthCounts>() {
