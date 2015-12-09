@@ -21,7 +21,6 @@ import rx.Subscription;
 import rx.functions.Func1;
 import rx.functions.Func2;
 import rx.subjects.BehaviorSubject;
-import rx.subjects.Subject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,7 +51,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class RollingCommandConcurrencyStream {
     private Subscription rollingMaxSubscription;
-    private final Subject<Integer, Integer> rollingMax = BehaviorSubject.create(0);
+    private final BehaviorSubject<Integer> rollingMax = BehaviorSubject.create(0);
 
     private static final Func2<Integer, HystrixCommandEvent, Integer> scanConcurrencyCount = new Func2<Integer, HystrixCommandEvent, Integer>() {
         @Override

@@ -20,7 +20,6 @@ import com.netflix.hystrix.HystrixEventType;
 import rx.Observable;
 import rx.Subscription;
 import rx.subjects.BehaviorSubject;
-import rx.subjects.Subject;
 
 /**
  * Maintains a stream of event counters for a given Command.
@@ -38,7 +37,7 @@ import rx.subjects.Subject;
  */
 public class CumulativeCommandEventCounterStream extends CommandEventCounterStream {
     private Subscription cumulativeCounterSubscription;
-    private final Subject<long[], long[]> cumulativeCounter = BehaviorSubject.create(new long[HystrixEventType.values().length]);
+    private final BehaviorSubject<long[]> cumulativeCounter = BehaviorSubject.create(new long[HystrixEventType.values().length]);
 
     public static CumulativeCommandEventCounterStream from(HystrixCommandEventStream commandEventStream, HystrixCommandProperties properties) {
         final int counterMetricWindow = properties.metricsRollingStatisticalWindowInMilliseconds().get();
