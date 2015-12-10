@@ -17,9 +17,7 @@ package com.netflix.hystrix.metric;
 
 import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.HystrixEventType;
-import rx.Observable;
-import rx.Subscription;
-import rx.subjects.BehaviorSubject;
+import rx.functions.Func2;
 
 /**
  * Maintains a stream of event counters for a given Command.
@@ -35,37 +33,38 @@ import rx.subjects.BehaviorSubject;
  *
  * These values get produced and cached in this class.  This value (the latest observed value) may be queried using {@link #getLatest(HystrixEventType)}.
  */
-public class CumulativeCommandEventCounterStream extends CommandEventCounterStream {
-    private Subscription cumulativeCounterSubscription;
-    private final BehaviorSubject<long[]> cumulativeCounter = BehaviorSubject.create(new long[HystrixEventType.values().length]);
+public class CumulativeCommandEventCounterStream extends BucketedCumulativeCounterStream<long[], long[]> {
 
-    public static CumulativeCommandEventCounterStream from(HystrixCommandEventStream commandEventStream, HystrixCommandProperties properties) {
+    public static CumulativeCommandEventCounterStream from(HystrixCommandEventStream commandEventStream, HystrixCommandProperties properties,
+                                                           Func2<long[], HystrixCommandCompletion, long[]> reduceCommandCompletion,
+                                                           Func2<long[], long[], long[]> reduceBucket) {
         final int counterMetricWindow = properties.metricsRollingStatisticalWindowInMilliseconds().get();
         final int numCounterBuckets = properties.metricsRollingStatisticalWindowBuckets().get();
         final int counterBucketSizeInMs = counterMetricWindow / numCounterBuckets;
 
-        return new CumulativeCommandEventCounterStream(commandEventStream, numCounterBuckets, counterBucketSizeInMs);
+        CumulativeCommandEventCounterStream cumulativeCommandEventCounterStream =
+                new CumulativeCommandEventCounterStream(commandEventStream, numCounterBuckets, counterBucketSizeInMs, reduceCommandCompletion, reduceBucket);
+        cumulativeCommandEventCounterStream.start();
+        return cumulativeCommandEventCounterStream;
     }
 
-    private CumulativeCommandEventCounterStream(HystrixCommandEventStream commandEventStream, int numCounterBuckets, int counterBucketSizeInMs) {
-        super(commandEventStream, numCounterBuckets, counterBucketSizeInMs);
-
-        Observable<long[]> cumulativeCounterStream = bucketedCounterMetrics
-                .scan(new long[HystrixEventType.values().length], counterAggregator); //take the bucket accumulations and produce a cumulative sum every time a bucket is emitted
-
-        cumulativeCounterSubscription = cumulativeCounterStream.subscribe(cumulativeCounter);
+    private CumulativeCommandEventCounterStream(HystrixCommandEventStream commandEventStream, int numCounterBuckets, int counterBucketSizeInMs,
+                                                Func2<long[], HystrixCommandCompletion, long[]> reduceCommandCompletion,
+                                                Func2<long[], long[], long[]> reduceBucket) {
+        super(commandEventStream, numCounterBuckets, counterBucketSizeInMs, reduceCommandCompletion, reduceBucket);
     }
 
     @Override
-    public void unsubscribe() {
-        cumulativeCounterSubscription.unsubscribe();
+    long[] getEmptyBucketSummary() {
+        return new long[HystrixEventType.values().length];
+    }
+
+    @Override
+    long[] getEmptyEmitValue() {
+        return new long[HystrixEventType.values().length];
     }
 
     public long getLatest(HystrixEventType eventType) {
-        if (cumulativeCounter.hasValue()) {
-            return cumulativeCounter.getValue()[eventType.ordinal()];
-        } else {
-            return 0L;
-        }
+        return getLatest()[eventType.ordinal()];
     }
 }

@@ -19,6 +19,7 @@ import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.HystrixEventType;
 import rx.Observable;
 import rx.Subscription;
+import rx.functions.Func2;
 import rx.subjects.BehaviorSubject;
 
 /**
@@ -33,38 +34,38 @@ import rx.subjects.BehaviorSubject;
  *
  * These values get produced and cached in this class.  This value (the latest observed value) may be queried using {@link #getLatest(HystrixEventType)}.
  */
-public class RollingCommandEventCounterStream extends CommandEventCounterStream {
-    private Subscription rollingCounterSubscription;
-    private final BehaviorSubject<long[]> rollingCounter = BehaviorSubject.create(new long[HystrixEventType.values().length]);
+public class RollingCommandEventCounterStream extends BucketedRollingCounterStream<long[], long[]> {
 
-    public RollingCommandEventCounterStream(HystrixCommandEventStream commandEventStream, int numCounterBuckets, int counterBucketSizeInMs) {
-        super(commandEventStream, numCounterBuckets, counterBucketSizeInMs);
-
-        Observable<long[]> rollingCounterStream = bucketedCounterMetrics
-                .window(numCounterBuckets, 1)      //take the bucket accumulations and window them to only look at n-at-a-time
-                .flatMap(reduceWindowToSingleSum); //for those n buckets, emit a rolling sum of them on every bucket emission
-
-        rollingCounterSubscription = rollingCounterStream.subscribe(rollingCounter);
-    }
-
-    @Override
-    public void unsubscribe() {
-        rollingCounterSubscription.unsubscribe();
-    }
-
-    public long getLatest(HystrixEventType eventType) {
-        if (rollingCounter.hasValue()) {
-            return rollingCounter.getValue()[eventType.ordinal()];
-        } else {
-            return 0L;
-        }
-    }
-
-    public static RollingCommandEventCounterStream from(HystrixCommandEventStream commandEventStream, HystrixCommandProperties properties) {
+    public static RollingCommandEventCounterStream from(HystrixCommandEventStream commandEventStream, HystrixCommandProperties properties,
+                                                        Func2<long[], HystrixCommandCompletion, long[]> reduceCommandCompletion,
+                                                        Func2<long[], long[], long[]> reduceBucket) {
         final int counterMetricWindow = properties.metricsRollingStatisticalWindowInMilliseconds().get();
         final int numCounterBuckets = properties.metricsRollingStatisticalWindowBuckets().get();
         final int counterBucketSizeInMs = counterMetricWindow / numCounterBuckets;
 
-        return new RollingCommandEventCounterStream(commandEventStream, numCounterBuckets, counterBucketSizeInMs);
+        RollingCommandEventCounterStream rollingCommandEventCounterStream =
+                new RollingCommandEventCounterStream(commandEventStream, numCounterBuckets, counterBucketSizeInMs, reduceCommandCompletion, reduceBucket);
+        rollingCommandEventCounterStream.start();
+        return rollingCommandEventCounterStream;
+    }
+
+    private RollingCommandEventCounterStream(HystrixCommandEventStream commandEventStream, int numCounterBuckets, int counterBucketSizeInMs,
+                                             Func2<long[], HystrixCommandCompletion, long[]> reduceCommandCompletion,
+                                             Func2<long[], long[], long[]> reduceBucket) {
+        super(commandEventStream, numCounterBuckets, counterBucketSizeInMs, reduceCommandCompletion, reduceBucket);
+    }
+
+    @Override
+    long[] getEmptyBucketSummary() {
+        return new long[HystrixEventType.values().length];
+    }
+
+    @Override
+    long[] getEmptyEmitValue() {
+        return new long[HystrixEventType.values().length];
+    }
+
+    public long getLatest(HystrixEventType eventType) {
+        return getLatest()[eventType.ordinal()];
     }
 }

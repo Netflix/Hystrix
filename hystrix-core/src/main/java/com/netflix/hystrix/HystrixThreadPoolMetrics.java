@@ -15,25 +15,21 @@
  */
 package com.netflix.hystrix;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadPoolExecutor;
 
+import com.netflix.hystrix.metric.CumulativeThreadPoolEventCounterStream;
 import com.netflix.hystrix.metric.HystrixCommandCompletion;
 import com.netflix.hystrix.metric.HystrixThreadPoolEventStream;
+import com.netflix.hystrix.metric.RollingThreadPoolEventCounterStream;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import rx.Observable;
-import rx.Subscription;
-import rx.functions.Func1;
 import rx.functions.Func2;
-import rx.subjects.BehaviorSubject;
 
 /**
  * Used by {@link HystrixThreadPool} to record metrics.
@@ -98,16 +94,6 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
         return Collections.unmodifiableCollection(metrics.values());
     }
 
-    private static final Func2<long[], long[], long[]> counterAggregator = new Func2<long[], long[], long[]>() {
-        @Override
-        public long[] call(long[] cumulativeEvents, long[] bucketEventCounts) {
-            for (int i = 0; i < 2; i++) {
-                cumulativeEvents[i] += bucketEventCounts[i];
-            }
-            return cumulativeEvents;
-        }
-    };
-
     private static final Func2<long[], HystrixCommandCompletion, long[]> aggregateEventCounts = new Func2<long[], HystrixCommandCompletion, long[]>() {
         @Override
         public long[] call(long[] initialCountArray, HystrixCommandCompletion execution) {
@@ -125,8 +111,8 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
                     case FAILURE:
                     case TIMEOUT:
                     case BAD_REQUEST:
-                    // SEMAPHORE_REJECTED can't happen
-                    // SHORT_CIRCUITED implies the failure happened before the attempt to put work on the threadpool
+                        // SEMAPHORE_REJECTED can't happen
+                        // SHORT_CIRCUITED implies the failure happened before the attempt to put work on the threadpool
                         initialCountArray[0] += eventCount;
                 }
             }
@@ -134,10 +120,13 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
         }
     };
 
-    private static final Func1<Observable<HystrixCommandCompletion>, Observable<long[]>> reduceBucketToSingleCountArray = new Func1<Observable<HystrixCommandCompletion>, Observable<long[]>>() {
+    private static final Func2<long[], long[], long[]> counterAggregator = new Func2<long[], long[], long[]>() {
         @Override
-        public Observable<long[]> call(Observable<HystrixCommandCompletion> windowOfExecutions) {
-            return windowOfExecutions.reduce(new long[2], aggregateEventCounts);
+        public long[] call(long[] cumulativeEvents, long[] bucketEventCounts) {
+            for (int i = 0; i < 2; i++) {
+                cumulativeEvents[i] += bucketEventCounts[i];
+            }
+            return cumulativeEvents;
         }
     };
 
@@ -153,13 +142,8 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
     private final ThreadPoolExecutor threadPool;
     private final HystrixThreadPoolProperties properties;
 
-    private Subscription cumulativeCounterSubscription;
-    //2 possibilities: accepted/rejected
-    private final BehaviorSubject<long[]> cumulativeCounter = BehaviorSubject.create(new long[2]);
-
-    private Subscription rollingCounterSubscription;
-    //2 possibilities: accepted/rejected
-    private final BehaviorSubject<long[]> rollingCounter = BehaviorSubject.create(new long[2]);
+    private final RollingThreadPoolEventCounterStream rollingCounterStream;
+    private final CumulativeThreadPoolEventCounterStream cumulativeCounterStream;
 
     private HystrixThreadPoolMetrics(HystrixThreadPoolKey threadPoolKey, ThreadPoolExecutor threadPool, HystrixThreadPoolProperties properties) {
         super(null);
@@ -171,32 +155,9 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
         final int numCounterBuckets = properties.metricsRollingStatisticalWindowBuckets().get();
         final int counterBucketSizeInMs = counterMetricWindow / numCounterBuckets;
 
-        final Func1<Observable<long[]>, Observable<long[]>> reduceWindowToSingleSum = new Func1<Observable<long[]>, Observable<long[]>>() {
-            @Override
-            public Observable<long[]> call(Observable<long[]> window) {
-                return window.scan(new long[HystrixEventType.values().length], counterAggregator).skip(numCounterBuckets);
-            }
-        };
-
-        final List<long[]> emptyEventCountsToStart = new ArrayList<long[]>();
-        for (int i = 0; i < numCounterBuckets; i++) {
-            emptyEventCountsToStart.add(new long[HystrixEventType.values().length]);
-        }
-
-        Observable<long[]> bucketedCounterMetrics =
-                HystrixThreadPoolEventStream.getInstance(threadPoolKey)               //get the event stream for the threadpool we're interested in
-                        .getBucketedStreamOfCommandCompletions(counterBucketSizeInMs) //bucket it by the counter window so we can emit to the next operator in time chunks, not on every OnNext
-                        .flatMap(reduceBucketToSingleCountArray)                      //for a given bucket, turn it into a long array containing counts of event types
-                        .startWith(emptyEventCountsToStart);                          //start it with empty arrays to make consumer logic as generic as possible (windows are always full)
-
-        cumulativeCounterSubscription = bucketedCounterMetrics
-                .scan(new long[2], counterAggregator) //take the bucket accumulations and produce a cumulative sum every time a bucket is emitted
-                .subscribe(cumulativeCounter);        //sink this value into the cumulative counter
-
-        rollingCounterSubscription = bucketedCounterMetrics
-                .window(numCounterBuckets, 1)     //take the bucket accumulations and window them to only look at n-at-a-time
-                .flatMap(reduceWindowToSingleSum) //for those n buckets, emit a rolling sum of them on every bucket emission
-                .subscribe(rollingCounter);       //sink this value into the rolling counter
+        final HystrixThreadPoolEventStream threadPoolStream = HystrixThreadPoolEventStream.getInstance(threadPoolKey);
+        rollingCounterStream = RollingThreadPoolEventCounterStream.from(threadPoolStream, properties, aggregateEventCounts, counterAggregator);
+        cumulativeCounterStream = CumulativeThreadPoolEventCounterStream.from(threadPoolStream, properties, aggregateEventCounts, counterAggregator);
     }
 
     /**
@@ -312,11 +273,7 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
      * @return rolling count of threads executed
      */
     public long getRollingCountThreadsExecuted() {
-        if (rollingCounter.hasValue()) {
-            return rollingCounter.getValue()[0];
-        } else {
-            return 0L;
-        }
+        return rollingCounterStream.getLatestExecutedCount();
     }
 
     /**
@@ -325,11 +282,7 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
      * @return cumulative count of threads executed
      */
     public long getCumulativeCountThreadsExecuted() {
-        if (cumulativeCounter.hasValue()) {
-            return cumulativeCounter.getValue()[0];
-        } else {
-            return 0L;
-        }
+        return cumulativeCounterStream.getLatestExecutedCount();
     }
 
     /**
@@ -340,11 +293,7 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
      * @return rolling count of threads rejected
      */
     public long getRollingCountThreadsRejected() {
-        if (rollingCounter.hasValue()) {
-            return rollingCounter.getValue()[1];
-        } else {
-            return 0L;
-        }
+        return rollingCounterStream.getLatestRejectedCount();
     }
 
     /**
@@ -353,11 +302,7 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
      * @return cumulative count of threads rejected
      */
     public long getCumulativeCountThreadsRejected() {
-        if (cumulativeCounter.hasValue()) {
-            return cumulativeCounter.getValue()[1];
-        } else {
-            return 0L;
-        }
+        return cumulativeCounterStream.getLatestRejectedCount();
     }
 
     @Override
