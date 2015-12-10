@@ -18,14 +18,7 @@ package com.netflix.hystrix.metric;
 import com.netflix.hystrix.HystrixCommandMetrics;
 import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.HystrixEventType;
-import rx.Observable;
-import rx.Subscription;
-import rx.functions.Func1;
 import rx.functions.Func2;
-import rx.subjects.BehaviorSubject;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Maintains a stream of rolling health counts for a given Command.
@@ -39,10 +32,7 @@ import java.util.List;
  *
  * These values get produced and cached in this class.  This value (the latest observed value) may be queried using {@link #getLatest()}.
  */
-public class HealthCountsStream extends CommandEventCounterStream {
-    private Subscription healthCountsSubscription;
-    private final BehaviorSubject<HystrixCommandMetrics.HealthCounts> healthCountsSubject =
-            BehaviorSubject.create(HystrixCommandMetrics.HealthCounts.empty());
+public class HealthCountsStream extends BucketedRollingCounterStream<long[], HystrixCommandMetrics.HealthCounts> {
 
     private static final Func2<HystrixCommandMetrics.HealthCounts, long[], HystrixCommandMetrics.HealthCounts> healthCheckAccumulator = new Func2<HystrixCommandMetrics.HealthCounts, long[], HystrixCommandMetrics.HealthCounts>() {
         @Override
@@ -51,52 +41,30 @@ public class HealthCountsStream extends CommandEventCounterStream {
         }
     };
 
-    public static HealthCountsStream from(HystrixCommandEventStream commandEventStream, HystrixCommandProperties properties) {
+    public static HealthCountsStream from(HystrixCommandEventStream commandEventStream, HystrixCommandProperties properties,
+                                          Func2<long[], HystrixCommandCompletion, long[]> reduceCommandCompletion) {
         final int healthCountBucketSizeInMs = properties.metricsHealthSnapshotIntervalInMilliseconds().get();
         if (healthCountBucketSizeInMs == 0) {
             throw new RuntimeException("You have set the bucket size to 0ms.  Please set a positive number, so that the metric stream can be properly consumed");
         }
         final int numHealthCountBuckets = properties.metricsRollingStatisticalWindowInMilliseconds().get() / healthCountBucketSizeInMs;
-        return new HealthCountsStream(commandEventStream, numHealthCountBuckets, healthCountBucketSizeInMs);
+        HealthCountsStream healthCountsStream =  new HealthCountsStream(commandEventStream, numHealthCountBuckets, healthCountBucketSizeInMs, reduceCommandCompletion);
+        healthCountsStream.start();
+        return healthCountsStream;
     }
 
-    private HealthCountsStream(final HystrixCommandEventStream commandEventStream, final int numBuckets, final int bucketSizeInMs) {
-        super(commandEventStream, numBuckets, bucketSizeInMs);
-        final Func1<Observable<long[]>, Observable<HystrixCommandMetrics.HealthCounts>> eventBucketAccumulator = new Func1<Observable<long[]>, Observable<HystrixCommandMetrics.HealthCounts>>() {
-            @Override
-            public Observable<HystrixCommandMetrics.HealthCounts> call(Observable<long[]> window) {
-                return window.scan(HystrixCommandMetrics.HealthCounts.empty(), healthCheckAccumulator).skip(numBuckets);
-            }
-        };
-
-        final List<long[]> emptyEventCountsToStart = new ArrayList<long[]>();
-        for (int i = 0; i < numBuckets; i++) {
-            emptyEventCountsToStart.add(new long[HystrixEventType.values().length]);
-        }
-
-        //TODO We can share streams if health bucket size in ms is the same as the counter bucket size in ms
-        Observable<HystrixCommandMetrics.HealthCounts> healthCountsStream = commandEventStream
-                .getBucketedStreamOfCommandCompletions(bucketSizeInMs) //stream of unaggregated event buckets
-                .flatMap(reduceBucketToSingleCountArray)               //stream of bucket sums
-                .startWith(emptyEventCountsToStart)                    //stream of bucket sums that starts with n empty
-                .window(numBuckets, 1)                                 //stream of n-bucket streams
-                .flatMap(eventBucketAccumulator);                      //reduce each window of buckets to a sum of event types
-
-        healthCountsSubscription = healthCountsStream.subscribe(healthCountsSubject); //sink this sum into the health counts subject
-    }
-
-    public HystrixCommandMetrics.HealthCounts getLatest() {
-        if (healthCountsSubject.hasValue()) {
-            return healthCountsSubject.getValue();
-        } else {
-            return HystrixCommandMetrics.HealthCounts.empty();
-        }
+    private HealthCountsStream(final HystrixCommandEventStream commandEventStream, final int numBuckets, final int bucketSizeInMs,
+                               Func2<long[], HystrixCommandCompletion, long[]> reduceCommandCompletion) {
+        super(commandEventStream, numBuckets, bucketSizeInMs, reduceCommandCompletion, healthCheckAccumulator);
     }
 
     @Override
-    public void unsubscribe() {
-        healthCountsSubscription.unsubscribe();
+    long[] getEmptyBucketSummary() {
+        return new long[HystrixEventType.values().length];
     }
 
-
+    @Override
+    HystrixCommandMetrics.HealthCounts getEmptyEmitValue() {
+        return HystrixCommandMetrics.HealthCounts.empty();
+    }
 }

@@ -15,9 +15,11 @@
  */
 package com.netflix.hystrix.metric;
 
+import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.HystrixThreadPoolKey;
 import rx.Observable;
 import rx.functions.Func1;
+import rx.functions.Func2;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -30,7 +32,8 @@ import java.util.concurrent.TimeUnit;
  *
  * Note that {@link HystrixThreadEventStream} emits on an RxComputation thread, so all consumption is async.
  */
-public class HystrixThreadPoolEventStream {
+public class HystrixThreadPoolEventStream implements HystrixEventStream {
+
     private final Func1<HystrixCommandEvent, Boolean> filterByThreadPoolKey;
 
     private static final ConcurrentMap<String, HystrixThreadPoolEventStream> streams = new ConcurrentHashMap<String, HystrixThreadPoolEventStream>();
@@ -83,6 +86,7 @@ public class HystrixThreadPoolEventStream {
         return HystrixGlobalEventStream.getInstance().observeCommandCompletions().filter(filterByThreadPoolKey);
     }
 
+    @Override
     public Observable<Observable<HystrixCommandCompletion>> getBucketedStreamOfCommandCompletions(int bucketSizeInMs) {
         return observeCommandCompletions().window(bucketSizeInMs, TimeUnit.MILLISECONDS);
     }

@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.netflix.hystrix.metric.CumulativeCommandEventCounterStream;
 import com.netflix.hystrix.metric.HealthCountsStream;
+import com.netflix.hystrix.metric.HystrixCommandCompletion;
 import com.netflix.hystrix.metric.HystrixCommandEventStream;
 import com.netflix.hystrix.metric.HystrixThreadEventStream;
 import com.netflix.hystrix.metric.RollingCommandConcurrencyStream;
@@ -33,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
+import rx.functions.Func2;
 
 /**
  * Used by {@link HystrixCommand} to record metrics.
@@ -41,6 +43,27 @@ public class HystrixCommandMetrics extends HystrixMetrics {
 
     @SuppressWarnings("unused")
     private static final Logger logger = LoggerFactory.getLogger(HystrixCommandMetrics.class);
+
+    private static final Func2<long[], HystrixCommandCompletion, long[]> aggregateEventCounts = new Func2<long[], HystrixCommandCompletion, long[]>() {
+        @Override
+        public long[] call(long[] initialCountArray, HystrixCommandCompletion execution) {
+            long[] executionCount = execution.getEventTypeCounts();
+            for (int i = 0; i < initialCountArray.length; i++) {
+                initialCountArray[i] += executionCount[i];
+            }
+            return initialCountArray;
+        }
+    };
+
+    private static final Func2<long[], long[], long[]> bucketAggregator = new Func2<long[], long[], long[]>() {
+        @Override
+        public long[] call(long[] cumulativeEvents, long[] bucketEventCounts) {
+            for (HystrixEventType eventType: HystrixEventType.values()) {
+                cumulativeEvents[eventType.ordinal()] += bucketEventCounts[eventType.ordinal()];
+            }
+            return cumulativeEvents;
+        }
+    };
 
     // String is HystrixCommandKey.name() (we can't use HystrixCommandKey directly as we can't guarantee it implements hashcode/equals correctly)
     private static final ConcurrentHashMap<String, HystrixCommandMetrics> metrics = new ConcurrentHashMap<String, HystrixCommandMetrics>();
@@ -163,10 +186,9 @@ public class HystrixCommandMetrics extends HystrixMetrics {
         //TODO Put this in properties
         final int sampleFrequencyInMs = 100;
 
-        //TODO Should these 3 streams come from same object.  Counter-argument: healthcounts needs to be cleared periodically
-        healthCountsStream = HealthCountsStream.from(commandEventStream, properties);
-        rollingCommandEventCounterStream = RollingCommandEventCounterStream.from(commandEventStream, properties);
-        cumulativeCommandEventCounterStream = CumulativeCommandEventCounterStream.from(commandEventStream, properties);
+        healthCountsStream = HealthCountsStream.from(commandEventStream, properties, aggregateEventCounts);
+        rollingCommandEventCounterStream = RollingCommandEventCounterStream.from(commandEventStream, properties, aggregateEventCounts, bucketAggregator);
+        cumulativeCommandEventCounterStream = CumulativeCommandEventCounterStream.from(commandEventStream, properties, aggregateEventCounts, bucketAggregator);
 
         rollingCommandLatencyStream = RollingCommandLatencyStream.from(commandEventStream, properties);
         rollingCommandConcurrencyStream = RollingCommandConcurrencyStream.from(commandEventStream, sampleFrequencyInMs, properties);
@@ -174,7 +196,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
 
     /* package */ void resetStream() {
         healthCountsStream.unsubscribe();
-        healthCountsStream = HealthCountsStream.from(commandEventStream, properties);
+        healthCountsStream = HealthCountsStream.from(commandEventStream, properties, aggregateEventCounts);
     }
 
     /**
