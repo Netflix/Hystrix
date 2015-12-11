@@ -78,6 +78,7 @@ public class HystrixThreadPoolEventStream implements HystrixEventStream {
         streams.clear();
     }
 
+    @Override
     public Observable<HystrixCommandEvent> observe() {
         return HystrixGlobalEventStream.getInstance().observe().filter(filterByThreadPoolKey);
     }
