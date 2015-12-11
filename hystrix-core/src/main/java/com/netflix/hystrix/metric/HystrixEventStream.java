@@ -20,4 +20,6 @@ import rx.Observable;
 public interface HystrixEventStream {
 
     Observable<Observable<HystrixCommandCompletion>> getBucketedStreamOfCommandCompletions(int bucketSizeInMs);
+
+    Observable<HystrixCommandEvent> observe();
 }

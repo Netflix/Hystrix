@@ -15,29 +15,20 @@
  */
 package com.netflix.hystrix.metric;
 
-import com.netflix.hystrix.HystrixCommandProperties;
-import rx.Observable;
-import rx.Subscription;
-import rx.functions.Func1;
-import rx.functions.Func2;
-import rx.subjects.BehaviorSubject;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
+import com.netflix.hystrix.HystrixThreadPoolProperties;
 
 /**
- * Maintains a stream of concurrency distributions for a given Command.
+ * Maintains a stream of concurrency distributions for a given ThreadPool.
  *
  * There are 2 related streams that may be consumed:
  *
- * A) A rolling window of the maximum concurrency seen by this command.
- * B) A histogram of sampled concurrency seen by this command.
+ * A) A rolling window of the maximum concurrency seen by this ThreadPool.
+ * B) A histogram of sampled concurrency seen by this ThreadPool.
  *
  * A) gets calculated using a rolling window of t1 milliseconds.  This window has b buckets.
  * Therefore, a new rolling-max is produced every t2 (=t1/b) milliseconds
- * t1 = {@link HystrixCommandProperties#metricsRollingStatisticalWindowInMilliseconds()}
- * b = {@link HystrixCommandProperties#metricsRollingStatisticalWindowBuckets()}
+ * t1 = {@link HystrixThreadPoolProperties#metricsRollingStatisticalWindowInMilliseconds()}
+ * b = {@link HystrixThreadPoolProperties#metricsRollingStatisticalWindowBuckets()}
  *
  * This value gets cached in this class.  It may be queried using {@link #getRollingMax()}
  *
@@ -49,20 +40,20 @@ import java.util.concurrent.TimeUnit;
  *
  * Both A) and B) are stable - there's no peeking into a bucket until it is emitted
  */
-public class RollingCommandConcurrencyStream extends RollingConcurrencyStream {
+public class RollingThreadPoolConcurrencyStream extends RollingConcurrencyStream {
 
-    public static RollingCommandConcurrencyStream from(HystrixCommandEventStream commandEventStream, HystrixCommandProperties properties) {
+    public static RollingThreadPoolConcurrencyStream from(HystrixThreadPoolEventStream threadPoolEventStream, HystrixThreadPoolProperties properties) {
         final int counterMetricWindow = properties.metricsRollingStatisticalWindowInMilliseconds().get();
         final int numCounterBuckets = properties.metricsRollingStatisticalWindowBuckets().get();
         final int counterBucketSizeInMs = counterMetricWindow / numCounterBuckets;
 
-        RollingCommandConcurrencyStream rollingCommandConcurrencyStream =
-                new RollingCommandConcurrencyStream(commandEventStream, numCounterBuckets, counterBucketSizeInMs);
-        rollingCommandConcurrencyStream.start();
-        return rollingCommandConcurrencyStream;
+        RollingThreadPoolConcurrencyStream rollingThreadPoolConcurrencyStream =
+                new RollingThreadPoolConcurrencyStream(threadPoolEventStream, numCounterBuckets, counterBucketSizeInMs);
+        rollingThreadPoolConcurrencyStream.start();
+        return rollingThreadPoolConcurrencyStream;
     }
 
-    public RollingCommandConcurrencyStream(final HystrixCommandEventStream commandEventStream, final int numBuckets, final int bucketSizeInMs) {
-        super(commandEventStream, numBuckets, bucketSizeInMs);
+    public RollingThreadPoolConcurrencyStream(final HystrixThreadPoolEventStream threadPoolEventStream, final int numBuckets, final int bucketSizeInMs) {
+        super(threadPoolEventStream, numBuckets, bucketSizeInMs);
     }
 }
