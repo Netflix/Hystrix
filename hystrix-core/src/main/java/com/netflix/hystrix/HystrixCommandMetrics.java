@@ -183,15 +183,12 @@ public class HystrixCommandMetrics extends HystrixMetrics {
 
         commandEventStream = HystrixCommandEventStream.getInstance(key);
 
-        //TODO Put this in properties
-        final int sampleFrequencyInMs = 100;
-
         healthCountsStream = HealthCountsStream.from(commandEventStream, properties, aggregateEventCounts);
         rollingCommandEventCounterStream = RollingCommandEventCounterStream.from(commandEventStream, properties, aggregateEventCounts, bucketAggregator);
         cumulativeCommandEventCounterStream = CumulativeCommandEventCounterStream.from(commandEventStream, properties, aggregateEventCounts, bucketAggregator);
 
         rollingCommandLatencyStream = RollingCommandLatencyStream.from(commandEventStream, properties);
-        rollingCommandConcurrencyStream = RollingCommandConcurrencyStream.from(commandEventStream, sampleFrequencyInMs, properties);
+        rollingCommandConcurrencyStream = RollingCommandConcurrencyStream.from(commandEventStream, properties);
     }
 
     /* package */ void resetStream() {

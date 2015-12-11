@@ -66,6 +66,7 @@ public class HystrixCommandEventStream implements HystrixEventStream {
         streams.clear();
     }
 
+    @Override
     public Observable<HystrixCommandEvent> observe() {
         return HystrixGlobalEventStream.getInstance().observe().filter(filterByCommandKey);
     }

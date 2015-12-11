@@ -24,6 +24,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import com.netflix.hystrix.metric.CumulativeThreadPoolEventCounterStream;
 import com.netflix.hystrix.metric.HystrixCommandCompletion;
 import com.netflix.hystrix.metric.HystrixThreadPoolEventStream;
+import com.netflix.hystrix.metric.RollingThreadPoolConcurrencyStream;
 import com.netflix.hystrix.metric.RollingThreadPoolEventCounterStream;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 import org.slf4j.Logger;
@@ -144,6 +145,7 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
 
     private final RollingThreadPoolEventCounterStream rollingCounterStream;
     private final CumulativeThreadPoolEventCounterStream cumulativeCounterStream;
+    private final RollingThreadPoolConcurrencyStream rollingThreadPoolConcurrencyStream;
 
     private HystrixThreadPoolMetrics(HystrixThreadPoolKey threadPoolKey, ThreadPoolExecutor threadPool, HystrixThreadPoolProperties properties) {
         super(null);
@@ -151,13 +153,10 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
         this.threadPool = threadPool;
         this.properties = properties;
 
-        final int counterMetricWindow = properties.metricsRollingStatisticalWindowInMilliseconds().get();
-        final int numCounterBuckets = properties.metricsRollingStatisticalWindowBuckets().get();
-        final int counterBucketSizeInMs = counterMetricWindow / numCounterBuckets;
-
         final HystrixThreadPoolEventStream threadPoolStream = HystrixThreadPoolEventStream.getInstance(threadPoolKey);
         rollingCounterStream = RollingThreadPoolEventCounterStream.from(threadPoolStream, properties, aggregateEventCounts, counterAggregator);
         cumulativeCounterStream = CumulativeThreadPoolEventCounterStream.from(threadPoolStream, properties, aggregateEventCounts, counterAggregator);
+        rollingThreadPoolConcurrencyStream = RollingThreadPoolConcurrencyStream.from(threadPoolStream, properties);
     }
 
     /**
@@ -339,9 +338,7 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
      * @return rolling max active threads
      */
     public long getRollingMaxActiveThreads() {
-        //TODO This should get fixed, either by adding a metric stream that can produce this value, or by
-        //changing the problem into getting the whole distribution via sampling (not just the max as in this method)
-        return 0;
+        return rollingThreadPoolConcurrencyStream.getRollingMax();
     }
 
     /**
