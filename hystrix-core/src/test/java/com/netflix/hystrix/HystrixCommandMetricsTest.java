@@ -125,6 +125,35 @@ public class HystrixCommandMetricsTest {
         assertEquals(NUM_CMDS, metrics.getCurrentConcurrentExecutionCount());
     }
 
+    @Test
+    public void testMetricsErrorPercentageTotalThreshold() {
+
+        try {
+            HystrixCommandProperties.Setter properties = HystrixCommandPropertiesTest.getUnitTestPropertiesSetter();
+
+            // set threshold of 2 total before errorPercentage should be non-zero.
+            properties = properties.withCircuitBreakerTotalThresholdForErrorPercentage(3);
+            HystrixCommandMetrics metrics = getMetrics(properties);
+
+            metrics.markFailure(100);
+            assertEquals(0, metrics.getHealthCounts().getErrorPercentage());
+
+            metrics.markFailure(100);
+            assertEquals(0, metrics.getHealthCounts().getErrorPercentage());
+
+            metrics.markSuccess(100);
+            assertEquals(0, metrics.getHealthCounts().getErrorPercentage());
+
+            metrics.markSuccess(100);
+            assertEquals(50, metrics.getHealthCounts().getErrorPercentage());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail("Error occurred: " + e.getMessage());
+        }
+
+    }
+
     /**
      * Utility method for creating {@link HystrixCommandMetrics} for unit tests.
      */

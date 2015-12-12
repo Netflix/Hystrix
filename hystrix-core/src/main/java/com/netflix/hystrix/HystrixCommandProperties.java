@@ -60,12 +60,14 @@ public abstract class HystrixCommandProperties {
     private static final Integer default_metricsRollingPercentileWindowBuckets = 6; // default to 6 buckets (10 seconds each in 60 second window)
     private static final Integer default_metricsRollingPercentileBucketSize = 100; // default to 100 values max per bucket
     private static final Integer default_metricsHealthSnapshotIntervalInMilliseconds = 500; // default to 500ms as max frequency between allowing snapshots of health (error percentage etc)
+    private static final Integer default_circuitBreakerTotalThresholdForErrorPercentage = 0; // default to zero as threshold for publishing errorPercentage (ie. always publish)
 
     @SuppressWarnings("unused") private final HystrixCommandKey key;
     private final HystrixProperty<Integer> circuitBreakerRequestVolumeThreshold; // number of requests that must be made within a statisticalWindow before open/close decisions are made using stats
     private final HystrixProperty<Integer> circuitBreakerSleepWindowInMilliseconds; // milliseconds after tripping circuit before allowing retry
     private final HystrixProperty<Boolean> circuitBreakerEnabled; // Whether circuit breaker should be enabled.
     private final HystrixProperty<Integer> circuitBreakerErrorThresholdPercentage; // % of 'marks' that must be failed to trip the circuit
+    private final HystrixProperty<Integer> circuitBreakerTotalThresholdForErrorPercentage; // threshold of totalCount below which errorPercentage will not be published
     private final HystrixProperty<Boolean> circuitBreakerForceOpen; // a property to allow forcing the circuit open (stopping all requests)
     private final HystrixProperty<Boolean> circuitBreakerForceClosed; // a property to allow ignoring errors and therefore never trip 'open' (ie. allow all traffic through)
     private final HystrixProperty<ExecutionIsolationStrategy> executionIsolationStrategy; // Whether a command should be executed in a separate thread or not.
@@ -113,6 +115,7 @@ public abstract class HystrixCommandProperties {
         this.circuitBreakerRequestVolumeThreshold = getProperty(propertyPrefix, key, "circuitBreaker.requestVolumeThreshold", builder.getCircuitBreakerRequestVolumeThreshold(), default_circuitBreakerRequestVolumeThreshold);
         this.circuitBreakerSleepWindowInMilliseconds = getProperty(propertyPrefix, key, "circuitBreaker.sleepWindowInMilliseconds", builder.getCircuitBreakerSleepWindowInMilliseconds(), default_circuitBreakerSleepWindowInMilliseconds);
         this.circuitBreakerErrorThresholdPercentage = getProperty(propertyPrefix, key, "circuitBreaker.errorThresholdPercentage", builder.getCircuitBreakerErrorThresholdPercentage(), default_circuitBreakerErrorThresholdPercentage);
+        this.circuitBreakerTotalThresholdForErrorPercentage = getProperty(propertyPrefix, key, "metrics.healthSnapshot.errorPercentageTotalThreshold", builder.getCircuitBreakerTotalThresholdForErrorPercentage(), default_circuitBreakerTotalThresholdForErrorPercentage);
         this.circuitBreakerForceOpen = getProperty(propertyPrefix, key, "circuitBreaker.forceOpen", builder.getCircuitBreakerForceOpen(), default_circuitBreakerForceOpen);
         this.circuitBreakerForceClosed = getProperty(propertyPrefix, key, "circuitBreaker.forceClosed", builder.getCircuitBreakerForceClosed(), default_circuitBreakerForceClosed);
         this.executionIsolationStrategy = getProperty(propertyPrefix, key, "execution.isolation.strategy", builder.getExecutionIsolationStrategy(), default_executionIsolationStrategy);
@@ -394,6 +397,15 @@ public abstract class HystrixCommandProperties {
     }
 
     /**
+     * Threshold that totalCount for a circuit must be above for the errorPercentage to be published as non-zero.
+     *
+     * @return {@code HystrixProperty<Integer>}
+     */
+    public HystrixProperty<Integer> metricsErrorPercentageTotalThreshold() {
+        return circuitBreakerTotalThresholdForErrorPercentage;
+    }
+
+    /**
      * Whether {@link HystrixCommand#getCacheKey()} should be used with {@link HystrixRequestCache} to provide de-duplication functionality via request-scoped caching.
      * 
      * @return {@code HystrixProperty<Boolean>}
@@ -519,6 +531,7 @@ public abstract class HystrixCommandProperties {
 
         private Boolean circuitBreakerEnabled = null;
         private Integer circuitBreakerErrorThresholdPercentage = null;
+        private Integer circuitBreakerTotalThresholdForErrorPercentage = null;
         private Boolean circuitBreakerForceClosed = null;
         private Boolean circuitBreakerForceOpen = null;
         private Integer circuitBreakerRequestVolumeThreshold = null;
@@ -632,6 +645,10 @@ public abstract class HystrixCommandProperties {
             return metricsRollingStatisticalWindowBuckets;
         }
 
+        public Integer getCircuitBreakerTotalThresholdForErrorPercentage() {
+            return circuitBreakerTotalThresholdForErrorPercentage;
+        }
+
         public Boolean getRequestCacheEnabled() {
             return requestCacheEnabled;
         }
@@ -647,6 +664,11 @@ public abstract class HystrixCommandProperties {
 
         public Setter withCircuitBreakerErrorThresholdPercentage(int value) {
             this.circuitBreakerErrorThresholdPercentage = value;
+            return this;
+        }
+
+        public Setter withCircuitBreakerTotalThresholdForErrorPercentage(int value) {
+            this.circuitBreakerTotalThresholdForErrorPercentage = value;
             return this;
         }
 

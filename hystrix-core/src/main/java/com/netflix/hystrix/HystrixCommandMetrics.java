@@ -462,7 +462,10 @@ public class HystrixCommandMetrics extends HystrixMetrics {
                 long errorCount = failure + timeout + threadPoolRejected + shortCircuited + semaphoreRejected;
                 int errorPercentage = 0;
 
-                if (totalCount > 0) {
+                // Only set errorPercentage as non-zero if totalCount is above configured threshold.
+                // This allows this to be configured so that very low usage circuits that often fail can be
+                // more easily ignored in monitoring/alerting.
+                if (totalCount > properties.metricsErrorPercentageTotalThreshold().get()) {
                     errorPercentage = (int) ((double) errorCount / totalCount * 100);
                 }
 

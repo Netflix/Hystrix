@@ -38,6 +38,7 @@ public class HystrixCommandPropertiesTest {
                 .withExecutionIsolationThreadInterruptOnTimeout(true)
                 .withCircuitBreakerForceOpen(false) // we don't want short-circuiting by default
                 .withCircuitBreakerErrorThresholdPercentage(40) // % of 'marks' that must be failed to trip the circuit
+                .withCircuitBreakerTotalThresholdForErrorPercentage(0)
                 .withMetricsRollingStatisticalWindowInMilliseconds(5000)// milliseconds back that will be tracked
                 .withMetricsRollingStatisticalWindowBuckets(5) // buckets
                 .withCircuitBreakerRequestVolumeThreshold(0) // in testing we will not have a threshold unless we're specifically testing that feature
@@ -169,6 +170,11 @@ public class HystrixCommandPropertiesTest {
             @Override
             public HystrixProperty<Integer> metricsRollingStatisticalWindowBuckets() {
                 return HystrixProperty.Factory.asProperty(builder.getMetricsRollingStatisticalWindowBuckets());
+            }
+
+            @Override
+            public HystrixProperty<Integer> metricsErrorPercentageTotalThreshold() {
+                return HystrixProperty.Factory.asProperty(builder.getCircuitBreakerTotalThresholdForErrorPercentage());
             }
 
             @Override
