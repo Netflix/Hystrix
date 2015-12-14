@@ -33,6 +33,10 @@ import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 import rx.Observable;
 
+/**
+ * These tests each use a different command key to ensure that running them in parallel doesn't allow the state
+ * built up during a test to cause others to fail
+ */
 public class HystrixCircuitBreakerTest {
 
     @Before
@@ -73,6 +77,7 @@ public class HystrixCircuitBreakerTest {
 
         @Override
         public boolean isOpen() {
+            System.out.println("metrics : " + metrics.getCommandKey().name() + " : " + metrics.getHealthCounts());
             if (forceShortCircuit) {
                 return true;
             } else {
@@ -92,17 +97,19 @@ public class HystrixCircuitBreakerTest {
 
     }
 
+
     /**
      * Test that if all 'marks' are successes during the test window that it does NOT trip the circuit.
      * Test that if all 'marks' are failures during the test window that it trips the circuit.
      */
     @Test
     public void testTripCircuit() {
+        String key = "cmd-A";
         try {
-            HystrixCommand<Boolean> cmd1 = new SuccessCommand(1);
-            HystrixCommand<Boolean> cmd2 = new SuccessCommand(1);
-            HystrixCommand<Boolean> cmd3 = new SuccessCommand(1);
-            HystrixCommand<Boolean> cmd4 = new SuccessCommand(1);
+            HystrixCommand<Boolean> cmd1 = new SuccessCommand(key, 1);
+            HystrixCommand<Boolean> cmd2 = new SuccessCommand(key, 1);
+            HystrixCommand<Boolean> cmd3 = new SuccessCommand(key, 1);
+            HystrixCommand<Boolean> cmd4 = new SuccessCommand(key, 1);
 
             HystrixCircuitBreaker cb = cmd1.circuitBreaker;
 
@@ -117,10 +124,10 @@ public class HystrixCircuitBreakerTest {
             assertFalse(cb.isOpen());
 
             // fail
-            HystrixCommand<Boolean> cmd5 = new FailureCommand(1);
-            HystrixCommand<Boolean> cmd6 = new FailureCommand(1);
-            HystrixCommand<Boolean> cmd7 = new FailureCommand(1);
-            HystrixCommand<Boolean> cmd8 = new FailureCommand(1);
+            HystrixCommand<Boolean> cmd5 = new FailureCommand(key, 1);
+            HystrixCommand<Boolean> cmd6 = new FailureCommand(key, 1);
+            HystrixCommand<Boolean> cmd7 = new FailureCommand(key, 1);
+            HystrixCommand<Boolean> cmd8 = new FailureCommand(key, 1);
             cmd5.execute();
             cmd6.execute();
             cmd7.execute();
@@ -141,8 +148,9 @@ public class HystrixCircuitBreakerTest {
      */
     @Test
     public void testTripCircuitOnFailuresAboveThreshold() {
+        String key = "cmd-B";
         try {
-            HystrixCommand<Boolean> cmd1 = new SuccessCommand(60);
+            HystrixCommand<Boolean> cmd1 = new SuccessCommand(key, 60);
             HystrixCircuitBreaker cb = cmd1.circuitBreaker;
 
             // this should start as allowing requests
@@ -151,19 +159,19 @@ public class HystrixCircuitBreakerTest {
 
             // success with high latency
             cmd1.execute();
-            HystrixCommand<Boolean> cmd2 = new SuccessCommand(1);
+            HystrixCommand<Boolean> cmd2 = new SuccessCommand(key, 1);
             cmd2.execute();
-            HystrixCommand<Boolean> cmd3 = new FailureCommand(1);
+            HystrixCommand<Boolean> cmd3 = new FailureCommand(key, 1);
             cmd3.execute();
-            HystrixCommand<Boolean> cmd4 = new SuccessCommand(1);
+            HystrixCommand<Boolean> cmd4 = new SuccessCommand(key, 1);
             cmd4.execute();
-            HystrixCommand<Boolean> cmd5 = new FailureCommand(1);
+            HystrixCommand<Boolean> cmd5 = new FailureCommand(key, 1);
             cmd5.execute();
-            HystrixCommand<Boolean> cmd6 = new SuccessCommand(1);
+            HystrixCommand<Boolean> cmd6 = new SuccessCommand(key, 1);
             cmd6.execute();
-            HystrixCommand<Boolean> cmd7 = new FailureCommand(1);
+            HystrixCommand<Boolean> cmd7 = new FailureCommand(key, 1);
             cmd7.execute();
-            HystrixCommand<Boolean> cmd8 = new FailureCommand(1);
+            HystrixCommand<Boolean> cmd8 = new FailureCommand(key, 1);
             cmd8.execute();
 
             // this should trip the circuit as the error percentage is above the threshold
@@ -181,8 +189,9 @@ public class HystrixCircuitBreakerTest {
      */
     @Test
     public void testCircuitDoesNotTripOnFailuresBelowThreshold() {
+        String key = "cmd-C";
         try {
-            HystrixCommand<Boolean> cmd1 = new SuccessCommand(60);
+            HystrixCommand<Boolean> cmd1 = new SuccessCommand(key, 60);
             HystrixCircuitBreaker cb = cmd1.circuitBreaker;
 
             // this should start as allowing requests
@@ -191,19 +200,19 @@ public class HystrixCircuitBreakerTest {
 
             // success with high latency
             cmd1.execute();
-            HystrixCommand<Boolean> cmd2 = new SuccessCommand(1);
+            HystrixCommand<Boolean> cmd2 = new SuccessCommand(key, 1);
             cmd2.execute();
-            HystrixCommand<Boolean> cmd3 = new FailureCommand(1);
+            HystrixCommand<Boolean> cmd3 = new FailureCommand(key, 1);
             cmd3.execute();
-            HystrixCommand<Boolean> cmd4 = new SuccessCommand(1);
+            HystrixCommand<Boolean> cmd4 = new SuccessCommand(key, 1);
             cmd4.execute();
-            HystrixCommand<Boolean> cmd5 = new FailureCommand(1);
+            HystrixCommand<Boolean> cmd5 = new FailureCommand(key, 1);
             cmd5.execute();
-            HystrixCommand<Boolean> cmd6 = new SuccessCommand(1);
+            HystrixCommand<Boolean> cmd6 = new SuccessCommand(key, 1);
             cmd6.execute();
-            HystrixCommand<Boolean> cmd7 = new SuccessCommand(1);
+            HystrixCommand<Boolean> cmd7 = new SuccessCommand(key, 1);
             cmd7.execute();
-            HystrixCommand<Boolean> cmd8 = new FailureCommand(1);
+            HystrixCommand<Boolean> cmd8 = new FailureCommand(key, 1);
             cmd8.execute();
 
             // this should remain open as the failure threshold is below the percentage limit
@@ -221,8 +230,9 @@ public class HystrixCircuitBreakerTest {
      */
     @Test
     public void testTripCircuitOnTimeouts() {
+        String key = "cmd-D";
         try {
-            HystrixCommand<Boolean> cmd1 = new TimeoutCommand();
+            HystrixCommand<Boolean> cmd1 = new TimeoutCommand(key);
             HystrixCircuitBreaker cb = cmd1.circuitBreaker;
 
             // this should start as allowing requests
@@ -231,11 +241,11 @@ public class HystrixCircuitBreakerTest {
 
             // success with high latency
             cmd1.execute();
-            HystrixCommand<Boolean> cmd2 = new TimeoutCommand();
+            HystrixCommand<Boolean> cmd2 = new TimeoutCommand(key);
             cmd2.execute();
-            HystrixCommand<Boolean> cmd3 = new TimeoutCommand();
+            HystrixCommand<Boolean> cmd3 = new TimeoutCommand(key);
             cmd3.execute();
-            HystrixCommand<Boolean> cmd4 = new TimeoutCommand();
+            HystrixCommand<Boolean> cmd4 = new TimeoutCommand(key);
             cmd4.execute();
 
             // everything has been a timeout so we should not allow any requests
@@ -253,8 +263,9 @@ public class HystrixCircuitBreakerTest {
      */
     @Test
     public void testTripCircuitOnTimeoutsAboveThreshold() {
+        String key = "cmd-E";
         try {
-            HystrixCommand<Boolean> cmd1 = new SuccessCommand(60);
+            HystrixCommand<Boolean> cmd1 = new SuccessCommand(key, 60);
             HystrixCircuitBreaker cb = cmd1.circuitBreaker;
 
             // this should start as allowing requests
@@ -263,21 +274,21 @@ public class HystrixCircuitBreakerTest {
 
             // success with high latency
             cmd1.execute();
-            HystrixCommand<Boolean> cmd2 = new SuccessCommand(1);
+            HystrixCommand<Boolean> cmd2 = new SuccessCommand(key, 1);
             cmd2.execute();
-            HystrixCommand<Boolean> cmd3 = new TimeoutCommand();
+            HystrixCommand<Boolean> cmd3 = new TimeoutCommand(key);
             cmd3.execute();
-            HystrixCommand<Boolean> cmd4 = new SuccessCommand(1);
+            HystrixCommand<Boolean> cmd4 = new SuccessCommand(key, 1);
             cmd4.execute();
-            HystrixCommand<Boolean> cmd5 = new TimeoutCommand();
+            HystrixCommand<Boolean> cmd5 = new TimeoutCommand(key);
             cmd5.execute();
-            HystrixCommand<Boolean> cmd6 = new TimeoutCommand();
+            HystrixCommand<Boolean> cmd6 = new TimeoutCommand(key);
             cmd6.execute();
-            HystrixCommand<Boolean> cmd7 = new SuccessCommand(1);
+            HystrixCommand<Boolean> cmd7 = new SuccessCommand(key, 1);
             cmd7.execute();
-            HystrixCommand<Boolean> cmd8 = new TimeoutCommand();
+            HystrixCommand<Boolean> cmd8 = new TimeoutCommand(key);
             cmd8.execute();
-            HystrixCommand<Boolean> cmd9 = new TimeoutCommand();
+            HystrixCommand<Boolean> cmd9 = new TimeoutCommand(key);
             cmd9.execute();
 
             // this should trip the circuit as the error percentage is above the threshold
@@ -295,9 +306,10 @@ public class HystrixCircuitBreakerTest {
      */
     @Test
     public void testSingleTestOnOpenCircuitAfterTimeWindow() {
+        String key = "cmd-F";
         try {
             int sleepWindow = 200;
-            HystrixCommand<Boolean> cmd1 = new FailureCommand(60);
+            HystrixCommand<Boolean> cmd1 = new FailureCommand(key, 60);
             HystrixCircuitBreaker cb = cmd1.circuitBreaker;
 
             // this should start as allowing requests
@@ -305,11 +317,11 @@ public class HystrixCircuitBreakerTest {
             assertFalse(cb.isOpen());
 
             cmd1.execute();
-            HystrixCommand<Boolean> cmd2 = new FailureCommand(1);
+            HystrixCommand<Boolean> cmd2 = new FailureCommand(key, 1);
             cmd2.execute();
-            HystrixCommand<Boolean> cmd3 = new FailureCommand(1);
+            HystrixCommand<Boolean> cmd3 = new FailureCommand(key, 1);
             cmd3.execute();
-            HystrixCommand<Boolean> cmd4 = new FailureCommand(1);
+            HystrixCommand<Boolean> cmd4 = new FailureCommand(key, 1);
             cmd4.execute();
 
             // everything has failed in the test window so we should return false now
@@ -339,9 +351,10 @@ public class HystrixCircuitBreakerTest {
      */
     @Test
     public void testCircuitClosedAfterSuccess() {
+        String key = "cmd-G";
         try {
             int sleepWindow = 20;
-            HystrixCommand<Boolean> cmd1 = new FailureCommand(60, sleepWindow);
+            HystrixCommand<Boolean> cmd1 = new FailureCommand(key, 60, sleepWindow);
             HystrixCircuitBreaker cb = cmd1.circuitBreaker;
 
             // this should start as allowing requests
@@ -349,11 +362,11 @@ public class HystrixCircuitBreakerTest {
             assertFalse(cb.isOpen());
 
             cmd1.execute();
-            HystrixCommand<Boolean> cmd2 = new FailureCommand(1, sleepWindow);
+            HystrixCommand<Boolean> cmd2 = new FailureCommand(key, 1, sleepWindow);
             cmd2.execute();
-            HystrixCommand<Boolean> cmd3 = new FailureCommand(1, sleepWindow);
+            HystrixCommand<Boolean> cmd3 = new FailureCommand(key, 1, sleepWindow);
             cmd3.execute();
-            HystrixCommand<Boolean> cmd4 = new TimeoutCommand(sleepWindow);
+            HystrixCommand<Boolean> cmd4 = new TimeoutCommand(key, sleepWindow);
             cmd4.execute();
 
             // everything has failed in the test window so we should return false now
@@ -368,7 +381,7 @@ public class HystrixCircuitBreakerTest {
             assertTrue(cb.isOpen());
 
             // we should now allow 1 request, and upon success, should cause the circuit to be closed
-            HystrixCommand<Boolean> cmd5 = new SuccessCommand(60, sleepWindow);
+            HystrixCommand<Boolean> cmd5 = new SuccessCommand(key, 60, sleepWindow);
             Observable<Boolean> asyncResult = cmd5.observe();
 
             // and further requests are still blocked while the singleTest command is in flight
@@ -396,9 +409,10 @@ public class HystrixCircuitBreakerTest {
      */
     @Test
     public void testMultipleTimeWindowRetriesBeforeClosingCircuit() {
+        String key = "cmd-H";
         try {
             int sleepWindow = 200;
-            HystrixCommand<Boolean> cmd1 = new FailureCommand(60);
+            HystrixCommand<Boolean> cmd1 = new FailureCommand(key, 60);
             HystrixCircuitBreaker cb = cmd1.circuitBreaker;
 
             // this should start as allowing requests
@@ -406,11 +420,11 @@ public class HystrixCircuitBreakerTest {
             assertFalse(cb.isOpen());
 
             cmd1.execute();
-            HystrixCommand<Boolean> cmd2 = new FailureCommand(1);
+            HystrixCommand<Boolean> cmd2 = new FailureCommand(key, 1);
             cmd2.execute();
-            HystrixCommand<Boolean> cmd3 = new FailureCommand(1);
+            HystrixCommand<Boolean> cmd3 = new FailureCommand(key, 1);
             cmd3.execute();
-            HystrixCommand<Boolean> cmd4 = new TimeoutCommand();
+            HystrixCommand<Boolean> cmd4 = new TimeoutCommand(key);
             cmd4.execute();
 
             // everything has failed in the test window so we should return false now
@@ -429,7 +443,7 @@ public class HystrixCircuitBreakerTest {
             assertTrue(cb.isOpen());
 
             // we should now allow 1 request, and upon failure, should not affect the circuit breaker, which should remain open
-            HystrixCommand<Boolean> cmd5 = new FailureCommand(60);
+            HystrixCommand<Boolean> cmd5 = new FailureCommand(key, 60);
             Observable<Boolean> asyncResult5 = cmd5.observe();
             System.out.println("!!!! Kicked off the single-test");
 
@@ -451,7 +465,7 @@ public class HystrixCircuitBreakerTest {
             System.out.println("!!!! 2nd sleep window over");
 
             // we should now allow 1 request, and upon failure, should not affect the circuit breaker, which should remain open
-            HystrixCommand<Boolean> cmd6 = new FailureCommand(60);
+            HystrixCommand<Boolean> cmd6 = new FailureCommand(key, 60);
             Observable<Boolean> asyncResult6 = cmd6.observe();
             System.out.println("2nd singleTest just kicked off");
 
@@ -474,7 +488,7 @@ public class HystrixCircuitBreakerTest {
             assertTrue(cb.isOpen());
 
             // we should now allow 1 request, and upon success, should cause the circuit to be closed
-            HystrixCommand<Boolean> cmd7 = new SuccessCommand(60);
+            HystrixCommand<Boolean> cmd7 = new SuccessCommand(key, 60);
             Observable<Boolean> asyncResult7 = cmd7.observe();
 
             // and further requests are still blocked while the singleTest command is in flight
@@ -503,11 +517,12 @@ public class HystrixCircuitBreakerTest {
      */
     @Test
     public void testLowVolumeDoesNotTripCircuit() {
+        String key = "cmd-I";
         try {
             int sleepWindow = 200;
             int lowVolume = 5;
 
-            HystrixCommand<Boolean> cmd1 = new FailureCommand(60, sleepWindow, lowVolume);
+            HystrixCommand<Boolean> cmd1 = new FailureCommand(key, 60, sleepWindow, lowVolume);
             HystrixCircuitBreaker cb = cmd1.circuitBreaker;
 
             // this should start as allowing requests
@@ -515,11 +530,11 @@ public class HystrixCircuitBreakerTest {
             assertFalse(cb.isOpen());
 
             cmd1.execute();
-            HystrixCommand<Boolean> cmd2 = new FailureCommand(1, sleepWindow, lowVolume);
+            HystrixCommand<Boolean> cmd2 = new FailureCommand(key, 1, sleepWindow, lowVolume);
             cmd2.execute();
-            HystrixCommand<Boolean> cmd3 = new FailureCommand(1, sleepWindow, lowVolume);
+            HystrixCommand<Boolean> cmd3 = new FailureCommand(key, 1, sleepWindow, lowVolume);
             cmd3.execute();
-            HystrixCommand<Boolean> cmd4 = new FailureCommand(1, sleepWindow, lowVolume);
+            HystrixCommand<Boolean> cmd4 = new FailureCommand(key, 1, sleepWindow, lowVolume);
             cmd4.execute();
 
             // even though it has all failed we won't trip the circuit because the volume is low
@@ -643,8 +658,8 @@ public class HystrixCircuitBreakerTest {
         private final boolean shouldFailWithBadRequest;
         private final long latencyToAdd;
 
-        public Command(boolean shouldFail, boolean shouldFailWithBadRequest, long latencyToAdd, int sleepWindow, int requestVolumeThreshold) {
-            super(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("Command")).andCommandKey(HystrixCommandKey.Factory.asKey("Command")).
+        public Command(String commandKey, boolean shouldFail, boolean shouldFailWithBadRequest, long latencyToAdd, int sleepWindow, int requestVolumeThreshold) {
+            super(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("Command")).andCommandKey(HystrixCommandKey.Factory.asKey(commandKey)).
                     andCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().
                             withExecutionTimeoutInMilliseconds(100).
                             withCircuitBreakerRequestVolumeThreshold(requestVolumeThreshold).
@@ -654,8 +669,8 @@ public class HystrixCircuitBreakerTest {
             this.latencyToAdd = latencyToAdd;
         }
 
-        public Command(boolean shouldFail, long latencyToAdd) {
-            this(shouldFail, false, latencyToAdd, 200, 1);
+        public Command(String commandKey, boolean shouldFail, long latencyToAdd) {
+            this(commandKey, shouldFail, false, latencyToAdd, 200, 1);
         }
 
         @Override
@@ -678,48 +693,48 @@ public class HystrixCircuitBreakerTest {
 
     private class SuccessCommand extends Command {
 
-        SuccessCommand(long latencyToAdd) {
-            super(false, latencyToAdd);
+        SuccessCommand(String commandKey, long latencyToAdd) {
+            super(commandKey, false, latencyToAdd);
         }
 
-        SuccessCommand(long latencyToAdd, int sleepWindow) {
-            super(false, false, latencyToAdd, sleepWindow, 1);
+        SuccessCommand(String commandKey, long latencyToAdd, int sleepWindow) {
+            super(commandKey, false, false, latencyToAdd, sleepWindow, 1);
         }
     }
 
     private class FailureCommand extends Command {
 
-        FailureCommand(long latencyToAdd) {
-            super(true, latencyToAdd);
+        FailureCommand(String commandKey, long latencyToAdd) {
+            super(commandKey, true, latencyToAdd);
         }
 
-        FailureCommand(long latencyToAdd, int sleepWindow) {
-            super(true, false, latencyToAdd, sleepWindow, 1);
+        FailureCommand(String commandKey, long latencyToAdd, int sleepWindow) {
+            super(commandKey, true, false, latencyToAdd, sleepWindow, 1);
         }
 
-        FailureCommand(long latencyToAdd, int sleepWindow, int requestVolumeThreshold) {
-            super(true, false, latencyToAdd, sleepWindow, requestVolumeThreshold);
+        FailureCommand(String commandKey, long latencyToAdd, int sleepWindow, int requestVolumeThreshold) {
+            super(commandKey, true, false, latencyToAdd, sleepWindow, requestVolumeThreshold);
         }
     }
 
     private class TimeoutCommand extends Command {
 
-        TimeoutCommand() {
-            super(false, 2000);
+        TimeoutCommand(String commandKey) {
+            super(commandKey, false, 2000);
         }
 
-        TimeoutCommand(int sleepWindow) {
-            super(false, false, 2000, sleepWindow, 1);
+        TimeoutCommand(String commandKey, int sleepWindow) {
+            super(commandKey, false, false, 2000, sleepWindow, 1);
         }
     }
 
     private class BadRequestCommand extends Command {
-        BadRequestCommand(long latencyToAdd) {
-            super(false, true, latencyToAdd, 200, 1);
+        BadRequestCommand(String commandKey, long latencyToAdd) {
+            super(commandKey, false, true, latencyToAdd, 200, 1);
         }
 
-        BadRequestCommand(long latencyToAdd, int sleepWindow) {
-            super(false, true, latencyToAdd, sleepWindow, 1);
+        BadRequestCommand(String commandKey, long latencyToAdd, int sleepWindow) {
+            super(commandKey, false, true, latencyToAdd, sleepWindow, 1);
         }
     }
 

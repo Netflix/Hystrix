@@ -30,7 +30,9 @@ public abstract class BucketedCumulativeCounterStream<A, B> extends BucketedCoun
     }
 
     @Override
-    Observable<B> getStream() {
-        return getBucketedStream().scan(getEmptyEmitValue(), reduceBucket);
+    public Observable<B> observe() {
+        return getBucketedStream()
+                .scan(getEmptyEmitValue(), reduceBucket)
+                .skip(numBuckets);
     }
 }

@@ -15,16 +15,11 @@
  */
 package com.netflix.hystrix.metric;
 
+import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixCommandProperties;
-import rx.Observable;
-import rx.Subscription;
-import rx.functions.Func1;
-import rx.functions.Func2;
-import rx.subjects.BehaviorSubject;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Maintains a stream of concurrency distributions for a given Command.
@@ -51,18 +46,40 @@ import java.util.concurrent.TimeUnit;
  */
 public class RollingCommandConcurrencyStream extends RollingConcurrencyStream {
 
-    public static RollingCommandConcurrencyStream from(HystrixCommandEventStream commandEventStream, HystrixCommandProperties properties) {
+    private static final ConcurrentMap<String, RollingCommandConcurrencyStream> streams = new ConcurrentHashMap<String, RollingCommandConcurrencyStream>();
+
+    public static RollingCommandConcurrencyStream getInstance(HystrixCommandKey commandKey, HystrixCommandProperties properties) {
         final int counterMetricWindow = properties.metricsRollingStatisticalWindowInMilliseconds().get();
         final int numCounterBuckets = properties.metricsRollingStatisticalWindowBuckets().get();
         final int counterBucketSizeInMs = counterMetricWindow / numCounterBuckets;
 
-        RollingCommandConcurrencyStream rollingCommandConcurrencyStream =
-                new RollingCommandConcurrencyStream(commandEventStream, numCounterBuckets, counterBucketSizeInMs);
-        rollingCommandConcurrencyStream.start();
-        return rollingCommandConcurrencyStream;
+        return getInstance(commandKey, numCounterBuckets, counterBucketSizeInMs);
     }
 
-    public RollingCommandConcurrencyStream(final HystrixCommandEventStream commandEventStream, final int numBuckets, final int bucketSizeInMs) {
-        super(commandEventStream, numBuckets, bucketSizeInMs);
+    public static RollingCommandConcurrencyStream getInstance(HystrixCommandKey commandKey, int numBuckets, int bucketSizeInMs) {
+        RollingCommandConcurrencyStream initialStream = streams.get(commandKey.name());
+        if (initialStream != null) {
+            return initialStream;
+        } else {
+            synchronized (RollingCommandConcurrencyStream.class) {
+                RollingCommandConcurrencyStream existingStream = streams.get(commandKey.name());
+                if (existingStream == null) {
+                    RollingCommandConcurrencyStream newStream = new RollingCommandConcurrencyStream(commandKey, numBuckets, bucketSizeInMs);
+                    newStream.start();
+                    streams.putIfAbsent(commandKey.name(), newStream);
+                    return newStream;
+                } else {
+                    return existingStream;
+                }
+            }
+        }
+    }
+
+    public static void reset() {
+        streams.clear();
+    }
+
+    private RollingCommandConcurrencyStream(final HystrixCommandKey commandKey, final int numBuckets, final int bucketSizeInMs) {
+        super(HystrixCommandEventStream.getInstance(commandKey), numBuckets, bucketSizeInMs);
     }
 }

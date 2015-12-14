@@ -3299,7 +3299,6 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         assertEquals(1, results.ts.getOnNextEvents().size());
         assertEquals(false, results.ts.getOnNextEvents().get(0));
 
-        assertTrue(command.getExecutionTimeInMilliseconds() == -1);
         assertFalse(command.isSuccessfulExecution());
         assertTrue(command.isResponseRejected());
 

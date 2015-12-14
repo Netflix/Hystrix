@@ -95,7 +95,7 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
         return Collections.unmodifiableCollection(metrics.values());
     }
 
-    private static final Func2<long[], HystrixCommandCompletion, long[]> aggregateEventCounts = new Func2<long[], HystrixCommandCompletion, long[]>() {
+    public static final Func2<long[], HystrixCommandCompletion, long[]> aggregateEventCounts = new Func2<long[], HystrixCommandCompletion, long[]>() {
         @Override
         public long[] call(long[] initialCountArray, HystrixCommandCompletion execution) {
             long[] executionCount = execution.getEventTypeCounts();
@@ -121,7 +121,7 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
         }
     };
 
-    private static final Func2<long[], long[], long[]> counterAggregator = new Func2<long[], long[], long[]>() {
+    public static final Func2<long[], long[], long[]> counterAggregator = new Func2<long[], long[], long[]>() {
         @Override
         public long[] call(long[] cumulativeEvents, long[] bucketEventCounts) {
             for (int i = 0; i < 2; i++) {
@@ -153,10 +153,9 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
         this.threadPool = threadPool;
         this.properties = properties;
 
-        final HystrixThreadPoolEventStream threadPoolStream = HystrixThreadPoolEventStream.getInstance(threadPoolKey);
-        rollingCounterStream = RollingThreadPoolEventCounterStream.from(threadPoolStream, properties, aggregateEventCounts, counterAggregator);
-        cumulativeCounterStream = CumulativeThreadPoolEventCounterStream.from(threadPoolStream, properties, aggregateEventCounts, counterAggregator);
-        rollingThreadPoolConcurrencyStream = RollingThreadPoolConcurrencyStream.from(threadPoolStream, properties);
+        rollingCounterStream = RollingThreadPoolEventCounterStream.getInstance(threadPoolKey, properties, aggregateEventCounts, counterAggregator);
+        cumulativeCounterStream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, properties, aggregateEventCounts, counterAggregator);
+        rollingThreadPoolConcurrencyStream = RollingThreadPoolConcurrencyStream.getInstance(threadPoolKey, properties);
     }
 
     /**
