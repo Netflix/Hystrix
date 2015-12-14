@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.netflix.hystrix.metric.CumulativeCommandEventCounterStream;
 import com.netflix.hystrix.metric.HealthCountsStream;
 import com.netflix.hystrix.metric.HystrixCommandCompletion;
-import com.netflix.hystrix.metric.HystrixCommandEventStream;
+import com.netflix.hystrix.metric.HystrixCommandEvent;
 import com.netflix.hystrix.metric.HystrixThreadEventStream;
 import com.netflix.hystrix.metric.RollingCommandConcurrencyStream;
 import com.netflix.hystrix.metric.RollingCommandEventCounterStream;
@@ -44,18 +44,19 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     @SuppressWarnings("unused")
     private static final Logger logger = LoggerFactory.getLogger(HystrixCommandMetrics.class);
 
-    private static final Func2<long[], HystrixCommandCompletion, long[]> aggregateEventCounts = new Func2<long[], HystrixCommandCompletion, long[]>() {
+    public static final Func2<long[], HystrixCommandCompletion, long[]> aggregateEventCounts = new Func2<long[], HystrixCommandCompletion, long[]>() {
         @Override
         public long[] call(long[] initialCountArray, HystrixCommandCompletion execution) {
             long[] executionCount = execution.getEventTypeCounts();
             for (int i = 0; i < initialCountArray.length; i++) {
+
                 initialCountArray[i] += executionCount[i];
             }
             return initialCountArray;
         }
     };
 
-    private static final Func2<long[], long[], long[]> bucketAggregator = new Func2<long[], long[], long[]>() {
+    public static final Func2<long[], long[], long[]> bucketAggregator = new Func2<long[], long[], long[]>() {
         @Override
         public long[] call(long[] cumulativeEvents, long[] bucketEventCounts) {
             for (HystrixEventType eventType: HystrixEventType.values()) {
@@ -166,8 +167,8 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     private final HystrixCommandGroupKey group;
     private final HystrixThreadPoolKey threadPoolKey;
     private final AtomicInteger concurrentExecutionCount = new AtomicInteger();
+    private final AtomicInteger concurrentFallbackExecutionCount = new AtomicInteger();
 
-    private final HystrixCommandEventStream commandEventStream;
     private HealthCountsStream healthCountsStream;
     private final RollingCommandEventCounterStream rollingCommandEventCounterStream;
     private final CumulativeCommandEventCounterStream cumulativeCommandEventCounterStream;
@@ -181,19 +182,18 @@ public class HystrixCommandMetrics extends HystrixMetrics {
         this.threadPoolKey = threadPoolKey;
         this.properties = properties;
 
-        commandEventStream = HystrixCommandEventStream.getInstance(key);
+        healthCountsStream = HealthCountsStream.getInstance(key, properties, aggregateEventCounts);
+        rollingCommandEventCounterStream = RollingCommandEventCounterStream.getInstance(key, properties, aggregateEventCounts, bucketAggregator);
+        cumulativeCommandEventCounterStream = CumulativeCommandEventCounterStream.getInstance(key, properties, aggregateEventCounts, bucketAggregator);
 
-        healthCountsStream = HealthCountsStream.from(commandEventStream, properties, aggregateEventCounts);
-        rollingCommandEventCounterStream = RollingCommandEventCounterStream.from(commandEventStream, properties, aggregateEventCounts, bucketAggregator);
-        cumulativeCommandEventCounterStream = CumulativeCommandEventCounterStream.from(commandEventStream, properties, aggregateEventCounts, bucketAggregator);
-
-        rollingCommandLatencyStream = RollingCommandLatencyStream.from(commandEventStream, properties);
-        rollingCommandConcurrencyStream = RollingCommandConcurrencyStream.from(commandEventStream, properties);
+        rollingCommandLatencyStream = RollingCommandLatencyStream.getInstance(key, properties);
+        rollingCommandConcurrencyStream = RollingCommandConcurrencyStream.getInstance(key, properties);
     }
 
     /* package */ void resetStream() {
         healthCountsStream.unsubscribe();
-        healthCountsStream = HealthCountsStream.from(commandEventStream, properties, aggregateEventCounts);
+        HealthCountsStream.removeByKey(key);
+        healthCountsStream = HealthCountsStream.getInstance(key, properties, aggregateEventCounts);
     }
 
     /**
@@ -323,30 +323,32 @@ public class HystrixCommandMetrics extends HystrixMetrics {
         return concurrentExecutionCount.get();
     }
 
-    /**
-     * Increment concurrent requests counter.
-     */
-    /* package */void incrementConcurrentExecutionCount() {
-        int numConcurrent = concurrentExecutionCount.incrementAndGet();
+    /* package-private */ void markCommandConstructed(HystrixInvokableInfo<?> commandInstance) {
+        HystrixThreadEventStream.getInstance().commandConstructed(commandInstance);
     }
 
-    /**
-     * Decrement concurrent requests counter.
-     */
-    /* package */void decrementConcurrentExecutionCount() {
-        concurrentExecutionCount.decrementAndGet();
+    /* package-private */ void markCommandStart(HystrixInvokableInfo<?> commandInstance) {
+        HystrixThreadEventStream.getInstance().executionStart(commandInstance);
+        concurrentExecutionCount.incrementAndGet();
     }
 
-    /* package-private*/ void markCommandStart(HystrixInvokableInfo<?> commandInstance) {
-        HystrixThreadEventStream.getInstance().commandStart(commandInstance);
+    /* package-private */ void markCommandDone(HystrixInvokableInfo<?> commandInstance, AbstractCommand.ExecutionResult executionResult) {
+        HystrixThreadEventStream.getInstance().executionDone(
+                commandInstance, executionResult.getEventCounts(), executionResult.getExecutionLatency(),
+                executionResult.getUserThreadLatency(), executionResult.executionOccurred());
+        if (executionResult.executionOccurred()) {
+            concurrentExecutionCount.decrementAndGet();
+        }
     }
 
-    /* package-private*/ void markResponseFromCache(HystrixInvokableInfo<?> commandInstance) {
-        HystrixThreadEventStream.getInstance().commandResponseFromCache(commandInstance);
+    /* package-private */ void markFallbackExecutionStart(HystrixInvokableInfo<?> commandInstance) {
+        //TODO add ThreadEventStream event
+        concurrentFallbackExecutionCount.incrementAndGet();
     }
 
-    /* package-private */ void markCommandCompletion(HystrixInvokableInfo<?> commandInstance, AbstractCommand.ExecutionResult executionResult) {
-        HystrixThreadEventStream.getInstance().commandEnd(commandInstance, executionResult.getEventCounts(), executionResult.getExecutionLatency(), executionResult.getUserThreadLatency());
+    /* package-private */ void markFallbackExecutionDone(HystrixInvokableInfo<?> commandInstance) {
+        //TODO add ThreadEventStream event
+        concurrentFallbackExecutionCount.decrementAndGet();
     }
 
     /**

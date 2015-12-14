@@ -16,9 +16,9 @@
 package com.netflix.hystrix.metric;
 
 import com.netflix.hystrix.HystrixCommandKey;
-import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.HystrixInvokableInfo;
 import com.netflix.hystrix.HystrixThreadPoolKey;
+import rx.functions.Func1;
 
 public abstract class HystrixCommandEvent {
     abstract HystrixInvokableInfo<?> getCommandInstance();
@@ -31,9 +31,25 @@ public abstract class HystrixCommandEvent {
         return getCommandInstance().getThreadPoolKey();
     }
 
-    public enum CommandExecutionState {
-        START, RESPONSE_FROM_CACHE, END;
-    }
+    public abstract boolean isExecutionStart();
 
-    public abstract CommandExecutionState executionState();
+    public abstract boolean isThreadPoolExecutionStart();
+
+    public abstract boolean isCommandCompletion();
+
+    public abstract boolean didCommandExecute();
+
+    public static final Func1<HystrixCommandEvent, Boolean> filterCompletionsOnly = new Func1<HystrixCommandEvent, Boolean>() {
+        @Override
+        public Boolean call(HystrixCommandEvent commandEvent) {
+            return commandEvent.isCommandCompletion();
+        }
+    };
+
+    public static final Func1<HystrixCommandEvent, Boolean> filterActualExecutions = new Func1<HystrixCommandEvent, Boolean>() {
+        @Override
+        public Boolean call(HystrixCommandEvent commandEvent) {
+            return commandEvent.didCommandExecute();
+        }
+    };
 }

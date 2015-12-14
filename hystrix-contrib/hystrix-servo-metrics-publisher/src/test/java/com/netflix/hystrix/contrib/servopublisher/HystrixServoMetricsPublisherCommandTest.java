@@ -79,7 +79,7 @@ public class HystrixServoMetricsPublisherCommandTest {
             Thread.sleep(1000 - (endTime - startTime)); //sleep the remainder of the 1000ms allotted
         }
 
-        Thread.sleep(100);
+        Thread.sleep(1000);
 
         assertEquals(40L, servoPublisher.getCumulativeMonitor("success", HystrixEventType.SUCCESS).getValue());
         assertEquals(5L, servoPublisher.getCumulativeMonitor("timeout", HystrixEventType.TIMEOUT).getValue());

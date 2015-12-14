@@ -15,10 +15,14 @@
  */
 package com.netflix.hystrix.metric;
 
+import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixCommandMetrics;
 import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.HystrixEventType;
 import rx.functions.Func2;
+
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Maintains a stream of rolling health counts for a given Command.
@@ -34,6 +38,8 @@ import rx.functions.Func2;
  */
 public class HealthCountsStream extends BucketedRollingCounterStream<long[], HystrixCommandMetrics.HealthCounts> {
 
+    private static final ConcurrentMap<String, HealthCountsStream> streams = new ConcurrentHashMap<String, HealthCountsStream>();
+
     private static final Func2<HystrixCommandMetrics.HealthCounts, long[], HystrixCommandMetrics.HealthCounts> healthCheckAccumulator = new Func2<HystrixCommandMetrics.HealthCounts, long[], HystrixCommandMetrics.HealthCounts>() {
         @Override
         public HystrixCommandMetrics.HealthCounts call(HystrixCommandMetrics.HealthCounts healthCounts, long[] bucketEventCounts) {
@@ -41,21 +47,49 @@ public class HealthCountsStream extends BucketedRollingCounterStream<long[], Hys
         }
     };
 
-    public static HealthCountsStream from(HystrixCommandEventStream commandEventStream, HystrixCommandProperties properties,
+
+    public static HealthCountsStream getInstance(HystrixCommandKey commandKey, HystrixCommandProperties properties,
                                           Func2<long[], HystrixCommandCompletion, long[]> reduceCommandCompletion) {
         final int healthCountBucketSizeInMs = properties.metricsHealthSnapshotIntervalInMilliseconds().get();
         if (healthCountBucketSizeInMs == 0) {
             throw new RuntimeException("You have set the bucket size to 0ms.  Please set a positive number, so that the metric stream can be properly consumed");
         }
         final int numHealthCountBuckets = properties.metricsRollingStatisticalWindowInMilliseconds().get() / healthCountBucketSizeInMs;
-        HealthCountsStream healthCountsStream =  new HealthCountsStream(commandEventStream, numHealthCountBuckets, healthCountBucketSizeInMs, reduceCommandCompletion);
-        healthCountsStream.start();
-        return healthCountsStream;
+
+        return getInstance(commandKey, numHealthCountBuckets, healthCountBucketSizeInMs, reduceCommandCompletion);
     }
 
-    private HealthCountsStream(final HystrixCommandEventStream commandEventStream, final int numBuckets, final int bucketSizeInMs,
+    public static HealthCountsStream getInstance(HystrixCommandKey commandKey, int numBuckets, int bucketSizeInMs,
+                                                 Func2<long[], HystrixCommandCompletion, long[]> reduceCommandCompletion) {
+        HealthCountsStream initialStream = streams.get(commandKey.name());
+        if (initialStream != null) {
+            return initialStream;
+        } else {
+            synchronized (HealthCountsStream.class) {
+                HealthCountsStream existingStream = streams.get(commandKey.name());
+                if (existingStream == null) {
+                    HealthCountsStream newStream = new HealthCountsStream(commandKey, numBuckets, bucketSizeInMs, reduceCommandCompletion);
+                    newStream.start();
+                    streams.putIfAbsent(commandKey.name(), newStream);
+                    return newStream;
+                } else {
+                    return existingStream;
+                }
+            }
+        }
+    }
+
+    public static void reset() {
+        streams.clear();
+    }
+
+    public static void removeByKey(HystrixCommandKey key) {
+        streams.remove(key.name());
+    }
+
+    private HealthCountsStream(final HystrixCommandKey commandKey, final int numBuckets, final int bucketSizeInMs,
                                Func2<long[], HystrixCommandCompletion, long[]> reduceCommandCompletion) {
-        super(commandEventStream, numBuckets, bucketSizeInMs, reduceCommandCompletion, healthCheckAccumulator);
+        super(HystrixCommandEventStream.getInstance(commandKey), numBuckets, bucketSizeInMs, reduceCommandCompletion, healthCheckAccumulator);
     }
 
     @Override

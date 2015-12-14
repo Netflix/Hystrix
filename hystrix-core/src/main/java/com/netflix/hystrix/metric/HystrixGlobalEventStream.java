@@ -17,7 +17,6 @@ package com.netflix.hystrix.metric;
 
 import rx.Observable;
 import rx.functions.Action1;
-import rx.functions.Func1;
 import rx.observers.Subscribers;
 import rx.subjects.PublishSubject;
 import rx.subjects.SerializedSubject;
@@ -37,17 +36,6 @@ public class HystrixGlobalEventStream {
         }
     };
 
-    private static final Func1<HystrixCommandEvent, Boolean> filterCommandCompletions = new Func1<HystrixCommandEvent, Boolean>() {
-        @Override
-        public Boolean call(HystrixCommandEvent commandEvent) {
-            switch (commandEvent.executionState()) {
-                case RESPONSE_FROM_CACHE: return true;
-                case END: return true;
-                default: return false;
-            }
-        }
-    };
-
     public static HystrixGlobalEventStream getInstance() {
         return INSTANCE;
     }
@@ -63,10 +51,14 @@ public class HystrixGlobalEventStream {
     }
 
     public Observable<HystrixCommandCompletion> observeCommandCompletions() {
-        return globalStream.filter(filterCommandCompletions).cast(HystrixCommandCompletion.class);
+        return globalStream
+                .filter(HystrixCommandEvent.filterCompletionsOnly)
+                .cast(HystrixCommandCompletion.class);
     }
 
     public static void registerThreadStream(HystrixThreadEventStream threadEventStream) {
-        threadEventStream.observe().doOnNext(writeToGlobalStream).unsafeSubscribe(Subscribers.empty());
+        threadEventStream.observe()
+                .doOnNext(writeToGlobalStream)
+                .unsafeSubscribe(Subscribers.empty());
     }
 }

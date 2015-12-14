@@ -17,11 +17,11 @@ package com.netflix.hystrix.metric;
 
 import com.netflix.hystrix.HystrixInvokableInfo;
 
-public class HystrixCommandStart extends HystrixCommandEvent {
+public class HystrixCommandConstructed extends HystrixCommandEvent {
 	private final long timestamp;
     private final HystrixInvokableInfo<?> commandInstance;
 
-    public HystrixCommandStart(HystrixInvokableInfo<?> commandInstance) {
+    public HystrixCommandConstructed(HystrixInvokableInfo<?> commandInstance) {
         this.timestamp = System.currentTimeMillis();
         this.commandInstance = commandInstance;
     }
@@ -32,7 +32,22 @@ public class HystrixCommandStart extends HystrixCommandEvent {
     }
 
     @Override
-    public CommandExecutionState executionState() {
-        return CommandExecutionState.START;
+    public boolean isExecutionStart() {
+        return false;
+    }
+
+    @Override
+    public boolean isThreadPoolExecutionStart() {
+        return false;
+    }
+
+    @Override
+    public boolean isCommandCompletion() {
+        return false;
+    }
+
+    @Override
+    public boolean didCommandExecute() {
+        return false;
     }
 }

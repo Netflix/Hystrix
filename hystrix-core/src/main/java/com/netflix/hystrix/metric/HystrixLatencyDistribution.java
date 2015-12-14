@@ -281,6 +281,10 @@ public class HystrixLatencyDistribution {
         return this;
     }
 
+    long count() {
+        return executionLatencyDistribution.getTotalCount();
+    }
+
     //get an object from the pool
     public static HystrixLatencyDistribution acquire() {
         HystrixLatencyDistribution fromPool = POOL.poll();
@@ -302,4 +306,6 @@ public class HystrixLatencyDistribution {
         executionLatencyDistribution.reset();
         totalLatencyDistribution.reset();
     }
+
+
 }

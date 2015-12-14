@@ -15,7 +15,11 @@
  */
 package com.netflix.hystrix.metric;
 
+import com.netflix.hystrix.HystrixThreadPoolKey;
 import com.netflix.hystrix.HystrixThreadPoolProperties;
+
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Maintains a stream of concurrency distributions for a given ThreadPool.
@@ -42,18 +46,41 @@ import com.netflix.hystrix.HystrixThreadPoolProperties;
  */
 public class RollingThreadPoolConcurrencyStream extends RollingConcurrencyStream {
 
-    public static RollingThreadPoolConcurrencyStream from(HystrixThreadPoolEventStream threadPoolEventStream, HystrixThreadPoolProperties properties) {
+    private static final ConcurrentMap<String, RollingThreadPoolConcurrencyStream> streams = new ConcurrentHashMap<String, RollingThreadPoolConcurrencyStream>();
+
+    public static RollingThreadPoolConcurrencyStream getInstance(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolProperties properties) {
         final int counterMetricWindow = properties.metricsRollingStatisticalWindowInMilliseconds().get();
         final int numCounterBuckets = properties.metricsRollingStatisticalWindowBuckets().get();
         final int counterBucketSizeInMs = counterMetricWindow / numCounterBuckets;
 
-        RollingThreadPoolConcurrencyStream rollingThreadPoolConcurrencyStream =
-                new RollingThreadPoolConcurrencyStream(threadPoolEventStream, numCounterBuckets, counterBucketSizeInMs);
-        rollingThreadPoolConcurrencyStream.start();
-        return rollingThreadPoolConcurrencyStream;
+        return getInstance(threadPoolKey, numCounterBuckets, counterBucketSizeInMs);
     }
 
-    public RollingThreadPoolConcurrencyStream(final HystrixThreadPoolEventStream threadPoolEventStream, final int numBuckets, final int bucketSizeInMs) {
-        super(threadPoolEventStream, numBuckets, bucketSizeInMs);
+    public static RollingThreadPoolConcurrencyStream getInstance(HystrixThreadPoolKey threadPoolKey, int numBuckets, int bucketSizeInMs) {
+        RollingThreadPoolConcurrencyStream initialStream = streams.get(threadPoolKey.name());
+        if (initialStream != null) {
+            return initialStream;
+        } else {
+            synchronized (RollingThreadPoolConcurrencyStream.class) {
+                RollingThreadPoolConcurrencyStream existingStream = streams.get(threadPoolKey.name());
+                if (existingStream == null) {
+                    RollingThreadPoolConcurrencyStream newStream =
+                            new RollingThreadPoolConcurrencyStream(threadPoolKey, numBuckets, bucketSizeInMs);
+                    newStream.start();
+                    streams.putIfAbsent(threadPoolKey.name(), newStream);
+                    return newStream;
+                } else {
+                    return existingStream;
+                }
+            }
+        }
+    }
+
+    public static void reset() {
+        streams.clear();
+    }
+
+    public RollingThreadPoolConcurrencyStream(final HystrixThreadPoolKey threadPoolKey, final int numBuckets, final int bucketSizeInMs) {
+        super(HystrixThreadPoolEventStream.getInstance(threadPoolKey), numBuckets, bucketSizeInMs);
     }
 }

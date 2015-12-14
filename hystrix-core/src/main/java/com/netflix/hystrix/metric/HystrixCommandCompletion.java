@@ -43,6 +43,21 @@ public abstract class HystrixCommandCompletion extends HystrixCommandEvent {
         return commandInstance.getThreadPoolKey();
     }
 
+    @Override
+    public boolean isExecutionStart() {
+        return false;
+    }
+
+    @Override
+    public boolean isThreadPoolExecutionStart() {
+        return false;
+    }
+
+    @Override
+    public boolean isCommandCompletion() {
+        return true;
+    }
+
     public HystrixInvokableInfo<?> getCommandInstance() {
         return commandInstance;
     }

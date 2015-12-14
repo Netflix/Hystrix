@@ -15,12 +15,13 @@
  */
 package com.netflix.hystrix.metric;
 
+import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.HystrixEventType;
-import rx.Observable;
-import rx.Subscription;
 import rx.functions.Func2;
-import rx.subjects.BehaviorSubject;
+
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Maintains a stream of event counters for a given Command.
@@ -36,23 +37,47 @@ import rx.subjects.BehaviorSubject;
  */
 public class RollingCommandEventCounterStream extends BucketedRollingCounterStream<long[], long[]> {
 
-    public static RollingCommandEventCounterStream from(HystrixCommandEventStream commandEventStream, HystrixCommandProperties properties,
+    private static final ConcurrentMap<String, RollingCommandEventCounterStream> streams = new ConcurrentHashMap<String, RollingCommandEventCounterStream>();
+
+    public static RollingCommandEventCounterStream getInstance(HystrixCommandKey commandKey, HystrixCommandProperties properties,
                                                         Func2<long[], HystrixCommandCompletion, long[]> reduceCommandCompletion,
                                                         Func2<long[], long[], long[]> reduceBucket) {
         final int counterMetricWindow = properties.metricsRollingStatisticalWindowInMilliseconds().get();
         final int numCounterBuckets = properties.metricsRollingStatisticalWindowBuckets().get();
         final int counterBucketSizeInMs = counterMetricWindow / numCounterBuckets;
 
-        RollingCommandEventCounterStream rollingCommandEventCounterStream =
-                new RollingCommandEventCounterStream(commandEventStream, numCounterBuckets, counterBucketSizeInMs, reduceCommandCompletion, reduceBucket);
-        rollingCommandEventCounterStream.start();
-        return rollingCommandEventCounterStream;
+        return getInstance(commandKey, numCounterBuckets, counterBucketSizeInMs, reduceCommandCompletion, reduceBucket);
     }
 
-    private RollingCommandEventCounterStream(HystrixCommandEventStream commandEventStream, int numCounterBuckets, int counterBucketSizeInMs,
+    public static RollingCommandEventCounterStream getInstance(HystrixCommandKey commandKey, int numBuckets, int bucketSizeInMs,
+                                                               Func2<long[], HystrixCommandCompletion, long[]> reduceCommandCompletion,
+                                                               Func2<long[], long[], long[]> reduceBucket) {
+        RollingCommandEventCounterStream initialStream = streams.get(commandKey.name());
+        if (initialStream != null) {
+            return initialStream;
+        } else {
+            synchronized (RollingCommandEventCounterStream.class) {
+                RollingCommandEventCounterStream existingStream = streams.get(commandKey.name());
+                if (existingStream == null) {
+                    RollingCommandEventCounterStream newStream = new RollingCommandEventCounterStream(commandKey, numBuckets, bucketSizeInMs, reduceCommandCompletion, reduceBucket);
+                    newStream.start();
+                    streams.putIfAbsent(commandKey.name(), newStream);
+                    return newStream;
+                } else {
+                    return existingStream;
+                }
+            }
+        }
+    }
+
+    public static void reset() {
+        streams.clear();
+    }
+
+    private RollingCommandEventCounterStream(HystrixCommandKey commandKey, int numCounterBuckets, int counterBucketSizeInMs,
                                              Func2<long[], HystrixCommandCompletion, long[]> reduceCommandCompletion,
                                              Func2<long[], long[], long[]> reduceBucket) {
-        super(commandEventStream, numCounterBuckets, counterBucketSizeInMs, reduceCommandCompletion, reduceBucket);
+        super(HystrixCommandEventStream.getInstance(commandKey), numCounterBuckets, counterBucketSizeInMs, reduceCommandCompletion, reduceBucket);
     }
 
     @Override

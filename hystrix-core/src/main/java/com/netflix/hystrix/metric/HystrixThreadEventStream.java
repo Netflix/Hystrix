@@ -17,12 +17,11 @@ package com.netflix.hystrix.metric;
 
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandKey;
-import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.HystrixInvokableInfo;
 import com.netflix.hystrix.HystrixThreadPool;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import rx.Observable;
-import rx.functions.Func1;
+import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 import rx.subjects.PublishSubject;
 import rx.subjects.Subject;
@@ -57,17 +56,6 @@ public class HystrixThreadEventStream {
         }
     };
 
-    private static final Func1<HystrixCommandEvent, Boolean> filterCommandCompletions = new Func1<HystrixCommandEvent, Boolean>() {
-        @Override
-        public Boolean call(HystrixCommandEvent commandEvent) {
-            switch (commandEvent.executionState()) {
-                case RESPONSE_FROM_CACHE: return true;
-                case END: return true;
-                default: return false;
-            }
-        }
-    };
-
     /* package */ HystrixThreadEventStream(Thread thread) {
         this.threadId = thread.getId();
         this.threadName = thread.getName();
@@ -78,30 +66,61 @@ public class HystrixThreadEventStream {
         return threadLocalStreams.get();
     }
 
-    public void commandStart(HystrixInvokableInfo<?> commandInstance) {
-        subject.onNext(new HystrixCommandStart(commandInstance));
+    public void commandConstructed(HystrixInvokableInfo<?> commandInstance) {
+        subject.onNext(new HystrixCommandConstructed(commandInstance));
     }
 
-    public void commandResponseFromCache(HystrixInvokableInfo<?> commandInstance) {
-        subject.onNext(HystrixCommandResponseFromCache.from(commandInstance, HystrixRequestContext.getContextForCurrentThread()));
+    public void executionStart(HystrixInvokableInfo<?> commandInstance) {
+        subject.onNext(new HystrixCommandExecutionStarted(commandInstance));
     }
 
-    public void commandEnd(HystrixInvokableInfo<?> commandInstance, long[] eventTypeCounts, long executionLatency, long totalLatency) {
-        HystrixCommandExecution event = HystrixCommandExecution.from(commandInstance, eventTypeCounts, HystrixRequestContext.getContextForCurrentThread(), executionLatency, totalLatency);
+    public void executionDone(HystrixInvokableInfo<?> commandInstance, long[] eventTypeCounts, long executionLatency, long totalLatency, boolean didExecutionOccur) {
+        HystrixCommandExecution event = HystrixCommandExecution.from(commandInstance, eventTypeCounts,
+                HystrixRequestContext.getContextForCurrentThread(), executionLatency, totalLatency, didExecutionOccur);
         subject.onNext(event);
     }
 
     public Observable<HystrixCommandEvent> observe() {
-        return subject.onBackpressureBuffer().observeOn(Schedulers.computation());
+        return subject
+                .onBackpressureBuffer()
+                .observeOn(Schedulers.computation());
     }
 
     public Observable observeCommandCompletions() {
-        return subject.onBackpressureBuffer().filter(filterCommandCompletions).cast(HystrixCommandCompletion.class).observeOn(Schedulers.computation());
+        return subject
+                .onBackpressureBuffer()
+                .filter(HystrixCommandEvent.filterCompletionsOnly)
+                .cast(HystrixCommandCompletion.class)
+                .observeOn(Schedulers.computation());
     }
 
     public void shutdown() {
         subject.onCompleted();
     }
+
+    /*private static String bucketToStr(long[] eventTypeCounts) {
+        StringBuilder sb = new StringBuilder();
+        List<HystrixEventType> foundEventTypes = new ArrayList<HystrixEventType>();
+
+        for (HystrixEventType eventType: HystrixEventType.values()) {
+            if (eventTypeCounts[eventType.ordinal()] > 0) {
+                foundEventTypes.add(eventType);
+            }
+        }
+        System.out.println("FOUND : " + foundEventTypes.size());
+        int i = 0;
+        for (HystrixEventType eventType: foundEventTypes) {
+            sb.append(eventType.name());
+            if (eventTypeCounts[eventType.ordinal()] > 1) {
+                sb.append("x").append(eventTypeCounts[eventType.ordinal()]);
+            }
+            if (i < foundEventTypes.size() - 1) {
+                sb.append(", ");
+            }
+            i++;
+        }
+        return sb.toString();
+    }*/
 
     @Override
     public String toString() {

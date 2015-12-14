@@ -15,11 +15,11 @@
  */
 package com.netflix.hystrix.metric;
 
-import com.netflix.hystrix.HystrixEventType;
+import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.HystrixThreadPoolKey;
 import rx.Observable;
+import rx.functions.Action1;
 import rx.functions.Func1;
-import rx.functions.Func2;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -60,7 +60,9 @@ public class HystrixThreadPoolEventStream implements HystrixEventStream {
         this.filterByThreadPoolKey = new Func1<HystrixCommandEvent, Boolean>() {
             @Override
             public Boolean call(HystrixCommandEvent commandEvent) {
-                if (commandEvent.getCommandInstance().isExecutedInThread() || commandEvent.getCommandInstance().isResponseThreadPoolRejected()) {
+                if (commandEvent.isThreadPoolExecutionStart()
+                        || commandEvent.getCommandInstance().isExecutedInThread()
+                        || commandEvent.getCommandInstance().isResponseThreadPoolRejected()) {
                     HystrixThreadPoolKey executionThreadPoolKey = commandEvent.getThreadPoolKey();
                     if (executionThreadPoolKey != null) {
                         return executionThreadPoolKey.equals(threadPoolKey);
@@ -80,15 +82,20 @@ public class HystrixThreadPoolEventStream implements HystrixEventStream {
 
     @Override
     public Observable<HystrixCommandEvent> observe() {
-        return HystrixGlobalEventStream.getInstance().observe().filter(filterByThreadPoolKey);
+        return HystrixGlobalEventStream.getInstance()
+                .observe()
+                .filter(filterByThreadPoolKey);
     }
 
     public Observable<HystrixCommandCompletion> observeCommandCompletions() {
-        return HystrixGlobalEventStream.getInstance().observeCommandCompletions().filter(filterByThreadPoolKey);
+        return HystrixGlobalEventStream.getInstance()
+                .observeCommandCompletions()
+                .filter(filterByThreadPoolKey);
     }
 
     @Override
     public Observable<Observable<HystrixCommandCompletion>> getBucketedStreamOfCommandCompletions(int bucketSizeInMs) {
-        return observeCommandCompletions().window(bucketSizeInMs, TimeUnit.MILLISECONDS);
+        return observeCommandCompletions()
+                .window(bucketSizeInMs, TimeUnit.MILLISECONDS);
     }
 }

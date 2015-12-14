@@ -15,9 +15,13 @@
  */
 package com.netflix.hystrix.metric;
 
+import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.HystrixEventType;
 import rx.functions.Func2;
+
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Maintains a stream of event counters for a given Command.
@@ -35,23 +39,47 @@ import rx.functions.Func2;
  */
 public class CumulativeCommandEventCounterStream extends BucketedCumulativeCounterStream<long[], long[]> {
 
-    public static CumulativeCommandEventCounterStream from(HystrixCommandEventStream commandEventStream, HystrixCommandProperties properties,
+    private static final ConcurrentMap<String, CumulativeCommandEventCounterStream> streams = new ConcurrentHashMap<String, CumulativeCommandEventCounterStream>();
+
+    public static CumulativeCommandEventCounterStream getInstance(HystrixCommandKey commandKey, HystrixCommandProperties properties,
                                                            Func2<long[], HystrixCommandCompletion, long[]> reduceCommandCompletion,
                                                            Func2<long[], long[], long[]> reduceBucket) {
         final int counterMetricWindow = properties.metricsRollingStatisticalWindowInMilliseconds().get();
         final int numCounterBuckets = properties.metricsRollingStatisticalWindowBuckets().get();
         final int counterBucketSizeInMs = counterMetricWindow / numCounterBuckets;
 
-        CumulativeCommandEventCounterStream cumulativeCommandEventCounterStream =
-                new CumulativeCommandEventCounterStream(commandEventStream, numCounterBuckets, counterBucketSizeInMs, reduceCommandCompletion, reduceBucket);
-        cumulativeCommandEventCounterStream.start();
-        return cumulativeCommandEventCounterStream;
+        return getInstance(commandKey, numCounterBuckets, counterBucketSizeInMs, reduceCommandCompletion, reduceBucket);
     }
 
-    private CumulativeCommandEventCounterStream(HystrixCommandEventStream commandEventStream, int numCounterBuckets, int counterBucketSizeInMs,
+    public static CumulativeCommandEventCounterStream getInstance(HystrixCommandKey commandKey, int numBuckets, int bucketSizeInMs,
+                                                                  Func2<long[], HystrixCommandCompletion, long[]> reduceCommandCompletion,
+                                                                  Func2<long[], long[], long[]> reduceBucket) {
+        CumulativeCommandEventCounterStream initialStream = streams.get(commandKey.name());
+        if (initialStream != null) {
+            return initialStream;
+        } else {
+            synchronized (CumulativeCommandEventCounterStream.class) {
+                CumulativeCommandEventCounterStream existingStream = streams.get(commandKey.name());
+                if (existingStream == null) {
+                    CumulativeCommandEventCounterStream newStream = new CumulativeCommandEventCounterStream(commandKey, numBuckets, bucketSizeInMs, reduceCommandCompletion, reduceBucket);
+                    newStream.start();
+                    streams.putIfAbsent(commandKey.name(), newStream);
+                    return newStream;
+                } else {
+                    return existingStream;
+                }
+            }
+        }
+    }
+
+    public static void reset() {
+        streams.clear();
+    }
+
+    private CumulativeCommandEventCounterStream(HystrixCommandKey commandKey, int numCounterBuckets, int counterBucketSizeInMs,
                                                 Func2<long[], HystrixCommandCompletion, long[]> reduceCommandCompletion,
                                                 Func2<long[], long[], long[]> reduceBucket) {
-        super(commandEventStream, numCounterBuckets, counterBucketSizeInMs, reduceCommandCompletion, reduceBucket);
+        super(HystrixCommandEventStream.getInstance(commandKey), numCounterBuckets, counterBucketSizeInMs, reduceCommandCompletion, reduceBucket);
     }
 
     @Override
