@@ -132,7 +132,7 @@ public abstract class CommonEventStreamTest {
                         Thread.sleep(latency); //simulate some latency in the command execution
                         long[] eventTypeCounts = new long[HystrixEventType.values().length];
                         eventTypeCounts[event.ordinal()]++;
-                        stream.commandEnd(cmd, eventTypeCounts, latency, latency);
+                        stream.executionDone(cmd, eventTypeCounts, latency, latency, true);
                     }
                 } catch (InterruptedException ex) {
                     fail("InterruptedException : " + ex);

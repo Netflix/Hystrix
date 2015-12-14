@@ -21,15 +21,21 @@ import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 public class HystrixCommandExecution extends HystrixCommandCompletion {
     private final long executionLatency;
     private final long totalLatency;
+    private final boolean didExecutionOccur;
 
-    private HystrixCommandExecution(HystrixInvokableInfo<?> commandInstance, long[] eventTypeCounts, HystrixRequestContext requestContext, long executionLatency, long totalLatency) {
+    private HystrixCommandExecution(HystrixInvokableInfo<?> commandInstance, long[] eventTypeCounts,
+                                    HystrixRequestContext requestContext, long executionLatency, long totalLatency,
+                                    boolean didExecutionOccur) {
         super(commandInstance, eventTypeCounts, requestContext);
         this.executionLatency = executionLatency;
         this.totalLatency = totalLatency;
+        this.didExecutionOccur = didExecutionOccur;
     }
 
-    public static HystrixCommandExecution from(HystrixInvokableInfo<?> commandInstance, long[] eventTypeCounts, HystrixRequestContext requestContext, long executionLatency, long totalLatency) {
-        return new HystrixCommandExecution(commandInstance, eventTypeCounts, requestContext, executionLatency, totalLatency);
+    public static HystrixCommandExecution from(HystrixInvokableInfo<?> commandInstance, long[] eventTypeCounts,
+                                               HystrixRequestContext requestContext, long executionLatency,
+                                               long totalLatency, boolean didExecutionOccur) {
+        return new HystrixCommandExecution(commandInstance, eventTypeCounts, requestContext, executionLatency, totalLatency, didExecutionOccur);
     }
 
     public long[] getEventTypeCounts() {
@@ -45,7 +51,7 @@ public class HystrixCommandExecution extends HystrixCommandCompletion {
     }
 
     @Override
-    public CommandExecutionState executionState() {
-        return CommandExecutionState.END;
+    public boolean didCommandExecute() {
+        return didExecutionOccur;
     }
 }

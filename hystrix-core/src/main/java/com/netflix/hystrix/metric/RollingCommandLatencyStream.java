@@ -16,7 +16,10 @@
 
 package com.netflix.hystrix.metric;
 
+import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixCommandProperties;
+import com.netflix.hystrix.HystrixInvokableInfo;
+
 import rx.Observable;
 import rx.Subscription;
 import rx.functions.Action1;
@@ -27,6 +30,8 @@ import rx.subjects.BehaviorSubject;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Maintains a stream of latency distributions for a given Command.
@@ -38,9 +43,12 @@ import java.util.List;
  *
  * These values are stable - there's no peeking into a bucket until it is emitted
  *
+ * The only latencies which get included in the distribution are for those commands which started execution.
+ * This relies on {@link HystrixCommandEvent#didCommandExecute()}
+ *
  * These values get produced and cached in this class.
  * The distributions can be queried on 2 dimensions:
- * A) Execution time or total time
+ * * Execution time or total time
  * ** Execution time is the time spent executing the user-provided execution method.
  * ** Total time is the time spent from the perspecitve of the consumer, and includes all Hystrix bookkeeping.
  */
@@ -48,8 +56,11 @@ public class RollingCommandLatencyStream {
     private Subscription rollingLatencySubscription;
     private final BehaviorSubject<HystrixLatencyDistribution> rollingLatencyDistribution =
             BehaviorSubject.create(HystrixLatencyDistribution.empty());
+    final Observable<HystrixLatencyDistribution> rollingLatencyStream;
 
-    private static final Func2<HystrixLatencyDistribution, HystrixCommandCompletion, HystrixLatencyDistribution> aggregateEventLatencies = new Func2<HystrixLatencyDistribution, HystrixCommandCompletion, HystrixLatencyDistribution>() {
+    private static final ConcurrentMap<String, RollingCommandLatencyStream> streams = new ConcurrentHashMap<String, RollingCommandLatencyStream>();
+
+    private static final Func2<HystrixLatencyDistribution, HystrixCommandCompletion, HystrixLatencyDistribution> addLatenciesToBucket = new Func2<HystrixLatencyDistribution, HystrixCommandCompletion, HystrixLatencyDistribution>() {
         @Override
         public HystrixLatencyDistribution call(HystrixLatencyDistribution initialLatencyDistribution, HystrixCommandCompletion execution) {
             initialLatencyDistribution.recordLatencies(execution.getExecutionLatency(), execution.getTotalLatency());
@@ -59,8 +70,8 @@ public class RollingCommandLatencyStream {
 
     private static final Func1<Observable<HystrixCommandCompletion>, Observable<HystrixLatencyDistribution>> reduceBucketToSingleLatencyDistribution = new Func1<Observable<HystrixCommandCompletion>, Observable<HystrixLatencyDistribution>>() {
         @Override
-        public Observable<HystrixLatencyDistribution> call(Observable<HystrixCommandCompletion> windowOfExecutions) {
-            return windowOfExecutions.reduce(HystrixLatencyDistribution.empty(), aggregateEventLatencies);
+        public Observable<HystrixLatencyDistribution> call(Observable<HystrixCommandCompletion> bucket) {
+            return bucket.filter(HystrixCommandEvent.filterActualExecutions).reduce(HystrixLatencyDistribution.empty(), addLatenciesToBucket);
         }
     };
 
@@ -101,26 +112,49 @@ public class RollingCommandLatencyStream {
         }
     };
 
-    public static RollingCommandLatencyStream from(HystrixCommandEventStream commandEventStream, HystrixCommandProperties properties) {
+    public static RollingCommandLatencyStream getInstance(HystrixCommandKey commandKey, HystrixCommandProperties properties) {
         final int percentileMetricWindow = properties.metricsRollingPercentileWindowInMilliseconds().get();
         final int numPercentileBuckets = properties.metricsRollingPercentileWindowBuckets().get();
         final int percentileBucketSizeInMs = percentileMetricWindow / numPercentileBuckets;
 
-        return new RollingCommandLatencyStream(commandEventStream, numPercentileBuckets, percentileBucketSizeInMs);
+        return getInstance(commandKey, numPercentileBuckets, percentileBucketSizeInMs);
     }
 
-    private RollingCommandLatencyStream(HystrixCommandEventStream commandEventStream, int numPercentileBuckets, int percentileBucketSizeInMs) {
+    public static RollingCommandLatencyStream getInstance(HystrixCommandKey commandKey, int numBuckets, int bucketSizeInMs) {
+        RollingCommandLatencyStream initialStream = streams.get(commandKey.name());
+        if (initialStream != null) {
+            return initialStream;
+        } else {
+            synchronized (RollingCommandLatencyStream.class) {
+                RollingCommandLatencyStream existingStream = streams.get(commandKey.name());
+                if (existingStream == null) {
+                    RollingCommandLatencyStream newStream = new RollingCommandLatencyStream(commandKey, numBuckets, bucketSizeInMs);
+                    streams.putIfAbsent(commandKey.name(), newStream);
+                    return newStream;
+                } else {
+                    return existingStream;
+                }
+            }
+        }
+    }
+
+    public static void reset() {
+        streams.clear();
+    }
+
+    private RollingCommandLatencyStream(HystrixCommandKey commandKey, int numPercentileBuckets, int percentileBucketSizeInMs) {
+        final HystrixCommandEventStream commandEventStream = HystrixCommandEventStream.getInstance(commandKey);
         final List<HystrixLatencyDistribution> emptyLatencyDistributionsToStart = new ArrayList<HystrixLatencyDistribution>();
         for (int i = 0; i < numPercentileBuckets; i++) {
             emptyLatencyDistributionsToStart.add(HystrixLatencyDistribution.empty());
         }
 
-        Observable<HystrixLatencyDistribution> rollingLatencyStream = commandEventStream
+        rollingLatencyStream = commandEventStream
                 .getBucketedStreamOfCommandCompletions(percentileBucketSizeInMs) //stream of unaggregated buckets
                 .flatMap(reduceBucketToSingleLatencyDistribution)                //stream of aggregated HLDs
                 .startWith(emptyLatencyDistributionsToStart)                     //stream of aggregated HLDs that starts with n empty
                 .window(numPercentileBuckets, 1)                                 //windowed stream: each OnNext is a stream of n HLDs
-                .flatMap(reduceWindowToSingleDistribution);                      //reduced stream: each OnNext is a single HLD which values cached for reading
+                .flatMap(reduceWindowToSingleDistribution).share();              //reduced stream: each OnNext is a single HLD which values cached for reading
 
         rollingLatencySubscription = rollingLatencyStream.subscribe(rollingLatencyDistribution); //when a bucket rolls (via an OnNext), write it to the Subject, for external synchronous access
 
@@ -131,6 +165,10 @@ public class RollingCommandLatencyStream {
                 .subscribeOn(Schedulers.computation())                //do this on a RxComputation thread
                 .subscribe();                                         //no need to emit anywhere, this is side-effect only (release the memory of old HystrixLatencyDistribution)
 
+    }
+
+    public Observable<HystrixLatencyDistribution> observe() {
+        return rollingLatencyStream;
     }
 
     public int getTotalLatencyMean() {
@@ -162,6 +200,14 @@ public class RollingCommandLatencyStream {
             return (int) rollingLatencyDistribution.getValue().getExecutionLatencyPercentile(percentile);
         } else {
             return 0;
+        }
+    }
+
+    HystrixLatencyDistribution getLatest() {
+        if (rollingLatencyDistribution.hasValue()) {
+            return rollingLatencyDistribution.getValue();
+        } else {
+            return null;
         }
     }
 

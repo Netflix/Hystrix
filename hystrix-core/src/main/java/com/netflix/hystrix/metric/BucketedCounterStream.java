@@ -17,6 +17,7 @@ package com.netflix.hystrix.metric;
 
 import rx.Observable;
 import rx.Subscription;
+import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.functions.Func2;
 import rx.subjects.BehaviorSubject;
@@ -48,14 +49,14 @@ public abstract class BucketedCounterStream<A, B> {
     }
 
     public void start() {
-        counterSubscription = getStream().subscribe(counterSubject);
+        counterSubscription = observe().subscribe(counterSubject);
     }
 
     abstract A getEmptyBucketSummary();
 
     abstract B getEmptyEmitValue();
 
-    abstract Observable<B> getStream();
+    public abstract Observable<B> observe();
 
     protected Observable<A> getBucketedStream() {
         final List<A> emptyEventCountsToStart = new ArrayList<A>();

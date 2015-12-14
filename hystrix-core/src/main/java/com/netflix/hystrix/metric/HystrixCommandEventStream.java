@@ -68,19 +68,25 @@ public class HystrixCommandEventStream implements HystrixEventStream {
 
     @Override
     public Observable<HystrixCommandEvent> observe() {
-        return HystrixGlobalEventStream.getInstance().observe().filter(filterByCommandKey);
+        return HystrixGlobalEventStream.getInstance()
+                .observe()
+                .filter(filterByCommandKey);
     }
 
     public Observable<HystrixCommandCompletion> observeCommandCompletions() {
-        return HystrixGlobalEventStream.getInstance().observeCommandCompletions().filter(filterByCommandKey);
+        return HystrixGlobalEventStream.getInstance()
+                .observeCommandCompletions()
+                .filter(filterByCommandKey);
     }
 
     public Observable<Observable<HystrixCommandEvent>> getBucketedStream(int bucketSizeInMs) {
-        return observe().window(bucketSizeInMs, TimeUnit.MILLISECONDS);
+        return observe()
+                .window(bucketSizeInMs, TimeUnit.MILLISECONDS);
     }
 
     @Override
     public Observable<Observable<HystrixCommandCompletion>> getBucketedStreamOfCommandCompletions(int bucketSizeInMs) {
-        return observeCommandCompletions().window(bucketSizeInMs, TimeUnit.MILLISECONDS);
+        return observeCommandCompletions()
+                .window(bucketSizeInMs, TimeUnit.MILLISECONDS);
     }
 }

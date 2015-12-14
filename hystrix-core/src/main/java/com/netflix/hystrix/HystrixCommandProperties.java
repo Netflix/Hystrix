@@ -758,8 +758,5 @@ public abstract class HystrixCommandProperties {
             this.requestLogEnabled = value;
             return this;
         }
-
     }
-
-
 }
