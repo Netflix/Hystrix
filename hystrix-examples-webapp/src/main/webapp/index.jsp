@@ -34,7 +34,7 @@
 		To see the realtime stream change over time execute the following (with correct hostname, port etc) to keep accessing the webapp while watching the stream and you will see the metrics change:
 	</p>
 	<pre>
-	while true ; do curl "http://localhost:8080/hystrix-examples-webapp"; done
+	while true ; do curl "http://localhost:8989/hystrix-examples-webapp"; done
 	</pre>
 	<p>
 	The configuration of Hystrix for this functionality is done in web.xml as follows:
