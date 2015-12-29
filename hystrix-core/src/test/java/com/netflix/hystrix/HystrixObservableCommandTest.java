@@ -992,6 +992,12 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         Thread t3 = new Thread(r3);
 
         t2.start();
+        try {
+            Thread.sleep(100);
+        } catch (Throwable ex) {
+            fail(ex.getMessage());
+        }
+
         t3.start();
         try {
             t2.join();
@@ -1005,6 +1011,9 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
             fail("We expected an exception on the 2nd get");
         }
 
+        System.out.println("CMD1 : " + command1.getExecutionEvents());
+        System.out.println("CMD2 : " + command2.getExecutionEvents());
+        System.out.println("CMD3 : " + command3.getExecutionEvents());
         assertCommandExecutionEvents(command1, HystrixEventType.EMIT, HystrixEventType.SUCCESS);
         assertCommandExecutionEvents(command2, HystrixEventType.EMIT, HystrixEventType.SUCCESS);
         assertCommandExecutionEvents(command3, HystrixEventType.SEMAPHORE_REJECTED, HystrixEventType.FALLBACK_MISSING);
