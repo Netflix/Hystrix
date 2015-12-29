@@ -16,10 +16,9 @@
 package com.netflix.hystrix.metric;
 
 import com.netflix.hystrix.HystrixCommandProperties;
-import com.netflix.hystrix.HystrixEventType;
 import rx.Observable;
 import rx.Subscription;
-import rx.functions.Action1;
+import rx.functions.Func0;
 import rx.functions.Func1;
 import rx.functions.Func2;
 import rx.subjects.BehaviorSubject;
@@ -99,26 +98,29 @@ public abstract class RollingConcurrencyStream {
             emptyRollingMaxBuckets.add(0);
         }
 
-        Observable<Integer> concurrencyEmitsOnEdges = inputEventStream
-                .observe()                      //raw events
-                .scan(0, scanConcurrencyCount) //convert events into number of concurrent commands on each event
-                .share();                      //multicast data produced to all interested consumers
+        rollingMaxStream = Observable.defer(new Func0<Observable<Integer>>() {
+            @Override
+            public Observable<Integer> call() {
+                Observable<Integer> concurrencyEmitsOnEdges = inputEventStream
+                        .observe()                      //raw events
+                        .scan(0, scanConcurrencyCount); //convert events into number of concurrent commands on each event
 
-        //this ensures every bucket has at least 1 OnNext
-        Observable<Integer> concurrencyEmitsOnInterval =
-                Observable.interval(bucketSizeInMs, TimeUnit.MILLISECONDS) //timer that will fire 1x per bucket
-                        .withLatestFrom(concurrencyEmitsOnEdges, omitTimestamp);   //and will emit the current concurrency
+                //this ensures every bucket has at least 1 OnNext
+                Observable<Integer> concurrencyEmitsOnInterval =
+                        Observable.interval(bucketSizeInMs, TimeUnit.MILLISECONDS) //timer that will fire 1x per bucket
+                                .withLatestFrom(concurrencyEmitsOnEdges, omitTimestamp);   //and will emit the current concurrency
 
-        Observable<Integer> maxPerBucket =
-                Observable.merge(concurrencyEmitsOnEdges, concurrencyEmitsOnInterval)
-                .window(bucketSizeInMs, TimeUnit.MILLISECONDS) //break stream into buckets
-                .flatMap(reduceStreamToMax)                    //convert each bucket into the maximum observed concurrency in that bucket
-                .startWith(emptyRollingMaxBuckets);            //make sure that start of stream is handled correctly
+                Observable<Integer> maxPerBucket =
+                        Observable.merge(concurrencyEmitsOnEdges, concurrencyEmitsOnInterval)
+                                .window(bucketSizeInMs, TimeUnit.MILLISECONDS) //break stream into buckets
+                                .flatMap(reduceStreamToMax)                    //convert each bucket into the maximum observed concurrency in that bucket
+                                .startWith(emptyRollingMaxBuckets);            //make sure that start of stream is handled correctly
 
-        rollingMaxStream = maxPerBucket
-                .window(numBuckets, 1)       //take the bucket rolling-maxs and window them to only look at n-at-a-time
-                .flatMap(reduceStreamToMax)  //for each window, find the maximum concurrency in any bucket
-                .share();                    //multicast out to de-dupe upstream work
+                return maxPerBucket
+                        .window(numBuckets, 1)       //take the bucket rolling-maxs and window them to only look at n-at-a-time
+                        .flatMap(reduceStreamToMax); //for each window, find the maximum concurrency in any bucket
+            }
+        }).share();
     }
 
     protected void start() {

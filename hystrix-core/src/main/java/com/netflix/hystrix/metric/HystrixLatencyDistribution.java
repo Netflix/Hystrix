@@ -39,7 +39,7 @@ public class HystrixLatencyDistribution {
     private final Histogram totalLatencyDistribution;
 
     /**
-     * Cached values that may be read my arbitrary threads.
+     * Cached values that may be read by arbitrary threads.
      * HdrHistograms allow single-threaded access only, so these values allow commonly-accessed values to be accessed cheaply and from any thread.
      * Note they must be calculated in a single-threaded way, in {@link #availableForReads()}.
      */

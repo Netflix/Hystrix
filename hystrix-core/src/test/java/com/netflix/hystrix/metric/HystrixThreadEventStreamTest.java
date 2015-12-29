@@ -15,173 +15,331 @@
  */
 package com.netflix.hystrix.metric;
 
+import com.netflix.hystrix.ExecutionResult;
+import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixEventType;
-import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
+import com.netflix.hystrix.HystrixThreadPoolKey;
 import org.junit.Test;
-import rx.functions.Func0;
-import rx.observers.TestSubscriber;
+import rx.Subscriber;
+import rx.functions.Action1;
 
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Future;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 
-public class HystrixThreadEventStreamTest extends CommonEventStreamTest {
+public class HystrixThreadEventStreamTest {
+
+    HystrixCommandKey commandKey;
+    HystrixThreadPoolKey threadPoolKey;
+
+    HystrixThreadEventStream writeToStream;
+    HystrixCommandEventStream readCommandStream;
+    HystrixThreadPoolEventStream readThreadPoolStream;
+
+    public HystrixThreadEventStreamTest() {
+        commandKey = HystrixCommandKey.Factory.asKey("CMD-ThreadStream");
+        threadPoolKey = HystrixThreadPoolKey.Factory.asKey("TP-ThreadStream");
+
+        writeToStream = HystrixThreadEventStream.getInstance();
+        readCommandStream = HystrixCommandEventStream.getInstance(commandKey);
+        readThreadPoolStream = HystrixThreadPoolEventStream.getInstance(threadPoolKey);
+    }
+
+    private <T> Subscriber<T> getLatchedSubscriber(final CountDownLatch latch) {
+        return new Subscriber<T>() {
+            @Override
+            public void onCompleted() {
+                latch.countDown();
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                fail(e.getMessage());
+                e.printStackTrace();
+                latch.countDown();
+            }
+
+            @Override
+            public void onNext(T value) {
+                System.out.println("OnNext : " + value);
+            }
+        };
+    }
 
     @Test
-    public void noEvents() throws Exception {
-        HystrixThreadEventStream stream = HystrixThreadEventStream.getInstance();
-        TestSubscriber<HystrixCommandCompletion> subscriber = new TestSubscriber<HystrixCommandCompletion>(loggingWrapper);
+    public void noEvents() throws InterruptedException {
+        CountDownLatch commandLatch = new CountDownLatch(1);
+        CountDownLatch threadPoolLatch = new CountDownLatch(1);
 
-        stream.observeCommandCompletions().subscribe(subscriber);
+        Subscriber<HystrixCommandCompletion> commandSubscriber = getLatchedSubscriber(commandLatch);
+        readCommandStream.observeCommandCompletions().take(1).subscribe(commandSubscriber);
+
+        Subscriber<HystrixCommandCompletion> threadPoolSubscriber = getLatchedSubscriber(threadPoolLatch);
+        readThreadPoolStream.observeCommandCompletions().take(1).subscribe(threadPoolSubscriber);
+
         //no writes
-        Thread.sleep(100);
 
-        subscriber.assertNoTerminalEvent();
-        subscriber.assertNoValues();
+        assertFalse(commandLatch.await(1000, TimeUnit.MILLISECONDS));
+        assertFalse(threadPoolLatch.await(1000, TimeUnit.MILLISECONDS));
     }
 
     @Test
-    public void multipleEventsInSingleThreadNoRequestContext() throws Exception {
-        final HystrixThreadEventStream stream = HystrixThreadEventStream.getInstance();
-        TestSubscriber<HystrixCommandCompletion> subscriber = new TestSubscriber<HystrixCommandCompletion>(loggingWrapper);
-        stream.observeCommandCompletions().subscribe(subscriber);
+    public void testThreadIsolatedSuccess() throws InterruptedException {
+        CountDownLatch commandLatch = new CountDownLatch(1);
+        CountDownLatch threadPoolLatch = new CountDownLatch(1);
 
-        Future<?> f = createSampleTaskOnThread(stream, commandKey1, HystrixEventType.SUCCESS, HystrixEventType.SUCCESS, HystrixEventType.THREAD_POOL_REJECTED);
-        f.get(1000, TimeUnit.MILLISECONDS);
+        Subscriber<HystrixCommandCompletion> commandSubscriber = getLatchedSubscriber(commandLatch);
+        readCommandStream.observeCommandCompletions().take(1).subscribe(commandSubscriber);
 
-        //this waits on the OnNexts to show up.  there are no boundaries to unblock on, so we need to be a little lenient about when to expect values to show up in this thread
-        awaitOnNexts(subscriber, 3, 500);
-        System.out.println("TestSubscriber received : " + subscriber.getOnNextEvents());
+        Subscriber<HystrixCommandCompletion> threadPoolSubscriber = getLatchedSubscriber(threadPoolLatch);
+        readThreadPoolStream.observeCommandCompletions().take(1).subscribe(threadPoolSubscriber);
 
-        subscriber.assertNoTerminalEvent();
-        subscriber.assertValueCount(3);
-        assertNoRequestContext(subscriber);
+        ExecutionResult result = ExecutionResult.from(HystrixEventType.SUCCESS).setExecutedInThread();
+        writeToStream.executionDone(result, commandKey, threadPoolKey);
+
+        assertTrue(commandLatch.await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(threadPoolLatch.await(1000, TimeUnit.MILLISECONDS));
     }
 
     @Test
-    public void multipleEventsInSingleThreadWithRequestContext() throws Exception {
-        final HystrixThreadEventStream stream = HystrixThreadEventStream.getInstance();
-        TestSubscriber<HystrixCommandCompletion> subscriber = new TestSubscriber<HystrixCommandCompletion>(loggingWrapper);
-        stream.observeCommandCompletions().subscribe(subscriber);
+    public void testSemaphoreIsolatedSuccess() throws Exception {
+        CountDownLatch commandLatch = new CountDownLatch(1);
+        CountDownLatch threadPoolLatch = new CountDownLatch(1);
 
-        Func0<Future<?>> task = new Func0<Future<?>>() {
-            @Override
-            public Future<?> call() {
-                return createSampleTaskOnThread(stream, commandKey2, HystrixEventType.SUCCESS, HystrixEventType.SUCCESS, HystrixEventType.THREAD_POOL_REJECTED);
-            }
-        };
-        Future<?> request = createRequestScopedTasks(task);
+        Subscriber<HystrixCommandCompletion> commandSubscriber = getLatchedSubscriber(commandLatch);
+        readCommandStream.observeCommandCompletions().take(1).subscribe(commandSubscriber);
 
-        request.get(1000, TimeUnit.MILLISECONDS);
-        awaitOnNexts(subscriber, 3, 500);
-        System.out.println("TestSubscriber received : " + subscriber.getOnNextEvents());
+        Subscriber<HystrixCommandCompletion> threadPoolSubscriber = getLatchedSubscriber(threadPoolLatch);
+        readThreadPoolStream.observeCommandCompletions().take(1).subscribe(threadPoolSubscriber);
 
-        subscriber.assertNoTerminalEvent();
-        subscriber.assertValueCount(3);
-        assertRequestContext(subscriber);
+        ExecutionResult result = ExecutionResult.from(HystrixEventType.SUCCESS);
+        writeToStream.executionDone(result, commandKey, threadPoolKey);
+
+        assertTrue(commandLatch.await(1000, TimeUnit.MILLISECONDS));
+        assertFalse(threadPoolLatch.await(1000, TimeUnit.MILLISECONDS));
     }
 
     @Test
-    public void multipleSingleThreadedRequests() throws Exception {
-        final HystrixThreadEventStream stream = HystrixThreadEventStream.getInstance();
-        TestSubscriber<HystrixCommandCompletion> subscriber = new TestSubscriber<HystrixCommandCompletion>(loggingWrapper);
-        stream.observeCommandCompletions().subscribe(subscriber);
+    public void testThreadIsolatedFailure() throws Exception {
+        CountDownLatch commandLatch = new CountDownLatch(1);
+        CountDownLatch threadPoolLatch = new CountDownLatch(1);
 
-        Func0<Future<?>> task1 = new Func0<Future<?>>() {
-            @Override
-            public Future<?> call() {
-                return createSampleTaskOnThread(stream, commandKey1, HystrixEventType.SUCCESS, HystrixEventType.SUCCESS, HystrixEventType.THREAD_POOL_REJECTED);
-            }
-        };
-        Future<?> request1 = createRequestScopedTasks(task1);
+        Subscriber<HystrixCommandCompletion> commandSubscriber = getLatchedSubscriber(commandLatch);
+        readCommandStream.observeCommandCompletions().take(1).subscribe(commandSubscriber);
 
-        Func0<Future<?>> task2 = new Func0<Future<?>>() {
+        Subscriber<HystrixCommandCompletion> threadPoolSubscriber = getLatchedSubscriber(threadPoolLatch);
+        readThreadPoolStream.observeCommandCompletions().take(1).subscribe(threadPoolSubscriber);
 
-            @Override
-            public Future<?> call() {
-                return createSampleTaskOnThread(stream, commandKey2, HystrixEventType.FAILURE, HystrixEventType.FAILURE, HystrixEventType.SUCCESS);
-            }
-        };
-        Future<?> request2 = createRequestScopedTasks(task2);
+        ExecutionResult result = ExecutionResult.from(HystrixEventType.FAILURE).setExecutedInThread();
+        writeToStream.executionDone(result, commandKey, threadPoolKey);
 
-        Func0<Future<?>> task3 = new Func0<Future<?>>() {
-            @Override
-            public Future<?> call() {
-                return createSampleTaskOnThread(stream, commandKey1, HystrixEventType.TIMEOUT, HystrixEventType.TIMEOUT);
-            }
-        };
-        Future<?> request3 = createRequestScopedTasks(task3);
-
-        //this waits on the requests (writes) to complete
-        request1.get(1000, TimeUnit.MILLISECONDS);
-        request2.get(1000, TimeUnit.MILLISECONDS);
-        request3.get(1000, TimeUnit.MILLISECONDS);
-
-        //this waits on the OnNexts to show up.  there are no boundaries to unblock on, so we need to be a little lenient about when to expect values to show up in this thread
-        awaitOnNexts(subscriber, 8, 500);
-
-        Map<HystrixRequestContext, List<HystrixCommandCompletion>> perRequestMetrics = groupByRequest(subscriber);
-        subscriber.assertNoTerminalEvent();
-
-        boolean foundRequest1 = false;
-        boolean foundRequest2 = false;
-        boolean foundRequest3 = false;
-
-        //this asserts both that request contexts were properly applied and that order is maintained within a single-threaded request
-        for (List<HystrixCommandCompletion> events: perRequestMetrics.values()) {
-            if (eventListsEqual(events, HystrixEventType.SUCCESS, HystrixEventType.SUCCESS, HystrixEventType.THREAD_POOL_REJECTED)) {
-                foundRequest1 = true;
-            }
-            if (eventListsEqual(events, HystrixEventType.FAILURE, HystrixEventType.FAILURE, HystrixEventType.SUCCESS)) {
-                foundRequest2 = true;
-            }
-            if (eventListsEqual(events, HystrixEventType.TIMEOUT, HystrixEventType.TIMEOUT)) {
-                foundRequest3 = true;
-            }
-        }
-        assertTrue(foundRequest1 && foundRequest2 && foundRequest3);
-        assertRequestContext(subscriber);
+        assertTrue(commandLatch.await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(threadPoolLatch.await(1000, TimeUnit.MILLISECONDS));
     }
 
     @Test
-    public void testMultipleSubscribers() throws Exception {
-        final HystrixThreadEventStream stream = HystrixThreadEventStream.getInstance();
-        TestSubscriber<HystrixCommandCompletion> subscriber1 = new TestSubscriber<HystrixCommandCompletion>(loggingWrapper);
-        TestSubscriber<HystrixCommandCompletion> subscriber2 = new TestSubscriber<HystrixCommandCompletion>(loggingWrapper);
-        TestSubscriber<HystrixCommandCompletion> subscriber3 = new TestSubscriber<HystrixCommandCompletion>(loggingWrapper);
-        stream.observeCommandCompletions().subscribe(subscriber1);
-        stream.observeCommandCompletions().subscribe(subscriber2);
-        stream.observeCommandCompletions().subscribe(subscriber3);
+    public void testSemaphoreIsolatedFailure() throws Exception {
+        CountDownLatch commandLatch = new CountDownLatch(1);
+        CountDownLatch threadPoolLatch = new CountDownLatch(1);
 
-        Func0<Future<?>> task = new Func0<Future<?>>() {
-            @Override
-            public Future<?> call() {
-                return createSampleTaskOnThread(stream, commandKey2, HystrixEventType.SUCCESS, HystrixEventType.SUCCESS, HystrixEventType.THREAD_POOL_REJECTED, HystrixEventType.SUCCESS);
-            }
-        };
-        Future<?> request = createRequestScopedTasks(task);
+        Subscriber<HystrixCommandCompletion> commandSubscriber = getLatchedSubscriber(commandLatch);
+        readCommandStream.observeCommandCompletions().take(1).subscribe(commandSubscriber);
 
-        request.get(1000, TimeUnit.MILLISECONDS);
-        //this waits on the OnNexts to show up.  there are no boundaries to unblock on, so we need to be a little lenient about when to expect values to show up in this thread
-        awaitOnNexts(subscriber1, 4, 500);
-        awaitOnNexts(subscriber2, 4, 500);
-        awaitOnNexts(subscriber3, 4, 500);
+        Subscriber<HystrixCommandCompletion> threadPoolSubscriber = getLatchedSubscriber(threadPoolLatch);
+        readThreadPoolStream.observeCommandCompletions().take(1).subscribe(threadPoolSubscriber);
 
-        System.out.println("TestSubscriber1 received : " + subscriber1.getOnNextEvents());
-        System.out.println("TestSubscriber2 received : " + subscriber2.getOnNextEvents());
-        System.out.println("TestSubscriber3 received : " + subscriber3.getOnNextEvents());
+        ExecutionResult result = ExecutionResult.from(HystrixEventType.FAILURE);
+        writeToStream.executionDone(result, commandKey, threadPoolKey);
 
-        subscriber1.assertNoTerminalEvent();
-        subscriber1.assertValueCount(4);
-        subscriber2.assertNoTerminalEvent();
-        subscriber2.assertValueCount(4);
-        subscriber3.assertNoTerminalEvent();
-        subscriber3.assertValueCount(4);
-        assertRequestContext(subscriber1);
-        assertRequestContext(subscriber2);
-        assertRequestContext(subscriber3);
+        assertTrue(commandLatch.await(1000, TimeUnit.MILLISECONDS));
+        assertFalse(threadPoolLatch.await(1000, TimeUnit.MILLISECONDS));
+    }
+
+    @Test
+    public void testThreadIsolatedTimeout() throws Exception {
+        CountDownLatch commandLatch = new CountDownLatch(1);
+        CountDownLatch threadPoolLatch = new CountDownLatch(1);
+
+        Subscriber<HystrixCommandCompletion> commandSubscriber = getLatchedSubscriber(commandLatch);
+        readCommandStream.observeCommandCompletions().take(1).subscribe(commandSubscriber);
+
+        Subscriber<HystrixCommandCompletion> threadPoolSubscriber = getLatchedSubscriber(threadPoolLatch);
+        readThreadPoolStream.observeCommandCompletions().take(1).subscribe(threadPoolSubscriber);
+
+        ExecutionResult result = ExecutionResult.from(HystrixEventType.TIMEOUT).setExecutedInThread();
+        writeToStream.executionDone(result, commandKey, threadPoolKey);
+
+        assertTrue(commandLatch.await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(threadPoolLatch.await(1000, TimeUnit.MILLISECONDS));
+    }
+
+    @Test
+    public void testSemaphoreIsolatedTimeout() throws Exception {
+        CountDownLatch commandLatch = new CountDownLatch(1);
+        CountDownLatch threadPoolLatch = new CountDownLatch(1);
+
+        Subscriber<HystrixCommandCompletion> commandSubscriber = getLatchedSubscriber(commandLatch);
+        readCommandStream.observeCommandCompletions().take(1).subscribe(commandSubscriber);
+
+        Subscriber<HystrixCommandCompletion> threadPoolSubscriber = getLatchedSubscriber(threadPoolLatch);
+        readThreadPoolStream.observeCommandCompletions().take(1).subscribe(threadPoolSubscriber);
+
+        ExecutionResult result = ExecutionResult.from(HystrixEventType.TIMEOUT);
+        writeToStream.executionDone(result, commandKey, threadPoolKey);
+
+        assertTrue(commandLatch.await(1000, TimeUnit.MILLISECONDS));
+        assertFalse(threadPoolLatch.await(1000, TimeUnit.MILLISECONDS));
+    }
+
+    @Test
+    public void testThreadIsolatedBadRequest() throws Exception {
+        CountDownLatch commandLatch = new CountDownLatch(1);
+        CountDownLatch threadPoolLatch = new CountDownLatch(1);
+
+        Subscriber<HystrixCommandCompletion> commandSubscriber = getLatchedSubscriber(commandLatch);
+        readCommandStream.observeCommandCompletions().take(1).subscribe(commandSubscriber);
+
+        Subscriber<HystrixCommandCompletion> threadPoolSubscriber = getLatchedSubscriber(threadPoolLatch);
+        readThreadPoolStream.observeCommandCompletions().take(1).subscribe(threadPoolSubscriber);
+
+        ExecutionResult result = ExecutionResult.from(HystrixEventType.BAD_REQUEST).setExecutedInThread();
+        writeToStream.executionDone(result, commandKey, threadPoolKey);
+
+        assertTrue(commandLatch.await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(threadPoolLatch.await(1000, TimeUnit.MILLISECONDS));
+    }
+
+    @Test
+    public void testSemaphoreIsolatedBadRequest() throws Exception {
+        CountDownLatch commandLatch = new CountDownLatch(1);
+        CountDownLatch threadPoolLatch = new CountDownLatch(1);
+
+        Subscriber<HystrixCommandCompletion> commandSubscriber = getLatchedSubscriber(commandLatch);
+        readCommandStream.observeCommandCompletions().take(1).subscribe(commandSubscriber);
+
+        Subscriber<HystrixCommandCompletion> threadPoolSubscriber = getLatchedSubscriber(threadPoolLatch);
+        readThreadPoolStream.observeCommandCompletions().take(1).subscribe(threadPoolSubscriber);
+
+        ExecutionResult result = ExecutionResult.from(HystrixEventType.BAD_REQUEST);
+        writeToStream.executionDone(result, commandKey, threadPoolKey);
+
+        assertTrue(commandLatch.await(1000, TimeUnit.MILLISECONDS));
+        assertFalse(threadPoolLatch.await(1000, TimeUnit.MILLISECONDS));
+    }
+
+    @Test
+    public void testThreadRejectedCommand() throws Exception {
+        CountDownLatch commandLatch = new CountDownLatch(1);
+        CountDownLatch threadPoolLatch = new CountDownLatch(1);
+
+        Subscriber<HystrixCommandCompletion> commandSubscriber = getLatchedSubscriber(commandLatch);
+        readCommandStream.observeCommandCompletions().take(1).subscribe(commandSubscriber);
+
+        Subscriber<HystrixCommandCompletion> threadPoolSubscriber = getLatchedSubscriber(threadPoolLatch);
+        readThreadPoolStream.observeCommandCompletions().take(1).subscribe(threadPoolSubscriber);
+
+        ExecutionResult result = ExecutionResult.from(HystrixEventType.THREAD_POOL_REJECTED);
+        writeToStream.executionDone(result, commandKey, threadPoolKey);
+
+        assertTrue(commandLatch.await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(threadPoolLatch.await(1000, TimeUnit.MILLISECONDS));
+    }
+
+    @Test
+    public void testSemaphoreRejectedCommand() throws Exception {
+        CountDownLatch commandLatch = new CountDownLatch(1);
+        CountDownLatch threadPoolLatch = new CountDownLatch(1);
+
+        Subscriber<HystrixCommandCompletion> commandSubscriber = getLatchedSubscriber(commandLatch);
+        readCommandStream.observeCommandCompletions().take(1).subscribe(commandSubscriber);
+
+        Subscriber<HystrixCommandCompletion> threadPoolSubscriber = getLatchedSubscriber(threadPoolLatch);
+        readThreadPoolStream.observeCommandCompletions().take(1).subscribe(threadPoolSubscriber);
+
+        ExecutionResult result = ExecutionResult.from(HystrixEventType.SEMAPHORE_REJECTED);
+        writeToStream.executionDone(result, commandKey, threadPoolKey);
+
+        assertTrue(commandLatch.await(1000, TimeUnit.MILLISECONDS));
+        assertFalse(threadPoolLatch.await(1000, TimeUnit.MILLISECONDS));
+    }
+
+    @Test
+    public void testThreadIsolatedResponseFromCache() throws Exception {
+        CountDownLatch commandLatch = new CountDownLatch(1);
+        CountDownLatch threadPoolLatch = new CountDownLatch(1);
+
+        Subscriber<List<HystrixCommandCompletion>> commandListSubscriber = getLatchedSubscriber(commandLatch);
+        readCommandStream.observeCommandCompletions().buffer(500, TimeUnit.MILLISECONDS).take(1)
+                .doOnNext(new Action1<List<HystrixCommandCompletion>>() {
+                    @Override
+                    public void call(List<HystrixCommandCompletion> hystrixCommandCompletions) {
+                        System.out.println("LIST : " + hystrixCommandCompletions);
+                        assertEquals(3, hystrixCommandCompletions.size());
+                    }
+                })
+                .subscribe(commandListSubscriber);
+
+        Subscriber<HystrixCommandCompletion> threadPoolSubscriber = getLatchedSubscriber(threadPoolLatch);
+        readThreadPoolStream.observeCommandCompletions().take(1).subscribe(threadPoolSubscriber);
+
+        ExecutionResult result = ExecutionResult.from(HystrixEventType.SUCCESS).setExecutedInThread();
+        ExecutionResult cache1 = ExecutionResult.from(HystrixEventType.RESPONSE_FROM_CACHE);
+        ExecutionResult cache2 = ExecutionResult.from(HystrixEventType.RESPONSE_FROM_CACHE);
+        writeToStream.executionDone(result, commandKey, threadPoolKey);
+        writeToStream.executionDone(cache1, commandKey, threadPoolKey);
+        writeToStream.executionDone(cache2, commandKey, threadPoolKey);
+
+        assertTrue(commandLatch.await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(threadPoolLatch.await(1000, TimeUnit.MILLISECONDS));
+    }
+
+    @Test
+    public void testSemaphoreIsolatedResponseFromCache() throws Exception {
+        CountDownLatch commandLatch = new CountDownLatch(1);
+        CountDownLatch threadPoolLatch = new CountDownLatch(1);
+
+        Subscriber<List<HystrixCommandCompletion>> commandListSubscriber = getLatchedSubscriber(commandLatch);
+        readCommandStream.observeCommandCompletions().buffer(500, TimeUnit.MILLISECONDS).take(1)
+                .doOnNext(new Action1<List<HystrixCommandCompletion>>() {
+                    @Override
+                    public void call(List<HystrixCommandCompletion> hystrixCommandCompletions) {
+                        System.out.println("LIST : " + hystrixCommandCompletions);
+                        assertEquals(3, hystrixCommandCompletions.size());
+                    }
+                })
+                .subscribe(commandListSubscriber);
+
+        Subscriber<HystrixCommandCompletion> threadPoolSubscriber = getLatchedSubscriber(threadPoolLatch);
+        readThreadPoolStream.observeCommandCompletions().take(1).subscribe(threadPoolSubscriber);
+
+        ExecutionResult result = ExecutionResult.from(HystrixEventType.SUCCESS);
+        ExecutionResult cache1 = ExecutionResult.from(HystrixEventType.RESPONSE_FROM_CACHE);
+        ExecutionResult cache2 = ExecutionResult.from(HystrixEventType.RESPONSE_FROM_CACHE);
+        writeToStream.executionDone(result, commandKey, threadPoolKey);
+        writeToStream.executionDone(cache1, commandKey, threadPoolKey);
+        writeToStream.executionDone(cache2, commandKey, threadPoolKey);
+
+        assertTrue(commandLatch.await(1000, TimeUnit.MILLISECONDS));
+        assertFalse(threadPoolLatch.await(1000, TimeUnit.MILLISECONDS));
+    }
+
+    @Test
+    public void testShortCircuit() throws Exception {
+        CountDownLatch commandLatch = new CountDownLatch(1);
+        CountDownLatch threadPoolLatch = new CountDownLatch(1);
+
+        Subscriber<HystrixCommandCompletion> commandSubscriber = getLatchedSubscriber(commandLatch);
+        readCommandStream.observeCommandCompletions().take(1).subscribe(commandSubscriber);
+
+        Subscriber<HystrixCommandCompletion> threadPoolSubscriber = getLatchedSubscriber(threadPoolLatch);
+        readThreadPoolStream.observeCommandCompletions().take(1).subscribe(threadPoolSubscriber);
+
+        ExecutionResult result = ExecutionResult.from(HystrixEventType.SHORT_CIRCUITED);
+        writeToStream.executionDone(result, commandKey, threadPoolKey);
+
+        assertTrue(commandLatch.await(1000, TimeUnit.MILLISECONDS));
+        assertFalse(threadPoolLatch.await(1000, TimeUnit.MILLISECONDS));
     }
 }

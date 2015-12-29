@@ -15,26 +15,27 @@
  */
 package com.netflix.hystrix.metric;
 
-import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.HystrixThreadPoolKey;
 import rx.Observable;
-import rx.functions.Action1;
-import rx.functions.Func1;
+import rx.subjects.PublishSubject;
+import rx.subjects.SerializedSubject;
+import rx.subjects.Subject;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Using the primitive of {@link HystrixGlobalEventStream}, filter only the threadpool key that is set in the constructor.
- * This allows for a single place where this filtering is done, so that existing command-level metrics can be
- * consumed as efficiently as possible.
- *
- * Note that {@link HystrixThreadEventStream} emits on an RxComputation thread, so all consumption is async.
+ * Per-ThreadPool stream of {@link HystrixCommandEvent}s.  This gets written to by {@link HystrixThreadEventStream}s.
+ * That object will emit on an RxComputation thread, so all work done by a consumer of this {@link #observe()} happens
+ * asynchronously.
  */
 public class HystrixThreadPoolEventStream implements HystrixEventStream {
 
-    private final Func1<HystrixCommandEvent, Boolean> filterByThreadPoolKey;
+    private final HystrixThreadPoolKey threadPoolKey;
+
+    private final Subject<HystrixCommandEvent, HystrixCommandEvent> writeOnlySubject;
+    private final Observable<HystrixCommandEvent> readOnlyStream;
 
     private static final ConcurrentMap<String, HystrixThreadPoolEventStream> streams = new ConcurrentHashMap<String, HystrixThreadPoolEventStream>();
 
@@ -57,45 +58,38 @@ public class HystrixThreadPoolEventStream implements HystrixEventStream {
     }
 
     HystrixThreadPoolEventStream(final HystrixThreadPoolKey threadPoolKey) {
-        this.filterByThreadPoolKey = new Func1<HystrixCommandEvent, Boolean>() {
-            @Override
-            public Boolean call(HystrixCommandEvent commandEvent) {
-                if (commandEvent.isThreadPoolExecutionStart()
-                        || commandEvent.getCommandInstance().isExecutedInThread()
-                        || commandEvent.getCommandInstance().isResponseThreadPoolRejected()) {
-                    HystrixThreadPoolKey executionThreadPoolKey = commandEvent.getThreadPoolKey();
-                    if (executionThreadPoolKey != null) {
-                        return executionThreadPoolKey.equals(threadPoolKey);
-                    } else {
-                        return false;
-                    }
-                } else {
-                    return false;
-                }
-            }
-        };
+        this.threadPoolKey = threadPoolKey;
+
+        this.writeOnlySubject = new SerializedSubject<HystrixCommandEvent, HystrixCommandEvent>(PublishSubject.<HystrixCommandEvent>create());
+        this.readOnlyStream = writeOnlySubject.share();
     }
 
     public static void reset() {
         streams.clear();
     }
 
+    public void write(HystrixCommandEvent event) {
+        writeOnlySubject.onNext(event);
+    }
+
     @Override
     public Observable<HystrixCommandEvent> observe() {
-        return HystrixGlobalEventStream.getInstance()
-                .observe()
-                .filter(filterByThreadPoolKey);
+        return readOnlyStream;
     }
 
     public Observable<HystrixCommandCompletion> observeCommandCompletions() {
-        return HystrixGlobalEventStream.getInstance()
-                .observeCommandCompletions()
-                .filter(filterByThreadPoolKey);
+        return readOnlyStream
+                .cast(HystrixCommandCompletion.class);
     }
 
     @Override
     public Observable<Observable<HystrixCommandCompletion>> getBucketedStreamOfCommandCompletions(int bucketSizeInMs) {
         return observeCommandCompletions()
                 .window(bucketSizeInMs, TimeUnit.MILLISECONDS);
+    }
+
+    @Override
+    public String toString() {
+        return "HystrixThreadPoolEventStream(" + threadPoolKey.name() + ")";
     }
 }

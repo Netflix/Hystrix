@@ -15,6 +15,7 @@
  */
 package com.netflix.hystrix.metric;
 
+import com.netflix.hystrix.HystrixCollapser;
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandGroupKey;
 import com.netflix.hystrix.HystrixCommandKey;
@@ -26,6 +27,7 @@ import com.netflix.hystrix.exception.HystrixBadRequestException;
 import rx.functions.Func2;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -102,8 +104,6 @@ public abstract class CommandStreamTest {
                             .withCoreSize(10)
                             .withMaxQueueSize(-1));
 
-
-
             String uniqueArg;
 
             switch (desiredEventType) {
@@ -165,6 +165,55 @@ public abstract class CommandStreamTest {
         @Override
         protected String getCacheKey() {
             return arg;
+        }
+    }
+
+    static class Collapser extends HystrixCollapser<List<Integer>, Integer, Integer> {
+        private final Integer arg;
+
+        public static Collapser from(Integer arg) {
+            return new Collapser(arg);
+        }
+
+        private Collapser(Integer arg) {
+            this.arg = arg;
+        }
+
+        @Override
+        public Integer getRequestArgument() {
+            return arg;
+        }
+
+        @Override
+        protected HystrixCommand<List<Integer>> createCommand(Collection<CollapsedRequest<Integer, Integer>> collapsedRequests) {
+            List<Integer> args = new ArrayList<Integer>();
+            for (CollapsedRequest<Integer, Integer> collapsedReq: collapsedRequests) {
+                args.add(collapsedReq.getArgument());
+            }
+            return new BatchCommand(args);
+        }
+
+        @Override
+        protected void mapResponseToRequests(List<Integer> batchResponse, Collection<CollapsedRequest<Integer, Integer>> collapsedRequests) {
+            for (CollapsedRequest<Integer, Integer> collapsedReq: collapsedRequests) {
+                collapsedReq.emitResponse(collapsedReq.getArgument());
+                collapsedReq.setComplete();
+            }
+        }
+    }
+
+    private static class BatchCommand extends HystrixCommand<List<Integer>> {
+        private List<Integer> args;
+
+        protected BatchCommand(List<Integer> args) {
+            super(HystrixCommandGroupKey.Factory.asKey("BATCH"));
+            this.args = args;
+        }
+
+        @Override
+        protected List<Integer> run() throws Exception {
+            System.out.println(Thread.currentThread().getName() + " : Executing batch of : " + args.size());
+            return args;
         }
     }
 

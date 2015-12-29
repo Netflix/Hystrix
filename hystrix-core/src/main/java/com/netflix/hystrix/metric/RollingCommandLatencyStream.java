@@ -164,7 +164,6 @@ public class RollingCommandLatencyStream {
                 .doOnNext(releaseDistributionsAsTheyFallOutOfWindow)  //if there are 2, then the oldest one will never be read, so we can reclaim its memory
                 .subscribeOn(Schedulers.computation())                //do this on a RxComputation thread
                 .subscribe();                                         //no need to emit anywhere, this is side-effect only (release the memory of old HystrixLatencyDistribution)
-
     }
 
     public Observable<HystrixLatencyDistribution> observe() {

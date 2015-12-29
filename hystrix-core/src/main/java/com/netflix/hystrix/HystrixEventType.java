@@ -17,6 +17,9 @@ package com.netflix.hystrix;
 
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Various states/events that execution can result in or have tracked.
  * <p>
@@ -27,6 +30,7 @@ public enum HystrixEventType {
     SUCCESS(true),
     FAILURE(false),
     TIMEOUT(false),
+    BAD_REQUEST(true),
     SHORT_CIRCUITED(false),
     THREAD_POOL_REJECTED(false),
     SEMAPHORE_REJECTED(false),
@@ -37,8 +41,7 @@ public enum HystrixEventType {
     FALLBACK_MISSING(true),
     EXCEPTION_THROWN(false),
     RESPONSE_FROM_CACHE(true),
-    COLLAPSED(false),
-    BAD_REQUEST(true);
+    COLLAPSED(false);
 
     private final boolean isTerminal;
 
@@ -71,5 +74,17 @@ public enum HystrixEventType {
             default:
                 throw new RuntimeException("Not an event that can be converted to HystrixEventTvpe : " + event);
         }
+    }
+
+    /**
+     * List of events that throw an Exception to the caller
+     */
+    public final static List<HystrixEventType> EXCEPTION_PRODUCING_EVENT_TYPES = new ArrayList<HystrixEventType>();
+
+    static {
+        EXCEPTION_PRODUCING_EVENT_TYPES.add(BAD_REQUEST);
+        EXCEPTION_PRODUCING_EVENT_TYPES.add(FALLBACK_FAILURE);
+        EXCEPTION_PRODUCING_EVENT_TYPES.add(FALLBACK_MISSING);
+        EXCEPTION_PRODUCING_EVENT_TYPES.add(FALLBACK_REJECTION);
     }
 }

@@ -15,32 +15,42 @@
  */
 package com.netflix.hystrix.metric;
 
+import com.netflix.hystrix.ExecutionResult;
 import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixEventType;
-import com.netflix.hystrix.HystrixInvokableInfo;
 import com.netflix.hystrix.HystrixThreadPoolKey;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class HystrixCommandCompletion extends HystrixCommandEvent {
-    protected final HystrixInvokableInfo<?> commandInstance;
-    protected final long[] eventTypeCounts;
+/**
+ * Data class which gets fed into event stream when a command completes (with any of the outcomes in {@link HystrixEventType}).
+ */
+public class HystrixCommandCompletion extends HystrixCommandEvent {
+    protected final ExecutionResult executionResult;
     protected final HystrixRequestContext requestContext;
 
-    HystrixCommandCompletion(HystrixInvokableInfo<?> commandInstance, long[] eventTypeCounts, HystrixRequestContext requestContext) {
-        this.commandInstance = commandInstance;
-        this.eventTypeCounts = eventTypeCounts;
+    private final static HystrixEventType[] ALL_EVENT_TYPES = HystrixEventType.values();
+
+    HystrixCommandCompletion(ExecutionResult executionResult, HystrixCommandKey commandKey,
+                             HystrixThreadPoolKey threadPoolKey, HystrixRequestContext requestContext) {
+        super(commandKey, threadPoolKey);
+        this.executionResult = executionResult;
         this.requestContext = requestContext;
     }
 
-    public HystrixCommandKey getCommandKey() {
-        return commandInstance.getCommandKey();
+    public static HystrixCommandCompletion from(ExecutionResult executionResult, HystrixCommandKey commandKey, HystrixThreadPoolKey threadPoolKey) {
+        return from(executionResult, commandKey, threadPoolKey, HystrixRequestContext.getContextForCurrentThread());
     }
 
-    public HystrixThreadPoolKey getThreadPoolKey() {
-        return commandInstance.getThreadPoolKey();
+    public static HystrixCommandCompletion from(ExecutionResult executionResult, HystrixCommandKey commandKey, HystrixThreadPoolKey threadPoolKey, HystrixRequestContext requestContext) {
+        return new HystrixCommandCompletion(executionResult, commandKey, threadPoolKey, requestContext);
+    }
+
+    @Override
+    public boolean isResponseThreadPoolRejected() {
+        return executionResult.isResponseThreadPoolRejected();
     }
 
     @Override
@@ -49,8 +59,8 @@ public abstract class HystrixCommandCompletion extends HystrixCommandEvent {
     }
 
     @Override
-    public boolean isThreadPoolExecutionStart() {
-        return false;
+    public boolean isExecutedInThread() {
+        return executionResult.isExecutedInThread();
     }
 
     @Override
@@ -58,21 +68,28 @@ public abstract class HystrixCommandCompletion extends HystrixCommandEvent {
         return true;
     }
 
-    public HystrixInvokableInfo<?> getCommandInstance() {
-        return commandInstance;
-    }
-
-    public long[] getEventTypeCounts() {
-        return eventTypeCounts;
-    }
-
     public HystrixRequestContext getRequestContext() {
         return this.requestContext;
     }
 
-    public abstract long getExecutionLatency();
+    public ExecutionResult.EventCounts getEventCounts() {
+        return executionResult.getEventCounts();
+    }
 
-    public abstract long getTotalLatency();
+
+
+    public long getExecutionLatency() {
+        return executionResult.getExecutionLatency();
+    }
+
+    public long getTotalLatency() {
+        return executionResult.getUserThreadLatency();
+    }
+
+    @Override
+    public boolean didCommandExecute() {
+        return executionResult.executionOccurred();
+    }
 
     @Override
     public String toString() {
@@ -80,16 +97,18 @@ public abstract class HystrixCommandCompletion extends HystrixCommandEvent {
         List<HystrixEventType> foundEventTypes = new ArrayList<HystrixEventType>();
 
         sb.append(getCommandKey().name()).append("[");
-        for (HystrixEventType eventType: HystrixEventType.values()) {
-            if (eventTypeCounts[eventType.ordinal()] > 0) {
+        for (HystrixEventType eventType: ALL_EVENT_TYPES) {
+            if (executionResult.getEventCounts().contains(eventType)) {
                 foundEventTypes.add(eventType);
             }
         }
         int i = 0;
         for (HystrixEventType eventType: foundEventTypes) {
             sb.append(eventType.name());
-            if (eventTypeCounts[eventType.ordinal()] > 1) {
-                sb.append("x").append(eventTypeCounts[eventType.ordinal()]);
+            int eventCount = executionResult.getEventCounts().getCount(eventType);
+            if (eventCount > 1) {
+                sb.append("x").append(eventCount);
+
             }
             if (i < foundEventTypes.size() - 1) {
                 sb.append(", ");

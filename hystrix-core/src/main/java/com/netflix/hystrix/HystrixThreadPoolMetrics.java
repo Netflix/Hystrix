@@ -23,7 +23,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 import com.netflix.hystrix.metric.CumulativeThreadPoolEventCounterStream;
 import com.netflix.hystrix.metric.HystrixCommandCompletion;
-import com.netflix.hystrix.metric.HystrixThreadPoolEventStream;
 import com.netflix.hystrix.metric.RollingThreadPoolConcurrencyStream;
 import com.netflix.hystrix.metric.RollingThreadPoolEventCounterStream;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
@@ -39,6 +38,8 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
 
     @SuppressWarnings("unused")
     private static final Logger logger = LoggerFactory.getLogger(HystrixThreadPoolMetrics.class);
+
+    private static final HystrixEventType[] ALL_EVENT_TYPES = HystrixEventType.values();
 
     // String is HystrixThreadPoolKey.name() (we can't use HystrixThreadPoolKey directly as we can't guarantee it implements hashcode/equals correctly)
     private static final ConcurrentHashMap<String, HystrixThreadPoolMetrics> metrics = new ConcurrentHashMap<String, HystrixThreadPoolMetrics>();
@@ -98,9 +99,9 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
     public static final Func2<long[], HystrixCommandCompletion, long[]> aggregateEventCounts = new Func2<long[], HystrixCommandCompletion, long[]>() {
         @Override
         public long[] call(long[] initialCountArray, HystrixCommandCompletion execution) {
-            long[] executionCount = execution.getEventTypeCounts();
-            for (HystrixEventType eventType: HystrixEventType.values()) {
-                long eventCount = executionCount[eventType.ordinal()];
+            ExecutionResult.EventCounts eventCounts = execution.getEventCounts();
+            for (HystrixEventType eventType: ALL_EVENT_TYPES) {
+                long eventCount = eventCounts.getCount(eventType);
                 //the only executions that make it to this method are ones that executed in the given threadpool
                 //so we just count THREAD_POOL_REJECTED as rejected, and all other execution (not fallback) results as accepted
                 switch (eventType) {
@@ -145,7 +146,7 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
 
     private final RollingThreadPoolEventCounterStream rollingCounterStream;
     private final CumulativeThreadPoolEventCounterStream cumulativeCounterStream;
-    private final RollingThreadPoolConcurrencyStream rollingThreadPoolConcurrencyStream;
+    //private final RollingThreadPoolConcurrencyStream rollingThreadPoolConcurrencyStream;
 
     private HystrixThreadPoolMetrics(HystrixThreadPoolKey threadPoolKey, ThreadPoolExecutor threadPool, HystrixThreadPoolProperties properties) {
         super(null);
@@ -155,7 +156,7 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
 
         rollingCounterStream = RollingThreadPoolEventCounterStream.getInstance(threadPoolKey, properties, aggregateEventCounts, counterAggregator);
         cumulativeCounterStream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, properties, aggregateEventCounts, counterAggregator);
-        rollingThreadPoolConcurrencyStream = RollingThreadPoolConcurrencyStream.getInstance(threadPoolKey, properties);
+        //rollingThreadPoolConcurrencyStream = RollingThreadPoolConcurrencyStream.getInstance(threadPoolKey, properties);
     }
 
     /**
@@ -337,7 +338,8 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
      * @return rolling max active threads
      */
     public long getRollingMaxActiveThreads() {
-        return rollingThreadPoolConcurrencyStream.getRollingMax();
+        return 0L;
+        //return rollingThreadPoolConcurrencyStream.getRollingMax();
     }
 
     /**

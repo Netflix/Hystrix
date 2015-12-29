@@ -16,9 +16,6 @@
 package com.netflix.hystrix;
 
 import java.lang.ref.Reference;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RejectedExecutionException;
@@ -28,7 +25,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.hystrix.exception.HystrixTimeoutException;
-import com.netflix.hystrix.metric.HystrixCommandEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -107,7 +103,6 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
     /* If this command executed and timed-out */
     protected final AtomicReference<TimedOutStatus> isCommandTimedOut = new AtomicReference<TimedOutStatus>(TimedOutStatus.NOT_EXECUTED);
     protected final AtomicBoolean isExecutionComplete = new AtomicBoolean(false);
-    protected final AtomicBoolean isExecutedInThread = new AtomicBoolean(false);
     protected final AtomicReference<Action0> endCurrentThreadExecutingCommand = new AtomicReference<Action0>(); // don't like how this is being done
 
     /**
@@ -338,21 +333,18 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         if (!started.compareAndSet(false, true)) {
             throw new IllegalStateException("This instance can only be executed once. Please instantiate a new instance.");
         }
+
         final HystrixInvokable<R> _this = this;
-        final HystrixInvokableInfo<R> _invokableInfo = this;
-
-        metrics.markCommandConstructed(_invokableInfo);
-
         final boolean requestCacheEnabled = isRequestCachingEnabled();
 
         /* try from cache first */
         if (requestCacheEnabled) {
             Observable<R> fromCache = requestCache.get(getCacheKey());
             if (fromCache != null) {
-                long latency = System.currentTimeMillis() - executionResult.startTimestamp;
+                long latency = System.currentTimeMillis() - executionResult.getStartTimestamp();
                 executionResult = executionResult.markUserThreadCompletion((int) latency);
                 executionResult = executionResult.addEvent((int) latency, HystrixEventType.RESPONSE_FROM_CACHE);
-                metrics.markCommandDone(_invokableInfo, executionResult);
+                metrics.markCommandDone(executionResult, commandKey, threadPoolKey);
                 eventNotifier.markEvent(HystrixEventType.RESPONSE_FROM_CACHE, commandKey);
                 isExecutionComplete.set(true);
                 try {
@@ -371,7 +363,6 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
             public void call(Subscriber<? super R> observer) {
                 // async record keeping
                 recordExecutedCommand();
-
 
                 // mark that we're starting execution on the ExecutionHook
                 // if this hook throws an exception, then a fast-fail occurs with no fallback.  No state is left inconsistent
@@ -454,9 +445,9 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                     tl.clear();
                 }
 
-                long userThreadLatency = System.currentTimeMillis() - executionResult.startTimestamp;
+                long userThreadLatency = System.currentTimeMillis() - executionResult.getStartTimestamp();
                 executionResult = executionResult.markUserThreadCompletion((int) userThreadLatency);
-                metrics.markCommandDone(_invokableInfo, executionResult);
+                metrics.markCommandDone(executionResult, commandKey, threadPoolKey);
                 // record that we're completed
                 isExecutionComplete.set(true);
             }
@@ -498,7 +489,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 
                 @Override
                 public void call(Subscriber<? super R> s) {
-                    metrics.markCommandStart(_self);
+                    metrics.markCommandStart(commandKey, threadPoolKey, ExecutionIsolationStrategy.THREAD);
                     if (isCommandTimedOut.get() == TimedOutStatus.TIMED_OUT) {
                         // the command timed out in the wrapping thread so we will return immediately
                         // and not increment any of the counters below or other such logic
@@ -509,7 +500,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                         threadPool.markThreadExecution();
                         // store the command that is being run
                         endCurrentThreadExecutingCommand.set(Hystrix.startCurrentThreadExecutingCommand(getCommandKey()));
-                        isExecutedInThread.set(true);
+                        executionResult = executionResult.setExecutedInThread();
                         /**
                          * If any of these hooks throw an exception, then it appears as if the actual execution threw an error
                          */
@@ -531,7 +522,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                 }
             }));
         } else {
-            metrics.markCommandStart(_self);
+            metrics.markCommandStart(commandKey, threadPoolKey, ExecutionIsolationStrategy.SEMAPHORE);
             // semaphore isolated
             // store the command that is being run
             endCurrentThreadExecutingCommand.set(Hystrix.startCurrentThreadExecutingCommand(getCommandKey()));
@@ -561,7 +552,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
             @Override
             public void call(R r) {
                 if (shouldOutputOnNextEvents()) {
-                    executionResult = executionResult.addEmission(HystrixEventType.EMIT);
+                    executionResult = executionResult.addEvent(HystrixEventType.EMIT);
                     eventNotifier.markEvent(HystrixEventType.EMIT, commandKey);
                 }
             }
@@ -569,11 +560,11 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 
             @Override
             public void call() {
-                long latency = System.currentTimeMillis() - executionResult.startTimestamp;
+                long latency = System.currentTimeMillis() - executionResult.getStartTimestamp();
                 eventNotifier.markEvent(HystrixEventType.SUCCESS, commandKey);
                 executionResult = executionResult.addEvent((int) latency, HystrixEventType.SUCCESS);
                 circuitBreaker.markSuccess();
-                eventNotifier.markCommandExecution(getCommandKey(), properties.executionIsolationStrategy().get(), (int) latency, executionResult.events);
+                eventNotifier.markCommandExecution(getCommandKey(), properties.executionIsolationStrategy().get(), (int) latency, executionResult.getOrderedList());
             }
 
         }).onErrorResumeNext(new Func1<Throwable, Observable<R>>() {
@@ -602,7 +593,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                      * BadRequest handling
                      */
                     try {
-                        long executionLatency = System.currentTimeMillis() - executionResult.startTimestamp;
+                        long executionLatency = System.currentTimeMillis() - executionResult.getStartTimestamp();
                         eventNotifier.markEvent(HystrixEventType.BAD_REQUEST, commandKey);
                         executionResult = executionResult.addEvent((int) executionLatency, HystrixEventType.BAD_REQUEST);
                         Exception decorated = executionHook.onError(_self, FailureType.BAD_REQUEST_EXCEPTION, (Exception) t);
@@ -705,7 +696,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
      */
     private Observable<R> getFallbackOrThrowException(final HystrixEventType eventType, final FailureType failureType, final String message, final Exception originalException) {
         final HystrixRequestContext currentRequestContext = HystrixRequestContext.getContextForCurrentThread();
-        long latency = System.currentTimeMillis() - executionResult.startTimestamp;
+        long latency = System.currentTimeMillis() - executionResult.getStartTimestamp();
         // record the executionResult
         // do this before executing fallback so it can be queried from within getFallback (see See https://github.com/Netflix/Hystrix/pull/144)
         executionResult = executionResult.addEvent((int) latency, eventType);
@@ -758,9 +749,8 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                                 }
                             });
                 } else {
-                    long latencyWithFallback = System.currentTimeMillis() - executionResult.startTimestamp;
+                    long latencyWithFallback = System.currentTimeMillis() - executionResult.getStartTimestamp();
                     eventNotifier.markEvent(HystrixEventType.FALLBACK_REJECTION, commandKey);
-                    //TODOMRJ Make this addFallbackEvent
                     executionResult = executionResult.addEvent((int) latencyWithFallback, HystrixEventType.FALLBACK_REJECTION);
                     logger.debug("HystrixCommand Fallback Rejection."); // debug only since we're throwing the exception and someone higher will do something with it
                     // if we couldn't acquire a permit, we "fail fast" by throwing an exception
@@ -771,7 +761,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                     @Override
                     public void call(R r) {
                         if (shouldOutputOnNextEvents()) {
-                            executionResult = executionResult.addEmission(HystrixEventType.FALLBACK_EMIT);
+                            executionResult = executionResult.addEvent(HystrixEventType.FALLBACK_EMIT);
                             eventNotifier.markEvent(HystrixEventType.FALLBACK_EMIT, commandKey);
                         }
                     }
@@ -779,11 +769,10 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 
                     @Override
                     public void call() {
-                        long latency = System.currentTimeMillis() - executionResult.startTimestamp;
+                        long latency = System.currentTimeMillis() - executionResult.getStartTimestamp();
                         // mark fallback on counter
                         eventNotifier.markEvent(HystrixEventType.FALLBACK_SUCCESS, commandKey);
                         // record the executionResult
-                        //TODOMRJ Make this addFallbackEvent
                         executionResult = executionResult.addEvent((int) latency, HystrixEventType.FALLBACK_SUCCESS);
                     }
 
@@ -795,10 +784,9 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
                         Exception fe = getExceptionFromThrowable(t);
 
                         if (fe instanceof UnsupportedOperationException) {
-                            long latency = System.currentTimeMillis() - executionResult.startTimestamp;
+                            long latency = System.currentTimeMillis() - executionResult.getStartTimestamp();
                             logger.debug("No fallback for HystrixCommand. ", fe); // debug only since we're throwing the exception and someone higher will do something with it
                             eventNotifier.markEvent(HystrixEventType.FALLBACK_MISSING, commandKey);
-                            //TODOMRJ Make this addFallbackEvent
                             executionResult = executionResult.addEvent((int) latency, HystrixEventType.FALLBACK_MISSING);
 
                             /* executionHook for all errors */
@@ -806,11 +794,10 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 
                             return Observable.error(new HystrixRuntimeException(failureType, _cmd.getClass(), getLogMessagePrefix() + " " + message + " and no fallback available.", e, fe));
                         } else {
-                            long latency = System.currentTimeMillis() - executionResult.startTimestamp;
+                            long latency = System.currentTimeMillis() - executionResult.getStartTimestamp();
                             logger.debug("HystrixCommand execution " + failureType.name() + " and fallback failed.", fe);
                             eventNotifier.markEvent(HystrixEventType.FALLBACK_FAILURE, commandKey);
                             // record the executionResult
-                            //TODOMRJ Make this addFallbackEvent
                             executionResult = executionResult.addEvent((int) latency, HystrixEventType.FALLBACK_FAILURE);
 
                             /* executionHook for all errors */
@@ -910,7 +897,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         if (endCurrentThreadExecutingCommand.get() != null) {
             endCurrentThreadExecutingCommand.get().call();
         }
-        if (isExecutedInThread.get()) {
+        if (executionResult.isExecutedInThread()) {
             HystrixCounters.decrementGlobalConcurrentThreads();
             threadPool.markThreadCompletion();
             try {
@@ -1286,7 +1273,6 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
             }
         }
     }
-
 
     /* ******************************************************************************** */
     /* ******************************************************************************** */
@@ -1718,229 +1704,6 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
     /* ******************************************************************************** */
     /* ******************************************************************************** */
 
-    /**
-     * Immutable holder class for the status of command execution.
-     * <p>
-     * Contained within a class to simplify the sharing of it across Futures/threads that result from request caching.
-     * <p>
-     * This object can be referenced and "modified" by parent and child threads as well as by different instances of HystrixCommand since
-     * 1 instance could create an ExecutionResult, cache a Future that refers to it, a 2nd instance execution then retrieves a Future
-     * from cache and wants to append RESPONSE_FROM_CACHE to whatever the ExecutionResult was from the first command execution.
-     * <p>
-     * This being immutable forces and ensure thread-safety instead of using AtomicInteger/ConcurrentLinkedQueue and determining
-     * when it's safe to mutate the object directly versus needing to deep-copy clone to a new instance.
-     */
-    protected static class ExecutionResult {
-        protected final List<HystrixEventType> events;
-        //protected final List<HystrixEventType> fallbackEvents;
-        private final Exception failedExecutionException;
-        private final Exception executionException;
-        private final long startTimestamp;
-        private final int executionLatency; //time spent in run() method
-        private final int userThreadLatency; //time elapsed between caller thread submitting request and response being visible to it
-        private final int numEmissions;
-        private final int numFallbackEmissions;
-        private final int numCollapsed;
-        private final boolean executionOccurred;
-
-        private static ExecutionResult from(HystrixEventType... eventTypes) {
-            boolean didExecutionOccur = false;
-            for (HystrixEventType eventType: eventTypes) {
-                /*if (isFallbackEvent(eventType)) {
-
-                }*/
-                if (didExecutionOccur(eventType)) {
-                    didExecutionOccur = true;
-                }
-            }
-            return new ExecutionResult(Arrays.asList(eventTypes), -1L, -1, -1, null, null, 0, 0, 0, didExecutionOccur);
-        }
-
-        public ExecutionResult setExecutionLatency(int executionLatency) {
-            return new ExecutionResult(events, startTimestamp, executionLatency, userThreadLatency,
-                    failedExecutionException, executionException, numEmissions, numFallbackEmissions,
-                    numCollapsed, executionOccurred);
-        }
-
-        public ExecutionResult setException(Exception e) {
-            return new ExecutionResult(events, startTimestamp, executionLatency, userThreadLatency, e,
-                    executionException, numEmissions, numFallbackEmissions, numCollapsed, executionOccurred);
-        }
-
-        public ExecutionResult setExecutionException(Exception executionException) {
-            return new ExecutionResult(events, startTimestamp, executionLatency, userThreadLatency,
-                    failedExecutionException, executionException, numEmissions, numFallbackEmissions,
-                    numCollapsed, executionOccurred);
-        }
-
-        public ExecutionResult setInvocationStartTime(long startTimestamp) {
-            return new ExecutionResult(events, startTimestamp, executionLatency, userThreadLatency,
-                    failedExecutionException, executionException, numEmissions, numFallbackEmissions,
-                    numCollapsed, executionOccurred);
-        }
-
-        private ExecutionResult(List<HystrixEventType> events, long startTimestamp, int executionLatency,
-                                int userThreadLatency, Exception failedExecutionException, Exception executionException,
-                                int numEmissions, int numFallbackEmissions, int numCollapsed, boolean executionOccurred) {
-            // we are safe assigning the List reference instead of deep-copying
-            // because we control the original list in 'newEvent'
-            this.events = events;
-            this.startTimestamp = startTimestamp;
-            this.executionLatency = executionLatency;
-            this.userThreadLatency = userThreadLatency;
-            this.failedExecutionException = failedExecutionException;
-            this.executionException = executionException;
-            this.numEmissions = numEmissions;
-            this.numFallbackEmissions = numFallbackEmissions;
-            this.numCollapsed = numCollapsed;
-            this.executionOccurred = executionOccurred;
-        }
-
-        // we can return a static version since it's immutable
-        private static ExecutionResult EMPTY = ExecutionResult.from();
-
-        private static boolean didExecutionOccur(HystrixEventType eventType) {
-            switch (eventType) {
-                case SUCCESS: return true;
-                case FAILURE: return true;
-                case BAD_REQUEST: return true;
-                case TIMEOUT: return true;
-                default: return false;
-            }
-        }
-
-        /**
-         * Creates a new ExecutionResult by adding the defined 'event' to the ones on the current instance.
-         * 
-         * @param eventType event to add
-         * @return new {@link com.netflix.hystrix.AbstractCommand.ExecutionResult} with event added
-         */
-        public ExecutionResult addEvent(HystrixEventType eventType) {
-            return new ExecutionResult(getUpdatedList(this.events, eventType), startTimestamp, executionLatency,
-                    userThreadLatency, failedExecutionException, executionException, numEmissions,
-                    numFallbackEmissions, numCollapsed, executionOccurred ? executionOccurred : didExecutionOccur(eventType));
-        }
-
-        public ExecutionResult addEvent(int executionLatency, HystrixEventType eventType) {
-            if (startTimestamp >= 0 && !isResponseRejected()) {
-                return new ExecutionResult(getUpdatedList(this.events, eventType), startTimestamp, executionLatency,
-                        userThreadLatency, failedExecutionException, executionException, numEmissions,
-                        numFallbackEmissions, numCollapsed, executionOccurred ? executionOccurred : didExecutionOccur(eventType));
-            } else {
-                return addEvent(eventType);
-            }
-        }
-
-        public long[] getEventCounts() {
-            long[] eventCounts = new long[HystrixEventType.values().length];
-            for (HystrixEventType eventType: events) {
-                if (eventType.equals(HystrixEventType.COLLAPSED)) {
-                    eventCounts[eventType.ordinal()] += numCollapsed;
-                } else if (eventType.equals(HystrixEventType.EMIT)) {
-                    eventCounts[eventType.ordinal()] += numEmissions;
-                } else if (eventType.equals(HystrixEventType.FALLBACK_EMIT)) {
-                    eventCounts[eventType.ordinal()] += numFallbackEmissions;
-                } else {
-                    if (eventType.equals(HystrixEventType.FALLBACK_FAILURE) || eventType.equals(HystrixEventType.FALLBACK_REJECTION) || eventType.equals(HystrixEventType.FALLBACK_MISSING)) {
-                        eventCounts[HystrixEventType.EXCEPTION_THROWN.ordinal()]++;
-                    }
-                    eventCounts[eventType.ordinal()]++;
-                }
-            }
-            return eventCounts;
-        }
-
-        private static List<HystrixEventType> getUpdatedList(List<HystrixEventType> currentList, HystrixEventType... newEvents) {
-            ArrayList<HystrixEventType> updatedEvents = new ArrayList<HystrixEventType>();
-            updatedEvents.addAll(currentList);
-            Collections.addAll(updatedEvents, newEvents);
-            return Collections.unmodifiableList(updatedEvents);
-        }
-
-        public int getExecutionLatency() {
-            return executionLatency;
-        }
-
-        public int getUserThreadLatency() {
-            return userThreadLatency;
-        }
-
-        public long getCommandRunStartTimeInNanos() {
-            return startTimestamp * 1000 * 1000;
-        }
-
-        public Exception getException() {
-            return failedExecutionException;
-        }
-
-        public Exception getExecutionException() {
-            return executionException;
-        }
-
-        /**
-         * This method may be called many times for {@code HystrixEventType.EMIT} and {@code HystrixEventType.FALLBACK_EMIT}.
-         * To save on storage, on the first time we see that event type, it gets added to the event list, and the count gets incremented.
-         * @param eventType emission event
-         * @return "updated" {@link ExecutionResult}
-         */
-        public ExecutionResult addEmission(HystrixEventType eventType) {
-            switch (eventType) {
-                case EMIT: if (events.contains(HystrixEventType.EMIT)) {
-                    return new ExecutionResult(events, startTimestamp, executionLatency, userThreadLatency,
-                            failedExecutionException, executionException, numEmissions + 1, numFallbackEmissions,
-                            numCollapsed, executionOccurred);
-                } else {
-                    return new ExecutionResult(getUpdatedList(this.events, HystrixEventType.EMIT), startTimestamp,
-                            executionLatency, userThreadLatency, failedExecutionException, executionException,
-                            numEmissions +1, numFallbackEmissions, numCollapsed, executionOccurred);
-                }
-                case FALLBACK_EMIT: if (events.contains(HystrixEventType.FALLBACK_EMIT)) {
-                    return new ExecutionResult(events, startTimestamp, executionLatency, userThreadLatency,
-                            failedExecutionException, executionException, numEmissions, numFallbackEmissions + 1,
-                            numCollapsed, executionOccurred);
-                } else {
-                    return new ExecutionResult(getUpdatedList(this.events, HystrixEventType.FALLBACK_EMIT),
-                            startTimestamp, executionLatency, userThreadLatency, failedExecutionException,
-                            executionException, numEmissions, numFallbackEmissions + 1, numCollapsed, executionOccurred);
-                }
-                default: return this;
-            }
-        }
-
-        public ExecutionResult markCollapsed(int numCollapsed) {
-            return new ExecutionResult(getUpdatedList(this.events, HystrixEventType.COLLAPSED), startTimestamp,
-                    executionLatency, userThreadLatency, failedExecutionException, executionException, numEmissions,
-                    numFallbackEmissions, numCollapsed, executionOccurred);
-        }
-
-        public boolean isResponseSemaphoreRejected() {
-            return events.contains(HystrixEventType.SEMAPHORE_REJECTED);
-        }
-
-        public boolean isResponseThreadPoolRejected() {
-            return events.contains(HystrixEventType.THREAD_POOL_REJECTED);
-        }
-
-        public boolean isResponseRejected() {
-            return isResponseThreadPoolRejected() || isResponseSemaphoreRejected();
-        }
-
-        public ExecutionResult markUserThreadCompletion(long userThreadLatency) {
-            if (startTimestamp > 0 && !isResponseRejected()) {
-                /* execution time (must occur before terminal state otherwise a race condition can occur if requested by client) */
-                return new ExecutionResult(events, startTimestamp, executionLatency, (int) userThreadLatency,
-                        failedExecutionException, executionException, numEmissions, numFallbackEmissions,
-                        numCollapsed, executionOccurred);
-            } else {
-                return this;
-            }
-        }
-
-        public boolean executionOccurred() {
-            return executionOccurred;
-        }
-    }
-
     /* ******************************************************************************** */
     /* ******************************************************************************** */
     /* RequestCache */
@@ -2010,7 +1773,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
      * @return boolean
      */
     public boolean isExecutedInThread() {
-        return isExecutedInThread.get();
+        return executionResult.isExecutedInThread();
     }
 
     /**
@@ -2019,7 +1782,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
      * @return boolean
      */
     public boolean isSuccessfulExecution() {
-        return executionResult.events.contains(HystrixEventType.SUCCESS);
+        return executionResult.getEventCounts().contains(HystrixEventType.SUCCESS);
     }
 
     /**
@@ -2028,7 +1791,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
      * @return boolean
      */
     public boolean isFailedExecution() {
-        return executionResult.events.contains(HystrixEventType.FAILURE);
+        return executionResult.getEventCounts().contains(HystrixEventType.FAILURE);
     }
 
     /**
@@ -2071,7 +1834,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
      * @return boolean
      */
     public boolean isResponseFromFallback() {
-        return executionResult.events.contains(HystrixEventType.FALLBACK_SUCCESS);
+        return executionResult.getEventCounts().contains(HystrixEventType.FALLBACK_SUCCESS);
     }
 
     /**
@@ -2081,7 +1844,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
      * @return boolean
      */
     public boolean isResponseTimedOut() {
-        return executionResult.events.contains(HystrixEventType.TIMEOUT);
+        return executionResult.getEventCounts().contains(HystrixEventType.TIMEOUT);
     }
 
     /**
@@ -2091,7 +1854,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
      * @return boolean
      */
     public boolean isResponseShortCircuited() {
-        return executionResult.events.contains(HystrixEventType.SHORT_CIRCUITED);
+        return executionResult.getEventCounts().contains(HystrixEventType.SHORT_CIRCUITED);
     }
 
     /**
@@ -2100,7 +1863,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
      * @return boolean
      */
     public boolean isResponseFromCache() {
-        return executionResult.events.contains(HystrixEventType.RESPONSE_FROM_CACHE);
+        return executionResult.getEventCounts().contains(HystrixEventType.RESPONSE_FROM_CACHE);
     }
 
     /**
@@ -2138,7 +1901,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
      * @return {@code List<HystrixEventType>}
      */
     public List<HystrixEventType> getExecutionEvents() {
-        return executionResult.events;
+        return executionResult.getOrderedList();
     }
 
     /**
@@ -2147,7 +1910,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
      */
     @Override
     public int getNumberEmissions() {
-        return executionResult.numEmissions;
+        return executionResult.getEventCounts().getCount(HystrixEventType.EMIT);
     }
 
     /**
@@ -2156,7 +1919,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
      */
     @Override
     public int getNumberFallbackEmissions() {
-        return executionResult.numFallbackEmissions;
+        return executionResult.getEventCounts().getCount(HystrixEventType.FALLBACK_EMIT);
     }
 
     /**

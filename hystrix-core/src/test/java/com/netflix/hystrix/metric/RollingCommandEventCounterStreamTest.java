@@ -72,6 +72,7 @@ public class RollingCommandEventCounterStreamTest extends CommandStreamTest {
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
+        System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
         assertEquals(HystrixEventType.values().length, stream.getLatest().length);
         assertFalse(hasData(stream.getLatest()));
     }
@@ -96,6 +97,7 @@ public class RollingCommandEventCounterStreamTest extends CommandStreamTest {
         assertEquals(HystrixEventType.values().length, stream.getLatest().length);
         long[] expected = new long[HystrixEventType.values().length];
         expected[HystrixEventType.SUCCESS.ordinal()] = 1;
+        System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
         assertArrayEquals(expected, stream.getLatest());
     }
 
@@ -120,6 +122,7 @@ public class RollingCommandEventCounterStreamTest extends CommandStreamTest {
         long[] expected = new long[HystrixEventType.values().length];
         expected[HystrixEventType.FAILURE.ordinal()] = 1;
         expected[HystrixEventType.FALLBACK_SUCCESS.ordinal()] = 1;
+        System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
         assertArrayEquals(expected, stream.getLatest());
     }
 
@@ -144,6 +147,7 @@ public class RollingCommandEventCounterStreamTest extends CommandStreamTest {
         long[] expected = new long[HystrixEventType.values().length];
         expected[HystrixEventType.TIMEOUT.ordinal()] = 1;
         expected[HystrixEventType.FALLBACK_SUCCESS.ordinal()] = 1;
+        System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
         assertArrayEquals(expected, stream.getLatest());
     }
 
@@ -167,6 +171,8 @@ public class RollingCommandEventCounterStreamTest extends CommandStreamTest {
         assertEquals(HystrixEventType.values().length, stream.getLatest().length);
         long[] expected = new long[HystrixEventType.values().length];
         expected[HystrixEventType.BAD_REQUEST.ordinal()] = 1;
+        expected[HystrixEventType.EXCEPTION_THROWN.ordinal()] = 1;
+        System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
         assertArrayEquals(expected, stream.getLatest());
     }
 
@@ -197,6 +203,7 @@ public class RollingCommandEventCounterStreamTest extends CommandStreamTest {
         long[] expected = new long[HystrixEventType.values().length];
         expected[HystrixEventType.SUCCESS.ordinal()] = 1;
         expected[HystrixEventType.RESPONSE_FROM_CACHE.ordinal()] = 2;
+        System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
         assertArrayEquals(expected, stream.getLatest());
     }
 
@@ -245,6 +252,7 @@ public class RollingCommandEventCounterStreamTest extends CommandStreamTest {
         expected[HystrixEventType.FAILURE.ordinal()] = 3;
         expected[HystrixEventType.SHORT_CIRCUITED.ordinal()] = 2;
         expected[HystrixEventType.FALLBACK_SUCCESS.ordinal()] = 5;
+        System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
         assertArrayEquals(expected, stream.getLatest());
     }
 
@@ -301,6 +309,7 @@ public class RollingCommandEventCounterStreamTest extends CommandStreamTest {
         expected[HystrixEventType.SUCCESS.ordinal()] = 10;
         expected[HystrixEventType.SEMAPHORE_REJECTED.ordinal()] = 2;
         expected[HystrixEventType.FALLBACK_SUCCESS.ordinal()] = 2;
+        System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
         assertArrayEquals(expected, stream.getLatest());
     }
 
@@ -377,6 +386,7 @@ public class RollingCommandEventCounterStreamTest extends CommandStreamTest {
         expected[HystrixEventType.FAILURE.ordinal()] = 1;
         expected[HystrixEventType.FALLBACK_FAILURE.ordinal()] = 1;
         expected[HystrixEventType.EXCEPTION_THROWN.ordinal()] = 1;
+        System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
         assertArrayEquals(expected, stream.getLatest());
     }
 
@@ -448,6 +458,32 @@ public class RollingCommandEventCounterStreamTest extends CommandStreamTest {
         expected[HystrixEventType.FALLBACK_SUCCESS.ordinal()] = 5;
         expected[HystrixEventType.FALLBACK_REJECTION.ordinal()] = 2;
         expected[HystrixEventType.EXCEPTION_THROWN.ordinal()] = 2;
+        System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
+        assertArrayEquals(expected, stream.getLatest());
+    }
+
+    @Test
+    public void testCollapsed() {
+        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("BatchCommand");
+        stream = RollingCommandEventCounterStream.getInstance(key, 10, 100, HystrixCommandMetrics.aggregateEventCounts, HystrixCommandMetrics.bucketAggregator);
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        stream.observe().take(10).subscribe(getSubscriber(latch));
+
+        for (int i = 0; i < 3; i++) {
+            CommandStreamTest.Collapser.from(i).observe();
+        }
+
+        try {
+            latch.await(10000, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException ex) {
+            fail("Interrupted ex");
+        }
+        assertEquals(HystrixEventType.values().length, stream.getLatest().length);
+        long[] expected = new long[HystrixEventType.values().length];
+        expected[HystrixEventType.SUCCESS.ordinal()] = 1;
+        expected[HystrixEventType.COLLAPSED.ordinal()] = 3;
+        System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
         assertArrayEquals(expected, stream.getLatest());
     }
 
@@ -474,6 +510,7 @@ public class RollingCommandEventCounterStreamTest extends CommandStreamTest {
         }
         assertEquals(HystrixEventType.values().length, stream.getLatest().length);
         long[] expected = new long[HystrixEventType.values().length];
+        System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
         assertArrayEquals(expected, stream.getLatest());
     }
 }

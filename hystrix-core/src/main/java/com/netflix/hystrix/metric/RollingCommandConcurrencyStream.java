@@ -43,6 +43,9 @@ import java.util.concurrent.ConcurrentMap;
  * This value is not cached.  You need to consume this stream directly if you want to use it.
  *
  * Both A) and B) are stable - there's no peeking into a bucket until it is emitted
+ *
+ * LARGE CAVEAT:
+ * This will change after 1.5.0-RC.1.  This was an experiment that proved too costly. Rely on this at your own peril
  */
 public class RollingCommandConcurrencyStream extends RollingConcurrencyStream {
 

@@ -17,7 +17,6 @@ package com.netflix.hystrix.metric;
 
 import rx.Observable;
 import rx.Subscription;
-import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.functions.Func2;
 import rx.subjects.BehaviorSubject;
@@ -25,6 +24,11 @@ import rx.subjects.BehaviorSubject;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Abstract class that imposes a bucketing structure and provides streams of buckets
+ * @param <A> type of data contained in each bucket
+ * @param <B> type of data emitted to stream subscribers (often is the same as A but does not have to be)
+ */
 public abstract class BucketedCounterStream<A, B> {
     protected final HystrixEventStream inputEventStream;
     protected final int numBuckets;
@@ -48,6 +52,9 @@ public abstract class BucketedCounterStream<A, B> {
         };
     }
 
+    /**
+     * Cause the timer to start and buckets to start getting emitted.
+     */
     public void start() {
         counterSubscription = observe().subscribe(counterSubject);
     }
@@ -56,6 +63,10 @@ public abstract class BucketedCounterStream<A, B> {
 
     abstract B getEmptyEmitValue();
 
+    /**
+     * Return the stream of buckets
+     * @return stream of buckets
+     */
     public abstract Observable<B> observe();
 
     protected Observable<A> getBucketedStream() {
@@ -69,6 +80,10 @@ public abstract class BucketedCounterStream<A, B> {
                 .startWith(emptyEventCountsToStart);                                   //start it with empty arrays to make consumer logic as generic as possible (windows are always full)
     }
 
+    /**
+     * Synchronous call to retrieve the last calculated bucket without waiting for any emissions
+     * @return last calculated bucket
+     */
     public B getLatest() {
         if (counterSubject.hasValue()) {
             return counterSubject.getValue();

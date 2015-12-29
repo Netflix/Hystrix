@@ -39,6 +39,8 @@ public class RollingCommandEventCounterStream extends BucketedRollingCounterStre
 
     private static final ConcurrentMap<String, RollingCommandEventCounterStream> streams = new ConcurrentHashMap<String, RollingCommandEventCounterStream>();
 
+    private static final int NUM_EVENT_TYPES = HystrixEventType.values().length;
+
     public static RollingCommandEventCounterStream getInstance(HystrixCommandKey commandKey, HystrixCommandProperties properties,
                                                         Func2<long[], HystrixCommandCompletion, long[]> reduceCommandCompletion,
                                                         Func2<long[], long[], long[]> reduceBucket) {
@@ -82,12 +84,12 @@ public class RollingCommandEventCounterStream extends BucketedRollingCounterStre
 
     @Override
     long[] getEmptyBucketSummary() {
-        return new long[HystrixEventType.values().length];
+        return new long[NUM_EVENT_TYPES];
     }
 
     @Override
     long[] getEmptyEmitValue() {
-        return new long[HystrixEventType.values().length];
+        return new long[NUM_EVENT_TYPES];
     }
 
     public long getLatest(HystrixEventType eventType) {

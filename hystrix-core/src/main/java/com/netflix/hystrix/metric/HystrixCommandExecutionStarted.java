@@ -15,21 +15,20 @@
  */
 package com.netflix.hystrix.metric;
 
+import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixCommandProperties;
-import com.netflix.hystrix.HystrixInvokableInfo;
+import com.netflix.hystrix.HystrixThreadPoolKey;
 
-public class HystrixCommandExecutionStarted extends HystrixCommandEvent {
-	private final long timestamp;
-    private final HystrixInvokableInfo<?> commandInstance;
+/**
+ * Data class that get fed to event stream when a command starts executing.
+ * Was used in an experiment to get stream-based concurrency working, but not used as of 1.5.0-RC1
+ */
+/* package-private */class HystrixCommandExecutionStarted extends HystrixCommandEvent {
+    private final HystrixCommandProperties.ExecutionIsolationStrategy isolationStrategy;
 
-    public HystrixCommandExecutionStarted(HystrixInvokableInfo<?> commandInstance) {
-        this.timestamp = System.currentTimeMillis();
-        this.commandInstance = commandInstance;
-    }
-
-    @Override
-    HystrixInvokableInfo<?> getCommandInstance() {
-        return commandInstance;
+    public HystrixCommandExecutionStarted(HystrixCommandKey commandKey, HystrixThreadPoolKey threadPoolKey, HystrixCommandProperties.ExecutionIsolationStrategy isolationStrategy) {
+        super(commandKey, threadPoolKey);
+        this.isolationStrategy = isolationStrategy;
     }
 
     @Override
@@ -38,8 +37,13 @@ public class HystrixCommandExecutionStarted extends HystrixCommandEvent {
     }
 
     @Override
-    public boolean isThreadPoolExecutionStart() {
-        return commandInstance.getProperties().executionIsolationStrategy().get().equals(HystrixCommandProperties.ExecutionIsolationStrategy.THREAD);
+    public boolean isExecutedInThread() {
+        return isolationStrategy.equals(HystrixCommandProperties.ExecutionIsolationStrategy.THREAD);
+    }
+
+    @Override
+    public boolean isResponseThreadPoolRejected() {
+        return false;
     }
 
     @Override

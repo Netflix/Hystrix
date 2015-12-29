@@ -15,20 +15,16 @@
  */
 package com.netflix.hystrix.metric;
 
-import com.netflix.hystrix.HystrixInvokableInfo;
+import com.netflix.hystrix.HystrixCommandKey;
+import com.netflix.hystrix.HystrixThreadPoolKey;
 
-public class HystrixCommandConstructed extends HystrixCommandEvent {
-	private final long timestamp;
-    private final HystrixInvokableInfo<?> commandInstance;
-
-    public HystrixCommandConstructed(HystrixInvokableInfo<?> commandInstance) {
-        this.timestamp = System.currentTimeMillis();
-        this.commandInstance = commandInstance;
-    }
-
-    @Override
-    HystrixInvokableInfo<?> getCommandInstance() {
-        return commandInstance;
+/**
+ * Data class that get fed to event stream when a command is constructed.
+ * Was used in an experiment to get stream-based concurrency working, but not used as of 1.5.0-RC1
+ */
+/* package-private*/ class HystrixCommandConstructed extends HystrixCommandEvent {
+    public HystrixCommandConstructed(HystrixCommandKey commandKey, HystrixThreadPoolKey threadPoolKey) {
+        super(commandKey, threadPoolKey);
     }
 
     @Override
@@ -37,7 +33,12 @@ public class HystrixCommandConstructed extends HystrixCommandEvent {
     }
 
     @Override
-    public boolean isThreadPoolExecutionStart() {
+    public boolean isExecutedInThread() {
+        return false;
+    }
+
+    @Override
+    public boolean isResponseThreadPoolRejected() {
         return false;
     }
 

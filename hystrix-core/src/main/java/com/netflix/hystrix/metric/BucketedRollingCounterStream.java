@@ -19,6 +19,11 @@ import rx.Observable;
 import rx.functions.Func1;
 import rx.functions.Func2;
 
+/**
+ * Refinement of {@link BucketedCounterStream} which reduces numBuckets at a time.
+ * @param <A> type of data in each bucket
+ * @param <B> type of data emitted
+ */
 public abstract class BucketedRollingCounterStream<A, B> extends BucketedCounterStream<A, B> {
     private final Func1<Observable<A>, Observable<B>> reduceWindowToSummary;
 

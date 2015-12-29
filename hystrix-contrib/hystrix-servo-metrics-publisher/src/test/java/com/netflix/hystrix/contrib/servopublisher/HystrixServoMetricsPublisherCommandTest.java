@@ -37,8 +37,8 @@ import static org.junit.Assert.assertTrue;
 
 public class HystrixServoMetricsPublisherCommandTest {
 
-    private static HystrixCommandKey key = HystrixCommandKey.Factory.asKey("COMMAND");
-    private static HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("GROUP");
+    private static HystrixCommandKey key = HystrixCommandKey.Factory.asKey("ServoCOMMAND");
+    private static HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("ServoGROUP");
 
     private static HystrixCircuitBreaker circuitBreaker = HystrixCircuitBreaker.Factory.getInstance(key);
     private static HystrixCommandProperties.Setter propertiesSetter = HystrixCommandProperties.Setter()

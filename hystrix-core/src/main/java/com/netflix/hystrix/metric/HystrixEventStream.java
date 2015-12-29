@@ -17,6 +17,10 @@ package com.netflix.hystrix.metric;
 
 import rx.Observable;
 
+/**
+ * Base interface for a stream of {@link com.netflix.hystrix.HystrixEventType}s.  Allows consumption by individual
+ * {@link com.netflix.hystrix.HystrixEventType} or by time-based bucketing of events
+ */
 public interface HystrixEventStream {
 
     Observable<Observable<HystrixCommandCompletion>> getBucketedStreamOfCommandCompletions(int bucketSizeInMs);

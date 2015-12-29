@@ -41,6 +41,8 @@ public class CumulativeCommandEventCounterStream extends BucketedCumulativeCount
 
     private static final ConcurrentMap<String, CumulativeCommandEventCounterStream> streams = new ConcurrentHashMap<String, CumulativeCommandEventCounterStream>();
 
+    private static final int NUM_EVENT_TYPES = HystrixEventType.values().length;
+
     public static CumulativeCommandEventCounterStream getInstance(HystrixCommandKey commandKey, HystrixCommandProperties properties,
                                                            Func2<long[], HystrixCommandCompletion, long[]> reduceCommandCompletion,
                                                            Func2<long[], long[], long[]> reduceBucket) {
@@ -84,12 +86,12 @@ public class CumulativeCommandEventCounterStream extends BucketedCumulativeCount
 
     @Override
     long[] getEmptyBucketSummary() {
-        return new long[HystrixEventType.values().length];
+        return new long[NUM_EVENT_TYPES];
     }
 
     @Override
     long[] getEmptyEmitValue() {
-        return new long[HystrixEventType.values().length];
+        return new long[NUM_EVENT_TYPES];
     }
 
     public long getLatest(HystrixEventType eventType) {

@@ -167,6 +167,7 @@ public class CumulativeCommandEventCounterStreamTest extends CommandStreamTest {
         assertEquals(HystrixEventType.values().length, stream.getLatest().length);
         long[] expected = new long[HystrixEventType.values().length];
         expected[HystrixEventType.BAD_REQUEST.ordinal()] = 1;
+        expected[HystrixEventType.EXCEPTION_THROWN.ordinal()] = 1;
         assertArrayEquals(expected, stream.getLatest());
     }
 
@@ -448,6 +449,31 @@ public class CumulativeCommandEventCounterStreamTest extends CommandStreamTest {
         expected[HystrixEventType.FALLBACK_SUCCESS.ordinal()] = 5;
         expected[HystrixEventType.FALLBACK_REJECTION.ordinal()] = 2;
         expected[HystrixEventType.EXCEPTION_THROWN.ordinal()] = 2;
+        assertArrayEquals(expected, stream.getLatest());
+    }
+
+    @Test
+    public void testCollapsed() {
+        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("BatchCommand");
+        stream = CumulativeCommandEventCounterStream.getInstance(key, 10, 100, HystrixCommandMetrics.aggregateEventCounts, HystrixCommandMetrics.bucketAggregator);
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        stream.observe().take(10).subscribe(getSubscriber(latch));
+
+        for (int i = 0; i < 3; i++) {
+            CommandStreamTest.Collapser.from(i).observe();
+        }
+
+        try {
+            latch.await(10000, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException ex) {
+            fail("Interrupted ex");
+        }
+        assertEquals(HystrixEventType.values().length, stream.getLatest().length);
+        long[] expected = new long[HystrixEventType.values().length];
+        expected[HystrixEventType.SUCCESS.ordinal()] = 1;
+        expected[HystrixEventType.COLLAPSED.ordinal()] = 3;
+        System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
         assertArrayEquals(expected, stream.getLatest());
     }
 

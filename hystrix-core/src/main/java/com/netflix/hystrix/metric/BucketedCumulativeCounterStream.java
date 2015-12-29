@@ -15,10 +15,14 @@
  */
 package com.netflix.hystrix.metric;
 
-
 import rx.Observable;
 import rx.functions.Func2;
 
+/**
+ * Refinement of {@link BucketedCounterStream} which accumulates counters infinitely in the bucket-reduction step
+ * @param <A> type of data in each bucket
+ * @param <B> type of data emitted
+ */
 public abstract class BucketedCumulativeCounterStream<A, B> extends BucketedCounterStream<A, B> {
     private Func2<B, A, B> reduceBucket;
 

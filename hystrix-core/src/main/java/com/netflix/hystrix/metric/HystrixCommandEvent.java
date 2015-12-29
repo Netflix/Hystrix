@@ -16,24 +16,35 @@
 package com.netflix.hystrix.metric;
 
 import com.netflix.hystrix.HystrixCommandKey;
-import com.netflix.hystrix.HystrixInvokableInfo;
 import com.netflix.hystrix.HystrixThreadPoolKey;
 import rx.functions.Func1;
 
+/**
+ * Data class that comprises the event stream for Hystrix command executions.
+ * As of 1.5.0-RC1, this is only {@link HystrixCommandCompletion}s.
+ */
 public abstract class HystrixCommandEvent {
-    abstract HystrixInvokableInfo<?> getCommandInstance();
+    private final HystrixCommandKey commandKey;
+    private final HystrixThreadPoolKey threadPoolKey;
+
+    protected HystrixCommandEvent(HystrixCommandKey commandKey, HystrixThreadPoolKey threadPoolKey) {
+        this.commandKey = commandKey;
+        this.threadPoolKey = threadPoolKey;
+    }
 
     public HystrixCommandKey getCommandKey() {
-        return getCommandInstance().getCommandKey();
+        return commandKey;
     }
 
     public HystrixThreadPoolKey getThreadPoolKey() {
-        return getCommandInstance().getThreadPoolKey();
+        return threadPoolKey;
     }
 
     public abstract boolean isExecutionStart();
 
-    public abstract boolean isThreadPoolExecutionStart();
+    public abstract boolean isExecutedInThread();
+
+    public abstract boolean isResponseThreadPoolRejected();
 
     public abstract boolean isCommandCompletion();
 

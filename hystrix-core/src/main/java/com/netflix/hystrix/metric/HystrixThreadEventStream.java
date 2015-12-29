@@ -15,13 +15,13 @@
  */
 package com.netflix.hystrix.metric;
 
+import com.netflix.hystrix.ExecutionResult;
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandKey;
-import com.netflix.hystrix.HystrixInvokableInfo;
 import com.netflix.hystrix.HystrixThreadPool;
-import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
-import rx.Observable;
+import com.netflix.hystrix.HystrixThreadPoolKey;
 import rx.functions.Action1;
+import rx.observers.Subscribers;
 import rx.schedulers.Schedulers;
 import rx.subjects.PublishSubject;
 import rx.subjects.Subject;
@@ -34,8 +34,8 @@ import rx.subjects.Subject;
  * * Application caller threads (semaphore-isolated commands, or thread-pool-rejections)
  * * Timer threads (timeouts or collapsers)
  *
- * Given this, the simplest thing to do is just multiplex all single-threaded streams into a global stream.  We can
- * always recover any interesting slice of this stream later (like grouping by {@link HystrixCommandKey}.
+ * This is not a useful stream to consume directly (I think), so this stream writes to the proper {@link HystrixCommandEventStream} and
+ * {@link HystrixThreadPoolEventStream} (when executed in / rejected from a thread pool)
  *
  * Also note that any observers of this stream do so on an RxComputation thread.  This allows all processing of
  * events to happen off the main thread executing the {@link HystrixCommand}.  It also implies that event consumers
@@ -45,82 +45,52 @@ import rx.subjects.Subject;
 public class HystrixThreadEventStream {
     private final long threadId;
     private final String threadName;
-    private final Subject<HystrixCommandEvent, HystrixCommandEvent> subject;
+    private final Subject<HystrixCommandEvent, HystrixCommandEvent> writeOnlySubject;
 
     private static final ThreadLocal<HystrixThreadEventStream> threadLocalStreams = new ThreadLocal<HystrixThreadEventStream>() {
         @Override
         protected HystrixThreadEventStream initialValue() {
-            HystrixThreadEventStream newThreadEventStream = new HystrixThreadEventStream(Thread.currentThread());
-            HystrixGlobalEventStream.registerThreadStream(newThreadEventStream);
-            return newThreadEventStream;
+            return new HystrixThreadEventStream(Thread.currentThread());
+        }
+    };
+
+    private static final Action1<HystrixCommandEvent> writeToFilteredStreams = new Action1<HystrixCommandEvent>() {
+        @Override
+        public void call(HystrixCommandEvent commandEvent) {
+            HystrixCommandEventStream commandStream = HystrixCommandEventStream.getInstance(commandEvent.getCommandKey());
+            commandStream.write(commandEvent);
+
+            if (commandEvent.isExecutedInThread() || commandEvent.isResponseThreadPoolRejected()) {
+                HystrixThreadPoolEventStream threadPoolStream = HystrixThreadPoolEventStream.getInstance(commandEvent.getThreadPoolKey());
+                threadPoolStream.write(commandEvent);
+            }
         }
     };
 
     /* package */ HystrixThreadEventStream(Thread thread) {
         this.threadId = thread.getId();
         this.threadName = thread.getName();
-        subject = PublishSubject.create();
+        writeOnlySubject = PublishSubject.create();
+
+        writeOnlySubject
+                .onBackpressureBuffer()
+                .observeOn(Schedulers.computation())
+                .doOnNext(writeToFilteredStreams)
+                .unsafeSubscribe(Subscribers.empty());
     }
 
     public static HystrixThreadEventStream getInstance() {
         return threadLocalStreams.get();
     }
 
-    public void commandConstructed(HystrixInvokableInfo<?> commandInstance) {
-        subject.onNext(new HystrixCommandConstructed(commandInstance));
-    }
-
-    public void executionStart(HystrixInvokableInfo<?> commandInstance) {
-        subject.onNext(new HystrixCommandExecutionStarted(commandInstance));
-    }
-
-    public void executionDone(HystrixInvokableInfo<?> commandInstance, long[] eventTypeCounts, long executionLatency, long totalLatency, boolean didExecutionOccur) {
-        HystrixCommandExecution event = HystrixCommandExecution.from(commandInstance, eventTypeCounts,
-                HystrixRequestContext.getContextForCurrentThread(), executionLatency, totalLatency, didExecutionOccur);
-        subject.onNext(event);
-    }
-
-    public Observable<HystrixCommandEvent> observe() {
-        return subject
-                .onBackpressureBuffer()
-                .observeOn(Schedulers.computation());
-    }
-
-    public Observable observeCommandCompletions() {
-        return subject
-                .onBackpressureBuffer()
-                .filter(HystrixCommandEvent.filterCompletionsOnly)
-                .cast(HystrixCommandCompletion.class)
-                .observeOn(Schedulers.computation());
-    }
-
     public void shutdown() {
-        subject.onCompleted();
+        writeOnlySubject.onCompleted();
     }
 
-    /*private static String bucketToStr(long[] eventTypeCounts) {
-        StringBuilder sb = new StringBuilder();
-        List<HystrixEventType> foundEventTypes = new ArrayList<HystrixEventType>();
-
-        for (HystrixEventType eventType: HystrixEventType.values()) {
-            if (eventTypeCounts[eventType.ordinal()] > 0) {
-                foundEventTypes.add(eventType);
-            }
-        }
-        System.out.println("FOUND : " + foundEventTypes.size());
-        int i = 0;
-        for (HystrixEventType eventType: foundEventTypes) {
-            sb.append(eventType.name());
-            if (eventTypeCounts[eventType.ordinal()] > 1) {
-                sb.append("x").append(eventTypeCounts[eventType.ordinal()]);
-            }
-            if (i < foundEventTypes.size() - 1) {
-                sb.append(", ");
-            }
-            i++;
-        }
-        return sb.toString();
-    }*/
+    public void executionDone(ExecutionResult executionResult, HystrixCommandKey commandKey, HystrixThreadPoolKey threadPoolKey) {
+        HystrixCommandCompletion event = HystrixCommandCompletion.from(executionResult, commandKey, threadPoolKey);
+        writeOnlySubject.onNext(event);
+    }
 
     @Override
     public String toString() {
