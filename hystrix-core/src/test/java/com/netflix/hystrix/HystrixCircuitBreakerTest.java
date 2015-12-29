@@ -15,10 +15,6 @@
  */
 package com.netflix.hystrix;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.util.Random;
 
 import org.junit.Ignore;
@@ -29,6 +25,8 @@ import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifierDefault;
 import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
+
+import static org.junit.Assert.*;
 
 public class HystrixCircuitBreakerTest {
 
@@ -70,6 +68,11 @@ public class HystrixCircuitBreakerTest {
         @Override
         public void markSuccess() {
             // we don't need to do anything since we're going to permanently trip the circuit
+        }
+
+        @Override
+        public int getCurrentSleepWindowInMilliseconds() {
+            return Integer.MAX_VALUE;
         }
 
         @Override
@@ -294,6 +297,8 @@ public class HystrixCircuitBreakerTest {
             HystrixCommandMetrics metrics = getMetrics(properties);
             HystrixCircuitBreaker cb = getCircuitBreaker(key, CommandOwnerForUnitTest.OWNER_TWO, metrics, properties);
 
+            assertEquals(sleepWindow, HystrixCircuitBreaker.Factory.getInstance(key).getCurrentSleepWindowInMilliseconds());
+
             // fail
             metrics.markFailure(1000);
             metrics.markFailure(1000);
@@ -303,6 +308,8 @@ public class HystrixCircuitBreakerTest {
             // everything has failed in the test window so we should return false now
             assertFalse(cb.allowRequest());
             assertTrue(cb.isOpen());
+
+            assertEquals(sleepWindow, HystrixCircuitBreaker.Factory.getInstance(key).getCurrentSleepWindowInMilliseconds());
 
             // wait for sleepWindow to pass
             Thread.sleep(sleepWindow + 50);
@@ -314,9 +321,13 @@ public class HystrixCircuitBreakerTest {
             // and further requests are still blocked
             assertFalse(cb.allowRequest());
 
+            assertEquals(sleepWindow, HystrixCircuitBreaker.Factory.getInstance(key).getCurrentSleepWindowInMilliseconds());
+
             // the 'singleTest' succeeds so should cause the circuit to be closed
             metrics.markSuccess(500);
             cb.markSuccess();
+
+            assertEquals(sleepWindow, HystrixCircuitBreaker.Factory.getInstance(key).getCurrentSleepWindowInMilliseconds());
 
             // all requests should be open again
             assertTrue(cb.allowRequest());
@@ -324,7 +335,7 @@ public class HystrixCircuitBreakerTest {
             assertTrue(cb.allowRequest());
             // and the circuit should be closed again
             assertFalse(cb.isOpen());
-
+            assertEquals(sleepWindow, HystrixCircuitBreaker.Factory.getInstance(key).getCurrentSleepWindowInMilliseconds());
         } catch (Exception e) {
             e.printStackTrace();
             fail("Error occurred: " + e.getMessage());
@@ -515,7 +526,7 @@ public class HystrixCircuitBreakerTest {
      * Utility method for creating {@link HystrixCircuitBreaker} for unit tests.
      */
     private static HystrixCircuitBreaker getCircuitBreaker(HystrixCommandKey key, HystrixCommandGroupKey commandGroup, HystrixCommandMetrics metrics, HystrixCommandProperties.Setter properties) {
-        return new HystrixCircuitBreakerImpl(key, commandGroup, HystrixCommandPropertiesTest.asMock(properties), metrics);
+        return HystrixCircuitBreaker.Factory.getInstance(key, commandGroup, HystrixCommandPropertiesTest.asMock(properties), metrics);
     }
 
     private static enum CommandOwnerForUnitTest implements HystrixCommandGroupKey {
