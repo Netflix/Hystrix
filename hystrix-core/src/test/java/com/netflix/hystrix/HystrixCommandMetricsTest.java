@@ -18,47 +18,63 @@ package com.netflix.hystrix;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+import com.netflix.hystrix.exception.HystrixBadRequestException;
+import org.junit.Before;
 import org.junit.Test;
-
-import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifierDefault;
 
 
 public class HystrixCommandMetricsTest {
 
-    /**
-     * Testing the ErrorPercentage because this method could be easy to miss when making changes elsewhere.
-     */
+    @Before
+    public void init() {
+        HystrixCommandMetrics.reset();
+        Hystrix.reset();
+    }
+
     @Test
     public void testGetErrorPercentage() {
-
+        String key = "cmd-metrics-A";
         try {
-            HystrixCommandProperties.Setter properties = HystrixCommandPropertiesTest.getUnitTestPropertiesSetter();
-            HystrixCommandMetrics metrics = getMetrics(properties);
-
-            metrics.markSuccess(100);
+            HystrixCommand<Boolean> cmd1 = new SuccessCommand(key, 1);
+            HystrixCommandMetrics metrics = cmd1.metrics;
+            cmd1.execute();
+            Thread.sleep(100);
             assertEquals(0, metrics.getHealthCounts().getErrorPercentage());
 
-            metrics.markFailure(1000);
+            HystrixCommand<Boolean> cmd2 = new FailureCommand(key, 1);
+            cmd2.execute();
+            Thread.sleep(100);
             assertEquals(50, metrics.getHealthCounts().getErrorPercentage());
 
-            metrics.markSuccess(100);
-            metrics.markSuccess(100);
+            HystrixCommand<Boolean> cmd3 = new SuccessCommand(key, 1);
+            HystrixCommand<Boolean> cmd4 = new SuccessCommand(key, 1);
+            cmd3.execute();
+            cmd4.execute();
+            Thread.sleep(100);
             assertEquals(25, metrics.getHealthCounts().getErrorPercentage());
 
-            metrics.markTimeout(5000);
-            metrics.markTimeout(5000);
+            HystrixCommand<Boolean> cmd5 = new TimeoutCommand(key);
+            HystrixCommand<Boolean> cmd6 = new TimeoutCommand(key);
+            cmd5.execute();
+            cmd6.execute();
+            Thread.sleep(100);
             assertEquals(50, metrics.getHealthCounts().getErrorPercentage());
 
-            metrics.markSuccess(100);
-            metrics.markSuccess(100);
-            metrics.markSuccess(100);
+            HystrixCommand<Boolean> cmd7 = new SuccessCommand(key, 1);
+            HystrixCommand<Boolean> cmd8 = new SuccessCommand(key, 1);
+            HystrixCommand<Boolean> cmd9 = new SuccessCommand(key, 1);
+            cmd7.execute();
+            cmd8.execute();
+            cmd9.execute();
 
             // latent
-            metrics.markSuccess(5000);
+            HystrixCommand<Boolean> cmd10 = new SuccessCommand(key, 60);
+            cmd10.execute();
 
             // 6 success + 1 latent success + 1 failure + 2 timeout = 10 total
             // latent success not considered error
             // error percentage = 1 failure + 2 timeout / 10
+            Thread.sleep(100);
             assertEquals(30, metrics.getHealthCounts().getErrorPercentage());
 
         } catch (Exception e) {
@@ -70,66 +86,130 @@ public class HystrixCommandMetricsTest {
 
     @Test
     public void testBadRequestsDoNotAffectErrorPercentage() {
-        HystrixCommandProperties.Setter properties = HystrixCommandPropertiesTest.getUnitTestPropertiesSetter();
-        HystrixCommandMetrics metrics = getMetrics(properties);
+        String key = "cmd-metrics-B";
+        try {
 
-        metrics.markSuccess(100);
-        assertEquals(0, metrics.getHealthCounts().getErrorPercentage());
+            HystrixCommand<Boolean> cmd1 = new SuccessCommand(key ,1);
+            HystrixCommandMetrics metrics = cmd1.metrics;
+            cmd1.execute();
+            Thread.sleep(100);
+            assertEquals(0, metrics.getHealthCounts().getErrorPercentage());
 
-        metrics.markFailure(1000);
-        assertEquals(50, metrics.getHealthCounts().getErrorPercentage());
+            HystrixCommand<Boolean> cmd2 = new FailureCommand(key, 1);
+            cmd2.execute();
+            Thread.sleep(100);
+            assertEquals(50, metrics.getHealthCounts().getErrorPercentage());
 
-        metrics.markBadRequest(1);
-        metrics.markBadRequest(2);
-        assertEquals(50, metrics.getHealthCounts().getErrorPercentage());
+            HystrixCommand<Boolean> cmd3 = new BadRequestCommand(key, 1);
+            HystrixCommand<Boolean> cmd4 = new BadRequestCommand(key, 1);
+            try {
+                cmd3.execute();
+            } catch (HystrixBadRequestException ex) {
+                System.out.println("Caught expected HystrixBadRequestException from cmd3");
+            }
+            try {
+                cmd4.execute();
+            } catch (HystrixBadRequestException ex) {
+                System.out.println("Caught expected HystrixBadRequestException from cmd4");
+            }
+            Thread.sleep(100);
+            assertEquals(50, metrics.getHealthCounts().getErrorPercentage());
 
-        metrics.markFailure(45);
-        metrics.markFailure(55);
-        assertEquals(75, metrics.getHealthCounts().getErrorPercentage());
+            HystrixCommand<Boolean> cmd5 = new FailureCommand(key, 1);
+            HystrixCommand<Boolean> cmd6 = new FailureCommand(key, 1);
+            cmd5.execute();
+            cmd6.execute();
+            Thread.sleep(100);
+            assertEquals(75, metrics.getHealthCounts().getErrorPercentage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail("Error occurred : " + e.getMessage());
+        }
     }
 
     @Test
     public void testCurrentConcurrentExecutionCount() {
-        class LatentCommand extends HystrixCommand<Boolean> {
-
-            long duration;
-
-            public LatentCommand(long duration) {
-                super(HystrixCommandGroupKey.Factory.asKey("Latent"), HystrixThreadPoolKey.Factory.asKey("Latent"), 1000);
-                this.duration = duration;
-            }
-
-            @Override
-            protected Boolean run() throws Exception {
-                Thread.sleep(duration);
-                return true;
-            }
-
-            @Override
-            protected Boolean getFallback() {
-                return false;
-            }
-        }
+        String key = "cmd-metrics-C";
 
         HystrixCommandMetrics metrics = null;
 
         int NUM_CMDS = 8;
         for (int i = 0; i < NUM_CMDS; i++) {
-            LatentCommand cmd = new LatentCommand(400);
+            HystrixCommand<Boolean> cmd = new SuccessCommand(key, 400);
             if (metrics == null) {
                 metrics = cmd.metrics;
             }
             cmd.queue();
         }
 
+        try {
+            Thread.sleep(25);
+        } catch (InterruptedException ie) {
+            fail(ie.getMessage());
+        }
         assertEquals(NUM_CMDS, metrics.getCurrentConcurrentExecutionCount());
     }
 
-    /**
-     * Utility method for creating {@link HystrixCommandMetrics} for unit tests.
-     */
-    private static HystrixCommandMetrics getMetrics(HystrixCommandProperties.Setter properties) {
-        return new HystrixCommandMetrics(InspectableBuilder.CommandKeyForUnitTest.KEY_ONE, InspectableBuilder.CommandGroupForUnitTest.OWNER_ONE, InspectableBuilder.ThreadPoolKeyForUnitTest.THREAD_POOL_ONE, HystrixCommandPropertiesTest.asMock(properties), HystrixEventNotifierDefault.getInstance());
+    private class Command extends HystrixCommand<Boolean> {
+
+        private final boolean shouldFail;
+        private final boolean shouldFailWithBadRequest;
+        private final long latencyToAdd;
+
+        public Command(String commandKey, boolean shouldFail, boolean shouldFailWithBadRequest, long latencyToAdd) {
+            super(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("Command"))
+                    .andCommandKey(HystrixCommandKey.Factory.asKey(commandKey))
+                    .andCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter()
+                            .withExecutionTimeoutInMilliseconds(100)
+                            .withCircuitBreakerRequestVolumeThreshold(20)));
+            this.shouldFail = shouldFail;
+            this.shouldFailWithBadRequest = shouldFailWithBadRequest;
+            this.latencyToAdd = latencyToAdd;
+        }
+
+        @Override
+        protected Boolean run() throws Exception {
+            Thread.sleep(latencyToAdd);
+            if (shouldFail) {
+                throw new RuntimeException("induced failure");
+            }
+            if (shouldFailWithBadRequest) {
+                throw new HystrixBadRequestException("bad request");
+            }
+            return true;
+        }
+
+        @Override
+        protected Boolean getFallback() {
+            return false;
+        }
+    }
+
+    private class SuccessCommand extends Command {
+
+        SuccessCommand(String commandKey, long latencyToAdd) {
+            super(commandKey, false, false, latencyToAdd);
+        }
+    }
+
+    private class FailureCommand extends Command {
+
+        FailureCommand(String commandKey, long latencyToAdd) {
+            super(commandKey, true, false, latencyToAdd);
+        }
+    }
+
+    private class TimeoutCommand extends Command {
+
+        TimeoutCommand(String commandKey) {
+            super(commandKey, false, false, 2000);
+        }
+    }
+
+    private class BadRequestCommand extends Command {
+        BadRequestCommand(String commandKey, long latencyToAdd) {
+            super(commandKey, false, true, latencyToAdd);
+        }
     }
 
 }
