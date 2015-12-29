@@ -1,5 +1,19 @@
 # Hystrix Releases #
 
+### Version 1.4.22 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.22%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.22/)) ###
+
+* [Pull 1019](https://github.com/Netflix/Hystrix/pull/1019) hystrix-dashboard: Swap magnifying glass logos
+* [Commit 41e9c210f044fe822625acc6e23c5167e56c3f09](https://github.com/Netflix/Hystrix/commit/41e9c210f044fe822625acc6e23c5167e56c3f09) Add OSSMETADATA
+* [Pull 1014](https://github.com/Netflix/Hystrix/pull/1014) Upgrade to RxJava 1.1.0
+* [Pull 1009](https://github.com/Netflix/Hystrix/pull/1009) hystrix-javanica: Upgrade to AspectJ 1.8.6
+* [Pull 1008](https://github.com/Netflix/Hystrix/pull/1008) Add AbstractCommand.getExecutionException
+* [Pull 1006](https://github.com/Netflix/Hystrix/pull/1006) Add Cobertura plugin
+* [Pull 1005](https://github.com/Netflix/Hystrix/pull/1005) Upgrade RxJava to 1.0.17
+* [Pull 1000](https://github.com/Netflix/Hystrix/pull/1000) Fix network-auditor Javadoc
+* [Pull 999](https://github.com/Netflix/Hystrix/pull/999) Upgrade Javassist within hystrix-network-auditor-agent
+* [Pull 992](https://github.com/Netflix/Hystrix/pull/992) hystrix-dashboard: Remove validation error message when adding a stream
+* [Pull 977](https://github.com/Netflix/Hystrix/pull/977) hystrix-javanica support for Observable command
+
 ### Version 1.4.21 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.21%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.21/)) ###
 
 * [Pull 978](https://github.com/Netflix/Hystrix/pull/978) Upgrade commons-collections to 3.2.2
