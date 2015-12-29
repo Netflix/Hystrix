@@ -63,10 +63,8 @@ public class CumulativeThreadPoolEventCounterStream extends BucketedCumulativeCo
                             new CumulativeThreadPoolEventCounterStream(threadPoolKey, numBuckets, bucketSizeInMs, reduceCommandCompletion, reduceBucket);
                     newStream.start();
                     streams.putIfAbsent(threadPoolKey.name(), newStream);
-                    System.out.println("Returning new stream : " + newStream);
                     return newStream;
                 } else {
-                    System.out.println("Returning existing stream : " + existingStream);
                     return existingStream;
                 }
             }
