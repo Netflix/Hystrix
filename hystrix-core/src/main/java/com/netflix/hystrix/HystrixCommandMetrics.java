@@ -18,19 +18,23 @@ package com.netflix.hystrix;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
+import com.netflix.hystrix.metric.CumulativeCommandEventCounterStream;
+import com.netflix.hystrix.metric.HealthCountsStream;
+import com.netflix.hystrix.metric.HystrixCommandCompletion;
+import com.netflix.hystrix.metric.HystrixCommandEvent;
+import com.netflix.hystrix.metric.HystrixThreadEventStream;
+import com.netflix.hystrix.metric.RollingCommandConcurrencyStream;
+import com.netflix.hystrix.metric.RollingCommandEventCounterStream;
+import com.netflix.hystrix.metric.RollingCommandLatencyStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.netflix.hystrix.exception.HystrixBadRequestException;
 import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
-import com.netflix.hystrix.util.HystrixRollingNumber;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
-import com.netflix.hystrix.util.HystrixRollingPercentile;
+import rx.functions.Func2;
 
 /**
  * Used by {@link HystrixCommand} to record metrics.
@@ -39,6 +43,28 @@ public class HystrixCommandMetrics extends HystrixMetrics {
 
     @SuppressWarnings("unused")
     private static final Logger logger = LoggerFactory.getLogger(HystrixCommandMetrics.class);
+
+    public static final Func2<long[], HystrixCommandCompletion, long[]> aggregateEventCounts = new Func2<long[], HystrixCommandCompletion, long[]>() {
+        @Override
+        public long[] call(long[] initialCountArray, HystrixCommandCompletion execution) {
+            long[] executionCount = execution.getEventTypeCounts();
+            for (int i = 0; i < initialCountArray.length; i++) {
+
+                initialCountArray[i] += executionCount[i];
+            }
+            return initialCountArray;
+        }
+    };
+
+    public static final Func2<long[], long[], long[]> bucketAggregator = new Func2<long[], long[], long[]>() {
+        @Override
+        public long[] call(long[] cumulativeEvents, long[] bucketEventCounts) {
+            for (HystrixEventType eventType: HystrixEventType.values()) {
+                cumulativeEvents[eventType.ordinal()] += bucketEventCounts[eventType.ordinal()];
+            }
+            return cumulativeEvents;
+        }
+    };
 
     // String is HystrixCommandKey.name() (we can't use HystrixCommandKey directly as we can't guarantee it implements hashcode/equals correctly)
     private static final ConcurrentHashMap<String, HystrixCommandMetrics> metrics = new ConcurrentHashMap<String, HystrixCommandMetrics>();
@@ -78,25 +104,23 @@ public class HystrixCommandMetrics extends HystrixMetrics {
         HystrixCommandMetrics commandMetrics = metrics.get(key.name());
         if (commandMetrics != null) {
             return commandMetrics;
-        }
-        // it doesn't exist so we need to create it
-
-        //now check to see if we need to create a synthetic threadPoolKey
-        HystrixThreadPoolKey nonNullThreadPoolKey;
-        if (threadPoolKey == null) {
-            nonNullThreadPoolKey = HystrixThreadPoolKey.Factory.asKey(commandGroup.name());
         } else {
-            nonNullThreadPoolKey = threadPoolKey;
-        }
-        commandMetrics = new HystrixCommandMetrics(key, commandGroup, nonNullThreadPoolKey, properties, HystrixPlugins.getInstance().getEventNotifier());
-        // attempt to store it (race other threads)
-        HystrixCommandMetrics existing = metrics.putIfAbsent(key.name(), commandMetrics);
-        if (existing == null) {
-            // we won the thread-race to store the instance we created
-            return commandMetrics;
-        } else {
-            // we lost so return 'existing' and let the one we created be garbage collected
-            return existing;
+            synchronized (HystrixCommandMetrics.class) {
+                HystrixCommandMetrics existingMetrics = metrics.get(key.name());
+                if (existingMetrics != null) {
+                    return existingMetrics;
+                } else {
+                    HystrixThreadPoolKey nonNullThreadPoolKey;
+                    if (threadPoolKey == null) {
+                        nonNullThreadPoolKey = HystrixThreadPoolKey.Factory.asKey(commandGroup.name());
+                    } else {
+                        nonNullThreadPoolKey = threadPoolKey;
+                    }
+                    HystrixCommandMetrics newCommandMetrics = new HystrixCommandMetrics(key, commandGroup, nonNullThreadPoolKey, properties, HystrixPlugins.getInstance().getEventNotifier());
+                    metrics.putIfAbsent(key.name(), newCommandMetrics);
+                    return newCommandMetrics;
+                }
+            }
         }
     }
 
@@ -124,27 +148,52 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      * Clears all state from metrics. If new requests come in instances will be recreated and metrics started from scratch.
      */
     /* package */ static void reset() {
+        for (HystrixCommandMetrics metricsInstance: getInstances()) {
+            metricsInstance.unsubscribeAll();
+        }
         metrics.clear();
     }
 
+    private void unsubscribeAll() {
+        healthCountsStream.unsubscribe();
+        rollingCommandEventCounterStream.unsubscribe();
+        cumulativeCommandEventCounterStream.unsubscribe();
+        rollingCommandLatencyStream.unsubscribe();
+        rollingCommandConcurrencyStream.unsubscribe();
+    }
+
     private final HystrixCommandProperties properties;
-    private final HystrixRollingPercentile percentileExecution;
-    private final HystrixRollingPercentile percentileTotal;
     private final HystrixCommandKey key;
     private final HystrixCommandGroupKey group;
     private final HystrixThreadPoolKey threadPoolKey;
     private final AtomicInteger concurrentExecutionCount = new AtomicInteger();
-    private final HystrixEventNotifier eventNotifier;
+    private final AtomicInteger concurrentFallbackExecutionCount = new AtomicInteger();
 
-    /* package */HystrixCommandMetrics(HystrixCommandKey key, HystrixCommandGroupKey commandGroup, HystrixThreadPoolKey threadPoolKey, HystrixCommandProperties properties, HystrixEventNotifier eventNotifier) {
-        super(new HystrixRollingNumber(properties.metricsRollingStatisticalWindowInMilliseconds().get(), properties.metricsRollingStatisticalWindowBuckets().get()));
+    private HealthCountsStream healthCountsStream;
+    private final RollingCommandEventCounterStream rollingCommandEventCounterStream;
+    private final CumulativeCommandEventCounterStream cumulativeCommandEventCounterStream;
+    private final RollingCommandLatencyStream rollingCommandLatencyStream;
+    private final RollingCommandConcurrencyStream rollingCommandConcurrencyStream;
+
+    /* package */HystrixCommandMetrics(final HystrixCommandKey key, HystrixCommandGroupKey commandGroup, HystrixThreadPoolKey threadPoolKey, HystrixCommandProperties properties, HystrixEventNotifier eventNotifier) {
+        super(null);
         this.key = key;
         this.group = commandGroup;
         this.threadPoolKey = threadPoolKey;
         this.properties = properties;
-        this.percentileExecution = new HystrixRollingPercentile(properties.metricsRollingPercentileWindowInMilliseconds().get(), properties.metricsRollingPercentileWindowBuckets().get(), properties.metricsRollingPercentileBucketSize().get(), properties.metricsRollingPercentileEnabled());
-        this.percentileTotal = new HystrixRollingPercentile(properties.metricsRollingPercentileWindowInMilliseconds().get(), properties.metricsRollingPercentileWindowBuckets().get(), properties.metricsRollingPercentileBucketSize().get(), properties.metricsRollingPercentileEnabled());
-        this.eventNotifier = eventNotifier;
+
+        healthCountsStream = HealthCountsStream.getInstance(key, properties, aggregateEventCounts);
+        rollingCommandEventCounterStream = RollingCommandEventCounterStream.getInstance(key, properties, aggregateEventCounts, bucketAggregator);
+        cumulativeCommandEventCounterStream = CumulativeCommandEventCounterStream.getInstance(key, properties, aggregateEventCounts, bucketAggregator);
+
+        rollingCommandLatencyStream = RollingCommandLatencyStream.getInstance(key, properties);
+        rollingCommandConcurrencyStream = RollingCommandConcurrencyStream.getInstance(key, properties);
+    }
+
+    /* package */ void resetStream() {
+        healthCountsStream.unsubscribe();
+        HealthCountsStream.removeByKey(key);
+        healthCountsStream = HealthCountsStream.getInstance(key, properties, aggregateEventCounts);
     }
 
     /**
@@ -174,7 +223,6 @@ public class HystrixCommandMetrics extends HystrixMetrics {
         return threadPoolKey;
     }
 
-
     /**
      * {@link HystrixCommandProperties} of the {@link HystrixCommand} these metrics represent.
      * 
@@ -182,6 +230,24 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      */
     public HystrixCommandProperties getProperties() {
         return properties;
+    }
+
+    public long getRollingCount(HystrixEventType eventType) {
+        return rollingCommandEventCounterStream.getLatest(eventType);
+    }
+
+    public long getCumulativeCount(HystrixEventType eventType) {
+        return cumulativeCommandEventCounterStream.getLatest(eventType);
+    }
+
+    @Override
+    public long getCumulativeCount(HystrixRollingNumberEvent event) {
+        return getCumulativeCount(HystrixEventType.from(event));
+    }
+
+    @Override
+    public long getRollingCount(HystrixRollingNumberEvent event) {
+        return getRollingCount(HystrixEventType.from(event));
     }
 
     /**
@@ -194,7 +260,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      * @return int time in milliseconds
      */
     public int getExecutionTimePercentile(double percentile) {
-        return percentileExecution.getPercentile(percentile);
+        return rollingCommandLatencyStream.getExecutionLatencyPercentile(percentile);
     }
 
     /**
@@ -205,7 +271,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      * @return int time in milliseconds
      */
     public int getExecutionTimeMean() {
-        return percentileExecution.getMean();
+        return rollingCommandLatencyStream.getExecutionLatencyMean();
     }
 
     /**
@@ -230,7 +296,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      * @return int time in milliseconds
      */
     public int getTotalTimePercentile(double percentile) {
-        return percentileTotal.getPercentile(percentile);
+        return rollingCommandLatencyStream.getTotalLatencyPercentile(percentile);
     }
 
     /**
@@ -241,14 +307,11 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      * @return int time in milliseconds
      */
     public int getTotalTimeMean() {
-        return percentileTotal.getMean();
+        return rollingCommandLatencyStream.getTotalLatencyMean();
     }
 
-    /* package */void resetCounter() {
-        // TODO can we do without this somehow?
-        counter.reset();
-        lastHealthCountsSnapshot.set(System.currentTimeMillis());
-        healthCountsSnapshot = new HealthCounts(0, 0, 0);
+    public long getRollingMaxConcurrentExecutions() {
+        return rollingCommandConcurrencyStream.getRollingMax();
     }
 
     /**
@@ -260,183 +323,33 @@ public class HystrixCommandMetrics extends HystrixMetrics {
         return concurrentExecutionCount.get();
     }
 
-    /**
-     * When a {@link HystrixCommand} successfully completes it will call this method to report its success along with how long the execution took.
-     * 
-     * @param duration command duration
-     */
-    /* package */void markSuccess(long duration) {
-        eventNotifier.markEvent(HystrixEventType.SUCCESS, key);
-        counter.increment(HystrixRollingNumberEvent.SUCCESS);
+    /* package-private */ void markCommandConstructed(HystrixInvokableInfo<?> commandInstance) {
+        HystrixThreadEventStream.getInstance().commandConstructed(commandInstance);
     }
 
-    /**
-     * When a {@link HystrixCommand} fails to complete it will call this method to report its failure along with how long the execution took.
-     * 
-     * @param duration command duration
-     */
-    /* package */void markFailure(long duration) {
-        eventNotifier.markEvent(HystrixEventType.FAILURE, key);
-        counter.increment(HystrixRollingNumberEvent.FAILURE);
+    /* package-private */ void markCommandStart(HystrixInvokableInfo<?> commandInstance) {
+        HystrixThreadEventStream.getInstance().executionStart(commandInstance);
+        concurrentExecutionCount.incrementAndGet();
     }
 
-    /**
-     * When a {@link HystrixCommand} times out (fails to complete) it will call this method to report its failure along with how long the command waited (this time should equal or be very close to the
-     * timeout value).
-     * 
-     * @param duration command duration
-     */
-    /* package */void markTimeout(long duration) {
-        eventNotifier.markEvent(HystrixEventType.TIMEOUT, key);
-        counter.increment(HystrixRollingNumberEvent.TIMEOUT);
+    /* package-private */ void markCommandDone(HystrixInvokableInfo<?> commandInstance, AbstractCommand.ExecutionResult executionResult) {
+        HystrixThreadEventStream.getInstance().executionDone(
+                commandInstance, executionResult.getEventCounts(), executionResult.getExecutionLatency(),
+                executionResult.getUserThreadLatency(), executionResult.executionOccurred());
+        if (executionResult.executionOccurred()) {
+            concurrentExecutionCount.decrementAndGet();
+        }
     }
 
-    /**
-     * When a {@link HystrixCommand} performs a short-circuited fallback it will call this method to report its occurrence.
-     */
-    /* package */void markShortCircuited() {
-        eventNotifier.markEvent(HystrixEventType.SHORT_CIRCUITED, key);
-        counter.increment(HystrixRollingNumberEvent.SHORT_CIRCUITED);
+    /* package-private */ void markFallbackExecutionStart(HystrixInvokableInfo<?> commandInstance) {
+        //TODO add ThreadEventStream event
+        concurrentFallbackExecutionCount.incrementAndGet();
     }
 
-    /**
-     * When a {@link HystrixCommand} is unable to queue up (threadpool rejection) it will call this method to report its occurrence.
-     */
-    /* package */void markThreadPoolRejection() {
-        eventNotifier.markEvent(HystrixEventType.THREAD_POOL_REJECTED, key);
-        counter.increment(HystrixRollingNumberEvent.THREAD_POOL_REJECTED);
+    /* package-private */ void markFallbackExecutionDone(HystrixInvokableInfo<?> commandInstance) {
+        //TODO add ThreadEventStream event
+        concurrentFallbackExecutionCount.decrementAndGet();
     }
-
-    /**
-     * When a {@link HystrixCommand} is unable to execute due to reaching the semaphore limit it will call this method to report its occurrence.
-     */
-    /* package */void markSemaphoreRejection() {
-        eventNotifier.markEvent(HystrixEventType.SEMAPHORE_REJECTED, key);
-        counter.increment(HystrixRollingNumberEvent.SEMAPHORE_REJECTED);
-    }
-
-    /**
-     * When a {@link HystrixCommand} is executed and triggers a {@link HystrixBadRequestException} during its execution
-     */
-    /* package */void markBadRequest(long duration) {
-        eventNotifier.markEvent(HystrixEventType.BAD_REQUEST, key);
-        counter.increment(HystrixRollingNumberEvent.BAD_REQUEST);
-    }
-
-    /**
-     * Increment concurrent requests counter.
-     */
-    /* package */void incrementConcurrentExecutionCount() {
-        int numConcurrent = concurrentExecutionCount.incrementAndGet();
-        counter.updateRollingMax(HystrixRollingNumberEvent.COMMAND_MAX_ACTIVE, (long) numConcurrent);
-    }
-    
-    /**
-     * Decrement concurrent requests counter.
-     */
-    /* package */void decrementConcurrentExecutionCount() {
-        concurrentExecutionCount.decrementAndGet();
-    }
-
-    public long getRollingMaxConcurrentExecutions() {
-        return counter.getRollingMaxValue(HystrixRollingNumberEvent.COMMAND_MAX_ACTIVE);
-    }
-
-    /**
-     * When a {@link HystrixCommand} returns a Fallback successfully.
-     */
-    /* package */void markFallbackSuccess() {
-        eventNotifier.markEvent(HystrixEventType.FALLBACK_SUCCESS, key);
-        counter.increment(HystrixRollingNumberEvent.FALLBACK_SUCCESS);
-    }
-
-    /**
-     * When a {@link HystrixCommand} attempts to retrieve a fallback but fails.
-     */
-    /* package */void markFallbackFailure() {
-        eventNotifier.markEvent(HystrixEventType.FALLBACK_FAILURE, key);
-        counter.increment(HystrixRollingNumberEvent.FALLBACK_FAILURE);
-    }
-
-    /**
-     * When a {@link HystrixCommand} attempts to retrieve a fallback but it is rejected due to too many concurrent executing fallback requests.
-     */
-    /* package */void markFallbackRejection() {
-        eventNotifier.markEvent(HystrixEventType.FALLBACK_REJECTION, key);
-        counter.increment(HystrixRollingNumberEvent.FALLBACK_REJECTION);
-    }
-    /**
-     * When a {@link HystrixCommand} attempts to execute a user-defined fallback but none exist.
-     */
-    /* package */void markFallbackMissing() {
-        eventNotifier.markEvent(HystrixEventType.FALLBACK_MISSING, key);
-        counter.increment(HystrixRollingNumberEvent.FALLBACK_MISSING);
-    }
-
-    /**
-     * When a {@link HystrixCommand} throws an exception (this will occur every time {@link #markFallbackFailure} occurs,
-     * whenever {@link #markFailure} occurs without a fallback implemented, or whenever a {@link #markBadRequest(long)} occurs)
-     */
-    /* package */void markExceptionThrown() {
-        eventNotifier.markEvent(HystrixEventType.EXCEPTION_THROWN, key);
-        counter.increment(HystrixRollingNumberEvent.EXCEPTION_THROWN);
-    }
-
-    /**
-     * When a command is fronted by an {@link HystrixCollapser} then this marks how many requests are collapsed into the single command execution.
-     * 
-     * @param numRequestsCollapsedToBatch number of requests which got batched
-     */
-    /* package */void markCollapsed(int numRequestsCollapsedToBatch) {
-        eventNotifier.markEvent(HystrixEventType.COLLAPSED, key);
-        counter.add(HystrixRollingNumberEvent.COLLAPSED, numRequestsCollapsedToBatch);
-    }
-
-    /**
-     * When a response is coming from a cache.
-     * <p>
-     * The cache-hit ratio can be determined by dividing this number by the total calls.
-     */
-    /* package */void markResponseFromCache() {
-        eventNotifier.markEvent(HystrixEventType.RESPONSE_FROM_CACHE, key);
-        counter.increment(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE);
-    }
-
-    /**
-     * When a {@link HystrixObservableCommand} emits a value during execution
-     */
-    /* package */void markEmit() {
-        eventNotifier.markEvent(HystrixEventType.EMIT, getCommandKey());
-        counter.increment(HystrixRollingNumberEvent.EMIT);
-    }
-
-    /**
-     * When a {@link HystrixObservableCommand} emits a value during fallback
-     */
-    /* package */void markFallbackEmit() {
-        eventNotifier.markEvent(HystrixEventType.FALLBACK_EMIT, getCommandKey());
-        counter.increment(HystrixRollingNumberEvent.FALLBACK_EMIT);
-    }
-
-    /**
-     * Execution time of {@link HystrixCommand#run()}.
-     */
-    /* package */void addCommandExecutionTime(long duration) {
-        percentileExecution.addValue((int) duration);
-    }
-
-    /**
-     * Complete execution time of {@link HystrixCommand#execute()} or {@link HystrixCommand#queue()} (queue is considered complete once the work is finished and {@link Future#get} is capable of
-     * retrieving the value.
-     * <p>
-     * This differs from {@link #addCommandExecutionTime} in that this covers all of the threading and scheduling overhead, not just the execution of the {@link HystrixCommand#run()} method.
-     */
-    /* package */void addUserThreadExecutionTime(long duration) {
-        percentileTotal.addValue((int) duration);
-    }
-
-    private volatile HealthCounts healthCountsSnapshot = new HealthCounts(0, 0, 0);
-    private volatile AtomicLong lastHealthCountsSnapshot = new AtomicLong(System.currentTimeMillis());
 
     /**
      * Retrieve a snapshot of total requests, error count and error percentage.
@@ -444,32 +357,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      * @return {@link HealthCounts}
      */
     public HealthCounts getHealthCounts() {
-        // we put an interval between snapshots so high-volume commands don't 
-        // spend too much unnecessary time calculating metrics in very small time periods
-        long lastTime = lastHealthCountsSnapshot.get();
-        long currentTime = System.currentTimeMillis();
-        if (currentTime - lastTime >= properties.metricsHealthSnapshotIntervalInMilliseconds().get() || healthCountsSnapshot == null) {
-            if (lastHealthCountsSnapshot.compareAndSet(lastTime, currentTime)) {
-                // our thread won setting the snapshot time so we will proceed with generating a new snapshot
-                // losing threads will continue using the old snapshot
-                long success = counter.getRollingSum(HystrixRollingNumberEvent.SUCCESS);
-                long failure = counter.getRollingSum(HystrixRollingNumberEvent.FAILURE); // fallbacks occur on this
-                long timeout = counter.getRollingSum(HystrixRollingNumberEvent.TIMEOUT); // fallbacks occur on this
-                long threadPoolRejected = counter.getRollingSum(HystrixRollingNumberEvent.THREAD_POOL_REJECTED); // fallbacks occur on this
-                long semaphoreRejected = counter.getRollingSum(HystrixRollingNumberEvent.SEMAPHORE_REJECTED); // fallbacks occur on this
-                long shortCircuited = counter.getRollingSum(HystrixRollingNumberEvent.SHORT_CIRCUITED); // fallbacks occur on this
-                long totalCount = failure + success + timeout + threadPoolRejected + shortCircuited + semaphoreRejected;
-                long errorCount = failure + timeout + threadPoolRejected + shortCircuited + semaphoreRejected;
-                int errorPercentage = 0;
-
-                if (totalCount > 0) {
-                    errorPercentage = (int) ((double) errorCount / totalCount * 100);
-                }
-
-                healthCountsSnapshot = new HealthCounts(totalCount, errorCount, errorPercentage);
-            }
-        }
-        return healthCountsSnapshot;
+        return healthCountsStream.getLatest();
     }
 
     /**
@@ -482,11 +370,17 @@ public class HystrixCommandMetrics extends HystrixMetrics {
         private final long errorCount;
         private final int errorPercentage;
 
-        HealthCounts(long total, long error, int errorPercentage) {
+        HealthCounts(long total, long error) {
             this.totalCount = total;
             this.errorCount = error;
-            this.errorPercentage = errorPercentage;
+            if (totalCount > 0) {
+                this.errorPercentage = (int) ((double) errorCount / totalCount * 100);
+            } else {
+                this.errorPercentage = 0;
+            }
         }
+
+        private static final HealthCounts EMPTY = new HealthCounts(0, 0);
 
         public long getTotalRequests() {
             return totalCount;
@@ -499,6 +393,29 @@ public class HystrixCommandMetrics extends HystrixMetrics {
         public int getErrorPercentage() {
             return errorPercentage;
         }
-    }
 
+        public HealthCounts plus(long[] eventTypeCounts) {
+            long updatedTotalCount = totalCount;
+            long updatedErrorCount = errorCount;
+
+            long successCount = eventTypeCounts[HystrixEventType.SUCCESS.ordinal()];
+            long failureCount = eventTypeCounts[HystrixEventType.FAILURE.ordinal()];
+            long timeoutCount = eventTypeCounts[HystrixEventType.TIMEOUT.ordinal()];
+            long threadPoolRejectedCount = eventTypeCounts[HystrixEventType.THREAD_POOL_REJECTED.ordinal()];
+            long semaphoreRejectedCount = eventTypeCounts[HystrixEventType.SEMAPHORE_REJECTED.ordinal()];
+            long shortCircuitedCount = eventTypeCounts[HystrixEventType.SHORT_CIRCUITED.ordinal()];
+
+            updatedTotalCount += (successCount + failureCount + timeoutCount + threadPoolRejectedCount + semaphoreRejectedCount + shortCircuitedCount);
+            updatedErrorCount += (failureCount + timeoutCount + threadPoolRejectedCount + semaphoreRejectedCount + shortCircuitedCount);
+            return new HealthCounts(updatedTotalCount, updatedErrorCount);
+        }
+
+        public static HealthCounts empty() {
+            return EMPTY;
+        }
+
+        public String toString() {
+            return "HealthCounts[" + errorCount + " / " + totalCount + " : " + getErrorPercentage() + "%]";
+        }
+    }
 }

@@ -156,7 +156,7 @@ public class HystrixServoMetricsPublisherCommand extends HystrixServoMetricsPubl
         return HystrixRollingNumberEvent.from(eventType);
     }
 
-    protected Monitor<?> getCumulativeMonitor(final String name, final HystrixEventType event) {
+    protected Monitor<Number> getCumulativeMonitor(final String name, final HystrixEventType event) {
         return new CounterMetric(MonitorConfig.builder(name).withTag(getServoTypeTag()).withTag(getServoInstanceTag()).build()) {
             @Override
             public Long getValue() {
@@ -165,7 +165,7 @@ public class HystrixServoMetricsPublisherCommand extends HystrixServoMetricsPubl
         };
     }
 
-    protected Monitor<?> getRollingMonitor(final String name, final HystrixEventType event) {
+    protected Monitor<Number> getRollingMonitor(final String name, final HystrixEventType event) {
         return new GaugeMetric(MonitorConfig.builder(name).withTag(DataSourceLevel.DEBUG).withTag(getServoTypeTag()).withTag(getServoInstanceTag()).build()) {
             @Override
             public Long getValue() {
@@ -174,7 +174,7 @@ public class HystrixServoMetricsPublisherCommand extends HystrixServoMetricsPubl
         };
     }
 
-    protected Monitor<?> getExecutionLatencyMeanMonitor(final String name) {
+    protected Monitor<Number> getExecutionLatencyMeanMonitor(final String name) {
         return new GaugeMetric(MonitorConfig.builder(name).build()) {
             @Override
             public Number getValue() {
@@ -183,7 +183,7 @@ public class HystrixServoMetricsPublisherCommand extends HystrixServoMetricsPubl
         };
     }
 
-    protected Monitor<?> getExecutionLatencyPercentileMonitor(final String name, final double percentile) {
+    protected Monitor<Number> getExecutionLatencyPercentileMonitor(final String name, final double percentile) {
         return new GaugeMetric(MonitorConfig.builder(name).build()) {
             @Override
             public Number getValue() {
@@ -192,7 +192,7 @@ public class HystrixServoMetricsPublisherCommand extends HystrixServoMetricsPubl
         };
     }
 
-    protected Monitor<?> getTotalLatencyMeanMonitor(final String name) {
+    protected Monitor<Number> getTotalLatencyMeanMonitor(final String name) {
         return new GaugeMetric(MonitorConfig.builder(name).build()) {
             @Override
             public Number getValue() {
@@ -201,7 +201,7 @@ public class HystrixServoMetricsPublisherCommand extends HystrixServoMetricsPubl
         };
     }
 
-    protected Monitor<?> getTotalLatencyPercentileMonitor(final String name, final double percentile) {
+    protected Monitor<Number> getTotalLatencyPercentileMonitor(final String name, final double percentile) {
         return new GaugeMetric(MonitorConfig.builder(name).build()) {
             @Override
             public Number getValue() {
@@ -210,7 +210,7 @@ public class HystrixServoMetricsPublisherCommand extends HystrixServoMetricsPubl
         };
     }
 
-    protected Monitor<?> getCurrentValueMonitor(final String name, final Func0<Number> metricToEvaluate) {
+    protected Monitor<Number> getCurrentValueMonitor(final String name, final Func0<Number> metricToEvaluate) {
         return new GaugeMetric(MonitorConfig.builder(name).build()) {
             @Override
             public Number getValue() {
@@ -219,7 +219,7 @@ public class HystrixServoMetricsPublisherCommand extends HystrixServoMetricsPubl
         };
     }
 
-    protected Monitor<?> getCurrentValueMonitor(final String name, final Func0<Number> metricToEvaluate, final Tag tag) {
+    protected Monitor<Number> getCurrentValueMonitor(final String name, final Func0<Number> metricToEvaluate, final Tag tag) {
         return new GaugeMetric(MonitorConfig.builder(name).withTag(tag).build()) {
             @Override
             public Number getValue() {
