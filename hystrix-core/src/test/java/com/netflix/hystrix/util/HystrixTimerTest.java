@@ -15,21 +15,25 @@
  */
 package com.netflix.hystrix.util;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import com.netflix.hystrix.util.HystrixTimer.ScheduledExecutor;
+import com.netflix.hystrix.util.HystrixTimer.TimerListener;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.lang.ref.Reference;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.Test;
-
-import com.netflix.hystrix.util.HystrixTimer.ScheduledExecutor;
-import com.netflix.hystrix.util.HystrixTimer.TimerListener;
+import static org.junit.Assert.*;
 
 
 public class HystrixTimerTest {
+
+    @Before
+    public void setUp() {
+        HystrixTimer timer = HystrixTimer.getInstance();
+        HystrixTimer.reset();
+        System.clearProperty(HystrixTimer.SYS_PROP_TIMEOUT);
+    }
 
     @Test
     public void testSingleCommandSingleInterval() {
@@ -163,6 +167,25 @@ public class HystrixTimerTest {
         HystrixTimer.reset();
     }
 
+    @Test
+    public void testThreadPoolSizeSystemProperty() {
+
+        System.setProperty(HystrixTimer.SYS_PROP_TIMEOUT, "42");
+        HystrixTimer hystrixTimer = HystrixTimer.getInstance();
+        hystrixTimer.startThreadIfNeeded();
+        System.clearProperty(HystrixTimer.SYS_PROP_TIMEOUT);
+
+        assertEquals(42, hystrixTimer.executor.get().getThreadPool().getCorePoolSize());
+    }
+
+    @Test
+    public void testThreadPoolSizeDefault() {
+
+        HystrixTimer hystrixTimer = HystrixTimer.getInstance();
+        hystrixTimer.startThreadIfNeeded();
+        assertEquals(Runtime.getRuntime().availableProcessors(), hystrixTimer.executor.get().getThreadPool().getCorePoolSize());
+    }
+
     private static class TestListener implements TimerListener {
 
         private final int interval;
@@ -235,5 +258,5 @@ public class HystrixTimerTest {
 
     }
 
-    
+
 }

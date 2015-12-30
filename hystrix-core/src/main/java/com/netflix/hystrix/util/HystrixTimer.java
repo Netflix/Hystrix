@@ -35,6 +35,8 @@ import com.netflix.hystrix.HystrixCommand;
  */
 public class HystrixTimer {
 
+    static final String SYS_PROP_TIMEOUT = "com.netflix.hystrix.util.HystrixTimer.timeoutThreadPoolSize";
+
     private static final Logger logger = LoggerFactory.getLogger(HystrixTimer.class);
 
     private static HystrixTimer INSTANCE = new HystrixTimer();
@@ -147,7 +149,17 @@ public class HystrixTimer {
          * We want this only done once when created in compareAndSet so use an initialize method
          */
         public void initialize() {
-            executor = new ScheduledThreadPoolExecutor(Runtime.getRuntime().availableProcessors(), new ThreadFactory() {
+
+            // System property can override the default ThreadPool size
+            final String coreSizePropertyValue = System.getProperty(SYS_PROP_TIMEOUT);
+            int coreSize;
+            if (coreSizePropertyValue != null) {
+                coreSize = Integer.valueOf(coreSizePropertyValue);
+            } else {
+                coreSize = Runtime.getRuntime().availableProcessors();
+            }
+
+            executor = new ScheduledThreadPoolExecutor(coreSize, new ThreadFactory() {
                 final AtomicInteger counter = new AtomicInteger();
 
                 @Override
