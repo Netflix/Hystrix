@@ -50,9 +50,10 @@ public interface HystrixCommandGroupKey {
         public static HystrixCommandGroupKey asKey(String name) {
             HystrixCommandGroupKey k = intern.get(name);
             if (k == null) {
-                intern.putIfAbsent(name, new HystrixCommandGroupDefault(name));
+                k = new HystrixCommandGroupDefault(name);
+                intern.putIfAbsent(name, k);
             }
-            return intern.get(name);
+            return k;
         }
 
         private static class HystrixCommandGroupDefault implements HystrixCommandGroupKey {
