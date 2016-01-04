@@ -440,6 +440,23 @@ public class HystrixCommandMetrics extends HystrixMetrics {
 
     /**
      * Retrieve a snapshot of total requests, error count and error percentage.
+     *
+     * This metrics should measure the actual health of a {@link HystrixCommand}.  For that reason, the following are included:
+     * <p><ul>
+     * <li>{@link HystrixRollingNumberEvent#SUCCESS}
+     * <li>{@link HystrixRollingNumberEvent#FAILURE}
+     * <li>{@link HystrixRollingNumberEvent#TIMEOUT}
+     * <li>{@link HystrixRollingNumberEvent#THREAD_POOL_REJECTED}
+     * <li>{@link HystrixRollingNumberEvent#SEMAPHORE_REJECTED}
+     * </ul><p>
+     * The following are not included in either attempts/failures:
+     * <p><ul>
+     * <li>{@link HystrixRollingNumberEvent#BAD_REQUEST} - this event denotes bad arguments to the command and not a problem with the command
+     * <li>{@link HystrixRollingNumberEvent#SHORT_CIRCUITED} - this event measures a health problem in the past, not a problem with the current state
+     * <li>All Fallback metrics
+     * <li>{@link HystrixRollingNumberEvent#EMIT} - this event is not a terminal state for the command
+     * <li>{@link HystrixRollingNumberEvent#COLLAPSED} - this event is about the batching process, not the command execution
+     * </ul><p>
      * 
      * @return {@link HealthCounts}
      */
@@ -457,9 +474,8 @@ public class HystrixCommandMetrics extends HystrixMetrics {
                 long timeout = counter.getRollingSum(HystrixRollingNumberEvent.TIMEOUT); // fallbacks occur on this
                 long threadPoolRejected = counter.getRollingSum(HystrixRollingNumberEvent.THREAD_POOL_REJECTED); // fallbacks occur on this
                 long semaphoreRejected = counter.getRollingSum(HystrixRollingNumberEvent.SEMAPHORE_REJECTED); // fallbacks occur on this
-                long shortCircuited = counter.getRollingSum(HystrixRollingNumberEvent.SHORT_CIRCUITED); // fallbacks occur on this
-                long totalCount = failure + success + timeout + threadPoolRejected + shortCircuited + semaphoreRejected;
-                long errorCount = failure + timeout + threadPoolRejected + shortCircuited + semaphoreRejected;
+                long totalCount = failure + success + timeout + threadPoolRejected + semaphoreRejected;
+                long errorCount = failure + timeout + threadPoolRejected + semaphoreRejected;
                 int errorPercentage = 0;
 
                 if (totalCount > 0) {
