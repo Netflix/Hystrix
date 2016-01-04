@@ -34,7 +34,7 @@ import org.openjdk.jmh.annotations.State;
 
 import java.util.concurrent.TimeUnit;
 
-public class MultiThreadedMetricsTest {
+public class CommandExecutionAndConcurrentMetricsReadPerfTest {
     @State(Scope.Thread)
     public static class CommandState {
         HystrixCommand<Integer> command;

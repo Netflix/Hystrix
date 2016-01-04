@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Netflix, Inc.
+ * Copyright 2014 Netflix, Inc.
  * <p/>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
+import org.openjdk.jmh.infra.Blackhole;
 import rx.Observable;
 import rx.schedulers.Schedulers;
 
@@ -41,31 +42,60 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-public class CommandGroupKeyExecutionPerfTest {
+public class CommandExecutionPerfTest {
+
+    static HystrixCommandProperties.Setter threadIsolatedCommandDefaults = HystrixCommandProperties.Setter()
+            .withExecutionIsolationStrategy(HystrixCommandProperties.ExecutionIsolationStrategy.THREAD)
+            .withRequestCacheEnabled(true)
+            .withRequestLogEnabled(true)
+            .withCircuitBreakerEnabled(true)
+            .withCircuitBreakerForceOpen(false);
+
+    static HystrixCommandProperties.Setter semaphoreIsolatedCommandDefaults = HystrixCommandProperties.Setter()
+            .withExecutionIsolationStrategy(HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE)
+            .withRequestCacheEnabled(true)
+            .withRequestLogEnabled(true)
+            .withCircuitBreakerEnabled(true)
+            .withCircuitBreakerForceOpen(false);
+
+    static HystrixThreadPoolProperties.Setter threadPoolDefaults = HystrixThreadPoolProperties.Setter()
+            .withCoreSize(100);
+
+    private static HystrixCommandProperties.Setter getCommandSetter(HystrixCommandProperties.ExecutionIsolationStrategy isolationStrategy) {
+        switch (isolationStrategy) {
+            case THREAD: return threadIsolatedCommandDefaults;
+            default: return semaphoreIsolatedCommandDefaults;
+        }
+    }
 
     @State(Scope.Thread)
     public static class CommandState {
         HystrixCommand<Integer> command;
 
-        static class TestCommand extends HystrixCommand<Integer> {
-            TestCommand() {
-                super(HystrixCommandGroupKey.Factory.asKey("PERF"));
-            }
+        @Param({"THREAD", "SEMAPHORE"})
+        public HystrixCommandProperties.ExecutionIsolationStrategy isolationStrategy;
 
-            @Override
-            protected Integer run() throws Exception {
-                return 1;
-            }
-
-            @Override
-            protected Integer getFallback() {
-                return 2;
-            }
-        }
+        @Param({"1", "100", "10000"})
+        public int blackholeConsumption;
 
         @Setup(Level.Invocation)
         public void setUp() {
-            command = new TestCommand();
+            command = new HystrixCommand<Integer>(
+                    HystrixCommand.Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("PERF"))
+                            .andCommandPropertiesDefaults(getCommandSetter(isolationStrategy))
+                            .andThreadPoolPropertiesDefaults(threadPoolDefaults)
+            ) {
+                @Override
+                protected Integer run() throws Exception {
+                    Blackhole.consumeCPU(blackholeConsumption);
+                    return 1;
+                }
+
+                @Override
+                protected Integer getFallback() {
+                    return 2;
+                }
+            };
         }
     }
 
