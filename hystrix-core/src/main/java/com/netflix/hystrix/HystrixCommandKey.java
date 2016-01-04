@@ -48,9 +48,10 @@ public interface HystrixCommandKey {
         public static HystrixCommandKey asKey(String name) {
             HystrixCommandKey k = intern.get(name);
             if (k == null) {
-                intern.putIfAbsent(name, new HystrixCommandKeyDefault(name));
+                k = new HystrixCommandKeyDefault(name);
+                intern.putIfAbsent(name, k);
             }
-            return intern.get(name);
+            return k;
         }
 
         private static class HystrixCommandKeyDefault implements HystrixCommandKey {
