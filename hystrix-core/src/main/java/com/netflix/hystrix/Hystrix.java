@@ -15,9 +15,9 @@
  */
 package com.netflix.hystrix;
 
-import java.util.LinkedList;
 import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesFactory;
@@ -76,13 +76,13 @@ public class Hystrix {
         HystrixCircuitBreaker.Factory.reset();
         HystrixPlugins.reset();
         HystrixPropertiesFactory.reset();
-        currentCommand.set(new LinkedList<HystrixCommandKey>());
+        currentCommand.set(new ConcurrentStack<HystrixCommandKey>());
     }
 
-    private static ThreadLocal<LinkedList<HystrixCommandKey>> currentCommand = new ThreadLocal<LinkedList<HystrixCommandKey>>() {
+    private static ThreadLocal<ConcurrentStack<HystrixCommandKey>> currentCommand = new ThreadLocal<ConcurrentStack<HystrixCommandKey>>() {
         @Override
-        protected LinkedList<HystrixCommandKey> initialValue() {
-            return new LinkedList<HystrixCommandKey>();
+        protected ConcurrentStack<HystrixCommandKey> initialValue() {
+            return new ConcurrentStack<HystrixCommandKey>();
         }
     };
 
@@ -108,7 +108,7 @@ public class Hystrix {
      * @return Action0 to perform the same work as `endCurrentThreadExecutingCommand()` but can be done from any thread
      */
     /* package */static Action0 startCurrentThreadExecutingCommand(HystrixCommandKey key) {
-        final LinkedList<HystrixCommandKey> list = currentCommand.get();
+        final ConcurrentStack<HystrixCommandKey> list = currentCommand.get();
         try {
             list.push(key);
         } catch (Exception e) {
@@ -128,7 +128,7 @@ public class Hystrix {
         endCurrentThreadExecutingCommand(currentCommand.get());
     }
 
-    private static void endCurrentThreadExecutingCommand(LinkedList<HystrixCommandKey> list) {
+    private static void endCurrentThreadExecutingCommand(ConcurrentStack<HystrixCommandKey> list) {
         try {
             if (!list.isEmpty()) {
                 list.pop();
@@ -141,4 +141,68 @@ public class Hystrix {
         }
     }
 
+    /* package-private */ static int getCommandCount() {
+        return currentCommand.get().size();
+    }
+
+    /**
+     * Trieber's algorithm for a concurrent stack
+     * @param <E>
+     */
+    private static class ConcurrentStack<E> {
+        AtomicReference<Node<E>> top = new AtomicReference<Node<E>>();
+
+        public void push(E item) {
+            Node<E> newHead = new Node<E>(item);
+            Node<E> oldHead;
+            do {
+                oldHead = top.get();
+                newHead.next = oldHead;
+            } while (!top.compareAndSet(oldHead, newHead));
+        }
+
+        public E pop() {
+            Node<E> oldHead;
+            Node<E> newHead;
+            do {
+                oldHead = top.get();
+                if (oldHead == null) {
+                    return null;
+                }
+                newHead = oldHead.next;
+            } while (!top.compareAndSet(oldHead, newHead));
+            return oldHead.item;
+        }
+
+        public boolean isEmpty() {
+            return top.get() == null;
+        }
+
+        public int size() {
+            int currentSize = 0;
+            Node<E> current = top.get();
+            while (current != null) {
+                currentSize++;
+                current = current.next;
+            }
+            return currentSize;
+        }
+
+        public E peek() {
+            if (top.get() == null) {
+                return null;
+            } else {
+                return top.get().item;
+            }
+        }
+
+        private class Node<E> {
+            public final E item;
+            public Node<E> next;
+
+            public Node(E item) {
+                this.item = item;
+            }
+        }
+    }
 }
