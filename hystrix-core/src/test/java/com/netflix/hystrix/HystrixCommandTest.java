@@ -20,6 +20,8 @@ import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -3110,6 +3112,54 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         }
 
         assertTrue(1 == new PrimaryCommand(new TestCircuitBreaker()).execute());
+    }
+
+    @Test
+    public void testSemaphoreThreadSafety() {
+        final int NUM_PERMITS = 1;
+        final TryableSemaphoreActual s = new TryableSemaphoreActual(HystrixProperty.Factory.asProperty(NUM_PERMITS));
+
+        final int NUM_THREADS = 10;
+        ExecutorService threadPool = Executors.newFixedThreadPool(NUM_THREADS);
+
+        final int NUM_TRIALS = 100;
+
+        for (int t = 0; t < NUM_TRIALS; t++) {
+
+            System.out.println("TRIAL : " + t);
+
+            final AtomicInteger numAcquired = new AtomicInteger(0);
+            final CountDownLatch latch = new CountDownLatch(NUM_THREADS);
+
+            for (int i = 0; i < NUM_THREADS; i++) {
+                threadPool.submit(new Runnable() {
+                    @Override
+                    public void run() {
+                        boolean acquired = s.tryAcquire();
+                        if (acquired) {
+                            try {
+                                numAcquired.incrementAndGet();
+                                Thread.sleep(10);
+                            } catch (InterruptedException ex) {
+                                ex.printStackTrace();
+                            } finally {
+                                s.release();
+                            }
+                        }
+                        latch.countDown();
+                    }
+                });
+            }
+
+            try {
+                assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
+            } catch (InterruptedException ex) {
+                fail(ex.getMessage());
+            }
+
+            assertEquals("Number acquired should be equal to the number of permits", NUM_PERMITS, numAcquired.get());
+            assertEquals("Semaphore should always get released back to 0", 0, s.getNumberOfPermitsUsed());
+        }
     }
 
     @Test
