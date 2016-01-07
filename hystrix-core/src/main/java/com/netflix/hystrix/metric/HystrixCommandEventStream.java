@@ -32,7 +32,8 @@ import java.util.concurrent.ConcurrentMap;
 public class HystrixCommandEventStream implements HystrixEventStream<HystrixCommandCompletion> {
     private final HystrixCommandKey commandKey;
 
-    private final Subject<HystrixCommandCompletion, HystrixCommandCompletion> stream;
+    private final Subject<HystrixCommandCompletion, HystrixCommandCompletion> writeOnlySubject;
+    private final Observable<HystrixCommandCompletion> readOnlyStream;
 
     private static final ConcurrentMap<String, HystrixCommandEventStream> streams = new ConcurrentHashMap<String, HystrixCommandEventStream>();
 
@@ -57,7 +58,8 @@ public class HystrixCommandEventStream implements HystrixEventStream<HystrixComm
     HystrixCommandEventStream(final HystrixCommandKey commandKey) {
         this.commandKey = commandKey;
 
-        this.stream = new SerializedSubject<HystrixCommandCompletion, HystrixCommandCompletion>(PublishSubject.<HystrixCommandCompletion>create());
+        this.writeOnlySubject = new SerializedSubject<HystrixCommandCompletion, HystrixCommandCompletion>(PublishSubject.<HystrixCommandCompletion>create());
+        this.readOnlyStream = writeOnlySubject.share();
     }
 
     public static void reset() {
@@ -65,13 +67,13 @@ public class HystrixCommandEventStream implements HystrixEventStream<HystrixComm
     }
 
     public void write(HystrixCommandCompletion event) {
-        stream.onNext(event);
+        writeOnlySubject.onNext(event);
     }
 
 
     @Override
     public Observable<HystrixCommandCompletion> observe() {
-        return stream;
+        return readOnlyStream;
     }
 
     @Override

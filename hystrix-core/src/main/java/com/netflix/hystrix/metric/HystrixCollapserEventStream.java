@@ -23,7 +23,6 @@ import rx.subjects.Subject;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Per-Collapser stream of {@link HystrixCollapserEvent}s.  This gets written to by {@link HystrixThreadEventStream}s.
@@ -33,7 +32,8 @@ import java.util.concurrent.TimeUnit;
 public class HystrixCollapserEventStream implements HystrixEventStream<HystrixCollapserEvent> {
     private final HystrixCollapserKey collapserKey;
 
-    private final Subject<HystrixCollapserEvent, HystrixCollapserEvent> stream;
+    private final Subject<HystrixCollapserEvent, HystrixCollapserEvent> writeOnlyStream;
+    private final Observable<HystrixCollapserEvent> readOnlyStream;
 
     private static final ConcurrentMap<String, HystrixCollapserEventStream> streams = new ConcurrentHashMap<String, HystrixCollapserEventStream>();
 
@@ -58,7 +58,8 @@ public class HystrixCollapserEventStream implements HystrixEventStream<HystrixCo
     HystrixCollapserEventStream(final HystrixCollapserKey collapserKey) {
         this.collapserKey = collapserKey;
 
-        this.stream = new SerializedSubject<HystrixCollapserEvent, HystrixCollapserEvent>(PublishSubject.<HystrixCollapserEvent>create());
+        this.writeOnlyStream = new SerializedSubject<HystrixCollapserEvent, HystrixCollapserEvent>(PublishSubject.<HystrixCollapserEvent>create());
+        this.readOnlyStream = writeOnlyStream.share();
     }
 
     public static void reset() {
@@ -66,16 +67,11 @@ public class HystrixCollapserEventStream implements HystrixEventStream<HystrixCo
     }
 
     public void write(HystrixCollapserEvent event) {
-        stream.onNext(event);
+        writeOnlyStream.onNext(event);
     }
 
     public Observable<HystrixCollapserEvent> observe() {
-        return stream;
-    }
-
-    public Observable<Observable<HystrixCollapserEvent>> getBucketedStream(int bucketSizeInMs) {
-        return observe()
-                .window(bucketSizeInMs, TimeUnit.MILLISECONDS);
+        return readOnlyStream;
     }
 
     @Override
