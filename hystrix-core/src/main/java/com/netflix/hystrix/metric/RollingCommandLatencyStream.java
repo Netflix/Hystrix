@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Maintains a stream of latency distributions for a given Command.
@@ -150,11 +151,12 @@ public class RollingCommandLatencyStream {
         }
 
         rollingLatencyStream = commandEventStream
-                .getBucketedStreamOfCommandCompletions(percentileBucketSizeInMs) //stream of unaggregated buckets
-                .flatMap(reduceBucketToSingleLatencyDistribution)                //stream of aggregated HLDs
-                .startWith(emptyLatencyDistributionsToStart)                     //stream of aggregated HLDs that starts with n empty
-                .window(numPercentileBuckets, 1)                                 //windowed stream: each OnNext is a stream of n HLDs
-                .flatMap(reduceWindowToSingleDistribution).share();              //reduced stream: each OnNext is a single HLD which values cached for reading
+                .observe()
+                .window(percentileBucketSizeInMs, TimeUnit.MILLISECONDS) //stream of unaggregated buckets
+                .flatMap(reduceBucketToSingleLatencyDistribution)        //stream of aggregated HLDs
+                .startWith(emptyLatencyDistributionsToStart)             //stream of aggregated HLDs that starts with n empty
+                .window(numPercentileBuckets, 1)                         //windowed stream: each OnNext is a stream of n HLDs
+                .flatMap(reduceWindowToSingleDistribution).share();      //reduced stream: each OnNext is a single HLD which values cached for reading
 
         rollingLatencySubscription = rollingLatencyStream.subscribe(rollingLatencyDistribution); //when a bucket rolls (via an OnNext), write it to the Subject, for external synchronous access
 

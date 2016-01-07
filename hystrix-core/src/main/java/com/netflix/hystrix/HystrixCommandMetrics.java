@@ -44,7 +44,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
 
     private static final HystrixEventType[] ALL_EVENT_TYPES = HystrixEventType.values();
 
-    public static final Func2<long[], HystrixCommandCompletion, long[]> aggregateEventCounts = new Func2<long[], HystrixCommandCompletion, long[]>() {
+    public static final Func2<long[], HystrixCommandCompletion, long[]> appendEventToBucket = new Func2<long[], HystrixCommandCompletion, long[]>() {
         @Override
         public long[] call(long[] initialCountArray, HystrixCommandCompletion execution) {
             ExecutionResult.EventCounts eventCounts = execution.getEventCounts();
@@ -194,9 +194,9 @@ public class HystrixCommandMetrics extends HystrixMetrics {
         this.threadPoolKey = threadPoolKey;
         this.properties = properties;
 
-        healthCountsStream = HealthCountsStream.getInstance(key, properties, aggregateEventCounts);
-        rollingCommandEventCounterStream = RollingCommandEventCounterStream.getInstance(key, properties, aggregateEventCounts, bucketAggregator);
-        cumulativeCommandEventCounterStream = CumulativeCommandEventCounterStream.getInstance(key, properties, aggregateEventCounts, bucketAggregator);
+        healthCountsStream = HealthCountsStream.getInstance(key, properties, appendEventToBucket);
+        rollingCommandEventCounterStream = RollingCommandEventCounterStream.getInstance(key, properties, appendEventToBucket, bucketAggregator);
+        cumulativeCommandEventCounterStream = CumulativeCommandEventCounterStream.getInstance(key, properties, appendEventToBucket, bucketAggregator);
 
         rollingCommandLatencyStream = RollingCommandLatencyStream.getInstance(key, properties);
         //rollingCommandConcurrencyStream = RollingCommandConcurrencyStream.getInstance(key, properties);
@@ -205,7 +205,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     /* package */ void resetStream() {
         healthCountsStream.unsubscribe();
         HealthCountsStream.removeByKey(key);
-        healthCountsStream = HealthCountsStream.getInstance(key, properties, aggregateEventCounts);
+        healthCountsStream = HealthCountsStream.getInstance(key, properties, appendEventToBucket);
     }
 
     /**

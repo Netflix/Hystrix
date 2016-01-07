@@ -23,7 +23,7 @@ import rx.functions.Func1;
  * Data class that comprises the event stream for Hystrix command executions.
  * As of 1.5.0-RC1, this is only {@link HystrixCommandCompletion}s.
  */
-public abstract class HystrixCommandEvent {
+public abstract class HystrixCommandEvent implements HystrixEvent {
     private final HystrixCommandKey commandKey;
     private final HystrixThreadPoolKey threadPoolKey;
 

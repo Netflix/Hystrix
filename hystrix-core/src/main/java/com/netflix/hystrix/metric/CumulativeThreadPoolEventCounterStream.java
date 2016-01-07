@@ -35,7 +35,7 @@ import java.util.concurrent.ConcurrentMap;
  * These values get produced and cached in this class.
  * You may query to find the latest rolling count of 2 events (executed/rejected) via {@link #getLatestExecutedCount()} and {@link #getLatestRejectedCount()}.
  */
-public class CumulativeThreadPoolEventCounterStream extends BucketedCumulativeCounterStream<long[], long[]> {
+public class CumulativeThreadPoolEventCounterStream extends BucketedCumulativeCounterStream<HystrixCommandCompletion, long[], long[]> {
 
     private static final ConcurrentMap<String, CumulativeThreadPoolEventCounterStream> streams = new ConcurrentHashMap<String, CumulativeThreadPoolEventCounterStream>();
 
@@ -88,7 +88,7 @@ public class CumulativeThreadPoolEventCounterStream extends BucketedCumulativeCo
     }
 
     @Override
-    public long[] getEmptyEmitValue() {
+    public long[] getEmptyOutputValue() {
         return new long[2];
     }
 

@@ -61,6 +61,8 @@ public interface HystrixInvokableInfo<R> {
 
     public int getNumberFallbackEmissions();
 
+    int getNumberCollapsed();
+
     public int getExecutionTimeInMilliseconds();
 
     public long getCommandRunStartTimeInNanos();

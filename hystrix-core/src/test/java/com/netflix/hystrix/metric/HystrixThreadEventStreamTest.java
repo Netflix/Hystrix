@@ -74,10 +74,10 @@ public class HystrixThreadEventStreamTest {
         CountDownLatch threadPoolLatch = new CountDownLatch(1);
 
         Subscriber<HystrixCommandCompletion> commandSubscriber = getLatchedSubscriber(commandLatch);
-        readCommandStream.observeCommandCompletions().take(1).subscribe(commandSubscriber);
+        readCommandStream.observe().take(1).subscribe(commandSubscriber);
 
         Subscriber<HystrixCommandCompletion> threadPoolSubscriber = getLatchedSubscriber(threadPoolLatch);
-        readThreadPoolStream.observeCommandCompletions().take(1).subscribe(threadPoolSubscriber);
+        readThreadPoolStream.observe().take(1).subscribe(threadPoolSubscriber);
 
         //no writes
 
@@ -91,10 +91,10 @@ public class HystrixThreadEventStreamTest {
         CountDownLatch threadPoolLatch = new CountDownLatch(1);
 
         Subscriber<HystrixCommandCompletion> commandSubscriber = getLatchedSubscriber(commandLatch);
-        readCommandStream.observeCommandCompletions().take(1).subscribe(commandSubscriber);
+        readCommandStream.observe().take(1).subscribe(commandSubscriber);
 
         Subscriber<HystrixCommandCompletion> threadPoolSubscriber = getLatchedSubscriber(threadPoolLatch);
-        readThreadPoolStream.observeCommandCompletions().take(1).subscribe(threadPoolSubscriber);
+        readThreadPoolStream.observe().take(1).subscribe(threadPoolSubscriber);
 
         ExecutionResult result = ExecutionResult.from(HystrixEventType.SUCCESS).setExecutedInThread();
         writeToStream.executionDone(result, commandKey, threadPoolKey);
@@ -109,10 +109,10 @@ public class HystrixThreadEventStreamTest {
         CountDownLatch threadPoolLatch = new CountDownLatch(1);
 
         Subscriber<HystrixCommandCompletion> commandSubscriber = getLatchedSubscriber(commandLatch);
-        readCommandStream.observeCommandCompletions().take(1).subscribe(commandSubscriber);
+        readCommandStream.observe().take(1).subscribe(commandSubscriber);
 
         Subscriber<HystrixCommandCompletion> threadPoolSubscriber = getLatchedSubscriber(threadPoolLatch);
-        readThreadPoolStream.observeCommandCompletions().take(1).subscribe(threadPoolSubscriber);
+        readThreadPoolStream.observe().take(1).subscribe(threadPoolSubscriber);
 
         ExecutionResult result = ExecutionResult.from(HystrixEventType.SUCCESS);
         writeToStream.executionDone(result, commandKey, threadPoolKey);
@@ -127,10 +127,10 @@ public class HystrixThreadEventStreamTest {
         CountDownLatch threadPoolLatch = new CountDownLatch(1);
 
         Subscriber<HystrixCommandCompletion> commandSubscriber = getLatchedSubscriber(commandLatch);
-        readCommandStream.observeCommandCompletions().take(1).subscribe(commandSubscriber);
+        readCommandStream.observe().take(1).subscribe(commandSubscriber);
 
         Subscriber<HystrixCommandCompletion> threadPoolSubscriber = getLatchedSubscriber(threadPoolLatch);
-        readThreadPoolStream.observeCommandCompletions().take(1).subscribe(threadPoolSubscriber);
+        readThreadPoolStream.observe().take(1).subscribe(threadPoolSubscriber);
 
         ExecutionResult result = ExecutionResult.from(HystrixEventType.FAILURE).setExecutedInThread();
         writeToStream.executionDone(result, commandKey, threadPoolKey);
@@ -145,10 +145,10 @@ public class HystrixThreadEventStreamTest {
         CountDownLatch threadPoolLatch = new CountDownLatch(1);
 
         Subscriber<HystrixCommandCompletion> commandSubscriber = getLatchedSubscriber(commandLatch);
-        readCommandStream.observeCommandCompletions().take(1).subscribe(commandSubscriber);
+        readCommandStream.observe().take(1).subscribe(commandSubscriber);
 
         Subscriber<HystrixCommandCompletion> threadPoolSubscriber = getLatchedSubscriber(threadPoolLatch);
-        readThreadPoolStream.observeCommandCompletions().take(1).subscribe(threadPoolSubscriber);
+        readThreadPoolStream.observe().take(1).subscribe(threadPoolSubscriber);
 
         ExecutionResult result = ExecutionResult.from(HystrixEventType.FAILURE);
         writeToStream.executionDone(result, commandKey, threadPoolKey);
@@ -163,10 +163,10 @@ public class HystrixThreadEventStreamTest {
         CountDownLatch threadPoolLatch = new CountDownLatch(1);
 
         Subscriber<HystrixCommandCompletion> commandSubscriber = getLatchedSubscriber(commandLatch);
-        readCommandStream.observeCommandCompletions().take(1).subscribe(commandSubscriber);
+        readCommandStream.observe().take(1).subscribe(commandSubscriber);
 
         Subscriber<HystrixCommandCompletion> threadPoolSubscriber = getLatchedSubscriber(threadPoolLatch);
-        readThreadPoolStream.observeCommandCompletions().take(1).subscribe(threadPoolSubscriber);
+        readThreadPoolStream.observe().take(1).subscribe(threadPoolSubscriber);
 
         ExecutionResult result = ExecutionResult.from(HystrixEventType.TIMEOUT).setExecutedInThread();
         writeToStream.executionDone(result, commandKey, threadPoolKey);
@@ -181,10 +181,10 @@ public class HystrixThreadEventStreamTest {
         CountDownLatch threadPoolLatch = new CountDownLatch(1);
 
         Subscriber<HystrixCommandCompletion> commandSubscriber = getLatchedSubscriber(commandLatch);
-        readCommandStream.observeCommandCompletions().take(1).subscribe(commandSubscriber);
+        readCommandStream.observe().take(1).subscribe(commandSubscriber);
 
         Subscriber<HystrixCommandCompletion> threadPoolSubscriber = getLatchedSubscriber(threadPoolLatch);
-        readThreadPoolStream.observeCommandCompletions().take(1).subscribe(threadPoolSubscriber);
+        readThreadPoolStream.observe().take(1).subscribe(threadPoolSubscriber);
 
         ExecutionResult result = ExecutionResult.from(HystrixEventType.TIMEOUT);
         writeToStream.executionDone(result, commandKey, threadPoolKey);
@@ -199,10 +199,10 @@ public class HystrixThreadEventStreamTest {
         CountDownLatch threadPoolLatch = new CountDownLatch(1);
 
         Subscriber<HystrixCommandCompletion> commandSubscriber = getLatchedSubscriber(commandLatch);
-        readCommandStream.observeCommandCompletions().take(1).subscribe(commandSubscriber);
+        readCommandStream.observe().take(1).subscribe(commandSubscriber);
 
         Subscriber<HystrixCommandCompletion> threadPoolSubscriber = getLatchedSubscriber(threadPoolLatch);
-        readThreadPoolStream.observeCommandCompletions().take(1).subscribe(threadPoolSubscriber);
+        readThreadPoolStream.observe().take(1).subscribe(threadPoolSubscriber);
 
         ExecutionResult result = ExecutionResult.from(HystrixEventType.BAD_REQUEST).setExecutedInThread();
         writeToStream.executionDone(result, commandKey, threadPoolKey);
@@ -217,10 +217,10 @@ public class HystrixThreadEventStreamTest {
         CountDownLatch threadPoolLatch = new CountDownLatch(1);
 
         Subscriber<HystrixCommandCompletion> commandSubscriber = getLatchedSubscriber(commandLatch);
-        readCommandStream.observeCommandCompletions().take(1).subscribe(commandSubscriber);
+        readCommandStream.observe().take(1).subscribe(commandSubscriber);
 
         Subscriber<HystrixCommandCompletion> threadPoolSubscriber = getLatchedSubscriber(threadPoolLatch);
-        readThreadPoolStream.observeCommandCompletions().take(1).subscribe(threadPoolSubscriber);
+        readThreadPoolStream.observe().take(1).subscribe(threadPoolSubscriber);
 
         ExecutionResult result = ExecutionResult.from(HystrixEventType.BAD_REQUEST);
         writeToStream.executionDone(result, commandKey, threadPoolKey);
@@ -235,10 +235,10 @@ public class HystrixThreadEventStreamTest {
         CountDownLatch threadPoolLatch = new CountDownLatch(1);
 
         Subscriber<HystrixCommandCompletion> commandSubscriber = getLatchedSubscriber(commandLatch);
-        readCommandStream.observeCommandCompletions().take(1).subscribe(commandSubscriber);
+        readCommandStream.observe().take(1).subscribe(commandSubscriber);
 
         Subscriber<HystrixCommandCompletion> threadPoolSubscriber = getLatchedSubscriber(threadPoolLatch);
-        readThreadPoolStream.observeCommandCompletions().take(1).subscribe(threadPoolSubscriber);
+        readThreadPoolStream.observe().take(1).subscribe(threadPoolSubscriber);
 
         ExecutionResult result = ExecutionResult.from(HystrixEventType.THREAD_POOL_REJECTED);
         writeToStream.executionDone(result, commandKey, threadPoolKey);
@@ -253,10 +253,10 @@ public class HystrixThreadEventStreamTest {
         CountDownLatch threadPoolLatch = new CountDownLatch(1);
 
         Subscriber<HystrixCommandCompletion> commandSubscriber = getLatchedSubscriber(commandLatch);
-        readCommandStream.observeCommandCompletions().take(1).subscribe(commandSubscriber);
+        readCommandStream.observe().take(1).subscribe(commandSubscriber);
 
         Subscriber<HystrixCommandCompletion> threadPoolSubscriber = getLatchedSubscriber(threadPoolLatch);
-        readThreadPoolStream.observeCommandCompletions().take(1).subscribe(threadPoolSubscriber);
+        readThreadPoolStream.observe().take(1).subscribe(threadPoolSubscriber);
 
         ExecutionResult result = ExecutionResult.from(HystrixEventType.SEMAPHORE_REJECTED);
         writeToStream.executionDone(result, commandKey, threadPoolKey);
@@ -271,7 +271,7 @@ public class HystrixThreadEventStreamTest {
         CountDownLatch threadPoolLatch = new CountDownLatch(1);
 
         Subscriber<List<HystrixCommandCompletion>> commandListSubscriber = getLatchedSubscriber(commandLatch);
-        readCommandStream.observeCommandCompletions().buffer(500, TimeUnit.MILLISECONDS).take(1)
+        readCommandStream.observe().buffer(500, TimeUnit.MILLISECONDS).take(1)
                 .doOnNext(new Action1<List<HystrixCommandCompletion>>() {
                     @Override
                     public void call(List<HystrixCommandCompletion> hystrixCommandCompletions) {
@@ -282,7 +282,7 @@ public class HystrixThreadEventStreamTest {
                 .subscribe(commandListSubscriber);
 
         Subscriber<HystrixCommandCompletion> threadPoolSubscriber = getLatchedSubscriber(threadPoolLatch);
-        readThreadPoolStream.observeCommandCompletions().take(1).subscribe(threadPoolSubscriber);
+        readThreadPoolStream.observe().take(1).subscribe(threadPoolSubscriber);
 
         ExecutionResult result = ExecutionResult.from(HystrixEventType.SUCCESS).setExecutedInThread();
         ExecutionResult cache1 = ExecutionResult.from(HystrixEventType.RESPONSE_FROM_CACHE);
@@ -301,7 +301,7 @@ public class HystrixThreadEventStreamTest {
         CountDownLatch threadPoolLatch = new CountDownLatch(1);
 
         Subscriber<List<HystrixCommandCompletion>> commandListSubscriber = getLatchedSubscriber(commandLatch);
-        readCommandStream.observeCommandCompletions().buffer(500, TimeUnit.MILLISECONDS).take(1)
+        readCommandStream.observe().buffer(500, TimeUnit.MILLISECONDS).take(1)
                 .doOnNext(new Action1<List<HystrixCommandCompletion>>() {
                     @Override
                     public void call(List<HystrixCommandCompletion> hystrixCommandCompletions) {
@@ -312,7 +312,7 @@ public class HystrixThreadEventStreamTest {
                 .subscribe(commandListSubscriber);
 
         Subscriber<HystrixCommandCompletion> threadPoolSubscriber = getLatchedSubscriber(threadPoolLatch);
-        readThreadPoolStream.observeCommandCompletions().take(1).subscribe(threadPoolSubscriber);
+        readThreadPoolStream.observe().take(1).subscribe(threadPoolSubscriber);
 
         ExecutionResult result = ExecutionResult.from(HystrixEventType.SUCCESS);
         ExecutionResult cache1 = ExecutionResult.from(HystrixEventType.RESPONSE_FROM_CACHE);
@@ -331,10 +331,10 @@ public class HystrixThreadEventStreamTest {
         CountDownLatch threadPoolLatch = new CountDownLatch(1);
 
         Subscriber<HystrixCommandCompletion> commandSubscriber = getLatchedSubscriber(commandLatch);
-        readCommandStream.observeCommandCompletions().take(1).subscribe(commandSubscriber);
+        readCommandStream.observe().take(1).subscribe(commandSubscriber);
 
         Subscriber<HystrixCommandCompletion> threadPoolSubscriber = getLatchedSubscriber(threadPoolLatch);
-        readThreadPoolStream.observeCommandCompletions().take(1).subscribe(threadPoolSubscriber);
+        readThreadPoolStream.observe().take(1).subscribe(threadPoolSubscriber);
 
         ExecutionResult result = ExecutionResult.from(HystrixEventType.SHORT_CIRCUITED);
         writeToStream.executionDone(result, commandKey, threadPoolKey);

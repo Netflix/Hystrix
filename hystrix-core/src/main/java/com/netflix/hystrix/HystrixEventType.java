@@ -72,7 +72,7 @@ public enum HystrixEventType {
             case COLLAPSED: return COLLAPSED;
             case BAD_REQUEST: return BAD_REQUEST;
             default:
-                throw new RuntimeException("Not an event that can be converted to HystrixEventTvpe : " + event);
+                throw new RuntimeException("Not an event that can be converted to HystrixEventType : " + event);
         }
     }
 
@@ -86,5 +86,19 @@ public enum HystrixEventType {
         EXCEPTION_PRODUCING_EVENT_TYPES.add(FALLBACK_FAILURE);
         EXCEPTION_PRODUCING_EVENT_TYPES.add(FALLBACK_MISSING);
         EXCEPTION_PRODUCING_EVENT_TYPES.add(FALLBACK_REJECTION);
+    }
+
+    public enum Collapser {
+        BATCH_EXECUTED, ADDED_TO_BATCH, RESPONSE_FROM_CACHE;
+
+        public static Collapser from(HystrixRollingNumberEvent event) {
+            switch (event) {
+                case COLLAPSER_BATCH: return BATCH_EXECUTED;
+                case COLLAPSER_REQUEST_BATCHED: return ADDED_TO_BATCH;
+                case RESPONSE_FROM_CACHE: return RESPONSE_FROM_CACHE;
+                default:
+                    throw new RuntimeException("Not an event that can be converted to HystrixEventType.Collapser : " + event);
+            }
+        }
     }
 }

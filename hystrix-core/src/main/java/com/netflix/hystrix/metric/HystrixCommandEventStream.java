@@ -23,17 +23,16 @@ import rx.subjects.Subject;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Per-Command stream of {@link HystrixCommandEvent}s.  This gets written to by {@link HystrixThreadEventStream}s.
  * That object will emit on an RxComputation thread, so all work done by a consumer of this {@link #observe()} happens
  * asynchronously.
  */
-public class HystrixCommandEventStream implements HystrixEventStream {
+public class HystrixCommandEventStream implements HystrixEventStream<HystrixCommandCompletion> {
     private final HystrixCommandKey commandKey;
 
-    private final Subject<HystrixCommandEvent, HystrixCommandEvent> stream;
+    private final Subject<HystrixCommandCompletion, HystrixCommandCompletion> stream;
 
     private static final ConcurrentMap<String, HystrixCommandEventStream> streams = new ConcurrentHashMap<String, HystrixCommandEventStream>();
 
@@ -58,38 +57,21 @@ public class HystrixCommandEventStream implements HystrixEventStream {
     HystrixCommandEventStream(final HystrixCommandKey commandKey) {
         this.commandKey = commandKey;
 
-        this.stream = new SerializedSubject<HystrixCommandEvent, HystrixCommandEvent>(PublishSubject.<HystrixCommandEvent>create());
+        this.stream = new SerializedSubject<HystrixCommandCompletion, HystrixCommandCompletion>(PublishSubject.<HystrixCommandCompletion>create());
     }
 
     public static void reset() {
         streams.clear();
     }
 
-    public void write(HystrixCommandEvent event) {
+    public void write(HystrixCommandCompletion event) {
         stream.onNext(event);
     }
 
 
     @Override
-    public Observable<HystrixCommandEvent> observe() {
+    public Observable<HystrixCommandCompletion> observe() {
         return stream;
-    }
-
-    public Observable<HystrixCommandCompletion> observeCommandCompletions() {
-        return stream
-                .cast(HystrixCommandCompletion.class);
-    }
-
-    public Observable<Observable<HystrixCommandEvent>> getBucketedStream(int bucketSizeInMs) {
-        return observe()
-                .window(bucketSizeInMs, TimeUnit.MILLISECONDS);
-    }
-
-    @Override
-    public Observable<Observable<HystrixCommandCompletion>> getBucketedStreamOfCommandCompletions(int bucketSizeInMs) {
-        return stream
-                .cast(HystrixCommandCompletion.class)
-                .window(bucketSizeInMs, TimeUnit.MILLISECONDS);
     }
 
     @Override

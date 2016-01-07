@@ -23,31 +23,34 @@ import rx.subjects.BehaviorSubject;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Abstract class that imposes a bucketing structure and provides streams of buckets
- * @param <A> type of data contained in each bucket
- * @param <B> type of data emitted to stream subscribers (often is the same as A but does not have to be)
+ *
+ * @param <Event> type of raw data that needs to get summarized into a bucket
+ * @param <Bucket> type of data contained in each bucket
+ * @param <Output> type of data emitted to stream subscribers (often is the same as A but does not have to be)
  */
-public abstract class BucketedCounterStream<A, B> {
-    protected final HystrixEventStream inputEventStream;
+public abstract class BucketedCounterStream<Event extends HystrixEvent, Bucket, Output> {
+    protected final HystrixEventStream<Event> inputEventStream;
     protected final int numBuckets;
     protected final int bucketSizeInMs;
 
-    private final Func1<Observable<HystrixCommandCompletion>, Observable<A>> reduceBucketToSummary;
+    private final Func1<Observable<Event>, Observable<Bucket>> reduceBucketToSummary;
 
-    private final BehaviorSubject<B> counterSubject = BehaviorSubject.create(getEmptyEmitValue());
+    private final BehaviorSubject<Output> counterSubject = BehaviorSubject.create(getEmptyOutputValue());
     private Subscription counterSubscription;
 
-    protected BucketedCounterStream(final HystrixEventStream inputEventStream, final int numBuckets, final int bucketSizeInMs,
-                                    final Func2<A, HystrixCommandCompletion, A> reduceCommandCompletion) {
+    protected BucketedCounterStream(final HystrixEventStream<Event> inputEventStream, final int numBuckets, final int bucketSizeInMs,
+                                    final Func2<Bucket, Event, Bucket> appendRawEventToBucket) {
         this.inputEventStream = inputEventStream;
         this.numBuckets = numBuckets;
         this.bucketSizeInMs = bucketSizeInMs;
-        this.reduceBucketToSummary = new Func1<Observable<HystrixCommandCompletion>, Observable<A>>() {
+        this.reduceBucketToSummary = new Func1<Observable<Event>, Observable<Bucket>>() {
             @Override
-            public Observable<A> call(Observable<HystrixCommandCompletion> bucketOfCommandCompletions) {
-                return bucketOfCommandCompletions.reduce(getEmptyBucketSummary(), reduceCommandCompletion);
+            public Observable<Bucket> call(Observable<Event> eventBucket) {
+                return eventBucket.reduce(getEmptyBucketSummary(), appendRawEventToBucket);
             }
         };
     }
@@ -59,36 +62,38 @@ public abstract class BucketedCounterStream<A, B> {
         counterSubscription = observe().subscribe(counterSubject);
     }
 
-    abstract A getEmptyBucketSummary();
+    abstract Bucket getEmptyBucketSummary();
 
-    abstract B getEmptyEmitValue();
+    abstract Output getEmptyOutputValue();
 
     /**
      * Return the stream of buckets
      * @return stream of buckets
      */
-    public abstract Observable<B> observe();
+    public abstract Observable<Output> observe();
 
-    protected Observable<A> getBucketedStream() {
-        final List<A> emptyEventCountsToStart = new ArrayList<A>();
+    protected Observable<Bucket> getBucketedStream() {
+        final List<Bucket> emptyEventCountsToStart = new ArrayList<Bucket>();
         for (int i = 0; i < numBuckets; i++) {
             emptyEventCountsToStart.add(getEmptyBucketSummary());
         }
 
-        return inputEventStream.getBucketedStreamOfCommandCompletions(bucketSizeInMs)  //bucket it by the counter window so we can emit to the next operator in time chunks, not on every OnNext
-                .flatMap(reduceBucketToSummary)                                        //for a given bucket, turn it into a long array containing counts of event types
-                .startWith(emptyEventCountsToStart);                                   //start it with empty arrays to make consumer logic as generic as possible (windows are always full)
+        return inputEventStream
+                .observe()
+                .window(bucketSizeInMs, TimeUnit.MILLISECONDS) //bucket it by the counter window so we can emit to the next operator in time chunks, not on every OnNext
+                .flatMap(reduceBucketToSummary)                //for a given bucket, turn it into a long array containing counts of event types
+                .startWith(emptyEventCountsToStart);           //start it with empty arrays to make consumer logic as generic as possible (windows are always full)
     }
 
     /**
      * Synchronous call to retrieve the last calculated bucket without waiting for any emissions
      * @return last calculated bucket
      */
-    public B getLatest() {
+    public Output getLatest() {
         if (counterSubject.hasValue()) {
             return counterSubject.getValue();
         } else {
-            return getEmptyEmitValue();
+            return getEmptyOutputValue();
         }
     }
 

@@ -23,7 +23,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 import com.netflix.hystrix.metric.CumulativeThreadPoolEventCounterStream;
 import com.netflix.hystrix.metric.HystrixCommandCompletion;
-import com.netflix.hystrix.metric.RollingThreadPoolConcurrencyStream;
 import com.netflix.hystrix.metric.RollingThreadPoolEventCounterStream;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 import org.slf4j.Logger;
@@ -96,7 +95,8 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
         return Collections.unmodifiableCollection(metrics.values());
     }
 
-    public static final Func2<long[], HystrixCommandCompletion, long[]> aggregateEventCounts = new Func2<long[], HystrixCommandCompletion, long[]>() {
+    public static final Func2<long[], HystrixCommandCompletion, long[]> appendEventToBucket
+            = new Func2<long[], HystrixCommandCompletion, long[]>() {
         @Override
         public long[] call(long[] initialCountArray, HystrixCommandCompletion execution) {
             ExecutionResult.EventCounts eventCounts = execution.getEventCounts();
@@ -154,8 +154,8 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
         this.threadPool = threadPool;
         this.properties = properties;
 
-        rollingCounterStream = RollingThreadPoolEventCounterStream.getInstance(threadPoolKey, properties, aggregateEventCounts, counterAggregator);
-        cumulativeCounterStream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, properties, aggregateEventCounts, counterAggregator);
+        rollingCounterStream = RollingThreadPoolEventCounterStream.getInstance(threadPoolKey, properties, appendEventToBucket, counterAggregator);
+        cumulativeCounterStream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, properties, appendEventToBucket, counterAggregator);
         //rollingThreadPoolConcurrencyStream = RollingThreadPoolConcurrencyStream.getInstance(threadPoolKey, properties);
     }
 

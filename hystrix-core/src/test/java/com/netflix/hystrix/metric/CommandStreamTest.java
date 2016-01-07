@@ -16,6 +16,8 @@
 package com.netflix.hystrix.metric;
 
 import com.netflix.hystrix.HystrixCollapser;
+import com.netflix.hystrix.HystrixCollapserKey;
+import com.netflix.hystrix.HystrixCollapserProperties;
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandGroupKey;
 import com.netflix.hystrix.HystrixCommandKey;
@@ -172,10 +174,18 @@ public abstract class CommandStreamTest {
         private final Integer arg;
 
         public static Collapser from(Integer arg) {
-            return new Collapser(arg);
+            return new Collapser(HystrixCollapserKey.Factory.asKey("Collapser"), arg);
         }
 
-        private Collapser(Integer arg) {
+        public static Collapser from(HystrixCollapserKey key, Integer arg) {
+            return new Collapser(key, arg);
+        }
+
+        private Collapser(HystrixCollapserKey key, Integer arg) {
+            super(Setter.withCollapserKey(key)
+                    .andCollapserPropertiesDefaults(
+                            HystrixCollapserProperties.Setter()
+                    .withTimerDelayInMilliseconds(100)));
             this.arg = arg;
         }
 
@@ -199,6 +209,11 @@ public abstract class CommandStreamTest {
                 collapsedReq.emitResponse(collapsedReq.getArgument());
                 collapsedReq.setComplete();
             }
+        }
+
+        @Override
+        protected String getCacheKey() {
+            return arg.toString();
         }
     }
 

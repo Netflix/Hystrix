@@ -15,13 +15,9 @@
  */
 package com.netflix.hystrix.metric;
 
-import rx.Observable;
-
 /**
- * Base interface for a stream of {@link com.netflix.hystrix.HystrixEventType}s.  Allows consumption by individual
- * {@link com.netflix.hystrix.HystrixEventType} or by time-based bucketing of events
+ * Marker interface for events which may appear in an event stream
  */
-public interface HystrixEventStream<E extends HystrixEvent> {
+public interface HystrixEvent {
 
-    Observable<E> observe();
 }

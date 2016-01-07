@@ -35,7 +35,7 @@ import java.util.concurrent.ConcurrentMap;
  *
  * These values get produced and cached in this class.  This value (the latest observed value) may be queried using {@link #getLatest(HystrixEventType)}.
  */
-public class RollingCommandEventCounterStream extends BucketedRollingCounterStream<long[], long[]> {
+public class RollingCommandEventCounterStream extends BucketedRollingCounterStream<HystrixCommandCompletion, long[], long[]> {
 
     private static final ConcurrentMap<String, RollingCommandEventCounterStream> streams = new ConcurrentHashMap<String, RollingCommandEventCounterStream>();
 
@@ -88,7 +88,7 @@ public class RollingCommandEventCounterStream extends BucketedRollingCounterStre
     }
 
     @Override
-    long[] getEmptyEmitValue() {
+    long[] getEmptyOutputValue() {
         return new long[NUM_EVENT_TYPES];
     }
 

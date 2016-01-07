@@ -36,7 +36,7 @@ import java.util.concurrent.ConcurrentMap;
  *
  * These values get produced and cached in this class.  This value (the latest observed value) may be queried using {@link #getLatest()}.
  */
-public class HealthCountsStream extends BucketedRollingCounterStream<long[], HystrixCommandMetrics.HealthCounts> {
+public class HealthCountsStream extends BucketedRollingCounterStream<HystrixCommandCompletion, long[], HystrixCommandMetrics.HealthCounts> {
 
     private static final ConcurrentMap<String, HealthCountsStream> streams = new ConcurrentHashMap<String, HealthCountsStream>();
 
@@ -100,7 +100,7 @@ public class HealthCountsStream extends BucketedRollingCounterStream<long[], Hys
     }
 
     @Override
-    HystrixCommandMetrics.HealthCounts getEmptyEmitValue() {
+    HystrixCommandMetrics.HealthCounts getEmptyOutputValue() {
         return HystrixCommandMetrics.HealthCounts.empty();
     }
 }

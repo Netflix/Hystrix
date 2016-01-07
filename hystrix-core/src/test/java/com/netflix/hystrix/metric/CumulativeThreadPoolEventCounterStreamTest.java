@@ -61,7 +61,7 @@ public class CumulativeThreadPoolEventCounterStreamTest extends CommandStreamTes
         HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("Cumulative-ThreadPool-A");
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("Cumulative-ThreadPool-A");
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("Cumulative-Counter-A");
-        stream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100, HystrixThreadPoolMetrics.aggregateEventCounts, HystrixThreadPoolMetrics.counterAggregator);
+        stream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100, HystrixThreadPoolMetrics.appendEventToBucket, HystrixThreadPoolMetrics.counterAggregator);
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -83,7 +83,7 @@ public class CumulativeThreadPoolEventCounterStreamTest extends CommandStreamTes
         HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("Cumulative-ThreadPool-B");
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("Cumulative-ThreadPool-B");
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("Cumulative-Counter-B");
-        stream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100, HystrixThreadPoolMetrics.aggregateEventCounts, HystrixThreadPoolMetrics.counterAggregator);
+        stream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100, HystrixThreadPoolMetrics.appendEventToBucket, HystrixThreadPoolMetrics.counterAggregator);
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -107,7 +107,7 @@ public class CumulativeThreadPoolEventCounterStreamTest extends CommandStreamTes
         HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("Cumulative-ThreadPool-C");
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("Cumulative-ThreadPool-C");
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("Cumulative-Counter-C");
-        stream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100, HystrixThreadPoolMetrics.aggregateEventCounts, HystrixThreadPoolMetrics.counterAggregator);
+        stream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100, HystrixThreadPoolMetrics.appendEventToBucket, HystrixThreadPoolMetrics.counterAggregator);
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -131,7 +131,7 @@ public class CumulativeThreadPoolEventCounterStreamTest extends CommandStreamTes
         HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("Cumulative-ThreadPool-D");
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("Cumulative-ThreadPool-D");
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("Cumulative-Counter-D");
-        stream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100, HystrixThreadPoolMetrics.aggregateEventCounts, HystrixThreadPoolMetrics.counterAggregator);
+        stream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100, HystrixThreadPoolMetrics.appendEventToBucket, HystrixThreadPoolMetrics.counterAggregator);
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -155,7 +155,7 @@ public class CumulativeThreadPoolEventCounterStreamTest extends CommandStreamTes
         HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("Cumulative-ThreadPool-E");
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("Cumulative-ThreadPool-E");
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("Cumulative-Counter-E");
-        stream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100, HystrixThreadPoolMetrics.aggregateEventCounts, HystrixThreadPoolMetrics.counterAggregator);
+        stream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100, HystrixThreadPoolMetrics.appendEventToBucket, HystrixThreadPoolMetrics.counterAggregator);
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -179,7 +179,7 @@ public class CumulativeThreadPoolEventCounterStreamTest extends CommandStreamTes
         HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("Cumulative-ThreadPool-F");
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("Cumulative-ThreadPool-F");
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("Cumulative-Counter-F");
-        stream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100, HystrixThreadPoolMetrics.aggregateEventCounts, HystrixThreadPoolMetrics.counterAggregator);
+        stream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100, HystrixThreadPoolMetrics.appendEventToBucket, HystrixThreadPoolMetrics.counterAggregator);
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -211,7 +211,7 @@ public class CumulativeThreadPoolEventCounterStreamTest extends CommandStreamTes
         HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("Cumulative-ThreadPool-G");
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("Cumulative-ThreadPool-G");
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("Cumulative-Counter-G");
-        stream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100, HystrixThreadPoolMetrics.aggregateEventCounts, HystrixThreadPoolMetrics.counterAggregator);
+        stream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100, HystrixThreadPoolMetrics.appendEventToBucket, HystrixThreadPoolMetrics.counterAggregator);
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -260,7 +260,7 @@ public class CumulativeThreadPoolEventCounterStreamTest extends CommandStreamTes
         HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("Cumulative-ThreadPool-H");
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("Cumulative-ThreadPool-H");
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("Cumulative-Counter-H");
-        stream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100, HystrixThreadPoolMetrics.aggregateEventCounts, HystrixThreadPoolMetrics.counterAggregator);
+        stream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100, HystrixThreadPoolMetrics.appendEventToBucket, HystrixThreadPoolMetrics.counterAggregator);
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -317,7 +317,7 @@ public class CumulativeThreadPoolEventCounterStreamTest extends CommandStreamTes
         HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("Cumulative-ThreadPool-I");
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("Cumulative-ThreadPool-I");
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("Cumulative-Counter-I");
-        stream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100, HystrixThreadPoolMetrics.aggregateEventCounts, HystrixThreadPoolMetrics.counterAggregator);
+        stream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100, HystrixThreadPoolMetrics.appendEventToBucket, HystrixThreadPoolMetrics.counterAggregator);
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -369,7 +369,7 @@ public class CumulativeThreadPoolEventCounterStreamTest extends CommandStreamTes
         HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("Cumulative-ThreadPool-J");
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("Cumulative-ThreadPool-J");
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("Cumulative-Counter-J");
-        stream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100, HystrixThreadPoolMetrics.aggregateEventCounts, HystrixThreadPoolMetrics.counterAggregator);
+        stream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100, HystrixThreadPoolMetrics.appendEventToBucket, HystrixThreadPoolMetrics.counterAggregator);
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -393,7 +393,7 @@ public class CumulativeThreadPoolEventCounterStreamTest extends CommandStreamTes
         HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("Cumulative-ThreadPool-K");
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("Cumulative-ThreadPool-K");
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("Cumulative-Counter-K");
-        stream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100, HystrixThreadPoolMetrics.aggregateEventCounts, HystrixThreadPoolMetrics.counterAggregator);
+        stream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100, HystrixThreadPoolMetrics.appendEventToBucket, HystrixThreadPoolMetrics.counterAggregator);
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -417,7 +417,7 @@ public class CumulativeThreadPoolEventCounterStreamTest extends CommandStreamTes
         HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("Cumulative-ThreadPool-L");
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("Cumulative-ThreadPool-L");
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("Cumulative-Counter-L");
-        stream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100, HystrixThreadPoolMetrics.aggregateEventCounts, HystrixThreadPoolMetrics.counterAggregator);
+        stream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100, HystrixThreadPoolMetrics.appendEventToBucket, HystrixThreadPoolMetrics.counterAggregator);
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -464,7 +464,7 @@ public class CumulativeThreadPoolEventCounterStreamTest extends CommandStreamTes
         HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("Cumulative-ThreadPool-M");
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("Cumulative-ThreadPool-M");
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("Cumulative-Counter-M");
-        stream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100, HystrixThreadPoolMetrics.aggregateEventCounts, HystrixThreadPoolMetrics.counterAggregator);
+        stream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100, HystrixThreadPoolMetrics.appendEventToBucket, HystrixThreadPoolMetrics.counterAggregator);
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(30).subscribe(getSubscriber(latch));

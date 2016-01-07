@@ -68,7 +68,7 @@ public class HystrixCommandEventStreamTest {
         CountDownLatch latch = new CountDownLatch(1);
         Subscriber<HystrixCommandCompletion> subscriber = getLatchedSubscriber(latch);
 
-        commandStream.observeCommandCompletions().take(1).subscribe(subscriber);
+        commandStream.observe().take(1).subscribe(subscriber);
 
         //no writes
 
@@ -80,7 +80,7 @@ public class HystrixCommandEventStreamTest {
         CountDownLatch latch = new CountDownLatch(1);
         Subscriber<HystrixCommandCompletion> subscriber = getLatchedSubscriber(latch);
 
-        commandStream.observeCommandCompletions().take(1).subscribe(subscriber);
+        commandStream.observe().take(1).subscribe(subscriber);
 
         ExecutionResult result = ExecutionResult.from(HystrixEventType.SUCCESS).setExecutedInThread();
         HystrixCommandCompletion event = HystrixCommandCompletion.from(result, commandKey, threadPoolKey);
@@ -97,8 +97,8 @@ public class HystrixCommandEventStreamTest {
         CountDownLatch latch2 = new CountDownLatch(1);
         Subscriber<HystrixCommandCompletion> subscriber2 = getLatchedSubscriber(latch2);
 
-        commandStream.observeCommandCompletions().take(1).subscribe(subscriber1);
-        commandStream.observeCommandCompletions().take(1).subscribe(subscriber2);
+        commandStream.observe().take(1).subscribe(subscriber1);
+        commandStream.observe().take(1).subscribe(subscriber2);
 
         ExecutionResult result = ExecutionResult.from(HystrixEventType.SUCCESS).setExecutedInThread();
         HystrixCommandCompletion event = HystrixCommandCompletion.from(result, commandKey, threadPoolKey);

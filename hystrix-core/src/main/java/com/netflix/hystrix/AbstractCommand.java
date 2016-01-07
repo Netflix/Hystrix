@@ -1922,6 +1922,11 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         return executionResult.getEventCounts().getCount(HystrixEventType.FALLBACK_EMIT);
     }
 
+    @Override
+    public int getNumberCollapsed() {
+        return executionResult.getEventCounts().getCount(HystrixEventType.COLLAPSED);
+    }
+
     /**
      * The execution time of this command instance in milliseconds, or -1 if not executed.
      * 

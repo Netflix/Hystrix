@@ -15,8 +15,8 @@
  */
 package com.netflix.hystrix.metric;
 
-import com.netflix.hystrix.HystrixCommandKey;
-import com.netflix.hystrix.HystrixCommandProperties;
+import com.netflix.hystrix.HystrixCollapserKey;
+import com.netflix.hystrix.HystrixCollapserProperties;
 import com.netflix.hystrix.HystrixEventType;
 import rx.functions.Func2;
 
@@ -30,42 +30,42 @@ import java.util.concurrent.ConcurrentMap;
  * so bucket rolls correspond to new data in this stream, though data never goes out of window in this stream.
  *
  * Therefore, a new set of counters is produced every t2 (=t1/b) milliseconds
- * t1 = {@link HystrixCommandProperties#metricsRollingStatisticalWindowInMilliseconds()}
- * b = {@link HystrixCommandProperties#metricsRollingStatisticalWindowBuckets()}
+ * t1 = {@link com.netflix.hystrix.HystrixCollapserProperties#metricsRollingStatisticalWindowInMilliseconds()}
+ * b = {@link com.netflix.hystrix.HystrixCollapserProperties#metricsRollingStatisticalWindowBuckets()}
  *
  * These values are stable - there's no peeking into a bucket until it is emitted
  *
- * These values get produced and cached in this class.  This value (the latest observed value) may be queried using {@link #getLatest(HystrixEventType)}.
+ * These values get produced and cached in this class.  This value (the latest observed value) may be queried using {@link #getLatest(HystrixEventType.Collapser)}.
  */
-public class CumulativeCommandEventCounterStream extends BucketedCumulativeCounterStream<HystrixCommandCompletion, long[], long[]> {
+public class CumulativeCollapserEventCounterStream extends BucketedCumulativeCounterStream<HystrixCollapserEvent, long[], long[]> {
 
-    private static final ConcurrentMap<String, CumulativeCommandEventCounterStream> streams = new ConcurrentHashMap<String, CumulativeCommandEventCounterStream>();
+    private static final ConcurrentMap<String, CumulativeCollapserEventCounterStream> streams = new ConcurrentHashMap<String, CumulativeCollapserEventCounterStream>();
 
-    private static final int NUM_EVENT_TYPES = HystrixEventType.values().length;
+    private static final int NUM_EVENT_TYPES = HystrixEventType.Collapser.values().length;
 
-    public static CumulativeCommandEventCounterStream getInstance(HystrixCommandKey commandKey, HystrixCommandProperties properties,
-                                                           Func2<long[], HystrixCommandCompletion, long[]> reduceCommandCompletion,
+    public static CumulativeCollapserEventCounterStream getInstance(HystrixCollapserKey collapserKey, HystrixCollapserProperties properties,
+                                                           Func2<long[], HystrixCollapserEvent, long[]> appendEventToBucket,
                                                            Func2<long[], long[], long[]> reduceBucket) {
         final int counterMetricWindow = properties.metricsRollingStatisticalWindowInMilliseconds().get();
         final int numCounterBuckets = properties.metricsRollingStatisticalWindowBuckets().get();
         final int counterBucketSizeInMs = counterMetricWindow / numCounterBuckets;
 
-        return getInstance(commandKey, numCounterBuckets, counterBucketSizeInMs, reduceCommandCompletion, reduceBucket);
+        return getInstance(collapserKey, numCounterBuckets, counterBucketSizeInMs, appendEventToBucket, reduceBucket);
     }
 
-    public static CumulativeCommandEventCounterStream getInstance(HystrixCommandKey commandKey, int numBuckets, int bucketSizeInMs,
-                                                                  Func2<long[], HystrixCommandCompletion, long[]> reduceCommandCompletion,
+    public static CumulativeCollapserEventCounterStream getInstance(HystrixCollapserKey collapserKey, int numBuckets, int bucketSizeInMs,
+                                                                  Func2<long[], HystrixCollapserEvent, long[]> appendEventToBucket,
                                                                   Func2<long[], long[], long[]> reduceBucket) {
-        CumulativeCommandEventCounterStream initialStream = streams.get(commandKey.name());
+        CumulativeCollapserEventCounterStream initialStream = streams.get(collapserKey.name());
         if (initialStream != null) {
             return initialStream;
         } else {
-            synchronized (CumulativeCommandEventCounterStream.class) {
-                CumulativeCommandEventCounterStream existingStream = streams.get(commandKey.name());
+            synchronized (CumulativeCollapserEventCounterStream.class) {
+                CumulativeCollapserEventCounterStream existingStream = streams.get(collapserKey.name());
                 if (existingStream == null) {
-                    CumulativeCommandEventCounterStream newStream = new CumulativeCommandEventCounterStream(commandKey, numBuckets, bucketSizeInMs, reduceCommandCompletion, reduceBucket);
+                    CumulativeCollapserEventCounterStream newStream = new CumulativeCollapserEventCounterStream(collapserKey, numBuckets, bucketSizeInMs, appendEventToBucket, reduceBucket);
                     newStream.start();
-                    streams.putIfAbsent(commandKey.name(), newStream);
+                    streams.putIfAbsent(collapserKey.name(), newStream);
                     return newStream;
                 } else {
                     return existingStream;
@@ -78,10 +78,10 @@ public class CumulativeCommandEventCounterStream extends BucketedCumulativeCount
         streams.clear();
     }
 
-    private CumulativeCommandEventCounterStream(HystrixCommandKey commandKey, int numCounterBuckets, int counterBucketSizeInMs,
-                                                Func2<long[], HystrixCommandCompletion, long[]> reduceCommandCompletion,
+    private CumulativeCollapserEventCounterStream(HystrixCollapserKey collapserKey, int numCounterBuckets, int counterBucketSizeInMs,
+                                                Func2<long[], HystrixCollapserEvent, long[]> appendEventToBucket,
                                                 Func2<long[], long[], long[]> reduceBucket) {
-        super(HystrixCommandEventStream.getInstance(commandKey), numCounterBuckets, counterBucketSizeInMs, reduceCommandCompletion, reduceBucket);
+        super(HystrixCollapserEventStream.getInstance(collapserKey), numCounterBuckets, counterBucketSizeInMs, appendEventToBucket, reduceBucket);
     }
 
     @Override
@@ -94,7 +94,7 @@ public class CumulativeCommandEventCounterStream extends BucketedCumulativeCount
         return new long[NUM_EVENT_TYPES];
     }
 
-    public long getLatest(HystrixEventType eventType) {
+    public long getLatest(HystrixEventType.Collapser eventType) {
         return getLatest()[eventType.ordinal()];
     }
 }
