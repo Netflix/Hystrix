@@ -74,7 +74,7 @@ public class RollingThreadPoolEventCounterStreamTest extends CommandStreamTest {
             fail("Interrupted ex");
         }
         assertEquals(2, stream.getLatest().length);
-        assertEquals(0, stream.getLatestExecutedCount() + stream.getLatestRejectedCount());
+        assertEquals(0, stream.getLatestCount(HystrixEventType.ThreadPool.EXECUTED) + stream.getLatestCount(HystrixEventType.ThreadPool.REJECTED));
     }
 
     @Test
@@ -97,8 +97,8 @@ public class RollingThreadPoolEventCounterStreamTest extends CommandStreamTest {
             fail("Interrupted ex");
         }
         assertEquals(2, stream.getLatest().length);
-        assertEquals(1, stream.getLatestExecutedCount());
-        assertEquals(0, stream.getLatestRejectedCount());
+        assertEquals(1, stream.getLatestCount(HystrixEventType.ThreadPool.EXECUTED));
+        assertEquals(0, stream.getLatestCount(HystrixEventType.ThreadPool.REJECTED));
     }
 
     @Test
@@ -121,8 +121,8 @@ public class RollingThreadPoolEventCounterStreamTest extends CommandStreamTest {
             fail("Interrupted ex");
         }
         assertEquals(2, stream.getLatest().length);
-        assertEquals(1, stream.getLatestExecutedCount());
-        assertEquals(0, stream.getLatestRejectedCount());
+        assertEquals(1, stream.getLatestCount(HystrixEventType.ThreadPool.EXECUTED));
+        assertEquals(0, stream.getLatestCount(HystrixEventType.ThreadPool.REJECTED));
     }
 
     @Test
@@ -145,8 +145,8 @@ public class RollingThreadPoolEventCounterStreamTest extends CommandStreamTest {
             fail("Interrupted ex");
         }
         assertEquals(2, stream.getLatest().length);
-        assertEquals(1, stream.getLatestExecutedCount());
-        assertEquals(0, stream.getLatestRejectedCount());
+        assertEquals(1, stream.getLatestCount(HystrixEventType.ThreadPool.EXECUTED));
+        assertEquals(0, stream.getLatestCount(HystrixEventType.ThreadPool.REJECTED));
     }
 
     @Test
@@ -169,8 +169,8 @@ public class RollingThreadPoolEventCounterStreamTest extends CommandStreamTest {
             fail("Interrupted ex");
         }
         assertEquals(2, stream.getLatest().length);
-        assertEquals(1, stream.getLatestExecutedCount());
-        assertEquals(0, stream.getLatestRejectedCount());
+        assertEquals(1, stream.getLatestCount(HystrixEventType.ThreadPool.EXECUTED));
+        assertEquals(0, stream.getLatestCount(HystrixEventType.ThreadPool.REJECTED));
     }
 
     @Test
@@ -201,8 +201,8 @@ public class RollingThreadPoolEventCounterStreamTest extends CommandStreamTest {
 
         //RESPONSE_FROM_CACHE should not show up at all in thread pool counters - just the success
         assertEquals(2, stream.getLatest().length);
-        assertEquals(1, stream.getLatestExecutedCount());
-        assertEquals(0, stream.getLatestRejectedCount());
+        assertEquals(1, stream.getLatestCount(HystrixEventType.ThreadPool.EXECUTED));
+        assertEquals(0, stream.getLatestCount(HystrixEventType.ThreadPool.REJECTED));
     }
 
     @Test
@@ -250,8 +250,8 @@ public class RollingThreadPoolEventCounterStreamTest extends CommandStreamTest {
 
         //only the FAILUREs should show up in thread pool counters
         assertEquals(2, stream.getLatest().length);
-        assertEquals(3, stream.getLatestExecutedCount());
-        assertEquals(0, stream.getLatestRejectedCount());
+        assertEquals(3, stream.getLatestCount(HystrixEventType.ThreadPool.EXECUTED));
+        assertEquals(0, stream.getLatestCount(HystrixEventType.ThreadPool.REJECTED));
     }
 
     @Test
@@ -307,8 +307,8 @@ public class RollingThreadPoolEventCounterStreamTest extends CommandStreamTest {
 
         //none of these got executed on a thread-pool, so thread pool metrics should be 0
         assertEquals(2, stream.getLatest().length);
-        assertEquals(0, stream.getLatestExecutedCount());
-        assertEquals(0, stream.getLatestRejectedCount());
+        assertEquals(0, stream.getLatestCount(HystrixEventType.ThreadPool.EXECUTED));
+        assertEquals(0, stream.getLatestCount(HystrixEventType.ThreadPool.REJECTED));
     }
 
     @Test
@@ -359,8 +359,8 @@ public class RollingThreadPoolEventCounterStreamTest extends CommandStreamTest {
 
         //all 12 commands got submitted to thread pool, 10 accepted, 2 rejected is expected
         assertEquals(2, stream.getLatest().length);
-        assertEquals(10, stream.getLatestExecutedCount());
-        assertEquals(2, stream.getLatestRejectedCount());
+        assertEquals(10, stream.getLatestCount(HystrixEventType.ThreadPool.EXECUTED));
+        assertEquals(2, stream.getLatestCount(HystrixEventType.ThreadPool.REJECTED));
     }
 
     @Test
@@ -383,8 +383,8 @@ public class RollingThreadPoolEventCounterStreamTest extends CommandStreamTest {
             fail("Interrupted ex");
         }
         assertEquals(2, stream.getLatest().length);
-        assertEquals(1, stream.getLatestExecutedCount());
-        assertEquals(0, stream.getLatestRejectedCount());
+        assertEquals(1, stream.getLatestCount(HystrixEventType.ThreadPool.EXECUTED));
+        assertEquals(0, stream.getLatestCount(HystrixEventType.ThreadPool.REJECTED));
     }
 
     @Test
@@ -407,8 +407,8 @@ public class RollingThreadPoolEventCounterStreamTest extends CommandStreamTest {
             fail("Interrupted ex");
         }
         assertEquals(2, stream.getLatest().length);
-        assertEquals(1, stream.getLatestExecutedCount());
-        assertEquals(0, stream.getLatestRejectedCount());
+        assertEquals(1, stream.getLatestCount(HystrixEventType.ThreadPool.EXECUTED));
+        assertEquals(0, stream.getLatestCount(HystrixEventType.ThreadPool.REJECTED));
     }
 
     @Test
@@ -453,8 +453,8 @@ public class RollingThreadPoolEventCounterStreamTest extends CommandStreamTest {
 
         //all 7 commands executed on-thread, so should be executed according to thread-pool metrics
         assertEquals(2, stream.getLatest().length);
-        assertEquals(7, stream.getLatestExecutedCount());
-        assertEquals(0, stream.getLatestRejectedCount());
+        assertEquals(7, stream.getLatestCount(HystrixEventType.ThreadPool.EXECUTED));
+        assertEquals(0, stream.getLatestCount(HystrixEventType.ThreadPool.REJECTED));
     }
 
     @Test
@@ -483,7 +483,7 @@ public class RollingThreadPoolEventCounterStreamTest extends CommandStreamTest {
 
         //all commands should have aged out
         assertEquals(2, stream.getLatest().length);
-        assertEquals(0, stream.getLatestExecutedCount());
-        assertEquals(0, stream.getLatestRejectedCount());
+        assertEquals(0, stream.getLatestCount(HystrixEventType.ThreadPool.EXECUTED));
+        assertEquals(0, stream.getLatestCount(HystrixEventType.ThreadPool.REJECTED));
     }
 }

@@ -88,6 +88,30 @@ public enum HystrixEventType {
         EXCEPTION_PRODUCING_EVENT_TYPES.add(FALLBACK_REJECTION);
     }
 
+    public enum ThreadPool {
+        EXECUTED, REJECTED;
+
+        public static ThreadPool from(HystrixRollingNumberEvent event) {
+            switch (event) {
+                case THREAD_EXECUTION: return EXECUTED;
+                case THREAD_POOL_REJECTED: return REJECTED;
+                default:
+                    throw new RuntimeException("Not an event that can be converted to HystrixEventType.ThreadPool : " + event);
+            }
+        }
+
+        public static ThreadPool from(HystrixEventType eventType) {
+            switch (eventType) {
+                case SUCCESS: return EXECUTED;
+                case FAILURE: return EXECUTED;
+                case TIMEOUT: return EXECUTED;
+                case BAD_REQUEST: return EXECUTED;
+                case THREAD_POOL_REJECTED: return REJECTED;
+                default: return null;
+            }
+        }
+    }
+
     public enum Collapser {
         BATCH_EXECUTED, ADDED_TO_BATCH, RESPONSE_FROM_CACHE;
 

@@ -17,6 +17,7 @@ package com.netflix.hystrix.metric;
 
 import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixCommandProperties;
+import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.HystrixThreadPoolKey;
 import com.netflix.hystrix.HystrixThreadPoolProperties;
 import rx.functions.Func2;
@@ -35,11 +36,13 @@ import java.util.concurrent.ConcurrentMap;
  * These values are stable - there's no peeking into a bucket until it is emitted
  *
  * These values get produced and cached in this class.
- * You may query to find the latest rolling count of 2 events (executed/rejected) via {@link #getLatestExecutedCount()} and {@link #getLatestRejectedCount()}.
+ * You may query to find the latest rolling count of 2 events (executed/rejected) via {@link #getLatestCount(com.netflix.hystrix.HystrixEventType.ThreadPool)}.
  */
 public class RollingThreadPoolEventCounterStream extends BucketedRollingCounterStream<HystrixCommandCompletion, long[], long[]> {
 
     private static final ConcurrentMap<String, RollingThreadPoolEventCounterStream> streams = new ConcurrentHashMap<String, RollingThreadPoolEventCounterStream>();
+
+    private static final int ALL_EVENT_TYPES_SIZE = HystrixEventType.ThreadPool.values().length;
 
     public static RollingThreadPoolEventCounterStream getInstance(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolProperties properties,
                                                                Func2<long[], HystrixCommandCompletion, long[]> reduceCommandCompletion,
@@ -85,23 +88,15 @@ public class RollingThreadPoolEventCounterStream extends BucketedRollingCounterS
 
     @Override
     public long[] getEmptyBucketSummary() {
-        return new long[2];
+        return new long[ALL_EVENT_TYPES_SIZE];
     }
 
     @Override
     public long[] getEmptyOutputValue() {
-        return new long[2];
+        return new long[ALL_EVENT_TYPES_SIZE];
     }
 
-    public long getLatestExecutedCount() {
-        return getLatestCount(0);
-    }
-
-    public long getLatestRejectedCount() {
-        return getLatestCount(1);
-    }
-
-    private long getLatestCount(final int index) {
-        return getLatest()[index];
+    public long getLatestCount(HystrixEventType.ThreadPool eventType) {
+        return getLatest()[eventType.ordinal()];
     }
 }

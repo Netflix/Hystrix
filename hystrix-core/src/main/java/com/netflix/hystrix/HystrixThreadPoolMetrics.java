@@ -38,7 +38,9 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
     @SuppressWarnings("unused")
     private static final Logger logger = LoggerFactory.getLogger(HystrixThreadPoolMetrics.class);
 
-    private static final HystrixEventType[] ALL_EVENT_TYPES = HystrixEventType.values();
+    private static final HystrixEventType[] ALL_COMMAND_EVENT_TYPES = HystrixEventType.values();
+    private static final HystrixEventType.ThreadPool[] ALL_THREADPOOL_EVENT_TYPES = HystrixEventType.ThreadPool.values();
+    private static final int NUMBER_THREADPOOL_EVENT_TYPES = ALL_THREADPOOL_EVENT_TYPES.length;
 
     // String is HystrixThreadPoolKey.name() (we can't use HystrixThreadPoolKey directly as we can't guarantee it implements hashcode/equals correctly)
     private static final ConcurrentHashMap<String, HystrixThreadPoolMetrics> metrics = new ConcurrentHashMap<String, HystrixThreadPoolMetrics>();
@@ -100,22 +102,11 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
         @Override
         public long[] call(long[] initialCountArray, HystrixCommandCompletion execution) {
             ExecutionResult.EventCounts eventCounts = execution.getEventCounts();
-            for (HystrixEventType eventType: ALL_EVENT_TYPES) {
+            for (HystrixEventType eventType: ALL_COMMAND_EVENT_TYPES) {
                 long eventCount = eventCounts.getCount(eventType);
-                //the only executions that make it to this method are ones that executed in the given threadpool
-                //so we just count THREAD_POOL_REJECTED as rejected, and all other execution (not fallback) results as accepted
-                switch (eventType) {
-                    case THREAD_POOL_REJECTED:
-                        initialCountArray[1] += eventCount;
-                        break;
-                    //these all fall through on purpose (they have the same behavior)
-                    case SUCCESS:
-                    case FAILURE:
-                    case TIMEOUT:
-                    case BAD_REQUEST:
-                        // SEMAPHORE_REJECTED can't happen
-                        // SHORT_CIRCUITED implies the failure happened before the attempt to put work on the threadpool
-                        initialCountArray[0] += eventCount;
+                HystrixEventType.ThreadPool threadPoolEventType = HystrixEventType.ThreadPool.from(eventType);
+                if (threadPoolEventType != null) {
+                    initialCountArray[threadPoolEventType.ordinal()] += eventCount;
                 }
             }
             return initialCountArray;
@@ -125,7 +116,7 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
     public static final Func2<long[], long[], long[]> counterAggregator = new Func2<long[], long[], long[]>() {
         @Override
         public long[] call(long[] cumulativeEvents, long[] bucketEventCounts) {
-            for (int i = 0; i < 2; i++) {
+            for (int i = 0; i < NUMBER_THREADPOOL_EVENT_TYPES; i++) {
                 cumulativeEvents[i] += bucketEventCounts[i];
             }
             return cumulativeEvents;
@@ -272,7 +263,7 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
      * @return rolling count of threads executed
      */
     public long getRollingCountThreadsExecuted() {
-        return rollingCounterStream.getLatestExecutedCount();
+        return rollingCounterStream.getLatestCount(HystrixEventType.ThreadPool.EXECUTED);
     }
 
     /**
@@ -281,7 +272,7 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
      * @return cumulative count of threads executed
      */
     public long getCumulativeCountThreadsExecuted() {
-        return cumulativeCounterStream.getLatestExecutedCount();
+        return cumulativeCounterStream.getLatestCount(HystrixEventType.ThreadPool.EXECUTED);
     }
 
     /**
@@ -292,7 +283,7 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
      * @return rolling count of threads rejected
      */
     public long getRollingCountThreadsRejected() {
-        return rollingCounterStream.getLatestRejectedCount();
+        return rollingCounterStream.getLatestCount(HystrixEventType.ThreadPool.REJECTED);
     }
 
     /**
@@ -301,27 +292,17 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
      * @return cumulative count of threads rejected
      */
     public long getCumulativeCountThreadsRejected() {
-        return cumulativeCounterStream.getLatestRejectedCount();
+        return cumulativeCounterStream.getLatestCount(HystrixEventType.ThreadPool.REJECTED);
     }
 
     @Override
     public long getCumulativeCount(HystrixRollingNumberEvent event) {
-        //only args that are valid are THREAD_EXECUTION and THREAD_POOL_REJECTION.  delegate them appropriately and throw an exception for all others
-        switch (event) {
-            case THREAD_EXECUTION: return getCumulativeCountThreadsExecuted();
-            case THREAD_POOL_REJECTED: return getCumulativeCountThreadsRejected();
-            default: throw new RuntimeException("HystrixThreadPoolMetrics can not be queried for : " + event.name());
-        }
+        return cumulativeCounterStream.getLatestCount(HystrixEventType.ThreadPool.from(event));
     }
 
     @Override
     public long getRollingCount(HystrixRollingNumberEvent event) {
-        //only args that are valid are THREAD_EXECUTION and THREAD_POOL_REJECTION.  delegate them appropriately and throw an exception for all others
-        switch (event) {
-            case THREAD_EXECUTION: return getRollingCountThreadsExecuted();
-            case THREAD_POOL_REJECTED: return getRollingCountThreadsRejected();
-            default: throw new RuntimeException("HystrixThreadPoolMetrics can not be queried for : " + event.name());
-        }
+        return rollingCounterStream.getLatestCount(HystrixEventType.ThreadPool.from(event));
     }
 
     /**
