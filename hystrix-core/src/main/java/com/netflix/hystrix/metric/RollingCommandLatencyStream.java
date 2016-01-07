@@ -25,6 +25,7 @@ import rx.Subscription;
 import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.functions.Func2;
+import rx.observers.Subscribers;
 import rx.schedulers.Schedulers;
 import rx.subjects.BehaviorSubject;
 
@@ -106,10 +107,10 @@ public class RollingCommandLatencyStream {
         }
     };
 
-    private static final Action1<Observable<HystrixLatencyDistribution>> releaseDistributionsAsTheyFallOutOfWindow = new Action1<Observable<HystrixLatencyDistribution>>() {
+    private static final Func1<Observable<HystrixLatencyDistribution>, Observable<List<HystrixLatencyDistribution>>> convertToList = new Func1<Observable<HystrixLatencyDistribution>, Observable<List<HystrixLatencyDistribution>>>() {
         @Override
-        public void call(Observable<HystrixLatencyDistribution> twoLatestDistributions) {
-            twoLatestDistributions.toList().doOnNext(releaseOlderOfTwoDistributions).subscribe();
+        public Observable<List<HystrixLatencyDistribution>> call(Observable<HystrixLatencyDistribution> windowOf2) {
+            return windowOf2.toList();
         }
     };
 
@@ -162,10 +163,10 @@ public class RollingCommandLatencyStream {
 
         //as soon as subject receives a new HystrixLatencyDistribution, old one may be released
         rollingLatencyDistribution
-                .window(2, 1)                                         //subject is used as a single-value, but can be viewed as a stream.  Here, get the latest 2 values of the subject
-                .doOnNext(releaseDistributionsAsTheyFallOutOfWindow)  //if there are 2, then the oldest one will never be read, so we can reclaim its memory
-                .subscribeOn(Schedulers.computation())                //do this on a RxComputation thread
-                .subscribe();                                         //no need to emit anywhere, this is side-effect only (release the memory of old HystrixLatencyDistribution)
+                .window(2, 1)                              //subject is used as a single-value, but can be viewed as a stream.  Here, get the latest 2 values of the subject
+                .flatMap(convertToList)                    //convert to list (of length 2)
+                .doOnNext(releaseOlderOfTwoDistributions)  //if there are 2, then the oldest one will never be read, so we can reclaim its memory
+                .unsafeSubscribe(Subscribers.empty());     //no need to emit anywhere, this is side-effect only (release the memory of old HystrixLatencyDistribution)
     }
 
     public Observable<HystrixLatencyDistribution> observe() {
