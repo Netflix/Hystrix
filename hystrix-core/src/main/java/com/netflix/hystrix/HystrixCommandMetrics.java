@@ -25,7 +25,8 @@ import com.netflix.hystrix.metric.HealthCountsStream;
 import com.netflix.hystrix.metric.HystrixCommandCompletion;
 import com.netflix.hystrix.metric.HystrixThreadEventStream;
 import com.netflix.hystrix.metric.RollingCommandEventCounterStream;
-import com.netflix.hystrix.metric.RollingCommandLatencyStream;
+import com.netflix.hystrix.metric.RollingCommandLatencyDistributionStream;
+import com.netflix.hystrix.metric.RollingCommandUserLatencyDistributionStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -167,13 +168,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
         metrics.clear();
     }
 
-    private void unsubscribeAll() {
-        healthCountsStream.unsubscribe();
-        rollingCommandEventCounterStream.unsubscribe();
-        cumulativeCommandEventCounterStream.unsubscribe();
-        rollingCommandLatencyStream.unsubscribe();
-        //rollingCommandConcurrencyStream.unsubscribe();
-    }
+
 
     private final HystrixCommandProperties properties;
     private final HystrixCommandKey key;
@@ -184,7 +179,8 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     private HealthCountsStream healthCountsStream;
     private final RollingCommandEventCounterStream rollingCommandEventCounterStream;
     private final CumulativeCommandEventCounterStream cumulativeCommandEventCounterStream;
-    private final RollingCommandLatencyStream rollingCommandLatencyStream;
+    private final RollingCommandLatencyDistributionStream rollingCommandLatencyDistributionStream;
+    private final RollingCommandUserLatencyDistributionStream rollingCommandUserLatencyDistributionStream;
     //private final RollingCommandConcurrencyStream rollingCommandConcurrencyStream;
 
     /* package */HystrixCommandMetrics(final HystrixCommandKey key, HystrixCommandGroupKey commandGroup, HystrixThreadPoolKey threadPoolKey, HystrixCommandProperties properties, HystrixEventNotifier eventNotifier) {
@@ -198,7 +194,8 @@ public class HystrixCommandMetrics extends HystrixMetrics {
         rollingCommandEventCounterStream = RollingCommandEventCounterStream.getInstance(key, properties, appendEventToBucket, bucketAggregator);
         cumulativeCommandEventCounterStream = CumulativeCommandEventCounterStream.getInstance(key, properties, appendEventToBucket, bucketAggregator);
 
-        rollingCommandLatencyStream = RollingCommandLatencyStream.getInstance(key, properties);
+        rollingCommandLatencyDistributionStream = RollingCommandLatencyDistributionStream.getInstance(key, properties);
+        rollingCommandUserLatencyDistributionStream = RollingCommandUserLatencyDistributionStream.getInstance(key, properties);
         //rollingCommandConcurrencyStream = RollingCommandConcurrencyStream.getInstance(key, properties);
     }
 
@@ -272,7 +269,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      * @return int time in milliseconds
      */
     public int getExecutionTimePercentile(double percentile) {
-        return rollingCommandLatencyStream.getExecutionLatencyPercentile(percentile);
+        return rollingCommandLatencyDistributionStream.getLatestPercentile(percentile);
     }
 
     /**
@@ -283,7 +280,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      * @return int time in milliseconds
      */
     public int getExecutionTimeMean() {
-        return rollingCommandLatencyStream.getExecutionLatencyMean();
+        return rollingCommandLatencyDistributionStream.getLatestMean();
     }
 
     /**
@@ -308,7 +305,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      * @return int time in milliseconds
      */
     public int getTotalTimePercentile(double percentile) {
-        return rollingCommandLatencyStream.getTotalLatencyPercentile(percentile);
+        return rollingCommandUserLatencyDistributionStream.getLatestPercentile(percentile);
     }
 
     /**
@@ -319,7 +316,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      * @return int time in milliseconds
      */
     public int getTotalTimeMean() {
-        return rollingCommandLatencyStream.getTotalLatencyMean();
+        return rollingCommandUserLatencyDistributionStream.getLatestMean();
     }
 
     public long getRollingMaxConcurrentExecutions() {
@@ -371,6 +368,15 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      */
     public HealthCounts getHealthCounts() {
         return healthCountsStream.getLatest();
+    }
+
+    private void unsubscribeAll() {
+        healthCountsStream.unsubscribe();
+        rollingCommandEventCounterStream.unsubscribe();
+        cumulativeCommandEventCounterStream.unsubscribe();
+        rollingCommandLatencyDistributionStream.unsubscribe();
+        rollingCommandUserLatencyDistributionStream.unsubscribe();
+        //rollingCommandConcurrencyStream.unsubscribe();
     }
 
     /**

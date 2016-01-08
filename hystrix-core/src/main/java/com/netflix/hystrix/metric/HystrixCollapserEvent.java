@@ -54,4 +54,9 @@ public class HystrixCollapserEvent implements HystrixEvent {
     public int getCount() {
         return count;
     }
+
+    @Override
+    public String toString() {
+        return "HystrixCollapserEvent[" + collapserKey.name() + "] : " + eventType.name() + " : " + count;
+    }
 }

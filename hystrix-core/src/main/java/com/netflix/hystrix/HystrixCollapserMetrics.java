@@ -22,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import com.netflix.hystrix.metric.CumulativeCollapserEventCounterStream;
 import com.netflix.hystrix.metric.HystrixCollapserEvent;
 import com.netflix.hystrix.metric.HystrixThreadEventStream;
+import com.netflix.hystrix.metric.RollingCollapserBatchSizeDistributionStream;
 import com.netflix.hystrix.metric.RollingCollapserEventCounterStream;
 import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
 import com.netflix.hystrix.util.HystrixRollingNumber;
@@ -114,20 +115,16 @@ public class HystrixCollapserMetrics extends HystrixMetrics {
 
     private final RollingCollapserEventCounterStream rollingCollapserEventCounterStream;
     private final CumulativeCollapserEventCounterStream cumulativeCollapserEventCounterStream;
-    private final HystrixRollingPercentile percentileBatchSize;
-    private final HystrixRollingPercentile percentileShardSize;
+    private final RollingCollapserBatchSizeDistributionStream rollingCollapserBatchSizeDistributionStream;
 
     /* package */HystrixCollapserMetrics(HystrixCollapserKey key, HystrixCollapserProperties properties) {
         super(new HystrixRollingNumber(properties.metricsRollingStatisticalWindowInMilliseconds().get(), properties.metricsRollingStatisticalWindowBuckets().get()));
         this.collapserKey = key;
         this.properties = properties;
 
-        this.percentileBatchSize = new HystrixRollingPercentile(properties.metricsRollingPercentileWindowInMilliseconds().get(), properties.metricsRollingPercentileWindowBuckets().get(), properties.metricsRollingPercentileBucketSize().get(), properties.metricsRollingPercentileEnabled());
-        this.percentileShardSize = new HystrixRollingPercentile(properties.metricsRollingPercentileWindowInMilliseconds().get(), properties.metricsRollingPercentileWindowBuckets().get(), properties.metricsRollingPercentileBucketSize().get(), properties.metricsRollingPercentileEnabled());
-
         rollingCollapserEventCounterStream = RollingCollapserEventCounterStream.getInstance(key, properties, appendEventToBucket, bucketAggregator);
         cumulativeCollapserEventCounterStream = CumulativeCollapserEventCounterStream.getInstance(key, properties, appendEventToBucket, bucketAggregator);
-
+        rollingCollapserBatchSizeDistributionStream = RollingCollapserBatchSizeDistributionStream.getInstance(key, properties);
     }
 
     /**
@@ -171,11 +168,11 @@ public class HystrixCollapserMetrics extends HystrixMetrics {
      * @return batch size
      */
     public int getBatchSizePercentile(double percentile) {
-        return percentileBatchSize.getPercentile(percentile);
+        return rollingCollapserBatchSizeDistributionStream.getLatestPercentile(percentile);
     }
 
     public int getBatchSizeMean() {
-        return percentileBatchSize.getMean();
+        return rollingCollapserBatchSizeDistributionStream.getLatestMean();
     }
 
     /**
@@ -188,15 +185,16 @@ public class HystrixCollapserMetrics extends HystrixMetrics {
      * @return batch size
      */
     public int getShardSizePercentile(double percentile) {
-        return percentileShardSize.getPercentile(percentile);
+        return 0;
+        //return rollingCollapserUsageDistributionStream.getLatestBatchSizePercentile(percentile);
     }
 
     public int getShardSizeMean() {
-        return percentileShardSize.getMean();
+        return 0;
+        //return percentileShardSize.getMean();
     }
 
     public void markRequestBatched() {
-        //HystrixThreadEventStream.getInstance().collapserEvent(HystrixEventType.Collapser.APPENDED_INTO_BATCH, collapserKey);
     }
 
     public void markResponseFromCache() {
@@ -204,13 +202,9 @@ public class HystrixCollapserMetrics extends HystrixMetrics {
     }
 
     public void markBatch(int batchSize) {
-        percentileBatchSize.addValue(batchSize);
         HystrixThreadEventStream.getInstance().collapserBatchExecuted(collapserKey, batchSize);
     }
 
     public void markShards(int numShards) {
-        percentileShardSize.addValue(numShards);
     }
-
-
 }

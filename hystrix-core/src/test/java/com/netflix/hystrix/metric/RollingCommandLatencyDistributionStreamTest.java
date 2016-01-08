@@ -7,6 +7,7 @@ import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.HystrixRequestLog;
 import com.netflix.hystrix.strategy.concurrency.HystrixContextRunnable;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
+import org.HdrHistogram.Histogram;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -19,8 +20,8 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 
-public class RollingCommandLatencyStreamTest extends CommandStreamTest {
-    RollingCommandLatencyStream stream;
+public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTest {
+    RollingCommandLatencyDistributionStream stream;
     HystrixRequestContext context;
     static HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("CommandLatency");
 
@@ -33,16 +34,16 @@ public class RollingCommandLatencyStreamTest extends CommandStreamTest {
     public void tearDown() {
         stream.unsubscribe();
         context.shutdown();
-        RollingCommandLatencyStream.reset();
+        RollingCommandLatencyDistributionStream.reset();
     }
 
     @Test
     public void testEmptyStreamProducesEmptyDistributions() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Latency-A");
-        stream = RollingCommandLatencyStream.getInstance(key, 10, 100);
+        stream = RollingCommandLatencyDistributionStream.getInstance(key, 10, 100);
 
         final CountDownLatch latch = new CountDownLatch(1);
-        stream.observe().skip(10).take(10).subscribe(new Subscriber<HystrixLatencyDistribution>() {
+        stream.observe().take(10).subscribe(new Subscriber<Histogram>() {
             @Override
             public void onCompleted() {
                 latch.countDown();
@@ -54,9 +55,9 @@ public class RollingCommandLatencyStreamTest extends CommandStreamTest {
             }
 
             @Override
-            public void onNext(HystrixLatencyDistribution distribution) {
+            public void onNext(Histogram distribution) {
                 System.out.println("OnNext @ " + System.currentTimeMillis());
-                assertEquals(0, distribution.count());
+                assertEquals(0, distribution.getTotalCount());
             }
         });
 
@@ -67,7 +68,7 @@ public class RollingCommandLatencyStreamTest extends CommandStreamTest {
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
-        assertEquals(0, stream.getLatest().count());
+        assertEquals(0, stream.getLatest().getTotalCount());
     }
 
     private void assertBetween(int expectedLow, int expectedHigh, int value) {
@@ -78,10 +79,10 @@ public class RollingCommandLatencyStreamTest extends CommandStreamTest {
     @Test
     public void testSingleBucketGetsStored() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Latency-B");
-        stream = RollingCommandLatencyStream.getInstance(key, 10, 100);
+        stream = RollingCommandLatencyDistributionStream.getInstance(key, 10, 100);
 
         final CountDownLatch latch = new CountDownLatch(1);
-        stream.observe().take(10).subscribe(new Subscriber<HystrixLatencyDistribution>() {
+        stream.observe().take(10).subscribe(new Subscriber<Histogram>() {
             @Override
             public void onCompleted() {
                 latch.countDown();
@@ -93,12 +94,12 @@ public class RollingCommandLatencyStreamTest extends CommandStreamTest {
             }
 
             @Override
-            public void onNext(HystrixLatencyDistribution distribution) {
-                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Received distribution with count : " + distribution.count() + " and mean : " + distribution.getExecutionLatencyMean());
-                if (distribution.count() == 1) {
-                    assertBetween(10, 50, (int) distribution.getExecutionLatencyMean());
-                } else if (distribution.count() == 2) {
-                    assertBetween(150, 250, (int) distribution.getExecutionLatencyMean());
+            public void onNext(Histogram distribution) {
+                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Received distribution with count : " + distribution.getTotalCount() + " and mean : " + distribution.getMean());
+                if (distribution.getTotalCount() == 1) {
+                    assertBetween(10, 50, (int) distribution.getMean());
+                } else if (distribution.getTotalCount() == 2) {
+                    assertBetween(150, 250, (int) distribution.getMean());
                 }
             }
         });
@@ -114,12 +115,9 @@ public class RollingCommandLatencyStreamTest extends CommandStreamTest {
             fail("Interrupted ex");
         }
 
-        assertBetween(150, 250, stream.getExecutionLatencyMean());
-        assertBetween(10, 50, stream.getExecutionLatencyPercentile(0.0));
-        assertBetween(300, 400, stream.getExecutionLatencyPercentile(100.0));
-        assertBetween(150, 250, stream.getTotalLatencyMean());
-        assertBetween(10, 50, stream.getTotalLatencyPercentile(0.0));
-        assertBetween(300, 400, stream.getTotalLatencyPercentile(100.0));
+        assertBetween(150, 250, stream.getLatestMean());
+        assertBetween(10, 50, stream.getLatestPercentile(0.0));
+        assertBetween(300, 400, stream.getLatestPercentile(100.0));
     }
 
     /*
@@ -137,10 +135,10 @@ public class RollingCommandLatencyStreamTest extends CommandStreamTest {
     @Test
     public void testSingleBucketWithMultipleEventTypes() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Latency-C");
-        stream = RollingCommandLatencyStream.getInstance(key, 10, 100);
+        stream = RollingCommandLatencyDistributionStream.getInstance(key, 10, 100);
 
         final CountDownLatch latch = new CountDownLatch(1);
-        stream.observe().take(10).subscribe(new Subscriber<HystrixLatencyDistribution>() {
+        stream.observe().take(10).subscribe(new Subscriber<Histogram>() {
             @Override
             public void onCompleted() {
                 latch.countDown();
@@ -152,12 +150,12 @@ public class RollingCommandLatencyStreamTest extends CommandStreamTest {
             }
 
             @Override
-            public void onNext(HystrixLatencyDistribution distribution) {
-                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Received distribution with count : " + distribution.count() + " and mean : " + distribution.getExecutionLatencyMean());
-                    if (distribution.count() < 4 && distribution.count() > 0) { //buckets before timeout latency registers
-                        assertBetween(10, 50, (int) distribution.getExecutionLatencyMean());
-                    } else if (distribution.count() == 4){
-                        assertBetween(95, 140, (int) distribution.getExecutionLatencyMean()); //now timeout latency of 500ms is there
+            public void onNext(Histogram distribution) {
+                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Received distribution with count : " + distribution.getTotalCount() + " and mean : " + distribution.getMean());
+                    if (distribution.getTotalCount() < 4 && distribution.getTotalCount() > 0) { //buckets before timeout latency registers
+                        assertBetween(10, 50, (int) distribution.getMean());
+                    } else if (distribution.getTotalCount() == 4){
+                        assertBetween(95, 140, (int) distribution.getMean()); //now timeout latency of 500ms is there
                     }
             }
         });
@@ -177,18 +175,15 @@ public class RollingCommandLatencyStreamTest extends CommandStreamTest {
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
-        assertBetween(95, 140, stream.getExecutionLatencyMean()); //now timeout latency of 300ms is there
-        assertBetween(10, 40, stream.getExecutionLatencyPercentile(0.0));
-        assertBetween(300, 400, stream.getExecutionLatencyPercentile(100.0));
-        assertBetween(95, 140, stream.getTotalLatencyMean());
-        assertBetween(10, 40, stream.getTotalLatencyPercentile(0.0));
-        assertBetween(300, 400, stream.getTotalLatencyPercentile(100.0));
+        assertBetween(95, 140, stream.getLatestMean()); //now timeout latency of 300ms is there
+        assertBetween(10, 40, stream.getLatestPercentile(0.0));
+        assertBetween(300, 400, stream.getLatestPercentile(100.0));
     }
 
     @Test
     public void testShortCircuitedCommandDoesNotGetLatencyTracked() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Latency-D");
-        stream = RollingCommandLatencyStream.getInstance(key, 10, 100);
+        stream = RollingCommandLatencyDistributionStream.getInstance(key, 10, 100);
 
         //3 failures is enough to trigger short-circuit.  execute those, then wait for bucket to roll
         //next command should be a short-circuit
@@ -198,7 +193,7 @@ public class RollingCommandLatencyStreamTest extends CommandStreamTest {
         }
 
         final CountDownLatch latch = new CountDownLatch(1);
-        stream.observe().take(10).subscribe(new Subscriber<HystrixLatencyDistribution>() {
+        stream.observe().take(10).subscribe(new Subscriber<Histogram>() {
             @Override
             public void onCompleted() {
                 latch.countDown();
@@ -210,9 +205,9 @@ public class RollingCommandLatencyStreamTest extends CommandStreamTest {
             }
 
             @Override
-            public void onNext(HystrixLatencyDistribution distribution) {
-                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Received distribution with count : " + distribution.count() + " and mean : " + distribution.getExecutionLatencyMean());
-                assertBetween(0, 30, (int) distribution.getExecutionLatencyMean());
+            public void onNext(Histogram distribution) {
+                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Received distribution with count : " + distribution.getTotalCount() + " and mean : " + distribution.getMean());
+                assertBetween(0, 30, (int) distribution.getMean());
             }
         });
 
@@ -234,8 +229,8 @@ public class RollingCommandLatencyStreamTest extends CommandStreamTest {
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
-        assertEquals(3, stream.getLatest().count());
-        assertBetween(0, 30, stream.getExecutionLatencyMean());
+        assertEquals(3, stream.getLatest().getTotalCount());
+        assertBetween(0, 30, stream.getLatestMean());
         System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
         assertTrue(shortCircuit.isResponseShortCircuited());
     }
@@ -243,7 +238,7 @@ public class RollingCommandLatencyStreamTest extends CommandStreamTest {
     @Test
     public void testThreadPoolRejectedCommandDoesNotGetLatencyTracked() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Latency-E");
-        stream = RollingCommandLatencyStream.getInstance(key, 10, 100);
+        stream = RollingCommandLatencyDistributionStream.getInstance(key, 10, 100);
 
         //10 commands with latency should occupy the entire threadpool.  execute those, then wait for bucket to roll
         //next command should be a thread-pool rejection
@@ -253,7 +248,7 @@ public class RollingCommandLatencyStreamTest extends CommandStreamTest {
         }
 
         final CountDownLatch latch = new CountDownLatch(1);
-        stream.observe().take(10).subscribe(new Subscriber<HystrixLatencyDistribution>() {
+        stream.observe().take(10).subscribe(new Subscriber<Histogram>() {
             @Override
             public void onCompleted() {
                 latch.countDown();
@@ -265,11 +260,11 @@ public class RollingCommandLatencyStreamTest extends CommandStreamTest {
             }
 
             @Override
-            public void onNext(HystrixLatencyDistribution distribution) {
-                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Received distribution with count : " + distribution.count() + " and mean : " + distribution.getExecutionLatencyMean());
-                if (distribution.count() > 0) {
-                    assertBetween(200, 250, (int) distribution.getExecutionLatencyMean());
-                }
+            public void onNext(Histogram distribution) {
+                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Received distribution with count : " + distribution.getTotalCount() + " and mean : " + distribution.getMean());
+//                if (distribution.getTotalCount() > 0) {
+//                    assertBetween(200, 250, (int) distribution.getMean());
+//                }
             }
         });
 
@@ -291,8 +286,8 @@ public class RollingCommandLatencyStreamTest extends CommandStreamTest {
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
-        assertEquals(10, stream.getLatest().count());
-        assertBetween(200, 250, stream.getExecutionLatencyMean());
+        assertEquals(10, stream.getLatest().getTotalCount());
+        assertBetween(200, 250, stream.getLatestMean());
         System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
         assertTrue(threadPoolRejected.isResponseThreadPoolRejected());
     }
@@ -300,7 +295,7 @@ public class RollingCommandLatencyStreamTest extends CommandStreamTest {
     @Test
     public void testSemaphoreRejectedCommandDoesNotGetLatencyTracked() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Latency-F");
-        stream = RollingCommandLatencyStream.getInstance(key, 10, 100);
+        stream = RollingCommandLatencyDistributionStream.getInstance(key, 10, 100);
 
         //10 commands with latency should occupy all semaphores.  execute those, then wait for bucket to roll
         //next command should be a semaphore rejection
@@ -310,7 +305,7 @@ public class RollingCommandLatencyStreamTest extends CommandStreamTest {
         }
 
         final CountDownLatch latch = new CountDownLatch(1);
-        stream.observe().take(10).subscribe(new Subscriber<HystrixLatencyDistribution>() {
+        stream.observe().take(10).subscribe(new Subscriber<Histogram>() {
             @Override
             public void onCompleted() {
                 latch.countDown();
@@ -322,10 +317,10 @@ public class RollingCommandLatencyStreamTest extends CommandStreamTest {
             }
 
             @Override
-            public void onNext(HystrixLatencyDistribution distribution) {
-                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Received distribution with count : " + distribution.count() + " and mean : " + distribution.getExecutionLatencyMean());
-                if (distribution.count() > 0) {
-                    assertBetween(200, 250, (int) distribution.getExecutionLatencyMean());
+            public void onNext(Histogram distribution) {
+                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Received distribution with count : " + distribution.getTotalCount() + " and mean : " + distribution.getMean());
+                if (distribution.getTotalCount() > 0) {
+                    assertBetween(200, 250, (int) distribution.getMean());
                 }
             }
         });
@@ -354,8 +349,8 @@ public class RollingCommandLatencyStreamTest extends CommandStreamTest {
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
-        assertEquals(10, stream.getLatest().count());
-        assertBetween(200, 250, stream.getExecutionLatencyMean());
+        assertEquals(10, stream.getLatest().getTotalCount());
+        assertBetween(200, 250, stream.getLatestMean());
         System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
         assertTrue(semaphoreRejected.isResponseSemaphoreRejected());
     }
@@ -363,13 +358,13 @@ public class RollingCommandLatencyStreamTest extends CommandStreamTest {
     @Test
     public void testResponseFromCacheDoesNotGetLatencyTracked() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Latency-G");
-        stream = RollingCommandLatencyStream.getInstance(key, 10, 100);
+        stream = RollingCommandLatencyDistributionStream.getInstance(key, 10, 100);
 
         //should get 1 SUCCESS and 1 RESPONSE_FROM_CACHE
         List<Command> commands = Command.getCommandsWithResponseFromCache(groupKey, key);
 
         final CountDownLatch latch = new CountDownLatch(1);
-        stream.observe().take(10).subscribe(new Subscriber<HystrixLatencyDistribution>() {
+        stream.observe().take(10).subscribe(new Subscriber<Histogram>() {
             @Override
             public void onCompleted() {
                 latch.countDown();
@@ -381,9 +376,9 @@ public class RollingCommandLatencyStreamTest extends CommandStreamTest {
             }
 
             @Override
-            public void onNext(HystrixLatencyDistribution distribution) {
-                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Received distribution with count : " + distribution.count() + " and mean : " + distribution.getExecutionLatencyMean());
-                assertTrue(distribution.count() <= 1);
+            public void onNext(Histogram distribution) {
+                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Received distribution with count : " + distribution.getTotalCount() + " and mean : " + distribution.getMean());
+                assertTrue(distribution.getTotalCount() <= 1);
             }
         });
 
@@ -396,18 +391,18 @@ public class RollingCommandLatencyStreamTest extends CommandStreamTest {
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
-        assertEquals(1, stream.getLatest().count());
-        assertBetween(0, 30, stream.getExecutionLatencyMean());
+        assertEquals(1, stream.getLatest().getTotalCount());
+        assertBetween(0, 30, stream.getLatestMean());
         System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
     }
 
     @Test
     public void testMultipleBucketsBothGetStored() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Latency-H");
-        stream = RollingCommandLatencyStream.getInstance(key, 10, 100);
+        stream = RollingCommandLatencyDistributionStream.getInstance(key, 10, 100);
 
         final CountDownLatch latch = new CountDownLatch(1);
-        stream.observe().take(10).subscribe(new Subscriber<HystrixLatencyDistribution>() {
+        stream.observe().take(10).subscribe(new Subscriber<Histogram>() {
             @Override
             public void onCompleted() {
                 latch.countDown();
@@ -419,13 +414,13 @@ public class RollingCommandLatencyStreamTest extends CommandStreamTest {
             }
 
             @Override
-            public void onNext(HystrixLatencyDistribution distribution) {
-                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Received distribution with count : " + distribution.count() + " and mean : " + distribution.getExecutionLatencyMean());
-                if (distribution.count() == 2) {
-                    assertBetween(55, 90, (int) distribution.getExecutionLatencyMean());
+            public void onNext(Histogram distribution) {
+                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Received distribution with count : " + distribution.getTotalCount() + " and mean : " + distribution.getMean());
+                if (distribution.getTotalCount() == 2) {
+                    assertBetween(55, 90, (int) distribution.getMean());
                 }
-                if (distribution.count() == 5) {
-                    assertEquals(60, 90, (long) distribution.getExecutionLatencyMean());
+                if (distribution.getTotalCount() == 5) {
+                    assertEquals(60, 90, (long) distribution.getMean());
                 }
             }
         });
@@ -456,12 +451,9 @@ public class RollingCommandLatencyStreamTest extends CommandStreamTest {
             fail("Interrupted ex");
         }
 
-        assertBetween(55, 90, stream.getExecutionLatencyMean());
-        assertBetween(10, 50, stream.getExecutionLatencyPercentile(0.0));
-        assertBetween(100, 150, stream.getExecutionLatencyPercentile(100.0));
-        assertBetween(55, 100, stream.getTotalLatencyMean());
-        assertBetween(10, 50, stream.getTotalLatencyPercentile(0.0));
-        assertBetween(100, 150, stream.getTotalLatencyPercentile(100.0));
+        assertBetween(55, 90, stream.getLatestMean());
+        assertBetween(10, 50, stream.getLatestPercentile(0.0));
+        assertBetween(100, 150, stream.getLatestPercentile(100.0));
     }
 
     /**
@@ -470,10 +462,10 @@ public class RollingCommandLatencyStreamTest extends CommandStreamTest {
     @Test
     public void testMultipleBucketsBothGetStoredAndThenAgeOut() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Latency-I");
-        stream = RollingCommandLatencyStream.getInstance(key, 10, 100);
+        stream = RollingCommandLatencyDistributionStream.getInstance(key, 10, 100);
 
         final CountDownLatch latch = new CountDownLatch(1);
-        stream.observe().take(30).subscribe(new Subscriber<HystrixLatencyDistribution>() {
+        stream.observe().take(30).subscribe(new Subscriber<Histogram>() {
             @Override
             public void onCompleted() {
                 latch.countDown();
@@ -485,13 +477,13 @@ public class RollingCommandLatencyStreamTest extends CommandStreamTest {
             }
 
             @Override
-            public void onNext(HystrixLatencyDistribution distribution) {
-                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Received distribution with count : " + distribution.count() + " and mean : " + distribution.getExecutionLatencyMean());
-                if (distribution.count() == 2) {
-                    assertBetween(55, 90, (int) distribution.getExecutionLatencyMean());
+            public void onNext(Histogram distribution) {
+                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Received distribution with count : " + distribution.getTotalCount() + " and mean : " + distribution.getMean());
+                if (distribution.getTotalCount() == 2) {
+                    assertBetween(55, 90, (int) distribution.getMean());
                 }
-                if (distribution.count() == 5) {
-                    assertEquals(60, 90, (long) distribution.getExecutionLatencyMean());
+                if (distribution.getTotalCount() == 5) {
+                    assertEquals(60, 90, (long) distribution.getMean());
                 }
             }
         });
@@ -523,6 +515,6 @@ public class RollingCommandLatencyStreamTest extends CommandStreamTest {
             fail("Interrupted ex");
         }
 
-        assertEquals(0, stream.getLatest().count());
+        assertEquals(0, stream.getLatest().getTotalCount());
     }
 }
