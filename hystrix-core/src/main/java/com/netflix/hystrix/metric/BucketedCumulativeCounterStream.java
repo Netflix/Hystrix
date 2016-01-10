@@ -37,7 +37,7 @@ public abstract class BucketedCumulativeCounterStream<Event extends HystrixEvent
 
     @Override
     public Observable<Output> observe() {
-        return getBucketedStream()
+        return bucketedStream
                 .scan(getEmptyOutputValue(), reduceBucket)
                 .skip(numBuckets);
     }

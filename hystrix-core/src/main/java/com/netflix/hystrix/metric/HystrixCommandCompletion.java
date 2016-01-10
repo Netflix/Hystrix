@@ -76,8 +76,6 @@ public class HystrixCommandCompletion extends HystrixCommandEvent {
         return executionResult.getEventCounts();
     }
 
-
-
     public long getExecutionLatency() {
         return executionResult.getExecutionLatency();
     }

@@ -65,7 +65,8 @@ public class CumulativeCollapserEventCounterStreamTest extends CommandStreamTest
     @Test
     public void testEmptyStreamProducesZeros() {
         HystrixCollapserKey key = HystrixCollapserKey.Factory.asKey("CumulativeCollapser-A");
-        stream = CumulativeCollapserEventCounterStream.getInstance(key, 10, 100, HystrixCollapserMetrics.appendEventToBucket, HystrixCollapserMetrics.bucketAggregator);
+        stream = CumulativeCollapserEventCounterStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -88,7 +89,8 @@ public class CumulativeCollapserEventCounterStreamTest extends CommandStreamTest
     @Test
     public void testCollapsed() {
         HystrixCollapserKey key = HystrixCollapserKey.Factory.asKey("CumulativeCollapser-B");
-        stream = CumulativeCollapserEventCounterStream.getInstance(key, 10, 100, HystrixCollapserMetrics.appendEventToBucket, HystrixCollapserMetrics.bucketAggregator);
+        stream = CumulativeCollapserEventCounterStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -113,7 +115,8 @@ public class CumulativeCollapserEventCounterStreamTest extends CommandStreamTest
     @Test
     public void testCollapsedAndResponseFromCache() {
         HystrixCollapserKey key = HystrixCollapserKey.Factory.asKey("CumulativeCollapser-C");
-        stream = CumulativeCollapserEventCounterStream.getInstance(key, 10, 100, HystrixCollapserMetrics.appendEventToBucket, HystrixCollapserMetrics.bucketAggregator);
+        stream = CumulativeCollapserEventCounterStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -142,7 +145,8 @@ public class CumulativeCollapserEventCounterStreamTest extends CommandStreamTest
     @Test
     public void testCollapsedAndResponseFromCacheAgeOutOfCumulativeWindow() {
         HystrixCollapserKey key = HystrixCollapserKey.Factory.asKey("CumulativeCollapser-D");
-        stream = CumulativeCollapserEventCounterStream.getInstance(key, 10, 100, HystrixCollapserMetrics.appendEventToBucket, HystrixCollapserMetrics.bucketAggregator);
+        stream = CumulativeCollapserEventCounterStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(30).subscribe(getSubscriber(latch));

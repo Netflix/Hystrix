@@ -24,6 +24,10 @@ import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixCommandMetrics;
 import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.HystrixEventType;
+import com.netflix.hystrix.metric.CumulativeCommandEventCounterStream;
+import com.netflix.hystrix.metric.RollingCommandEventCounterStream;
+import com.netflix.hystrix.metric.RollingCommandLatencyDistributionStream;
+import com.netflix.hystrix.metric.RollingCommandUserLatencyDistributionStream;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherCommand;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 import com.netflix.servo.DefaultMonitorRegistry;
@@ -105,6 +109,10 @@ public class HystrixServoMetricsPublisherCommand extends HystrixServoMetricsPubl
         BasicCompositeMonitor commandMetricsMonitor = new BasicCompositeMonitor(commandMetricsConfig, monitors);
 
         DefaultMonitorRegistry.getInstance().register(commandMetricsMonitor);
+        RollingCommandEventCounterStream.getInstance(key, properties).startCachingStreamValuesIfUnstarted();
+        CumulativeCommandEventCounterStream.getInstance(key, properties).startCachingStreamValuesIfUnstarted();
+        RollingCommandLatencyDistributionStream.getInstance(key, properties).startCachingStreamValuesIfUnstarted();
+        RollingCommandUserLatencyDistributionStream.getInstance(key, properties).startCachingStreamValuesIfUnstarted();
     }
 
     @Override

@@ -118,12 +118,12 @@ public class HystrixCollapserMetrics extends HystrixMetrics {
     private final RollingCollapserBatchSizeDistributionStream rollingCollapserBatchSizeDistributionStream;
 
     /* package */HystrixCollapserMetrics(HystrixCollapserKey key, HystrixCollapserProperties properties) {
-        super(new HystrixRollingNumber(properties.metricsRollingStatisticalWindowInMilliseconds().get(), properties.metricsRollingStatisticalWindowBuckets().get()));
+        super(null);
         this.collapserKey = key;
         this.properties = properties;
 
-        rollingCollapserEventCounterStream = RollingCollapserEventCounterStream.getInstance(key, properties, appendEventToBucket, bucketAggregator);
-        cumulativeCollapserEventCounterStream = CumulativeCollapserEventCounterStream.getInstance(key, properties, appendEventToBucket, bucketAggregator);
+        rollingCollapserEventCounterStream = RollingCollapserEventCounterStream.getInstance(key, properties);
+        cumulativeCollapserEventCounterStream = CumulativeCollapserEventCounterStream.getInstance(key, properties);
         rollingCollapserBatchSizeDistributionStream = RollingCollapserBatchSizeDistributionStream.getInstance(key, properties);
     }
 

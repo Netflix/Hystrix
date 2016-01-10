@@ -2,19 +2,13 @@ package com.netflix.hystrix.metric;
 
 import com.netflix.hystrix.HystrixCommandGroupKey;
 import com.netflix.hystrix.HystrixCommandKey;
-import com.netflix.hystrix.HystrixCommandProperties;
-import com.netflix.hystrix.HystrixEventType;
-import com.netflix.hystrix.HystrixRequestLog;
 import com.netflix.hystrix.HystrixThreadPoolKey;
-import com.netflix.hystrix.strategy.concurrency.HystrixContextRunnable;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import rx.Subscriber;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -66,6 +60,7 @@ public class RollingThreadPoolConcurrencyStreamTest extends CommandStreamTest {
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("ThreadPool-Concurrency-A");
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("RollingConcurrency-A");
         stream = RollingThreadPoolConcurrencyStream.getInstance(threadPoolKey, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -77,7 +72,7 @@ public class RollingThreadPoolConcurrencyStreamTest extends CommandStreamTest {
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
-        assertEquals(0, stream.getRollingMax());
+        assertEquals(0, stream.getLatestRollingMax());
     }
 
 //    @Test

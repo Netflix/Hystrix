@@ -26,6 +26,7 @@ import rx.subjects.BehaviorSubject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Maintains a stream of concurrency distributions
@@ -40,7 +41,7 @@ import java.util.concurrent.TimeUnit;
  * t1 = {@link HystrixCommandProperties#metricsRollingStatisticalWindowInMilliseconds()}
  * b = {@link HystrixCommandProperties#metricsRollingStatisticalWindowBuckets()}
  *
- * This value gets cached in this class.  It may be queried using {@link #getRollingMax()}
+ * This value gets cached in this class.  It may be queried using {@link #getLatestRollingMax()}
  *
  * B) gets calculated by sampling the actual concurrency at some rate higher than the bucket-rolling frequency.
  * Each sample gets stored in a histogram.  At the moment, there's no bucketing or windowing on this stream.
@@ -51,18 +52,18 @@ import java.util.concurrent.TimeUnit;
  * Both A) and B) are stable - there's no peeking into a bucket until it is emitted
  */
 public abstract class RollingConcurrencyStream {
-    private Subscription rollingMaxSubscription;
+    private AtomicReference<Subscription> rollingMaxSubscription = new AtomicReference<Subscription>(null);
     private final BehaviorSubject<Integer> rollingMax = BehaviorSubject.create(0);
 
     private final Observable<Integer> rollingMaxStream;
 
-    private static final Func2<Integer, HystrixCommandEvent, Integer> scanConcurrencyCount = new Func2<Integer, HystrixCommandEvent, Integer>() {
+    private static final Func2<Integer, HystrixCommandCompletion, Integer> scanConcurrencyCount = new Func2<Integer, HystrixCommandCompletion, Integer>() {
         @Override
-        public Integer call(Integer currentOutstanding, HystrixCommandEvent commandEvent) {
-            if (commandEvent.isExecutionStart()) {
+        public Integer call(Integer currentOutstanding, HystrixCommandCompletion event) {
+            if (event.isExecutionStart()) {
                 return currentOutstanding + 1;
             } else {
-                if (commandEvent.didCommandExecute()) {
+                if (event.didCommandExecute()) {
                     return currentOutstanding - 1;
                 } else {
                     return currentOutstanding;
@@ -92,7 +93,7 @@ public abstract class RollingConcurrencyStream {
         }
     };
 
-    protected RollingConcurrencyStream(final HystrixEventStream inputEventStream, final int numBuckets, final int bucketSizeInMs) {
+    protected RollingConcurrencyStream(final HystrixEventStream<HystrixCommandCompletion> inputEventStream, final int numBuckets, final int bucketSizeInMs) {
         final List<Integer> emptyRollingMaxBuckets = new ArrayList<Integer>();
         for (int i = 0; i < numBuckets; i++) {
             emptyRollingMaxBuckets.add(0);
@@ -123,11 +124,21 @@ public abstract class RollingConcurrencyStream {
         }).share();
     }
 
-    protected void start() {
-        rollingMaxSubscription = rollingMaxStream.subscribe(rollingMax);
+    public void startCachingStreamValuesIfUnstarted() {
+        if (rollingMaxSubscription.get() == null) {
+            //the stream is not yet started
+            Subscription candidateSubscription = observe().subscribe(rollingMax);
+            if (rollingMaxSubscription.compareAndSet(null, candidateSubscription)) {
+                //won the race to set the subscription
+            } else {
+                //lost the race to set the subscription, so we need to cancel this one
+                candidateSubscription.unsubscribe();
+            }
+        }
     }
 
-    public long getRollingMax() {
+    public long getLatestRollingMax() {
+        startCachingStreamValuesIfUnstarted();
         if (rollingMax.hasValue()) {
             return rollingMax.getValue();
         } else {
@@ -140,6 +151,10 @@ public abstract class RollingConcurrencyStream {
     }
 
     public void unsubscribe() {
-        rollingMaxSubscription.unsubscribe();
+        Subscription s = rollingMaxSubscription.get();
+        if (s != null) {
+            s.unsubscribe();
+            rollingMaxSubscription.compareAndSet(s, null);
+        }
     }
 }

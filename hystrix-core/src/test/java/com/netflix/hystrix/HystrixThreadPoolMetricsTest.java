@@ -15,6 +15,7 @@
  */
 package com.netflix.hystrix;
 
+import com.netflix.hystrix.metric.RollingThreadPoolEventCounterStream;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -24,8 +25,11 @@ import static org.junit.Assert.assertEquals;
 
 public class HystrixThreadPoolMetricsTest {
 
-	@Before
-	public void resetAll() {
+	private static final HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("HystrixThreadPoolMetrics-UnitTest");
+	private static final HystrixThreadPoolKey tpKey = HystrixThreadPoolKey.Factory.asKey("HystrixThreadPoolMetrics-ThreadPool");
+
+    @Before
+    public void resetAll() {
 		HystrixThreadPoolMetrics.reset();
 	}
 
@@ -42,6 +46,7 @@ public class HystrixThreadPoolMetricsTest {
 	public void shouldReturnOneExecutedTask() throws Exception {
 		//given
 		final Collection<HystrixThreadPoolMetrics> instances = HystrixThreadPoolMetrics.getInstances();
+		RollingThreadPoolEventCounterStream.getInstance(tpKey, 10, 100).startCachingStreamValuesIfUnstarted();
 
 		//when
 		new NoOpHystrixCommand().execute();
@@ -54,7 +59,8 @@ public class HystrixThreadPoolMetricsTest {
 
 	private static class NoOpHystrixCommand extends HystrixCommand<Void> {
 		public NoOpHystrixCommand() {
-			super(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("HystrixThreadPoolMetrics-UnitTest"))
+			super(Setter.withGroupKey(groupKey)
+                    .andThreadPoolKey(tpKey)
                     .andThreadPoolPropertiesDefaults(HystrixThreadPoolProperties.Setter().withMetricsRollingStatisticalWindowInMilliseconds(100)));
 		}
 

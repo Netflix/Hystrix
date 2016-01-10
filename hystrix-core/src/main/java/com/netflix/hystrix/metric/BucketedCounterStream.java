@@ -17,6 +17,7 @@ package com.netflix.hystrix.metric;
 
 import rx.Observable;
 import rx.Subscription;
+import rx.functions.Func0;
 import rx.functions.Func1;
 import rx.functions.Func2;
 import rx.subjects.BehaviorSubject;
@@ -24,6 +25,7 @@ import rx.subjects.BehaviorSubject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Abstract class that imposes a bucketing structure and provides streams of buckets
@@ -33,33 +35,39 @@ import java.util.concurrent.TimeUnit;
  * @param <Output> type of data emitted to stream subscribers (often is the same as A but does not have to be)
  */
 public abstract class BucketedCounterStream<Event extends HystrixEvent, Bucket, Output> {
-    protected final HystrixEventStream<Event> inputEventStream;
     protected final int numBuckets;
-    protected final int bucketSizeInMs;
+    protected final Observable<Bucket> bucketedStream;
+    protected final AtomicReference<Subscription> subscription = new AtomicReference<Subscription>(null);
 
     private final Func1<Observable<Event>, Observable<Bucket>> reduceBucketToSummary;
 
     private final BehaviorSubject<Output> counterSubject = BehaviorSubject.create(getEmptyOutputValue());
-    private Subscription counterSubscription;
 
     protected BucketedCounterStream(final HystrixEventStream<Event> inputEventStream, final int numBuckets, final int bucketSizeInMs,
                                     final Func2<Bucket, Event, Bucket> appendRawEventToBucket) {
-        this.inputEventStream = inputEventStream;
         this.numBuckets = numBuckets;
-        this.bucketSizeInMs = bucketSizeInMs;
         this.reduceBucketToSummary = new Func1<Observable<Event>, Observable<Bucket>>() {
             @Override
             public Observable<Bucket> call(Observable<Event> eventBucket) {
                 return eventBucket.reduce(getEmptyBucketSummary(), appendRawEventToBucket);
             }
         };
-    }
 
-    /**
-     * Cause the timer to start and buckets to start getting emitted.
-     */
-    public void start() {
-        counterSubscription = observe().subscribe(counterSubject);
+        final List<Bucket> emptyEventCountsToStart = new ArrayList<Bucket>();
+        for (int i = 0; i < numBuckets; i++) {
+            emptyEventCountsToStart.add(getEmptyBucketSummary());
+        }
+
+        this.bucketedStream = Observable.defer(new Func0<Observable<Bucket>>() {
+            @Override
+            public Observable<Bucket> call() {
+                return inputEventStream
+                        .observe()
+                        .window(bucketSizeInMs, TimeUnit.MILLISECONDS) //bucket it by the counter window so we can emit to the next operator in time chunks, not on every OnNext
+                        .flatMap(reduceBucketToSummary)                //for a given bucket, turn it into a long array containing counts of event types
+                        .startWith(emptyEventCountsToStart);           //start it with empty arrays to make consumer logic as generic as possible (windows are always full)
+            }
+        });
     }
 
     abstract Bucket getEmptyBucketSummary();
@@ -72,17 +80,17 @@ public abstract class BucketedCounterStream<Event extends HystrixEvent, Bucket, 
      */
     public abstract Observable<Output> observe();
 
-    protected Observable<Bucket> getBucketedStream() {
-        final List<Bucket> emptyEventCountsToStart = new ArrayList<Bucket>();
-        for (int i = 0; i < numBuckets; i++) {
-            emptyEventCountsToStart.add(getEmptyBucketSummary());
+    public void startCachingStreamValuesIfUnstarted() {
+        if (subscription.get() == null) {
+            //the stream is not yet started
+            Subscription candidateSubscription = observe().subscribe(counterSubject);
+            if (subscription.compareAndSet(null, candidateSubscription)) {
+                //won the race to set the subscription
+            } else {
+                //lost the race to set the subscription, so we need to cancel this one
+                candidateSubscription.unsubscribe();
+            }
         }
-
-        return inputEventStream
-                .observe()
-                .window(bucketSizeInMs, TimeUnit.MILLISECONDS) //bucket it by the counter window so we can emit to the next operator in time chunks, not on every OnNext
-                .flatMap(reduceBucketToSummary)                //for a given bucket, turn it into a long array containing counts of event types
-                .startWith(emptyEventCountsToStart);           //start it with empty arrays to make consumer logic as generic as possible (windows are always full)
     }
 
     /**
@@ -90,6 +98,7 @@ public abstract class BucketedCounterStream<Event extends HystrixEvent, Bucket, 
      * @return last calculated bucket
      */
     public Output getLatest() {
+        startCachingStreamValuesIfUnstarted();
         if (counterSubject.hasValue()) {
             return counterSubject.getValue();
         } else {
@@ -98,6 +107,10 @@ public abstract class BucketedCounterStream<Event extends HystrixEvent, Bucket, 
     }
 
     public void unsubscribe() {
-        counterSubscription.unsubscribe();
+        Subscription s = subscription.get();
+        if (s != null) {
+            s.unsubscribe();
+            subscription.compareAndSet(s, null);
+        }
     }
 }

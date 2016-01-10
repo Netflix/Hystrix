@@ -65,6 +65,7 @@ public class RollingCommandConcurrencyStreamTest extends CommandStreamTest {
     public void testEmptyStreamProducesZeros() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Concurrency-A");
         stream = RollingCommandConcurrencyStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -76,13 +77,14 @@ public class RollingCommandConcurrencyStreamTest extends CommandStreamTest {
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
-        assertEquals(0, stream.getRollingMax());
+        assertEquals(0, stream.getLatestRollingMax());
     }
 
 //    @Test
 //    public void testStartsAndEndsInSameBucketProduceValue() throws InterruptedException {
 //        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Concurrency-B");
 //        stream = RollingCommandConcurrencyStream.getInstance(key, 10, 100);
+//        stream.startCachingStreamValuesIfUnstarted();
 //
 //        final CountDownLatch latch = new CountDownLatch(1);
 //        stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -95,7 +97,7 @@ public class RollingCommandConcurrencyStreamTest extends CommandStreamTest {
 //        cmd2.observe();
 //
 //        latch.await(10000, TimeUnit.MILLISECONDS);
-//        assertEquals(2, stream.getRollingMax());
+//        assertEquals(2, stream.getLatestRollingMax());
 //    }
 //
 //    /***
@@ -107,6 +109,7 @@ public class RollingCommandConcurrencyStreamTest extends CommandStreamTest {
 //    public void testOneCommandCarriesOverToNextBucket() throws InterruptedException {
 //        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Concurrency-C");
 //        stream = RollingCommandConcurrencyStream.getInstance(key, 10, 100);
+//        stream.startCachingStreamValuesIfUnstarted();
 //
 //        final CountDownLatch latch = new CountDownLatch(1);
 //        stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -122,7 +125,7 @@ public class RollingCommandConcurrencyStreamTest extends CommandStreamTest {
 //        cmd3.observe();
 //
 //        latch.await(10000, TimeUnit.MILLISECONDS);
-//        assertEquals(3, stream.getRollingMax());
+//        assertEquals(3, stream.getLatestRollingMax());
 //    }
 //
 //    /**
@@ -139,6 +142,7 @@ public class RollingCommandConcurrencyStreamTest extends CommandStreamTest {
 //    public void testMultipleCommandsCarryOverMultipleBuckets() throws InterruptedException {
 //        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Concurrency-D");
 //        stream = RollingCommandConcurrencyStream.getInstance(key, 10, 100);
+//        stream.startCachingStreamValuesIfUnstarted();
 //
 //        final CountDownLatch latch = new CountDownLatch(1);
 //        stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -157,7 +161,7 @@ public class RollingCommandConcurrencyStreamTest extends CommandStreamTest {
 //        cmd4.observe();
 //
 //        latch.await(10000, TimeUnit.MILLISECONDS);
-//        assertEquals(3, stream.getRollingMax());
+//        assertEquals(3, stream.getLatestRollingMax());
 //    }
 //
 //    /**
@@ -174,6 +178,7 @@ public class RollingCommandConcurrencyStreamTest extends CommandStreamTest {
 //    public void testMultipleCommandsCarryOverMultipleBucketsAndThenAgeOut() throws InterruptedException {
 //        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Concurrency-E");
 //        stream = RollingCommandConcurrencyStream.getInstance(key, 10, 100);
+//        stream.startCachingStreamValuesIfUnstarted();
 //
 //        final CountDownLatch latch = new CountDownLatch(1);
 //        stream.observe().take(30).subscribe(getSubscriber(latch));
@@ -192,13 +197,14 @@ public class RollingCommandConcurrencyStreamTest extends CommandStreamTest {
 //        cmd4.observe();
 //
 //        latch.await();
-//        assertEquals(0, stream.getRollingMax());
+//        assertEquals(0, stream.getLatestRollingMax());
 //    }
 //
 //    @Test
 //    public void testConcurrencyStreamProperlyFiltersOutResponseFromCache() throws InterruptedException {
 //        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Concurrency-F");
 //        stream = RollingCommandConcurrencyStream.getInstance(key, 10, 100);
+//        stream.startCachingStreamValuesIfUnstarted();
 //
 //        final CountDownLatch latch = new CountDownLatch(1);
 //        stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -216,13 +222,14 @@ public class RollingCommandConcurrencyStreamTest extends CommandStreamTest {
 //
 //        latch.await(10000, TimeUnit.MILLISECONDS);
 //        System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
-//        assertEquals(1, stream.getRollingMax());
+//        assertEquals(1, stream.getLatestRollingMax());
 //    }
 //
 //    @Test
 //    public void testConcurrencyStreamProperlyFiltersOutShortCircuits() throws InterruptedException {
 //        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Concurrency-G");
 //        stream = RollingCommandConcurrencyStream.getInstance(key, 10, 100);
+//        stream.startCachingStreamValuesIfUnstarted();
 //
 //        final CountDownLatch latch = new CountDownLatch(1);
 //        stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -252,13 +259,14 @@ public class RollingCommandConcurrencyStreamTest extends CommandStreamTest {
 //
 //        latch.await(10000, TimeUnit.MILLISECONDS);
 //        System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
-//        assertEquals(1, stream.getRollingMax());
+//        assertEquals(1, stream.getLatestRollingMax());
 //    }
 //
 //    @Test
 //    public void testConcurrencyStreamProperlyFiltersOutSemaphoreRejections() throws InterruptedException {
 //        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Concurrency-H");
 //        stream = RollingCommandConcurrencyStream.getInstance(key, 10, 100);
+//        stream.startCachingStreamValuesIfUnstarted();
 //
 //        final CountDownLatch latch = new CountDownLatch(1);
 //        stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -299,13 +307,14 @@ public class RollingCommandConcurrencyStreamTest extends CommandStreamTest {
 //
 //        latch.await(10000, TimeUnit.MILLISECONDS);
 //        System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
-//        assertEquals(10, stream.getRollingMax());
+//        assertEquals(10, stream.getLatestRollingMax());
 //    }
 //
 //    @Test
 //    public void testConcurrencyStreamProperlyFiltersOutThreadPoolRejections() throws InterruptedException {
 //        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Concurrency-I");
 //        stream = RollingCommandConcurrencyStream.getInstance(key, 10, 100);
+//        stream.startCachingStreamValuesIfUnstarted();
 //
 //        final CountDownLatch latch = new CountDownLatch(1);
 //        stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -336,6 +345,6 @@ public class RollingCommandConcurrencyStreamTest extends CommandStreamTest {
 //
 //        latch.await(10000, TimeUnit.MILLISECONDS);
 //        System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
-//        assertEquals(10, stream.getRollingMax());
+//        assertEquals(10, stream.getLatestRollingMax());
 //    }
 }

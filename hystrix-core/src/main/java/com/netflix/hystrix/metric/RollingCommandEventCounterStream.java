@@ -16,6 +16,7 @@
 package com.netflix.hystrix.metric;
 
 import com.netflix.hystrix.HystrixCommandKey;
+import com.netflix.hystrix.HystrixCommandMetrics;
 import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.HystrixEventType;
 import rx.functions.Func2;
@@ -41,19 +42,15 @@ public class RollingCommandEventCounterStream extends BucketedRollingCounterStre
 
     private static final int NUM_EVENT_TYPES = HystrixEventType.values().length;
 
-    public static RollingCommandEventCounterStream getInstance(HystrixCommandKey commandKey, HystrixCommandProperties properties,
-                                                        Func2<long[], HystrixCommandCompletion, long[]> reduceCommandCompletion,
-                                                        Func2<long[], long[], long[]> reduceBucket) {
+    public static RollingCommandEventCounterStream getInstance(HystrixCommandKey commandKey, HystrixCommandProperties properties) {
         final int counterMetricWindow = properties.metricsRollingStatisticalWindowInMilliseconds().get();
         final int numCounterBuckets = properties.metricsRollingStatisticalWindowBuckets().get();
         final int counterBucketSizeInMs = counterMetricWindow / numCounterBuckets;
 
-        return getInstance(commandKey, numCounterBuckets, counterBucketSizeInMs, reduceCommandCompletion, reduceBucket);
+        return getInstance(commandKey, numCounterBuckets, counterBucketSizeInMs);
     }
 
-    public static RollingCommandEventCounterStream getInstance(HystrixCommandKey commandKey, int numBuckets, int bucketSizeInMs,
-                                                               Func2<long[], HystrixCommandCompletion, long[]> reduceCommandCompletion,
-                                                               Func2<long[], long[], long[]> reduceBucket) {
+    public static RollingCommandEventCounterStream getInstance(HystrixCommandKey commandKey, int numBuckets, int bucketSizeInMs) {
         RollingCommandEventCounterStream initialStream = streams.get(commandKey.name());
         if (initialStream != null) {
             return initialStream;
@@ -61,8 +58,8 @@ public class RollingCommandEventCounterStream extends BucketedRollingCounterStre
             synchronized (RollingCommandEventCounterStream.class) {
                 RollingCommandEventCounterStream existingStream = streams.get(commandKey.name());
                 if (existingStream == null) {
-                    RollingCommandEventCounterStream newStream = new RollingCommandEventCounterStream(commandKey, numBuckets, bucketSizeInMs, reduceCommandCompletion, reduceBucket);
-                    newStream.start();
+                    RollingCommandEventCounterStream newStream = new RollingCommandEventCounterStream(commandKey, numBuckets, bucketSizeInMs,
+                            HystrixCommandMetrics.appendEventToBucket, HystrixCommandMetrics.bucketAggregator);
                     streams.putIfAbsent(commandKey.name(), newStream);
                     return newStream;
                 } else {

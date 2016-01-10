@@ -60,7 +60,8 @@ public class RollingCommandEventCounterStreamTest extends CommandStreamTest {
     @Test
     public void testEmptyStreamProducesZeros() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-RollingCounter-A");
-        stream = RollingCommandEventCounterStream.getInstance(key, 10, 100, HystrixCommandMetrics.appendEventToBucket, HystrixCommandMetrics.bucketAggregator);
+        stream = RollingCommandEventCounterStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -80,7 +81,8 @@ public class RollingCommandEventCounterStreamTest extends CommandStreamTest {
     @Test
     public void testSingleSuccess() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-RollingCounter-B");
-        stream = RollingCommandEventCounterStream.getInstance(key, 10, 100, HystrixCommandMetrics.appendEventToBucket, HystrixCommandMetrics.bucketAggregator);
+        stream = RollingCommandEventCounterStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -104,7 +106,8 @@ public class RollingCommandEventCounterStreamTest extends CommandStreamTest {
     @Test
     public void testSingleFailure() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-RollingCounter-C");
-        stream = RollingCommandEventCounterStream.getInstance(key, 10, 100, HystrixCommandMetrics.appendEventToBucket, HystrixCommandMetrics.bucketAggregator);
+        stream = RollingCommandEventCounterStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -129,7 +132,8 @@ public class RollingCommandEventCounterStreamTest extends CommandStreamTest {
     @Test
     public void testSingleTimeout() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-RollingCounter-D");
-        stream = RollingCommandEventCounterStream.getInstance(key, 10, 100, HystrixCommandMetrics.appendEventToBucket, HystrixCommandMetrics.bucketAggregator);
+        stream = RollingCommandEventCounterStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -154,7 +158,8 @@ public class RollingCommandEventCounterStreamTest extends CommandStreamTest {
     @Test
     public void testSingleBadRequest() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-RollingCounter-E");
-        stream = RollingCommandEventCounterStream.getInstance(key, 10, 100, HystrixCommandMetrics.appendEventToBucket, HystrixCommandMetrics.bucketAggregator);
+        stream = RollingCommandEventCounterStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -179,7 +184,8 @@ public class RollingCommandEventCounterStreamTest extends CommandStreamTest {
     @Test
     public void testRequestFromCache() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-RollingCounter-F");
-        stream = RollingCommandEventCounterStream.getInstance(key, 10, 100, HystrixCommandMetrics.appendEventToBucket, HystrixCommandMetrics.bucketAggregator);
+        stream = RollingCommandEventCounterStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -210,7 +216,8 @@ public class RollingCommandEventCounterStreamTest extends CommandStreamTest {
     @Test
     public void testShortCircuited() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-RollingCounter-G");
-        stream = RollingCommandEventCounterStream.getInstance(key, 10, 100, HystrixCommandMetrics.appendEventToBucket, HystrixCommandMetrics.bucketAggregator);
+        stream = RollingCommandEventCounterStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -259,7 +266,8 @@ public class RollingCommandEventCounterStreamTest extends CommandStreamTest {
     @Test
     public void testSemaphoreRejected() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-RollingCounter-H");
-        stream = RollingCommandEventCounterStream.getInstance(key, 10, 100, HystrixCommandMetrics.appendEventToBucket, HystrixCommandMetrics.bucketAggregator);
+        stream = RollingCommandEventCounterStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -316,7 +324,8 @@ public class RollingCommandEventCounterStreamTest extends CommandStreamTest {
     @Test
     public void testThreadPoolRejected() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-RollingCounter-I");
-        stream = RollingCommandEventCounterStream.getInstance(key, 10, 100, HystrixCommandMetrics.appendEventToBucket, HystrixCommandMetrics.bucketAggregator);
+        stream = RollingCommandEventCounterStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -367,7 +376,8 @@ public class RollingCommandEventCounterStreamTest extends CommandStreamTest {
     @Test
     public void testFallbackFailure() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-RollingCounter-J");
-        stream = RollingCommandEventCounterStream.getInstance(key, 10, 100, HystrixCommandMetrics.appendEventToBucket, HystrixCommandMetrics.bucketAggregator);
+        stream = RollingCommandEventCounterStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -393,7 +403,8 @@ public class RollingCommandEventCounterStreamTest extends CommandStreamTest {
     @Test
     public void testFallbackMissing() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-RollingCounter-K");
-        stream = RollingCommandEventCounterStream.getInstance(key, 10, 100, HystrixCommandMetrics.appendEventToBucket, HystrixCommandMetrics.bucketAggregator);
+        stream = RollingCommandEventCounterStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -418,7 +429,8 @@ public class RollingCommandEventCounterStreamTest extends CommandStreamTest {
     @Test
     public void testFallbackRejection() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-RollingCounter-L");
-        stream = RollingCommandEventCounterStream.getInstance(key, 10, 100, HystrixCommandMetrics.appendEventToBucket, HystrixCommandMetrics.bucketAggregator);
+        stream = RollingCommandEventCounterStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -465,7 +477,8 @@ public class RollingCommandEventCounterStreamTest extends CommandStreamTest {
     @Test
     public void testCollapsed() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("BatchCommand");
-        stream = RollingCommandEventCounterStream.getInstance(key, 10, 100, HystrixCommandMetrics.appendEventToBucket, HystrixCommandMetrics.bucketAggregator);
+        stream = RollingCommandEventCounterStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -490,7 +503,8 @@ public class RollingCommandEventCounterStreamTest extends CommandStreamTest {
     @Test
     public void testMultipleEventsOverTimeGetStoredAndAgeOut() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-RollingCounter-M");
-        stream = RollingCommandEventCounterStream.getInstance(key, 10, 100, HystrixCommandMetrics.appendEventToBucket, HystrixCommandMetrics.bucketAggregator);
+        stream = RollingCommandEventCounterStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         //by doing a take(30), we ensure that all rolling counts go back to 0
 

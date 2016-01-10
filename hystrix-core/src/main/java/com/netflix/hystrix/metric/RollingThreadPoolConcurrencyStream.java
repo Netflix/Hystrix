@@ -34,7 +34,7 @@ import java.util.concurrent.ConcurrentMap;
  * t1 = {@link HystrixThreadPoolProperties#metricsRollingStatisticalWindowInMilliseconds()}
  * b = {@link HystrixThreadPoolProperties#metricsRollingStatisticalWindowBuckets()}
  *
- * This value gets cached in this class.  It may be queried using {@link #getRollingMax()}
+ * This value gets cached in this class.  It may be queried using {@link #getLatestRollingMax()}
  *
  * B) gets calculated by sampling the actual concurrency at some rate higher than the bucket-rolling frequency.
  * Each sample gets stored in a histogram.  At the moment, there's no bucketing or windowing on this stream.
@@ -69,7 +69,6 @@ public class RollingThreadPoolConcurrencyStream extends RollingConcurrencyStream
                 if (existingStream == null) {
                     RollingThreadPoolConcurrencyStream newStream =
                             new RollingThreadPoolConcurrencyStream(threadPoolKey, numBuckets, bucketSizeInMs);
-                    newStream.start();
                     streams.putIfAbsent(threadPoolKey.name(), newStream);
                     return newStream;
                 } else {

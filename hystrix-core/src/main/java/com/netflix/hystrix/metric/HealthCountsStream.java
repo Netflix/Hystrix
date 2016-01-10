@@ -50,19 +50,17 @@ public class HealthCountsStream extends BucketedRollingCounterStream<HystrixComm
     };
 
 
-    public static HealthCountsStream getInstance(HystrixCommandKey commandKey, HystrixCommandProperties properties,
-                                          Func2<long[], HystrixCommandCompletion, long[]> reduceCommandCompletion) {
+    public static HealthCountsStream getInstance(HystrixCommandKey commandKey, HystrixCommandProperties properties) {
         final int healthCountBucketSizeInMs = properties.metricsHealthSnapshotIntervalInMilliseconds().get();
         if (healthCountBucketSizeInMs == 0) {
             throw new RuntimeException("You have set the bucket size to 0ms.  Please set a positive number, so that the metric stream can be properly consumed");
         }
         final int numHealthCountBuckets = properties.metricsRollingStatisticalWindowInMilliseconds().get() / healthCountBucketSizeInMs;
 
-        return getInstance(commandKey, numHealthCountBuckets, healthCountBucketSizeInMs, reduceCommandCompletion);
+        return getInstance(commandKey, numHealthCountBuckets, healthCountBucketSizeInMs);
     }
 
-    public static HealthCountsStream getInstance(HystrixCommandKey commandKey, int numBuckets, int bucketSizeInMs,
-                                                 Func2<long[], HystrixCommandCompletion, long[]> reduceCommandCompletion) {
+    public static HealthCountsStream getInstance(HystrixCommandKey commandKey, int numBuckets, int bucketSizeInMs) {
         HealthCountsStream initialStream = streams.get(commandKey.name());
         if (initialStream != null) {
             return initialStream;
@@ -70,8 +68,9 @@ public class HealthCountsStream extends BucketedRollingCounterStream<HystrixComm
             synchronized (HealthCountsStream.class) {
                 HealthCountsStream existingStream = streams.get(commandKey.name());
                 if (existingStream == null) {
-                    HealthCountsStream newStream = new HealthCountsStream(commandKey, numBuckets, bucketSizeInMs, reduceCommandCompletion);
-                    newStream.start();
+                    HealthCountsStream newStream = new HealthCountsStream(commandKey, numBuckets, bucketSizeInMs,
+                            HystrixCommandMetrics.appendEventToBucket);
+                    newStream.startCachingStreamValuesIfUnstarted();
                     streams.putIfAbsent(commandKey.name(), newStream);
                     return newStream;
                 } else {

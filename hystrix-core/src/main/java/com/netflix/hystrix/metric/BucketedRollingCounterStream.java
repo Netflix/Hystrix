@@ -43,7 +43,7 @@ public abstract class BucketedRollingCounterStream<Event extends HystrixEvent, B
 
     @Override
     public Observable<Output> observe() {
-        return getBucketedStream()               //stream broken up into buckets
+        return bucketedStream                    //stream broken up into buckets
                 .window(numBuckets, 1)           //emit overlapping windows of buckets
                 .flatMap(reduceWindowToSummary); //convert a window of bucket-summaries into a single summary
     }

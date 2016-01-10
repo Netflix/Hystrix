@@ -60,7 +60,7 @@ public class HealthCountsStreamTest extends CommandStreamTest {
     @Test
     public void testEmptyStreamProducesZeros() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Health-A");
-        stream = HealthCountsStream.getInstance(key, 10, 100, HystrixCommandMetrics.appendEventToBucket);
+        stream = HealthCountsStream.getInstance(key, 10, 100);
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -80,7 +80,7 @@ public class HealthCountsStreamTest extends CommandStreamTest {
     @Test
     public void testSingleSuccess() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Health-B");
-        stream = HealthCountsStream.getInstance(key, 10, 100, HystrixCommandMetrics.appendEventToBucket);
+        stream = HealthCountsStream.getInstance(key, 10, 100);
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -102,7 +102,7 @@ public class HealthCountsStreamTest extends CommandStreamTest {
     @Test
     public void testSingleFailure() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Health-C");
-        stream = HealthCountsStream.getInstance(key, 10, 100, HystrixCommandMetrics.appendEventToBucket);
+        stream = HealthCountsStream.getInstance(key, 10, 100);
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -124,7 +124,7 @@ public class HealthCountsStreamTest extends CommandStreamTest {
     @Test
     public void testSingleTimeout() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Health-D");
-        stream = HealthCountsStream.getInstance(key, 10, 100, HystrixCommandMetrics.appendEventToBucket);
+        stream = HealthCountsStream.getInstance(key, 10, 100);
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -146,7 +146,7 @@ public class HealthCountsStreamTest extends CommandStreamTest {
     @Test
     public void testSingleBadRequest() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Health-E");
-        stream = HealthCountsStream.getInstance(key, 10, 100, HystrixCommandMetrics.appendEventToBucket);
+        stream = HealthCountsStream.getInstance(key, 10, 100);
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -168,7 +168,7 @@ public class HealthCountsStreamTest extends CommandStreamTest {
     @Test
     public void testRequestFromCache() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Health-F");
-        stream = HealthCountsStream.getInstance(key, 10, 100, HystrixCommandMetrics.appendEventToBucket);
+        stream = HealthCountsStream.getInstance(key, 10, 100);
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -195,7 +195,7 @@ public class HealthCountsStreamTest extends CommandStreamTest {
     @Test
     public void testShortCircuited() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Health-G");
-        stream = HealthCountsStream.getInstance(key, 10, 100, HystrixCommandMetrics.appendEventToBucket);
+        stream = HealthCountsStream.getInstance(key, 10, 100);
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -240,7 +240,7 @@ public class HealthCountsStreamTest extends CommandStreamTest {
     @Test
     public void testSemaphoreRejected() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Health-H");
-        stream = HealthCountsStream.getInstance(key, 10, 100, HystrixCommandMetrics.appendEventToBucket);
+        stream = HealthCountsStream.getInstance(key, 10, 100);
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -292,7 +292,7 @@ public class HealthCountsStreamTest extends CommandStreamTest {
     @Test
     public void testThreadPoolRejected() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Health-I");
-        stream = HealthCountsStream.getInstance(key, 10, 100, HystrixCommandMetrics.appendEventToBucket);
+        stream = HealthCountsStream.getInstance(key, 10, 100);
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -339,7 +339,7 @@ public class HealthCountsStreamTest extends CommandStreamTest {
     @Test
     public void testFallbackFailure() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Health-J");
-        stream = HealthCountsStream.getInstance(key, 10, 100, HystrixCommandMetrics.appendEventToBucket);
+        stream = HealthCountsStream.getInstance(key, 10, 100);
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -361,7 +361,7 @@ public class HealthCountsStreamTest extends CommandStreamTest {
     @Test
     public void testFallbackMissing() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Health-K");
-        stream = HealthCountsStream.getInstance(key, 10, 100, HystrixCommandMetrics.appendEventToBucket);
+        stream = HealthCountsStream.getInstance(key, 10, 100);
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -382,7 +382,7 @@ public class HealthCountsStreamTest extends CommandStreamTest {
     @Test
     public void testFallbackRejection() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Health-L");
-        stream = HealthCountsStream.getInstance(key, 10, 100, HystrixCommandMetrics.appendEventToBucket);
+        stream = HealthCountsStream.getInstance(key, 10, 100);
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -424,7 +424,7 @@ public class HealthCountsStreamTest extends CommandStreamTest {
     @Test
     public void testMultipleEventsOverTimeGetStoredAndAgeOut() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Health-M");
-        stream = HealthCountsStream.getInstance(key, 10, 100, HystrixCommandMetrics.appendEventToBucket);
+        stream = HealthCountsStream.getInstance(key, 10, 100);
 
         //by doing a take(30), we ensure that all rolling counts go back to 0
 

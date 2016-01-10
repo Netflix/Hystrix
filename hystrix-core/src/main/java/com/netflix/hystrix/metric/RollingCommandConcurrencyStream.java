@@ -34,7 +34,7 @@ import java.util.concurrent.ConcurrentMap;
  * t1 = {@link HystrixCommandProperties#metricsRollingStatisticalWindowInMilliseconds()}
  * b = {@link HystrixCommandProperties#metricsRollingStatisticalWindowBuckets()}
  *
- * This value gets cached in this class.  It may be queried using {@link #getRollingMax()}
+ * This value gets cached in this class.  It may be queried using {@link #getLatestRollingMax()}
  *
  * B) gets calculated by sampling the actual concurrency at some rate higher than the bucket-rolling frequency.
  * Each sample gets stored in a histogram.  At the moment, there's no bucketing or windowing on this stream.
@@ -68,7 +68,6 @@ public class RollingCommandConcurrencyStream extends RollingConcurrencyStream {
                 RollingCommandConcurrencyStream existingStream = streams.get(commandKey.name());
                 if (existingStream == null) {
                     RollingCommandConcurrencyStream newStream = new RollingCommandConcurrencyStream(commandKey, numBuckets, bucketSizeInMs);
-                    newStream.start();
                     streams.putIfAbsent(commandKey.name(), newStream);
                     return newStream;
                 } else {

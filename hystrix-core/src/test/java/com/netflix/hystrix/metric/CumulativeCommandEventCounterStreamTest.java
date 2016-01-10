@@ -60,7 +60,8 @@ public class CumulativeCommandEventCounterStreamTest extends CommandStreamTest {
     @Test
     public void testEmptyStreamProducesZeros() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-CumulativeCounter-A");
-        stream = CumulativeCommandEventCounterStream.getInstance(key, 10, 100, HystrixCommandMetrics.appendEventToBucket, HystrixCommandMetrics.bucketAggregator);
+        stream = CumulativeCommandEventCounterStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -79,7 +80,8 @@ public class CumulativeCommandEventCounterStreamTest extends CommandStreamTest {
     @Test
     public void testSingleSuccess() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-CumulativeCounter-B");
-        stream = CumulativeCommandEventCounterStream.getInstance(key, 10, 100, HystrixCommandMetrics.appendEventToBucket, HystrixCommandMetrics.bucketAggregator);
+        stream = CumulativeCommandEventCounterStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -102,7 +104,8 @@ public class CumulativeCommandEventCounterStreamTest extends CommandStreamTest {
     @Test
     public void testSingleFailure() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-CumulativeCounter-C");
-        stream = CumulativeCommandEventCounterStream.getInstance(key, 10, 100, HystrixCommandMetrics.appendEventToBucket, HystrixCommandMetrics.bucketAggregator);
+        stream = CumulativeCommandEventCounterStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -126,7 +129,8 @@ public class CumulativeCommandEventCounterStreamTest extends CommandStreamTest {
     @Test
     public void testSingleTimeout() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-CumulativeCounter-D");
-        stream = CumulativeCommandEventCounterStream.getInstance(key, 10, 100, HystrixCommandMetrics.appendEventToBucket, HystrixCommandMetrics.bucketAggregator);
+        stream = CumulativeCommandEventCounterStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -150,7 +154,8 @@ public class CumulativeCommandEventCounterStreamTest extends CommandStreamTest {
     @Test
     public void testSingleBadRequest() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-CumulativeCounter-E");
-        stream = CumulativeCommandEventCounterStream.getInstance(key, 10, 100, HystrixCommandMetrics.appendEventToBucket, HystrixCommandMetrics.bucketAggregator);
+        stream = CumulativeCommandEventCounterStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -174,7 +179,8 @@ public class CumulativeCommandEventCounterStreamTest extends CommandStreamTest {
     @Test
     public void testRequestFromCache() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-CumulativeCounter-F");
-        stream = CumulativeCommandEventCounterStream.getInstance(key, 10, 100, HystrixCommandMetrics.appendEventToBucket, HystrixCommandMetrics.bucketAggregator);
+        stream = CumulativeCommandEventCounterStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -204,7 +210,8 @@ public class CumulativeCommandEventCounterStreamTest extends CommandStreamTest {
     @Test
     public void testShortCircuited() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-CumulativeCounter-G");
-        stream = CumulativeCommandEventCounterStream.getInstance(key, 10, 100, HystrixCommandMetrics.appendEventToBucket, HystrixCommandMetrics.bucketAggregator);
+        stream = CumulativeCommandEventCounterStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -252,7 +259,8 @@ public class CumulativeCommandEventCounterStreamTest extends CommandStreamTest {
     @Test
     public void testSemaphoreRejected() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-CumulativeCounter-H");
-        stream = CumulativeCommandEventCounterStream.getInstance(key, 10, 100, HystrixCommandMetrics.appendEventToBucket, HystrixCommandMetrics.bucketAggregator);
+        stream = CumulativeCommandEventCounterStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -308,7 +316,8 @@ public class CumulativeCommandEventCounterStreamTest extends CommandStreamTest {
     @Test
     public void testThreadPoolRejected() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-CumulativeCounter-I");
-        stream = CumulativeCommandEventCounterStream.getInstance(key, 10, 100, HystrixCommandMetrics.appendEventToBucket, HystrixCommandMetrics.bucketAggregator);
+        stream = CumulativeCommandEventCounterStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -359,7 +368,8 @@ public class CumulativeCommandEventCounterStreamTest extends CommandStreamTest {
     @Test
     public void testFallbackFailure() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-CumulativeCounter-J");
-        stream = CumulativeCommandEventCounterStream.getInstance(key, 10, 100, HystrixCommandMetrics.appendEventToBucket, HystrixCommandMetrics.bucketAggregator);
+        stream = CumulativeCommandEventCounterStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -384,7 +394,8 @@ public class CumulativeCommandEventCounterStreamTest extends CommandStreamTest {
     @Test
     public void testFallbackMissing() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-CumulativeCounter-K");
-        stream = CumulativeCommandEventCounterStream.getInstance(key, 10, 100, HystrixCommandMetrics.appendEventToBucket, HystrixCommandMetrics.bucketAggregator);
+        stream = CumulativeCommandEventCounterStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -409,7 +420,8 @@ public class CumulativeCommandEventCounterStreamTest extends CommandStreamTest {
     @Test
     public void testFallbackRejection() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-CumulativeCounter-L");
-        stream = CumulativeCommandEventCounterStream.getInstance(key, 10, 100, HystrixCommandMetrics.appendEventToBucket, HystrixCommandMetrics.bucketAggregator);
+        stream = CumulativeCommandEventCounterStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -455,7 +467,8 @@ public class CumulativeCommandEventCounterStreamTest extends CommandStreamTest {
     @Test
     public void testCollapsed() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("BatchCommand");
-        stream = CumulativeCommandEventCounterStream.getInstance(key, 10, 100, HystrixCommandMetrics.appendEventToBucket, HystrixCommandMetrics.bucketAggregator);
+        stream = CumulativeCommandEventCounterStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -480,9 +493,10 @@ public class CumulativeCommandEventCounterStreamTest extends CommandStreamTest {
     @Test
     public void testMultipleEventsOverTimeGetStoredAndNeverAgeOut() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-CumulativeCounter-M");
-        stream = CumulativeCommandEventCounterStream.getInstance(key, 10, 100, HystrixCommandMetrics.appendEventToBucket, HystrixCommandMetrics.bucketAggregator);
+        stream = CumulativeCommandEventCounterStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
-        //by doign a take(30), we ensure that no rolling out of window takes place
+        //by doing a take(30), we ensure that no rolling out of window takes place
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(30).subscribe(getSubscriber(latch));

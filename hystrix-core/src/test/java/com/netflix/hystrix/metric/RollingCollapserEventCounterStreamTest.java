@@ -65,7 +65,8 @@ public class RollingCollapserEventCounterStreamTest extends CommandStreamTest {
     @Test
     public void testEmptyStreamProducesZeros() {
         HystrixCollapserKey key = HystrixCollapserKey.Factory.asKey("RollingCollapser-A");
-        stream = RollingCollapserEventCounterStream.getInstance(key, 10, 100, HystrixCollapserMetrics.appendEventToBucket, HystrixCollapserMetrics.bucketAggregator);
+        stream = RollingCollapserEventCounterStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -88,7 +89,8 @@ public class RollingCollapserEventCounterStreamTest extends CommandStreamTest {
     @Test
     public void testCollapsed() {
         HystrixCollapserKey key = HystrixCollapserKey.Factory.asKey("RollingCollapser-B");
-        stream = RollingCollapserEventCounterStream.getInstance(key, 10, 100, HystrixCollapserMetrics.appendEventToBucket, HystrixCollapserMetrics.bucketAggregator);
+        stream = RollingCollapserEventCounterStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -113,7 +115,8 @@ public class RollingCollapserEventCounterStreamTest extends CommandStreamTest {
     @Test
     public void testCollapsedAndResponseFromCache() {
         HystrixCollapserKey key = HystrixCollapserKey.Factory.asKey("RollingCollapser-C");
-        stream = RollingCollapserEventCounterStream.getInstance(key, 10, 100, HystrixCollapserMetrics.appendEventToBucket, HystrixCollapserMetrics.bucketAggregator);
+        stream = RollingCollapserEventCounterStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -142,7 +145,8 @@ public class RollingCollapserEventCounterStreamTest extends CommandStreamTest {
     @Test
     public void testCollapsedAndResponseFromCacheAgeOutOfRollingWindow() {
         HystrixCollapserKey key = HystrixCollapserKey.Factory.asKey("RollingCollapser-D");
-        stream = RollingCollapserEventCounterStream.getInstance(key, 10, 100, HystrixCollapserMetrics.appendEventToBucket, HystrixCollapserMetrics.bucketAggregator);
+        stream = RollingCollapserEventCounterStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(30).subscribe(getSubscriber(latch));

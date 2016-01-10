@@ -24,6 +24,7 @@ import com.netflix.hystrix.metric.CumulativeCommandEventCounterStream;
 import com.netflix.hystrix.metric.HealthCountsStream;
 import com.netflix.hystrix.metric.HystrixCommandCompletion;
 import com.netflix.hystrix.metric.HystrixThreadEventStream;
+import com.netflix.hystrix.metric.RollingCommandConcurrencyStream;
 import com.netflix.hystrix.metric.RollingCommandEventCounterStream;
 import com.netflix.hystrix.metric.RollingCommandLatencyDistributionStream;
 import com.netflix.hystrix.metric.RollingCommandUserLatencyDistributionStream;
@@ -181,7 +182,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     private final CumulativeCommandEventCounterStream cumulativeCommandEventCounterStream;
     private final RollingCommandLatencyDistributionStream rollingCommandLatencyDistributionStream;
     private final RollingCommandUserLatencyDistributionStream rollingCommandUserLatencyDistributionStream;
-    //private final RollingCommandConcurrencyStream rollingCommandConcurrencyStream;
+    private final RollingCommandConcurrencyStream rollingCommandConcurrencyStream;
 
     /* package */HystrixCommandMetrics(final HystrixCommandKey key, HystrixCommandGroupKey commandGroup, HystrixThreadPoolKey threadPoolKey, HystrixCommandProperties properties, HystrixEventNotifier eventNotifier) {
         super(null);
@@ -190,19 +191,19 @@ public class HystrixCommandMetrics extends HystrixMetrics {
         this.threadPoolKey = threadPoolKey;
         this.properties = properties;
 
-        healthCountsStream = HealthCountsStream.getInstance(key, properties, appendEventToBucket);
-        rollingCommandEventCounterStream = RollingCommandEventCounterStream.getInstance(key, properties, appendEventToBucket, bucketAggregator);
-        cumulativeCommandEventCounterStream = CumulativeCommandEventCounterStream.getInstance(key, properties, appendEventToBucket, bucketAggregator);
+        healthCountsStream = HealthCountsStream.getInstance(key, properties);
+        rollingCommandEventCounterStream = RollingCommandEventCounterStream.getInstance(key, properties);
+        cumulativeCommandEventCounterStream = CumulativeCommandEventCounterStream.getInstance(key, properties);
 
         rollingCommandLatencyDistributionStream = RollingCommandLatencyDistributionStream.getInstance(key, properties);
         rollingCommandUserLatencyDistributionStream = RollingCommandUserLatencyDistributionStream.getInstance(key, properties);
-        //rollingCommandConcurrencyStream = RollingCommandConcurrencyStream.getInstance(key, properties);
+        rollingCommandConcurrencyStream = RollingCommandConcurrencyStream.getInstance(key, properties);
     }
 
-    /* package */ void resetStream() {
+    /* package */ synchronized void resetStream() {
         healthCountsStream.unsubscribe();
         HealthCountsStream.removeByKey(key);
-        healthCountsStream = HealthCountsStream.getInstance(key, properties, appendEventToBucket);
+        healthCountsStream = HealthCountsStream.getInstance(key, properties);
     }
 
     /**
@@ -321,7 +322,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
 
     public long getRollingMaxConcurrentExecutions() {
         return 0L;
-        //return rollingCommandConcurrencyStream.getRollingMax();
+        //return rollingCommandConcurrencyStream.getLatestRollingMax();
     }
 
     /**
@@ -376,7 +377,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
         cumulativeCommandEventCounterStream.unsubscribe();
         rollingCommandLatencyDistributionStream.unsubscribe();
         rollingCommandUserLatencyDistributionStream.unsubscribe();
-        //rollingCommandConcurrencyStream.unsubscribe();
+        rollingCommandConcurrencyStream.unsubscribe();
     }
 
     /**

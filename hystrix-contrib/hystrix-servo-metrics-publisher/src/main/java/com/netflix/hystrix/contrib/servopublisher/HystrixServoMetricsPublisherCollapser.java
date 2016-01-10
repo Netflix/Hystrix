@@ -21,6 +21,9 @@ import java.util.List;
 import com.netflix.hystrix.HystrixCollapserKey;
 import com.netflix.hystrix.HystrixCollapserMetrics;
 import com.netflix.hystrix.HystrixCollapserProperties;
+import com.netflix.hystrix.metric.CumulativeCollapserEventCounterStream;
+import com.netflix.hystrix.metric.RollingCollapserBatchSizeDistributionStream;
+import com.netflix.hystrix.metric.RollingCollapserEventCounterStream;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherCollapser;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 import com.netflix.servo.DefaultMonitorRegistry;
@@ -94,6 +97,9 @@ public class HystrixServoMetricsPublisherCollapser extends HystrixServoMetricsPu
         BasicCompositeMonitor commandMetricsMonitor = new BasicCompositeMonitor(commandMetricsConfig, monitors);
 
         DefaultMonitorRegistry.getInstance().register(commandMetricsMonitor);
+        RollingCollapserBatchSizeDistributionStream.getInstance(key, properties).startCachingStreamValuesIfUnstarted();
+        RollingCollapserEventCounterStream.getInstance(key, properties).startCachingStreamValuesIfUnstarted();
+        CumulativeCollapserEventCounterStream.getInstance(key, properties).startCachingStreamValuesIfUnstarted();
     }
 
     @Override

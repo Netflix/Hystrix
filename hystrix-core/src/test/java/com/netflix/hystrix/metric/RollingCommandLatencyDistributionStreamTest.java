@@ -41,6 +41,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
     public void testEmptyStreamProducesEmptyDistributions() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Latency-A");
         stream = RollingCommandLatencyDistributionStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(new Subscriber<Histogram>() {
@@ -80,6 +81,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
     public void testSingleBucketGetsStored() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Latency-B");
         stream = RollingCommandLatencyDistributionStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(new Subscriber<Histogram>() {
@@ -136,6 +138,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
     public void testSingleBucketWithMultipleEventTypes() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Latency-C");
         stream = RollingCommandLatencyDistributionStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(new Subscriber<Histogram>() {
@@ -184,6 +187,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
     public void testShortCircuitedCommandDoesNotGetLatencyTracked() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Latency-D");
         stream = RollingCommandLatencyDistributionStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         //3 failures is enough to trigger short-circuit.  execute those, then wait for bucket to roll
         //next command should be a short-circuit
@@ -239,6 +243,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
     public void testThreadPoolRejectedCommandDoesNotGetLatencyTracked() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Latency-E");
         stream = RollingCommandLatencyDistributionStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         //10 commands with latency should occupy the entire threadpool.  execute those, then wait for bucket to roll
         //next command should be a thread-pool rejection
@@ -296,6 +301,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
     public void testSemaphoreRejectedCommandDoesNotGetLatencyTracked() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Latency-F");
         stream = RollingCommandLatencyDistributionStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         //10 commands with latency should occupy all semaphores.  execute those, then wait for bucket to roll
         //next command should be a semaphore rejection
@@ -359,6 +365,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
     public void testResponseFromCacheDoesNotGetLatencyTracked() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Latency-G");
         stream = RollingCommandLatencyDistributionStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         //should get 1 SUCCESS and 1 RESPONSE_FROM_CACHE
         List<Command> commands = Command.getCommandsWithResponseFromCache(groupKey, key);
@@ -400,6 +407,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
     public void testMultipleBucketsBothGetStored() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Latency-H");
         stream = RollingCommandLatencyDistributionStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(new Subscriber<Histogram>() {
@@ -463,6 +471,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
     public void testMultipleBucketsBothGetStoredAndThenAgeOut() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Latency-I");
         stream = RollingCommandLatencyDistributionStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(30).subscribe(new Subscriber<Histogram>() {

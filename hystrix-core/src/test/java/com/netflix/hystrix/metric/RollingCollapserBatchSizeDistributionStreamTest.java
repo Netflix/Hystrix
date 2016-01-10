@@ -41,6 +41,7 @@ public class RollingCollapserBatchSizeDistributionStreamTest extends CommandStre
     public void testEmptyStreamProducesEmptyDistributions() {
         HystrixCollapserKey key = HystrixCollapserKey.Factory.asKey("Collapser-Batch-Size-A");
         stream = RollingCollapserBatchSizeDistributionStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().skip(10).take(10).subscribe(new Subscriber<Histogram>() {
@@ -75,6 +76,7 @@ public class RollingCollapserBatchSizeDistributionStreamTest extends CommandStre
     public void testBatches() {
         HystrixCollapserKey key = HystrixCollapserKey.Factory.asKey("Collapser-Batch-Size-B");
         stream = RollingCollapserBatchSizeDistributionStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(new Subscriber<Histogram>() {
@@ -145,6 +147,7 @@ public class RollingCollapserBatchSizeDistributionStreamTest extends CommandStre
     public void testBatchesAgeOut() {
         HystrixCollapserKey key = HystrixCollapserKey.Factory.asKey("Collapser-Batch-Size-B");
         stream = RollingCollapserBatchSizeDistributionStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(30).subscribe(new Subscriber<Histogram>() {

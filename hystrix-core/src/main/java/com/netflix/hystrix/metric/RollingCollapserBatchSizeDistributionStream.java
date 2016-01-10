@@ -26,7 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * Maintains a stream of latency distributions for a given Command.
+ * Maintains a stream of batch size distributions for a given Command.
  * There is a rolling window abstraction on this stream.
  * The latency distribution object is calculated over a window of t1 milliseconds.  This window has b buckets.
  * Therefore, a new set of counters is produced every t2 (=t1/b) milliseconds
@@ -35,14 +35,7 @@ import java.util.concurrent.ConcurrentMap;
  *
  * These values are stable - there's no peeking into a bucket until it is emitted
  *
- * The only latencies which get included in the distribution are for those commands which started execution.
- * This relies on {@link HystrixCommandEvent#didCommandExecute()}
- *
- * These values get produced and cached in this class.
- * The distributions can be queried on 2 dimensions:
- * * Execution time or total time
- * ** Execution time is the time spent executing the user-provided execution method.
- * ** Total time is the time spent from the perspecitve of the consumer, and includes all Hystrix bookkeeping.
+ * These values get produced and cached in this class, as soon as this stream is queried for the first time.
  */
 public class RollingCollapserBatchSizeDistributionStream extends RollingDistributionStream<HystrixCollapserEvent> {
     private static final ConcurrentMap<String, RollingCollapserBatchSizeDistributionStream> streams = new ConcurrentHashMap<String, RollingCollapserBatchSizeDistributionStream>();

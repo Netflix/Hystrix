@@ -16,6 +16,7 @@
 package com.netflix.hystrix.metric;
 
 import com.netflix.hystrix.HystrixCollapserKey;
+import com.netflix.hystrix.HystrixCollapserMetrics;
 import com.netflix.hystrix.HystrixCollapserProperties;
 import com.netflix.hystrix.HystrixEventType;
 import rx.functions.Func2;
@@ -41,19 +42,15 @@ public class RollingCollapserEventCounterStream extends BucketedRollingCounterSt
 
     private static final int NUM_EVENT_TYPES = HystrixEventType.Collapser.values().length;
 
-    public static RollingCollapserEventCounterStream getInstance(HystrixCollapserKey collapserKey, HystrixCollapserProperties properties,
-                                                        Func2<long[], HystrixCollapserEvent, long[]> appendEventToBucket,
-                                                        Func2<long[], long[], long[]> reduceBucket) {
+    public static RollingCollapserEventCounterStream getInstance(HystrixCollapserKey collapserKey, HystrixCollapserProperties properties) {
         final int counterMetricWindow = properties.metricsRollingStatisticalWindowInMilliseconds().get();
         final int numCounterBuckets = properties.metricsRollingStatisticalWindowBuckets().get();
         final int counterBucketSizeInMs = counterMetricWindow / numCounterBuckets;
 
-        return getInstance(collapserKey, numCounterBuckets, counterBucketSizeInMs, appendEventToBucket, reduceBucket);
+        return getInstance(collapserKey, numCounterBuckets, counterBucketSizeInMs);
     }
 
-    public static RollingCollapserEventCounterStream getInstance(HystrixCollapserKey collapserKey, int numBuckets, int bucketSizeInMs,
-                                                               Func2<long[], HystrixCollapserEvent, long[]> appendEventToBucket,
-                                                               Func2<long[], long[], long[]> reduceBucket) {
+    public static RollingCollapserEventCounterStream getInstance(HystrixCollapserKey collapserKey, int numBuckets, int bucketSizeInMs) {
         RollingCollapserEventCounterStream initialStream = streams.get(collapserKey.name());
         if (initialStream != null) {
             return initialStream;
@@ -61,8 +58,7 @@ public class RollingCollapserEventCounterStream extends BucketedRollingCounterSt
             synchronized (RollingCollapserEventCounterStream.class) {
                 RollingCollapserEventCounterStream existingStream = streams.get(collapserKey.name());
                 if (existingStream == null) {
-                    RollingCollapserEventCounterStream newStream = new RollingCollapserEventCounterStream(collapserKey, numBuckets, bucketSizeInMs, appendEventToBucket, reduceBucket);
-                    newStream.start();
+                    RollingCollapserEventCounterStream newStream = new RollingCollapserEventCounterStream(collapserKey, numBuckets, bucketSizeInMs, HystrixCollapserMetrics.appendEventToBucket, HystrixCollapserMetrics.bucketAggregator);
                     streams.putIfAbsent(collapserKey.name(), newStream);
                     return newStream;
                 } else {

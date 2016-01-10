@@ -16,6 +16,7 @@
 package com.netflix.hystrix.metric;
 
 import com.netflix.hystrix.HystrixCommandKey;
+import com.netflix.hystrix.HystrixCommandMetrics;
 import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.HystrixEventType;
 import rx.functions.Func2;
@@ -43,19 +44,15 @@ public class CumulativeCommandEventCounterStream extends BucketedCumulativeCount
 
     private static final int NUM_EVENT_TYPES = HystrixEventType.values().length;
 
-    public static CumulativeCommandEventCounterStream getInstance(HystrixCommandKey commandKey, HystrixCommandProperties properties,
-                                                           Func2<long[], HystrixCommandCompletion, long[]> reduceCommandCompletion,
-                                                           Func2<long[], long[], long[]> reduceBucket) {
+    public static CumulativeCommandEventCounterStream getInstance(HystrixCommandKey commandKey, HystrixCommandProperties properties) {
         final int counterMetricWindow = properties.metricsRollingStatisticalWindowInMilliseconds().get();
         final int numCounterBuckets = properties.metricsRollingStatisticalWindowBuckets().get();
         final int counterBucketSizeInMs = counterMetricWindow / numCounterBuckets;
 
-        return getInstance(commandKey, numCounterBuckets, counterBucketSizeInMs, reduceCommandCompletion, reduceBucket);
+        return getInstance(commandKey, numCounterBuckets, counterBucketSizeInMs);
     }
 
-    public static CumulativeCommandEventCounterStream getInstance(HystrixCommandKey commandKey, int numBuckets, int bucketSizeInMs,
-                                                                  Func2<long[], HystrixCommandCompletion, long[]> reduceCommandCompletion,
-                                                                  Func2<long[], long[], long[]> reduceBucket) {
+    public static CumulativeCommandEventCounterStream getInstance(HystrixCommandKey commandKey, int numBuckets, int bucketSizeInMs) {
         CumulativeCommandEventCounterStream initialStream = streams.get(commandKey.name());
         if (initialStream != null) {
             return initialStream;
@@ -63,8 +60,8 @@ public class CumulativeCommandEventCounterStream extends BucketedCumulativeCount
             synchronized (CumulativeCommandEventCounterStream.class) {
                 CumulativeCommandEventCounterStream existingStream = streams.get(commandKey.name());
                 if (existingStream == null) {
-                    CumulativeCommandEventCounterStream newStream = new CumulativeCommandEventCounterStream(commandKey, numBuckets, bucketSizeInMs, reduceCommandCompletion, reduceBucket);
-                    newStream.start();
+                    CumulativeCommandEventCounterStream newStream = new CumulativeCommandEventCounterStream(commandKey, numBuckets, bucketSizeInMs,
+                            HystrixCommandMetrics.appendEventToBucket, HystrixCommandMetrics.bucketAggregator);
                     streams.putIfAbsent(commandKey.name(), newStream);
                     return newStream;
                 } else {
