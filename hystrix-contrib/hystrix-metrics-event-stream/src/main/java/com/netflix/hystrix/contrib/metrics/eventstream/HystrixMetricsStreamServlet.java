@@ -15,23 +15,20 @@
  */
 package com.netflix.hystrix.contrib.metrics.eventstream;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicInteger;
+import com.netflix.config.DynamicIntProperty;
+import com.netflix.config.DynamicPropertyFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import com.netflix.hystrix.metric.RollingCollapserEventCounterStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.netflix.config.DynamicIntProperty;
-import com.netflix.config.DynamicPropertyFactory;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Streams Hystrix metrics in text/event-stream format.

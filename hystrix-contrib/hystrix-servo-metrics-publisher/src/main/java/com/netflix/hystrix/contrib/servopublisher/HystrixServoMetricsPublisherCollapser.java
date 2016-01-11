@@ -15,23 +15,23 @@
  */
 package com.netflix.hystrix.contrib.servopublisher;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import com.netflix.hystrix.HystrixCollapserKey;
 import com.netflix.hystrix.HystrixCollapserMetrics;
 import com.netflix.hystrix.HystrixCollapserProperties;
-import com.netflix.hystrix.metric.CumulativeCollapserEventCounterStream;
-import com.netflix.hystrix.metric.RollingCollapserBatchSizeDistributionStream;
-import com.netflix.hystrix.metric.RollingCollapserEventCounterStream;
+import com.netflix.hystrix.HystrixEventType;
+import com.netflix.hystrix.metric.consumer.CumulativeCollapserEventCounterStream;
+import com.netflix.hystrix.metric.consumer.RollingCollapserBatchSizeDistributionStream;
+import com.netflix.hystrix.metric.consumer.RollingCollapserEventCounterStream;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherCollapser;
-import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 import com.netflix.servo.DefaultMonitorRegistry;
 import com.netflix.servo.annotations.DataSourceLevel;
 import com.netflix.servo.monitor.BasicCompositeMonitor;
 import com.netflix.servo.monitor.Monitor;
 import com.netflix.servo.monitor.MonitorConfig;
 import com.netflix.servo.tag.Tag;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Implementation of {@link HystrixMetricsPublisherCollapser} using Servo (https://github.com/Netflix/servo)
@@ -112,6 +112,60 @@ public class HystrixServoMetricsPublisherCollapser extends HystrixServoMetricsPu
         return servoInstanceTag;
     }
 
+    protected Monitor<Number> getCumulativeMonitor(final String name, final HystrixEventType.Collapser event) {
+        return new CounterMetric(MonitorConfig.builder(name).withTag(getServoTypeTag()).withTag(getServoInstanceTag()).build()) {
+            @Override
+            public Long getValue() {
+                return metrics.getCumulativeCount(event);
+            }
+        };
+    }
+
+    protected Monitor<Number> getRollingMonitor(final String name, final HystrixEventType.Collapser event) {
+        return new GaugeMetric(MonitorConfig.builder(name).withTag(DataSourceLevel.DEBUG).withTag(getServoTypeTag()).withTag(getServoInstanceTag()).build()) {
+            @Override
+            public Long getValue() {
+                return metrics.getRollingCount(event);
+            }
+        };
+    }
+
+    protected Monitor<Number> getBatchSizeMeanMonitor(final String name) {
+        return new GaugeMetric(MonitorConfig.builder(name).build()) {
+            @Override
+            public Number getValue() {
+                return metrics.getBatchSizeMean();
+            }
+        };
+    }
+
+    protected Monitor<Number> getBatchSizePercentileMonitor(final String name, final double percentile) {
+        return new GaugeMetric(MonitorConfig.builder(name).build()) {
+            @Override
+            public Number getValue() {
+                return metrics.getBatchSizePercentile(percentile);
+            }
+        };
+    }
+
+    protected Monitor<Number> getShardSizeMeanMonitor(final String name) {
+        return new GaugeMetric(MonitorConfig.builder(name).build()) {
+            @Override
+            public Number getValue() {
+                return metrics.getShardSizeMean();
+            }
+        };
+    }
+
+    protected Monitor<Number> getShardSizePercentileMonitor(final String name, final double percentile) {
+        return new GaugeMetric(MonitorConfig.builder(name).build()) {
+            @Override
+            public Number getValue() {
+                return metrics.getShardSizePercentile(percentile);
+            }
+        };
+    }
+
     /**
      * Servo will flatten metric names as: getServoTypeTag()_getServoInstanceTag()_monitorName
      */
@@ -134,128 +188,30 @@ public class HystrixServoMetricsPublisherCollapser extends HystrixServoMetricsPu
             }
         });
 
-        monitors.add(getCumulativeCountForEvent("countRequestsBatched", metrics, HystrixRollingNumberEvent.COLLAPSER_REQUEST_BATCHED));
-        monitors.add(getCumulativeCountForEvent("countBatches", metrics, HystrixRollingNumberEvent.COLLAPSER_BATCH));
-        monitors.add(getCumulativeCountForEvent("countResponsesFromCache", metrics, HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+        //collapser event cumulative metrics
+        monitors.add(getCumulativeMonitor("countRequestsBatched", HystrixEventType.Collapser.ADDED_TO_BATCH));
+        monitors.add(getCumulativeMonitor("countBatches", HystrixEventType.Collapser.BATCH_EXECUTED));
+        monitors.add(getCumulativeMonitor("countResponsesFromCache", HystrixEventType.Collapser.RESPONSE_FROM_CACHE));
 
-        monitors.add(new GaugeMetric(MonitorConfig.builder("batchSize_mean").build()) {
-            @Override
-            public Number getValue() {
-                return metrics.getBatchSizeMean();
-            }
-        });
+        //batch size distribution metrics
+        monitors.add(getBatchSizeMeanMonitor("batchSize_mean"));
+        monitors.add(getBatchSizePercentileMonitor("batchSize_percentile_25", 25));
+        monitors.add(getBatchSizePercentileMonitor("batchSize_percentile_50", 50));
+        monitors.add(getBatchSizePercentileMonitor("batchSize_percentile_75", 75));
+        monitors.add(getBatchSizePercentileMonitor("batchSize_percentile_95", 95));
+        monitors.add(getBatchSizePercentileMonitor("batchSize_percentile_99", 99));
+        monitors.add(getBatchSizePercentileMonitor("batchSize_percentile_99_5", 99.5));
+        monitors.add(getBatchSizePercentileMonitor("batchSize_percentile_100", 100));
 
-        monitors.add(new GaugeMetric(MonitorConfig.builder("batchSize_percentile_25").build()) {
-            @Override
-            public Number getValue() {
-                return metrics.getBatchSizePercentile(25);
-            }
-        });
-
-        monitors.add(new GaugeMetric(MonitorConfig.builder("batchSize_percentile_50").build()) {
-            @Override
-            public Number getValue() {
-                return metrics.getBatchSizePercentile(50);
-            }
-        });
-
-        monitors.add(new GaugeMetric(MonitorConfig.builder("batchSize_percentile_75").build()) {
-            @Override
-            public Number getValue() {
-                return metrics.getBatchSizePercentile(75);
-            }
-        });
-
-        monitors.add(new GaugeMetric(MonitorConfig.builder("batchSize_percentile_95").build()) {
-            @Override
-            public Number getValue() {
-                return metrics.getBatchSizePercentile(95);
-            }
-        });
-
-        monitors.add(new GaugeMetric(MonitorConfig.builder("batchSize_percentile_99").build()) {
-            @Override
-            public Number getValue() {
-                return metrics.getBatchSizePercentile(99);
-            }
-        });
-
-        monitors.add(new GaugeMetric(MonitorConfig.builder("batchSize_percentile_99_5").build()) {
-            @Override
-            public Number getValue() {
-                return metrics.getBatchSizePercentile(99.5);
-            }
-        });
-
-        monitors.add(new GaugeMetric(MonitorConfig.builder("batchSize_percentile_100").build()) {
-            @Override
-            public Number getValue() {
-                return metrics.getBatchSizePercentile(100);
-            }
-        });
-
-        monitors.add(new GaugeMetric(MonitorConfig.builder("shardSize_mean").build()) {
-            @Override
-            public Number getValue() {
-                return metrics.getShardSizeMean();
-            }
-        });
-
-        monitors.add(new GaugeMetric(MonitorConfig.builder("shardSize_percentile_25").build()) {
-            @Override
-            public Number getValue() {
-                return metrics.getShardSizePercentile(25);
-            }
-        });
-
-        monitors.add(new GaugeMetric(MonitorConfig.builder("shardSize_percentile_50").build()) {
-            @Override
-            public Number getValue() {
-                return metrics.getShardSizePercentile(50);
-            }
-        });
-
-        monitors.add(new GaugeMetric(MonitorConfig.builder("shardSize_percentile_75").build()) {
-            @Override
-            public Number getValue() {
-                return metrics.getShardSizePercentile(75);
-            }
-        });
-
-        monitors.add(new GaugeMetric(MonitorConfig.builder("shardSize_percentile_90").build()) {
-            @Override
-            public Number getValue() {
-                return metrics.getShardSizePercentile(90);
-            }
-        });
-
-        monitors.add(new GaugeMetric(MonitorConfig.builder("shardSize_percentile_95").build()) {
-            @Override
-            public Number getValue() {
-                return metrics.getShardSizePercentile(95);
-            }
-        });
-
-        monitors.add(new GaugeMetric(MonitorConfig.builder("shardSize_percentile_99").build()) {
-            @Override
-            public Number getValue() {
-                return metrics.getShardSizePercentile(99);
-            }
-        });
-
-        monitors.add(new GaugeMetric(MonitorConfig.builder("shardSize_percentile_99_5").build()) {
-            @Override
-            public Number getValue() {
-                return metrics.getShardSizePercentile(99.5);
-            }
-        });
-
-        monitors.add(new GaugeMetric(MonitorConfig.builder("shardSize_percentile_100").build()) {
-            @Override
-            public Number getValue() {
-                return metrics.getShardSizePercentile(100);
-            }
-        });
+        //shard size distribution metrics
+        monitors.add(getShardSizeMeanMonitor("shardSize_mean"));
+        monitors.add(getShardSizePercentileMonitor("shardSize_percentile_25", 25));
+        monitors.add(getShardSizePercentileMonitor("shardSize_percentile_50", 50));
+        monitors.add(getShardSizePercentileMonitor("shardSize_percentile_75", 75));
+        monitors.add(getShardSizePercentileMonitor("shardSize_percentile_95", 95));
+        monitors.add(getShardSizePercentileMonitor("shardSize_percentile_99", 99));
+        monitors.add(getShardSizePercentileMonitor("shardSize_percentile_99_5", 99.5));
+        monitors.add(getShardSizePercentileMonitor("shardSize_percentile_100", 100));
 
         // properties (so the values can be inspected and monitored)
         monitors.add(new InformationalMetric<Number>(MonitorConfig.builder("propertyValue_rollingStatisticalWindowInMilliseconds").build()) {

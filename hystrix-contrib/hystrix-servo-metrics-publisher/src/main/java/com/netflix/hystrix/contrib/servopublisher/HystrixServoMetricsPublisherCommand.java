@@ -15,20 +15,17 @@
  */
 package com.netflix.hystrix.contrib.servopublisher;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import com.netflix.hystrix.HystrixCircuitBreaker;
 import com.netflix.hystrix.HystrixCommandGroupKey;
 import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixCommandMetrics;
 import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.HystrixEventType;
-import com.netflix.hystrix.metric.CumulativeCommandEventCounterStream;
-import com.netflix.hystrix.metric.RollingCommandEventCounterStream;
-import com.netflix.hystrix.metric.RollingCommandLatencyDistributionStream;
-import com.netflix.hystrix.metric.RollingCommandMaxConcurrencyStream;
-import com.netflix.hystrix.metric.RollingCommandUserLatencyDistributionStream;
+import com.netflix.hystrix.metric.consumer.CumulativeCommandEventCounterStream;
+import com.netflix.hystrix.metric.consumer.RollingCommandEventCounterStream;
+import com.netflix.hystrix.metric.consumer.RollingCommandLatencyDistributionStream;
+import com.netflix.hystrix.metric.consumer.RollingCommandMaxConcurrencyStream;
+import com.netflix.hystrix.metric.consumer.RollingCommandUserLatencyDistributionStream;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherCommand;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 import com.netflix.servo.DefaultMonitorRegistry;
@@ -38,6 +35,9 @@ import com.netflix.servo.monitor.Monitor;
 import com.netflix.servo.monitor.MonitorConfig;
 import com.netflix.servo.tag.Tag;
 import rx.functions.Func0;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Concrete Implementation of {@link HystrixMetricsPublisherCommand} using Servo (https://github.com/Netflix/servo)
@@ -170,7 +170,7 @@ public class HystrixServoMetricsPublisherCommand extends HystrixServoMetricsPubl
         return new CounterMetric(MonitorConfig.builder(name).withTag(getServoTypeTag()).withTag(getServoInstanceTag()).build()) {
             @Override
             public Long getValue() {
-                return metrics.getCumulativeCount(HystrixRollingNumberEvent.from(event));
+                return metrics.getCumulativeCount(event);
             }
         };
     }
@@ -179,7 +179,7 @@ public class HystrixServoMetricsPublisherCommand extends HystrixServoMetricsPubl
         return new GaugeMetric(MonitorConfig.builder(name).withTag(DataSourceLevel.DEBUG).withTag(getServoTypeTag()).withTag(getServoInstanceTag()).build()) {
             @Override
             public Long getValue() {
-                return metrics.getRollingCount(HystrixRollingNumberEvent.from(event));
+                return metrics.getRollingCount(event);
             }
         };
     }

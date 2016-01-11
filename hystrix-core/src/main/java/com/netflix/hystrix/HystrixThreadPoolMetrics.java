@@ -300,6 +300,14 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
         return cumulativeCounterStream.getLatestCount(HystrixEventType.ThreadPool.REJECTED);
     }
 
+    public long getRollingCount(HystrixEventType.ThreadPool event) {
+        return rollingCounterStream.getLatestCount(event);
+    }
+
+    public long getCumulativeCount(HystrixEventType.ThreadPool event) {
+        return cumulativeCounterStream.getLatestCount(event);
+    }
+
     @Override
     public long getCumulativeCount(HystrixRollingNumberEvent event) {
         return cumulativeCounterStream.getLatestCount(HystrixEventType.ThreadPool.from(event));

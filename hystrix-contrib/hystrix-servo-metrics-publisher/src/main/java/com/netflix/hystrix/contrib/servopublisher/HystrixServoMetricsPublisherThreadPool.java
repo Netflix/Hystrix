@@ -15,23 +15,23 @@
  */
 package com.netflix.hystrix.contrib.servopublisher;
 
-import java.util.ArrayList;
-import java.util.List;
-
+import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.HystrixThreadPoolKey;
 import com.netflix.hystrix.HystrixThreadPoolMetrics;
 import com.netflix.hystrix.HystrixThreadPoolProperties;
-import com.netflix.hystrix.metric.CumulativeThreadPoolEventCounterStream;
-import com.netflix.hystrix.metric.RollingThreadPoolConcurrencyStream;
-import com.netflix.hystrix.metric.RollingThreadPoolEventCounterStream;
+import com.netflix.hystrix.metric.consumer.CumulativeThreadPoolEventCounterStream;
+import com.netflix.hystrix.metric.consumer.RollingThreadPoolConcurrencyStream;
+import com.netflix.hystrix.metric.consumer.RollingThreadPoolEventCounterStream;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherThreadPool;
-import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 import com.netflix.servo.DefaultMonitorRegistry;
 import com.netflix.servo.annotations.DataSourceLevel;
 import com.netflix.servo.monitor.BasicCompositeMonitor;
 import com.netflix.servo.monitor.Monitor;
 import com.netflix.servo.monitor.MonitorConfig;
 import com.netflix.servo.tag.Tag;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Implementation of {@link HystrixMetricsPublisherThreadPool} using Servo (https://github.com/Netflix/servo)
@@ -112,6 +112,24 @@ public class HystrixServoMetricsPublisherThreadPool extends HystrixServoMetricsP
         return servoInstanceTag;
     }
 
+    protected Monitor<Number> getCumulativeMonitor(final String name, final HystrixEventType.ThreadPool event) {
+        return new CounterMetric(MonitorConfig.builder(name).withTag(getServoTypeTag()).withTag(getServoInstanceTag()).build()) {
+            @Override
+            public Long getValue() {
+                return metrics.getCumulativeCount(event);
+            }
+        };
+    }
+
+    protected Monitor<Number> getRollingMonitor(final String name, final HystrixEventType.ThreadPool event) {
+        return new GaugeMetric(MonitorConfig.builder(name).withTag(DataSourceLevel.DEBUG).withTag(getServoTypeTag()).withTag(getServoInstanceTag()).build()) {
+            @Override
+            public Long getValue() {
+                return metrics.getRollingCount(event);
+            }
+        };
+    }
+
     /**
      * Servo will flatten metric names as: getServoTypeTag()_getServoInstanceTag()_monitorName
      */
@@ -176,10 +194,11 @@ public class HystrixServoMetricsPublisherThreadPool extends HystrixServoMetricsP
             }
         });
 
-        monitors.add(getCumulativeCountForEvent("countThreadsExecuted", metrics, HystrixRollingNumberEvent.THREAD_EXECUTION));
-        monitors.add(getRollingCountForEvent("rollingCountThreadsExecuted", metrics, HystrixRollingNumberEvent.THREAD_EXECUTION));
-
-        monitors.add(getRollingCountForEvent("rollingCountCommandsRejected", metrics, HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
+        //thread pool event monitors
+        monitors.add(getCumulativeMonitor("countThreadsExecuted", HystrixEventType.ThreadPool.EXECUTED));
+        monitors.add(getCumulativeMonitor("countThreadsRejected", HystrixEventType.ThreadPool.REJECTED));
+        monitors.add(getRollingMonitor("rollingCountThreadsExecuted", HystrixEventType.ThreadPool.EXECUTED));
+        monitors.add(getRollingMonitor("rollingCountCommandsRejected", HystrixEventType.ThreadPool.REJECTED));
 
         // properties
         monitors.add(new InformationalMetric<Number>(MonitorConfig.builder("propertyValue_corePoolSize").build()) {

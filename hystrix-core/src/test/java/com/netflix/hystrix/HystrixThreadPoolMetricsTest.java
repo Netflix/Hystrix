@@ -15,7 +15,7 @@
  */
 package com.netflix.hystrix;
 
-import com.netflix.hystrix.metric.RollingThreadPoolEventCounterStream;
+import com.netflix.hystrix.metric.consumer.RollingThreadPoolEventCounterStream;
 import org.junit.Before;
 import org.junit.Test;
 
