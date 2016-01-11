@@ -24,7 +24,7 @@ import com.netflix.hystrix.metric.CumulativeCommandEventCounterStream;
 import com.netflix.hystrix.metric.HealthCountsStream;
 import com.netflix.hystrix.metric.HystrixCommandCompletion;
 import com.netflix.hystrix.metric.HystrixThreadEventStream;
-import com.netflix.hystrix.metric.RollingCommandConcurrencyStream;
+import com.netflix.hystrix.metric.RollingCommandMaxConcurrencyStream;
 import com.netflix.hystrix.metric.RollingCommandEventCounterStream;
 import com.netflix.hystrix.metric.RollingCommandLatencyDistributionStream;
 import com.netflix.hystrix.metric.RollingCommandUserLatencyDistributionStream;
@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
+import rx.functions.Func0;
 import rx.functions.Func2;
 
 /**
@@ -169,8 +170,6 @@ public class HystrixCommandMetrics extends HystrixMetrics {
         metrics.clear();
     }
 
-
-
     private final HystrixCommandProperties properties;
     private final HystrixCommandKey key;
     private final HystrixCommandGroupKey group;
@@ -182,7 +181,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     private final CumulativeCommandEventCounterStream cumulativeCommandEventCounterStream;
     private final RollingCommandLatencyDistributionStream rollingCommandLatencyDistributionStream;
     private final RollingCommandUserLatencyDistributionStream rollingCommandUserLatencyDistributionStream;
-    private final RollingCommandConcurrencyStream rollingCommandConcurrencyStream;
+    private final RollingCommandMaxConcurrencyStream rollingCommandMaxConcurrencyStream;
 
     /* package */HystrixCommandMetrics(final HystrixCommandKey key, HystrixCommandGroupKey commandGroup, HystrixThreadPoolKey threadPoolKey, HystrixCommandProperties properties, HystrixEventNotifier eventNotifier) {
         super(null);
@@ -191,13 +190,20 @@ public class HystrixCommandMetrics extends HystrixMetrics {
         this.threadPoolKey = threadPoolKey;
         this.properties = properties;
 
+        Func0<Integer> concurrentExecutionThunk = new Func0<Integer>() {
+            @Override
+            public Integer call() {
+                return HystrixCommandMetrics.getInstance(key).concurrentExecutionCount.get();
+            }
+        };
+
         healthCountsStream = HealthCountsStream.getInstance(key, properties);
         rollingCommandEventCounterStream = RollingCommandEventCounterStream.getInstance(key, properties);
         cumulativeCommandEventCounterStream = CumulativeCommandEventCounterStream.getInstance(key, properties);
 
         rollingCommandLatencyDistributionStream = RollingCommandLatencyDistributionStream.getInstance(key, properties);
         rollingCommandUserLatencyDistributionStream = RollingCommandUserLatencyDistributionStream.getInstance(key, properties);
-        rollingCommandConcurrencyStream = RollingCommandConcurrencyStream.getInstance(key, properties);
+        rollingCommandMaxConcurrencyStream = RollingCommandMaxConcurrencyStream.getInstance(key, properties);
     }
 
     /* package */ synchronized void resetStream() {
@@ -321,8 +327,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     }
 
     public long getRollingMaxConcurrentExecutions() {
-        return 0L;
-        //return rollingCommandConcurrencyStream.getLatestRollingMax();
+        return rollingCommandMaxConcurrencyStream.getLatestRollingMax();
     }
 
     /**
@@ -335,7 +340,8 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     }
 
     /* package-private */ void markCommandStart(HystrixCommandKey commandKey, HystrixThreadPoolKey threadPoolKey, HystrixCommandProperties.ExecutionIsolationStrategy isolationStrategy) {
-        concurrentExecutionCount.incrementAndGet();
+        int currentCount = concurrentExecutionCount.incrementAndGet();
+        HystrixThreadEventStream.getInstance().commandExecutionStarted(commandKey, threadPoolKey, isolationStrategy, currentCount);
     }
 
     /* package-private */ void markCommandDone(ExecutionResult executionResult, HystrixCommandKey commandKey, HystrixThreadPoolKey threadPoolKey) {
@@ -377,7 +383,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
         cumulativeCommandEventCounterStream.unsubscribe();
         rollingCommandLatencyDistributionStream.unsubscribe();
         rollingCommandUserLatencyDistributionStream.unsubscribe();
-        rollingCommandConcurrencyStream.unsubscribe();
+        rollingCommandMaxConcurrencyStream.unsubscribe();
     }
 
     /**

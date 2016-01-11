@@ -21,14 +21,17 @@ import com.netflix.hystrix.HystrixThreadPoolKey;
 
 /**
  * Data class that get fed to event stream when a command starts executing.
- * Was used in an experiment to get stream-based concurrency working, but not used as of 1.5.0-RC1
  */
-/* package-private */class HystrixCommandExecutionStarted extends HystrixCommandEvent {
+public class HystrixCommandExecutionStarted extends HystrixCommandEvent {
     private final HystrixCommandProperties.ExecutionIsolationStrategy isolationStrategy;
+    private final int currentConcurrency;
 
-    public HystrixCommandExecutionStarted(HystrixCommandKey commandKey, HystrixThreadPoolKey threadPoolKey, HystrixCommandProperties.ExecutionIsolationStrategy isolationStrategy) {
+    public HystrixCommandExecutionStarted(HystrixCommandKey commandKey, HystrixThreadPoolKey threadPoolKey,
+                                          HystrixCommandProperties.ExecutionIsolationStrategy isolationStrategy,
+                                          int currentConcurrency) {
         super(commandKey, threadPoolKey);
         this.isolationStrategy = isolationStrategy;
+        this.currentConcurrency = currentConcurrency;
     }
 
     @Override
@@ -54,6 +57,10 @@ import com.netflix.hystrix.HystrixThreadPoolKey;
     @Override
     public boolean didCommandExecute() {
         return false;
+    }
+
+    public int getCurrentConcurrency() {
+        return currentConcurrency;
     }
 
 }

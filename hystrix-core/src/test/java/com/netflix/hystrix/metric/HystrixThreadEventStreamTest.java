@@ -35,16 +35,16 @@ public class HystrixThreadEventStreamTest {
     HystrixThreadPoolKey threadPoolKey;
 
     HystrixThreadEventStream writeToStream;
-    HystrixCommandEventStream readCommandStream;
-    HystrixThreadPoolEventStream readThreadPoolStream;
+    HystrixCommandCompletionStream readCommandStream;
+    HystrixThreadPoolCompletionStream readThreadPoolStream;
 
     public HystrixThreadEventStreamTest() {
         commandKey = HystrixCommandKey.Factory.asKey("CMD-ThreadStream");
         threadPoolKey = HystrixThreadPoolKey.Factory.asKey("TP-ThreadStream");
 
         writeToStream = HystrixThreadEventStream.getInstance();
-        readCommandStream = HystrixCommandEventStream.getInstance(commandKey);
-        readThreadPoolStream = HystrixThreadPoolEventStream.getInstance(threadPoolKey);
+        readCommandStream = HystrixCommandCompletionStream.getInstance(commandKey);
+        readThreadPoolStream = HystrixThreadPoolCompletionStream.getInstance(threadPoolKey);
     }
 
     private <T> Subscriber<T> getLatchedSubscriber(final CountDownLatch latch) {

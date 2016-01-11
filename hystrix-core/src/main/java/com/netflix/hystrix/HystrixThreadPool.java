@@ -210,14 +210,17 @@ public interface HystrixThreadPool {
 
         @Override
         public void markThreadExecution() {
+            metrics.markThreadExecution();
         }
 
         @Override
         public void markThreadCompletion() {
+            metrics.markThreadCompletion();
         }
 
         @Override
         public void markThreadRejection() {
+            metrics.markThreadRejection();
         }
 
         /**

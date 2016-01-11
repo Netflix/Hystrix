@@ -22,6 +22,7 @@ import com.netflix.hystrix.HystrixThreadPoolKey;
 import com.netflix.hystrix.HystrixThreadPoolMetrics;
 import com.netflix.hystrix.HystrixThreadPoolProperties;
 import com.netflix.hystrix.metric.CumulativeThreadPoolEventCounterStream;
+import com.netflix.hystrix.metric.RollingThreadPoolConcurrencyStream;
 import com.netflix.hystrix.metric.RollingThreadPoolEventCounterStream;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherThreadPool;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
@@ -98,6 +99,7 @@ public class HystrixServoMetricsPublisherThreadPool extends HystrixServoMetricsP
         DefaultMonitorRegistry.getInstance().register(commandMetricsMonitor);
         RollingThreadPoolEventCounterStream.getInstance(key, properties).startCachingStreamValuesIfUnstarted();
         CumulativeThreadPoolEventCounterStream.getInstance(key, properties).startCachingStreamValuesIfUnstarted();
+        RollingThreadPoolConcurrencyStream.getInstance(key, properties).startCachingStreamValuesIfUnstarted();
     }
 
     @Override

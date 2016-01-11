@@ -16,27 +16,20 @@
 package com.netflix.hystrix.metric;
 
 import com.netflix.hystrix.ExecutionResult;
-import com.netflix.hystrix.HystrixCollapserKey;
 import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.HystrixThreadPoolKey;
-import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import org.junit.Test;
 import rx.Subscriber;
-import rx.functions.Func0;
-import rx.observers.TestSubscriber;
 
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class HystrixCommandEventStreamTest {
+public class HystrixCommandCompletionStreamTest {
 
     private <T> Subscriber<T> getLatchedSubscriber(final CountDownLatch latch) {
         return new Subscriber<T>() {
@@ -61,7 +54,7 @@ public class HystrixCommandEventStreamTest {
 
     static final HystrixCommandKey commandKey = HystrixCommandKey.Factory.asKey("COMMAND");
     static final HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("ThreadPool");
-    final HystrixCommandEventStream commandStream = new HystrixCommandEventStream(commandKey);
+    final HystrixCommandCompletionStream commandStream = new HystrixCommandCompletionStream(commandKey);
 
     @Test
     public void noEvents() throws InterruptedException {

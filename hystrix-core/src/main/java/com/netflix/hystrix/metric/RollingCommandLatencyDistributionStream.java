@@ -49,7 +49,6 @@ public class RollingCommandLatencyDistributionStream extends RollingDistribution
     private static final Func2<Histogram, HystrixCommandCompletion, Histogram> addValuesToBucket = new Func2<Histogram, HystrixCommandCompletion, Histogram>() {
         @Override
         public Histogram call(Histogram initialDistribution, HystrixCommandCompletion event) {
-            System.out.println("Received event : " + event);
             if (event.didCommandExecute() && event.getExecutionLatency() > -1) {
                 initialDistribution.recordValue(event.getExecutionLatency());
             }
@@ -88,6 +87,6 @@ public class RollingCommandLatencyDistributionStream extends RollingDistribution
     }
 
     private RollingCommandLatencyDistributionStream(HystrixCommandKey commandKey, int numPercentileBuckets, int percentileBucketSizeInMs) {
-        super(HystrixCommandEventStream.getInstance(commandKey), numPercentileBuckets, percentileBucketSizeInMs, addValuesToBucket);
+        super(HystrixCommandCompletionStream.getInstance(commandKey), numPercentileBuckets, percentileBucketSizeInMs, addValuesToBucket);
     }
 }

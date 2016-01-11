@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.netflix.hystrix.metric.CumulativeThreadPoolEventCounterStream;
 import com.netflix.hystrix.metric.HystrixCommandCompletion;
@@ -29,6 +30,7 @@ import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import rx.functions.Func0;
 import rx.functions.Func2;
 
 /**
@@ -135,6 +137,8 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
     private final HystrixThreadPoolKey threadPoolKey;
     private final ThreadPoolExecutor threadPool;
     private final HystrixThreadPoolProperties properties;
+
+    private final AtomicInteger concurrentExecutionCount = new AtomicInteger();
 
     private final RollingThreadPoolEventCounterStream rollingCounterStream;
     private final CumulativeThreadPoolEventCounterStream cumulativeCounterStream;
@@ -254,6 +258,7 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
      * Invoked each time a thread is executed.
      */
     public void markThreadExecution() {
+        concurrentExecutionCount.incrementAndGet();
     }
 
     /**
@@ -310,6 +315,7 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
      * Invoked each time a thread completes.
      */
     public void markThreadCompletion() {
+        concurrentExecutionCount.decrementAndGet();
     }
 
     /**
@@ -320,13 +326,22 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
      * @return rolling max active threads
      */
     public long getRollingMaxActiveThreads() {
-        return 0L;
-        //return rollingThreadPoolConcurrencyStream.getRollingMax();
+        return rollingThreadPoolConcurrencyStream.getLatestRollingMax();
     }
 
     /**
      * Invoked each time a command is rejected from the thread-pool
      */
     public void markThreadRejection() {
+        concurrentExecutionCount.decrementAndGet();
+    }
+
+    public static Func0<Integer> getCurrentConcurrencyThunk(final HystrixThreadPoolKey threadPoolKey) {
+        return new Func0<Integer>() {
+            @Override
+            public Integer call() {
+                return HystrixThreadPoolMetrics.getInstance(threadPoolKey).concurrentExecutionCount.get();
+            }
+        };
     }
 }

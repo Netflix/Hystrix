@@ -25,28 +25,28 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * Per-ThreadPool stream of {@link HystrixCommandEvent}s.  This gets written to by {@link HystrixThreadEventStream}s.
+ * Per-ThreadPool stream of {@link HystrixCommandCompletion}s.  This gets written to by {@link HystrixThreadEventStream}s.
  * That object will emit on an RxComputation thread, so all work done by a consumer of this {@link #observe()} happens
  * asynchronously.
  */
-public class HystrixThreadPoolEventStream implements HystrixEventStream<HystrixCommandCompletion> {
+public class HystrixThreadPoolCompletionStream implements HystrixEventStream<HystrixCommandCompletion> {
 
     private final HystrixThreadPoolKey threadPoolKey;
 
     private final Subject<HystrixCommandCompletion, HystrixCommandCompletion> writeOnlySubject;
     private final Observable<HystrixCommandCompletion> readOnlyStream;
 
-    private static final ConcurrentMap<String, HystrixThreadPoolEventStream> streams = new ConcurrentHashMap<String, HystrixThreadPoolEventStream>();
+    private static final ConcurrentMap<String, HystrixThreadPoolCompletionStream> streams = new ConcurrentHashMap<String, HystrixThreadPoolCompletionStream>();
 
-    public static HystrixThreadPoolEventStream getInstance(HystrixThreadPoolKey threadPoolKey) {
-        HystrixThreadPoolEventStream initialStream = streams.get(threadPoolKey.name());
+    public static HystrixThreadPoolCompletionStream getInstance(HystrixThreadPoolKey threadPoolKey) {
+        HystrixThreadPoolCompletionStream initialStream = streams.get(threadPoolKey.name());
         if (initialStream != null) {
             return initialStream;
         } else {
-            synchronized (HystrixThreadPoolEventStream.class) {
-                HystrixThreadPoolEventStream existingStream = streams.get(threadPoolKey.name());
+            synchronized (HystrixThreadPoolCompletionStream.class) {
+                HystrixThreadPoolCompletionStream existingStream = streams.get(threadPoolKey.name());
                 if (existingStream == null) {
-                    HystrixThreadPoolEventStream newStream = new HystrixThreadPoolEventStream(threadPoolKey);
+                    HystrixThreadPoolCompletionStream newStream = new HystrixThreadPoolCompletionStream(threadPoolKey);
                     streams.putIfAbsent(threadPoolKey.name(), newStream);
                     return newStream;
                 } else {
@@ -56,7 +56,7 @@ public class HystrixThreadPoolEventStream implements HystrixEventStream<HystrixC
         }
     }
 
-    HystrixThreadPoolEventStream(final HystrixThreadPoolKey threadPoolKey) {
+    HystrixThreadPoolCompletionStream(final HystrixThreadPoolKey threadPoolKey) {
         this.threadPoolKey = threadPoolKey;
 
         this.writeOnlySubject = new SerializedSubject<HystrixCommandCompletion, HystrixCommandCompletion>(PublishSubject.<HystrixCommandCompletion>create());
@@ -78,6 +78,6 @@ public class HystrixThreadPoolEventStream implements HystrixEventStream<HystrixC
 
     @Override
     public String toString() {
-        return "HystrixThreadPoolEventStream(" + threadPoolKey.name() + ")";
+        return "HystrixThreadPoolCompletionStream(" + threadPoolKey.name() + ")";
     }
 }

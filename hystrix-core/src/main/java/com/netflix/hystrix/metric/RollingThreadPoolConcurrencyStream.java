@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Netflix, Inc.
+ * Copyright 2016 Netflix, Inc.
  * <p/>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,30 +22,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * Maintains a stream of concurrency distributions for a given ThreadPool.
+ * Maintains a stream of max-concurrency
  *
- * There are 2 related streams that may be consumed:
- *
- * A) A rolling window of the maximum concurrency seen by this ThreadPool.
- * B) A histogram of sampled concurrency seen by this ThreadPool.
- *
- * A) gets calculated using a rolling window of t1 milliseconds.  This window has b buckets.
+ * This gets calculated using a rolling window of t1 milliseconds.  This window has b buckets.
  * Therefore, a new rolling-max is produced every t2 (=t1/b) milliseconds
  * t1 = {@link HystrixThreadPoolProperties#metricsRollingStatisticalWindowInMilliseconds()}
  * b = {@link HystrixThreadPoolProperties#metricsRollingStatisticalWindowBuckets()}
  *
  * This value gets cached in this class.  It may be queried using {@link #getLatestRollingMax()}
  *
- * B) gets calculated by sampling the actual concurrency at some rate higher than the bucket-rolling frequency.
- * Each sample gets stored in a histogram.  At the moment, there's no bucketing or windowing on this stream.
- * To control the emission rate, the histogram is emitted on a bucket-roll.
- *
- * This value is not cached.  You need to consume this stream directly if you want to use it.
- *
- * Both A) and B) are stable - there's no peeking into a bucket until it is emitted
- *
- * LARGE CAVEAT:
- * This will change after 1.5.0-RC.1.  This was an experiment that proved too costly. Rely on this at your own peril
+ * This is a stable value - there's no peeking into a bucket until it is emitted
  */
 public class RollingThreadPoolConcurrencyStream extends RollingConcurrencyStream {
 
@@ -83,6 +69,6 @@ public class RollingThreadPoolConcurrencyStream extends RollingConcurrencyStream
     }
 
     public RollingThreadPoolConcurrencyStream(final HystrixThreadPoolKey threadPoolKey, final int numBuckets, final int bucketSizeInMs) {
-        super(HystrixThreadPoolEventStream.getInstance(threadPoolKey), numBuckets, bucketSizeInMs);
+        super(HystrixThreadPoolStartStream.getInstance(threadPoolKey), numBuckets, bucketSizeInMs);
     }
 }

@@ -15,8 +15,6 @@
  */
 package com.netflix.hystrix.metric;
 
-import com.netflix.hystrix.HystrixCommandKey;
-import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.HystrixThreadPoolKey;
 import com.netflix.hystrix.HystrixThreadPoolMetrics;
@@ -80,7 +78,7 @@ public class RollingThreadPoolEventCounterStream extends BucketedRollingCounterS
     private RollingThreadPoolEventCounterStream(HystrixThreadPoolKey threadPoolKey, int numCounterBuckets, int counterBucketSizeInMs,
                                                 Func2<long[], HystrixCommandCompletion, long[]> reduceCommandCompletion,
                                                 Func2<long[], long[], long[]> reduceBucket) {
-        super(HystrixThreadPoolEventStream.getInstance(threadPoolKey), numCounterBuckets, counterBucketSizeInMs, reduceCommandCompletion, reduceBucket);
+        super(HystrixThreadPoolCompletionStream.getInstance(threadPoolKey), numCounterBuckets, counterBucketSizeInMs, reduceCommandCompletion, reduceBucket);
     }
 
     @Override

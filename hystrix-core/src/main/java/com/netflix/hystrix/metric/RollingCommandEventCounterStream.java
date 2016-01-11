@@ -76,7 +76,7 @@ public class RollingCommandEventCounterStream extends BucketedRollingCounterStre
     private RollingCommandEventCounterStream(HystrixCommandKey commandKey, int numCounterBuckets, int counterBucketSizeInMs,
                                              Func2<long[], HystrixCommandCompletion, long[]> reduceCommandCompletion,
                                              Func2<long[], long[], long[]> reduceBucket) {
-        super(HystrixCommandEventStream.getInstance(commandKey), numCounterBuckets, counterBucketSizeInMs, reduceCommandCompletion, reduceBucket);
+        super(HystrixCommandCompletionStream.getInstance(commandKey), numCounterBuckets, counterBucketSizeInMs, reduceCommandCompletion, reduceBucket);
     }
 
     @Override

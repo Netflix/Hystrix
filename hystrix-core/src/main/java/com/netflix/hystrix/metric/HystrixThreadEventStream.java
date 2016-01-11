@@ -19,6 +19,7 @@ import com.netflix.hystrix.ExecutionResult;
 import com.netflix.hystrix.HystrixCollapserKey;
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandKey;
+import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.HystrixThreadPool;
 import com.netflix.hystrix.HystrixThreadPoolKey;
@@ -36,8 +37,8 @@ import rx.subjects.Subject;
  * * Application caller threads (semaphore-isolated commands, or thread-pool-rejections)
  * * Timer threads (timeouts or collapsers)
  *
- * This is not a useful stream to consume directly (I think), so this stream writes to the proper {@link HystrixCommandEventStream} and
- * {@link HystrixThreadPoolEventStream} (when executed in / rejected from a thread pool)
+ * This is not a useful stream to consume directly (I think), so this stream writes to the proper {@link HystrixCommandCompletionStream} and
+ * {@link HystrixThreadPoolCompletionStream} (when executed in / rejected from a thread pool)
  *
  * Also note that any observers of this stream do so on an RxComputation thread.  This allows all processing of
  * events to happen off the main thread executing the {@link HystrixCommand}.  It also implies that event consumers
@@ -48,7 +49,8 @@ public class HystrixThreadEventStream {
     private final long threadId;
     private final String threadName;
 
-    private final Subject<HystrixCommandCompletion, HystrixCommandCompletion> writeOnlyCommandSubject;
+    private final Subject<HystrixCommandExecutionStarted, HystrixCommandExecutionStarted> writeOnlyCommandStartSubject;
+    private final Subject<HystrixCommandCompletion, HystrixCommandCompletion> writeOnlyCommandCompletionSubject;
     private final Subject<HystrixCollapserEvent, HystrixCollapserEvent> writeOnlyCollapserSubject;
 
     private static final ThreadLocal<HystrixThreadEventStream> threadLocalStreams = new ThreadLocal<HystrixThreadEventStream>() {
@@ -58,14 +60,27 @@ public class HystrixThreadEventStream {
         }
     };
 
-    private static final Action1<HystrixCommandCompletion> writeCommandExecutionsToShardedStreams = new Action1<HystrixCommandCompletion>() {
+    private static final Action1<HystrixCommandExecutionStarted> writeCommandStartsToShardedStreams = new Action1<HystrixCommandExecutionStarted>() {
+        @Override
+        public void call(HystrixCommandExecutionStarted event) {
+            HystrixCommandStartStream commandStartStream = HystrixCommandStartStream.getInstance(event.getCommandKey());
+            commandStartStream.write(event);
+
+            if (event.isExecutedInThread()) {
+                HystrixThreadPoolStartStream threadPoolStartStream = HystrixThreadPoolStartStream.getInstance(event.getThreadPoolKey());
+                threadPoolStartStream.write(event);
+            }
+        }
+    };
+
+    private static final Action1<HystrixCommandCompletion> writeCommandCompletionsToShardedStreams = new Action1<HystrixCommandCompletion>() {
         @Override
         public void call(HystrixCommandCompletion commandCompletion) {
-            HystrixCommandEventStream commandStream = HystrixCommandEventStream.getInstance(commandCompletion.getCommandKey());
+            HystrixCommandCompletionStream commandStream = HystrixCommandCompletionStream.getInstance(commandCompletion.getCommandKey());
             commandStream.write(commandCompletion);
 
             if (commandCompletion.isExecutedInThread() || commandCompletion.isResponseThreadPoolRejected()) {
-                HystrixThreadPoolEventStream threadPoolStream = HystrixThreadPoolEventStream.getInstance(commandCompletion.getThreadPoolKey());
+                HystrixThreadPoolCompletionStream threadPoolStream = HystrixThreadPoolCompletionStream.getInstance(commandCompletion.getThreadPoolKey());
                 threadPoolStream.write(commandCompletion);
             }
         }
@@ -82,13 +97,20 @@ public class HystrixThreadEventStream {
     /* package */ HystrixThreadEventStream(Thread thread) {
         this.threadId = thread.getId();
         this.threadName = thread.getName();
-        writeOnlyCommandSubject = PublishSubject.create();
+        writeOnlyCommandStartSubject = PublishSubject.create();
+        writeOnlyCommandCompletionSubject = PublishSubject.create();
         writeOnlyCollapserSubject = PublishSubject.create();
 
-        writeOnlyCommandSubject
+        writeOnlyCommandStartSubject
                 .onBackpressureBuffer()
                 .observeOn(Schedulers.computation())
-                .doOnNext(writeCommandExecutionsToShardedStreams)
+                .doOnNext(writeCommandStartsToShardedStreams)
+                .unsafeSubscribe(Subscribers.empty());
+
+        writeOnlyCommandCompletionSubject
+                .onBackpressureBuffer()
+                .observeOn(Schedulers.computation())
+                .doOnNext(writeCommandCompletionsToShardedStreams)
                 .unsafeSubscribe(Subscribers.empty());
 
         writeOnlyCollapserSubject
@@ -103,12 +125,20 @@ public class HystrixThreadEventStream {
     }
 
     public void shutdown() {
-        writeOnlyCommandSubject.onCompleted();
+        writeOnlyCommandStartSubject.onCompleted();
+        writeOnlyCommandCompletionSubject.onCompleted();
+        writeOnlyCollapserSubject.onCompleted();
+    }
+
+    public void commandExecutionStarted(HystrixCommandKey commandKey, HystrixThreadPoolKey threadPoolKey,
+                                        HystrixCommandProperties.ExecutionIsolationStrategy isolationStrategy, int currentConcurrency) {
+        HystrixCommandExecutionStarted event = new HystrixCommandExecutionStarted(commandKey, threadPoolKey, isolationStrategy, currentConcurrency);
+        writeOnlyCommandStartSubject.onNext(event);
     }
 
     public void executionDone(ExecutionResult executionResult, HystrixCommandKey commandKey, HystrixThreadPoolKey threadPoolKey) {
         HystrixCommandCompletion event = HystrixCommandCompletion.from(executionResult, commandKey, threadPoolKey);
-        writeOnlyCommandSubject.onNext(event);
+        writeOnlyCommandCompletionSubject.onNext(event);
     }
 
     public void collapserResponseFromCache(HystrixCollapserKey collapserKey) {

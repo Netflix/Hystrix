@@ -25,27 +25,27 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * Per-Command stream of {@link HystrixCommandEvent}s.  This gets written to by {@link HystrixThreadEventStream}s.
+ * Per-Command stream of {@link HystrixCommandCompletion}s.  This gets written to by {@link HystrixThreadEventStream}s.
  * That object will emit on an RxComputation thread, so all work done by a consumer of this {@link #observe()} happens
  * asynchronously.
  */
-public class HystrixCommandEventStream implements HystrixEventStream<HystrixCommandCompletion> {
+public class HystrixCommandCompletionStream implements HystrixEventStream<HystrixCommandCompletion> {
     private final HystrixCommandKey commandKey;
 
     private final Subject<HystrixCommandCompletion, HystrixCommandCompletion> writeOnlySubject;
     private final Observable<HystrixCommandCompletion> readOnlyStream;
 
-    private static final ConcurrentMap<String, HystrixCommandEventStream> streams = new ConcurrentHashMap<String, HystrixCommandEventStream>();
+    private static final ConcurrentMap<String, HystrixCommandCompletionStream> streams = new ConcurrentHashMap<String, HystrixCommandCompletionStream>();
 
-    public static HystrixCommandEventStream getInstance(HystrixCommandKey commandKey) {
-        HystrixCommandEventStream initialStream = streams.get(commandKey.name());
+    public static HystrixCommandCompletionStream getInstance(HystrixCommandKey commandKey) {
+        HystrixCommandCompletionStream initialStream = streams.get(commandKey.name());
         if (initialStream != null) {
             return initialStream;
         } else {
-            synchronized (HystrixCommandEventStream.class) {
-                HystrixCommandEventStream existingStream = streams.get(commandKey.name());
+            synchronized (HystrixCommandCompletionStream.class) {
+                HystrixCommandCompletionStream existingStream = streams.get(commandKey.name());
                 if (existingStream == null) {
-                    HystrixCommandEventStream newStream = new HystrixCommandEventStream(commandKey);
+                    HystrixCommandCompletionStream newStream = new HystrixCommandCompletionStream(commandKey);
                     streams.putIfAbsent(commandKey.name(), newStream);
                     return newStream;
                 } else {
@@ -55,7 +55,7 @@ public class HystrixCommandEventStream implements HystrixEventStream<HystrixComm
         }
     }
 
-    HystrixCommandEventStream(final HystrixCommandKey commandKey) {
+    HystrixCommandCompletionStream(final HystrixCommandKey commandKey) {
         this.commandKey = commandKey;
 
         this.writeOnlySubject = new SerializedSubject<HystrixCommandCompletion, HystrixCommandCompletion>(PublishSubject.<HystrixCommandCompletion>create());
@@ -78,6 +78,6 @@ public class HystrixCommandEventStream implements HystrixEventStream<HystrixComm
 
     @Override
     public String toString() {
-        return "HystrixCommandEventStream(" + commandKey.name() + ")";
+        return "HystrixCommandCompletionStream(" + commandKey.name() + ")";
     }
 }

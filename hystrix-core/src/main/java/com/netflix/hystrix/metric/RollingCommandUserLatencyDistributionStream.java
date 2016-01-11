@@ -89,6 +89,6 @@ public class RollingCommandUserLatencyDistributionStream extends RollingDistribu
     }
 
     private RollingCommandUserLatencyDistributionStream(HystrixCommandKey commandKey, int numPercentileBuckets, int percentileBucketSizeInMs) {
-        super(HystrixCommandEventStream.getInstance(commandKey), numPercentileBuckets, percentileBucketSizeInMs, addValuesToBucket);
+        super(HystrixCommandCompletionStream.getInstance(commandKey), numPercentileBuckets, percentileBucketSizeInMs, addValuesToBucket);
     }
 }
