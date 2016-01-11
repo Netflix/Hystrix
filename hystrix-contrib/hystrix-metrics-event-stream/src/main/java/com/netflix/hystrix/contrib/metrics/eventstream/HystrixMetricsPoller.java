@@ -15,6 +15,21 @@
  */
 package com.netflix.hystrix.contrib.metrics.eventstream;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.netflix.hystrix.HystrixCircuitBreaker;
+import com.netflix.hystrix.HystrixCollapserKey;
+import com.netflix.hystrix.HystrixCollapserMetrics;
+import com.netflix.hystrix.HystrixCommandKey;
+import com.netflix.hystrix.HystrixCommandMetrics;
+import com.netflix.hystrix.HystrixCommandMetrics.HealthCounts;
+import com.netflix.hystrix.HystrixCommandProperties;
+import com.netflix.hystrix.HystrixEventType;
+import com.netflix.hystrix.HystrixThreadPoolKey;
+import com.netflix.hystrix.HystrixThreadPoolMetrics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.concurrent.Executors;
@@ -24,22 +39,6 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.netflix.hystrix.HystrixCollapserKey;
-import com.netflix.hystrix.HystrixCollapserMetrics;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.netflix.hystrix.HystrixCircuitBreaker;
-import com.netflix.hystrix.HystrixCommandKey;
-import com.netflix.hystrix.HystrixCommandMetrics;
-import com.netflix.hystrix.HystrixCommandMetrics.HealthCounts;
-import com.netflix.hystrix.HystrixCommandProperties;
-import com.netflix.hystrix.HystrixThreadPoolKey;
-import com.netflix.hystrix.HystrixThreadPoolMetrics;
-import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 
 /**
  * Polls Hystrix metrics and output JSON strings for each metric to a MetricsPollerListener.
@@ -201,22 +200,22 @@ public class HystrixMetricsPoller {
             json.writeNumberField("requestCount", healthCounts.getTotalRequests());
 
             // rolling counters
-            json.writeNumberField("rollingCountBadRequests", commandMetrics.getRollingCount(HystrixRollingNumberEvent.BAD_REQUEST));
-            json.writeNumberField("rollingCountCollapsedRequests", commandMetrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSED));
-            json.writeNumberField("rollingCountEmit", commandMetrics.getRollingCount(HystrixRollingNumberEvent.EMIT));
-            json.writeNumberField("rollingCountExceptionsThrown", commandMetrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN));
-            json.writeNumberField("rollingCountFailure", commandMetrics.getRollingCount(HystrixRollingNumberEvent.FAILURE));
-            json.writeNumberField("rollingCountFallbackEmit", commandMetrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_EMIT));
-            json.writeNumberField("rollingCountFallbackFailure", commandMetrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE));
-            json.writeNumberField("rollingCountFallbackMissing", commandMetrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING));
-            json.writeNumberField("rollingCountFallbackRejection", commandMetrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION));
-            json.writeNumberField("rollingCountFallbackSuccess", commandMetrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS));
-            json.writeNumberField("rollingCountResponsesFromCache", commandMetrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
-            json.writeNumberField("rollingCountSemaphoreRejected", commandMetrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED));
-            json.writeNumberField("rollingCountShortCircuited", commandMetrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED));
-            json.writeNumberField("rollingCountSuccess", commandMetrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS));
-            json.writeNumberField("rollingCountThreadPoolRejected", commandMetrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
-            json.writeNumberField("rollingCountTimeout", commandMetrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT));
+            json.writeNumberField("rollingCountBadRequests", commandMetrics.getRollingCount(HystrixEventType.BAD_REQUEST));
+            json.writeNumberField("rollingCountCollapsedRequests", commandMetrics.getRollingCount(HystrixEventType.COLLAPSED));
+            json.writeNumberField("rollingCountEmit", commandMetrics.getRollingCount(HystrixEventType.EMIT));
+            json.writeNumberField("rollingCountExceptionsThrown", commandMetrics.getRollingCount(HystrixEventType.EXCEPTION_THROWN));
+            json.writeNumberField("rollingCountFailure", commandMetrics.getRollingCount(HystrixEventType.FAILURE));
+            json.writeNumberField("rollingCountFallbackEmit", commandMetrics.getRollingCount(HystrixEventType.FALLBACK_EMIT));
+            json.writeNumberField("rollingCountFallbackFailure", commandMetrics.getRollingCount(HystrixEventType.FALLBACK_FAILURE));
+            json.writeNumberField("rollingCountFallbackMissing", commandMetrics.getRollingCount(HystrixEventType.FALLBACK_MISSING));
+            json.writeNumberField("rollingCountFallbackRejection", commandMetrics.getRollingCount(HystrixEventType.FALLBACK_REJECTION));
+            json.writeNumberField("rollingCountFallbackSuccess", commandMetrics.getRollingCount(HystrixEventType.FALLBACK_SUCCESS));
+            json.writeNumberField("rollingCountResponsesFromCache", commandMetrics.getRollingCount(HystrixEventType.RESPONSE_FROM_CACHE));
+            json.writeNumberField("rollingCountSemaphoreRejected", commandMetrics.getRollingCount(HystrixEventType.SEMAPHORE_REJECTED));
+            json.writeNumberField("rollingCountShortCircuited", commandMetrics.getRollingCount(HystrixEventType.SHORT_CIRCUITED));
+            json.writeNumberField("rollingCountSuccess", commandMetrics.getRollingCount(HystrixEventType.SUCCESS));
+            json.writeNumberField("rollingCountThreadPoolRejected", commandMetrics.getRollingCount(HystrixEventType.THREAD_POOL_REJECTED));
+            json.writeNumberField("rollingCountTimeout", commandMetrics.getRollingCount(HystrixEventType.TIMEOUT));
 
             json.writeNumberField("currentConcurrentExecutionCount", commandMetrics.getCurrentConcurrentExecutionCount());
             json.writeNumberField("rollingMaxConcurrentExecutionCount", commandMetrics.getRollingMaxConcurrentExecutions());
@@ -312,9 +311,9 @@ public class HystrixMetricsPoller {
             json.writeNumberField("currentPoolSize", threadPoolMetrics.getCurrentPoolSize().intValue());
             json.writeNumberField("currentQueueSize", threadPoolMetrics.getCurrentQueueSize().intValue());
             json.writeNumberField("currentTaskCount", threadPoolMetrics.getCurrentTaskCount().longValue());
-            json.writeNumberField("rollingCountThreadsExecuted", threadPoolMetrics.getRollingCount(HystrixRollingNumberEvent.THREAD_EXECUTION));
+            json.writeNumberField("rollingCountThreadsExecuted", threadPoolMetrics.getRollingCount(HystrixEventType.ThreadPool.EXECUTED));
             json.writeNumberField("rollingMaxActiveThreads", threadPoolMetrics.getRollingMaxActiveThreads());
-            json.writeNumberField("rollingCountCommandRejections", threadPoolMetrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED));
+            json.writeNumberField("rollingCountCommandRejections", threadPoolMetrics.getRollingCount(HystrixEventType.ThreadPool.REJECTED));
 
             json.writeNumberField("propertyValue_queueSizeRejectionThreshold", threadPoolMetrics.getProperties().queueSizeRejectionThreshold().get());
             json.writeNumberField("propertyValue_metricsRollingStatisticalWindowInMilliseconds", threadPoolMetrics.getProperties().metricsRollingStatisticalWindowInMilliseconds().get());
@@ -337,9 +336,9 @@ public class HystrixMetricsPoller {
             json.writeStringField("name", key.name());
             json.writeNumberField("currentTime", System.currentTimeMillis());
 
-            json.writeNumberField("rollingCountRequestsBatched", collapserMetrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_REQUEST_BATCHED));
-            json.writeNumberField("rollingCountBatches", collapserMetrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_BATCH));
-            json.writeNumberField("rollingCountResponsesFromCache", collapserMetrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+            json.writeNumberField("rollingCountRequestsBatched", collapserMetrics.getRollingCount(HystrixEventType.Collapser.ADDED_TO_BATCH));
+            json.writeNumberField("rollingCountBatches", collapserMetrics.getRollingCount(HystrixEventType.Collapser.BATCH_EXECUTED));
+            json.writeNumberField("rollingCountResponsesFromCache", collapserMetrics.getRollingCount(HystrixEventType.Collapser.RESPONSE_FROM_CACHE));
 
             // batch size percentiles
             json.writeNumberField("batchSize_mean", collapserMetrics.getBatchSizeMean());
