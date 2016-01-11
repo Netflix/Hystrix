@@ -15,11 +15,13 @@
  */
 package com.netflix.hystrix.util;
 
+import com.netflix.hystrix.Hystrix;
 import com.netflix.hystrix.HystrixTimerThreadPoolProperties;
 import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 import com.netflix.hystrix.util.HystrixTimer.ScheduledExecutor;
 import com.netflix.hystrix.util.HystrixTimer.TimerListener;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -35,6 +37,11 @@ public class HystrixTimerTest {
     public void setUp() {
         HystrixTimer timer = HystrixTimer.getInstance();
         HystrixTimer.reset();
+    }
+
+    @After
+    public void tearDown() {
+        HystrixPlugins.reset();
     }
 
     @Test
@@ -179,33 +186,6 @@ public class HystrixTimerTest {
 
     @Test
     public void testThreadPoolSizeConfiguredWithBuilder() {
-
-        HystrixPlugins.reset();
-
-        HystrixTimerThreadPoolProperties.Setter builder = HystrixTimerThreadPoolProperties.Setter().withCoreSize(1);
-        final HystrixTimerThreadPoolProperties props = new HystrixTimerThreadPoolProperties(builder) {
-        };
-
-        HystrixPropertiesStrategy strategy = new HystrixPropertiesStrategy() {
-            @Override
-            public HystrixTimerThreadPoolProperties getTimerThreadPoolProperties() {
-                return props;
-            }
-        };
-
-        HystrixPlugins.getInstance().registerPropertiesStrategy(strategy);
-
-        HystrixTimer hystrixTimer = HystrixTimer.getInstance();
-        hystrixTimer.startThreadIfNeeded();
-
-        assertEquals(1, hystrixTimer.executor.get().getThreadPool().getCorePoolSize());
-
-    }
-
-    @Test
-    public void testThreadPoolSizeConfiguredWithArchaius() {
-
-        HystrixPlugins.reset();
 
         HystrixTimerThreadPoolProperties.Setter builder = HystrixTimerThreadPoolProperties.Setter().withCoreSize(1);
         final HystrixTimerThreadPoolProperties props = new HystrixTimerThreadPoolProperties(builder) {
