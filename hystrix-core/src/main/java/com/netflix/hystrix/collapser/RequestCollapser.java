@@ -87,7 +87,7 @@ public class RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType
         while (true) {
             RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> b = batch.get();
             if (b == null) {
-                throw new IllegalStateException("Submitting requests after collapser is shutdown");
+                return Observable.error(new IllegalStateException("Submitting requests after collapser is shutdown"));
             }
             Observable<ResponseType> f = b.offer(arg);
             // it will always get an Observable unless we hit the max batch size
@@ -150,9 +150,9 @@ public class RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType
                             createNewBatchAndExecutePreviousIfNeeded(currentBatch);
                         }
                     } catch (Throwable t) {
-                        logger.error("Error occurred trying to executeRequestsFromQueue.", t);
+                        logger.error("Error occurred trying to execute the batch.", t);
+                        t.printStackTrace();
                         // ignore error so we don't kill the Timer mainLoop and prevent further items from being scheduled
-                        // http://jira.netflix.com/browse/API-5042 HystrixCommand: Collapser TimerThread Vulnerable to Shutdown
                     }
                     return null;
                 }

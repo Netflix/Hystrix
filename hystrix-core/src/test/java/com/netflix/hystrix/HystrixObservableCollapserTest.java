@@ -15,13 +15,8 @@
  */
 package com.netflix.hystrix;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertSame;
-
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,16 +24,15 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.netflix.hystrix.collapser.CollapserTimer;
 import com.netflix.hystrix.collapser.RealCollapserTimer;
-import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.concurrency.HystrixContextRunnable;
-import com.netflix.hystrix.strategy.concurrency.HystrixContextScheduler;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesCollapserDefault;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 import org.junit.After;
@@ -56,6 +50,8 @@ import rx.schedulers.Schedulers;
 import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
 import com.netflix.hystrix.HystrixCollapserTest.TestCollapserTimer;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
+
+import static org.junit.Assert.*;
 
 public class HystrixObservableCollapserTest {
     private static Action1<CollapsedRequest<String, String>> onMissingError = new Action1<CollapsedRequest<String, String>>() {
@@ -126,6 +122,7 @@ public class HystrixObservableCollapserTest {
         }
     };
 
+    private static ExecutorService threadPool = new ThreadPoolExecutor(100, 100, 10, TimeUnit.MINUTES, new SynchronousQueue<Runnable>());
 
     @Before
     public void init() {
@@ -179,8 +176,8 @@ public class HystrixObservableCollapserTest {
     public void testTwoRequestsWhichShouldEachEmitTwice() throws Exception {
         //TestCollapserTimer timer = new TestCollapserTimer();
         CollapserTimer timer = new RealCollapserTimer();
-        HystrixObservableCollapser<String, String, String, String> collapser1 = new TestCollapserWithMultipleResponses(timer, 1, 3, false, prefixMapper, onMissingComplete);
-        HystrixObservableCollapser<String, String, String, String> collapser2 = new TestCollapserWithMultipleResponses(timer, 2, 3, false, prefixMapper, onMissingComplete);
+        HystrixObservableCollapser<String, String, String, String> collapser1 = new TestCollapserWithMultipleResponses(timer, 1, 3, false, false, prefixMapper, onMissingComplete);
+        HystrixObservableCollapser<String, String, String, String> collapser2 = new TestCollapserWithMultipleResponses(timer, 2, 3, false, false, prefixMapper, onMissingComplete);
 
         TestSubscriber<String> testSubscriber1 = new TestSubscriber<String>();
         TestSubscriber<String> testSubscriber2 = new TestSubscriber<String>();
@@ -232,8 +229,8 @@ public class HystrixObservableCollapserTest {
     @Test
     public void testTwoRequestsWithErrorInDemultiplex() {
         TestCollapserTimer timer = new TestCollapserTimer();
-        HystrixObservableCollapser<String, String, String, String> collapser1 = new TestCollapserWithMultipleResponses(timer, 1, 3, false, mapWithErrorOn1, onMissingError);
-        HystrixObservableCollapser<String, String, String, String> collapser2 = new TestCollapserWithMultipleResponses(timer, 2, 3, false, mapWithErrorOn1, onMissingError);
+        HystrixObservableCollapser<String, String, String, String> collapser1 = new TestCollapserWithMultipleResponses(timer, 1, 3, false, false, mapWithErrorOn1, onMissingError);
+        HystrixObservableCollapser<String, String, String, String> collapser2 = new TestCollapserWithMultipleResponses(timer, 2, 3, false, false, mapWithErrorOn1, onMissingError);
 
         System.out.println("Starting to observe collapser1");
         Observable<String> result1 = collapser1.observe();
@@ -544,8 +541,8 @@ public class HystrixObservableCollapserTest {
     @Test
     public void testTwoRequestsWithValuesForWrongArgs() {
         TestCollapserTimer timer = new TestCollapserTimer();
-        HystrixObservableCollapser<String, String, String, String> collapser1 = new TestCollapserWithMultipleResponses(timer, 1, 3, false, map1To3And2To2, onMissingError);
-        HystrixObservableCollapser<String, String, String, String> collapser2 = new TestCollapserWithMultipleResponses(timer, 2, 3, false, map1To3And2To2, onMissingError);
+        HystrixObservableCollapser<String, String, String, String> collapser1 = new TestCollapserWithMultipleResponses(timer, 1, 3, false, false, map1To3And2To2, onMissingError);
+        HystrixObservableCollapser<String, String, String, String> collapser2 = new TestCollapserWithMultipleResponses(timer, 2, 3, false, false, map1To3And2To2, onMissingError);
 
         System.out.println("Starting to observe collapser1");
         Observable<String> result1 = collapser1.observe();
@@ -570,10 +567,39 @@ public class HystrixObservableCollapserTest {
     }
 
     @Test
+    public void testTwoRequestsWhenBatchCommandFails() {
+        TestCollapserTimer timer = new TestCollapserTimer();
+        HystrixObservableCollapser<String, String, String, String> collapser1 = new TestCollapserWithMultipleResponses(timer, 1, 3, false, true, map1To3And2To2, onMissingError);
+        HystrixObservableCollapser<String, String, String, String> collapser2 = new TestCollapserWithMultipleResponses(timer, 2, 3, false, true, map1To3And2To2, onMissingError);
+
+        System.out.println("Starting to observe collapser1");
+        Observable<String> result1 = collapser1.observe();
+        Observable<String> result2 = collapser2.observe();
+
+        timer.incrementTime(10); // let time pass that equals the default delay/period
+
+        TestSubscriber<String> testSubscriber1 = new TestSubscriber<String>();
+        result1.subscribe(testSubscriber1);
+
+        TestSubscriber<String> testSubscriber2 = new TestSubscriber<String>();
+        result2.subscribe(testSubscriber2);
+
+        testSubscriber1.awaitTerminalEvent();
+        testSubscriber2.awaitTerminalEvent();
+
+        testSubscriber1.assertError(RuntimeException.class);
+        testSubscriber1.getOnErrorEvents().get(0).printStackTrace();
+        testSubscriber1.assertNoValues();
+        testSubscriber2.assertError(RuntimeException.class);
+        testSubscriber2.assertNoValues();
+    }
+
+    @Test
     public void testCollapserUnderConcurrency() throws InterruptedException {
         final CollapserTimer timer = new RealCollapserTimer();
-        final int NUM_THREADS_SUBMITTING_WORK = 4;
-        final int NUM_REQUESTS_PER_THREAD = 2;
+
+        final int NUM_THREADS_SUBMITTING_WORK = 8;
+        final int NUM_REQUESTS_PER_THREAD = 8;
 
         final CountDownLatch latch = new CountDownLatch(NUM_THREADS_SUBMITTING_WORK);
 
@@ -588,28 +614,30 @@ public class HystrixObservableCollapserTest {
             runnables.add(new Runnable() {
                 @Override
                 public void run() {
-                    //System.out.println("Runnable starting on thread : " + Thread.currentThread().getName());
+                    try {
+                        //System.out.println("Runnable starting on thread : " + Thread.currentThread().getName());
 
-                    for (int j = 0; j < NUM_REQUESTS_PER_THREAD; j++) {
-                        HystrixObservableCollapser<String, String, String, String> collapser =
-                                new TestCollapserWithMultipleResponses(timer, uniqueInt.getAndIncrement(), 3, false);
-                        Observable<String> o = collapser.observe();
-                        TestSubscriber<String> subscriber = new TestSubscriber<String>();
-                        o.subscribe(subscriber);
-                        subscribers.offer(subscriber);
+                        for (int j = 0; j < NUM_REQUESTS_PER_THREAD; j++) {
+                            HystrixObservableCollapser<String, String, String, String> collapser =
+                                    new TestCollapserWithMultipleResponses(timer, uniqueInt.getAndIncrement(), 3, false);
+                            Observable<String> o = collapser.toObservable();
+                            TestSubscriber<String> subscriber = new TestSubscriber<String>();
+                            o.subscribe(subscriber);
+                            subscribers.offer(subscriber);
+                        }
+                        //System.out.println("Runnable done on thread : " + Thread.currentThread().getName());
+                    } finally {
+                        latch.countDown();
                     }
-                    //System.out.println("Runnable done on thread : " + Thread.currentThread().getName());
-                    latch.countDown();
                 }
             });
         }
 
-        ExecutorService threadPool = Executors.newFixedThreadPool(NUM_THREADS_SUBMITTING_WORK);
         for (Runnable r: runnables) {
             threadPool.submit(new HystrixContextRunnable(r));
         }
 
-        latch.await();
+        assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
 
         for (TestSubscriber<String> subscriber: subscribers) {
             subscriber.awaitTerminalEvent();
@@ -621,16 +649,15 @@ public class HystrixObservableCollapserTest {
             }
             subscriber.assertCompleted();
             subscriber.assertNoErrors();
-            //System.out.println("Received : " + subscriber.getOnNextEvents());
+            System.out.println("Received : " + subscriber.getOnNextEvents());
             subscriber.assertValueCount(3);
         }
 
         context.shutdown();
-        threadPool.shutdown();
     }
 
     @Test
-    public void testConcurrencyInTightLoop() throws InterruptedException {
+    public void testConcurrencyInLoop() throws InterruptedException {
         for (int i = 0; i < 10; i++) {
             System.out.println("TRIAL : " + i);
             testCollapserUnderConcurrency();
@@ -795,37 +822,38 @@ public class HystrixObservableCollapserTest {
         private final String arg;
         private final static ConcurrentMap<String, Integer> emitsPerArg;
         private final boolean commandConstructionFails;
+        private final boolean commandExecutionFails;
         private final Func1<String, String> keyMapper;
         private final Action1<CollapsedRequest<String, String>> onMissingResponseHandler;
+
+        private final static HystrixCollapserKey key = HystrixCollapserKey.Factory.asKey("COLLAPSER_MULTI");
+        private final static HystrixCollapserProperties.Setter propsSetter = HystrixCollapserProperties.Setter().withMaxRequestsInBatch(10).withTimerDelayInMilliseconds(10);
+        private final static HystrixCollapserMetrics metrics = HystrixCollapserMetrics.getInstance(key, new HystrixPropertiesCollapserDefault(key, HystrixCollapserProperties.Setter()));
 
         static {
             emitsPerArg = new ConcurrentHashMap<String, Integer>();
         }
 
         public TestCollapserWithMultipleResponses(CollapserTimer timer, int arg, int numEmits, boolean commandConstructionFails) {
-            this(timer, arg, numEmits, commandConstructionFails, prefixMapper, onMissingComplete);
+            this(timer, arg, numEmits, commandConstructionFails, false, prefixMapper, onMissingComplete);
         }
 
         public TestCollapserWithMultipleResponses(CollapserTimer timer, int arg, int numEmits, Action1<CollapsedRequest<String, String>> onMissingHandler) {
-            this(timer, arg, numEmits, false, prefixMapper, onMissingHandler);
+            this(timer, arg, numEmits, false, false, prefixMapper, onMissingHandler);
         }
 
         public TestCollapserWithMultipleResponses(CollapserTimer timer, int arg, int numEmits, Func1<String, String> keyMapper) {
-            this(timer, arg, numEmits, false, keyMapper, onMissingComplete);
+            this(timer, arg, numEmits, false, false, keyMapper, onMissingComplete);
         }
 
-        public TestCollapserWithMultipleResponses(CollapserTimer timer, int arg, int numEmits, boolean commandConstructionFails, Func1<String, String> keyMapper, Action1<CollapsedRequest<String, String>> onMissingResponseHandler) {
-            super(collapserKeyFromString(timer), Scope.REQUEST, timer, HystrixCollapserProperties.Setter().withMaxRequestsInBatch(10).withTimerDelayInMilliseconds(10), createMetrics());
+        public TestCollapserWithMultipleResponses(CollapserTimer timer, int arg, int numEmits, boolean commandConstructionFails, boolean commandExecutionFails, Func1<String, String> keyMapper, Action1<CollapsedRequest<String, String>> onMissingResponseHandler) {
+            super(collapserKeyFromString(timer), Scope.REQUEST, timer, propsSetter, metrics);
             this.arg = arg + "";
             emitsPerArg.put(this.arg, numEmits);
             this.commandConstructionFails = commandConstructionFails;
+            this.commandExecutionFails = commandExecutionFails;
             this.keyMapper = keyMapper;
             this.onMissingResponseHandler = onMissingResponseHandler;
-        }
-
-        private static HystrixCollapserMetrics createMetrics() {
-            HystrixCollapserKey key = HystrixCollapserKey.Factory.asKey("COLLAPSER_MULTI");
-            return HystrixCollapserMetrics.getInstance(key, new HystrixPropertiesCollapserDefault(key, HystrixCollapserProperties.Setter()));
         }
 
         @Override
@@ -847,7 +875,7 @@ public class HystrixObservableCollapserTest {
                     args.add(intArg);
                 }
 
-                return new TestCollapserCommandWithMultipleResponsePerArgument(args, emitsPerArg);
+                return new TestCollapserCommandWithMultipleResponsePerArgument(args, emitsPerArg, commandExecutionFails);
             }
         }
 
@@ -894,37 +922,45 @@ public class HystrixObservableCollapserTest {
 
         private final List<Integer> args;
         private final Map<String, Integer> emitsPerArg;
+        private final boolean commandExecutionFails;
 
-        TestCollapserCommandWithMultipleResponsePerArgument(List<Integer> args, Map<String, Integer> emitsPerArg) {
-            super(testPropsBuilder());
+        private static InspectableBuilder.TestCommandBuilder setter = testPropsBuilder();
+
+        TestCollapserCommandWithMultipleResponsePerArgument(List<Integer> args, Map<String, Integer> emitsPerArg, boolean commandExecutionFails) {
+            super(setter);
             this.args = args;
             this.emitsPerArg = emitsPerArg;
+            this.commandExecutionFails = commandExecutionFails;
         }
 
         @Override
         protected Observable<String> construct() {
             assertNotNull("Wiring the Batch command into the Observable chain should have a HystrixRequestContext", HystrixRequestContext.getContextForCurrentThread());
-            return Observable.create(new OnSubscribe<String>() {
-                @Override
-                public void call(Subscriber<? super String> subscriber) {
-                    try {
-                        assertNotNull("Executing the Batch command should have a HystrixRequestContext", HystrixRequestContext.getContextForCurrentThread());
-                        Thread.sleep(30);
-                        for (Integer arg: args) {
-                            int numEmits = emitsPerArg.get(arg.toString());
-                            for (int j = 1; j < numEmits + 1; j++) {
-                                subscriber.onNext(arg + ":" + (arg * j));
+            if (commandExecutionFails) {
+                return Observable.error(new RuntimeException("Synthetic error while running batch command"));
+            } else {
+                return Observable.create(new OnSubscribe<String>() {
+                    @Override
+                    public void call(Subscriber<? super String> subscriber) {
+                        try {
+                            assertNotNull("Executing the Batch command should have a HystrixRequestContext", HystrixRequestContext.getContextForCurrentThread());
+                            Thread.sleep(1);
+                            for (Integer arg : args) {
+                                int numEmits = emitsPerArg.get(arg.toString());
+                                for (int j = 1; j < numEmits + 1; j++) {
+                                    subscriber.onNext(arg + ":" + (arg * j));
+                                    Thread.sleep(1);
+                                }
                                 Thread.sleep(1);
                             }
-                            Thread.sleep(10);
+                            subscriber.onCompleted();
+                        } catch (Throwable ex) {
+                            ex.printStackTrace();
+                            subscriber.onError(ex);
                         }
-                    } catch (Throwable ex) {
-                        ex.printStackTrace();
-                        subscriber.onError(ex);
                     }
-                    subscriber.onCompleted();
-                }
-            });
+                });
+            }
         }
     }
 }

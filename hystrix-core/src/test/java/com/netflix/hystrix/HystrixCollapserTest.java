@@ -42,6 +42,7 @@ import com.netflix.hystrix.strategy.concurrency.HystrixContextRunnable;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestVariableHolder;
 import com.netflix.hystrix.util.HystrixTimer.TimerListener;
+import rx.Observable;
 
 import static org.junit.Assert.*;
 
@@ -817,22 +818,22 @@ public class HystrixCollapserTest {
     public void testRequestWithCommandShortCircuited() throws Exception {
         TestCollapserTimer timer = new TestCollapserTimer();
         HystrixCollapser<List<String>, String, String> collapser1 = new TestRequestCollapserWithShortCircuitedCommand(timer, "1");
-        Future<String> response1 = collapser1.queue();
-        Future<String> response2 = new TestRequestCollapserWithShortCircuitedCommand(timer, "2").queue();
+        Observable<String> response1 = collapser1.observe();
+        Observable<String> response2 = new TestRequestCollapserWithShortCircuitedCommand(timer, "2").observe();
         timer.incrementTime(10); // let time pass that equals the default delay/period
 
         try {
-            response1.get();
+            response1.toBlocking().first();
             fail("we should have received an exception");
-        } catch (ExecutionException e) {
-            //                e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
             // what we expect
         }
         try {
-            response2.get();
+            response2.toBlocking().first();
             fail("we should have received an exception");
-        } catch (ExecutionException e) {
-            //                e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
             // what we expect
         }
 
