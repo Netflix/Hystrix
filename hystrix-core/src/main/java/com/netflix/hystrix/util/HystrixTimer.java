@@ -24,6 +24,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.netflix.hystrix.strategy.HystrixPlugins;
+import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,8 +36,6 @@ import com.netflix.hystrix.HystrixCommand;
  * Timer used by {@link HystrixCommand} to timeout async executions and {@link HystrixCollapser} to trigger batch executions.
  */
 public class HystrixTimer {
-
-    static final String SYS_PROP_TIMEOUT = "com.netflix.hystrix.util.HystrixTimer.timeoutThreadPoolSize";
 
     private static final Logger logger = LoggerFactory.getLogger(HystrixTimer.class);
 
@@ -150,14 +150,8 @@ public class HystrixTimer {
          */
         public void initialize() {
 
-            // System property can override the default ThreadPool size
-            final String coreSizePropertyValue = System.getProperty(SYS_PROP_TIMEOUT);
-            int coreSize;
-            if (coreSizePropertyValue != null) {
-                coreSize = Integer.valueOf(coreSizePropertyValue);
-            } else {
-                coreSize = Runtime.getRuntime().availableProcessors();
-            }
+            HystrixPropertiesStrategy propertiesStrategy = HystrixPlugins.getInstance().getPropertiesStrategy();
+            int coreSize = propertiesStrategy.getTimerThreadPoolProperties().getCorePoolSize().get();
 
             executor = new ScheduledThreadPoolExecutor(coreSize, new ThreadFactory() {
                 final AtomicInteger counter = new AtomicInteger();

@@ -24,6 +24,7 @@ import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.HystrixThreadPool;
 import com.netflix.hystrix.HystrixThreadPoolKey;
 import com.netflix.hystrix.HystrixThreadPoolProperties;
+import com.netflix.hystrix.HystrixTimerThreadPoolProperties;
 import com.netflix.hystrix.strategy.HystrixPlugins;
 
 /**
@@ -148,5 +149,18 @@ public abstract class HystrixPropertiesStrategy {
      */
     public String getCollapserPropertiesCacheKey(HystrixCollapserKey collapserKey, HystrixCollapserProperties.Setter builder) {
         return collapserKey.name();
+    }
+
+    /**
+     * Construct an implementation of {@link com.netflix.hystrix.HystrixTimerThreadPoolProperties} for configuration of the timer thread pool
+     * that handles timeouts and collapser logic.
+     * <p>
+     * Constructs instance of {@link HystrixPropertiesTimerThreadPoolDefault}.
+     *
+     *
+     * @return Implementation of {@link com.netflix.hystrix.HystrixTimerThreadPoolProperties}
+     */
+    public HystrixTimerThreadPoolProperties getTimerThreadPoolProperties() {
+        return new HystrixPropertiesTimerThreadPoolDefault();
     }
 }

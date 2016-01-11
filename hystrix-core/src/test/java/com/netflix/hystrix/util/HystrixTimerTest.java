@@ -1,12 +1,12 @@
 /**
  * Copyright 2015 Netflix, Inc.
- *
+ * <p/>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * <p/>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p/>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,6 +15,9 @@
  */
 package com.netflix.hystrix.util;
 
+import com.netflix.hystrix.HystrixTimerThreadPoolProperties;
+import com.netflix.hystrix.strategy.HystrixPlugins;
+import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 import com.netflix.hystrix.util.HystrixTimer.ScheduledExecutor;
 import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 import org.junit.Before;
@@ -32,7 +35,6 @@ public class HystrixTimerTest {
     public void setUp() {
         HystrixTimer timer = HystrixTimer.getInstance();
         HystrixTimer.reset();
-        System.clearProperty(HystrixTimer.SYS_PROP_TIMEOUT);
     }
 
     @Test
@@ -168,22 +170,61 @@ public class HystrixTimerTest {
     }
 
     @Test
-    public void testThreadPoolSizeSystemProperty() {
-
-        System.setProperty(HystrixTimer.SYS_PROP_TIMEOUT, "42");
-        HystrixTimer hystrixTimer = HystrixTimer.getInstance();
-        hystrixTimer.startThreadIfNeeded();
-        System.clearProperty(HystrixTimer.SYS_PROP_TIMEOUT);
-
-        assertEquals(42, hystrixTimer.executor.get().getThreadPool().getCorePoolSize());
-    }
-
-    @Test
     public void testThreadPoolSizeDefault() {
 
         HystrixTimer hystrixTimer = HystrixTimer.getInstance();
         hystrixTimer.startThreadIfNeeded();
         assertEquals(Runtime.getRuntime().availableProcessors(), hystrixTimer.executor.get().getThreadPool().getCorePoolSize());
+    }
+
+    @Test
+    public void testThreadPoolSizeConfiguredWithBuilder() {
+
+        HystrixPlugins.reset();
+
+        HystrixTimerThreadPoolProperties.Setter builder = HystrixTimerThreadPoolProperties.Setter().withCoreSize(1);
+        final HystrixTimerThreadPoolProperties props = new HystrixTimerThreadPoolProperties(builder) {
+        };
+
+        HystrixPropertiesStrategy strategy = new HystrixPropertiesStrategy() {
+            @Override
+            public HystrixTimerThreadPoolProperties getTimerThreadPoolProperties() {
+                return props;
+            }
+        };
+
+        HystrixPlugins.getInstance().registerPropertiesStrategy(strategy);
+
+        HystrixTimer hystrixTimer = HystrixTimer.getInstance();
+        hystrixTimer.startThreadIfNeeded();
+
+        assertEquals(1, hystrixTimer.executor.get().getThreadPool().getCorePoolSize());
+
+    }
+
+    @Test
+    public void testThreadPoolSizeConfiguredWithArchaius() {
+
+        HystrixPlugins.reset();
+
+        HystrixTimerThreadPoolProperties.Setter builder = HystrixTimerThreadPoolProperties.Setter().withCoreSize(1);
+        final HystrixTimerThreadPoolProperties props = new HystrixTimerThreadPoolProperties(builder) {
+        };
+
+        HystrixPropertiesStrategy strategy = new HystrixPropertiesStrategy() {
+            @Override
+            public HystrixTimerThreadPoolProperties getTimerThreadPoolProperties() {
+                return props;
+            }
+        };
+
+        HystrixPlugins.getInstance().registerPropertiesStrategy(strategy);
+
+        HystrixTimer hystrixTimer = HystrixTimer.getInstance();
+        hystrixTimer.startThreadIfNeeded();
+
+        assertEquals(1, hystrixTimer.executor.get().getThreadPool().getCorePoolSize());
+
     }
 
     private static class TestListener implements TimerListener {
