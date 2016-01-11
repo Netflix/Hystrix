@@ -1,12 +1,12 @@
-package com.netflix.hystrix.metric;
+package com.netflix.hystrix.metric.consumer;
 
 import com.netflix.hystrix.HystrixCommandGroupKey;
 import com.netflix.hystrix.HystrixCommandKey;
+import com.netflix.hystrix.HystrixCommandMetrics;
 import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.HystrixRequestLog;
-import com.netflix.hystrix.HystrixThreadPoolKey;
-import com.netflix.hystrix.HystrixThreadPoolMetrics;
+import com.netflix.hystrix.metric.CommandStreamTest;
 import com.netflix.hystrix.strategy.concurrency.HystrixContextRunnable;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import org.junit.After;
@@ -21,12 +21,14 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 
-public class CumulativeThreadPoolEventCounterStreamTest extends CommandStreamTest {
+public class HealthCountsStreamTest extends CommandStreamTest {
     HystrixRequestContext context;
-    CumulativeThreadPoolEventCounterStream stream;
+    HealthCountsStream stream;
 
-    private static Subscriber<long[]> getSubscriber(final CountDownLatch latch) {
-        return new Subscriber<long[]>() {
+    static HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("HealthCounts");
+
+    private static Subscriber<HystrixCommandMetrics.HealthCounts> getSubscriber(final CountDownLatch latch) {
+        return new Subscriber<HystrixCommandMetrics.HealthCounts>() {
             @Override
             public void onCompleted() {
                 latch.countDown();
@@ -38,8 +40,8 @@ public class CumulativeThreadPoolEventCounterStreamTest extends CommandStreamTes
             }
 
             @Override
-            public void onNext(long[] eventCounts) {
-                System.out.println("OnNext @ " + System.currentTimeMillis() + " : " + eventCounts[0] + " : " + eventCounts[1]);
+            public void onNext(HystrixCommandMetrics.HealthCounts healthCounts) {
+                System.out.println("OnNext @ " + System.currentTimeMillis() + " : " + healthCounts);
             }
         };
     }
@@ -58,11 +60,8 @@ public class CumulativeThreadPoolEventCounterStreamTest extends CommandStreamTes
 
     @Test
     public void testEmptyStreamProducesZeros() {
-        HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("Cumulative-ThreadPool-A");
-        HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("Cumulative-ThreadPool-A");
-        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("Cumulative-Counter-A");
-        stream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100);
-        stream.startCachingStreamValuesIfUnstarted();
+        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Health-A");
+        stream = HealthCountsStream.getInstance(key, 10, 100);
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -74,18 +73,15 @@ public class CumulativeThreadPoolEventCounterStreamTest extends CommandStreamTes
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
-        assertEquals(2, stream.getLatest().length);
-        assertEquals(0, stream.getLatestCount(HystrixEventType.ThreadPool.EXECUTED));
-        assertEquals(0, stream.getLatestCount(HystrixEventType.ThreadPool.REJECTED));
+        System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
+        assertEquals(0L, stream.getLatest().getErrorCount());
+        assertEquals(0L, stream.getLatest().getTotalRequests());
     }
 
     @Test
     public void testSingleSuccess() {
-        HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("Cumulative-ThreadPool-B");
-        HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("Cumulative-ThreadPool-B");
-        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("Cumulative-Counter-B");
-        stream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100);
-        stream.startCachingStreamValuesIfUnstarted();
+        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Health-B");
+        stream = HealthCountsStream.getInstance(key, 10, 100);
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -99,18 +95,15 @@ public class CumulativeThreadPoolEventCounterStreamTest extends CommandStreamTes
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
-        assertEquals(2, stream.getLatest().length);
-        assertEquals(1, stream.getLatestCount(HystrixEventType.ThreadPool.EXECUTED));
-        assertEquals(0, stream.getLatestCount(HystrixEventType.ThreadPool.REJECTED));
+        System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
+        assertEquals(0L, stream.getLatest().getErrorCount());
+        assertEquals(1L, stream.getLatest().getTotalRequests());
     }
 
     @Test
     public void testSingleFailure() {
-        HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("Cumulative-ThreadPool-C");
-        HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("Cumulative-ThreadPool-C");
-        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("Cumulative-Counter-C");
-        stream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100);
-        stream.startCachingStreamValuesIfUnstarted();
+        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Health-C");
+        stream = HealthCountsStream.getInstance(key, 10, 100);
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -124,18 +117,15 @@ public class CumulativeThreadPoolEventCounterStreamTest extends CommandStreamTes
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
-        assertEquals(2, stream.getLatest().length);
-        assertEquals(1, stream.getLatestCount(HystrixEventType.ThreadPool.EXECUTED));
-        assertEquals(0, stream.getLatestCount(HystrixEventType.ThreadPool.REJECTED));
+        System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
+        assertEquals(1L, stream.getLatest().getErrorCount());
+        assertEquals(1L, stream.getLatest().getTotalRequests());
     }
 
     @Test
     public void testSingleTimeout() {
-        HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("Cumulative-ThreadPool-D");
-        HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("Cumulative-ThreadPool-D");
-        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("Cumulative-Counter-D");
-        stream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100);
-        stream.startCachingStreamValuesIfUnstarted();
+        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Health-D");
+        stream = HealthCountsStream.getInstance(key, 10, 100);
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -149,18 +139,15 @@ public class CumulativeThreadPoolEventCounterStreamTest extends CommandStreamTes
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
-        assertEquals(2, stream.getLatest().length);
-        assertEquals(1, stream.getLatestCount(HystrixEventType.ThreadPool.EXECUTED));
-        assertEquals(0, stream.getLatestCount(HystrixEventType.ThreadPool.REJECTED));
+        System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
+        assertEquals(1L, stream.getLatest().getErrorCount());
+        assertEquals(1L, stream.getLatest().getTotalRequests());
     }
 
     @Test
     public void testSingleBadRequest() {
-        HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("Cumulative-ThreadPool-E");
-        HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("Cumulative-ThreadPool-E");
-        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("Cumulative-Counter-E");
-        stream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100);
-        stream.startCachingStreamValuesIfUnstarted();
+        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Health-E");
+        stream = HealthCountsStream.getInstance(key, 10, 100);
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -174,18 +161,15 @@ public class CumulativeThreadPoolEventCounterStreamTest extends CommandStreamTes
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
-        assertEquals(2, stream.getLatest().length);
-        assertEquals(1, stream.getLatestCount(HystrixEventType.ThreadPool.EXECUTED));
-        assertEquals(0, stream.getLatestCount(HystrixEventType.ThreadPool.REJECTED));
+        System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
+        assertEquals(0L, stream.getLatest().getErrorCount());
+        assertEquals(0L, stream.getLatest().getTotalRequests());
     }
 
     @Test
     public void testRequestFromCache() {
-        HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("Cumulative-ThreadPool-F");
-        HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("Cumulative-ThreadPool-F");
-        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("Cumulative-Counter-F");
-        stream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100);
-        stream.startCachingStreamValuesIfUnstarted();
+        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Health-F");
+        stream = HealthCountsStream.getInstance(key, 10, 100);
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -205,26 +189,20 @@ public class CumulativeThreadPoolEventCounterStreamTest extends CommandStreamTes
         }
 
         System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
-
-        //RESPONSE_FROM_CACHE should not show up at all in thread pool counters - just the success
-        assertEquals(2, stream.getLatest().length);
-        assertEquals(1, stream.getLatestCount(HystrixEventType.ThreadPool.EXECUTED));
-        assertEquals(0, stream.getLatestCount(HystrixEventType.ThreadPool.REJECTED));
+        assertEquals(0L, stream.getLatest().getErrorCount());
+        assertEquals(1L, stream.getLatest().getTotalRequests()); //responses from cache should not show up here
     }
 
     @Test
     public void testShortCircuited() {
-        HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("Cumulative-ThreadPool-G");
-        HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("Cumulative-ThreadPool-G");
-        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("Cumulative-Counter-G");
-        stream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100);
-        stream.startCachingStreamValuesIfUnstarted();
+        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Health-G");
+        stream = HealthCountsStream.getInstance(key, 10, 100);
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
 
         //3 failures in a row will trip circuit.  let bucket roll once then submit 2 requests.
-        //should see 3 FAILUREs and 2 SHORT_CIRCUITs and each should see a FALLBACK_SUCCESS
+        //should see 3 FAILUREs and 2 SHORT_CIRCUITs and then 5 FALLBACK_SUCCESSes
 
         CommandStreamTest.Command failure1 = CommandStreamTest.Command.from(groupKey, key, HystrixEventType.FAILURE, 20);
         CommandStreamTest.Command failure2 = CommandStreamTest.Command.from(groupKey, key, HystrixEventType.FAILURE, 20);
@@ -252,23 +230,18 @@ public class CumulativeThreadPoolEventCounterStreamTest extends CommandStreamTes
             fail("Interrupted ex");
         }
 
-        System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
         assertTrue(shortCircuit1.isResponseShortCircuited());
         assertTrue(shortCircuit2.isResponseShortCircuited());
-
-        //only the FAILUREs should show up in thread pool counters
-        assertEquals(2, stream.getLatest().length);
-        assertEquals(3, stream.getLatestCount(HystrixEventType.ThreadPool.EXECUTED));
-        assertEquals(0, stream.getLatestCount(HystrixEventType.ThreadPool.REJECTED));
+        System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
+        //should only see failures here, not SHORT-CIRCUITS
+        assertEquals(3L, stream.getLatest().getErrorCount());
+        assertEquals(3L, stream.getLatest().getTotalRequests());
     }
 
     @Test
     public void testSemaphoreRejected() {
-        HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("Cumulative-ThreadPool-H");
-        HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("Cumulative-ThreadPool-H");
-        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("Cumulative-Counter-H");
-        stream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100);
-        stream.startCachingStreamValuesIfUnstarted();
+        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Health-H");
+        stream = HealthCountsStream.getInstance(key, 10, 100);
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -313,20 +286,14 @@ public class CumulativeThreadPoolEventCounterStreamTest extends CommandStreamTes
         System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
         assertTrue(rejected1.isResponseSemaphoreRejected());
         assertTrue(rejected2.isResponseSemaphoreRejected());
-
-        //none of these got executed on a thread-pool, so thread pool metrics should be 0
-        assertEquals(2, stream.getLatest().length);
-        assertEquals(0, stream.getLatestCount(HystrixEventType.ThreadPool.EXECUTED));
-        assertEquals(0, stream.getLatestCount(HystrixEventType.ThreadPool.REJECTED));
+        assertEquals(2L, stream.getLatest().getErrorCount());
+        assertEquals(12L, stream.getLatest().getTotalRequests());
     }
 
     @Test
     public void testThreadPoolRejected() {
-        HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("Cumulative-ThreadPool-I");
-        HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("Cumulative-ThreadPool-I");
-        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("Cumulative-Counter-I");
-        stream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100);
-        stream.startCachingStreamValuesIfUnstarted();
+        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Health-I");
+        stream = HealthCountsStream.getInstance(key, 10, 100);
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -366,20 +333,14 @@ public class CumulativeThreadPoolEventCounterStreamTest extends CommandStreamTes
         System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
         assertTrue(rejected1.isResponseThreadPoolRejected());
         assertTrue(rejected2.isResponseThreadPoolRejected());
-
-        //all 12 commands got submitted to thread pool, 10 accepted, 2 rejected is expected
-        assertEquals(2, stream.getLatest().length);
-        assertEquals(10, stream.getLatestCount(HystrixEventType.ThreadPool.EXECUTED));
-        assertEquals(2, stream.getLatestCount(HystrixEventType.ThreadPool.REJECTED));
+        assertEquals(2L, stream.getLatest().getErrorCount());
+        assertEquals(12L, stream.getLatest().getTotalRequests());
     }
 
     @Test
     public void testFallbackFailure() {
-        HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("Cumulative-ThreadPool-J");
-        HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("Cumulative-ThreadPool-J");
-        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("Cumulative-Counter-J");
-        stream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100);
-        stream.startCachingStreamValuesIfUnstarted();
+        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Health-J");
+        stream = HealthCountsStream.getInstance(key, 10, 100);
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -393,18 +354,15 @@ public class CumulativeThreadPoolEventCounterStreamTest extends CommandStreamTes
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
-        assertEquals(2, stream.getLatest().length);
-        assertEquals(1, stream.getLatestCount(HystrixEventType.ThreadPool.EXECUTED));
-        assertEquals(0, stream.getLatestCount(HystrixEventType.ThreadPool.REJECTED));
+        System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
+        assertEquals(1L, stream.getLatest().getErrorCount());
+        assertEquals(1L, stream.getLatest().getTotalRequests());
     }
 
     @Test
     public void testFallbackMissing() {
-        HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("Cumulative-ThreadPool-K");
-        HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("Cumulative-ThreadPool-K");
-        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("Cumulative-Counter-K");
-        stream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100);
-        stream.startCachingStreamValuesIfUnstarted();
+        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Health-K");
+        stream = HealthCountsStream.getInstance(key, 10, 100);
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -418,18 +376,14 @@ public class CumulativeThreadPoolEventCounterStreamTest extends CommandStreamTes
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
-        assertEquals(2, stream.getLatest().length);
-        assertEquals(1, stream.getLatestCount(HystrixEventType.ThreadPool.EXECUTED));
-        assertEquals(0, stream.getLatestCount(HystrixEventType.ThreadPool.REJECTED));
+        assertEquals(1L, stream.getLatest().getErrorCount());
+        assertEquals(1L, stream.getLatest().getTotalRequests());
     }
 
     @Test
     public void testFallbackRejection() {
-        HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("Cumulative-ThreadPool-L");
-        HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("Cumulative-ThreadPool-L");
-        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("Cumulative-Counter-L");
-        stream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100);
-        stream.startCachingStreamValuesIfUnstarted();
+        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Health-L");
+        stream = HealthCountsStream.getInstance(key, 10, 100);
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
@@ -463,21 +417,17 @@ public class CumulativeThreadPoolEventCounterStreamTest extends CommandStreamTes
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
-
-        //all 7 commands executed on-thread, so should be executed according to thread-pool metrics
-        assertEquals(2, stream.getLatest().length);
-        assertEquals(7, stream.getLatestCount(HystrixEventType.ThreadPool.EXECUTED));
-        assertEquals(0, stream.getLatestCount(HystrixEventType.ThreadPool.REJECTED));
+        System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
+        assertEquals(7L, stream.getLatest().getErrorCount());
+        assertEquals(7L, stream.getLatest().getTotalRequests());
     }
 
-    //in a rolling window, take(30) would age out all counters.  in the cumulative count, we expect them to remain non-zero forever
     @Test
-    public void testMultipleEventsOverTimeGetStoredAndDoNotAgeOut() {
-        HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("Cumulative-ThreadPool-M");
-        HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("Cumulative-ThreadPool-M");
-        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("Cumulative-Counter-M");
-        stream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100);
-        stream.startCachingStreamValuesIfUnstarted();
+    public void testMultipleEventsOverTimeGetStoredAndAgeOut() {
+        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Health-M");
+        stream = HealthCountsStream.getInstance(key, 10, 100);
+
+        //by doing a take(30), we ensure that all rolling counts go back to 0
 
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(30).subscribe(getSubscriber(latch));
@@ -493,10 +443,8 @@ public class CumulativeThreadPoolEventCounterStreamTest extends CommandStreamTes
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
-
-        //all commands should have aged out
-        assertEquals(2, stream.getLatest().length);
-        assertEquals(2, stream.getLatestCount(HystrixEventType.ThreadPool.EXECUTED));
-        assertEquals(0, stream.getLatestCount(HystrixEventType.ThreadPool.REJECTED));
+        System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
+        assertEquals(0L, stream.getLatest().getErrorCount());
+        assertEquals(0L, stream.getLatest().getTotalRequests());
     }
 }

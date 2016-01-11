@@ -15,27 +15,26 @@
  */
 package com.netflix.hystrix;
 
+import com.netflix.hystrix.metric.HystrixCommandCompletion;
+import com.netflix.hystrix.metric.HystrixThreadEventStream;
+import com.netflix.hystrix.metric.consumer.CumulativeCommandEventCounterStream;
+import com.netflix.hystrix.metric.consumer.HealthCountsStream;
+import com.netflix.hystrix.metric.consumer.RollingCommandEventCounterStream;
+import com.netflix.hystrix.metric.consumer.RollingCommandLatencyDistributionStream;
+import com.netflix.hystrix.metric.consumer.RollingCommandMaxConcurrencyStream;
+import com.netflix.hystrix.metric.consumer.RollingCommandUserLatencyDistributionStream;
+import com.netflix.hystrix.strategy.HystrixPlugins;
+import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
+import com.netflix.hystrix.util.HystrixRollingNumberEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import rx.functions.Func0;
+import rx.functions.Func2;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import com.netflix.hystrix.metric.CumulativeCommandEventCounterStream;
-import com.netflix.hystrix.metric.HealthCountsStream;
-import com.netflix.hystrix.metric.HystrixCommandCompletion;
-import com.netflix.hystrix.metric.HystrixThreadEventStream;
-import com.netflix.hystrix.metric.RollingCommandMaxConcurrencyStream;
-import com.netflix.hystrix.metric.RollingCommandEventCounterStream;
-import com.netflix.hystrix.metric.RollingCommandLatencyDistributionStream;
-import com.netflix.hystrix.metric.RollingCommandUserLatencyDistributionStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.netflix.hystrix.strategy.HystrixPlugins;
-import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
-import com.netflix.hystrix.util.HystrixRollingNumberEvent;
-import rx.functions.Func0;
-import rx.functions.Func2;
 
 /**
  * Used by {@link HystrixCommand} to record metrics.

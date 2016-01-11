@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package com.netflix.hystrix.metric;
+package com.netflix.hystrix.metric.consumer;
 
 import com.netflix.hystrix.HystrixCollapserKey;
 import com.netflix.hystrix.HystrixCollapserProperties;
-
+import com.netflix.hystrix.metric.HystrixCollapserEvent;
+import com.netflix.hystrix.metric.HystrixCollapserEventStream;
 import org.HdrHistogram.Histogram;
 import rx.functions.Func2;
 

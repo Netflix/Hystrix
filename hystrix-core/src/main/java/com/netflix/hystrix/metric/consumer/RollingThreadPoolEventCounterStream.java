@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.hystrix.metric;
+package com.netflix.hystrix.metric.consumer;
 
 import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.HystrixThreadPoolKey;
 import com.netflix.hystrix.HystrixThreadPoolMetrics;
 import com.netflix.hystrix.HystrixThreadPoolProperties;
+import com.netflix.hystrix.metric.HystrixCommandCompletion;
+import com.netflix.hystrix.metric.HystrixThreadPoolCompletionStream;
 import rx.functions.Func2;
 
 import java.util.concurrent.ConcurrentHashMap;

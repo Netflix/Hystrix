@@ -15,23 +15,22 @@
  */
 package com.netflix.hystrix;
 
+import com.netflix.hystrix.metric.HystrixCommandCompletion;
+import com.netflix.hystrix.metric.consumer.CumulativeThreadPoolEventCounterStream;
+import com.netflix.hystrix.metric.consumer.RollingThreadPoolConcurrencyStream;
+import com.netflix.hystrix.metric.consumer.RollingThreadPoolEventCounterStream;
+import com.netflix.hystrix.util.HystrixRollingNumberEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import rx.functions.Func0;
+import rx.functions.Func2;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import com.netflix.hystrix.metric.CumulativeThreadPoolEventCounterStream;
-import com.netflix.hystrix.metric.HystrixCommandCompletion;
-import com.netflix.hystrix.metric.RollingThreadPoolConcurrencyStream;
-import com.netflix.hystrix.metric.RollingThreadPoolEventCounterStream;
-import com.netflix.hystrix.util.HystrixRollingNumberEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import rx.functions.Func0;
-import rx.functions.Func2;
 
 /**
  * Used by {@link HystrixThreadPool} to record metrics.

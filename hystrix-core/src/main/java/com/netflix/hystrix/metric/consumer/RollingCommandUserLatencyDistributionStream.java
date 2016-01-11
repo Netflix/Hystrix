@@ -14,10 +14,15 @@
  * limitations under the License.
  */
 
-package com.netflix.hystrix.metric;
+package com.netflix.hystrix.metric.consumer;
+
+import com.netflix.hystrix.HystrixCollapserProperties;
 
 import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixCommandProperties;
+import com.netflix.hystrix.metric.HystrixCommandCompletion;
+import com.netflix.hystrix.metric.HystrixCommandCompletionStream;
+import com.netflix.hystrix.metric.HystrixCommandEvent;
 import org.HdrHistogram.Histogram;
 import rx.functions.Func2;
 
@@ -29,8 +34,8 @@ import java.util.concurrent.ConcurrentMap;
  * There is a rolling window abstraction on this stream.
  * The latency distribution object is calculated over a window of t1 milliseconds.  This window has b buckets.
  * Therefore, a new set of counters is produced every t2 (=t1/b) milliseconds
- * t1 = {@link HystrixCommandProperties#metricsRollingPercentileWindowInMilliseconds()}
- * b = {@link HystrixCommandProperties#metricsRollingPercentileBucketSize()}
+ * t1 = {@link HystrixCollapserProperties#metricsRollingPercentileWindowInMilliseconds()}
+ * b = {@link HystrixCollapserProperties#metricsRollingPercentileBucketSize()}
  *
  * These values are stable - there's no peeking into a bucket until it is emitted
  *
@@ -43,20 +48,20 @@ import java.util.concurrent.ConcurrentMap;
  * ** Execution time is the time spent executing the user-provided execution method.
  * ** Total time is the time spent from the perspecitve of the consumer, and includes all Hystrix bookkeeping.
  */
-public class RollingCommandLatencyDistributionStream extends RollingDistributionStream<HystrixCommandCompletion> {
-    private static final ConcurrentMap<String, RollingCommandLatencyDistributionStream> streams = new ConcurrentHashMap<String, RollingCommandLatencyDistributionStream>();
+public class RollingCommandUserLatencyDistributionStream extends RollingDistributionStream<HystrixCommandCompletion> {
+    private static final ConcurrentMap<String, RollingCommandUserLatencyDistributionStream> streams = new ConcurrentHashMap<String, RollingCommandUserLatencyDistributionStream>();
 
     private static final Func2<Histogram, HystrixCommandCompletion, Histogram> addValuesToBucket = new Func2<Histogram, HystrixCommandCompletion, Histogram>() {
         @Override
         public Histogram call(Histogram initialDistribution, HystrixCommandCompletion event) {
-            if (event.didCommandExecute() && event.getExecutionLatency() > -1) {
-                initialDistribution.recordValue(event.getExecutionLatency());
+            if (event.didCommandExecute() && event.getTotalLatency() > -1) {
+                initialDistribution.recordValue(event.getTotalLatency());
             }
             return initialDistribution;
         }
     };
 
-    public static RollingCommandLatencyDistributionStream getInstance(HystrixCommandKey commandKey, HystrixCommandProperties properties) {
+    public static RollingCommandUserLatencyDistributionStream getInstance(HystrixCommandKey commandKey, HystrixCommandProperties properties) {
         final int percentileMetricWindow = properties.metricsRollingPercentileWindowInMilliseconds().get();
         final int numPercentileBuckets = properties.metricsRollingPercentileWindowBuckets().get();
         final int percentileBucketSizeInMs = percentileMetricWindow / numPercentileBuckets;
@@ -64,15 +69,15 @@ public class RollingCommandLatencyDistributionStream extends RollingDistribution
         return getInstance(commandKey, numPercentileBuckets, percentileBucketSizeInMs);
     }
 
-    public static RollingCommandLatencyDistributionStream getInstance(HystrixCommandKey commandKey, int numBuckets, int bucketSizeInMs) {
-        RollingCommandLatencyDistributionStream initialStream = streams.get(commandKey.name());
+    public static RollingCommandUserLatencyDistributionStream getInstance(HystrixCommandKey commandKey, int numBuckets, int bucketSizeInMs) {
+        RollingCommandUserLatencyDistributionStream initialStream = streams.get(commandKey.name());
         if (initialStream != null) {
             return initialStream;
         } else {
-            synchronized (RollingCommandLatencyDistributionStream.class) {
-                RollingCommandLatencyDistributionStream existingStream = streams.get(commandKey.name());
+            synchronized (RollingCommandUserLatencyDistributionStream.class) {
+                RollingCommandUserLatencyDistributionStream existingStream = streams.get(commandKey.name());
                 if (existingStream == null) {
-                    RollingCommandLatencyDistributionStream newStream = new RollingCommandLatencyDistributionStream(commandKey, numBuckets, bucketSizeInMs);
+                    RollingCommandUserLatencyDistributionStream newStream = new RollingCommandUserLatencyDistributionStream(commandKey, numBuckets, bucketSizeInMs);
                     streams.putIfAbsent(commandKey.name(), newStream);
                     return newStream;
                 } else {
@@ -86,7 +91,7 @@ public class RollingCommandLatencyDistributionStream extends RollingDistribution
         streams.clear();
     }
 
-    private RollingCommandLatencyDistributionStream(HystrixCommandKey commandKey, int numPercentileBuckets, int percentileBucketSizeInMs) {
+    private RollingCommandUserLatencyDistributionStream(HystrixCommandKey commandKey, int numPercentileBuckets, int percentileBucketSizeInMs) {
         super(HystrixCommandCompletionStream.getInstance(commandKey), numPercentileBuckets, percentileBucketSizeInMs, addValuesToBucket);
     }
 }

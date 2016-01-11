@@ -15,22 +15,20 @@
  */
 package com.netflix.hystrix;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.concurrent.ConcurrentHashMap;
-
-import com.netflix.hystrix.metric.CumulativeCollapserEventCounterStream;
 import com.netflix.hystrix.metric.HystrixCollapserEvent;
 import com.netflix.hystrix.metric.HystrixThreadEventStream;
-import com.netflix.hystrix.metric.RollingCollapserBatchSizeDistributionStream;
-import com.netflix.hystrix.metric.RollingCollapserEventCounterStream;
+import com.netflix.hystrix.metric.consumer.CumulativeCollapserEventCounterStream;
+import com.netflix.hystrix.metric.consumer.RollingCollapserBatchSizeDistributionStream;
+import com.netflix.hystrix.metric.consumer.RollingCollapserEventCounterStream;
 import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
-import com.netflix.hystrix.util.HystrixRollingNumber;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
-import com.netflix.hystrix.util.HystrixRollingPercentile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.functions.Func2;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Used by {@link HystrixCollapser} to record metrics.

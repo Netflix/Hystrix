@@ -1,10 +1,12 @@
-package com.netflix.hystrix.metric;
+package com.netflix.hystrix.metric.consumer;
 
 import com.netflix.hystrix.HystrixCommandGroupKey;
 import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.HystrixRequestLog;
+import com.netflix.hystrix.HystrixThreadPoolKey;
+import com.netflix.hystrix.metric.CommandStreamTest;
 import com.netflix.hystrix.strategy.concurrency.HystrixContextRunnable;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import org.junit.After;
@@ -21,12 +23,10 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 
-public class RollingCommandMaxConcurrencyStreamTest extends CommandStreamTest {
-    RollingCommandMaxConcurrencyStream stream;
+public class RollingThreadPoolConcurrencyStreamTest extends CommandStreamTest {
+    RollingThreadPoolConcurrencyStream stream;
     HystrixRequestContext context;
     ExecutorService threadPool;
-
-    static HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("Command-Concurrency");
 
     private static Subscriber<Integer> getSubscriber(final CountDownLatch latch) {
         return new Subscriber<Integer>() {
@@ -63,8 +63,10 @@ public class RollingCommandMaxConcurrencyStreamTest extends CommandStreamTest {
 
     @Test
     public void testEmptyStreamProducesZeros() {
-        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Concurrency-A");
-        stream = RollingCommandMaxConcurrencyStream.getInstance(key, 10, 100);
+        HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("ThreadPool-Concurrency-A");
+        HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("ThreadPool-Concurrency-A");
+        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("RollingConcurrency-A");
+        stream = RollingThreadPoolConcurrencyStream.getInstance(threadPoolKey, 10, 100);
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
@@ -82,8 +84,10 @@ public class RollingCommandMaxConcurrencyStreamTest extends CommandStreamTest {
 
     @Test
     public void testStartsAndEndsInSameBucketProduceValue() throws InterruptedException {
-        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Concurrency-B");
-        stream = RollingCommandMaxConcurrencyStream.getInstance(key, 10, 100);
+        HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("ThreadPool-Concurrency-B");
+        HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("ThreadPool-Concurrency-B");
+        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("RollingConcurrency-B");
+        stream = RollingThreadPoolConcurrencyStream.getInstance(threadPoolKey, 10, 100);
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
@@ -100,6 +104,30 @@ public class RollingCommandMaxConcurrencyStreamTest extends CommandStreamTest {
         assertEquals(2, stream.getLatestRollingMax());
     }
 
+    @Test
+    public void testStartsAndEndsInSameBucketSemaphoreIsolated() throws InterruptedException {
+        HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("ThreadPool-Concurrency-C");
+        HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("ThreadPool-Concurrency-C");
+        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("RollingConcurrency-C");
+        stream = RollingThreadPoolConcurrencyStream.getInstance(threadPoolKey, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        stream.observe().take(10).subscribe(getSubscriber(latch));
+
+        Command cmd1 = Command.from(groupKey, key, HystrixEventType.SUCCESS, 10, HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE);
+        Command cmd2 = Command.from(groupKey, key, HystrixEventType.SUCCESS, 14, HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE);
+
+        cmd1.observe();
+        Thread.sleep(1);
+        cmd2.observe();
+
+        latch.await(10000, TimeUnit.MILLISECONDS);
+        //since commands run in semaphore isolation, they are not tracked by threadpool metrics
+        assertEquals(0, stream.getLatestRollingMax());
+    }
+
+
     /***
      * 3 Commands,
      * Command 1 gets started in Bucket A and not completed until Bucket B
@@ -107,8 +135,10 @@ public class RollingCommandMaxConcurrencyStreamTest extends CommandStreamTest {
      */
     @Test
     public void testOneCommandCarriesOverToNextBucket() throws InterruptedException {
-        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Concurrency-C");
-        stream = RollingCommandMaxConcurrencyStream.getInstance(key, 10, 100);
+        HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("ThreadPool-Concurrency-D");
+        HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("ThreadPool-Concurrency-D");
+        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("RollingConcurrency-D");
+        stream = RollingThreadPoolConcurrencyStream.getInstance(threadPoolKey, 10, 100);
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
@@ -140,8 +170,10 @@ public class RollingCommandMaxConcurrencyStreamTest extends CommandStreamTest {
      */
     @Test
     public void testMultipleCommandsCarryOverMultipleBuckets() throws InterruptedException {
-        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Concurrency-D");
-        stream = RollingCommandMaxConcurrencyStream.getInstance(key, 10, 100);
+        HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("ThreadPool-Concurrency-E");
+        HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("ThreadPool-Concurrency-E");
+        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("RollingConcurrency-E");
+        stream = RollingThreadPoolConcurrencyStream.getInstance(threadPoolKey, 10, 100);
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
@@ -167,6 +199,47 @@ public class RollingCommandMaxConcurrencyStreamTest extends CommandStreamTest {
     /**
      * BUCKETS
      *     A    |    B    |    C    |    D    |    E    |
+     * 1:  [-------------------------------]              ThreadPool x
+     * 2:          [-------------------------------]                 y
+     * 3:                      [--]                                  x
+     * 4:                              [--]                          x
+     *
+     * Same input data as above test, just that command 2 runs in a separate threadpool, so concurrency should not get tracked
+     * Max concurrency should be 2 for x
+     */
+    @Test
+    public void testMultipleCommandsCarryOverMultipleBucketsForMultipleThreadPools() throws InterruptedException {
+        HystrixCommandGroupKey groupKeyX = HystrixCommandGroupKey.Factory.asKey("ThreadPool-Concurrency-X");
+        HystrixCommandGroupKey groupKeyY = HystrixCommandGroupKey.Factory.asKey("ThreadPool-Concurrency-Y");
+        HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("ThreadPool-Concurrency-X");
+        HystrixCommandKey keyX = HystrixCommandKey.Factory.asKey("RollingConcurrency-X");
+        HystrixCommandKey keyY = HystrixCommandKey.Factory.asKey("RollingConcurrency-Y");
+        stream = RollingThreadPoolConcurrencyStream.getInstance(threadPoolKey, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        stream.observe().take(10).subscribe(getSubscriber(latch));
+
+        Command cmd1 = Command.from(groupKeyX, keyX, HystrixEventType.SUCCESS, 300);
+        Command cmd2 = Command.from(groupKeyY, keyY, HystrixEventType.SUCCESS, 300);
+        Command cmd3 = Command.from(groupKeyX, keyY, HystrixEventType.SUCCESS, 10);
+        Command cmd4 = Command.from(groupKeyX, keyY, HystrixEventType.SUCCESS, 10);
+
+        cmd1.observe();
+        Thread.sleep(100); //bucket roll
+        cmd2.observe();
+        Thread.sleep(100);
+        cmd3.observe();
+        Thread.sleep(100);
+        cmd4.observe();
+
+        latch.await(10000, TimeUnit.MILLISECONDS);
+        assertEquals(2, stream.getLatestRollingMax());
+    }
+
+    /**
+     * BUCKETS
+     *     A    |    B    |    C    |    D    |    E    |
      * 1:  [-------------------------------]
      * 2:          [-------------------------------]
      * 3:                      [--]
@@ -176,8 +249,10 @@ public class RollingCommandMaxConcurrencyStreamTest extends CommandStreamTest {
      */
     @Test
     public void testMultipleCommandsCarryOverMultipleBucketsAndThenAgeOut() throws InterruptedException {
-        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Concurrency-E");
-        stream = RollingCommandMaxConcurrencyStream.getInstance(key, 10, 100);
+        HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("ThreadPool-Concurrency-F");
+        HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("ThreadPool-Concurrency-F");
+        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("RollingConcurrency-F");
+        stream = RollingThreadPoolConcurrencyStream.getInstance(threadPoolKey, 10, 100);
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
@@ -202,8 +277,10 @@ public class RollingCommandMaxConcurrencyStreamTest extends CommandStreamTest {
 
     @Test
     public void testConcurrencyStreamProperlyFiltersOutResponseFromCache() throws InterruptedException {
-        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Concurrency-F");
-        stream = RollingCommandMaxConcurrencyStream.getInstance(key, 10, 100);
+        HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("ThreadPool-Concurrency-G");
+        HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("ThreadPool-Concurrency-G");
+        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("RollingConcurrency-G");
+        stream = RollingThreadPoolConcurrencyStream.getInstance(threadPoolKey, 10, 100);
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
@@ -222,13 +299,18 @@ public class RollingCommandMaxConcurrencyStreamTest extends CommandStreamTest {
 
         latch.await(10000, TimeUnit.MILLISECONDS);
         System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
+        assertTrue(cmd2.isResponseFromCache());
+        assertTrue(cmd3.isResponseFromCache());
+        assertTrue(cmd4.isResponseFromCache());
         assertEquals(1, stream.getLatestRollingMax());
     }
 
     @Test
     public void testConcurrencyStreamProperlyFiltersOutShortCircuits() throws InterruptedException {
-        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Concurrency-G");
-        stream = RollingCommandMaxConcurrencyStream.getInstance(key, 10, 100);
+        HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("ThreadPool-Concurrency-H");
+        HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("ThreadPool-Concurrency-H");
+        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("RollingConcurrency-H");
+        stream = RollingThreadPoolConcurrencyStream.getInstance(threadPoolKey, 10, 100);
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
@@ -259,13 +341,18 @@ public class RollingCommandMaxConcurrencyStreamTest extends CommandStreamTest {
 
         latch.await(10000, TimeUnit.MILLISECONDS);
         System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
+        for (Command cmd: shortCircuited) {
+            assertTrue(cmd.isResponseShortCircuited());
+        }
         assertEquals(1, stream.getLatestRollingMax());
     }
 
     @Test
     public void testConcurrencyStreamProperlyFiltersOutSemaphoreRejections() throws InterruptedException {
-        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Concurrency-H");
-        stream = RollingCommandMaxConcurrencyStream.getInstance(key, 10, 100);
+        HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("ThreadPool-Concurrency-I");
+        HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("ThreadPool-Concurrency-I");
+        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("RollingConcurrency-I");
+        stream = RollingThreadPoolConcurrencyStream.getInstance(threadPoolKey, 10, 100);
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
@@ -307,13 +394,20 @@ public class RollingCommandMaxConcurrencyStreamTest extends CommandStreamTest {
 
         latch.await(10000, TimeUnit.MILLISECONDS);
         System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
-        assertEquals(10, stream.getLatestRollingMax());
+
+        for (Command rejectedCmd: rejected) {
+            assertTrue(rejectedCmd.isResponseSemaphoreRejected());
+        }
+        //should be 0 since all are executed in a semaphore
+        assertEquals(0, stream.getLatestRollingMax());
     }
 
     @Test
     public void testConcurrencyStreamProperlyFiltersOutThreadPoolRejections() throws InterruptedException {
-        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Concurrency-I");
-        stream = RollingCommandMaxConcurrencyStream.getInstance(key, 10, 100);
+        HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("ThreadPool-Concurrency-J");
+        HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("ThreadPool-Concurrency-J");
+        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("RollingConcurrency-J");
+        stream = RollingThreadPoolConcurrencyStream.getInstance(threadPoolKey, 10, 100);
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
@@ -345,6 +439,11 @@ public class RollingCommandMaxConcurrencyStreamTest extends CommandStreamTest {
 
         latch.await(10000, TimeUnit.MILLISECONDS);
         System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
+        for (Command rejectedCmd: rejected) {
+            assertTrue(rejectedCmd.isResponseThreadPoolRejected());
+        }
+
+        //this should not count rejected commands
         assertEquals(10, stream.getLatestRollingMax());
     }
 }

@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.hystrix.metric;
+package com.netflix.hystrix.metric.consumer;
 
 import com.netflix.hystrix.HystrixCollapserKey;
 import com.netflix.hystrix.HystrixCollapserMetrics;
 import com.netflix.hystrix.HystrixCollapserProperties;
 import com.netflix.hystrix.HystrixEventType;
+import com.netflix.hystrix.metric.HystrixCollapserEvent;
+import com.netflix.hystrix.metric.HystrixCollapserEventStream;
 import rx.functions.Func2;
 
 import java.util.concurrent.ConcurrentHashMap;

@@ -37,7 +37,7 @@ public abstract class CommandStreamTest {
 
     static final AtomicInteger uniqueId = new AtomicInteger(0);
 
-    static class Command extends HystrixCommand<Integer> {
+    public static class Command extends HystrixCommand<Integer> {
 
         final String arg;
 
@@ -56,36 +56,36 @@ public abstract class CommandStreamTest {
             this.arg = arg;
         }
 
-        protected static Command from(HystrixCommandGroupKey groupKey, HystrixCommandKey key, HystrixEventType desiredEventType) {
+        public static Command from(HystrixCommandGroupKey groupKey, HystrixCommandKey key, HystrixEventType desiredEventType) {
             return from(groupKey, key, desiredEventType, 0);
         }
 
-        protected static Command from(HystrixCommandGroupKey groupKey, HystrixCommandKey key, HystrixEventType desiredEventType, int latency) {
+        public static Command from(HystrixCommandGroupKey groupKey, HystrixCommandKey key, HystrixEventType desiredEventType, int latency) {
             return from(groupKey, key, desiredEventType, latency, HystrixCommandProperties.ExecutionIsolationStrategy.THREAD);
         }
 
-        protected static Command from(HystrixCommandGroupKey groupKey, HystrixCommandKey key, HystrixEventType desiredEventType, int latency,
+        public static Command from(HystrixCommandGroupKey groupKey, HystrixCommandKey key, HystrixEventType desiredEventType, int latency,
                                       HystrixEventType desiredFallbackEventType) {
             return from(groupKey, key, desiredEventType, latency, HystrixCommandProperties.ExecutionIsolationStrategy.THREAD, desiredFallbackEventType);
         }
 
-        protected static Command from(HystrixCommandGroupKey groupKey, HystrixCommandKey key, HystrixEventType desiredEventType, int latency,
+        public static Command from(HystrixCommandGroupKey groupKey, HystrixCommandKey key, HystrixEventType desiredEventType, int latency,
                                       HystrixEventType desiredFallbackEventType, int fallbackLatency) {
             return from(groupKey, key, desiredEventType, latency, HystrixCommandProperties.ExecutionIsolationStrategy.THREAD, desiredFallbackEventType, fallbackLatency);
         }
 
-        protected static Command from(HystrixCommandGroupKey groupKey, HystrixCommandKey key, HystrixEventType desiredEventType, int latency,
+        public static Command from(HystrixCommandGroupKey groupKey, HystrixCommandKey key, HystrixEventType desiredEventType, int latency,
                                       HystrixCommandProperties.ExecutionIsolationStrategy isolationStrategy) {
             return from(groupKey, key, desiredEventType, latency, isolationStrategy, HystrixEventType.FALLBACK_SUCCESS, 0);
         }
 
-        protected static Command from(HystrixCommandGroupKey groupKey, HystrixCommandKey key, HystrixEventType desiredEventType, int latency,
+        public static Command from(HystrixCommandGroupKey groupKey, HystrixCommandKey key, HystrixEventType desiredEventType, int latency,
                                       HystrixCommandProperties.ExecutionIsolationStrategy isolationStrategy,
                                       HystrixEventType desiredFallbackEventType) {
             return from(groupKey, key, desiredEventType, latency, isolationStrategy, desiredFallbackEventType, 0);
         }
 
-        protected static Command from(HystrixCommandGroupKey groupKey, HystrixCommandKey key, HystrixEventType desiredEventType, int latency,
+        public static Command from(HystrixCommandGroupKey groupKey, HystrixCommandKey key, HystrixEventType desiredEventType, int latency,
                                       HystrixCommandProperties.ExecutionIsolationStrategy isolationStrategy,
                                       HystrixEventType desiredFallbackEventType, int fallbackLatency) {
             Setter setter = Setter.withGroupKey(groupKey)
@@ -170,7 +170,7 @@ public abstract class CommandStreamTest {
         }
     }
 
-    static class Collapser extends HystrixCollapser<List<Integer>, Integer, Integer> {
+    public static class Collapser extends HystrixCollapser<List<Integer>, Integer, Integer> {
         private final Integer arg;
 
         public static Collapser from(Integer arg) {

@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.hystrix.metric;
+package com.netflix.hystrix.metric.consumer;
 
+import com.netflix.hystrix.metric.HystrixEvent;
+import com.netflix.hystrix.metric.HystrixEventStream;
 import rx.Observable;
 import rx.functions.Func2;
 
