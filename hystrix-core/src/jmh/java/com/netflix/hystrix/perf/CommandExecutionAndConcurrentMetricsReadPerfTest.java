@@ -74,43 +74,43 @@ public class CommandExecutionAndConcurrentMetricsReadPerfTest {
         }
     }
 
-//    @Benchmark
-//    @Group("writeHeavy")
-//    @GroupThreads(7)
-//    @BenchmarkMode({Mode.Throughput})
-//    @OutputTimeUnit(TimeUnit.MILLISECONDS)
-//    public Integer writeHeavyCommandExecution(CommandState state) {
-//        return state.command.observe().toBlocking().first();
-//    }
-//
-//    @Benchmark
-//    @Group("writeHeavy")
-//    @GroupThreads(1)
-//    @BenchmarkMode({Mode.Throughput})
-//    @OutputTimeUnit(TimeUnit.MILLISECONDS)
-//    public Integer writeHeavyReadMetrics(CommandState state) {
-//        HystrixCommandMetrics metrics = state.command.getMetrics();
-//        return metrics.getExecutionTimeMean() + metrics.getExecutionTimePercentile(50) + metrics.getExecutionTimePercentile(75) + metrics.getExecutionTimePercentile(99);
-//    }
-//
-//    @Benchmark
-//    @Group("evenSplit")
-//    @GroupThreads(4)
-//    @BenchmarkMode({Mode.Throughput})
-//    @OutputTimeUnit(TimeUnit.MILLISECONDS)
-//    public Integer evenSplitOfWritesAndReadsCommandExecution(CommandState state) {
-//        return state.command.observe().toBlocking().first();
-//    }
-//
-//    @Benchmark
-//    @Group("evenSplit")
-//    @GroupThreads(4)
-//    @BenchmarkMode({Mode.Throughput})
-//    @OutputTimeUnit(TimeUnit.MILLISECONDS)
-//    public Integer evenSplitOfWritesAndReadsReadMetrics(CommandState state) {
-//        HystrixCommandMetrics metrics = state.command.getMetrics();
-//        return metrics.getExecutionTimeMean() + metrics.getExecutionTimePercentile(50) + metrics.getExecutionTimePercentile(75) + metrics.getExecutionTimePercentile(99);
-//    }
+    @Benchmark
+    @Group("writeHeavy")
+    @GroupThreads(7)
+    @BenchmarkMode({Mode.Throughput})
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    public Integer writeHeavyCommandExecution(CommandState state) {
+        return state.command.observe().toBlocking().first();
+    }
+
+    @Benchmark
+    @Group("writeHeavy")
+    @GroupThreads(1)
+    @BenchmarkMode({Mode.Throughput})
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    public Integer writeHeavyReadMetrics(CommandState state) {
+        HystrixCommandMetrics metrics = state.command.getMetrics();
+        return metrics.getExecutionTimeMean() + metrics.getExecutionTimePercentile(50) + metrics.getExecutionTimePercentile(75) + metrics.getExecutionTimePercentile(99);
+    }
+
+    @Benchmark
+    @Group("evenSplit")
+    @GroupThreads(4)
+    @BenchmarkMode({Mode.Throughput})
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    public Integer evenSplitOfWritesAndReadsCommandExecution(CommandState state) {
+        return state.command.observe().toBlocking().first();
+    }
+
+    @Benchmark
+    @Group("evenSplit")
+    @GroupThreads(4)
+    @BenchmarkMode({Mode.Throughput})
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    public Integer evenSplitOfWritesAndReadsReadMetrics(CommandState state) {
+        HystrixCommandMetrics metrics = state.command.getMetrics();
+        return metrics.getExecutionTimeMean() + metrics.getExecutionTimePercentile(50) + metrics.getExecutionTimePercentile(75) + metrics.getExecutionTimePercentile(99);
+    }
 
     @Benchmark
     @Group("readHeavy")

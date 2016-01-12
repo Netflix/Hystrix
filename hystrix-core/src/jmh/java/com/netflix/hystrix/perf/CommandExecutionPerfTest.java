@@ -203,7 +203,7 @@ public class CommandExecutionPerfTest {
         }
     }
 
-	/*    @Benchmark
+    @Benchmark
     @BenchmarkMode({Mode.Throughput})
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public Integer baselineExecute(BlackholeState bhState) {
@@ -282,7 +282,7 @@ public class CommandExecutionPerfTest {
         } catch (Throwable t) {
             return 2;
         }
-		}*/
+    }
 
     @Benchmark
     @BenchmarkMode({Mode.Throughput})
