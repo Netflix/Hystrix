@@ -35,7 +35,6 @@ import com.netflix.hystrix.collapser.CollapserTimer;
 import com.netflix.hystrix.collapser.RealCollapserTimer;
 import com.netflix.hystrix.strategy.concurrency.HystrixContextRunnable;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesCollapserDefault;
-import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
