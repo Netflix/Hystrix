@@ -26,8 +26,7 @@ import java.util.concurrent.ConcurrentMap;
 
 /**
  * Per-Collapser stream of {@link HystrixCollapserEvent}s.  This gets written to by {@link HystrixThreadEventStream}s.
- * That object will emit on an RxComputation thread, so all work done by a consumer of this {@link #observe()} happens
- * asynchronously.
+ * Events are emitted synchronously in the same thread that performs the batch-command execution.
  */
 public class HystrixCollapserEventStream implements HystrixEventStream<HystrixCollapserEvent> {
     private final HystrixCollapserKey collapserKey;

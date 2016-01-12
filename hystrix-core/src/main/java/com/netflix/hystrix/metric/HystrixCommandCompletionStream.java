@@ -26,8 +26,7 @@ import java.util.concurrent.ConcurrentMap;
 
 /**
  * Per-Command stream of {@link HystrixCommandCompletion}s.  This gets written to by {@link HystrixThreadEventStream}s.
- * That object will emit on an RxComputation thread, so all work done by a consumer of this {@link #observe()} happens
- * asynchronously.
+ * Events are emitted synchronously in the same thread that performs the command execution.
  */
 public class HystrixCommandCompletionStream implements HystrixEventStream<HystrixCommandCompletion> {
     private final HystrixCommandKey commandKey;

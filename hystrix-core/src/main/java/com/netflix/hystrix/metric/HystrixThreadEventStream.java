@@ -17,7 +17,6 @@ package com.netflix.hystrix.metric;
 
 import com.netflix.hystrix.ExecutionResult;
 import com.netflix.hystrix.HystrixCollapserKey;
-import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.HystrixEventType;
@@ -35,14 +34,23 @@ import rx.subjects.Subject;
  * However, many situations arise where a single thread may serve many different commands.  Examples include:
  * * Application caller threads (semaphore-isolated commands, or thread-pool-rejections)
  * * Timer threads (timeouts or collapsers)
+ * <p>
+ * I don't think that a thread-level view is an interesting one to consume (I could be wrong), so at the moment there
+ * is no public way to consume it.  I can always add it later, if desired.
+ * <p>
+ * Instead, this stream writes to the following streams, which have more meaning to metrics consumers:
+ * <ul>
+ *     <li>{@link HystrixCommandCompletionStream}</li>
+ *     <li>{@link HystrixCommandStartStream}</li>
+ *     <li>{@link HystrixThreadPoolCompletionStream}</li>
+ *     <li>{@link HystrixThreadPoolStartStream}</li>
+ *     <li>{@link HystrixCollapserEventStream}</li>
+ * </ul>
  *
- * This is not a useful stream to consume directly (I think), so this stream writes to the proper {@link HystrixCommandCompletionStream} and
- * {@link HystrixThreadPoolCompletionStream} (when executed in / rejected from a thread pool)
- *
- * Also note that any observers of this stream do so on an RxComputation thread.  This allows all processing of
- * events to happen off the main thread executing the {@link HystrixCommand}.  It also implies that event consumers
- * should not expect synchronous invocation.  Each HystrixThreadEventStream will use a dedicated RxComputation thread
- * for the duration of the application's uptime.
+ * Also note that any observers of this stream do so on the thread that writes the metric.  This is the command caller
+ * thread in the SEMAPHORE-isolated case, and the Hystrix thread in the THREAD-isolated case. I determined this to
+ * be more efficient CPU-wise than immediately hopping off-thread and doing all the metric calculations in the
+ * RxComputationThreadPool.
  */
 public class HystrixThreadEventStream {
     private final long threadId;
@@ -102,19 +110,16 @@ public class HystrixThreadEventStream {
 
         writeOnlyCommandStartSubject
                 .onBackpressureBuffer()
-                //.observeOn(Schedulers.computation())
                 .doOnNext(writeCommandStartsToShardedStreams)
                 .unsafeSubscribe(Subscribers.empty());
 
         writeOnlyCommandCompletionSubject
                 .onBackpressureBuffer()
-                //.observeOn(Schedulers.computation())
                 .doOnNext(writeCommandCompletionsToShardedStreams)
                 .unsafeSubscribe(Subscribers.empty());
 
         writeOnlyCollapserSubject
                 .onBackpressureBuffer()
-                //.observeOn(Schedulers.computation())
                 .doOnNext(writeCollapserExecutionsToShardedStreams)
                 .unsafeSubscribe(Subscribers.empty());
     }
