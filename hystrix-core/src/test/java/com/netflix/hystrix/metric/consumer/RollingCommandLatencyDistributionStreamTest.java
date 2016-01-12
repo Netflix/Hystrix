@@ -5,10 +5,10 @@ import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.HystrixRequestLog;
+import com.netflix.hystrix.metric.CachedValuesHistogram;
 import com.netflix.hystrix.metric.CommandStreamTest;
 import com.netflix.hystrix.strategy.concurrency.HystrixContextRunnable;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
-import org.HdrHistogram.Histogram;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -45,7 +45,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
-        stream.observe().take(10).subscribe(new Subscriber<Histogram>() {
+        stream.observe().take(10).subscribe(new Subscriber<CachedValuesHistogram>() {
             @Override
             public void onCompleted() {
                 latch.countDown();
@@ -57,7 +57,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
             }
 
             @Override
-            public void onNext(Histogram distribution) {
+            public void onNext(CachedValuesHistogram distribution) {
                 System.out.println("OnNext @ " + System.currentTimeMillis());
                 assertEquals(0, distribution.getTotalCount());
             }
@@ -85,7 +85,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
-        stream.observe().take(10).subscribe(new Subscriber<Histogram>() {
+        stream.observe().take(10).subscribe(new Subscriber<CachedValuesHistogram>() {
             @Override
             public void onCompleted() {
                 latch.countDown();
@@ -97,7 +97,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
             }
 
             @Override
-            public void onNext(Histogram distribution) {
+            public void onNext(CachedValuesHistogram distribution) {
                 System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Received distribution with count : " + distribution.getTotalCount() + " and mean : " + distribution.getMean());
                 if (distribution.getTotalCount() == 1) {
                     assertBetween(10, 50, (int) distribution.getMean());
@@ -142,7 +142,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
-        stream.observe().take(10).subscribe(new Subscriber<Histogram>() {
+        stream.observe().take(10).subscribe(new Subscriber<CachedValuesHistogram>() {
             @Override
             public void onCompleted() {
                 latch.countDown();
@@ -154,7 +154,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
             }
 
             @Override
-            public void onNext(Histogram distribution) {
+            public void onNext(CachedValuesHistogram distribution) {
                 System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Received distribution with count : " + distribution.getTotalCount() + " and mean : " + distribution.getMean());
                     if (distribution.getTotalCount() < 4 && distribution.getTotalCount() > 0) { //buckets before timeout latency registers
                         assertBetween(10, 50, (int) distribution.getMean());
@@ -198,7 +198,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
         }
 
         final CountDownLatch latch = new CountDownLatch(1);
-        stream.observe().take(10).subscribe(new Subscriber<Histogram>() {
+        stream.observe().take(10).subscribe(new Subscriber<CachedValuesHistogram>() {
             @Override
             public void onCompleted() {
                 latch.countDown();
@@ -210,7 +210,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
             }
 
             @Override
-            public void onNext(Histogram distribution) {
+            public void onNext(CachedValuesHistogram distribution) {
                 System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Received distribution with count : " + distribution.getTotalCount() + " and mean : " + distribution.getMean());
                 assertBetween(0, 30, (int) distribution.getMean());
             }
@@ -254,7 +254,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
         }
 
         final CountDownLatch latch = new CountDownLatch(1);
-        stream.observe().take(10).subscribe(new Subscriber<Histogram>() {
+        stream.observe().take(10).subscribe(new Subscriber<CachedValuesHistogram>() {
             @Override
             public void onCompleted() {
                 latch.countDown();
@@ -266,7 +266,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
             }
 
             @Override
-            public void onNext(Histogram distribution) {
+            public void onNext(CachedValuesHistogram distribution) {
                 System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Received distribution with count : " + distribution.getTotalCount() + " and mean : " + distribution.getMean());
 //                if (distribution.getTotalCount() > 0) {
 //                    assertBetween(200, 250, (int) distribution.getMean());
@@ -312,7 +312,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
         }
 
         final CountDownLatch latch = new CountDownLatch(1);
-        stream.observe().take(10).subscribe(new Subscriber<Histogram>() {
+        stream.observe().take(10).subscribe(new Subscriber<CachedValuesHistogram>() {
             @Override
             public void onCompleted() {
                 latch.countDown();
@@ -324,7 +324,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
             }
 
             @Override
-            public void onNext(Histogram distribution) {
+            public void onNext(CachedValuesHistogram distribution) {
                 System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Received distribution with count : " + distribution.getTotalCount() + " and mean : " + distribution.getMean());
                 if (distribution.getTotalCount() > 0) {
                     assertBetween(200, 250, (int) distribution.getMean());
@@ -372,7 +372,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
         List<Command> commands = Command.getCommandsWithResponseFromCache(groupKey, key);
 
         final CountDownLatch latch = new CountDownLatch(1);
-        stream.observe().take(10).subscribe(new Subscriber<Histogram>() {
+        stream.observe().take(10).subscribe(new Subscriber<CachedValuesHistogram>() {
             @Override
             public void onCompleted() {
                 latch.countDown();
@@ -384,7 +384,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
             }
 
             @Override
-            public void onNext(Histogram distribution) {
+            public void onNext(CachedValuesHistogram distribution) {
                 System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Received distribution with count : " + distribution.getTotalCount() + " and mean : " + distribution.getMean());
                 assertTrue(distribution.getTotalCount() <= 1);
             }
@@ -411,7 +411,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
-        stream.observe().take(10).subscribe(new Subscriber<Histogram>() {
+        stream.observe().take(10).subscribe(new Subscriber<CachedValuesHistogram>() {
             @Override
             public void onCompleted() {
                 latch.countDown();
@@ -423,7 +423,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
             }
 
             @Override
-            public void onNext(Histogram distribution) {
+            public void onNext(CachedValuesHistogram distribution) {
                 System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Received distribution with count : " + distribution.getTotalCount() + " and mean : " + distribution.getMean());
                 if (distribution.getTotalCount() == 2) {
                     assertBetween(55, 90, (int) distribution.getMean());
@@ -475,7 +475,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
-        stream.observe().take(30).subscribe(new Subscriber<Histogram>() {
+        stream.observe().take(30).subscribe(new Subscriber<CachedValuesHistogram>() {
             @Override
             public void onCompleted() {
                 latch.countDown();
@@ -487,7 +487,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
             }
 
             @Override
-            public void onNext(Histogram distribution) {
+            public void onNext(CachedValuesHistogram distribution) {
                 System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Received distribution with count : " + distribution.getTotalCount() + " and mean : " + distribution.getMean());
                 if (distribution.getTotalCount() == 2) {
                     assertBetween(55, 90, (int) distribution.getMean());

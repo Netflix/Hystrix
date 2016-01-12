@@ -25,7 +25,6 @@ import com.netflix.hystrix.HystrixThreadPool;
 import com.netflix.hystrix.HystrixThreadPoolKey;
 import rx.functions.Action1;
 import rx.observers.Subscribers;
-import rx.schedulers.Schedulers;
 import rx.subjects.PublishSubject;
 import rx.subjects.Subject;
 
@@ -103,19 +102,19 @@ public class HystrixThreadEventStream {
 
         writeOnlyCommandStartSubject
                 .onBackpressureBuffer()
-                .observeOn(Schedulers.computation())
+                //.observeOn(Schedulers.computation())
                 .doOnNext(writeCommandStartsToShardedStreams)
                 .unsafeSubscribe(Subscribers.empty());
 
         writeOnlyCommandCompletionSubject
                 .onBackpressureBuffer()
-                .observeOn(Schedulers.computation())
+                //.observeOn(Schedulers.computation())
                 .doOnNext(writeCommandCompletionsToShardedStreams)
                 .unsafeSubscribe(Subscribers.empty());
 
         writeOnlyCollapserSubject
                 .onBackpressureBuffer()
-                .observeOn(Schedulers.computation())
+                //.observeOn(Schedulers.computation())
                 .doOnNext(writeCollapserExecutionsToShardedStreams)
                 .unsafeSubscribe(Subscribers.empty());
     }

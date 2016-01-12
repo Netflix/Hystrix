@@ -16,8 +16,7 @@
 
 package com.netflix.hystrix.metric.consumer;
 
-import com.netflix.hystrix.HystrixCollapserProperties;
-
+import com.netflix.hystrix.metric.CachedValuesHistogram;
 import com.netflix.hystrix.metric.HystrixEvent;
 import com.netflix.hystrix.metric.HystrixEventStream;
 import org.HdrHistogram.Histogram;
@@ -29,6 +28,7 @@ import rx.functions.Func1;
 import rx.functions.Func2;
 import rx.observers.Subscribers;
 import rx.subjects.BehaviorSubject;
+import sun.misc.Cache;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,8 +50,8 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class RollingDistributionStream<Event extends HystrixEvent> {
     private AtomicReference<Subscription> rollingDistributionSubscription = new AtomicReference<Subscription>(null);
-    private final BehaviorSubject<Histogram> rollingDistribution = BehaviorSubject.create(getNewHistogram());
-    private final Observable<Histogram> rollingDistributionStream;
+    private final BehaviorSubject<CachedValuesHistogram> rollingDistribution = BehaviorSubject.create(CachedValuesHistogram.backedBy(getNewHistogram()));
+    private final Observable<CachedValuesHistogram> rollingDistributionStream;
 
     private static final Func2<Histogram, Histogram, Histogram> distributionAggregator = new Func2<Histogram, Histogram, Histogram>() {
         @Override
@@ -68,21 +68,29 @@ public class RollingDistributionStream<Event extends HystrixEvent> {
         }
     };
 
-    private static final Action1<List<Histogram>> releaseOlderOfTwoDistributions = new Action1<List<Histogram>>() {
+    private static final Action1<List<CachedValuesHistogram>> releaseOlderOfTwoDistributions = new Action1<List<CachedValuesHistogram>>() {
         @Override
-        public void call(List<Histogram> histograms) {
+        public void call(List<CachedValuesHistogram> histograms) {
             if (histograms != null && histograms.size() == 2) {
-                releaseHistogram(histograms.get(0));
+                releaseHistogram(histograms.get(0).getUnderlying());
             }
         }
     };
 
-    private static final Func1<Observable<Histogram>, Observable<List<Histogram>>> convertToList = new Func1<Observable<Histogram>, Observable<List<Histogram>>>() {
+    private static final Func1<Histogram, CachedValuesHistogram> cacheHistogramValues = new Func1<Histogram, CachedValuesHistogram>() {
         @Override
-        public Observable<List<Histogram>> call(Observable<Histogram> windowOf2) {
-            return windowOf2.toList();
+        public CachedValuesHistogram call(Histogram histogram) {
+            return CachedValuesHistogram.backedBy(histogram);
         }
     };
+
+    private static final Func1<Observable<CachedValuesHistogram>, Observable<List<CachedValuesHistogram>>> convertToList =
+            new Func1<Observable<CachedValuesHistogram>, Observable<List<CachedValuesHistogram>>>() {
+                @Override
+                public Observable<List<CachedValuesHistogram>> call(Observable<CachedValuesHistogram> windowOf2) {
+                    return windowOf2.toList();
+                }
+            };
 
     protected RollingDistributionStream(final HystrixEventStream<Event> stream, final int numBuckets, final int bucketSizeInMs,
                                         final Func2<Histogram, Event, Histogram> addValuesToBucket) {
@@ -98,37 +106,38 @@ public class RollingDistributionStream<Event extends HystrixEvent> {
             }
         };
 
-        rollingDistributionStream = Observable.defer(new Func0<Observable<Histogram>>() {
+        rollingDistributionStream = Observable.defer(new Func0<Observable<CachedValuesHistogram>>() {
             @Override
-            public Observable<Histogram> call() {
+            public Observable<CachedValuesHistogram> call() {
                 return stream
                         .observe()
                         .window(bucketSizeInMs, TimeUnit.MILLISECONDS) //stream of unaggregated buckets
                         .flatMap(reduceBucketToSingleDistribution)     //stream of aggregated Histograms
                         .startWith(emptyDistributionsToStart)          //stream of aggregated Histograms that starts with n empty
                         .window(numBuckets, 1)                         //windowed stream: each OnNext is a stream of n Histograms
-                        .flatMap(reduceWindowToSingleDistribution);     //reduced stream: each OnNext is a single Histogram which values cached for reading
+                        .flatMap(reduceWindowToSingleDistribution)     //reduced stream: each OnNext is a single Histogram
+                        .map(cacheHistogramValues);                    //convert to CachedValueHistogram (commonly-accessed values are cached)
             }
         }).share(); //multicast
     }
 
-    public Observable<Histogram> observe() {
+    public Observable<CachedValuesHistogram> observe() {
         return rollingDistributionStream;
     }
 
     public int getLatestMean() {
-        Histogram latest = getLatest();
+        CachedValuesHistogram latest = getLatest();
         if (latest != null) {
-            return (int) latest.getMean();
+            return latest.getMean();
         } else {
             return 0;
         }
     }
 
     public int getLatestPercentile(double percentile) {
-        Histogram latest = getLatest();
+        CachedValuesHistogram latest = getLatest();
         if (latest != null) {
-            return (int) latest.getValueAtPercentile(percentile);
+            return latest.getValueAtPercentile(percentile);
         } else {
             return 0;
         }
@@ -154,7 +163,7 @@ public class RollingDistributionStream<Event extends HystrixEvent> {
         }
     }
 
-    Histogram getLatest() {
+    CachedValuesHistogram getLatest() {
         startCachingStreamValuesIfUnstarted();
         if (rollingDistribution.hasValue()) {
             return rollingDistribution.getValue();

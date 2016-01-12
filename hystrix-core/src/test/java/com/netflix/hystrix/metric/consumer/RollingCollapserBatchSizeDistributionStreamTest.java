@@ -1,26 +1,19 @@
 package com.netflix.hystrix.metric.consumer;
 
 import com.netflix.hystrix.HystrixCollapserKey;
-import com.netflix.hystrix.HystrixCommandGroupKey;
-import com.netflix.hystrix.HystrixCommandKey;
-import com.netflix.hystrix.HystrixCommandProperties;
-import com.netflix.hystrix.HystrixEventType;
-import com.netflix.hystrix.HystrixRequestLog;
+import com.netflix.hystrix.metric.CachedValuesHistogram;
 import com.netflix.hystrix.metric.CommandStreamTest;
-import com.netflix.hystrix.strategy.concurrency.HystrixContextRunnable;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
-import org.HdrHistogram.Histogram;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import rx.Subscriber;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 public class RollingCollapserBatchSizeDistributionStreamTest extends CommandStreamTest {
     RollingCollapserBatchSizeDistributionStream stream;
@@ -45,7 +38,7 @@ public class RollingCollapserBatchSizeDistributionStreamTest extends CommandStre
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
-        stream.observe().skip(10).take(10).subscribe(new Subscriber<Histogram>() {
+        stream.observe().skip(10).take(10).subscribe(new Subscriber<CachedValuesHistogram>() {
             @Override
             public void onCompleted() {
                 latch.countDown();
@@ -57,7 +50,7 @@ public class RollingCollapserBatchSizeDistributionStreamTest extends CommandStre
             }
 
             @Override
-            public void onNext(Histogram distribution) {
+            public void onNext(CachedValuesHistogram distribution) {
                 System.out.println("OnNext @ " + System.currentTimeMillis());
                 assertEquals(0, distribution.getTotalCount());
             }
@@ -80,7 +73,7 @@ public class RollingCollapserBatchSizeDistributionStreamTest extends CommandStre
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
-        stream.observe().take(10).subscribe(new Subscriber<Histogram>() {
+        stream.observe().take(10).subscribe(new Subscriber<CachedValuesHistogram>() {
             @Override
             public void onCompleted() {
                 latch.countDown();
@@ -92,7 +85,7 @@ public class RollingCollapserBatchSizeDistributionStreamTest extends CommandStre
             }
 
             @Override
-            public void onNext(Histogram distribution) {
+            public void onNext(CachedValuesHistogram distribution) {
                 System.out.println("OnNext @ " + System.currentTimeMillis());
             }
         });
@@ -151,7 +144,7 @@ public class RollingCollapserBatchSizeDistributionStreamTest extends CommandStre
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
-        stream.observe().take(30).subscribe(new Subscriber<Histogram>() {
+        stream.observe().take(30).subscribe(new Subscriber<CachedValuesHistogram>() {
             @Override
             public void onCompleted() {
                 latch.countDown();
@@ -163,7 +156,7 @@ public class RollingCollapserBatchSizeDistributionStreamTest extends CommandStre
             }
 
             @Override
-            public void onNext(Histogram distribution) {
+            public void onNext(CachedValuesHistogram distribution) {
                 System.out.println("OnNext @ " + System.currentTimeMillis());
             }
         });
