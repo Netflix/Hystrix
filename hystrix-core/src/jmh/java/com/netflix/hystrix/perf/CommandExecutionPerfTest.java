@@ -18,6 +18,7 @@ package com.netflix.hystrix.perf;
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandGroupKey;
 import com.netflix.hystrix.HystrixCommandProperties;
+import com.netflix.hystrix.HystrixObservableCommand;
 import com.netflix.hystrix.HystrixThreadPool;
 import com.netflix.hystrix.HystrixThreadPoolKey;
 import com.netflix.hystrix.HystrixThreadPoolProperties;
@@ -66,6 +67,8 @@ public class CommandExecutionPerfTest {
     static HystrixThreadPoolProperties.Setter threadPoolDefaults = HystrixThreadPoolProperties.Setter()
             .withCoreSize(100);
 
+    static HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("PERF");
+
     private static HystrixCommandProperties.Setter getCommandSetter(HystrixCommandProperties.ExecutionIsolationStrategy isolationStrategy) {
         switch (isolationStrategy) {
             case THREAD: return threadIsolatedCommandDefaults;
@@ -107,6 +110,34 @@ public class CommandExecutionPerfTest {
                 @Override
                 protected Integer getFallback() {
                     return 2;
+                }
+            };
+        }
+    }
+
+    @State(Scope.Thread)
+    public static class ObservableCommandState {
+        HystrixObservableCommand<Integer> command;
+
+        //amount of "work" to give to CPU
+        @Param({"1", "100", "10000"})
+        public int blackholeConsumption;
+
+        @Setup(Level.Invocation)
+        public void setUp() {
+            command = new HystrixObservableCommand<Integer>(
+                    HystrixObservableCommand.Setter.withGroupKey(groupKey)
+                    .andCommandPropertiesDefaults(getCommandSetter(HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE))
+            ) {
+                @Override
+                protected Observable<Integer> construct() {
+                    return Observable.defer(new Func0<Observable<Integer>>() {
+                        @Override
+                        public Observable<Integer> call() {
+                            Blackhole.consumeCPU(blackholeConsumption);
+                            return Observable.just(1);
+                        }
+                    });
                 }
             };
         }
@@ -156,7 +187,7 @@ public class CommandExecutionPerfTest {
     @Benchmark
     @BenchmarkMode({Mode.Throughput})
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
-    public Integer baselineQueue(ExecutorState state, final BlackholeState bhState) throws InterruptedException, ExecutionException{
+    public Integer baselineQueue(ExecutorState state, final BlackholeState bhState) throws InterruptedException, ExecutionException {
         try {
             return state.executorService.submit(new Callable<Integer>() {
                 @Override
@@ -231,5 +262,12 @@ public class CommandExecutionPerfTest {
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public Integer hystrixExecute(CommandState state) {
         return state.command.execute();
+    }
+
+    @Benchmark
+    @BenchmarkMode({Mode.Throughput})
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    public Integer hystrixObserve(ObservableCommandState state) {
+        return state.command.observe().toBlocking().first();
     }
 }
