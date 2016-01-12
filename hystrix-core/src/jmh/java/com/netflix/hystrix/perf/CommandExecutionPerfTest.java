@@ -22,6 +22,7 @@ import com.netflix.hystrix.HystrixObservableCommand;
 import com.netflix.hystrix.HystrixThreadPool;
 import com.netflix.hystrix.HystrixThreadPoolKey;
 import com.netflix.hystrix.HystrixThreadPoolProperties;
+import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Level;
@@ -86,6 +87,10 @@ public class CommandExecutionPerfTest {
     @State(Scope.Thread)
     public static class CommandState {
         HystrixCommand<Integer> command;
+        HystrixRequestContext requestContext;
+
+        @Param({"true", "false"})
+        public boolean setUpRequestContext;
 
         @Param({"THREAD", "SEMAPHORE"})
         public HystrixCommandProperties.ExecutionIsolationStrategy isolationStrategy;
@@ -96,6 +101,10 @@ public class CommandExecutionPerfTest {
 
         @Setup(Level.Invocation)
         public void setUp() {
+            if (setUpRequestContext) {
+                requestContext = HystrixRequestContext.initializeContext();
+            }
+
             command = new HystrixCommand<Integer>(
                     HystrixCommand.Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("PERF"))
                             .andCommandPropertiesDefaults(getCommandSetter(isolationStrategy))
@@ -113,11 +122,22 @@ public class CommandExecutionPerfTest {
                 }
             };
         }
+
+        @TearDown(Level.Invocation)
+        public void tearDown() {
+            if (setUpRequestContext) {
+                requestContext.shutdown();
+            }
+        }
     }
 
     @State(Scope.Thread)
     public static class ObservableCommandState {
         HystrixObservableCommand<Integer> command;
+        HystrixRequestContext requestContext;
+
+        @Param({"true", "false"})
+        public boolean setUpRequestContext;
 
         //amount of "work" to give to CPU
         @Param({"1", "100", "10000"})
@@ -125,6 +145,10 @@ public class CommandExecutionPerfTest {
 
         @Setup(Level.Invocation)
         public void setUp() {
+            if (setUpRequestContext) {
+                requestContext = HystrixRequestContext.initializeContext();
+            }
+
             command = new HystrixObservableCommand<Integer>(
                     HystrixObservableCommand.Setter.withGroupKey(groupKey)
                     .andCommandPropertiesDefaults(getCommandSetter(HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE))
@@ -140,6 +164,13 @@ public class CommandExecutionPerfTest {
                     });
                 }
             };
+        }
+
+        @TearDown(Level.Invocation)
+        public void tearDown() {
+            if (setUpRequestContext) {
+                requestContext.shutdown();
+            }
         }
     }
 
@@ -174,7 +205,6 @@ public class CommandExecutionPerfTest {
             hystrixThreadPool.getExecutor().shutdownNow();
         }
     }
-
 
     @Benchmark
     @BenchmarkMode({Mode.Throughput})
