@@ -24,7 +24,6 @@ import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesCommandDefault;
 import org.junit.Test;
-import org.mockito.Mockito;
 import rx.Observable;
 import rx.observers.TestSubscriber;
 
@@ -44,7 +43,7 @@ public class HystrixServoMetricsPublisherCommandTest {
     private static HystrixCommandProperties.Setter propertiesSetter = HystrixCommandProperties.Setter()
             .withCircuitBreakerEnabled(true)
             .withExecutionIsolationStrategy(HystrixCommandProperties.ExecutionIsolationStrategy.THREAD)
-            .withExecutionTimeoutInMilliseconds(25)
+            .withExecutionTimeoutInMilliseconds(100)
             .withMetricsRollingStatisticalWindowInMilliseconds(1000)
             .withMetricsRollingPercentileWindowInMilliseconds(1000)
             .withMetricsRollingPercentileWindowBuckets(10);
@@ -66,20 +65,18 @@ public class HystrixServoMetricsPublisherCommandTest {
             new SuccessCommand().execute();
             new SuccessCommand().execute();
             new SuccessCommand().execute();
-            Thread.sleep(50);
+            Thread.sleep(10);
             new TimeoutCommand().execute();
             new SuccessCommand().execute();
             new FailureCommand().execute();
             new SuccessCommand().execute();
             new SuccessCommand().execute();
             new SuccessCommand().execute();
-            Thread.sleep(100);
+            Thread.sleep(10);
             new SuccessCommand().execute();
-            long endTime = System.currentTimeMillis();
-            Thread.sleep(1000 - (endTime - startTime)); //sleep the remainder of the 1000ms allotted
         }
 
-        Thread.sleep(1000);
+        Thread.sleep(500);
 
         assertEquals(40L, servoPublisher.getCumulativeMonitor("success", HystrixEventType.SUCCESS).getValue());
         assertEquals(5L, servoPublisher.getCumulativeMonitor("timeout", HystrixEventType.TIMEOUT).getValue());
@@ -235,7 +232,7 @@ public class HystrixServoMetricsPublisherCommandTest {
 
     static class TimeoutCommand extends SampleCommand {
         protected TimeoutCommand() {
-            super(false, 100); //exceeds 25ms timeout
+            super(false, 400); //exceeds 100ms timeout
         }
     }
 }
