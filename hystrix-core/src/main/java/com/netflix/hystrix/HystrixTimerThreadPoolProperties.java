@@ -67,13 +67,5 @@ public abstract class HystrixTimerThreadPoolProperties {
             this.coreSize = value;
             return this;
         }
-
-        /**
-         * Base properties for unit testing.
-         */
-        /* package */
-        static Setter getUnitTestPropertiesBuilder() {
-            return new Setter().withCoreSize(10); // size of thread pool
-        }
     }
 }

@@ -15,8 +15,6 @@
  */
 package com.netflix.hystrix.strategy.properties;
 
-import com.netflix.hystrix.HystrixThreadPoolKey;
-import com.netflix.hystrix.HystrixThreadPoolProperties;
 import com.netflix.hystrix.HystrixTimerThreadPoolProperties;
 
 /**
