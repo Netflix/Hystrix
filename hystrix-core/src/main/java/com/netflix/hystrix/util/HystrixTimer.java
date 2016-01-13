@@ -24,6 +24,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.netflix.hystrix.strategy.HystrixPlugins;
+import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -147,7 +149,11 @@ public class HystrixTimer {
          * We want this only done once when created in compareAndSet so use an initialize method
          */
         public void initialize() {
-            executor = new ScheduledThreadPoolExecutor(Runtime.getRuntime().availableProcessors(), new ThreadFactory() {
+
+            HystrixPropertiesStrategy propertiesStrategy = HystrixPlugins.getInstance().getPropertiesStrategy();
+            int coreSize = propertiesStrategy.getTimerThreadPoolProperties().getCorePoolSize().get();
+
+            executor = new ScheduledThreadPoolExecutor(coreSize, new ThreadFactory() {
                 final AtomicInteger counter = new AtomicInteger();
 
                 @Override
