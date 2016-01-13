@@ -36,10 +36,7 @@ import static org.junit.Assert.assertTrue;
 
 public class HystrixServoMetricsPublisherCommandTest {
 
-    private static HystrixCommandKey key = HystrixCommandKey.Factory.asKey("ServoCOMMAND");
     private static HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("ServoGROUP");
-
-    private static HystrixCircuitBreaker circuitBreaker = HystrixCircuitBreaker.Factory.getInstance(key);
     private static HystrixCommandProperties.Setter propertiesSetter = HystrixCommandProperties.Setter()
             .withCircuitBreakerEnabled(true)
             .withExecutionIsolationStrategy(HystrixCommandProperties.ExecutionIsolationStrategy.THREAD)
@@ -47,33 +44,34 @@ public class HystrixServoMetricsPublisherCommandTest {
             .withMetricsRollingStatisticalWindowInMilliseconds(1000)
             .withMetricsRollingPercentileWindowInMilliseconds(1000)
             .withMetricsRollingPercentileWindowBuckets(10);
-    private static HystrixCommandProperties properties = new HystrixPropertiesCommandDefault(key, propertiesSetter);
-    private static HystrixCommandMetrics metrics = HystrixCommandMetrics.getInstance(key, groupKey, properties);
+
 
 	@Test
 	public void testCumulativeCounters() throws Exception {
 		//execute 10 commands/sec (8 SUCCESS, 1 FAILURE, 1 TIMEOUT).
 		//after 5 seconds, cumulative counters should have observed 50 commands (40 SUCCESS, 5 FAILURE, 5 TIMEOUT)
-
+        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("ServoCOMMAND-A");
+        HystrixCircuitBreaker circuitBreaker = HystrixCircuitBreaker.Factory.getInstance(key);
+        HystrixCommandProperties properties = new HystrixPropertiesCommandDefault(key, propertiesSetter);
+        HystrixCommandMetrics metrics = HystrixCommandMetrics.getInstance(key, groupKey, properties);
         HystrixServoMetricsPublisherCommand servoPublisher = new HystrixServoMetricsPublisherCommand(key, groupKey, metrics, circuitBreaker, properties);
         servoPublisher.initialize();
 
         final int NUM_SECONDS = 5;
 
         for (int i = 0; i < NUM_SECONDS; i++) {
-            long startTime = System.currentTimeMillis();
-            new SuccessCommand().execute();
-            new SuccessCommand().execute();
-            new SuccessCommand().execute();
+            new SuccessCommand(key).execute();
+            new SuccessCommand(key).execute();
+            new SuccessCommand(key).execute();
             Thread.sleep(10);
-            new TimeoutCommand().execute();
-            new SuccessCommand().execute();
-            new FailureCommand().execute();
-            new SuccessCommand().execute();
-            new SuccessCommand().execute();
-            new SuccessCommand().execute();
+            new TimeoutCommand(key).execute();
+            new SuccessCommand(key).execute();
+            new FailureCommand(key).execute();
+            new SuccessCommand(key).execute();
+            new SuccessCommand(key).execute();
+            new SuccessCommand(key).execute();
             Thread.sleep(10);
-            new SuccessCommand().execute();
+            new SuccessCommand(key).execute();
         }
 
         Thread.sleep(500);
@@ -89,32 +87,36 @@ public class HystrixServoMetricsPublisherCommandTest {
         //execute 10 commands, then sleep for 2000ms to let these age out
         //execute 10 commands again, these should show up in rolling count
 
+        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("ServoCOMMAND-B");
+        HystrixCircuitBreaker circuitBreaker = HystrixCircuitBreaker.Factory.getInstance(key);
+        HystrixCommandProperties properties = new HystrixPropertiesCommandDefault(key, propertiesSetter);
+        HystrixCommandMetrics metrics = HystrixCommandMetrics.getInstance(key, groupKey, properties);
         HystrixServoMetricsPublisherCommand servoPublisher = new HystrixServoMetricsPublisherCommand(key, groupKey, metrics, circuitBreaker, properties);
         servoPublisher.initialize();
 
-        new SuccessCommand().execute();
-        new SuccessCommand().execute();
-        new SuccessCommand().execute();
-        new TimeoutCommand().execute();
-        new SuccessCommand().execute();
-        new FailureCommand().execute();
-        new SuccessCommand().execute();
-        new SuccessCommand().execute();
-        new SuccessCommand().execute();
-        new SuccessCommand().execute();
+        new SuccessCommand(key).execute();
+        new SuccessCommand(key).execute();
+        new SuccessCommand(key).execute();
+        new TimeoutCommand(key).execute();
+        new SuccessCommand(key).execute();
+        new FailureCommand(key).execute();
+        new SuccessCommand(key).execute();
+        new SuccessCommand(key).execute();
+        new SuccessCommand(key).execute();
+        new SuccessCommand(key).execute();
 
         Thread.sleep(2000);
 
-        new SuccessCommand().execute();
-        new SuccessCommand().execute();
-        new SuccessCommand().execute();
-        new TimeoutCommand().execute();
-        new SuccessCommand().execute();
-        new FailureCommand().execute();
-        new TimeoutCommand().execute();
-        new TimeoutCommand().execute();
-        new TimeoutCommand().execute();
-        new TimeoutCommand().execute();
+        new SuccessCommand(key).execute();
+        new SuccessCommand(key).execute();
+        new SuccessCommand(key).execute();
+        new TimeoutCommand(key).execute();
+        new SuccessCommand(key).execute();
+        new FailureCommand(key).execute();
+        new TimeoutCommand(key).execute();
+        new TimeoutCommand(key).execute();
+        new TimeoutCommand(key).execute();
+        new TimeoutCommand(key).execute();
 
         Thread.sleep(100); //time for 1 bucket roll
 
@@ -129,35 +131,40 @@ public class HystrixServoMetricsPublisherCommandTest {
         //execute 10 commands, then sleep for 2000ms to let these age out
         //execute 10 commands again, these should show up in rolling count
 
+        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("ServoCOMMAND-C");
+        HystrixCircuitBreaker circuitBreaker = HystrixCircuitBreaker.Factory.getInstance(key);
+        HystrixCommandProperties properties = new HystrixPropertiesCommandDefault(key, propertiesSetter);
+        HystrixCommandMetrics metrics = HystrixCommandMetrics.getInstance(key, groupKey, properties);
+
         HystrixServoMetricsPublisherCommand servoPublisher = new HystrixServoMetricsPublisherCommand(key, groupKey, metrics, circuitBreaker, properties);
         servoPublisher.initialize();
 
-        new SuccessCommand(5).execute();
-        new SuccessCommand(5).execute();
-        new SuccessCommand(5).execute();
-        new TimeoutCommand().execute();
-        new SuccessCommand(5).execute();
-        new FailureCommand(5).execute();
-        new SuccessCommand(5).execute();
-        new SuccessCommand(5).execute();
-        new SuccessCommand(5).execute();
-        new SuccessCommand(5).execute();
+        new SuccessCommand(key, 5).execute();
+        new SuccessCommand(key, 5).execute();
+        new SuccessCommand(key, 5).execute();
+        new TimeoutCommand(key).execute();
+        new SuccessCommand(key, 5).execute();
+        new FailureCommand(key, 5).execute();
+        new SuccessCommand(key, 5).execute();
+        new SuccessCommand(key, 5).execute();
+        new SuccessCommand(key, 5).execute();
+        new SuccessCommand(key, 5).execute();
 
         Thread.sleep(2000);
 
         List<Observable<Integer>> os = new ArrayList<Observable<Integer>>();
         TestSubscriber<Integer> testSubscriber = new TestSubscriber<Integer>();
 
-        os.add(new SuccessCommand(10).observe());
-        os.add(new SuccessCommand(20).observe());
-        os.add(new SuccessCommand(10).observe());
-        os.add(new TimeoutCommand().observe());
-        os.add(new SuccessCommand(15).observe());
-        os.add(new FailureCommand(10).observe());
-        os.add(new TimeoutCommand().observe());
-        os.add(new TimeoutCommand().observe());
-        os.add(new TimeoutCommand().observe());
-        os.add(new TimeoutCommand().observe());
+        os.add(new SuccessCommand(key, 10).observe());
+        os.add(new SuccessCommand(key, 20).observe());
+        os.add(new SuccessCommand(key, 10).observe());
+        os.add(new TimeoutCommand(key).observe());
+        os.add(new SuccessCommand(key, 15).observe());
+        os.add(new FailureCommand(key, 10).observe());
+        os.add(new TimeoutCommand(key).observe());
+        os.add(new TimeoutCommand(key).observe());
+        os.add(new TimeoutCommand(key).observe());
+        os.add(new TimeoutCommand(key).observe());
 
         Observable.merge(os).subscribe(testSubscriber);
 
@@ -188,7 +195,7 @@ public class HystrixServoMetricsPublisherCommandTest {
         boolean shouldFail;
         int latencyToAdd;
 
-        protected SampleCommand(boolean shouldFail, int latencyToAdd) {
+        protected SampleCommand(HystrixCommandKey key, boolean shouldFail, int latencyToAdd) {
             super(Setter.withGroupKey(groupKey).andCommandKey(key).andCommandPropertiesDefaults(propertiesSetter));
             this.shouldFail = shouldFail;
             this.latencyToAdd = latencyToAdd;
@@ -211,28 +218,28 @@ public class HystrixServoMetricsPublisherCommandTest {
     }
 
     static class SuccessCommand extends SampleCommand {
-        protected SuccessCommand() {
-            super(false, 0);
+        protected SuccessCommand(HystrixCommandKey key) {
+            super(key, false, 0);
         }
 
-        public SuccessCommand(int latencyToAdd) {
-            super(false, latencyToAdd);
+        public SuccessCommand(HystrixCommandKey key, int latencyToAdd) {
+            super(key, false, latencyToAdd);
         }
     }
 
     static class FailureCommand extends SampleCommand {
-        protected FailureCommand() {
-            super(true, 0);
+        protected FailureCommand(HystrixCommandKey key) {
+            super(key, true, 0);
         }
 
-        public FailureCommand(int latencyToAdd) {
-            super(true, latencyToAdd);
+        public FailureCommand(HystrixCommandKey key, int latencyToAdd) {
+            super(key, true, latencyToAdd);
         }
     }
 
     static class TimeoutCommand extends SampleCommand {
-        protected TimeoutCommand() {
-            super(false, 400); //exceeds 100ms timeout
+        protected TimeoutCommand(HystrixCommandKey key) {
+            super(key, false, 400); //exceeds 100ms timeout
         }
     }
 }
