@@ -1,5 +1,17 @@
 # Hystrix Releases #
 
+### Version 1.4.23 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.23%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.23/)) ###
+
+* [Pull 1032](https://github.com/Netflix/Hystrix/pull/1032) Make number of timer threads a piece of config (with Archaius integration)
+* [Pull 1045](https://github.com/Netflix/Hystrix/pull/1045) Documentation cleanup in HystrixCommandProperties
+* [Pull 1044](https://github.com/Netflix/Hystrix/pull/1044) Add request context and HystrixObservableCommand to command execution JMH tests
+* [Pull 1043](https://github.com/Netflix/Hystrix/pull/1043) HystrixObservableCollapser emits error to each submitter when batch command encounters error
+* [Pull 1039](https://github.com/Netflix/Hystrix/pull/1039) Use thread-safe data structure for storing list of command keys per-thread
+* [Pull 1036](https://github.com/Netflix/Hystrix/pull/1036) Remove redundant ConcurrentHashMap read when getting name from command class
+* [Pull 1035](https://github.com/Netflix/Hystrix/pull/1035) Rename command execution JMH tests
+* [Pull 1034](https://github.com/Netflix/Hystrix/pull/1034) Remove SHORT_CIRCUITED events from health counts calculation 
+* [Pull 1027](https://github.com/Netflix/Hystrix/pull/1027) Fix typo in hystrix-examples-webapp documentation
+
 ### Version 1.4.22 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.22%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.22/)) ###
 
 * [Pull 1019](https://github.com/Netflix/Hystrix/pull/1019) hystrix-dashboard: Swap magnifying glass logos
