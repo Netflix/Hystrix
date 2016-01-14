@@ -19,6 +19,7 @@ import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandGroupKey;
 import com.netflix.hystrix.HystrixCommandMetrics;
 import com.netflix.hystrix.HystrixCommandProperties;
+import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.HystrixThreadPoolProperties;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -87,9 +88,15 @@ public class CommandExecutionAndConcurrentMetricsReadPerfTest {
     @GroupThreads(1)
     @BenchmarkMode({Mode.Throughput})
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
-    public Integer writeHeavyReadMetrics(CommandState state) {
+    public long writeHeavyReadMetrics(CommandState state) {
         HystrixCommandMetrics metrics = state.command.getMetrics();
-        return metrics.getExecutionTimeMean() + metrics.getExecutionTimePercentile(50) + metrics.getExecutionTimePercentile(75) + metrics.getExecutionTimePercentile(99);
+        return metrics.getExecutionTimeMean()
+                + metrics.getExecutionTimePercentile(50)
+                + metrics.getExecutionTimePercentile(75)
+                + metrics.getExecutionTimePercentile(99)
+                + metrics.getCumulativeCount(HystrixEventType.SUCCESS)
+                + metrics.getRollingCount(HystrixEventType.FAILURE)
+                + metrics.getRollingMaxConcurrentExecutions();
     }
 
     @Benchmark
@@ -106,9 +113,15 @@ public class CommandExecutionAndConcurrentMetricsReadPerfTest {
     @GroupThreads(4)
     @BenchmarkMode({Mode.Throughput})
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
-    public Integer evenSplitOfWritesAndReadsReadMetrics(CommandState state) {
+    public long evenSplitOfWritesAndReadsReadMetrics(CommandState state) {
         HystrixCommandMetrics metrics = state.command.getMetrics();
-        return metrics.getExecutionTimeMean() + metrics.getExecutionTimePercentile(50) + metrics.getExecutionTimePercentile(75) + metrics.getExecutionTimePercentile(99);
+        return metrics.getExecutionTimeMean()
+                + metrics.getExecutionTimePercentile(50)
+                + metrics.getExecutionTimePercentile(75)
+                + metrics.getExecutionTimePercentile(99)
+                + metrics.getCumulativeCount(HystrixEventType.SUCCESS)
+                + metrics.getRollingCount(HystrixEventType.FAILURE)
+                + metrics.getRollingMaxConcurrentExecutions();
     }
 
     @Benchmark
@@ -125,8 +138,15 @@ public class CommandExecutionAndConcurrentMetricsReadPerfTest {
     @GroupThreads(7)
     @BenchmarkMode({Mode.Throughput})
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
-    public Integer readHeavyReadMetrics(CommandState state) {
+    public Long readHeavyReadMetrics(CommandState state) {
         HystrixCommandMetrics metrics = state.command.getMetrics();
-        return metrics.getExecutionTimeMean() + metrics.getExecutionTimePercentile(50) + metrics.getExecutionTimePercentile(75) + metrics.getExecutionTimePercentile(99);
+        return metrics.getExecutionTimeMean()
+                + metrics.getExecutionTimePercentile(50)
+                + metrics.getExecutionTimePercentile(75)
+                + metrics.getExecutionTimePercentile(99)
+                + metrics.getCumulativeCount(HystrixEventType.SUCCESS)
+                + metrics.getRollingCount(HystrixEventType.FAILURE)
+                + metrics.getRollingMaxConcurrentExecutions();
+
     }
 }

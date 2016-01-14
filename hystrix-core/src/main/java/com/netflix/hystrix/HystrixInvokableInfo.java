@@ -51,11 +51,17 @@ public interface HystrixInvokableInfo<R> {
 
     public boolean isResponseRejected();
 
+    boolean isResponseSemaphoreRejected();
+
+    boolean isResponseThreadPoolRejected();
+
     public List<HystrixEventType> getExecutionEvents();
 
     public int getNumberEmissions();
 
     public int getNumberFallbackEmissions();
+
+    int getNumberCollapsed();
 
     public int getExecutionTimeInMilliseconds();
 

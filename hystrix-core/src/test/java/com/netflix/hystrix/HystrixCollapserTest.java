@@ -19,6 +19,7 @@ import java.lang.ref.Reference;
 import java.lang.ref.SoftReference;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -72,6 +73,7 @@ public class HystrixCollapserTest {
         Future<String> response1 = collapser1.queue();
         HystrixCollapser<List<String>, String, String> collapser2 = new TestRequestCollapser(timer, 2);
         Future<String> response2 = collapser2.queue();
+
         timer.incrementTime(10); // let time pass that equals the default delay/period
 
         assertEquals("1", response1.get());
@@ -81,9 +83,9 @@ public class HystrixCollapserTest {
 
         HystrixCollapserMetrics metrics = collapser1.getMetrics();
         assertSame(metrics, collapser2.getMetrics());
-        assertEquals(2L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_REQUEST_BATCHED));
-        assertEquals(1L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_BATCH));
-        assertEquals(0L, metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+
+        HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().iterator().next();
+        assertEquals(2, command.getNumberCollapsed());
     }
 
     @Test
@@ -106,10 +108,9 @@ public class HystrixCollapserTest {
         // we should have had it execute twice now
         assertEquals(2, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
 
-        HystrixCollapserMetrics metrics = collapser1.getMetrics();
-        assertEquals(3L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_REQUEST_BATCHED));
-        assertEquals(2L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_BATCH));
-        assertEquals(0L, metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+        Iterator<HystrixInvokableInfo<?>> cmdIterator = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().iterator();
+        assertEquals(2, cmdIterator.next().getNumberCollapsed());
+        assertEquals(1, cmdIterator.next().getNumberCollapsed());
     }
 
     @Test
@@ -128,10 +129,9 @@ public class HystrixCollapserTest {
         // we should have had it execute twice because the batch size was 2
         assertEquals(2, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
 
-        HystrixCollapserMetrics metrics = collapser1.getMetrics();
-        assertEquals(3L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_REQUEST_BATCHED));
-        assertEquals(2L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_BATCH));
-        assertEquals(0L, metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+        Iterator<HystrixInvokableInfo<?>> cmdIterator = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().iterator();
+        assertEquals(2, cmdIterator.next().getNumberCollapsed());
+        assertEquals(1, cmdIterator.next().getNumberCollapsed());
     }
 
     @Test
@@ -161,10 +161,10 @@ public class HystrixCollapserTest {
 
         assertEquals(3, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
 
-        HystrixCollapserMetrics metrics = collapser1.getMetrics();
-        assertEquals(5L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_REQUEST_BATCHED));
-        assertEquals(3L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_BATCH));
-        assertEquals(0L, metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+        Iterator<HystrixInvokableInfo<?>> cmdIterator = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().iterator();
+        assertEquals(2, cmdIterator.next().getNumberCollapsed());
+        assertEquals(2, cmdIterator.next().getNumberCollapsed());
+        assertEquals(1, cmdIterator.next().getNumberCollapsed());
     }
 
     @Test
@@ -190,10 +190,9 @@ public class HystrixCollapserTest {
         assertEquals("2", response2.get());
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-        HystrixCollapserMetrics metrics = collapser1.getMetrics();
-        assertEquals(2L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_REQUEST_BATCHED));
-        assertEquals(1L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_BATCH));
-        assertEquals(0L, metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+
+        Iterator<HystrixInvokableInfo<?>> cmdIterator = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().iterator();
+        assertEquals(2, cmdIterator.next().getNumberCollapsed());
     }
 
     @Test
@@ -213,10 +212,10 @@ public class HystrixCollapserTest {
 
         /* we should get 2 batches since it gets sharded */
         assertEquals(2, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-        HystrixCollapserMetrics metrics = collapser1.getMetrics();
-        assertEquals(4L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_REQUEST_BATCHED));
-        assertEquals(2L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_BATCH));
-        assertEquals(0L, metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+
+        Iterator<HystrixInvokableInfo<?>> cmdIterator = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().iterator();
+        assertEquals(2, cmdIterator.next().getNumberCollapsed());
+        assertEquals(2, cmdIterator.next().getNumberCollapsed());
     }
 
     @Test
@@ -241,10 +240,10 @@ public class HystrixCollapserTest {
 
         // 2 different batches should execute, 1 per request
         assertEquals(2, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-        HystrixCollapserMetrics metrics = collapser1.getMetrics();
-        assertEquals(4L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_REQUEST_BATCHED));
-        assertEquals(2L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_BATCH));
-        assertEquals(0L, metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+
+        Iterator<HystrixInvokableInfo<?>> cmdIterator = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().iterator();
+        assertEquals(2, cmdIterator.next().getNumberCollapsed());
+        assertEquals(2, cmdIterator.next().getNumberCollapsed());
     }
 
     @Test
@@ -269,10 +268,9 @@ public class HystrixCollapserTest {
 
         // despite having cleared the cache in between we should have a single execution because this is on the global not request cache
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-        HystrixCollapserMetrics metrics = collapser1.getMetrics();
-        assertEquals(4L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_REQUEST_BATCHED));
-        assertEquals(1L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_BATCH));
-        assertEquals(0L, metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+
+        Iterator<HystrixInvokableInfo<?>> cmdIterator = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().iterator();
+        assertEquals(4, cmdIterator.next().getNumberCollapsed());
     }
 
     @Test
@@ -297,10 +295,6 @@ public class HystrixCollapserTest {
         }
 
         assertEquals(0, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-        HystrixCollapserMetrics metrics = collapser1.getMetrics();
-        assertEquals(2L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_REQUEST_BATCHED));
-        assertEquals(0L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_BATCH));
-        assertEquals(0L, metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
     }
 
     @Test
@@ -327,10 +321,9 @@ public class HystrixCollapserTest {
         // the batch failed so no executions
         // but it still executed the command once
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-        HystrixCollapserMetrics metrics = collapser1.getMetrics();
-        assertEquals(2L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_REQUEST_BATCHED));
-        assertEquals(1L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_BATCH));
-        assertEquals(0L, metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+
+        Iterator<HystrixInvokableInfo<?>> cmdIterator = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().iterator();
+        assertEquals(2, cmdIterator.next().getNumberCollapsed());
     }
 
     @Test
@@ -370,6 +363,11 @@ public class HystrixCollapserTest {
         System.out.println("timer.tasks.size() A: " + timer.tasks.size());
         System.out.println("tasks in test: " + timer.tasks);
 
+        Iterator<HystrixInvokableInfo<?>> cmdIterator = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().iterator();
+        assertEquals(2, cmdIterator.next().getNumberCollapsed());
+        assertEquals(2, cmdIterator.next().getNumberCollapsed());
+        assertEquals(1, cmdIterator.next().getNumberCollapsed());
+
         // simulate request lifecycle
         requestContext.shutdown();
 
@@ -380,11 +378,6 @@ public class HystrixCollapserTest {
         assertNotNull(rv);
         // they should have all been removed as part of ThreadContext.remove()
         assertEquals(0, timer.tasks.size());
-
-        HystrixCollapserMetrics metrics = collapser1.getMetrics();
-        assertEquals(5L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_REQUEST_BATCHED));
-        assertEquals(3L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_BATCH));
-        assertEquals(0L, metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
     }
 
     @Test
@@ -453,6 +446,11 @@ public class HystrixCollapserTest {
             assertEquals(3, t.task.count.get());
         }
 
+        Iterator<HystrixInvokableInfo<?>> cmdIterator = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().iterator();
+        assertEquals(501, cmdIterator.next().getNumberCollapsed());
+        assertEquals(2, cmdIterator.next().getNumberCollapsed());
+        assertEquals(1, cmdIterator.next().getNumberCollapsed());
+
         // simulate request lifecycle
         requestContext.shutdown();
 
@@ -461,11 +459,6 @@ public class HystrixCollapserTest {
         assertNotNull(rv);
         // they should have all been removed as part of ThreadContext.remove()
         assertEquals(0, timer.tasks.size());
-
-        HystrixCollapserMetrics metrics = collapser1.getMetrics();
-        assertEquals(504L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_REQUEST_BATCHED));
-        assertEquals(3L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_BATCH));
-        assertEquals(0L, metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
     }
 
     /**
@@ -513,10 +506,8 @@ public class HystrixCollapserTest {
         assertTrue(command.getExecutionEvents().contains(HystrixEventType.SUCCESS));
         assertTrue(command.getExecutionEvents().contains(HystrixEventType.COLLAPSED));
 
-        HystrixCollapserMetrics metrics = command1.getMetrics();
-        assertEquals(1L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_REQUEST_BATCHED));
-        assertEquals(1L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_BATCH));
-        assertEquals(2L, metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+        Iterator<HystrixInvokableInfo<?>> cmdIterator = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().iterator();
+        assertEquals(1, cmdIterator.next().getNumberCollapsed());
     }
 
     /**
@@ -565,10 +556,8 @@ public class HystrixCollapserTest {
         assertTrue(command.getExecutionEvents().contains(HystrixEventType.SUCCESS));
         assertTrue(command.getExecutionEvents().contains(HystrixEventType.COLLAPSED));
 
-        HystrixCollapserMetrics metrics = command1.getMetrics();
-        assertEquals(2L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_REQUEST_BATCHED));
-        assertEquals(1L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_BATCH));
-        assertEquals(2L, metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+        Iterator<HystrixInvokableInfo<?>> cmdIterator = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().iterator();
+        assertEquals(2, cmdIterator.next().getNumberCollapsed());
     }
 
     /**
@@ -622,10 +611,8 @@ public class HystrixCollapserTest {
         assertTrue(command.getExecutionEvents().contains(HystrixEventType.SUCCESS));
         assertTrue(command.getExecutionEvents().contains(HystrixEventType.COLLAPSED));
 
-        HystrixCollapserMetrics metrics = command1.getMetrics();
-        assertEquals(2L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_REQUEST_BATCHED));
-        assertEquals(1L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_BATCH));
-        assertEquals(4L, metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+        Iterator<HystrixInvokableInfo<?>> cmdIterator = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().iterator();
+        assertEquals(2, cmdIterator.next().getNumberCollapsed());
     }
 
     /**
@@ -686,10 +673,9 @@ public class HystrixCollapserTest {
         assertTrue(commandB.getExecutionEvents().contains(HystrixEventType.SUCCESS));
         assertTrue(commandB.getExecutionEvents().contains(HystrixEventType.COLLAPSED));
 
-        HystrixCollapserMetrics metrics = command1.getMetrics();
-        assertEquals(6L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_REQUEST_BATCHED));
-        assertEquals(2L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_BATCH));
-        assertEquals(0L, metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+        Iterator<HystrixInvokableInfo<?>> cmdIterator = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().iterator();
+        assertEquals(3, cmdIterator.next().getNumberCollapsed());
+        assertEquals(3, cmdIterator.next().getNumberCollapsed());
     }
 
     /**
@@ -749,10 +735,8 @@ public class HystrixCollapserTest {
         assertTrue(command.getExecutionEvents().contains(HystrixEventType.COLLAPSED));
         assertTrue(command.getExecutionEvents().contains(HystrixEventType.FALLBACK_MISSING));
 
-        HystrixCollapserMetrics metrics = command1.getMetrics();
-        assertEquals(1L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_REQUEST_BATCHED));
-        assertEquals(1L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_BATCH));
-        assertEquals(2L, metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+        Iterator<HystrixInvokableInfo<?>> cmdIterator = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().iterator();
+        assertEquals(1, cmdIterator.next().getNumberCollapsed());
     }
 
     /**
@@ -805,10 +789,8 @@ public class HystrixCollapserTest {
         assertEquals(1, commands.size());
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
 
-        HystrixCollapserMetrics metrics = command1.getMetrics();
-        assertEquals(1L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_REQUEST_BATCHED));
-        assertEquals(1L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_BATCH));
-        assertEquals(2L, metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+        Iterator<HystrixInvokableInfo<?>> cmdIterator = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().iterator();
+        assertEquals(1, cmdIterator.next().getNumberCollapsed());
     }
 
     /**
@@ -840,10 +822,8 @@ public class HystrixCollapserTest {
         // it will execute once (short-circuited)
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
 
-        HystrixCollapserMetrics metrics = collapser1.getMetrics();
-        assertEquals(2L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_REQUEST_BATCHED));
-        assertEquals(1L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_BATCH));
-        assertEquals(0L, metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+        Iterator<HystrixInvokableInfo<?>> cmdIterator = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().iterator();
+        assertEquals(2, cmdIterator.next().getNumberCollapsed());
     }
 
     /**
@@ -866,10 +846,8 @@ public class HystrixCollapserTest {
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
 
-        HystrixCollapserMetrics metrics = collapser1.getMetrics();
-        assertEquals(2L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_REQUEST_BATCHED));
-        assertEquals(1L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_BATCH));
-        assertEquals(0L, metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+        Iterator<HystrixInvokableInfo<?>> cmdIterator = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().iterator();
+        assertEquals(2, cmdIterator.next().getNumberCollapsed());
     }
 
     /**
@@ -896,10 +874,8 @@ public class HystrixCollapserTest {
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
 
-        HystrixCollapserMetrics metrics = collapser1.getMetrics();
-        assertEquals(2L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_REQUEST_BATCHED));
-        assertEquals(1L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_BATCH));
-        assertEquals(0L, metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+        Iterator<HystrixInvokableInfo<?>> cmdIterator = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().iterator();
+        assertEquals(2, cmdIterator.next().getNumberCollapsed());
     }
 
     /**
@@ -915,10 +891,8 @@ public class HystrixCollapserTest {
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
 
-        HystrixCollapserMetrics metrics = collapser1.getMetrics();
-        assertEquals(1L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_REQUEST_BATCHED));
-        assertEquals(1L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_BATCH));
-        assertEquals(0L, metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+        Iterator<HystrixInvokableInfo<?>> cmdIterator = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().iterator();
+        assertEquals(1, cmdIterator.next().getNumberCollapsed());
     }
 
     private static class TestRequestCollapser extends HystrixCollapser<List<String>, String, String> {
@@ -1370,4 +1344,38 @@ public class HystrixCollapserTest {
         protected void mapResponseToRequests(Void batchResponse, Collection<CollapsedRequest<Void, Integer>> requests) {
         }
     }
+
+//    protected void assertCollap(HystrixInvokableInfo<?> command, HystrixEventType... expectedEventTypes) {
+//        boolean emitExpected = false;
+//        int expectedEmitCount = 0;
+//
+//        boolean fallbackEmitExpected = false;
+//        int expectedFallbackEmitCount = 0;
+//
+//        List<HystrixEventType> condensedEmitExpectedEventTypes = new ArrayList<HystrixEventType>();
+//
+//        for (HystrixEventType expectedEventType: expectedEventTypes) {
+//            if (expectedEventType.equals(HystrixEventType.EMIT)) {
+//                if (!emitExpected) {
+//                    //first EMIT encountered, add it to condensedEmitExpectedEventTypes
+//                    condensedEmitExpectedEventTypes.add(HystrixEventType.EMIT);
+//                }
+//                emitExpected = true;
+//                expectedEmitCount++;
+//            } else if (expectedEventType.equals(HystrixEventType.FALLBACK_EMIT)) {
+//                if (!fallbackEmitExpected) {
+//                    //first FALLBACK_EMIT encountered, add it to condensedEmitExpectedEventTypes
+//                    condensedEmitExpectedEventTypes.add(HystrixEventType.FALLBACK_EMIT);
+//                }
+//                fallbackEmitExpected = true;
+//                expectedFallbackEmitCount++;
+//            } else {
+//                condensedEmitExpectedEventTypes.add(expectedEventType);
+//            }
+//        }
+//        List<HystrixEventType> actualEventTypes = command.getExecutionEvents();
+//        assertEquals(expectedEmitCount, command.getNumberEmissions());
+//        assertEquals(expectedFallbackEmitCount, command.getNumberFallbackEmissions());
+//        assertEquals(condensedEmitExpectedEventTypes, actualEventTypes);
+//    }
 }

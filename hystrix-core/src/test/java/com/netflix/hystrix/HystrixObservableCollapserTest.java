@@ -17,6 +17,7 @@ package com.netflix.hystrix;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,7 +35,6 @@ import com.netflix.hystrix.collapser.CollapserTimer;
 import com.netflix.hystrix.collapser.RealCollapserTimer;
 import com.netflix.hystrix.strategy.concurrency.HystrixContextRunnable;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesCollapserDefault;
-import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -156,11 +156,8 @@ public class HystrixObservableCollapserTest {
 
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
 
-        HystrixCollapserMetrics metrics = collapser1.getMetrics();
-        assertSame(metrics, collapser2.getMetrics());
-        assertEquals(2L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_REQUEST_BATCHED));
-        assertEquals(1L, metrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_BATCH));
-        assertEquals(0L, metrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE));
+        Iterator<HystrixInvokableInfo<?>> cmdIterator = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().iterator();
+        assertEquals(2, cmdIterator.next().getNumberCollapsed());
     }
 
     @Test

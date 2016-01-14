@@ -15,16 +15,20 @@
  */
 package com.netflix.hystrix;
 
+import com.netflix.hystrix.metric.HystrixCollapserEvent;
+import com.netflix.hystrix.metric.HystrixThreadEventStream;
+import com.netflix.hystrix.metric.consumer.CumulativeCollapserEventCounterStream;
+import com.netflix.hystrix.metric.consumer.RollingCollapserBatchSizeDistributionStream;
+import com.netflix.hystrix.metric.consumer.RollingCollapserEventCounterStream;
+import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
+import com.netflix.hystrix.util.HystrixRollingNumberEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import rx.functions.Func2;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
-
-import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
-import com.netflix.hystrix.util.HystrixRollingNumber;
-import com.netflix.hystrix.util.HystrixRollingNumberEvent;
-import com.netflix.hystrix.util.HystrixRollingPercentile;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Used by {@link HystrixCollapser} to record metrics.
@@ -75,6 +79,28 @@ public class HystrixCollapserMetrics extends HystrixMetrics {
         return Collections.unmodifiableCollection(metrics.values());
     }
 
+    private static final HystrixEventType.Collapser[] ALL_EVENT_TYPES = HystrixEventType.Collapser.values();
+
+    public static final Func2<long[], HystrixCollapserEvent, long[]> appendEventToBucket = new Func2<long[], HystrixCollapserEvent, long[]>() {
+        @Override
+        public long[] call(long[] initialCountArray, HystrixCollapserEvent collapserEvent) {
+            HystrixEventType.Collapser eventType = collapserEvent.getEventType();
+            int count = collapserEvent.getCount();
+            initialCountArray[eventType.ordinal()] += count;
+            return initialCountArray;
+        }
+    };
+
+    public static final Func2<long[], long[], long[]> bucketAggregator = new Func2<long[], long[], long[]>() {
+        @Override
+        public long[] call(long[] cumulativeEvents, long[] bucketEventCounts) {
+            for (HystrixEventType.Collapser eventType: ALL_EVENT_TYPES) {
+                cumulativeEvents[eventType.ordinal()] += bucketEventCounts[eventType.ordinal()];
+            }
+            return cumulativeEvents;
+        }
+    };
+
     /**
      * Clears all state from metrics. If new requests come in instances will be recreated and metrics started from scratch.
      */
@@ -82,18 +108,21 @@ public class HystrixCollapserMetrics extends HystrixMetrics {
         metrics.clear();
     }
 
-    private final HystrixCollapserKey key;
+    private final HystrixCollapserKey collapserKey;
     private final HystrixCollapserProperties properties;
-    private final HystrixRollingPercentile percentileBatchSize;
-    private final HystrixRollingPercentile percentileShardSize;
+
+    private final RollingCollapserEventCounterStream rollingCollapserEventCounterStream;
+    private final CumulativeCollapserEventCounterStream cumulativeCollapserEventCounterStream;
+    private final RollingCollapserBatchSizeDistributionStream rollingCollapserBatchSizeDistributionStream;
 
     /* package */HystrixCollapserMetrics(HystrixCollapserKey key, HystrixCollapserProperties properties) {
-        super(new HystrixRollingNumber(properties.metricsRollingStatisticalWindowInMilliseconds().get(), properties.metricsRollingStatisticalWindowBuckets().get()));
-        this.key = key;
+        super(null);
+        this.collapserKey = key;
         this.properties = properties;
 
-        this.percentileBatchSize = new HystrixRollingPercentile(properties.metricsRollingPercentileWindowInMilliseconds().get(), properties.metricsRollingPercentileWindowBuckets().get(), properties.metricsRollingPercentileBucketSize().get(), properties.metricsRollingPercentileEnabled());
-        this.percentileShardSize = new HystrixRollingPercentile(properties.metricsRollingPercentileWindowInMilliseconds().get(), properties.metricsRollingPercentileWindowBuckets().get(), properties.metricsRollingPercentileBucketSize().get(), properties.metricsRollingPercentileEnabled());
+        rollingCollapserEventCounterStream = RollingCollapserEventCounterStream.getInstance(key, properties);
+        cumulativeCollapserEventCounterStream = CumulativeCollapserEventCounterStream.getInstance(key, properties);
+        rollingCollapserBatchSizeDistributionStream = RollingCollapserBatchSizeDistributionStream.getInstance(key, properties);
     }
 
     /**
@@ -102,11 +131,29 @@ public class HystrixCollapserMetrics extends HystrixMetrics {
      * @return HystrixCollapserKey
      */
     public HystrixCollapserKey getCollapserKey() {
-        return key;
+        return collapserKey;
     }
 
     public HystrixCollapserProperties getProperties() {
         return properties;
+    }
+
+    public long getRollingCount(HystrixEventType.Collapser collapserEventType) {
+        return rollingCollapserEventCounterStream.getLatest(collapserEventType);
+    }
+
+    public long getCumulativeCount(HystrixEventType.Collapser collapserEventType) {
+        return cumulativeCollapserEventCounterStream.getLatest(collapserEventType);
+    }
+
+    @Override
+    public long getCumulativeCount(HystrixRollingNumberEvent event) {
+        return getCumulativeCount(HystrixEventType.Collapser.from(event));
+    }
+
+    @Override
+    public long getRollingCount(HystrixRollingNumberEvent event) {
+        return getRollingCount(HystrixEventType.Collapser.from(event));
     }
 
     /**
@@ -119,11 +166,11 @@ public class HystrixCollapserMetrics extends HystrixMetrics {
      * @return batch size
      */
     public int getBatchSizePercentile(double percentile) {
-        return percentileBatchSize.getPercentile(percentile);
+        return rollingCollapserBatchSizeDistributionStream.getLatestPercentile(percentile);
     }
 
     public int getBatchSizeMean() {
-        return percentileBatchSize.getMean();
+        return rollingCollapserBatchSizeDistributionStream.getLatestMean();
     }
 
     /**
@@ -136,29 +183,26 @@ public class HystrixCollapserMetrics extends HystrixMetrics {
      * @return batch size
      */
     public int getShardSizePercentile(double percentile) {
-        return percentileShardSize.getPercentile(percentile);
+        return 0;
+        //return rollingCollapserUsageDistributionStream.getLatestBatchSizePercentile(percentile);
     }
 
     public int getShardSizeMean() {
-        return percentileShardSize.getMean();
+        return 0;
+        //return percentileShardSize.getMean();
     }
 
     public void markRequestBatched() {
-        counter.increment(HystrixRollingNumberEvent.COLLAPSER_REQUEST_BATCHED);
     }
 
     public void markResponseFromCache() {
-        counter.increment(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE);
+        HystrixThreadEventStream.getInstance().collapserResponseFromCache(collapserKey);
     }
 
     public void markBatch(int batchSize) {
-        percentileBatchSize.addValue(batchSize);
-        counter.increment(HystrixRollingNumberEvent.COLLAPSER_BATCH);
+        HystrixThreadEventStream.getInstance().collapserBatchExecuted(collapserKey, batchSize);
     }
 
     public void markShards(int numShards) {
-        percentileShardSize.addValue(numShards);
     }
-
-
 }

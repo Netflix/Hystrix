@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * 1) {@link #setResponse(T)}: return a single-valued response.  equivalent to OnNext(T), OnCompleted()
  * 2) {@link #emitResponse(T)}: emit a single value.  equivalent to OnNext(T)
- * 3) {@link #setException(Exception)}: return an exception.  equivalent to OnError(Excception)
+ * 3) {@link #setException(Exception)}: return an exception.  equivalent to OnError(Exception)
  * 4) {@link #setComplete()}: mark that no more values will be emitted.  Should be used in conjunction with {@link #emitResponse(T)}.  equivalent to OnCompleted()
  *
  * <p>

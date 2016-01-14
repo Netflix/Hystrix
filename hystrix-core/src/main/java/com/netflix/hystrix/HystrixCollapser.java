@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import rx.Observable;
 import rx.Scheduler;
+import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 import rx.subjects.ReplaySubject;
@@ -153,7 +154,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
 
             @Override
             public Observable<BatchReturnType> createObservableCommand(Collection<CollapsedRequest<ResponseType, RequestArgumentType>> requests) {
-                HystrixCommand<BatchReturnType> command = self.createCommand(requests);
+                final HystrixCommand<BatchReturnType> command = self.createCommand(requests);
 
                 command.markAsCollapsedCommand(requests.size());
                 self.metrics.markBatch(requests.size());
