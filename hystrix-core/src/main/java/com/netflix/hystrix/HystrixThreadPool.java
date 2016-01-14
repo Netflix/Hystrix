@@ -17,6 +17,7 @@ package com.netflix.hystrix;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -27,6 +28,7 @@ import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
 import com.netflix.hystrix.strategy.concurrency.HystrixContextScheduler;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherFactory;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesFactory;
+
 import rx.functions.Func0;
 
 /**
@@ -49,7 +51,7 @@ public interface HystrixThreadPool {
      * 
      * @return ThreadPoolExecutor
      */
-    public ThreadPoolExecutor getExecutor();
+    public ExecutorService getExecutor();
 
     public Scheduler getScheduler();
 
