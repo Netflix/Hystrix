@@ -15,36 +15,12 @@
  */
 package com.netflix.hystrix;
 
-import java.lang.ref.Reference;
-import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-
-import com.netflix.hystrix.exception.HystrixTimeoutException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import rx.Notification;
-import rx.Observable;
-import rx.Observable.OnSubscribe;
-import rx.Observable.Operator;
-import rx.Subscriber;
-import rx.functions.Action0;
-import rx.functions.Action1;
-import rx.functions.Func0;
-import rx.functions.Func1;
-import rx.subjects.ReplaySubject;
-import rx.subscriptions.CompositeSubscription;
-
 import com.netflix.hystrix.HystrixCircuitBreaker.NoOpCircuitBreaker;
 import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
 import com.netflix.hystrix.exception.HystrixBadRequestException;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
 import com.netflix.hystrix.exception.HystrixRuntimeException.FailureType;
+import com.netflix.hystrix.exception.HystrixTimeoutException;
 import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
 import com.netflix.hystrix.strategy.concurrency.HystrixContextRunnable;
@@ -57,6 +33,28 @@ import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 import com.netflix.hystrix.strategy.properties.HystrixProperty;
 import com.netflix.hystrix.util.HystrixTimer;
 import com.netflix.hystrix.util.HystrixTimer.TimerListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import rx.Notification;
+import rx.Observable;
+import rx.Observable.OnSubscribe;
+import rx.Observable.Operator;
+import rx.Subscriber;
+import rx.functions.Action0;
+import rx.functions.Action1;
+import rx.functions.Func0;
+import rx.functions.Func1;
+import rx.subjects.ReplaySubject;
+import rx.subscriptions.CompositeSubscription;
+
+import java.lang.ref.Reference;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 /* package */abstract class AbstractCommand<R> implements HystrixInvokableInfo<R>, HystrixObservable<R> {
     private static final Logger logger = LoggerFactory.getLogger(AbstractCommand.class);
@@ -134,130 +132,141 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         return name;
     }
 
+
+
     protected AbstractCommand(HystrixCommandGroupKey group, HystrixCommandKey key, HystrixThreadPoolKey threadPoolKey, HystrixCircuitBreaker circuitBreaker, HystrixThreadPool threadPool,
             HystrixCommandProperties.Setter commandPropertiesDefaults, HystrixThreadPoolProperties.Setter threadPoolPropertiesDefaults,
             HystrixCommandMetrics metrics, TryableSemaphore fallbackSemaphore, TryableSemaphore executionSemaphore,
             HystrixPropertiesStrategy propertiesStrategy, HystrixCommandExecutionHook executionHook) {
 
-        /*
-         * CommandGroup initialization
-         */
-        if (group == null) {
-            throw new IllegalStateException("HystrixCommandGroup can not be NULL");
-        } else {
-            this.commandGroup = group;
-        }
+        this.commandGroup = initGroupKey(group);
+        this.commandKey = initCommandKey(key, getClass());
+        this.properties = initCommandProperties(this.commandKey, propertiesStrategy, commandPropertiesDefaults);
+        this.threadPoolKey = initThreadPoolKey(threadPoolKey, this.commandGroup, this.properties.executionIsolationThreadPoolKeyOverride().get());
+        this.metrics = initMetrics(metrics, this.commandGroup, this.threadPoolKey, this.commandKey, this.properties);
+        this.circuitBreaker = initCircuitBreaker(this.properties.circuitBreakerEnabled().get(), circuitBreaker, this.commandGroup, this.commandKey, this.properties, this.metrics);
+        this.threadPool = initThreadPool(threadPool, this.threadPoolKey, threadPoolPropertiesDefaults);
 
-        /*
-         * CommandKey initialization
-         */
-        if (key == null || key.name().trim().equals("")) {
-            final String keyName = getDefaultNameFromClass(getClass());
-            this.commandKey = HystrixCommandKey.Factory.asKey(keyName);
-        } else {
-            this.commandKey = key;
-        }
 
-        /*
-         * Properties initialization
-         */
-        if (propertiesStrategy == null) {
-            this.properties = HystrixPropertiesFactory.getCommandProperties(this.commandKey, commandPropertiesDefaults);
-        } else {
-            // used for unit testing
-            this.properties = propertiesStrategy.getCommandProperties(this.commandKey, commandPropertiesDefaults);
-        }
-
-        /*
-         * ThreadPoolKey
-         * 
-         * This defines which thread-pool this command should run on.
-         * 
-         * It uses the HystrixThreadPoolKey if provided, then defaults to use HystrixCommandGroup.
-         * 
-         * It can then be overridden by a property if defined so it can be changed at runtime.
-         */
-        if (this.properties.executionIsolationThreadPoolKeyOverride().get() == null) {
-            // we don't have a property overriding the value so use either HystrixThreadPoolKey or HystrixCommandGroup
-            if (threadPoolKey == null) {
-                /* use HystrixCommandGroup if HystrixThreadPoolKey is null */
-                this.threadPoolKey = HystrixThreadPoolKey.Factory.asKey(commandGroup.name());
-            } else {
-                this.threadPoolKey = threadPoolKey;
-            }
-        } else {
-            // we have a property defining the thread-pool so use it instead
-            this.threadPoolKey = HystrixThreadPoolKey.Factory.asKey(properties.executionIsolationThreadPoolKeyOverride().get());
-        }
-
-        /* strategy: HystrixEventNotifier */
+        //Strategies from plugins
         this.eventNotifier = HystrixPlugins.getInstance().getEventNotifier();
-
-        /* strategy: HystrixConcurrentStrategy */
         this.concurrencyStrategy = HystrixPlugins.getInstance().getConcurrencyStrategy();
-
-        /*
-         * Metrics initialization
-         */
-        if (metrics == null) {
-            this.metrics = HystrixCommandMetrics.getInstance(this.commandKey, this.commandGroup, this.threadPoolKey, this.properties);
-        } else {
-            this.metrics = metrics;
-        }
-
-        /*
-         * CircuitBreaker initialization
-         */
-        if (this.properties.circuitBreakerEnabled().get()) {
-            if (circuitBreaker == null) {
-                // get the default implementation of HystrixCircuitBreaker
-                this.circuitBreaker = HystrixCircuitBreaker.Factory.getInstance(this.commandKey, this.commandGroup, this.properties, this.metrics);
-            } else {
-                this.circuitBreaker = circuitBreaker;
-            }
-        } else {
-            this.circuitBreaker = new NoOpCircuitBreaker();
-        }
-
-        /* strategy: HystrixMetricsPublisherCommand */
         HystrixMetricsPublisherFactory.createOrRetrievePublisherForCommand(this.commandKey, this.commandGroup, this.metrics, this.circuitBreaker, this.properties);
+        this.executionHook = initExecutionHook(executionHook);
 
-        /* strategy: HystrixCommandExecutionHook */
-        if (executionHook == null) {
-            this.executionHook = new ExecutionHookDeprecationWrapper(HystrixPlugins.getInstance().getCommandExecutionHook());
-        } else {
-            // used for unit testing
-            if (executionHook instanceof ExecutionHookDeprecationWrapper) {
-                this.executionHook = executionHook;
-            } else {
-                this.executionHook = new ExecutionHookDeprecationWrapper(executionHook);
-            }
-        }
-
-        /*
-         * ThreadPool initialization
-         */
-        if (threadPool == null) {
-            // get the default implementation of HystrixThreadPool
-            this.threadPool = HystrixThreadPool.Factory.getInstance(this.threadPoolKey, threadPoolPropertiesDefaults);
-        } else {
-            this.threadPool = threadPool;
-        }
+        this.requestCache = HystrixRequestCache.getInstance(this.commandKey, this.concurrencyStrategy);
+        this.currentRequestLog = initRequestLog(this.properties.requestLogEnabled().get(), this.concurrencyStrategy);
 
         /* fallback semaphore override if applicable */
         this.fallbackSemaphoreOverride = fallbackSemaphore;
 
         /* execution semaphore override if applicable */
         this.executionSemaphoreOverride = executionSemaphore;
+    }
 
-        /* setup the request cache for this instance */
-        this.requestCache = HystrixRequestCache.getInstance(this.commandKey, this.concurrencyStrategy);
-
-        if (properties.requestLogEnabled().get()) {
-            /* store reference to request log regardless of which thread later hits it */
-            currentRequestLog = HystrixRequestLog.getCurrentRequest(concurrencyStrategy);
+    private static HystrixCommandGroupKey initGroupKey(final HystrixCommandGroupKey fromConstructor) {
+        if (fromConstructor == null) {
+            throw new IllegalStateException("HystrixCommandGroup can not be NULL");
         } else {
-            currentRequestLog = null;
+            return fromConstructor;
+        }
+    }
+
+    private static HystrixCommandKey initCommandKey(final HystrixCommandKey fromConstructor, Class<?> clazz) {
+        if (fromConstructor == null || fromConstructor.name().trim().equals("")) {
+            final String keyName = getDefaultNameFromClass(clazz);
+            return HystrixCommandKey.Factory.asKey(keyName);
+        } else {
+            return fromConstructor;
+        }
+    }
+
+    private static HystrixCommandProperties initCommandProperties(HystrixCommandKey commandKey, HystrixPropertiesStrategy propertiesStrategy, HystrixCommandProperties.Setter commandPropertiesDefaults) {
+        if (propertiesStrategy == null) {
+            return HystrixPropertiesFactory.getCommandProperties(commandKey, commandPropertiesDefaults);
+        } else {
+            // used for unit testing
+            return propertiesStrategy.getCommandProperties(commandKey, commandPropertiesDefaults);
+        }
+    }
+
+    /*
+     * ThreadPoolKey
+     *
+     * This defines which thread-pool this command should run on.
+     *
+     * It uses the HystrixThreadPoolKey if provided, then defaults to use HystrixCommandGroup.
+     *
+     * It can then be overridden by a property if defined so it can be changed at runtime.
+     */
+    private static HystrixThreadPoolKey initThreadPoolKey(HystrixThreadPoolKey threadPoolKey, HystrixCommandGroupKey groupKey, String threadPoolKeyOverride) {
+        if (threadPoolKeyOverride == null) {
+            // we don't have a property overriding the value so use either HystrixThreadPoolKey or HystrixCommandGroup
+            if (threadPoolKey == null) {
+                /* use HystrixCommandGroup if HystrixThreadPoolKey is null */
+                return HystrixThreadPoolKey.Factory.asKey(groupKey.name());
+            } else {
+                return threadPoolKey;
+            }
+        } else {
+            // we have a property defining the thread-pool so use it instead
+            return HystrixThreadPoolKey.Factory.asKey(threadPoolKeyOverride);
+        }
+    }
+
+    private static HystrixCommandMetrics initMetrics(HystrixCommandMetrics fromConstructor, HystrixCommandGroupKey groupKey,
+                                                     HystrixThreadPoolKey threadPoolKey, HystrixCommandKey commandKey,
+                                                     HystrixCommandProperties properties) {
+        if (fromConstructor == null) {
+            return HystrixCommandMetrics.getInstance(commandKey, groupKey, threadPoolKey, properties);
+        } else {
+            return fromConstructor;
+        }
+    }
+
+    private static HystrixCircuitBreaker initCircuitBreaker(boolean enabled, HystrixCircuitBreaker fromConstructor,
+                                                            HystrixCommandGroupKey groupKey, HystrixCommandKey commandKey,
+                                                            HystrixCommandProperties properties, HystrixCommandMetrics metrics) {
+        if (enabled) {
+            if (fromConstructor == null) {
+                // get the default implementation of HystrixCircuitBreaker
+                return HystrixCircuitBreaker.Factory.getInstance(commandKey, groupKey, properties, metrics);
+            } else {
+                return fromConstructor;
+            }
+        } else {
+            return new NoOpCircuitBreaker();
+        }
+    }
+
+    private static HystrixCommandExecutionHook initExecutionHook(HystrixCommandExecutionHook fromConstructor) {
+        if (fromConstructor == null) {
+            return new ExecutionHookDeprecationWrapper(HystrixPlugins.getInstance().getCommandExecutionHook());
+        } else {
+            // used for unit testing
+            if (fromConstructor instanceof ExecutionHookDeprecationWrapper) {
+                return fromConstructor;
+            } else {
+                return new ExecutionHookDeprecationWrapper(fromConstructor);
+            }
+        }
+    }
+
+    private static HystrixThreadPool initThreadPool(HystrixThreadPool fromConstructor, HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolProperties.Setter threadPoolPropertiesDefaults) {
+        if (fromConstructor == null) {
+            // get the default implementation of HystrixThreadPool
+            return HystrixThreadPool.Factory.getInstance(threadPoolKey, threadPoolPropertiesDefaults);
+        } else {
+            return fromConstructor;
+        }
+    }
+
+    private static HystrixRequestLog initRequestLog(boolean enabled, HystrixConcurrencyStrategy concurrencyStrategy) {
+        if (enabled) {
+            /* store reference to request log regardless of which thread later hits it */
+            return HystrixRequestLog.getCurrentRequest(concurrencyStrategy);
+        } else {
+            return null;
         }
     }
 
