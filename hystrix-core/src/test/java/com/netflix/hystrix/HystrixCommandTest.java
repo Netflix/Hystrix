@@ -559,12 +559,12 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
      * Multiple HystrixCommand objects with the same dependency use the same circuit-breaker.
      */
     @Test
-    public void testCircuitBreakerAcrossMultipleCommandsButSameCircuitBreaker() throws InterruptedException{
-        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("FlexibleTestHystrixCommandWithFallback");
+    public void testCircuitBreakerAcrossMultipleCommandsButSameCircuitBreaker() throws InterruptedException {
+        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("SharedCircuitBreaker");
         TestCircuitBreaker circuitBreaker = new TestCircuitBreaker(key);
         /* fail 3 times and then it should trip the circuit and stop executing */
         // failure 1
-        TestHystrixCommand<?> attempt1 = getSharedCircuitBreakerCommand(ExecutionIsolationStrategy.THREAD, circuitBreaker);
+        TestHystrixCommand<?> attempt1 = getSharedCircuitBreakerCommand(key, ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.FallbackResult.SUCCESS, circuitBreaker);
         System.out.println("COMMAND KEY (from cmd): " + attempt1.commandKey.name());
         attempt1.execute();
         Thread.sleep(100);
@@ -573,7 +573,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertFalse(attempt1.isResponseShortCircuited());
 
         // failure 2 with a different command, same circuit breaker
-        TestHystrixCommand<?> attempt2 = getSharedCircuitBreakerCommand(ExecutionIsolationStrategy.THREAD, circuitBreaker);
+        TestHystrixCommand<?> attempt2 = getSharedCircuitBreakerCommand(key, ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.FallbackResult.SUCCESS, circuitBreaker);
         attempt2.execute();
         Thread.sleep(100);
         assertTrue(attempt2.isFailedExecution());
@@ -582,7 +582,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertFalse(attempt2.isResponseShortCircuited());
 
         // failure 3 of the Hystrix, 2nd for this particular HystrixCommand
-        TestHystrixCommand<?> attempt3 = getSharedCircuitBreakerCommand(ExecutionIsolationStrategy.THREAD, circuitBreaker);
+        TestHystrixCommand<?> attempt3 = getSharedCircuitBreakerCommand(key, ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.FallbackResult.SUCCESS, circuitBreaker);
         attempt3.execute();
         Thread.sleep(100);
         assertTrue(attempt3.isFailedExecution());
@@ -594,7 +594,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertTrue(attempt3.isCircuitBreakerOpen());
 
         // attempt 4
-        TestHystrixCommand<?> attempt4 = getSharedCircuitBreakerCommand(ExecutionIsolationStrategy.THREAD, circuitBreaker);
+        TestHystrixCommand<?> attempt4 = getSharedCircuitBreakerCommand(key, ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.FallbackResult.SUCCESS, circuitBreaker);
         attempt4.execute();
         Thread.sleep(100);
         assertTrue(attempt4.isResponseFromFallback());
@@ -3278,9 +3278,17 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
     /* ******************************************************************************** */
     /* ******************************************************************************** */
 
+    static AtomicInteger uniqueNameCounter = new AtomicInteger(1);
+
     @Override
     TestHystrixCommand<?> getCommand(ExecutionIsolationStrategy isolationStrategy, AbstractTestHystrixCommand.ExecutionResult executionResult, int executionLatency, AbstractTestHystrixCommand.FallbackResult fallbackResult, int fallbackLatency, TestCircuitBreaker circuitBreaker, HystrixThreadPool threadPool, int timeout, AbstractTestHystrixCommand.CacheEnabled cacheEnabled, Object value, TryableSemaphore executionSemaphore, TryableSemaphore fallbackSemaphore, boolean circuitBreakerDisabled) {
-        return FlexibleTestHystrixCommand.from(isolationStrategy, executionResult, executionLatency, fallbackResult, fallbackLatency, circuitBreaker, threadPool, timeout, cacheEnabled, value, executionSemaphore, fallbackSemaphore, circuitBreakerDisabled);
+        HystrixCommandKey commandKey = HystrixCommandKey.Factory.asKey("Flexible-" + uniqueNameCounter.getAndIncrement());
+        return FlexibleTestHystrixCommand.from(commandKey, isolationStrategy, executionResult, executionLatency, fallbackResult, fallbackLatency, circuitBreaker, threadPool, timeout, cacheEnabled, value, executionSemaphore, fallbackSemaphore, circuitBreakerDisabled);
+    }
+
+    @Override
+    TestHystrixCommand<?> getCommand(HystrixCommandKey commandKey, ExecutionIsolationStrategy isolationStrategy, AbstractTestHystrixCommand.ExecutionResult executionResult, int executionLatency, AbstractTestHystrixCommand.FallbackResult fallbackResult, int fallbackLatency, TestCircuitBreaker circuitBreaker, HystrixThreadPool threadPool, int timeout, AbstractTestHystrixCommand.CacheEnabled cacheEnabled, Object value, TryableSemaphore executionSemaphore, TryableSemaphore fallbackSemaphore, boolean circuitBreakerDisabled) {
+        return FlexibleTestHystrixCommand.from(commandKey, isolationStrategy, executionResult, executionLatency, fallbackResult, fallbackLatency, circuitBreaker, threadPool, timeout, cacheEnabled, value, executionSemaphore, fallbackSemaphore, circuitBreakerDisabled);
     }
 
     private static class FlexibleTestHystrixCommand {
@@ -3288,11 +3296,12 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         public static int EXECUTE_VALUE = 1;
         public static int FALLBACK_VALUE = 11;
 
-        public static AbstractFlexibleTestHystrixCommand from(ExecutionIsolationStrategy isolationStrategy, AbstractTestHystrixCommand.ExecutionResult executionResult, int executionLatency, AbstractTestHystrixCommand.FallbackResult fallbackResult, int fallbackLatency, TestCircuitBreaker circuitBreaker, HystrixThreadPool threadPool, int timeout, AbstractTestHystrixCommand.CacheEnabled cacheEnabled, Object value, TryableSemaphore executionSemaphore, TryableSemaphore fallbackSemaphore, boolean circuitBreakerDisabled) {
+
+        public static AbstractFlexibleTestHystrixCommand from(HystrixCommandKey commandKey, ExecutionIsolationStrategy isolationStrategy, AbstractTestHystrixCommand.ExecutionResult executionResult, int executionLatency, AbstractTestHystrixCommand.FallbackResult fallbackResult, int fallbackLatency, TestCircuitBreaker circuitBreaker, HystrixThreadPool threadPool, int timeout, AbstractTestHystrixCommand.CacheEnabled cacheEnabled, Object value, TryableSemaphore executionSemaphore, TryableSemaphore fallbackSemaphore, boolean circuitBreakerDisabled) {
             if (fallbackResult.equals(AbstractTestHystrixCommand.FallbackResult.UNIMPLEMENTED)) {
-                return new FlexibleTestHystrixCommandNoFallback(isolationStrategy, executionResult, executionLatency, circuitBreaker, threadPool, timeout, cacheEnabled, value, executionSemaphore, fallbackSemaphore, circuitBreakerDisabled);
+                return new FlexibleTestHystrixCommandNoFallback(commandKey, isolationStrategy, executionResult, executionLatency, circuitBreaker, threadPool, timeout, cacheEnabled, value, executionSemaphore, fallbackSemaphore, circuitBreakerDisabled);
             } else {
-                return new FlexibleTestHystrixCommandWithFallback(isolationStrategy, executionResult, executionLatency, fallbackResult, fallbackLatency, circuitBreaker, threadPool, timeout, cacheEnabled, value, executionSemaphore, fallbackSemaphore, circuitBreakerDisabled);
+                return new FlexibleTestHystrixCommandWithFallback(commandKey, isolationStrategy, executionResult, executionLatency, fallbackResult, fallbackLatency, circuitBreaker, threadPool, timeout, cacheEnabled, value, executionSemaphore, fallbackSemaphore, circuitBreakerDisabled);
             }
         }
     }
@@ -3304,8 +3313,10 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         protected final CacheEnabled cacheEnabled;
         protected final Object value;
 
-        AbstractFlexibleTestHystrixCommand(ExecutionIsolationStrategy isolationStrategy, AbstractTestHystrixCommand.ExecutionResult executionResult, int executionLatency, TestCircuitBreaker circuitBreaker, HystrixThreadPool threadPool, int timeout, CacheEnabled cacheEnabled, Object value, TryableSemaphore executionSemaphore, TryableSemaphore fallbackSemaphore, boolean circuitBreakerDisabled) {
+
+        AbstractFlexibleTestHystrixCommand(HystrixCommandKey commandKey, ExecutionIsolationStrategy isolationStrategy, AbstractTestHystrixCommand.ExecutionResult executionResult, int executionLatency, TestCircuitBreaker circuitBreaker, HystrixThreadPool threadPool, int timeout, CacheEnabled cacheEnabled, Object value, TryableSemaphore executionSemaphore, TryableSemaphore fallbackSemaphore, boolean circuitBreakerDisabled) {
             super(testPropsBuilder(circuitBreaker)
+                    .setCommandKey(commandKey)
                     .setCircuitBreaker(circuitBreaker)
                     .setMetrics(circuitBreaker.metrics)
                     .setThreadPool(threadPool)
@@ -3376,8 +3387,8 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         protected final AbstractTestHystrixCommand.FallbackResult fallbackResult;
         protected final int fallbackLatency;
 
-        FlexibleTestHystrixCommandWithFallback(ExecutionIsolationStrategy isolationStrategy, AbstractTestHystrixCommand.ExecutionResult executionResult, int executionLatency, FallbackResult fallbackResult, int fallbackLatency, TestCircuitBreaker circuitBreaker, HystrixThreadPool threadPool, int timeout, CacheEnabled cacheEnabled, Object value, TryableSemaphore executionSemaphore, TryableSemaphore fallbackSemaphore, boolean circuitBreakerDisabled) {
-            super(isolationStrategy, executionResult, executionLatency, circuitBreaker, threadPool, timeout, cacheEnabled, value, executionSemaphore, fallbackSemaphore, circuitBreakerDisabled);
+        FlexibleTestHystrixCommandWithFallback(HystrixCommandKey commandKey, ExecutionIsolationStrategy isolationStrategy, AbstractTestHystrixCommand.ExecutionResult executionResult, int executionLatency, FallbackResult fallbackResult, int fallbackLatency, TestCircuitBreaker circuitBreaker, HystrixThreadPool threadPool, int timeout, CacheEnabled cacheEnabled, Object value, TryableSemaphore executionSemaphore, TryableSemaphore fallbackSemaphore, boolean circuitBreakerDisabled) {
+            super(commandKey, isolationStrategy, executionResult, executionLatency, circuitBreaker, threadPool, timeout, cacheEnabled, value, executionSemaphore, fallbackSemaphore, circuitBreakerDisabled);
             this.fallbackResult = fallbackResult;
             this.fallbackLatency = fallbackLatency;
         }
@@ -3398,8 +3409,8 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
     }
 
     private static class FlexibleTestHystrixCommandNoFallback extends AbstractFlexibleTestHystrixCommand {
-        FlexibleTestHystrixCommandNoFallback(ExecutionIsolationStrategy isolationStrategy, AbstractTestHystrixCommand.ExecutionResult executionResult, int executionLatency, TestCircuitBreaker circuitBreaker, HystrixThreadPool threadPool, int timeout, CacheEnabled cacheEnabled, Object value, TryableSemaphore executionSemaphore, TryableSemaphore fallbackSemaphore, boolean circuitBreakerDisabled) {
-            super(isolationStrategy, executionResult, executionLatency, circuitBreaker, threadPool, timeout, cacheEnabled, value, executionSemaphore, fallbackSemaphore, circuitBreakerDisabled);
+        FlexibleTestHystrixCommandNoFallback(HystrixCommandKey commandKey, ExecutionIsolationStrategy isolationStrategy, AbstractTestHystrixCommand.ExecutionResult executionResult, int executionLatency, TestCircuitBreaker circuitBreaker, HystrixThreadPool threadPool, int timeout, CacheEnabled cacheEnabled, Object value, TryableSemaphore executionSemaphore, TryableSemaphore fallbackSemaphore, boolean circuitBreakerDisabled) {
+            super(commandKey, isolationStrategy, executionResult, executionLatency, circuitBreaker, threadPool, timeout, cacheEnabled, value, executionSemaphore, fallbackSemaphore, circuitBreakerDisabled);
         }
     }
 
