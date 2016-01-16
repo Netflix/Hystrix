@@ -1107,11 +1107,11 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         final List<HystrixObservableCommand<Boolean>> commands = new ArrayList<HystrixObservableCommand<Boolean>>();
         final List<Observable<Boolean>> results = new ArrayList<Observable<Boolean>>();
 
-        HystrixObservableCommand<Boolean> isolated = new LatchedSemaphoreCommand("Command-Isolated", circuitBreaker, isolatedSemaphore, startLatch, isolatedLatch);
+        HystrixObservableCommand<Boolean> isolated = new LatchedSemaphoreCommand("ObservableCommand-Isolated", circuitBreaker, isolatedSemaphore, startLatch, isolatedLatch);
         commands.add(isolated);
 
         for (int s = 0; s < sharedSemaphore.numberOfPermits.get() * 2; s++) {
-            HystrixObservableCommand<Boolean> shared = new LatchedSemaphoreCommand("Command-Shared", circuitBreaker, sharedSemaphore, startLatch, sharedLatch);
+            HystrixObservableCommand<Boolean> shared = new LatchedSemaphoreCommand("ObservableCommand-Shared", circuitBreaker, sharedSemaphore, startLatch, sharedLatch);
             commands.add(shared);
             Observable<Boolean> result = shared.toObservable();
             results.add(result);

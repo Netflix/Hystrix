@@ -1126,8 +1126,10 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertTrue(requestLog.getExecutedCommandsAsString().contains("Executed"));
 
         try {
-            //block on the outstanding work, so we don't inadvertantly afect any other tests
+            //block on the outstanding work, so we don't inadvertently afect any other tests
+            long startTime = System.currentTimeMillis();
             f1.get();
+            System.out.println("Time blocked : " + (System.currentTimeMillis() - startTime));
         } catch (Exception ex) {
             fail("Exception while blocking on Future");
         }
@@ -3152,7 +3154,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
             }
 
             try {
-                assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
+                assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
             } catch (InterruptedException ex) {
                 fail(ex.getMessage());
             }
