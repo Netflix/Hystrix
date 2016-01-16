@@ -1632,7 +1632,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         final Runnable sharedSemaphoreRunnable = new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), new Runnable() {
             public void run() {
                 try {
-                    new LatchedSemaphoreCommand(circuitBreaker, sharedSemaphore, startLatch, sharedLatch).execute();
+                    new LatchedSemaphoreCommand("Command-Shared", circuitBreaker, sharedSemaphore, startLatch, sharedLatch).execute();
                 } catch (Exception e) {
                     startLatch.countDown();
                     e.printStackTrace();
@@ -1658,7 +1658,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         final Thread isolatedThread = new Thread(new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), new Runnable() {
             public void run() {
                 try {
-                    new LatchedSemaphoreCommand(circuitBreaker, isolatedSemaphore, startLatch, isolatedLatch).execute();
+                    new LatchedSemaphoreCommand("Command-Isolated", circuitBreaker, isolatedSemaphore, startLatch, isolatedLatch).execute();
                 } catch (Exception e) {
                     startLatch.countDown();
                     e.printStackTrace();
@@ -1704,6 +1704,8 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         }
 
         // verifies no permits in use after finishing threads
+        System.out.println("REQLOG : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
+
         assertEquals("after all threads have finished, no shared semaphores should be in-use", 0, sharedSemaphore.getNumberOfPermitsUsed());
         assertEquals("after all threads have finished, isolated semaphore not in-use", 0, isolatedSemaphore.getNumberOfPermitsUsed());
 
@@ -3818,10 +3820,19 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
          *            this command calls {@link java.util.concurrent.CountDownLatch#await()} once it starts
          *            to run. The caller can use the latch to signal the command to finish
          */
-        private LatchedSemaphoreCommand(TestCircuitBreaker circuitBreaker, TryableSemaphore semaphore,
-                CountDownLatch startLatch, CountDownLatch waitLatch) {
-            super(testPropsBuilder().setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics)
-                    .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionIsolationStrategy(ExecutionIsolationStrategy.SEMAPHORE).withCircuitBreakerEnabled(false))
+        private LatchedSemaphoreCommand(TestCircuitBreaker circuitBreaker, TryableSemaphore semaphore, CountDownLatch startLatch, CountDownLatch waitLatch) {
+            this("Latched", circuitBreaker, semaphore, startLatch, waitLatch);
+        }
+
+        private LatchedSemaphoreCommand(String commandName, TestCircuitBreaker circuitBreaker, TryableSemaphore semaphore,
+                                        CountDownLatch startLatch, CountDownLatch waitLatch) {
+            super(testPropsBuilder()
+                    .setCommandKey(HystrixCommandKey.Factory.asKey(commandName))
+                    .setCircuitBreaker(circuitBreaker)
+                    .setMetrics(circuitBreaker.metrics)
+                    .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter()
+                            .withExecutionIsolationStrategy(ExecutionIsolationStrategy.SEMAPHORE)
+                            .withCircuitBreakerEnabled(false))
                     .setExecutionSemaphore(semaphore));
             this.startLatch = startLatch;
             this.waitLatch = waitLatch;
