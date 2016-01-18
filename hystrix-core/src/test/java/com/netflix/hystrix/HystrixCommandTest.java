@@ -1022,54 +1022,37 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
     public void testRejectedThreadWithFallback() {
         TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
         SingleThreadedPoolWithQueue pool = new SingleThreadedPoolWithQueue(1);
-        // fill up the queue
-        pool.queue.add(new Runnable() {
 
-            @Override
-            public void run() {
-                System.out.println("**** queue filler1 ****");
-                try {
-                    Thread.sleep(500);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-
-        });
-
+        //command 1 will execute in threadpool (passing through the queue)
+        //command 2 will execute after spending time in the queue (after command1 completes)
+        //command 3 will get rejected, since it finds pool and queue both full
         TestCommandRejection command1 = new TestCommandRejection(circuitBreaker, pool, 500, 600, TestCommandRejection.FALLBACK_SUCCESS);
         TestCommandRejection command2 = new TestCommandRejection(circuitBreaker, pool, 500, 600, TestCommandRejection.FALLBACK_SUCCESS);
-        Future<?> f1 = null;
+        TestCommandRejection command3 = new TestCommandRejection(circuitBreaker, pool, 500, 600, TestCommandRejection.FALLBACK_SUCCESS);
+
+        Observable<Boolean> result1 = command1.observe();
+        Observable<Boolean> result2 = command2.observe();
 
         try {
-            f1 = command1.queue();
-            assertEquals(false, command2.queue().get());
+            Thread.sleep(100);
+            //command3 should find queue filled, and get rejected
+            assertFalse(command3.execute());
+            assertTrue(command3.isResponseRejected());
             assertFalse(command1.isResponseRejected());
-            assertFalse(command1.isResponseFromFallback());
-            assertNull(command1.getExecutionException());
-            assertTrue(command2.isResponseRejected());
-            assertTrue(command2.isResponseFromFallback());
-            assertNotNull(command2.getExecutionException());
+            assertFalse(command2.isResponseRejected());
+            assertTrue(command3.isResponseFromFallback());
+            assertNotNull(command3.getExecutionException());
         } catch (Exception e) {
             e.printStackTrace();
             fail("We should have received a response from the fallback.");
         }
 
-        assertCommandExecutionEvents(command1); //no events yet
-        assertCommandExecutionEvents(command2, HystrixEventType.THREAD_POOL_REJECTED, HystrixEventType.FALLBACK_SUCCESS);
-        assertEquals(1, circuitBreaker.metrics.getCurrentConcurrentExecutionCount()); //pool-filler still going
+        assertCommandExecutionEvents(command3, HystrixEventType.THREAD_POOL_REJECTED, HystrixEventType.FALLBACK_SUCCESS);
+        Observable.merge(result1, result2).toList().toBlocking().single(); //await the 2 latent commands
 
-        //This is a case where we knowingly walk away from an executing Hystrix thread (the pool-filler).  It should have an in-flight status ("Executed").  You should avoid this in a production environment
-        HystrixRequestLog requestLog = HystrixRequestLog.getCurrentRequest();
-        assertEquals(2, requestLog.getAllExecutedCommands().size());
-        assertTrue(requestLog.getExecutedCommandsAsString().contains("Executed"));
-
-        try {
-            //block on the outstanding work, so we don't inadvertantly afect any other tests
-            f1.get();
-        } catch (Exception ex) {
-            fail("Exception while blocking on Future");
-        }
+        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
+        System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
+        assertSaneHystrixRequestLog(3);
     }
 
     /**
