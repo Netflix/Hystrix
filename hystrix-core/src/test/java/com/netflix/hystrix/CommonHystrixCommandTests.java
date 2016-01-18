@@ -46,7 +46,7 @@ import static org.junit.Assert.*;
  * Place to share code and tests between {@link HystrixCommandTest} and {@link HystrixObservableCommandTest}.
  * @param <C>
  */
-public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCommand<?>> {
+public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCommand<Integer>> {
 
     /**
      * Run the command in multiple modes and check that the hook assertions hold in each and that the command succeeds
@@ -116,9 +116,9 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
         System.out.println("Running command.observe(), awaiting terminal state of Observable, then running assertions...");
         final CountDownLatch latch = new CountDownLatch(1);
 
-        Observable<?> o = command.observe();
+        Observable<Integer> o = command.observe();
 
-        o.subscribe(new Subscriber<Object>() {
+        o.subscribe(new Subscriber<Integer>() {
             @Override
             public void onCompleted() {
                 latch.countDown();
@@ -130,7 +130,7 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
             }
 
             @Override
-            public void onNext(Object t) {
+            public void onNext(Integer i) {
                 //do nothing
             }
         });

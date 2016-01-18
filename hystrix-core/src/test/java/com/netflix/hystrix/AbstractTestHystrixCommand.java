@@ -19,21 +19,21 @@ import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 
 public interface AbstractTestHystrixCommand<R> extends HystrixObservable<R>, InspectableBuilder {
 
-    public static enum ExecutionResult {
+    enum ExecutionResult {
         SUCCESS, FAILURE, ASYNC_FAILURE, HYSTRIX_FAILURE, ASYNC_HYSTRIX_FAILURE, RECOVERABLE_ERROR, ASYNC_RECOVERABLE_ERROR, UNRECOVERABLE_ERROR, ASYNC_UNRECOVERABLE_ERROR, BAD_REQUEST, ASYNC_BAD_REQUEST, MULTIPLE_EMITS_THEN_SUCCESS, MULTIPLE_EMITS_THEN_FAILURE, NO_EMITS_THEN_SUCCESS
     }
 
-    public static enum FallbackResult {
+    enum FallbackResult {
         UNIMPLEMENTED, SUCCESS, FAILURE, ASYNC_FAILURE, MULTIPLE_EMITS_THEN_SUCCESS, MULTIPLE_EMITS_THEN_FAILURE, NO_EMITS_THEN_SUCCESS
     }
 
-    public static enum CacheEnabled {
+    enum CacheEnabled {
         YES, NO
     }
 
-    static HystrixPropertiesStrategy TEST_PROPERTIES_FACTORY = new TestPropertiesFactory();
+    HystrixPropertiesStrategy TEST_PROPERTIES_FACTORY = new TestPropertiesFactory();
 
-    static class TestPropertiesFactory extends HystrixPropertiesStrategy {
+    class TestPropertiesFactory extends HystrixPropertiesStrategy {
 
         @Override
         public HystrixCommandProperties getCommandProperties(HystrixCommandKey commandKey, HystrixCommandProperties.Setter builder) {
@@ -72,5 +72,4 @@ public interface AbstractTestHystrixCommand<R> extends HystrixObservable<R>, Ins
         }
 
     }
-
 }
