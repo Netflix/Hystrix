@@ -15,13 +15,32 @@
  */
 package com.netflix.hystrix;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import com.netflix.config.ConfigurationManager;
+import com.netflix.hystrix.AbstractCommand.TryableSemaphoreActual;
+import com.netflix.hystrix.HystrixCircuitBreakerTest.TestCircuitBreaker;
+import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
+import com.netflix.hystrix.exception.HystrixBadRequestException;
+import com.netflix.hystrix.exception.HystrixRuntimeException;
+import com.netflix.hystrix.strategy.HystrixPlugins;
+import com.netflix.hystrix.strategy.concurrency.HystrixContextRunnable;
+import com.netflix.hystrix.strategy.concurrency.HystrixContextScheduler;
+import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
+import com.netflix.hystrix.strategy.properties.HystrixProperty;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import rx.Notification;
+import rx.Observable;
+import rx.Observable.OnSubscribe;
+import rx.Observer;
+import rx.Scheduler;
+import rx.Subscriber;
+import rx.functions.Action0;
+import rx.functions.Action1;
+import rx.functions.Func0;
+import rx.functions.Func1;
+import rx.observers.TestSubscriber;
+import rx.schedulers.Schedulers;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -39,36 +58,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.netflix.hystrix.strategy.properties.HystrixPropertiesFactory;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
-import rx.Notification;
-import rx.Observable;
-import rx.Observable.OnSubscribe;
-import rx.Observer;
-import rx.Scheduler;
-import rx.Subscriber;
-import rx.functions.Action0;
-import rx.functions.Action1;
-import rx.functions.Func0;
-import rx.functions.Func1;
-import rx.observers.TestSubscriber;
-import rx.schedulers.Schedulers;
-
-import com.netflix.config.ConfigurationManager;
-import com.netflix.hystrix.AbstractCommand.TryableSemaphoreActual;
-import com.netflix.hystrix.HystrixCircuitBreakerTest.TestCircuitBreaker;
-import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
-import com.netflix.hystrix.exception.HystrixBadRequestException;
-import com.netflix.hystrix.exception.HystrixRuntimeException;
-import com.netflix.hystrix.strategy.HystrixPlugins;
-import com.netflix.hystrix.strategy.concurrency.HystrixContextRunnable;
-import com.netflix.hystrix.strategy.concurrency.HystrixContextScheduler;
-import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
-import com.netflix.hystrix.strategy.properties.HystrixProperty;
-import com.netflix.hystrix.util.HystrixRollingNumberEvent;
+import static org.junit.Assert.*;
 
 public class HystrixObservableCommandTest extends CommonHystrixCommandTests<TestHystrixObservableCommand<?>> {
 
@@ -105,6 +95,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
                     latch.countDown();
                     try {
                         latch.await();
+
                         sub.onNext(true);
                         sub.onCompleted();
                     } catch (InterruptedException e) {
@@ -1094,79 +1085,72 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         assertSaneHystrixRequestLog(2);
     }
 
-    /**
-     * Tests that semaphores are counted separately for commands with unique keys
-     */
     @Test
     public void testSemaphorePermitsInUse() {
-        final TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
-
         // this semaphore will be shared across multiple command instances
         final TryableSemaphoreActual sharedSemaphore =
                 new TryableSemaphoreActual(HystrixProperty.Factory.asProperty(3));
-
-        // used to wait until all commands have started
-        final CountDownLatch startLatch = new CountDownLatch((sharedSemaphore.numberOfPermits.get()) * 2 + 1);
-
-        // used to signal that all command can finish
-        final CountDownLatch sharedLatch = new CountDownLatch(1);
-
-        // tracks failures to obtain semaphores
-        final AtomicInteger failureCount = new AtomicInteger();
-
-        final Runnable sharedSemaphoreRunnable = new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), new Runnable() {
-            public void run() {
-                try {
-                    new LatchedSemaphoreCommand(circuitBreaker, sharedSemaphore, startLatch, sharedLatch).observe().toBlocking().single();
-                } catch (Exception e) {
-                    startLatch.countDown();
-                    e.printStackTrace();
-                    failureCount.incrementAndGet();
-                }
-            }
-        });
-
-        // creates group of threads each using command sharing a single semaphore
-
-        // I create extra threads and commands so that I can verify that some of them fail to obtain a semaphore
-        final int sharedThreadCount = sharedSemaphore.numberOfPermits.get() * 2;
-        final Thread[] sharedSemaphoreThreads = new Thread[sharedThreadCount];
-        for (int i = 0; i < sharedThreadCount; i++) {
-            sharedSemaphoreThreads[i] = new Thread(sharedSemaphoreRunnable);
-        }
 
         // creates thread using isolated semaphore
         final TryableSemaphoreActual isolatedSemaphore =
                 new TryableSemaphoreActual(HystrixProperty.Factory.asProperty(1));
 
+        final TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
+
+        //used to wait until all commands are started
+        final CountDownLatch startLatch = new CountDownLatch((sharedSemaphore.numberOfPermits.get()) * 2 + 1);
+
+        // used to signal that all command can finish
+        final CountDownLatch sharedLatch = new CountDownLatch(1);
         final CountDownLatch isolatedLatch = new CountDownLatch(1);
 
-        final Thread isolatedThread = new Thread(new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), new Runnable() {
-            public void run() {
-                try {
-                    new LatchedSemaphoreCommand(circuitBreaker, isolatedSemaphore, startLatch, isolatedLatch).observe().toBlocking().single();
-                } catch (Exception e) {
-                    startLatch.countDown();
-                    e.printStackTrace();
-                    failureCount.incrementAndGet();
-                }
-            }
-        }));
+        final List<HystrixObservableCommand<Boolean>> commands = new ArrayList<HystrixObservableCommand<Boolean>>();
+        final List<Observable<Boolean>> results = new ArrayList<Observable<Boolean>>();
 
-        // verifies no permits in use before starting threads
-        assertEquals("before threads start, shared semaphore should be unused", 0, sharedSemaphore.getNumberOfPermitsUsed());
-        assertEquals("before threads start, isolated semaphore should be unused", 0, isolatedSemaphore.getNumberOfPermitsUsed());
+        HystrixObservableCommand<Boolean> isolated = new LatchedSemaphoreCommand("ObservableCommand-Isolated", circuitBreaker, isolatedSemaphore, startLatch, isolatedLatch);
+        commands.add(isolated);
 
-        for (int i = 0; i < sharedThreadCount; i++) {
-            sharedSemaphoreThreads[i].start();
+        for (int s = 0; s < sharedSemaphore.numberOfPermits.get() * 2; s++) {
+            HystrixObservableCommand<Boolean> shared = new LatchedSemaphoreCommand("ObservableCommand-Shared", circuitBreaker, sharedSemaphore, startLatch, sharedLatch);
+            commands.add(shared);
+            Observable<Boolean> result = shared.toObservable();
+            results.add(result);
         }
-        isolatedThread.start();
 
-        // waits until all commands have started
+        Observable<Boolean> isolatedResult = isolated.toObservable();
+        results.add(isolatedResult);
+
+        // verifies no permits in use before starting commands
+        assertEquals("before commands start, shared semaphore should be unused", 0, sharedSemaphore.getNumberOfPermitsUsed());
+        assertEquals("before commands start, isolated semaphore should be unused", 0, isolatedSemaphore.getNumberOfPermitsUsed());
+
+        final CountDownLatch allTerminal = new CountDownLatch(1);
+
+        Observable.merge(results)
+                .subscribeOn(Schedulers.computation())
+                .subscribe(new Subscriber<Boolean>() {
+                    @Override
+                    public void onCompleted() {
+                        System.out.println(Thread.currentThread().getName() + " OnCompleted");
+                        allTerminal.countDown();
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        System.out.println(Thread.currentThread().getName() + " OnError : " + e);
+                        allTerminal.countDown();
+                    }
+
+                    @Override
+                    public void onNext(Boolean b) {
+                        System.out.println(Thread.currentThread().getName() + " OnNext : " + b);
+                    }
+                });
+
         try {
-            startLatch.await(1000, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+            assertTrue(startLatch.await(1000, TimeUnit.MILLISECONDS));
+        } catch (Throwable ex) {
+            fail(ex.getMessage());
         }
 
         // verifies that all semaphores are in use
@@ -1180,13 +1164,10 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         isolatedLatch.countDown();
 
         try {
-            for (int i = 0; i < sharedThreadCount; i++) {
-                sharedSemaphoreThreads[i].join();
-            }
-            isolatedThread.join();
+            assertTrue(allTerminal.await(1000, TimeUnit.MILLISECONDS));
         } catch (Exception e) {
             e.printStackTrace();
-            fail("failed waiting on threads");
+            fail("failed waiting on commands");
         }
 
         // verifies no permits in use after finishing threads
@@ -1194,7 +1175,13 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         assertEquals("after all threads have finished, isolated semaphore not in-use", 0, isolatedSemaphore.getNumberOfPermitsUsed());
 
         // verifies that some executions failed
-        assertEquals("expected some of shared semaphore commands to get rejected", sharedSemaphore.numberOfPermits.get().longValue(), failureCount.get());
+        int numSemaphoreRejected = 0;
+        for (HystrixObservableCommand<Boolean> cmd: commands) {
+            if (cmd.isResponseSemaphoreRejected()) {
+                numSemaphoreRejected++;
+            }
+        }
+        assertEquals("expected some of shared semaphore commands to get rejected", sharedSemaphore.numberOfPermits.get().longValue(), numSemaphoreRejected);
         assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
     }
 
@@ -2697,105 +2684,62 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
     public void testRejectedViaSemaphoreIsolation() {
         final TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
         final ArrayBlockingQueue<Boolean> results = new ArrayBlockingQueue<Boolean>(2);
-        final List<Thread> executionThreads = Collections.synchronizedList(new ArrayList<Thread>(2));
-        final List<Thread> responseThreads = Collections.synchronizedList(new ArrayList<Thread>(2));
-
-        final AtomicBoolean exceptionReceived = new AtomicBoolean();
 
         final TryableSemaphoreActual semaphore = new TryableSemaphoreActual(HystrixProperty.Factory.asProperty(1));
 
-        // used to wait until all commands have started
+        //used to wait until all commands have started
         final CountDownLatch startLatch = new CountDownLatch(2);
 
         // used to signal that all command can finish
         final CountDownLatch sharedLatch = new CountDownLatch(1);
 
         final LatchedSemaphoreCommand command1 = new LatchedSemaphoreCommand(circuitBreaker, semaphore, startLatch, sharedLatch);
-        Runnable r1 = new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), new Runnable() {
-
-            @Override
-            public void run() {
-                try {
-                    executionThreads.add(Thread.currentThread());
-                    results.add(command1.toObservable().map(new Func1<Boolean, Boolean>() {
-
-                        @Override
-                        public Boolean call(Boolean b) {
-                            responseThreads.add(Thread.currentThread());
-                            return b;
-                        }
-
-                    }).toBlocking().single());
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    startLatch.countDown();
-                    exceptionReceived.set(true);
-                }
-            }
-
-        });
-
         final LatchedSemaphoreCommand command2 = new LatchedSemaphoreCommand(circuitBreaker, semaphore, startLatch, sharedLatch);
-        Runnable r2 = new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), new Runnable() {
 
+        Observable<Boolean> merged = Observable.merge(command1.toObservable(), command2.toObservable())
+                .subscribeOn(Schedulers.computation());
+
+        final CountDownLatch terminal = new CountDownLatch(1);
+
+        merged.subscribe(new Subscriber<Boolean>() {
             @Override
-            public void run() {
-                try {
-                    executionThreads.add(Thread.currentThread());
-                    results.add(command2.toObservable().map(new Func1<Boolean, Boolean>() {
-
-                        @Override
-                        public Boolean call(Boolean b) {
-                            responseThreads.add(Thread.currentThread());
-                            return b;
-                        }
-
-                    }).toBlocking().single());
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    startLatch.countDown();
-                    exceptionReceived.set(true);
-                }
+            public void onCompleted() {
+                System.out.println(Thread.currentThread().getName() + " OnCompleted");
+                terminal.countDown();
             }
 
+            @Override
+            public void onError(Throwable e) {
+                System.out.println(Thread.currentThread().getName() + " OnError : " + e);
+                terminal.countDown();
+            }
+
+            @Override
+            public void onNext(Boolean b) {
+                System.out.println(Thread.currentThread().getName() + " OnNext : " + b);
+                results.offer(b);
+            }
         });
 
-        // 2 threads, the second should be rejected by the semaphore and return fallback
-        Thread t1 = new Thread(r1);
-        Thread t2 = new Thread(r2);
-
-        t1.start();
         try {
-            Thread.sleep(50); //give thread1 a headstart
-        } catch (InterruptedException ie) {
-            fail(ie.getMessage());
-        }
-        t2.start();
-
-        try {
-            startLatch.await();
-        } catch (InterruptedException ie) {
-            fail("Got interrupted while waiting for commands to start");
-        }
-
-        sharedLatch.countDown();
-
-        try {
-            t1.join();
-            t2.join();
-        } catch (Exception e) {
-            e.printStackTrace();
-            fail("failed waiting on threads");
+            assertTrue(startLatch.await(1000, TimeUnit.MILLISECONDS));
+            sharedLatch.countDown();
+            assertTrue(terminal.await(1000, TimeUnit.MILLISECONDS));
+        } catch (Throwable ex) {
+            ex.printStackTrace();
+            fail(ex.getMessage());
         }
 
         // one thread should have returned values
-        assertEquals(1, results.size());
+        assertEquals(2, results.size());
+        //1 should have gotten the normal value, the other - the fallback
         assertTrue(results.contains(Boolean.TRUE));
-        // the other thread should have thrown an Exception
-        assertTrue(exceptionReceived.get());
+        assertTrue(results.contains(Boolean.FALSE));
+
+        System.out.println("REQ LOG : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
 
         assertCommandExecutionEvents(command1, HystrixEventType.EMIT, HystrixEventType.SUCCESS);
-        assertCommandExecutionEvents(command2, HystrixEventType.SEMAPHORE_REJECTED, HystrixEventType.FALLBACK_MISSING);
+        assertCommandExecutionEvents(command2, HystrixEventType.SEMAPHORE_REJECTED, HystrixEventType.FALLBACK_EMIT, HystrixEventType.FALLBACK_SUCCESS);
         assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
         assertSaneHystrixRequestLog(2);
     }
@@ -4566,17 +4510,25 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
     /* ******************************************************************************** */
     /* ******************************************************************************** */
 
+    static AtomicInteger uniqueNameCounter = new AtomicInteger(0);
+
     @Override
     TestHystrixObservableCommand<?> getCommand(ExecutionIsolationStrategy isolationStrategy, AbstractTestHystrixCommand.ExecutionResult executionResult, int executionLatency, AbstractTestHystrixCommand.FallbackResult fallbackResult, int fallbackLatency, TestCircuitBreaker circuitBreaker, HystrixThreadPool threadPool, int timeout, AbstractTestHystrixCommand.CacheEnabled cacheEnabled, Object value, AbstractCommand.TryableSemaphore executionSemaphore, AbstractCommand.TryableSemaphore fallbackSemaphore, boolean circuitBreakerDisabled) {
-        return FlexibleTestHystrixObservableCommand.from(isolationStrategy, executionResult, executionLatency, fallbackResult, fallbackLatency, circuitBreaker, threadPool, timeout, cacheEnabled, value, executionSemaphore, fallbackSemaphore, circuitBreakerDisabled);
+        HystrixCommandKey commandKey = HystrixCommandKey.Factory.asKey("FlexibleObservable-" + uniqueNameCounter.getAndIncrement());
+        return FlexibleTestHystrixObservableCommand.from(commandKey, isolationStrategy, executionResult, executionLatency, fallbackResult, fallbackLatency, circuitBreaker, threadPool, timeout, cacheEnabled, value, executionSemaphore, fallbackSemaphore, circuitBreakerDisabled);
+    }
+
+    @Override
+    TestHystrixObservableCommand<?> getCommand(HystrixCommandKey commandKey, ExecutionIsolationStrategy isolationStrategy, AbstractTestHystrixCommand.ExecutionResult executionResult, int executionLatency, AbstractTestHystrixCommand.FallbackResult fallbackResult, int fallbackLatency, TestCircuitBreaker circuitBreaker, HystrixThreadPool threadPool, int timeout, AbstractTestHystrixCommand.CacheEnabled cacheEnabled, Object value, AbstractCommand.TryableSemaphore executionSemaphore, AbstractCommand.TryableSemaphore fallbackSemaphore, boolean circuitBreakerDisabled) {
+        return FlexibleTestHystrixObservableCommand.from(commandKey, isolationStrategy, executionResult, executionLatency, fallbackResult, fallbackLatency, circuitBreaker, threadPool, timeout, cacheEnabled, value, executionSemaphore, fallbackSemaphore, circuitBreakerDisabled);
     }
 
     private static class FlexibleTestHystrixObservableCommand  {
-        public static AbstractFlexibleTestHystrixObservableCommand from(ExecutionIsolationStrategy isolationStrategy, AbstractTestHystrixCommand.ExecutionResult executionResult, int executionLatency, AbstractTestHystrixCommand.FallbackResult fallbackResult, int fallbackLatency, TestCircuitBreaker circuitBreaker, HystrixThreadPool threadPool, int timeout, AbstractTestHystrixCommand.CacheEnabled cacheEnabled, Object value, AbstractCommand.TryableSemaphore executionSemaphore, AbstractCommand.TryableSemaphore fallbackSemaphore, boolean circuitBreakerDisabled) {
+        public static AbstractFlexibleTestHystrixObservableCommand from(HystrixCommandKey commandKey, ExecutionIsolationStrategy isolationStrategy, AbstractTestHystrixCommand.ExecutionResult executionResult, int executionLatency, AbstractTestHystrixCommand.FallbackResult fallbackResult, int fallbackLatency, TestCircuitBreaker circuitBreaker, HystrixThreadPool threadPool, int timeout, AbstractTestHystrixCommand.CacheEnabled cacheEnabled, Object value, AbstractCommand.TryableSemaphore executionSemaphore, AbstractCommand.TryableSemaphore fallbackSemaphore, boolean circuitBreakerDisabled) {
             if (fallbackResult.equals(AbstractTestHystrixCommand.FallbackResult.UNIMPLEMENTED)) {
-                return new FlexibleTestHystrixObservableCommandNoFallback(isolationStrategy, executionResult, executionLatency, circuitBreaker, threadPool, timeout, cacheEnabled, value, executionSemaphore, fallbackSemaphore, circuitBreakerDisabled);
+                return new FlexibleTestHystrixObservableCommandNoFallback(commandKey, isolationStrategy, executionResult, executionLatency, circuitBreaker, threadPool, timeout, cacheEnabled, value, executionSemaphore, fallbackSemaphore, circuitBreakerDisabled);
             } else {
-                return new FlexibleTestHystrixObservableCommandWithFallback(isolationStrategy, executionResult, executionLatency, fallbackResult, fallbackLatency, circuitBreaker, threadPool, timeout, cacheEnabled, value, executionSemaphore, fallbackSemaphore, circuitBreakerDisabled);
+                return new FlexibleTestHystrixObservableCommandWithFallback(commandKey, isolationStrategy, executionResult, executionLatency, fallbackResult, fallbackLatency, circuitBreaker, threadPool, timeout, cacheEnabled, value, executionSemaphore, fallbackSemaphore, circuitBreakerDisabled);
             }
         }
     }
@@ -4587,8 +4539,9 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         private final CacheEnabled cacheEnabled;
         private final Object value;
 
-        public AbstractFlexibleTestHystrixObservableCommand(ExecutionIsolationStrategy isolationStrategy, AbstractTestHystrixCommand.ExecutionResult executionResult, int executionLatency, TestCircuitBreaker circuitBreaker, HystrixThreadPool threadPool, int timeout, CacheEnabled cacheEnabled, Object value, TryableSemaphore executionSemaphore, TryableSemaphore fallbackSemaphore, boolean circuitBreakerDisabled) {
+        public AbstractFlexibleTestHystrixObservableCommand(HystrixCommandKey commandKey, ExecutionIsolationStrategy isolationStrategy, AbstractTestHystrixCommand.ExecutionResult executionResult, int executionLatency, TestCircuitBreaker circuitBreaker, HystrixThreadPool threadPool, int timeout, CacheEnabled cacheEnabled, Object value, TryableSemaphore executionSemaphore, TryableSemaphore fallbackSemaphore, boolean circuitBreakerDisabled) {
             super(testPropsBuilder(circuitBreaker)
+                    .setCommandKey(commandKey)
                     .setCircuitBreaker(circuitBreaker)
                     .setMetrics(circuitBreaker.metrics)
                     .setThreadPool(threadPool)
@@ -4692,8 +4645,8 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         private final AbstractTestHystrixCommand.FallbackResult fallbackResult;
         private final int fallbackLatency;
 
-        public FlexibleTestHystrixObservableCommandWithFallback(ExecutionIsolationStrategy isolationStrategy, AbstractTestHystrixCommand.ExecutionResult executionResult, int executionLatency, FallbackResult fallbackResult, int fallbackLatency, TestCircuitBreaker circuitBreaker, HystrixThreadPool threadPool, int timeout, CacheEnabled cacheEnabled, Object value, TryableSemaphore executionSemaphore, TryableSemaphore fallbackSemaphore, boolean circuitBreakerDisabled) {
-            super(isolationStrategy, executionResult, executionLatency, circuitBreaker, threadPool, timeout, cacheEnabled, value, executionSemaphore, fallbackSemaphore, circuitBreakerDisabled);
+        public FlexibleTestHystrixObservableCommandWithFallback(HystrixCommandKey commandKey, ExecutionIsolationStrategy isolationStrategy, AbstractTestHystrixCommand.ExecutionResult executionResult, int executionLatency, FallbackResult fallbackResult, int fallbackLatency, TestCircuitBreaker circuitBreaker, HystrixThreadPool threadPool, int timeout, CacheEnabled cacheEnabled, Object value, TryableSemaphore executionSemaphore, TryableSemaphore fallbackSemaphore, boolean circuitBreakerDisabled) {
+            super(commandKey, isolationStrategy, executionResult, executionLatency, circuitBreaker, threadPool, timeout, cacheEnabled, value, executionSemaphore, fallbackSemaphore, circuitBreakerDisabled);
             this.fallbackResult = fallbackResult;
             this.fallbackLatency = fallbackLatency;
         }
@@ -4737,8 +4690,8 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
     }
 
     private static class FlexibleTestHystrixObservableCommandNoFallback extends AbstractFlexibleTestHystrixObservableCommand {
-        public FlexibleTestHystrixObservableCommandNoFallback(ExecutionIsolationStrategy isolationStrategy, AbstractTestHystrixCommand.ExecutionResult executionResult, int executionLatency, TestCircuitBreaker circuitBreaker, HystrixThreadPool threadPool, int timeout, CacheEnabled cacheEnabled, Object value, TryableSemaphore executionSemaphore, TryableSemaphore fallbackSemaphore, boolean circuitBreakerDisabled) {
-            super(isolationStrategy, executionResult, executionLatency, circuitBreaker, threadPool, timeout, cacheEnabled, value, executionSemaphore, fallbackSemaphore, circuitBreakerDisabled);
+        public FlexibleTestHystrixObservableCommandNoFallback(HystrixCommandKey commandKey, ExecutionIsolationStrategy isolationStrategy, AbstractTestHystrixCommand.ExecutionResult executionResult, int executionLatency, TestCircuitBreaker circuitBreaker, HystrixThreadPool threadPool, int timeout, CacheEnabled cacheEnabled, Object value, TryableSemaphore executionSemaphore, TryableSemaphore fallbackSemaphore, boolean circuitBreakerDisabled) {
+            super(commandKey, isolationStrategy, executionResult, executionLatency, circuitBreaker, threadPool, timeout, cacheEnabled, value, executionSemaphore, fallbackSemaphore, circuitBreakerDisabled);
         }
     }
 
@@ -5429,16 +5382,23 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
          * @param circuitBreaker circuit breaker (passed in so it may be shared)
          * @param semaphore semaphore (passed in so it may be shared)
          * @param startLatch
-         *            this command calls {@link CountDownLatch#countDown()} immediately
-         *            upon running
+         * this command calls {@link CountDownLatch#countDown()} immediately upon running
          * @param waitLatch
          *            this command calls {@link CountDownLatch#await()} once it starts
          *            to run. The caller can use the latch to signal the command to finish
          */
-        private LatchedSemaphoreCommand(TestCircuitBreaker circuitBreaker, TryableSemaphoreActual semaphore,
-                CountDownLatch startLatch, CountDownLatch waitLatch) {
-            super(testPropsBuilder().setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics)
-                    .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionIsolationStrategy(ExecutionIsolationStrategy.SEMAPHORE).withCircuitBreakerEnabled(false))
+        private LatchedSemaphoreCommand(TestCircuitBreaker circuitBreaker, TryableSemaphoreActual semaphore, CountDownLatch startLatch, CountDownLatch waitLatch) {
+            this("Latched", circuitBreaker, semaphore, startLatch, waitLatch);
+        }
+
+        private LatchedSemaphoreCommand(String commandName, TestCircuitBreaker circuitBreaker, TryableSemaphoreActual semaphore, CountDownLatch startLatch, CountDownLatch waitLatch) {
+            super(testPropsBuilder()
+                    .setCommandKey(HystrixCommandKey.Factory.asKey(commandName))
+                    .setCircuitBreaker(circuitBreaker)
+                    .setMetrics(circuitBreaker.metrics)
+                    .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter()
+                            .withExecutionIsolationStrategy(ExecutionIsolationStrategy.SEMAPHORE)
+                            .withCircuitBreakerEnabled(false))
                     .setExecutionSemaphore(semaphore));
             this.startLatch = startLatch;
             this.waitLatch = waitLatch;
@@ -5450,24 +5410,31 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
                 @Override
                 public void call(Subscriber<? super Boolean> s) {
-                    // signals caller that run has started
+                    //signals caller that run has started
                     startLatch.countDown();
-
                     try {
                         // waits for caller to countDown latch
                         waitLatch.await();
+                        s.onNext(true);
+                        s.onCompleted();
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                         s.onNext(false);
                         s.onCompleted();
-                        return;
                     }
-
-                    s.onNext(true);
-                    s.onCompleted();
                 }
-
             }).subscribeOn(Schedulers.computation());
+        }
+
+        @Override
+        protected Observable<Boolean> resumeWithFallback() {
+            return Observable.defer(new Func0<Observable<Boolean>>() {
+                @Override
+                public Observable<Boolean> call() {
+                    startLatch.countDown();
+                    return Observable.just(false);
+                }
+            });
         }
     }
 
