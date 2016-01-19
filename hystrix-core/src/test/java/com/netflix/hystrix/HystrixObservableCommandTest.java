@@ -5084,7 +5084,9 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         private volatile boolean executed = false;
 
         public SlowCacheableCommand(TestCircuitBreaker circuitBreaker, String value, int duration) {
-            super(testPropsBuilder().setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics));
+            super(testPropsBuilder()
+                    .setCommandKey(HystrixCommandKey.Factory.asKey("ObservableSlowCacheable"))
+                    .setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics));
             this.value = value;
             this.duration = duration;
         }
