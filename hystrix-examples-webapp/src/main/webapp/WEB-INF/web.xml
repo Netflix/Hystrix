@@ -40,12 +40,24 @@
 		<description></description>
 		<display-name>HystrixConfigSseServlet</display-name>
 		<servlet-name>HystrixConfigSseServlet</servlet-name>
-		<servlet-class>com.netflix.hystrix.contrib.config.stream.HystrixConfigSseServlet</servlet-class>
+		<servlet-class>com.netflix.hystrix.contrib.sample.stream.HystrixConfigSseServlet</servlet-class>
 	</servlet>
 
 	<servlet-mapping>
 		<servlet-name>HystrixConfigSseServlet</servlet-name>
 		<url-pattern>/hystrix/config.stream</url-pattern>
 	</servlet-mapping>
+
+    <servlet>
+        <description></description>
+        <display-name>HystrixUtilizationSseServlet</display-name>
+        <servlet-name>HystrixUtilizationSseServlet</servlet-name>
+        <servlet-class>com.netflix.hystrix.contrib.sample.stream.HystrixUtilizationSseServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>HystrixUtilizationSseServlet</servlet-name>
+        <url-pattern>/hystrix/utilization.stream</url-pattern>
+    </servlet-mapping>
 
 </web-app>
