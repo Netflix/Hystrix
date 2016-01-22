@@ -39,4 +39,16 @@ public class HystrixConfiguration {
                                             Map<HystrixCollapserKey, HystrixCollapserConfiguration> collapserConfig) {
         return new HystrixConfiguration(commandConfig, threadPoolConfig, collapserConfig);
     }
+
+    public Map<HystrixCommandKey, HystrixCommandConfiguration> getCommandConfig() {
+        return commandConfig;
+    }
+
+    public Map<HystrixThreadPoolKey, HystrixThreadPoolConfiguration> getThreadPoolConfig() {
+        return threadPoolConfig;
+    }
+
+    public Map<HystrixCollapserKey, HystrixCollapserConfiguration> getCollapserConfig() {
+        return collapserConfig;
+    }
 }

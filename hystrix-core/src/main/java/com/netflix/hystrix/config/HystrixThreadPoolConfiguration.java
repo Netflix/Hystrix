@@ -51,4 +51,32 @@ public class HystrixThreadPoolConfiguration {
                 threadPoolProperties.metricsRollingStatisticalWindowBuckets().get(),
                 threadPoolProperties.metricsRollingStatisticalWindowInMilliseconds().get());
     }
+
+    public HystrixThreadPoolKey getThreadPoolKey() {
+        return threadPoolKey;
+    }
+
+    public int getCoreSize() {
+        return coreSize;
+    }
+
+    public int getMaxQueueSize() {
+        return maxQueueSize;
+    }
+
+    public int getQueueRejectionThreshold() {
+        return queueRejectionThreshold;
+    }
+
+    public int getKeepAliveTimeInMinutes() {
+        return keepAliveTimeInMinutes;
+    }
+
+    public int getRollingCounterNumberOfBuckets() {
+        return rollingCounterNumberOfBuckets;
+    }
+
+    public int getRollingCounterBucketSizeInMilliseconds() {
+        return rollingCounterBucketSizeInMilliseconds;
+    }
 }

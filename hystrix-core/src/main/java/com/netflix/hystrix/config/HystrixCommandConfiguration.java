@@ -79,7 +79,27 @@ public class HystrixCommandConfiguration {
                 commandKey, threadPoolKey, groupKey, executionConfig, circuitBreakerConfig, metricsConfig);
     }
 
-    private static class HystrixCommandCircuitBreakerConfig {
+    public HystrixThreadPoolKey getThreadPoolKey() {
+        return threadPoolKey;
+    }
+
+    public HystrixCommandGroupKey getGroupKey() {
+        return groupKey;
+    }
+
+    public HystrixCommandExecutionConfig getExecutionConfig() {
+        return executionConfig;
+    }
+
+    public HystrixCommandCircuitBreakerConfig getCircuitBreakerConfig() {
+        return circuitBreakerConfig;
+    }
+
+    public HystrixCommandMetricsConfig getMetricsConfig() {
+        return metricsConfig;
+    }
+
+    public static class HystrixCommandCircuitBreakerConfig {
         private final boolean enabled;
         private final int errorThresholdPercentage;
         private final boolean forceClosed;
@@ -96,11 +116,35 @@ public class HystrixCommandConfiguration {
             this.requestVolumeThreshold = requestVolumeThreshold;
             this.sleepWindowInMilliseconds = sleepWindowInMilliseconds;
         }
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public int getErrorThresholdPercentage() {
+            return errorThresholdPercentage;
+        }
+
+        public boolean isForceClosed() {
+            return forceClosed;
+        }
+
+        public boolean isForceOpen() {
+            return forceOpen;
+        }
+
+        public int getRequestVolumeThreshold() {
+            return requestVolumeThreshold;
+        }
+
+        public int getSleepWindowInMilliseconds() {
+            return sleepWindowInMilliseconds;
+        }
     }
 
-    private static class HystrixCommandExecutionConfig {
+    public static class HystrixCommandExecutionConfig {
         private final int semaphoreMaxConcurrentRequests;
-        private final HystrixCommandProperties.ExecutionIsolationStrategy executionIsolationStrategy;
+        private final HystrixCommandProperties.ExecutionIsolationStrategy isolationStrategy;
         private final boolean threadInterruptOnTimeout;
         private final String threadPoolKeyOverride;
         private final boolean timeoutEnabled;
@@ -110,12 +154,12 @@ public class HystrixCommandConfiguration {
         private final boolean requestCacheEnabled;
         private final boolean requestLogEnabled;
 
-        public HystrixCommandExecutionConfig(int semaphoreMaxConcurrentRequests, HystrixCommandProperties.ExecutionIsolationStrategy executionIsolationStrategy,
+        public HystrixCommandExecutionConfig(int semaphoreMaxConcurrentRequests, HystrixCommandProperties.ExecutionIsolationStrategy isolationStrategy,
                                              boolean threadInterruptOnTimeout, String threadPoolKeyOverride, boolean timeoutEnabled,
                                              int timeoutInMilliseconds, boolean fallbackEnabled, int fallbackMaxConcurrentRequests,
                                              boolean requestCacheEnabled, boolean requestLogEnabled) {
             this.semaphoreMaxConcurrentRequests = semaphoreMaxConcurrentRequests;
-            this.executionIsolationStrategy = executionIsolationStrategy;
+            this.isolationStrategy = isolationStrategy;
             this.threadInterruptOnTimeout = threadInterruptOnTimeout;
             this.threadPoolKeyOverride = threadPoolKeyOverride;
             this.timeoutEnabled = timeoutEnabled;
@@ -126,9 +170,49 @@ public class HystrixCommandConfiguration {
             this.requestLogEnabled = requestLogEnabled;
 
         }
+
+        public int getSemaphoreMaxConcurrentRequests() {
+            return semaphoreMaxConcurrentRequests;
+        }
+
+        public HystrixCommandProperties.ExecutionIsolationStrategy getIsolationStrategy() {
+            return isolationStrategy;
+        }
+
+        public boolean isThreadInterruptOnTimeout() {
+            return threadInterruptOnTimeout;
+        }
+
+        public String getThreadPoolKeyOverride() {
+            return threadPoolKeyOverride;
+        }
+
+        public boolean isTimeoutEnabled() {
+            return timeoutEnabled;
+        }
+
+        public int getTimeoutInMilliseconds() {
+            return timeoutInMilliseconds;
+        }
+
+        public boolean isFallbackEnabled() {
+            return fallbackEnabled;
+        }
+
+        public int getFallbackMaxConcurrentRequest() {
+            return fallbackMaxConcurrentRequest;
+        }
+
+        public boolean isRequestCacheEnabled() {
+            return requestCacheEnabled;
+        }
+
+        public boolean isRequestLogEnabled() {
+            return requestLogEnabled;
+        }
     }
 
-    private static class HystrixCommandMetricsConfig {
+    public static class HystrixCommandMetricsConfig {
         private final int healthIntervalInMilliseconds;
         private final boolean rollingPercentileEnabled;
         private final int rollingPercentileNumberOfBuckets;
@@ -145,6 +229,30 @@ public class HystrixCommandConfiguration {
             this.rollingPercentileBucketSizeInMilliseconds = rollingPercentileBucketSizeInMilliseconds;
             this.rollingCounterNumberOfBuckets = rollingCounterNumberOfBuckets;
             this.rollingCounterBucketSizeInMilliseconds = rollingCounterBucketSizeInMilliseconds;
+        }
+
+        public int getHealthIntervalInMilliseconds() {
+            return healthIntervalInMilliseconds;
+        }
+
+        public boolean isRollingPercentileEnabled() {
+            return rollingPercentileEnabled;
+        }
+
+        public int getRollingPercentileNumberOfBuckets() {
+            return rollingPercentileNumberOfBuckets;
+        }
+
+        public int getRollingPercentileBucketSizeInMilliseconds() {
+            return rollingPercentileBucketSizeInMilliseconds;
+        }
+
+        public int getRollingCounterNumberOfBuckets() {
+            return rollingCounterNumberOfBuckets;
+        }
+
+        public int getRollingCounterBucketSizeInMilliseconds() {
+            return rollingCounterBucketSizeInMilliseconds;
         }
     }
 }

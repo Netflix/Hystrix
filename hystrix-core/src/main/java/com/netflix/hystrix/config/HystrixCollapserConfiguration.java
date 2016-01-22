@@ -52,7 +52,27 @@ public class HystrixCollapserConfiguration {
         );
     }
 
-    private static class CollapserMetricsConfig {
+    public HystrixCollapserKey getCollapserKey() {
+        return collapserKey;
+    }
+
+    public int getMaxRequestsInBatch() {
+        return maxRequestsInBatch;
+    }
+
+    public int getTimerDelayInMilliseconds() {
+        return timerDelayInMilliseconds;
+    }
+
+    public boolean isRequestCacheEnabled() {
+        return requestCacheEnabled;
+    }
+
+    public CollapserMetricsConfig getCollapserMetricsConfig() {
+        return collapserMetricsConfig;
+    }
+
+    public static class CollapserMetricsConfig {
         private final int rollingPercentileNumberOfBuckets;
         private final int rollingPercentileBucketSizeInMilliseconds;
         private final boolean rollingPercentileEnabled;
@@ -66,6 +86,26 @@ public class HystrixCollapserConfiguration {
             this.rollingPercentileEnabled = rollingPercentileEnabled;
             this.rollingCounterNumberOfBuckets = rollingCounterNumberOfBuckets;
             this.rollingCounterBucketSizeInMilliseconds = rollingCounterBucketSizeInMilliseconds;
+        }
+
+        public int getRollingPercentileNumberOfBuckets() {
+            return rollingPercentileNumberOfBuckets;
+        }
+
+        public int getRollingPercentileBucketSizeInMilliseconds() {
+            return rollingPercentileBucketSizeInMilliseconds;
+        }
+
+        public boolean isRollingPercentileEnabled() {
+            return rollingPercentileEnabled;
+        }
+
+        public int getRollingCounterNumberOfBuckets() {
+            return rollingCounterNumberOfBuckets;
+        }
+
+        public int getRollingCounterBucketSizeInMilliseconds() {
+            return rollingCounterBucketSizeInMilliseconds;
         }
     }
 }
