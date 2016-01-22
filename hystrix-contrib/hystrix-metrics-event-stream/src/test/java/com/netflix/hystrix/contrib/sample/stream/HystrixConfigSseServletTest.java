@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.hystrix.contrib.config.stream;
+package com.netflix.hystrix.contrib.sample.stream;
 
 import com.netflix.hystrix.config.HystrixConfiguration;
 import com.netflix.hystrix.config.HystrixConfigurationStream;
@@ -46,7 +46,6 @@ public class HystrixConfigSseServletTest {
 
     @Mock HttpServletRequest mockReq;
     @Mock HttpServletResponse mockResp;
-    @Mock HystrixConfigurationStream mockConfigStream;
     @Mock HystrixConfiguration mockConfig;
     @Mock PrintWriter mockPrintWriter;
 
@@ -58,6 +57,15 @@ public class HystrixConfigSseServletTest {
             return mockConfig;
         }
     });
+
+    private Func1<Integer, Observable<HystrixConfiguration>> generateStream(final Observable<HystrixConfiguration> o) {
+        return new Func1<Integer, Observable<HystrixConfiguration>>() {
+            @Override
+            public Observable<HystrixConfiguration> call(Integer integer) {
+                return o;
+            }
+        };
+    }
 
     private final Observable<HystrixConfiguration> streamOfOnNextThenOnError = Observable.create(new Observable.OnSubscribe<HystrixConfiguration>() {
         @Override
@@ -87,22 +95,10 @@ public class HystrixConfigSseServletTest {
         }
     }).subscribeOn(Schedulers.computation());
 
-    final Func1<Integer, HystrixConfigurationStream> mockStreamProvider = new Func1<Integer, HystrixConfigurationStream>() {
-        @Override
-        public HystrixConfigurationStream call(Integer delay) {
-            return mockConfigStream;
-        }
-    };
-
     @Before
     public void init() {
         MockitoAnnotations.initMocks(this);
-        servlet = new HystrixConfigSseServlet(mockStreamProvider);
-        try {
-            servlet.init();
-        } catch (ServletException ex) {
 
-        }
     }
 
     @After
@@ -113,6 +109,13 @@ public class HystrixConfigSseServletTest {
 
     @Test
     public void shutdownServletShouldRejectRequests() throws ServletException, IOException {
+        servlet = new HystrixConfigSseServlet(generateStream(streamOfOnNexts));
+        try {
+            servlet.init();
+        } catch (ServletException ex) {
+
+        }
+
         servlet.shutdown();
 
         servlet.doGet(mockReq, mockResp);
@@ -123,10 +126,16 @@ public class HystrixConfigSseServletTest {
 
     @Test
     public void testConfigDataWithInfiniteOnNextStream() throws IOException, InterruptedException {
+        servlet = new HystrixConfigSseServlet(generateStream(streamOfOnNexts));
+        try {
+            servlet.init();
+        } catch (ServletException ex) {
+
+        }
+
         final AtomicInteger writes = new AtomicInteger(0);
 
         when(mockReq.getParameter("delay")).thenReturn("100");
-        when(mockConfigStream.observe()).thenReturn(streamOfOnNexts);
         when(mockResp.getWriter()).thenReturn(mockPrintWriter);
         Mockito.doAnswer(new Answer<Void>() {
             @Override
@@ -179,10 +188,16 @@ public class HystrixConfigSseServletTest {
 
     @Test
     public void testConfigDataWithStreamOnError() throws IOException, InterruptedException {
+        servlet = new HystrixConfigSseServlet(generateStream(streamOfOnNextThenOnError));
+        try {
+            servlet.init();
+        } catch (ServletException ex) {
+
+        }
+
         final AtomicInteger writes = new AtomicInteger(0);
 
         when(mockReq.getParameter("delay")).thenReturn("100");
-        when(mockConfigStream.observe()).thenReturn(streamOfOnNextThenOnError);
         when(mockResp.getWriter()).thenReturn(mockPrintWriter);
         Mockito.doAnswer(new Answer<Void>() {
             @Override
@@ -226,10 +241,16 @@ public class HystrixConfigSseServletTest {
 
     @Test
     public void testConfigDataWithStreamOnCompleted() throws IOException, InterruptedException {
+        servlet = new HystrixConfigSseServlet(generateStream(streamOfOnNextThenOnCompleted));
+        try {
+            servlet.init();
+        } catch (ServletException ex) {
+
+        }
+
         final AtomicInteger writes = new AtomicInteger(0);
 
         when(mockReq.getParameter("delay")).thenReturn("100");
-        when(mockConfigStream.observe()).thenReturn(streamOfOnNextThenOnCompleted);
         when(mockResp.getWriter()).thenReturn(mockPrintWriter);
         Mockito.doAnswer(new Answer<Void>() {
             @Override
@@ -273,10 +294,16 @@ public class HystrixConfigSseServletTest {
 
     @Test
     public void testConfigDataWithIoExceptionOnWrite() throws IOException, InterruptedException {
+        servlet = new HystrixConfigSseServlet(generateStream(streamOfOnNexts));
+        try {
+            servlet.init();
+        } catch (ServletException ex) {
+
+        }
+
         final AtomicInteger writes = new AtomicInteger(0);
 
         when(mockReq.getParameter("delay")).thenReturn("100");
-        when(mockConfigStream.observe()).thenReturn(streamOfOnNexts);
         when(mockResp.getWriter()).thenReturn(mockPrintWriter);
         Mockito.doAnswer(new Answer<Void>() {
             @Override
