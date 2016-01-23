@@ -19,52 +19,51 @@ import java.util.List;
 
 public interface HystrixInvokableInfo<R> {
 
-    public HystrixCommandGroupKey getCommandGroup();
+    HystrixCommandGroupKey getCommandGroup();
 
-    public HystrixCommandKey getCommandKey();
+    HystrixCommandKey getCommandKey();
 
-    public HystrixThreadPoolKey getThreadPoolKey();
+    HystrixThreadPoolKey getThreadPoolKey();
 
-    public HystrixCommandMetrics getMetrics();
+    HystrixCommandMetrics getMetrics();
 
-    public HystrixCommandProperties getProperties();
+    HystrixCommandProperties getProperties();
 
-    public boolean isCircuitBreakerOpen();
+    boolean isCircuitBreakerOpen();
 
-    public boolean isExecutionComplete();
+    boolean isExecutionComplete();
 
-    public boolean isExecutedInThread();
+    boolean isExecutedInThread();
 
-    public boolean isSuccessfulExecution();
+    boolean isSuccessfulExecution();
 
-    public boolean isFailedExecution();
+    boolean isFailedExecution();
 
-    public Throwable getFailedExecutionException();
+    Throwable getFailedExecutionException();
 
-    public boolean isResponseFromFallback();
+    boolean isResponseFromFallback();
 
-    public boolean isResponseTimedOut();
+    boolean isResponseTimedOut();
 
-    public boolean isResponseShortCircuited();
+    boolean isResponseShortCircuited();
 
-    public boolean isResponseFromCache();
+    boolean isResponseFromCache();
 
-    public boolean isResponseRejected();
+    boolean isResponseRejected();
 
     boolean isResponseSemaphoreRejected();
 
     boolean isResponseThreadPoolRejected();
 
-    public List<HystrixEventType> getExecutionEvents();
+    List<HystrixEventType> getExecutionEvents();
 
-    public int getNumberEmissions();
+    int getNumberEmissions();
 
-    public int getNumberFallbackEmissions();
+    int getNumberFallbackEmissions();
 
     int getNumberCollapsed();
 
-    public int getExecutionTimeInMilliseconds();
+    int getExecutionTimeInMilliseconds();
 
-    public long getCommandRunStartTimeInNanos();
-
+    long getCommandRunStartTimeInNanos();
 }

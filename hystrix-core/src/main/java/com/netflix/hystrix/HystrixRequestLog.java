@@ -15,6 +15,15 @@
  */
 package com.netflix.hystrix;
 
+import com.netflix.hystrix.metric.HystrixRequestEventsStream;
+import com.netflix.hystrix.strategy.HystrixPlugins;
+import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
+import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
+import com.netflix.hystrix.strategy.concurrency.HystrixRequestVariableHolder;
+import com.netflix.hystrix.strategy.concurrency.HystrixRequestVariableLifecycle;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -23,15 +32,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.netflix.hystrix.strategy.HystrixPlugins;
-import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
-import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
-import com.netflix.hystrix.strategy.concurrency.HystrixRequestVariableHolder;
-import com.netflix.hystrix.strategy.concurrency.HystrixRequestVariableLifecycle;
 
 /**
  * Log of {@link HystrixCommand} executions and events during the current request.
@@ -57,9 +57,10 @@ public class HystrixRequestLog {
         }
 
         public void shutdown(HystrixRequestLog value) {
-            // nothing to shutdown
+            //write this value to the Request stream
+            HystrixRequestContext requestContext = HystrixRequestContext.getContextForCurrentThread();
+            HystrixRequestEventsStream.getInstance().write(requestContext, value.getAllExecutedCommands());
         }
-
     });
 
     /**

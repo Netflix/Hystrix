@@ -60,4 +60,16 @@
         <url-pattern>/hystrix/utilization.stream</url-pattern>
     </servlet-mapping>
 
+    <servlet>
+        <description></description>
+        <display-name>HystrixRequestEventsSseServlet</display-name>
+        <servlet-name>HystrixRequestEventsSseServlet</servlet-name>
+        <servlet-class>com.netflix.hystrix.contrib.requests.stream.HystrixRequestEventsSseServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>HystrixRequestEventsSseServlet</servlet-name>
+        <url-pattern>/hystrix/requests.stream</url-pattern>
+    </servlet-mapping>
+
 </web-app>
