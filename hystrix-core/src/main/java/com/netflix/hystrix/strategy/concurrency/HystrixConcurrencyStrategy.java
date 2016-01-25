@@ -15,6 +15,13 @@
  */
 package com.netflix.hystrix.strategy.concurrency;
 
+import com.netflix.hystrix.HystrixCommand;
+import com.netflix.hystrix.HystrixThreadPool;
+import com.netflix.hystrix.HystrixThreadPoolKey;
+import com.netflix.hystrix.strategy.HystrixPlugins;
+import com.netflix.hystrix.strategy.properties.HystrixProperty;
+import com.netflix.hystrix.util.PlatformSpecific;
+
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -23,12 +30,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import com.netflix.hystrix.HystrixCommand;
-import com.netflix.hystrix.HystrixThreadPool;
-import com.netflix.hystrix.HystrixThreadPoolKey;
-import com.netflix.hystrix.strategy.HystrixPlugins;
-import com.netflix.hystrix.strategy.properties.HystrixProperty;
 
 /**
  * Abstract class for defining different behavior or implementations for concurrency related aspects of the system with default implementations.
@@ -70,17 +71,24 @@ public abstract class HystrixConcurrencyStrategy {
      * @return instance of {@link ThreadPoolExecutor}
      */
     public ThreadPoolExecutor getThreadPool(final HystrixThreadPoolKey threadPoolKey, HystrixProperty<Integer> corePoolSize, HystrixProperty<Integer> maximumPoolSize, HystrixProperty<Integer> keepAliveTime, TimeUnit unit, BlockingQueue<Runnable> workQueue) {
-        return new ThreadPoolExecutor(corePoolSize.get(), maximumPoolSize.get(), keepAliveTime.get(), unit, workQueue, new ThreadFactory() {
+        ThreadFactory threadFactory = null;
+        if (!PlatformSpecific.isAppEngine()) {
+            threadFactory = new ThreadFactory() {
+                protected final AtomicInteger threadNumber = new AtomicInteger(0);
 
-            protected final AtomicInteger threadNumber = new AtomicInteger(0);
+                @Override
+                public Thread newThread(Runnable r) {
+                    Thread thread = new Thread(r, "hystrix-" + threadPoolKey.name() + "-" + threadNumber.incrementAndGet());
+                    thread.setDaemon(true);
+                    return thread;
+                }
 
-            @Override
-            public Thread newThread(Runnable r) {
-                Thread thread = new Thread(r, "hystrix-" + threadPoolKey.name() + "-" + threadNumber.incrementAndGet());
-                thread.setDaemon(true);
-                return thread; 
-            }
-        });
+            };
+        } else {
+            threadFactory = PlatformSpecific.getAppEngineThreadFactory();
+        }
+
+        return new ThreadPoolExecutor(corePoolSize.get(), maximumPoolSize.get(), keepAliveTime.get(), unit, workQueue, threadFactory);
     }
 
     /**

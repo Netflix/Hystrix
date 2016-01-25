@@ -15,6 +15,13 @@
  */
 package com.netflix.hystrix.util;
 
+import com.netflix.hystrix.HystrixCollapser;
+import com.netflix.hystrix.HystrixCommand;
+import com.netflix.hystrix.strategy.HystrixPlugins;
+import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.lang.ref.Reference;
 import java.lang.ref.SoftReference;
 import java.util.concurrent.ScheduledFuture;
@@ -23,14 +30,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-
-import com.netflix.hystrix.strategy.HystrixPlugins;
-import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.netflix.hystrix.HystrixCollapser;
-import com.netflix.hystrix.HystrixCommand;
 
 /**
  * Timer used by {@link HystrixCommand} to timeout async executions and {@link HystrixCollapser} to trigger batch executions.
@@ -153,17 +152,24 @@ public class HystrixTimer {
             HystrixPropertiesStrategy propertiesStrategy = HystrixPlugins.getInstance().getPropertiesStrategy();
             int coreSize = propertiesStrategy.getTimerThreadPoolProperties().getCorePoolSize().get();
 
-            executor = new ScheduledThreadPoolExecutor(coreSize, new ThreadFactory() {
-                final AtomicInteger counter = new AtomicInteger();
+            ThreadFactory threadFactory = null;
+            if (!PlatformSpecific.isAppEngine()) {
+                threadFactory = new ThreadFactory() {
+                    final AtomicInteger counter = new AtomicInteger();
 
-                @Override
-                public Thread newThread(Runnable r) {
-                    Thread thread = new Thread(r, "HystrixTimer-" + counter.incrementAndGet());
-                    thread.setDaemon(true);
-                    return thread;
-                }
+                    @Override
+                    public Thread newThread(Runnable r) {
+                        Thread thread = new Thread(r, "HystrixTimer-" + counter.incrementAndGet());
+                        thread.setDaemon(true);
+                        return thread;
+                    }
 
-            });
+                };
+            } else {
+                threadFactory = PlatformSpecific.getAppEngineThreadFactory();
+            }
+
+            executor = new ScheduledThreadPoolExecutor(coreSize, threadFactory);
             initialized = true;
         }
 

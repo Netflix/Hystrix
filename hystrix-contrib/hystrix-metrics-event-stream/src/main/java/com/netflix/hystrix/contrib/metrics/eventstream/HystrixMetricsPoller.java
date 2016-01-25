@@ -27,6 +27,7 @@ import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.HystrixThreadPoolKey;
 import com.netflix.hystrix.HystrixThreadPoolMetrics;
+import com.netflix.hystrix.util.PlatformSpecific;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.functions.Func0;
@@ -74,7 +75,15 @@ public class HystrixMetricsPoller {
      */
     public HystrixMetricsPoller(MetricsAsJsonPollerListener listener, int delay) {
         this.listener = listener;
-        executor = new ScheduledThreadPoolExecutor(1, new MetricsPollerThreadFactory());
+
+        ThreadFactory threadFactory = null;
+        if (!PlatformSpecific.isAppEngine()) {
+            threadFactory = new MetricsPollerThreadFactory();
+        } else {
+            threadFactory = PlatformSpecific.getAppEngineThreadFactory();
+        }
+
+        executor = new ScheduledThreadPoolExecutor(1, threadFactory);
         this.delay = delay;
     }
 
