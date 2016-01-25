@@ -23,6 +23,8 @@ import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 import com.yammer.metrics.core.Gauge;
 import com.yammer.metrics.core.MetricName;
 import com.yammer.metrics.core.MetricsRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Implementation of {@link HystrixMetricsPublisherThreadPool} using Yammer Metrics (https://github.com/codahale/metrics)
@@ -34,6 +36,9 @@ public class HystrixYammerMetricsPublisherThreadPool implements HystrixMetricsPu
     private final MetricsRegistry metricsRegistry;
     private final String metricGroup;
     private final String metricType;
+
+    static final Logger logger = LoggerFactory.getLogger(HystrixYammerMetricsPublisherThreadPool.class);
+
 
     public HystrixYammerMetricsPublisherThreadPool(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolMetrics metrics, HystrixThreadPoolProperties properties, MetricsRegistry metricsRegistry) {
         this.key = threadPoolKey;
@@ -113,7 +118,12 @@ public class HystrixYammerMetricsPublisherThreadPool implements HystrixMetricsPu
         metricsRegistry.newGauge(createMetricName("rollingCountCommandsRejected"), new Gauge<Number>() {
             @Override
             public Number value() {
-                return metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED);
+                try {
+                    return metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED);
+                } catch (NoSuchFieldError error) {
+                    logger.error("While publishing Yammer metrics, error looking up eventType for : rollingCountCommandsRejected.  Please check that all Hystrix versions are the same!");
+                    return 0L;
+                }
             }
         });
 
