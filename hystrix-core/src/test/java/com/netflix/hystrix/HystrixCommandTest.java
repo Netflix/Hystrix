@@ -1062,27 +1062,16 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
     public void testRejectedThreadWithFallbackFailure() {
         TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
         SingleThreadedPoolWithQueue pool = new SingleThreadedPoolWithQueue(1);
-        // fill up the queue
-        pool.queue.add(new Runnable() {
 
-            @Override
-            public void run() {
-                System.out.println("**** queue filler1 ****");
-                try {
-                    Thread.sleep(500);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-
-        });
-
-        TestCommandRejection command1 = new TestCommandRejection(circuitBreaker, pool, 500, 600, TestCommandRejection.FALLBACK_FAILURE);
-        TestCommandRejection command2 = new TestCommandRejection(circuitBreaker, pool, 500, 600, TestCommandRejection.FALLBACK_FAILURE);
+        TestCommandRejection command1 = new TestCommandRejection(circuitBreaker, pool, 500, 600, TestCommandRejection.FALLBACK_FAILURE); //this should pass through the queue and sit in the pool
+        TestCommandRejection command2 = new TestCommandRejection(circuitBreaker, pool, 500, 600, TestCommandRejection.FALLBACK_SUCCESS); //this should sit in the queue
+        TestCommandRejection command3 = new TestCommandRejection(circuitBreaker, pool, 500, 600, TestCommandRejection.FALLBACK_FAILURE); //this should observe full queue and get rejected
         Future<Boolean> f1 = null;
+        Future<Boolean> f2 = null;
         try {
             f1 = command1.queue();
-            assertEquals(false, command2.queue().get());
+            f2 = command2.queue();
+            assertEquals(false, command3.queue().get()); //should get thread-pool rejected
             fail("we shouldn't get here");
         } catch (Exception e) {
             e.printStackTrace();
@@ -1099,17 +1088,20 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         }
 
         assertCommandExecutionEvents(command1); //still in-flight, no events yet
-        assertCommandExecutionEvents(command2, HystrixEventType.THREAD_POOL_REJECTED, HystrixEventType.FALLBACK_FAILURE);
+        assertCommandExecutionEvents(command2); //still in-flight, no events yet
+        assertCommandExecutionEvents(command3, HystrixEventType.THREAD_POOL_REJECTED, HystrixEventType.FALLBACK_FAILURE);
         assertEquals(1, circuitBreaker.metrics.getCurrentConcurrentExecutionCount()); //pool-filler still going
-        //This is a case where we knowingly walk away from an executing Hystrix thread (the pool-filler).  It should have an in-flight status ("Executed").  You should avoid this in a production environment
+        //This is a case where we knowingly walk away from executing Hystrix threads. They should have an in-flight status ("Executed").  You should avoid this in a production environment
         HystrixRequestLog requestLog = HystrixRequestLog.getCurrentRequest();
-        assertEquals(2, requestLog.getAllExecutedCommands().size());
+        assertEquals(3, requestLog.getAllExecutedCommands().size());
         assertTrue(requestLog.getExecutedCommandsAsString().contains("Executed"));
 
         try {
-            //block on the outstanding work, so we don't inadvertently afect any other tests
+            //block on the outstanding work, so we don't inadvertently affect any other tests
             long startTime = System.currentTimeMillis();
             f1.get();
+            f2.get();
+            assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
             System.out.println("Time blocked : " + (System.currentTimeMillis() - startTime));
         } catch (Exception ex) {
             fail("Exception while blocking on Future");
