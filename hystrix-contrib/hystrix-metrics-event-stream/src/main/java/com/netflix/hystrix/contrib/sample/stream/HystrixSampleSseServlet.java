@@ -20,7 +20,6 @@ import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Subscriber;
 import rx.Subscription;
-import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 
 import javax.servlet.ServletException;
@@ -42,12 +41,6 @@ public abstract class HystrixSampleSseServlet<SampleData> extends HttpServlet {
 
     private static final String DELAY_REQ_PARAM_NAME = "delay";
 
-    private final Func1<Integer, Observable<SampleData>> createStream;
-
-    protected HystrixSampleSseServlet(Func1<Integer, Observable<SampleData>> createStream) {
-        this.createStream = createStream;
-    }
-
     abstract int getDefaultDelayInMilliseconds();
 
     abstract int getMaxNumberConcurrentConnectionsAllowed();
@@ -57,6 +50,8 @@ public abstract class HystrixSampleSseServlet<SampleData> extends HttpServlet {
     protected abstract int incrementAndGetCurrentConcurrentConnections();
 
     protected abstract void decrementCurrentConcurrentConnections();
+
+    protected abstract Observable<SampleData> getStream(int delay);
 
     protected abstract String convertToString(SampleData sampleData) throws IOException;
 
@@ -139,7 +134,7 @@ public abstract class HystrixSampleSseServlet<SampleData> extends HttpServlet {
 
                 final PrintWriter writer = response.getWriter();
 
-                Observable<SampleData> sampledStream = createStream.call(delay);
+                Observable<SampleData> sampledStream = getStream(delay);
 
                 //since the sample stream is based on Observable.interval, events will get published on an RxComputation thread
                 //since writing to the servlet response is blocking, use the Rx IO thread for the write that occurs in the onNext
