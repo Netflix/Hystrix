@@ -183,7 +183,7 @@ public class HystrixRequestEventsSseServlet extends HttpServlet {
                         } else {
                             List<HystrixRequestEvents> l = new ArrayList<HystrixRequestEvents>();
                             requestQueue.drainTo(l);
-                            String requestEventsAsStr = HystrixRequestEventsJsonStream.convertToJson(l);
+                            String requestEventsAsStr = HystrixRequestEventsJsonStream.convertRequestsToJson(l);
                             if (requestEventsAsStr != null) {
                                 try {
                                     writer.print("data: " + requestEventsAsStr + "\n\n");
