@@ -27,7 +27,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Collection;
 
-public class RequestEventsJsonStream {
+public class HystrixRequestEventsJsonStream {
     private static final JsonFactory jsonFactory = new JsonFactory();
 
     public Observable<HystrixRequestEvents> getStream() {
@@ -35,20 +35,28 @@ public class RequestEventsJsonStream {
                 .observe();
     }
 
-    public static String convertToJson(Collection<HystrixRequestEvents> requests) throws IOException {
+    public static String convertRequestsToJson(Collection<HystrixRequestEvents> requests) throws IOException {
         StringWriter jsonString = new StringWriter();
         JsonGenerator json = jsonFactory.createGenerator(jsonString);
 
         json.writeStartArray();
         for (HystrixRequestEvents request : requests) {
-            convertRequestToJson(json, request);
+            writeRequestAsJson(json, request);
         }
         json.writeEndArray();
         json.close();
         return jsonString.getBuffer().toString();
     }
 
-    private static void convertRequestToJson(JsonGenerator json, HystrixRequestEvents request) throws IOException {
+    public static String convertRequestToJson(HystrixRequestEvents request) throws IOException {
+        StringWriter jsonString = new StringWriter();
+        JsonGenerator json = jsonFactory.createGenerator(jsonString);
+        writeRequestAsJson(json, request);
+        json.close();
+        return jsonString.getBuffer().toString();
+    }
+
+    private static void writeRequestAsJson(JsonGenerator json, HystrixRequestEvents request) throws IOException {
         json.writeStartObject();
         json.writeStringField("request", request.getRequestContext().toString());
         json.writeObjectFieldStart("commands");
