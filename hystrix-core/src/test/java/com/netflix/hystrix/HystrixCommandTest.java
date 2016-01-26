@@ -951,6 +951,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
      */
     @Test
     public void testRejectedThreadWithNoFallback() {
+        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("Rejection-NoFallback");
         TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
         SingleThreadedPoolWithQueue pool = new SingleThreadedPoolWithQueue(1);
         // fill up the queue
@@ -972,9 +973,9 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         TestCommandRejection command1 = null;
         TestCommandRejection command2 = null;
         try {
-            command1 = new TestCommandRejection(circuitBreaker, pool, 500, 600, TestCommandRejection.FALLBACK_NOT_IMPLEMENTED);
+            command1 = new TestCommandRejection(key, circuitBreaker, pool, 500, 600, TestCommandRejection.FALLBACK_NOT_IMPLEMENTED);
             f = command1.queue();
-            command2 = new TestCommandRejection(circuitBreaker, pool, 500, 600, TestCommandRejection.FALLBACK_NOT_IMPLEMENTED);
+            command2 = new TestCommandRejection(key, circuitBreaker, pool, 500, 600, TestCommandRejection.FALLBACK_NOT_IMPLEMENTED);
             command2.queue();
             fail("we shouldn't get here");
         } catch (Exception e) {
@@ -1018,15 +1019,16 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
      */
     @Test
     public void testRejectedThreadWithFallback() {
+        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("Rejection-Fallback");
         TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
         SingleThreadedPoolWithQueue pool = new SingleThreadedPoolWithQueue(1);
 
         //command 1 will execute in threadpool (passing through the queue)
         //command 2 will execute after spending time in the queue (after command1 completes)
         //command 3 will get rejected, since it finds pool and queue both full
-        TestCommandRejection command1 = new TestCommandRejection(circuitBreaker, pool, 500, 600, TestCommandRejection.FALLBACK_SUCCESS);
-        TestCommandRejection command2 = new TestCommandRejection(circuitBreaker, pool, 500, 600, TestCommandRejection.FALLBACK_SUCCESS);
-        TestCommandRejection command3 = new TestCommandRejection(circuitBreaker, pool, 500, 600, TestCommandRejection.FALLBACK_SUCCESS);
+        TestCommandRejection command1 = new TestCommandRejection(key, circuitBreaker, pool, 500, 600, TestCommandRejection.FALLBACK_SUCCESS);
+        TestCommandRejection command2 = new TestCommandRejection(key, circuitBreaker, pool, 500, 600, TestCommandRejection.FALLBACK_SUCCESS);
+        TestCommandRejection command3 = new TestCommandRejection(key, circuitBreaker, pool, 500, 600, TestCommandRejection.FALLBACK_SUCCESS);
 
         Observable<Boolean> result1 = command1.observe();
         Observable<Boolean> result2 = command2.observe();
@@ -1062,10 +1064,11 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
     public void testRejectedThreadWithFallbackFailure() {
         TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
         SingleThreadedPoolWithQueue pool = new SingleThreadedPoolWithQueue(1);
+        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("Rejection-A");
 
-        TestCommandRejection command1 = new TestCommandRejection(circuitBreaker, pool, 500, 600, TestCommandRejection.FALLBACK_FAILURE); //this should pass through the queue and sit in the pool
-        TestCommandRejection command2 = new TestCommandRejection(circuitBreaker, pool, 500, 600, TestCommandRejection.FALLBACK_SUCCESS); //this should sit in the queue
-        TestCommandRejection command3 = new TestCommandRejection(circuitBreaker, pool, 500, 600, TestCommandRejection.FALLBACK_FAILURE); //this should observe full queue and get rejected
+        TestCommandRejection command1 = new TestCommandRejection(key, circuitBreaker, pool, 500, 600, TestCommandRejection.FALLBACK_FAILURE); //this should pass through the queue and sit in the pool
+        TestCommandRejection command2 = new TestCommandRejection(key, circuitBreaker, pool, 500, 600, TestCommandRejection.FALLBACK_SUCCESS); //this should sit in the queue
+        TestCommandRejection command3 = new TestCommandRejection(key, circuitBreaker, pool, 500, 600, TestCommandRejection.FALLBACK_FAILURE); //this should observe full queue and get rejected
         Future<Boolean> f1 = null;
         Future<Boolean> f2 = null;
         try {
@@ -1117,6 +1120,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
      */
     @Test
     public void testRejectedThreadUsingQueueSize() {
+        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("Rejection-B");
         TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
         SingleThreadedPoolWithQueue pool = new SingleThreadedPoolWithQueue(10, 1);
         // put 1 item in the queue
@@ -1137,7 +1141,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         });
 
 
-        TestCommandRejection command = new TestCommandRejection(circuitBreaker, pool, 500, 600, TestCommandRejection.FALLBACK_NOT_IMPLEMENTED);
+        TestCommandRejection command = new TestCommandRejection(key, circuitBreaker, pool, 500, 600, TestCommandRejection.FALLBACK_NOT_IMPLEMENTED);
         try {
             // this should fail as we already have 1 in the queue
             command.queue();
@@ -3603,8 +3607,12 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
 
         private final int sleepTime;
 
-        private TestCommandRejection(TestCircuitBreaker circuitBreaker, HystrixThreadPool threadPool, int sleepTime, int timeout, int fallbackBehavior) {
-            super(testPropsBuilder().setThreadPool(threadPool).setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics)
+        private TestCommandRejection(HystrixCommandKey key, TestCircuitBreaker circuitBreaker, HystrixThreadPool threadPool, int sleepTime, int timeout, int fallbackBehavior) {
+            super(testPropsBuilder()
+                    .setCommandKey(key)
+                    .setThreadPool(threadPool)
+                    .setCircuitBreaker(circuitBreaker)
+                    .setMetrics(circuitBreaker.metrics)
                     .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionTimeoutInMilliseconds(timeout)));
             this.fallbackBehavior = fallbackBehavior;
             this.sleepTime = sleepTime;
