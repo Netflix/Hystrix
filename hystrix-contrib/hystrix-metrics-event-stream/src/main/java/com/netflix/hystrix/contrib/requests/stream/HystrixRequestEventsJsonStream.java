@@ -27,7 +27,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Collection;
 
-public class RequestEventsJsonStream {
+public class HystrixRequestEventsJsonStream {
     private static final JsonFactory jsonFactory = new JsonFactory();
 
     public Observable<HystrixRequestEvents> getStream() {
