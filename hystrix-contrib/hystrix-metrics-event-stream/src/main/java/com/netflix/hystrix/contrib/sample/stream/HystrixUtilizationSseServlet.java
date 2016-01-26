@@ -15,22 +15,13 @@
  */
 package com.netflix.hystrix.contrib.sample.stream;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonGenerator;
 import com.netflix.config.DynamicIntProperty;
 import com.netflix.config.DynamicPropertyFactory;
-import com.netflix.hystrix.HystrixCommandKey;
-import com.netflix.hystrix.HystrixThreadPoolKey;
-import com.netflix.hystrix.metric.sample.HystrixCommandUtilization;
-import com.netflix.hystrix.metric.sample.HystrixThreadPoolUtilization;
 import com.netflix.hystrix.metric.sample.HystrixUtilization;
-import com.netflix.hystrix.metric.sample.HystrixUtilizationStream;
 import rx.Observable;
 import rx.functions.Func1;
 
 import java.io.IOException;
-import java.io.StringWriter;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -60,7 +51,7 @@ public class HystrixUtilizationSseServlet extends HystrixSampleSseServlet<Hystri
 
     private static final int DEFAULT_ONNEXT_DELAY_IN_MS = 100;
 
-    private JsonFactory jsonFactory = new JsonFactory();
+    private final HystrixUtilizationJsonStream jsonStream;
 
     /* used to track number of connections and throttle */
     private static AtomicInteger concurrentConnections = new AtomicInteger(0);
@@ -68,16 +59,12 @@ public class HystrixUtilizationSseServlet extends HystrixSampleSseServlet<Hystri
             DynamicPropertyFactory.getInstance().getIntProperty("hystrix.config.stream.maxConcurrentConnections", 5);
 
     public HystrixUtilizationSseServlet() {
-        super(new Func1<Integer, Observable<HystrixUtilization>>() {
-            @Override
-            public Observable<HystrixUtilization> call(Integer delay) {
-                return new HystrixUtilizationStream(delay).observe();
-            }
-        });
+        this.jsonStream = new HystrixUtilizationJsonStream();
+
     }
 
     /* package-private */ HystrixUtilizationSseServlet(Func1<Integer, Observable<HystrixUtilization>> createStream) {
-        super(createStream);
+        this.jsonStream = new HystrixUtilizationJsonStream(createStream);
     }
 
     @Override
@@ -105,48 +92,14 @@ public class HystrixUtilizationSseServlet extends HystrixSampleSseServlet<Hystri
         concurrentConnections.decrementAndGet();
     }
 
-    private void writeCommandUtilizationJson(JsonGenerator json, HystrixCommandKey key, HystrixCommandUtilization utilization) throws IOException {
-        json.writeObjectFieldStart(key.name());
-        json.writeNumberField("activeCount", utilization.getConcurrentCommandCount());
-        json.writeEndObject();
-    }
-
-    private void writeThreadPoolUtilizationJson(JsonGenerator json, HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolUtilization utilization) throws IOException {
-        json.writeObjectFieldStart(threadPoolKey.name());
-        json.writeNumberField("activeCount", utilization.getCurrentActiveCount());
-        json.writeNumberField("queueSize", utilization.getCurrentQueueSize());
-        json.writeNumberField("corePoolSize", utilization.getCurrentCorePoolSize());
-        json.writeNumberField("poolSize", utilization.getCurrentPoolSize());
-        json.writeEndObject();
+    @Override
+    protected Observable<HystrixUtilization> getStream(int delay) {
+        return jsonStream.observe(delay);
     }
 
     @Override
     protected String convertToString(HystrixUtilization utilization) throws IOException {
-        StringWriter jsonString = new StringWriter();
-        JsonGenerator json = jsonFactory.createGenerator(jsonString);
-
-        json.writeStartObject();
-        json.writeStringField("type", "HystrixUtilization");
-        json.writeObjectFieldStart("commands");
-        for (Map.Entry<HystrixCommandKey, HystrixCommandUtilization> entry: utilization.getCommandUtilizationMap().entrySet()) {
-            final HystrixCommandKey key = entry.getKey();
-            final HystrixCommandUtilization commandUtilization = entry.getValue();
-            writeCommandUtilizationJson(json, key, commandUtilization);
-
-        }
-        json.writeEndObject();
-
-        json.writeObjectFieldStart("threadpools");
-        for (Map.Entry<HystrixThreadPoolKey, HystrixThreadPoolUtilization> entry: utilization.getThreadPoolUtilizationMap().entrySet()) {
-            final HystrixThreadPoolKey threadPoolKey = entry.getKey();
-            final HystrixThreadPoolUtilization threadPoolUtilization = entry.getValue();
-            writeThreadPoolUtilizationJson(json, threadPoolKey, threadPoolUtilization);
-        }
-        json.writeEndObject();
-        json.writeEndObject();
-        json.close();
-
-        return jsonString.getBuffer().toString();
+        return HystrixUtilizationJsonStream.convertToJson(utilization);
     }
 }
 
