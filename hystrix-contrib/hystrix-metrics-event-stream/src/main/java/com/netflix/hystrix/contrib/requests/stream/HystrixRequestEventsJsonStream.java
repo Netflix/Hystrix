@@ -58,12 +58,9 @@ public class HystrixRequestEventsJsonStream {
 
     private static void writeRequestAsJson(JsonGenerator json, HystrixRequestEvents request) throws IOException {
         json.writeStartObject();
-        json.writeStringField("request", request.getRequestContext().toString());
-        json.writeObjectFieldStart("commands");
         for (HystrixInvokableInfo<?> execution: request.getExecutions()) {
             convertExecutionToJson(json, execution);
         }
-        json.writeEndObject();
         json.writeEndObject();
     }
 
