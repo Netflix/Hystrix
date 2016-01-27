@@ -58,8 +58,7 @@ public class HystrixRequestLog {
 
         public void shutdown(HystrixRequestLog value) {
             //write this value to the Request stream
-            HystrixRequestContext requestContext = HystrixRequestContext.getContextForCurrentThread();
-            HystrixRequestEventsStream.getInstance().write(requestContext, value.getAllExecutedCommands());
+            HystrixRequestEventsStream.getInstance().write(value.getAllExecutedCommands());
         }
     });
 

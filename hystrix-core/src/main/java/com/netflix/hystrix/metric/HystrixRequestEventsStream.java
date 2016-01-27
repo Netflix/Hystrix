@@ -16,7 +16,6 @@
 package com.netflix.hystrix.metric;
 
 import com.netflix.hystrix.HystrixInvokableInfo;
-import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import rx.Observable;
 import rx.subjects.PublishSubject;
 import rx.subjects.Subject;
@@ -44,8 +43,8 @@ public class HystrixRequestEventsStream {
         writeOnlyRequestEventsSubject.onCompleted();
     }
 
-    public void write(HystrixRequestContext requestContext, Collection<HystrixInvokableInfo<?>> executions) {
-        HystrixRequestEvents requestEvents = new HystrixRequestEvents(requestContext, executions);
+    public void write(Collection<HystrixInvokableInfo<?>> executions) {
+        HystrixRequestEvents requestEvents = new HystrixRequestEvents(executions);
         writeOnlyRequestEventsSubject.onNext(requestEvents);
     }
 

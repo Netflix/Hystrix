@@ -1735,6 +1735,10 @@ import java.util.concurrent.atomic.AtomicReference;
         return null;
     }
 
+    public String getPublicCacheKey() {
+        return getCacheKey();
+    }
+
     protected boolean isRequestCachingEnabled() {
         return properties.requestCacheEnabled().get() && getCacheKey() != null;
     }

@@ -26,6 +26,7 @@ import rx.Observable;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Collection;
+import java.util.HashMap;
 
 public class HystrixRequestEventsJsonStream {
     private static final JsonFactory jsonFactory = new JsonFactory();
@@ -58,16 +59,40 @@ public class HystrixRequestEventsJsonStream {
 
     private static void writeRequestAsJson(JsonGenerator json, HystrixRequestEvents request) throws IOException {
         json.writeStartObject();
+
+        //for cached responses, map from representation of commandKey:cacheKey to number of times it appears
+        HashMap<String, Integer> cachedResponsesMap = new HashMap<String, Integer>();
         for (HystrixInvokableInfo<?> execution: request.getExecutions()) {
-            convertExecutionToJson(json, execution);
+            if (execution.getPublicCacheKey() != null) {
+                String representation = execution.getCommandKey().hashCode() + "/\\" + execution.getPublicCacheKey();
+                Integer count = cachedResponsesMap.get(representation);
+                if (count == null) {
+                    cachedResponsesMap.put(representation, 0);
+                } else {
+                    cachedResponsesMap.put(representation, count + 1);
+                }
+            }
+        }
+
+
+        for (HystrixInvokableInfo<?> execution: request.getExecutions()) {
+            if (execution.getPublicCacheKey() != null) {
+                String representation = execution.getCommandKey().hashCode() + "/\\" + execution.getPublicCacheKey();
+                if (!execution.isResponseFromCache()) {
+                    convertExecutionToJson(json, execution, cachedResponsesMap.get(representation), execution.getPublicCacheKey());
+                } //otherwise skip the output
+            } else {
+                convertExecutionToJson(json, execution, 0, "");
+            }
         }
         json.writeEndObject();
     }
 
-    private static void convertExecutionToJson(JsonGenerator json, HystrixInvokableInfo<?> execution) throws IOException {
+    private static void convertExecutionToJson(JsonGenerator json, HystrixInvokableInfo<?> execution, int timesCached, String cacheKey) throws IOException {
         json.writeObjectFieldStart(execution.getCommandKey().name());
         json.writeNumberField("latency", execution.getExecutionTimeInMilliseconds());
         json.writeArrayFieldStart("events");
+
         for (HystrixEventType eventType: execution.getExecutionEvents()) {
             switch (eventType) {
                 case EMIT:
@@ -91,6 +116,10 @@ public class HystrixRequestEventsJsonStream {
             }
         }
         json.writeEndArray();
+        if (timesCached > 0) {
+            json.writeNumberField("cached", timesCached);
+            json.writeStringField("cacheKey", cacheKey);
+        }
         json.writeEndObject();
     }
 }
