@@ -38,6 +38,7 @@ public class ExecutionResult {
     private final int userThreadLatency; //time elapsed between caller thread submitting request and response being visible to it
     private final boolean executionOccurred;
     private final boolean isExecutedInThread;
+    private final HystrixCollapserKey collapserKey;
 
     private static final HystrixEventType[] ALL_EVENT_TYPES = HystrixEventType.values();
     private static final int NUM_EVENT_TYPES = ALL_EVENT_TYPES.length;
@@ -48,6 +49,7 @@ public class ExecutionResult {
             EXCEPTION_PRODUCING_EVENTS.set(eventType.ordinal());
         }
     }
+
 
     public static class EventCounts {
         private final BitSet events;
@@ -149,7 +151,7 @@ public class ExecutionResult {
 
     private ExecutionResult(EventCounts eventCounts, long startTimestamp, int executionLatency,
                             int userThreadLatency, Exception failedExecutionException, Exception executionException,
-                            boolean executionOccurred, boolean isExecutedInThread) {
+                            boolean executionOccurred, boolean isExecutedInThread, HystrixCollapserKey collapserKey) {
         this.eventCounts = eventCounts;
         this.startTimestamp = startTimestamp;
         this.executionLatency = executionLatency;
@@ -158,6 +160,7 @@ public class ExecutionResult {
         this.executionException = executionException;
         this.executionOccurred = executionOccurred;
         this.isExecutedInThread = isExecutedInThread;
+        this.collapserKey = collapserKey;
     }
 
     // we can return a static version since it's immutable
@@ -173,7 +176,7 @@ public class ExecutionResult {
                 didExecutionOccur = true;
             }
         }
-        return new ExecutionResult(new EventCounts(eventTypes), -1L, -1, -1, null, null, didExecutionOccur, false);
+        return new ExecutionResult(new EventCounts(eventTypes), -1L, -1, -1, null, null, didExecutionOccur, false, null);
     }
 
     private static boolean didExecutionOccur(HystrixEventType eventType) {
@@ -188,39 +191,39 @@ public class ExecutionResult {
 
     public ExecutionResult setExecutionLatency(int executionLatency) {
         return new ExecutionResult(eventCounts, startTimestamp, executionLatency, userThreadLatency,
-                failedExecutionException, executionException, executionOccurred, isExecutedInThread);
+                failedExecutionException, executionException, executionOccurred, isExecutedInThread, collapserKey);
     }
 
     public ExecutionResult setException(Exception e) {
         return new ExecutionResult(eventCounts, startTimestamp, executionLatency, userThreadLatency, e,
-                executionException, executionOccurred, isExecutedInThread);
+                executionException, executionOccurred, isExecutedInThread, collapserKey);
     }
 
     public ExecutionResult setExecutionException(Exception executionException) {
         return new ExecutionResult(eventCounts, startTimestamp, executionLatency, userThreadLatency,
-                failedExecutionException, executionException, executionOccurred, isExecutedInThread);
+                failedExecutionException, executionException, executionOccurred, isExecutedInThread, collapserKey);
     }
 
     public ExecutionResult setInvocationStartTime(long startTimestamp) {
         return new ExecutionResult(eventCounts, startTimestamp, executionLatency, userThreadLatency,
-                failedExecutionException, executionException, executionOccurred, isExecutedInThread);
+                failedExecutionException, executionException, executionOccurred, isExecutedInThread, collapserKey);
     }
 
     public ExecutionResult setExecutedInThread() {
         return new ExecutionResult(eventCounts, startTimestamp, executionLatency, userThreadLatency,
-                failedExecutionException, executionException, executionOccurred, true);
+                failedExecutionException, executionException, executionOccurred, true, collapserKey);
     }
 
-    public ExecutionResult markCollapsed(int sizeOfBatch) {
+    public ExecutionResult markCollapsed(HystrixCollapserKey collapserKey, int sizeOfBatch) {
         return new ExecutionResult(eventCounts.plus(HystrixEventType.COLLAPSED, sizeOfBatch), startTimestamp, executionLatency, userThreadLatency,
-                failedExecutionException, executionException, executionOccurred, isExecutedInThread);
+                failedExecutionException, executionException, executionOccurred, isExecutedInThread, collapserKey);
     }
 
     public ExecutionResult markUserThreadCompletion(long userThreadLatency) {
         if (startTimestamp > 0 && !isResponseRejected()) {
             /* execution time (must occur before terminal state otherwise a race condition can occur if requested by client) */
             return new ExecutionResult(eventCounts, startTimestamp, executionLatency, (int) userThreadLatency,
-                    failedExecutionException, executionException, executionOccurred, isExecutedInThread);
+                    failedExecutionException, executionException, executionOccurred, isExecutedInThread, collapserKey);
         } else {
             return this;
         }
@@ -235,14 +238,14 @@ public class ExecutionResult {
     public ExecutionResult addEvent(HystrixEventType eventType) {
         return new ExecutionResult(eventCounts.plus(eventType), startTimestamp, executionLatency,
                 userThreadLatency, failedExecutionException, executionException,
-                executionOccurred ? executionOccurred : didExecutionOccur(eventType), isExecutedInThread);
+                executionOccurred ? executionOccurred : didExecutionOccur(eventType), isExecutedInThread, collapserKey);
     }
 
     public ExecutionResult addEvent(int executionLatency, HystrixEventType eventType) {
         if (startTimestamp >= 0 && !isResponseRejected()) {
             return new ExecutionResult(eventCounts.plus(eventType), startTimestamp, executionLatency,
                     userThreadLatency, failedExecutionException, executionException,
-                    executionOccurred ? executionOccurred : didExecutionOccur(eventType), isExecutedInThread);
+                    executionOccurred ? executionOccurred : didExecutionOccur(eventType), isExecutedInThread, collapserKey);
         } else {
             return addEvent(eventType);
         }
@@ -274,6 +277,10 @@ public class ExecutionResult {
 
     public Exception getExecutionException() {
         return executionException;
+    }
+
+    public HystrixCollapserKey getCollapserKey() {
+        return collapserKey;
     }
 
     public boolean isResponseSemaphoreRejected() {

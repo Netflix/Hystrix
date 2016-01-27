@@ -74,7 +74,6 @@ public class HystrixRequestEventsJsonStream {
             }
         }
 
-
         for (HystrixInvokableInfo<?> execution: request.getExecutions()) {
             if (execution.getPublicCacheKey() != null) {
                 String representation = execution.getCommandKey().hashCode() + "/\\" + execution.getPublicCacheKey();
@@ -107,7 +106,9 @@ public class HystrixRequestEventsJsonStream {
                     break;
                 case COLLAPSED:
                     json.writeStartObject();
-                    json.writeNumberField(eventType.name(), execution.getNumberCollapsed());
+                    json.writeObjectFieldStart(eventType.name());
+                    json.writeNumberField(execution.getOriginatingCollapserKey().name(), execution.getNumberCollapsed());
+                    json.writeEndObject();
                     json.writeEndObject();
                     break;
                 default:
@@ -117,8 +118,7 @@ public class HystrixRequestEventsJsonStream {
         }
         json.writeEndArray();
         if (timesCached > 0) {
-            json.writeNumberField("cached", timesCached);
-            json.writeStringField("cacheKey", cacheKey);
+            json.writeNumberField(cacheKey, timesCached);
         }
         json.writeEndObject();
     }

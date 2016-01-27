@@ -275,9 +275,9 @@ import java.util.concurrent.atomic.AtomicReference;
      * 
      * @param sizeOfBatch number of commands in request batch
      */
-    /* package */void markAsCollapsedCommand(int sizeOfBatch) {
+    /* package */void markAsCollapsedCommand(HystrixCollapserKey collapserKey, int sizeOfBatch) {
         eventNotifier.markEvent(HystrixEventType.COLLAPSED, this.commandKey);
-        executionResult = executionResult.markCollapsed(sizeOfBatch);
+        executionResult = executionResult.markCollapsed(collapserKey, sizeOfBatch);
     }
 
     /**
@@ -1939,6 +1939,11 @@ import java.util.concurrent.atomic.AtomicReference;
     @Override
     public int getNumberCollapsed() {
         return executionResult.getEventCounts().getCount(HystrixEventType.COLLAPSED);
+    }
+
+    @Override
+    public HystrixCollapserKey getOriginatingCollapserKey() {
+        return executionResult.getCollapserKey();
     }
 
     /**

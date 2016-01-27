@@ -15,23 +15,6 @@
  */
 package com.netflix.hystrix;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Future;
-
-import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherFactory;
-import com.netflix.hystrix.strategy.properties.HystrixPropertiesFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import rx.Observable;
-import rx.Scheduler;
-import rx.functions.Action0;
-import rx.functions.Action1;
-import rx.schedulers.Schedulers;
-import rx.subjects.ReplaySubject;
-
 import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
 import com.netflix.hystrix.collapser.CollapserTimer;
 import com.netflix.hystrix.collapser.HystrixCollapserBridge;
@@ -41,7 +24,21 @@ import com.netflix.hystrix.collapser.RequestCollapserFactory;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
 import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
+import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherFactory;
+import com.netflix.hystrix.strategy.properties.HystrixPropertiesFactory;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import rx.Observable;
+import rx.Scheduler;
+import rx.functions.Action1;
+import rx.schedulers.Schedulers;
+import rx.subjects.ReplaySubject;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Future;
 
 /**
  * Collapse multiple requests into a single {@link HystrixCommand} execution based on a time window and optionally a max batch size.
@@ -156,7 +153,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
             public Observable<BatchReturnType> createObservableCommand(Collection<CollapsedRequest<ResponseType, RequestArgumentType>> requests) {
                 final HystrixCommand<BatchReturnType> command = self.createCommand(requests);
 
-                command.markAsCollapsedCommand(requests.size());
+                command.markAsCollapsedCommand(this.getCollapserKey(), requests.size());
                 self.metrics.markBatch(requests.size());
 
                 return command.toObservable();
