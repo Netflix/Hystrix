@@ -201,19 +201,6 @@ final class JsonMappers {
         json.writeNumberField("99.5", commandMetrics.getExecutionTimePercentile(99.5));
         json.writeNumberField("100", commandMetrics.getExecutionTimePercentile(100));
         json.writeEndObject();
-        //
-        json.writeNumberField("latencyTotal_mean", commandMetrics.getTotalTimeMean());
-        json.writeObjectFieldStart("latencyTotal");
-        json.writeNumberField("0", commandMetrics.getTotalTimePercentile(0));
-        json.writeNumberField("25", commandMetrics.getTotalTimePercentile(25));
-        json.writeNumberField("50", commandMetrics.getTotalTimePercentile(50));
-        json.writeNumberField("75", commandMetrics.getTotalTimePercentile(75));
-        json.writeNumberField("90", commandMetrics.getTotalTimePercentile(90));
-        json.writeNumberField("95", commandMetrics.getTotalTimePercentile(95));
-        json.writeNumberField("99", commandMetrics.getTotalTimePercentile(99));
-        json.writeNumberField("99.5", commandMetrics.getTotalTimePercentile(99.5));
-        json.writeNumberField("100", commandMetrics.getTotalTimePercentile(100));
-        json.writeEndObject();
 
         // property values for reporting what is actually seen by the command rather than what was set somewhere
         HystrixCommandProperties commandProperties = commandMetrics.getProperties();

@@ -309,7 +309,9 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      * @param percentile
      *            Percentile such as 50, 99, or 99.5.
      * @return int time in milliseconds
+     * @deprecated since 1.5.0, this metrics is practically identical to {@link #getExecutionTimePercentile(double)}/
      */
+    @Deprecated
     public int getTotalTimePercentile(double percentile) {
         return rollingCommandUserLatencyDistributionStream.getLatestPercentile(percentile);
     }
@@ -320,7 +322,9 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      * This uses the same backing data as {@link #getTotalTimePercentile};
      * 
      * @return int time in milliseconds
+     * @deprecated since 1.5.0, this metrics is practically identical to {@link #getExecutionTimeMean()}/
      */
+    @Deprecated
     public int getTotalTimeMean() {
         return rollingCommandUserLatencyDistributionStream.getLatestMean();
     }

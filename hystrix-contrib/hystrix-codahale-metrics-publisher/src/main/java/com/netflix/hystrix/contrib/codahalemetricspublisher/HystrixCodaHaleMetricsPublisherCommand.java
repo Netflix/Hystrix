@@ -339,55 +339,6 @@ public class HystrixCodaHaleMetricsPublisherCommand implements HystrixMetricsPub
             }
         });
 
-        metricRegistry.register(createMetricName("latencyTotal_mean"), new Gauge<Integer>() {
-            @Override
-            public Integer getValue() {
-                return metrics.getTotalTimeMean();
-            }
-        });
-        metricRegistry.register(createMetricName("latencyTotal_percentile_5"), new Gauge<Integer>() {
-            @Override
-            public Integer getValue() {
-                return metrics.getTotalTimePercentile(5);
-            }
-        });
-        metricRegistry.register(createMetricName("latencyTotal_percentile_25"), new Gauge<Integer>() {
-            @Override
-            public Integer getValue() {
-                return metrics.getTotalTimePercentile(25);
-            }
-        });
-        metricRegistry.register(createMetricName("latencyTotal_percentile_50"), new Gauge<Integer>() {
-            @Override
-            public Integer getValue() {
-                return metrics.getTotalTimePercentile(50);
-            }
-        });
-        metricRegistry.register(createMetricName("latencyTotal_percentile_75"), new Gauge<Integer>() {
-            @Override
-            public Integer getValue() {
-                return metrics.getTotalTimePercentile(75);
-            }
-        });
-        metricRegistry.register(createMetricName("latencyTotal_percentile_90"), new Gauge<Integer>() {
-            @Override
-            public Integer getValue() {
-                return metrics.getTotalTimePercentile(90);
-            }
-        });
-        metricRegistry.register(createMetricName("latencyTotal_percentile_99"), new Gauge<Integer>() {
-            @Override
-            public Integer getValue() {
-                return metrics.getTotalTimePercentile(99);
-            }
-        });
-        metricRegistry.register(createMetricName("latencyTotal_percentile_995"), new Gauge<Integer>() {
-            @Override
-            public Integer getValue() {
-                return metrics.getTotalTimePercentile(99.5);
-            }
-        });
-
         // group
         metricRegistry.register(createMetricName("commandGroup"), new Gauge<String>() {
             @Override
