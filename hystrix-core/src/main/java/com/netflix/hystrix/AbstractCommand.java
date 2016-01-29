@@ -1965,6 +1965,11 @@ import java.util.concurrent.atomic.AtomicReference;
         return executionResult.getCommandRunStartTimeInNanos();
     }
 
+    @Override
+    public ExecutionResult.EventCounts getEventCounts() {
+        return executionResult.getEventCounts();
+    }
+
     protected Exception getExceptionFromThrowable(Throwable t) {
         Exception e;
         if (t instanceof Exception) {

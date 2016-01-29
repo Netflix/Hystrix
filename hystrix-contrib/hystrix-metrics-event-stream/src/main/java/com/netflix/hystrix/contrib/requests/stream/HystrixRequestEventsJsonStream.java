@@ -17,6 +17,9 @@ package com.netflix.hystrix.contrib.requests.stream;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.netflix.hystrix.ExecutionResult;
+import com.netflix.hystrix.HystrixCollapserKey;
+import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.HystrixInvokableInfo;
 import com.netflix.hystrix.metric.HystrixRequestEvents;
@@ -25,8 +28,11 @@ import rx.Observable;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class HystrixRequestEventsJsonStream {
     private static final JsonFactory jsonFactory = new JsonFactory();
@@ -57,69 +63,186 @@ public class HystrixRequestEventsJsonStream {
         return jsonString.getBuffer().toString();
     }
 
-    private static void writeRequestAsJson(JsonGenerator json, HystrixRequestEvents request) throws IOException {
-        json.writeStartObject();
 
-        //for cached responses, map from representation of commandKey:cacheKey to number of times it appears
-        HashMap<String, Integer> cachedResponsesMap = new HashMap<String, Integer>();
+    private static void writeRequestAsJson(JsonGenerator json, HystrixRequestEvents request) throws IOException {
+        json.writeStartArray();
+        Map<CommandAndCacheKey, Integer> cachingDetector = new HashMap<CommandAndCacheKey, Integer>();
+        List<HystrixInvokableInfo<?>> nonCachedExecutions = new ArrayList<HystrixInvokableInfo<?>>(request.getExecutions().size());
         for (HystrixInvokableInfo<?> execution: request.getExecutions()) {
             if (execution.getPublicCacheKey() != null) {
-                String representation = execution.getCommandKey().hashCode() + "/\\" + execution.getPublicCacheKey();
-                Integer count = cachedResponsesMap.get(representation);
-                if (count == null) {
-                    cachedResponsesMap.put(representation, 0);
+                //eligible for caching - might be the initial, or might be from cache
+                CommandAndCacheKey key = new CommandAndCacheKey(execution.getCommandKey().name(), execution.getPublicCacheKey());
+                Integer count = cachingDetector.get(key);
+                if (count != null) {
+                    //key already seen
+                    cachingDetector.put(key, count + 1);
                 } else {
-                    cachedResponsesMap.put(representation, count + 1);
+                    //key not seen yet
+                    cachingDetector.put(key, 0);
                 }
+            }
+            if (!execution.isResponseFromCache()) {
+                nonCachedExecutions.add(execution);
             }
         }
 
-        for (HystrixInvokableInfo<?> execution: request.getExecutions()) {
+        Map<ExecutionSignature, List<Integer>> commandDeduper = new HashMap<ExecutionSignature, List<Integer>>();
+        for (HystrixInvokableInfo<?> execution: nonCachedExecutions) {
+            int cachedCount = 0;
+            String cacheKey = null;
             if (execution.getPublicCacheKey() != null) {
-                String representation = execution.getCommandKey().hashCode() + "/\\" + execution.getPublicCacheKey();
-                if (!execution.isResponseFromCache()) {
-                    convertExecutionToJson(json, execution, cachedResponsesMap.get(representation), execution.getPublicCacheKey());
-                } //otherwise skip the output
-            } else {
-                convertExecutionToJson(json, execution, 0, "");
+                cacheKey = execution.getPublicCacheKey();
+                CommandAndCacheKey key = new CommandAndCacheKey(execution.getCommandKey().name(), cacheKey);
+                cachedCount = cachingDetector.get(key);
             }
+            ExecutionSignature signature;
+            HystrixCollapserKey collapserKey = execution.getOriginatingCollapserKey();
+            int collapserBatchCount = execution.getNumberCollapsed();
+            if (cachedCount > 0) {
+                //this has a RESPONSE_FROM_CACHE and needs to get split off
+                signature = ExecutionSignature.from(execution, cacheKey, cachedCount);
+            } else {
+                //nothing cached from this, can collapse further
+                signature = ExecutionSignature.from(execution);
+            }
+            List<Integer> currentLatencyList = commandDeduper.get(signature);
+            if (currentLatencyList != null) {
+                currentLatencyList.add(execution.getExecutionTimeInMilliseconds());
+            } else {
+                List<Integer> newLatencyList = new ArrayList<Integer>();
+                newLatencyList.add(execution.getExecutionTimeInMilliseconds());
+                commandDeduper.put(signature, newLatencyList);
+            }
+        }
+
+        for (Map.Entry<ExecutionSignature, List<Integer>> entry: commandDeduper.entrySet()) {
+            ExecutionSignature executionSignature = entry.getKey();
+            List<Integer> latencies = entry.getValue();
+            convertExecutionToJson(json, executionSignature, latencies);
+        }
+
+        json.writeEndArray();
+    }
+
+    private static void convertExecutionToJson(JsonGenerator json, ExecutionSignature executionSignature, List<Integer> latencies) throws IOException {
+        json.writeStartObject();
+        json.writeStringField("name", executionSignature.commandName);
+        json.writeArrayFieldStart("events");
+        ExecutionResult.EventCounts eventCounts = executionSignature.eventCounts;
+        for (HystrixEventType eventType: HystrixEventType.values()) {
+            if (!eventType.equals(HystrixEventType.COLLAPSED)) {
+                if (eventCounts.contains(eventType)) {
+                    int eventCount = eventCounts.getCount(eventType);
+                    if (eventCount > 1) {
+                        json.writeStartObject();
+                        json.writeStringField("name", eventType.name());
+                        json.writeNumberField("count", eventCount);
+                        json.writeEndObject();
+                    } else {
+                        json.writeString(eventType.name());
+                    }
+                }
+            }
+        }
+        json.writeEndArray();
+        json.writeArrayFieldStart("latencies");
+        for (int latency: latencies) {
+            json.writeNumber(latency);
+        }
+        json.writeEndArray();
+        if (executionSignature.cachedCount > 0) {
+            json.writeNumberField("cached", executionSignature.cachedCount);
+        }
+        if (executionSignature.eventCounts.contains(HystrixEventType.COLLAPSED)) {
+            json.writeObjectFieldStart("collapsed");
+            json.writeStringField("name", executionSignature.collapserKey.name());
+            json.writeNumberField("count", executionSignature.collapserBatchSize);
+            json.writeEndObject();
         }
         json.writeEndObject();
     }
 
-    private static void convertExecutionToJson(JsonGenerator json, HystrixInvokableInfo<?> execution, int timesCached, String cacheKey) throws IOException {
-        json.writeObjectFieldStart(execution.getCommandKey().name());
-        json.writeNumberField("latency", execution.getExecutionTimeInMilliseconds());
-        json.writeArrayFieldStart("events");
+    private static class CommandAndCacheKey {
+        private final String commandName;
+        private final String cacheKey;
 
-        for (HystrixEventType eventType: execution.getExecutionEvents()) {
-            switch (eventType) {
-                case EMIT:
-                    json.writeStartObject();
-                    json.writeNumberField(eventType.name(), execution.getNumberEmissions());
-                    json.writeEndObject();
-                    break;
-                case FALLBACK_EMIT:
-                    json.writeStartObject();
-                    json.writeNumberField(eventType.name(), execution.getNumberFallbackEmissions());
-                    json.writeEndObject();
-                    break;
-                case COLLAPSED:
-                    json.writeStartObject();
-                    json.writeObjectFieldStart(eventType.name());
-                    json.writeNumberField(execution.getOriginatingCollapserKey().name(), execution.getNumberCollapsed());
-                    json.writeEndObject();
-                    json.writeEndObject();
-                    break;
-                default:
-                    json.writeString(eventType.name());
-                    break;
-            }
+        public CommandAndCacheKey(String commandName, String cacheKey) {
+            this.commandName = commandName;
+            this.cacheKey = cacheKey;
         }
-        json.writeEndArray();
-        if (timesCached > 0) {
-            json.writeNumberField(cacheKey, timesCached);
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            CommandAndCacheKey that = (CommandAndCacheKey) o;
+
+            if (!commandName.equals(that.commandName)) return false;
+            return cacheKey.equals(that.cacheKey);
+
         }
-        json.writeEndObject();
+
+        @Override
+        public int hashCode() {
+            int result = commandName.hashCode();
+            result = 31 * result + cacheKey.hashCode();
+            return result;
+        }
+
+        @Override
+        public String toString() {
+            return "CommandAndCacheKey{" +
+                    "commandName='" + commandName + '\'' +
+                    ", cacheKey='" + cacheKey + '\'' +
+                    '}';
+        }
+    }
+
+    private static class ExecutionSignature {
+        private final String commandName;
+        private final ExecutionResult.EventCounts eventCounts;
+        private final String cacheKey;
+        private final int cachedCount;
+        private final HystrixCollapserKey collapserKey;
+        private final int collapserBatchSize;
+
+        private ExecutionSignature(HystrixCommandKey commandKey, ExecutionResult.EventCounts eventCounts, String cacheKey, int cachedCount, HystrixCollapserKey collapserKey, int collapserBatchSize) {
+            this.commandName = commandKey.name();
+            this.eventCounts = eventCounts;
+            this.cacheKey = cacheKey;
+            this.cachedCount = cachedCount;
+            this.collapserKey = collapserKey;
+            this.collapserBatchSize = collapserBatchSize;
+        }
+
+        public static ExecutionSignature from(HystrixInvokableInfo<?> execution) {
+            return new ExecutionSignature(execution.getCommandKey(), execution.getEventCounts(), null, 0, execution.getOriginatingCollapserKey(), execution.getNumberCollapsed());
+        }
+
+        public static ExecutionSignature from(HystrixInvokableInfo<?> execution, String cacheKey, int cachedCount) {
+            return new ExecutionSignature(execution.getCommandKey(), execution.getEventCounts(), cacheKey, cachedCount, execution.getOriginatingCollapserKey(), execution.getNumberCollapsed());
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            ExecutionSignature that = (ExecutionSignature) o;
+
+            if (!commandName.equals(that.commandName)) return false;
+            if (!eventCounts.equals(that.eventCounts)) return false;
+            return !(cacheKey != null ? !cacheKey.equals(that.cacheKey) : that.cacheKey != null);
+
+        }
+
+        @Override
+        public int hashCode() {
+            int result = commandName.hashCode();
+            result = 31 * result + eventCounts.hashCode();
+            result = 31 * result + (cacheKey != null ? cacheKey.hashCode() : 0);
+            return result;
+        }
     }
 }

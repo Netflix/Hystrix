@@ -70,4 +70,6 @@ public interface HystrixInvokableInfo<R> {
     int getExecutionTimeInMilliseconds();
 
     long getCommandRunStartTimeInNanos();
+
+    ExecutionResult.EventCounts getEventCounts();
 }

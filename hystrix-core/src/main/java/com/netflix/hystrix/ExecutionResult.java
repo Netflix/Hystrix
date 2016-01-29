@@ -50,7 +50,6 @@ public class ExecutionResult {
         }
     }
 
-
     public static class EventCounts {
         private final BitSet events;
         private final int numEmissions;
@@ -146,6 +145,39 @@ public class ExecutionResult {
                 case COLLAPSED: return numCollapsed;
                 default: return contains(eventType) ? 1 : 0;
             }
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            EventCounts that = (EventCounts) o;
+
+            if (numEmissions != that.numEmissions) return false;
+            if (numFallbackEmissions != that.numFallbackEmissions) return false;
+            if (numCollapsed != that.numCollapsed) return false;
+            return events.equals(that.events);
+
+        }
+
+        @Override
+        public int hashCode() {
+            int result = events.hashCode();
+            result = 31 * result + numEmissions;
+            result = 31 * result + numFallbackEmissions;
+            result = 31 * result + numCollapsed;
+            return result;
+        }
+
+        @Override
+        public String toString() {
+            return "EventCounts{" +
+                    "events=" + events +
+                    ", numEmissions=" + numEmissions +
+                    ", numFallbackEmissions=" + numFallbackEmissions +
+                    ", numCollapsed=" + numCollapsed +
+                    '}';
         }
     }
 
@@ -311,5 +343,20 @@ public class ExecutionResult {
 
     public boolean executionOccurred() {
         return executionOccurred;
+    }
+
+    @Override
+    public String toString() {
+        return "ExecutionResult{" +
+                "eventCounts=" + eventCounts +
+                ", failedExecutionException=" + failedExecutionException +
+                ", executionException=" + executionException +
+                ", startTimestamp=" + startTimestamp +
+                ", executionLatency=" + executionLatency +
+                ", userThreadLatency=" + userThreadLatency +
+                ", executionOccurred=" + executionOccurred +
+                ", isExecutedInThread=" + isExecutedInThread +
+                ", collapserKey=" + collapserKey +
+                '}';
     }
 }
