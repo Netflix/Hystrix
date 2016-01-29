@@ -16,7 +16,6 @@
 package com.netflix.hystrix.metric;
 
 import com.netflix.hystrix.HystrixInvokableInfo;
-import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import rx.Observable;
 import rx.subjects.PublishSubject;
 import rx.subjects.Subject;
@@ -24,6 +23,7 @@ import rx.subjects.Subject;
 import java.util.Collection;
 
 /**
+ * Stream of requests, each of which contains a series of command executions
  */
 public class HystrixRequestEventsStream {
     private final Subject<HystrixRequestEvents, HystrixRequestEvents> writeOnlyRequestEventsSubject;
@@ -31,7 +31,7 @@ public class HystrixRequestEventsStream {
 
     /* package */ HystrixRequestEventsStream() {
         writeOnlyRequestEventsSubject = PublishSubject.create();
-        readOnlyRequestEvents = writeOnlyRequestEventsSubject.share();
+        readOnlyRequestEvents = writeOnlyRequestEventsSubject.onBackpressureBuffer(1024);
     }
 
     private static final HystrixRequestEventsStream INSTANCE = new HystrixRequestEventsStream();
@@ -44,8 +44,8 @@ public class HystrixRequestEventsStream {
         writeOnlyRequestEventsSubject.onCompleted();
     }
 
-    public void write(HystrixRequestContext requestContext, Collection<HystrixInvokableInfo<?>> executions) {
-        HystrixRequestEvents requestEvents = new HystrixRequestEvents(requestContext, executions);
+    public void write(Collection<HystrixInvokableInfo<?>> executions) {
+        HystrixRequestEvents requestEvents = new HystrixRequestEvents(executions);
         writeOnlyRequestEventsSubject.onNext(requestEvents);
     }
 

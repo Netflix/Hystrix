@@ -16,22 +16,15 @@
 package com.netflix.hystrix.metric;
 
 import com.netflix.hystrix.HystrixInvokableInfo;
-import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 
 import java.util.Collection;
 
 public class HystrixRequestEvents {
 
-    private final HystrixRequestContext requestContext;
     private final Collection<HystrixInvokableInfo<?>> executions;
 
-    public HystrixRequestEvents(HystrixRequestContext requestContext, Collection<HystrixInvokableInfo<?>> executions) {
-        this.requestContext = requestContext;
+    public HystrixRequestEvents(Collection<HystrixInvokableInfo<?>> executions) {
         this.executions = executions;
-    }
-
-    public HystrixRequestContext getRequestContext() {
-        return requestContext;
     }
 
     public Collection<HystrixInvokableInfo<?>> getExecutions() {

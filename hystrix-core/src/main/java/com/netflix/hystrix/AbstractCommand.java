@@ -275,9 +275,9 @@ import java.util.concurrent.atomic.AtomicReference;
      * 
      * @param sizeOfBatch number of commands in request batch
      */
-    /* package */void markAsCollapsedCommand(int sizeOfBatch) {
+    /* package */void markAsCollapsedCommand(HystrixCollapserKey collapserKey, int sizeOfBatch) {
         eventNotifier.markEvent(HystrixEventType.COLLAPSED, this.commandKey);
-        executionResult = executionResult.markCollapsed(sizeOfBatch);
+        executionResult = executionResult.markCollapsed(collapserKey, sizeOfBatch);
     }
 
     /**
@@ -1735,6 +1735,10 @@ import java.util.concurrent.atomic.AtomicReference;
         return null;
     }
 
+    public String getPublicCacheKey() {
+        return getCacheKey();
+    }
+
     protected boolean isRequestCachingEnabled() {
         return properties.requestCacheEnabled().get() && getCacheKey() != null;
     }
@@ -1937,6 +1941,11 @@ import java.util.concurrent.atomic.AtomicReference;
         return executionResult.getEventCounts().getCount(HystrixEventType.COLLAPSED);
     }
 
+    @Override
+    public HystrixCollapserKey getOriginatingCollapserKey() {
+        return executionResult.getCollapserKey();
+    }
+
     /**
      * The execution time of this command instance in milliseconds, or -1 if not executed.
      * 
@@ -1954,6 +1963,11 @@ import java.util.concurrent.atomic.AtomicReference;
      */
     public long getCommandRunStartTimeInNanos() {
         return executionResult.getCommandRunStartTimeInNanos();
+    }
+
+    @Override
+    public ExecutionResult.EventCounts getEventCounts() {
+        return executionResult.getEventCounts();
     }
 
     protected Exception getExceptionFromThrowable(Throwable t) {

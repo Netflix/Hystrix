@@ -25,6 +25,10 @@ public interface HystrixInvokableInfo<R> {
 
     HystrixThreadPoolKey getThreadPoolKey();
 
+    String getPublicCacheKey(); //have to use public in the name, as there's already a protected {@link AbstractCommand#getCacheKey()} method.
+
+    HystrixCollapserKey getOriginatingCollapserKey();
+
     HystrixCommandMetrics getMetrics();
 
     HystrixCommandProperties getProperties();
@@ -66,4 +70,6 @@ public interface HystrixInvokableInfo<R> {
     int getExecutionTimeInMilliseconds();
 
     long getCommandRunStartTimeInNanos();
+
+    ExecutionResult.EventCounts getEventCounts();
 }
