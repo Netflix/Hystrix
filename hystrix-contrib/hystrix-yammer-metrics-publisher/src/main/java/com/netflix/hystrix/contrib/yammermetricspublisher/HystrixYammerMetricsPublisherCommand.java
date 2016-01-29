@@ -280,16 +280,6 @@ public class HystrixYammerMetricsPublisherCommand implements HystrixMetricsPubli
         createExecutionLatencyPercentileGauge("latencyExecute_percentile_99", 99);
         createExecutionLatencyPercentileGauge("latencyExecute_percentile_995", 99.5);
 
-        createTotalLatencyMeanGauge("latencyTotal_mean");
-
-        createTotalLatencyPercentileGauge("latencyTotal_percentile_5", 5);
-        createTotalLatencyPercentileGauge("latencyTotal_percentile_25", 25);
-        createTotalLatencyPercentileGauge("latencyTotal_percentile_50", 50);
-        createTotalLatencyPercentileGauge("latencyTotal_percentile_75", 75);
-        createTotalLatencyPercentileGauge("latencyTotal_percentile_90", 90);
-        createTotalLatencyPercentileGauge("latencyTotal_percentile_99", 99);
-        createTotalLatencyPercentileGauge("latencyTotal_percentile_995", 99.5);
-
         // group
         metricsRegistry.newGauge(createMetricName("commandGroup"), new Gauge<String>() {
             @Override

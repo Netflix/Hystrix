@@ -251,6 +251,13 @@ public class ExecutionResult {
                 failedExecutionException, executionException, executionOccurred, isExecutedInThread, collapserKey);
     }
 
+    /**
+     * Sets the user-observed latency on this result
+     * @param userThreadLatency user-visible latency
+     * @return updated {@link ExecutionResult}
+     * @deprecated will eventually go away with no replacement, as execution time is now practically identical to this value
+     */
+    @Deprecated
     public ExecutionResult markUserThreadCompletion(long userThreadLatency) {
         if (startTimestamp > 0 && !isResponseRejected()) {
             /* execution time (must occur before terminal state otherwise a race condition can occur if requested by client) */
