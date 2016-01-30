@@ -38,8 +38,8 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 
-public class RollingThreadPoolConcurrencyStreamTest extends CommandStreamTest {
-    RollingThreadPoolConcurrencyStream stream;
+public class RollingThreadPoolMaxConcurrencyStreamTest extends CommandStreamTest {
+    RollingThreadPoolMaxConcurrencyStream stream;
     HystrixRequestContext context;
     ExecutorService threadPool;
 
@@ -81,7 +81,7 @@ public class RollingThreadPoolConcurrencyStreamTest extends CommandStreamTest {
         HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("ThreadPool-Concurrency-A");
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("ThreadPool-Concurrency-A");
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("RollingConcurrency-A");
-        stream = RollingThreadPoolConcurrencyStream.getInstance(threadPoolKey, 10, 100);
+        stream = RollingThreadPoolMaxConcurrencyStream.getInstance(threadPoolKey, 10, 100);
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
@@ -102,7 +102,7 @@ public class RollingThreadPoolConcurrencyStreamTest extends CommandStreamTest {
         HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("ThreadPool-Concurrency-B");
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("ThreadPool-Concurrency-B");
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("RollingConcurrency-B");
-        stream = RollingThreadPoolConcurrencyStream.getInstance(threadPoolKey, 10, 100);
+        stream = RollingThreadPoolMaxConcurrencyStream.getInstance(threadPoolKey, 10, 100);
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
@@ -124,7 +124,7 @@ public class RollingThreadPoolConcurrencyStreamTest extends CommandStreamTest {
         HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("ThreadPool-Concurrency-C");
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("ThreadPool-Concurrency-C");
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("RollingConcurrency-C");
-        stream = RollingThreadPoolConcurrencyStream.getInstance(threadPoolKey, 10, 100);
+        stream = RollingThreadPoolMaxConcurrencyStream.getInstance(threadPoolKey, 10, 100);
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
@@ -153,7 +153,7 @@ public class RollingThreadPoolConcurrencyStreamTest extends CommandStreamTest {
         HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("ThreadPool-Concurrency-D");
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("ThreadPool-Concurrency-D");
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("RollingConcurrency-D");
-        stream = RollingThreadPoolConcurrencyStream.getInstance(threadPoolKey, 10, 100);
+        stream = RollingThreadPoolMaxConcurrencyStream.getInstance(threadPoolKey, 10, 100);
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
@@ -188,7 +188,7 @@ public class RollingThreadPoolConcurrencyStreamTest extends CommandStreamTest {
         HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("ThreadPool-Concurrency-E");
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("ThreadPool-Concurrency-E");
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("RollingConcurrency-E");
-        stream = RollingThreadPoolConcurrencyStream.getInstance(threadPoolKey, 10, 100);
+        stream = RollingThreadPoolMaxConcurrencyStream.getInstance(threadPoolKey, 10, 100);
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
@@ -229,7 +229,7 @@ public class RollingThreadPoolConcurrencyStreamTest extends CommandStreamTest {
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("ThreadPool-Concurrency-X");
         HystrixCommandKey keyX = HystrixCommandKey.Factory.asKey("RollingConcurrency-X");
         HystrixCommandKey keyY = HystrixCommandKey.Factory.asKey("RollingConcurrency-Y");
-        stream = RollingThreadPoolConcurrencyStream.getInstance(threadPoolKey, 10, 100);
+        stream = RollingThreadPoolMaxConcurrencyStream.getInstance(threadPoolKey, 10, 100);
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
@@ -267,7 +267,7 @@ public class RollingThreadPoolConcurrencyStreamTest extends CommandStreamTest {
         HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("ThreadPool-Concurrency-F");
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("ThreadPool-Concurrency-F");
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("RollingConcurrency-F");
-        stream = RollingThreadPoolConcurrencyStream.getInstance(threadPoolKey, 10, 100);
+        stream = RollingThreadPoolMaxConcurrencyStream.getInstance(threadPoolKey, 10, 100);
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
@@ -295,7 +295,7 @@ public class RollingThreadPoolConcurrencyStreamTest extends CommandStreamTest {
         HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("ThreadPool-Concurrency-G");
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("ThreadPool-Concurrency-G");
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("RollingConcurrency-G");
-        stream = RollingThreadPoolConcurrencyStream.getInstance(threadPoolKey, 10, 100);
+        stream = RollingThreadPoolMaxConcurrencyStream.getInstance(threadPoolKey, 10, 100);
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
@@ -325,7 +325,7 @@ public class RollingThreadPoolConcurrencyStreamTest extends CommandStreamTest {
         HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("ThreadPool-Concurrency-H");
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("ThreadPool-Concurrency-H");
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("RollingConcurrency-H");
-        stream = RollingThreadPoolConcurrencyStream.getInstance(threadPoolKey, 10, 100);
+        stream = RollingThreadPoolMaxConcurrencyStream.getInstance(threadPoolKey, 10, 100);
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
@@ -367,7 +367,7 @@ public class RollingThreadPoolConcurrencyStreamTest extends CommandStreamTest {
         HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("ThreadPool-Concurrency-I");
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("ThreadPool-Concurrency-I");
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("RollingConcurrency-I");
-        stream = RollingThreadPoolConcurrencyStream.getInstance(threadPoolKey, 10, 100);
+        stream = RollingThreadPoolMaxConcurrencyStream.getInstance(threadPoolKey, 10, 100);
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
@@ -422,7 +422,7 @@ public class RollingThreadPoolConcurrencyStreamTest extends CommandStreamTest {
         HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("ThreadPool-Concurrency-J");
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("ThreadPool-Concurrency-J");
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("RollingConcurrency-J");
-        stream = RollingThreadPoolConcurrencyStream.getInstance(threadPoolKey, 10, 100);
+        stream = RollingThreadPoolMaxConcurrencyStream.getInstance(threadPoolKey, 10, 100);
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);

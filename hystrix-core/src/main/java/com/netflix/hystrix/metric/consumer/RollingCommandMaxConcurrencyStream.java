@@ -23,30 +23,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * Maintains a stream of concurrency distributions for a given Command.
+ * Maintains a stream of the maximum concurrency seen by this command.
  *
- * There are 2 related streams that may be consumed:
- *
- * A) A rolling window of the maximum concurrency seen by this command.
- * B) A histogram of sampled concurrency seen by this command.
- *
- * A) gets calculated using a rolling window of t1 milliseconds.  This window has b buckets.
+ * This gets calculated using a rolling window of t1 milliseconds.  This window has b buckets.
  * Therefore, a new rolling-max is produced every t2 (=t1/b) milliseconds
  * t1 = {@link HystrixCommandProperties#metricsRollingStatisticalWindowInMilliseconds()}
  * b = {@link HystrixCommandProperties#metricsRollingStatisticalWindowBuckets()}
  *
  * This value gets cached in this class.  It may be queried using {@link #getLatestRollingMax()}
+ * This value is stable - there's no peeking into a bucket until it is emitted
  *
- * B) gets calculated by sampling the actual concurrency at some rate higher than the bucket-rolling frequency.
- * Each sample gets stored in a histogram.  At the moment, there's no bucketing or windowing on this stream.
- * To control the emission rate, the histogram is emitted on a bucket-roll.
- *
- * This value is not cached.  You need to consume this stream directly if you want to use it.
- *
- * Both A) and B) are stable - there's no peeking into a bucket until it is emitted
- *
- * LARGE CAVEAT:
- * This will change after 1.5.0-RC.1.  This was an experiment that proved too costly. Rely on this at your own peril
  */
 public class RollingCommandMaxConcurrencyStream extends RollingConcurrencyStream {
 
