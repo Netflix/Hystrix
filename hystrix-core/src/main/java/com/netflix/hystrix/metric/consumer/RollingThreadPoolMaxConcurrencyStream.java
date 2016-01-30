@@ -34,11 +34,11 @@ import java.util.concurrent.ConcurrentMap;
  *
  * This is a stable value - there's no peeking into a bucket until it is emitted
  */
-public class RollingThreadPoolConcurrencyStream extends RollingConcurrencyStream {
+public class RollingThreadPoolMaxConcurrencyStream extends RollingConcurrencyStream {
 
-    private static final ConcurrentMap<String, RollingThreadPoolConcurrencyStream> streams = new ConcurrentHashMap<String, RollingThreadPoolConcurrencyStream>();
+    private static final ConcurrentMap<String, RollingThreadPoolMaxConcurrencyStream> streams = new ConcurrentHashMap<String, RollingThreadPoolMaxConcurrencyStream>();
 
-    public static RollingThreadPoolConcurrencyStream getInstance(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolProperties properties) {
+    public static RollingThreadPoolMaxConcurrencyStream getInstance(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolProperties properties) {
         final int counterMetricWindow = properties.metricsRollingStatisticalWindowInMilliseconds().get();
         final int numCounterBuckets = properties.metricsRollingStatisticalWindowBuckets().get();
         final int counterBucketSizeInMs = counterMetricWindow / numCounterBuckets;
@@ -46,16 +46,16 @@ public class RollingThreadPoolConcurrencyStream extends RollingConcurrencyStream
         return getInstance(threadPoolKey, numCounterBuckets, counterBucketSizeInMs);
     }
 
-    public static RollingThreadPoolConcurrencyStream getInstance(HystrixThreadPoolKey threadPoolKey, int numBuckets, int bucketSizeInMs) {
-        RollingThreadPoolConcurrencyStream initialStream = streams.get(threadPoolKey.name());
+    public static RollingThreadPoolMaxConcurrencyStream getInstance(HystrixThreadPoolKey threadPoolKey, int numBuckets, int bucketSizeInMs) {
+        RollingThreadPoolMaxConcurrencyStream initialStream = streams.get(threadPoolKey.name());
         if (initialStream != null) {
             return initialStream;
         } else {
-            synchronized (RollingThreadPoolConcurrencyStream.class) {
-                RollingThreadPoolConcurrencyStream existingStream = streams.get(threadPoolKey.name());
+            synchronized (RollingThreadPoolMaxConcurrencyStream.class) {
+                RollingThreadPoolMaxConcurrencyStream existingStream = streams.get(threadPoolKey.name());
                 if (existingStream == null) {
-                    RollingThreadPoolConcurrencyStream newStream =
-                            new RollingThreadPoolConcurrencyStream(threadPoolKey, numBuckets, bucketSizeInMs);
+                    RollingThreadPoolMaxConcurrencyStream newStream =
+                            new RollingThreadPoolMaxConcurrencyStream(threadPoolKey, numBuckets, bucketSizeInMs);
                     streams.putIfAbsent(threadPoolKey.name(), newStream);
                     return newStream;
                 } else {
@@ -69,7 +69,7 @@ public class RollingThreadPoolConcurrencyStream extends RollingConcurrencyStream
         streams.clear();
     }
 
-    public RollingThreadPoolConcurrencyStream(final HystrixThreadPoolKey threadPoolKey, final int numBuckets, final int bucketSizeInMs) {
+    public RollingThreadPoolMaxConcurrencyStream(final HystrixThreadPoolKey threadPoolKey, final int numBuckets, final int bucketSizeInMs) {
         super(HystrixThreadPoolStartStream.getInstance(threadPoolKey), numBuckets, bucketSizeInMs);
     }
 }

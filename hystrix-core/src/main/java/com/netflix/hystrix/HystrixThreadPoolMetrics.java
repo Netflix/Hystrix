@@ -17,7 +17,7 @@ package com.netflix.hystrix;
 
 import com.netflix.hystrix.metric.HystrixCommandCompletion;
 import com.netflix.hystrix.metric.consumer.CumulativeThreadPoolEventCounterStream;
-import com.netflix.hystrix.metric.consumer.RollingThreadPoolConcurrencyStream;
+import com.netflix.hystrix.metric.consumer.RollingThreadPoolMaxConcurrencyStream;
 import com.netflix.hystrix.metric.consumer.RollingThreadPoolEventCounterStream;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 import org.slf4j.Logger;
@@ -141,7 +141,7 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
 
     private final RollingThreadPoolEventCounterStream rollingCounterStream;
     private final CumulativeThreadPoolEventCounterStream cumulativeCounterStream;
-    private final RollingThreadPoolConcurrencyStream rollingThreadPoolConcurrencyStream;
+    private final RollingThreadPoolMaxConcurrencyStream rollingThreadPoolMaxConcurrencyStream;
 
     private HystrixThreadPoolMetrics(HystrixThreadPoolKey threadPoolKey, ThreadPoolExecutor threadPool, HystrixThreadPoolProperties properties) {
         super(null);
@@ -151,7 +151,7 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
 
         rollingCounterStream = RollingThreadPoolEventCounterStream.getInstance(threadPoolKey, properties);
         cumulativeCounterStream = CumulativeThreadPoolEventCounterStream.getInstance(threadPoolKey, properties);
-        rollingThreadPoolConcurrencyStream = RollingThreadPoolConcurrencyStream.getInstance(threadPoolKey, properties);
+        rollingThreadPoolMaxConcurrencyStream = RollingThreadPoolMaxConcurrencyStream.getInstance(threadPoolKey, properties);
     }
 
     /**
@@ -333,7 +333,7 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
      * @return rolling max active threads
      */
     public long getRollingMaxActiveThreads() {
-        return rollingThreadPoolConcurrencyStream.getLatestRollingMax();
+        return rollingThreadPoolMaxConcurrencyStream.getLatestRollingMax();
     }
 
     /**
