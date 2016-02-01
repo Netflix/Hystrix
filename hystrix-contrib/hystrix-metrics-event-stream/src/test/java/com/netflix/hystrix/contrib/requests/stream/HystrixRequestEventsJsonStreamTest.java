@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class HystrixRequestEventsJsonStreamTest {
 
@@ -159,7 +160,8 @@ public class HystrixRequestEventsJsonStreamTest {
         executions.add(bar1);
         HystrixRequestEvents request = new HystrixRequestEvents(executions);
         String actual = HystrixRequestEventsJsonStream.convertRequestToJson(request);
-        assertEquals("[{\"name\":\"Foo\",\"events\":[\"SUCCESS\"],\"latencies\":[23]},{\"name\":\"Bar\",\"events\":[\"SUCCESS\"],\"latencies\":[34]}]", actual);
+        assertTrue(actual.equals("[{\"name\":\"Foo\",\"events\":[\"SUCCESS\"],\"latencies\":[23]},{\"name\":\"Bar\",\"events\":[\"SUCCESS\"],\"latencies\":[34]}]") ||
+                actual.equals("[{\"name\":\"Bar\",\"events\":[\"SUCCESS\"],\"latencies\":[34]},{\"name\":\"Foo\",\"events\":[\"SUCCESS\"],\"latencies\":[23]}]"));
     }
 
     @Test
@@ -185,7 +187,8 @@ public class HystrixRequestEventsJsonStreamTest {
         executions.add(foo3);
         HystrixRequestEvents request = new HystrixRequestEvents(executions);
         String actual = HystrixRequestEventsJsonStream.convertRequestToJson(request);
-        assertEquals("[{\"name\":\"Foo\",\"events\":[\"SUCCESS\"],\"latencies\":[10,11]},{\"name\":\"Foo\",\"events\":[\"FAILURE\",\"FALLBACK_SUCCESS\"],\"latencies\":[67]}]", actual);
+        assertTrue(actual.equals("[{\"name\":\"Foo\",\"events\":[\"SUCCESS\"],\"latencies\":[10,11]},{\"name\":\"Foo\",\"events\":[\"FAILURE\",\"FALLBACK_SUCCESS\"],\"latencies\":[67]}]") ||
+                actual.equals("[{\"name\":\"Foo\",\"events\":[\"FAILURE\",\"FALLBACK_SUCCESS\"],\"latencies\":[67]},{\"name\":\"Foo\",\"events\":[\"SUCCESS\"],\"latencies\":[10,11]}]"));
     }
 
     @Test
@@ -227,7 +230,8 @@ public class HystrixRequestEventsJsonStreamTest {
         executions.add(cachedFoo2);
         HystrixRequestEvents request = new HystrixRequestEvents(executions);
         String actual = HystrixRequestEventsJsonStream.convertRequestToJson(request);
-        assertEquals("[{\"name\":\"Foo\",\"events\":[\"SUCCESS\"],\"latencies\":[67],\"cached\":1},{\"name\":\"Foo\",\"events\":[\"SUCCESS\"],\"latencies\":[23],\"cached\":1}]", actual);
+        assertTrue(actual.equals("[{\"name\":\"Foo\",\"events\":[\"SUCCESS\"],\"latencies\":[67],\"cached\":1},{\"name\":\"Foo\",\"events\":[\"SUCCESS\"],\"latencies\":[23],\"cached\":1}]") ||
+                actual.equals("[{\"name\":\"Foo\",\"events\":[\"SUCCESS\"],\"latencies\":[23],\"cached\":1},{\"name\":\"Foo\",\"events\":[\"SUCCESS\"],\"latencies\":[67],\"cached\":1}]"));
     }
 
     @Test
