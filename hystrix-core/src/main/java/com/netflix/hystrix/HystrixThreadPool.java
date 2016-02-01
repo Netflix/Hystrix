@@ -15,21 +15,19 @@
  */
 package com.netflix.hystrix;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-
-import rx.Scheduler;
-
 import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
 import com.netflix.hystrix.strategy.concurrency.HystrixContextScheduler;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherFactory;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesFactory;
-
+import rx.Scheduler;
 import rx.functions.Func0;
+
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * ThreadPool used to executed {@link HystrixCommand#run()} on separate threads when configured to do so with {@link HystrixCommandProperties#executionIsolationStrategy()}.
@@ -205,8 +203,9 @@ public interface HystrixThreadPool {
 
         // allow us to change things via fast-properties by setting it each time
         private void touchConfig() {
-            threadPool.setCorePoolSize(properties.coreSize().get());
-            threadPool.setMaximumPoolSize(properties.coreSize().get()); // we always want maxSize the same as coreSize, we are not using a dynamically resizing pool
+            final int dynamicCoreSize = properties.coreSize().get();
+            threadPool.setCorePoolSize(dynamicCoreSize);
+            threadPool.setMaximumPoolSize(dynamicCoreSize); // we always want maxSize the same as coreSize, we are not using a dynamically resizing pool
             threadPool.setKeepAliveTime(properties.keepAliveTimeMinutes().get(), TimeUnit.MINUTES); // this doesn't really matter since we're not resizing
         }
 
