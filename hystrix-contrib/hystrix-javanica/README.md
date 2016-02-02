@@ -315,7 +315,7 @@ case 2: sync command, async fallback. This case isn't supported for the same rea
 Same restrictions are imposed on using observable feature in javanica.
 
 ## Error Propagation
-Based on [this](https://github.com/Netflix/Hystrix/wiki/How-To-Use#ErrorPropagation) description, `@HystrixCommand` has an ability to specify exceptions types which should be ignored and wrapped to throw in `HystrixBadRequestException`.
+Based on [this](https://github.com/Netflix/Hystrix/wiki/How-To-Use#ErrorPropagation) description, `@HystrixCommand` has an ability to specify exceptions types which should be ignored.
 
 ```java
     @HystrixCommand(ignoreExceptions = {BadRequestException.class})
@@ -324,7 +324,7 @@ Based on [this](https://github.com/Netflix/Hystrix/wiki/How-To-Use#ErrorPropagat
     }
 ```
 
-If `userResource.getUserById(id);` throws an exception which type is _BadRequestException_ then this exception will be wrapped in `HystrixBadRequestException` and will not affect metrics and will not trigger fallback logic.
+If `userResource.getUserById(id);` throws an exception which type is _BadRequestException_ then this exception will be thrown without triggering fallback logic.
 
 ## Request Cache
 
