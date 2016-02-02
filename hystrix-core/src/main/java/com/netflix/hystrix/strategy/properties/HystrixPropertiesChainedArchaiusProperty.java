@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.netflix.config.PropertyWrapper;
+import com.netflix.hystrix.strategy.HystrixPlugins;
 
 /**
  * Chained property allowing a chain of defaults using Archaius (https://github.com/Netflix/archaius) properties which is used by the default properties implementations.
@@ -289,36 +289,72 @@ public abstract class HystrixPropertiesChainedArchaiusProperty {
     /**
      * @ExcludeFromJavadoc
      */
-    public static class DynamicBooleanProperty extends PropertyWrapper<Boolean> {
+    public static class DynamicBooleanProperty extends DynamicPropertyWrapper<Boolean> {
         public DynamicBooleanProperty(String propName, Boolean defaultValue) {
-            super(propName, defaultValue);
-        }
-
-        /**
-         * Get the current value from the underlying DynamicProperty
-         */
-        public Boolean get() {
-            return prop.getBoolean(defaultValue);
-        }
-
-        @Override
-        public Boolean getValue() {
-            return get();
+            super(propName, defaultValue, Boolean.class);
         }
     }
 
     /**
      * @ExcludeFromJavadoc
      */
-    public static class DynamicIntegerProperty extends PropertyWrapper<Integer> {
+    public static class DynamicIntegerProperty extends DynamicPropertyWrapper<Integer> {
         public DynamicIntegerProperty(String propName, Integer defaultValue) {
-            super(propName, defaultValue);
+            super(propName, defaultValue, Integer.class);
+        }
+    }
+
+    /**
+     * @ExcludeFromJavadoc
+     */
+    public static class DynamicLongProperty extends DynamicPropertyWrapper<Long> {
+        public DynamicLongProperty(String propName, Long defaultValue) {
+            super(propName, defaultValue, Long.class);
+        }
+    }
+
+    /**
+     * @ExcludeFromJavadoc
+     */
+    public static class DynamicStringProperty extends DynamicPropertyWrapper<String> {
+        public DynamicStringProperty(String propName, String defaultValue) {
+            super(propName, defaultValue, String.class);
+        }
+    }
+    
+    protected abstract static class DynamicPropertyWrapper<T> implements HystrixDynamicProperty<T> {
+        
+        private final HystrixDynamicProperty<T> delegate;
+        private final String propName;
+        
+        protected DynamicPropertyWrapper(String propName, T defaultValue, Class<T> type) {
+            super();
+            this.propName = propName;
+            this.delegate = getDynamicProperty(propName, defaultValue, type);
         }
 
-        /**
-         * Get the current value from the underlying DynamicProperty
-         */
-        public Integer get() {
+        @Override
+        public T get() {
+            return delegate.get();
+        }
+
+        @Override
+        public void addCallback(Runnable callback) {
+            delegate.addCallback(callback);
+        }
+        
+        public String getName() {
+            return this.propName;
+        }
+        
+        T getValue() {
+            return get();
+        }
+        
+    }
+    
+    /*
+     *         public Integer get() {
             return prop.getInteger(defaultValue);
         }
 
@@ -326,48 +362,14 @@ public abstract class HystrixPropertiesChainedArchaiusProperty {
         public Integer getValue() {
             return get();
         }
-    }
-
-    /**
-     * @ExcludeFromJavadoc
      */
-    public static class DynamicLongProperty extends PropertyWrapper<Long> {
-        public DynamicLongProperty(String propName, Long defaultValue) {
-            super(propName, defaultValue);
-        }
-
-        /**
-         * Get the current value from the underlying DynamicProperty
-         */
-        public Long get() {
-            return prop.getLong(defaultValue);
-        }
-
-        @Override
-        public Long getValue() {
-            return get();
-        }
-    }
-
-    /**
-     * @ExcludeFromJavadoc
-     */
-    public static class DynamicStringProperty extends PropertyWrapper<String> {
-        public DynamicStringProperty(String propName, String defaultValue) {
-            super(propName, defaultValue);
-        }
-
-        /**
-         * Get the current value from the underlying DynamicProperty
-         */
-        public String get() {
-            return prop.getString(defaultValue);
-        }
-
-        @Override
-        public String getValue() {
-            return get();
-        }
+    
+    private static <T> HystrixDynamicProperty<T> 
+        getDynamicProperty(String propName, T defaultValue, Class<T> type) {
+        HystrixDynamicProperties properties = HystrixPlugins.getInstance().getDynamicProperties();
+        HystrixDynamicProperty<T> p = 
+                HystrixDynamicProperties.Util.getProperty(properties, propName, defaultValue, type);
+        return p;
     }
 
 }

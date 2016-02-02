@@ -15,11 +15,9 @@
  */
 package com.netflix.hystrix.strategy;
 
-import java.io.IOException;
+import java.util.ServiceLoader;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.netflix.config.ConfigurationManager;
-import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategyDefault;
 import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
@@ -29,6 +27,8 @@ import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHookDef
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisher;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherDefault;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherFactory;
+import com.netflix.hystrix.strategy.properties.HystrixArchaiusHelper;
+import com.netflix.hystrix.strategy.properties.HystrixDynamicProperties;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategyDefault;
 
@@ -50,14 +50,11 @@ public class HystrixPlugins {
     /* package */ final AtomicReference<HystrixMetricsPublisher> metricsPublisher = new AtomicReference<HystrixMetricsPublisher>();
     /* package */ final AtomicReference<HystrixPropertiesStrategy> propertiesFactory = new AtomicReference<HystrixPropertiesStrategy>();
     /* package */ final AtomicReference<HystrixCommandExecutionHook> commandExecutionHook = new AtomicReference<HystrixCommandExecutionHook>();
+    /* package */ final HystrixDynamicProperties dynamicProperties;
 
     private HystrixPlugins() {
-        try {
-            // Load configuration from hystrix-plugins.properties, if that file exists
-            ConfigurationManager.loadCascadedPropertiesFromResources("hystrix-plugins");
-        } catch (IOException e) {
-            // fail silently
-        }
+        //This will load Archaius if its in the classpath.
+        dynamicProperties = resolveDynamicProperties();
     }
 
     public static HystrixPlugins getInstance() {
@@ -87,7 +84,7 @@ public class HystrixPlugins {
     public HystrixEventNotifier getEventNotifier() {
         if (notifier.get() == null) {
             // check for an implementation from Archaius first
-            Object impl = getPluginImplementationViaArchaius(HystrixEventNotifier.class);
+            Object impl = getPluginImplementation(HystrixEventNotifier.class);
             if (impl == null) {
                 // nothing set via Archaius so initialize with default
                 notifier.compareAndSet(null, HystrixEventNotifierDefault.getInstance());
@@ -125,7 +122,7 @@ public class HystrixPlugins {
     public HystrixConcurrencyStrategy getConcurrencyStrategy() {
         if (concurrencyStrategy.get() == null) {
             // check for an implementation from Archaius first
-            Object impl = getPluginImplementationViaArchaius(HystrixConcurrencyStrategy.class);
+            Object impl = getPluginImplementation(HystrixConcurrencyStrategy.class);
             if (impl == null) {
                 // nothing set via Archaius so initialize with default
                 concurrencyStrategy.compareAndSet(null, HystrixConcurrencyStrategyDefault.getInstance());
@@ -163,7 +160,7 @@ public class HystrixPlugins {
     public HystrixMetricsPublisher getMetricsPublisher() {
         if (metricsPublisher.get() == null) {
             // check for an implementation from Archaius first
-            Object impl = getPluginImplementationViaArchaius(HystrixMetricsPublisher.class);
+            Object impl = getPluginImplementation(HystrixMetricsPublisher.class);
             if (impl == null) {
                 // nothing set via Archaius so initialize with default
                 metricsPublisher.compareAndSet(null, HystrixMetricsPublisherDefault.getInstance());
@@ -201,7 +198,7 @@ public class HystrixPlugins {
     public HystrixPropertiesStrategy getPropertiesStrategy() {
         if (propertiesFactory.get() == null) {
             // check for an implementation from Archaius first
-            Object impl = getPluginImplementationViaArchaius(HystrixPropertiesStrategy.class);
+            Object impl = getPluginImplementation(HystrixPropertiesStrategy.class);
             if (impl == null) {
                 // nothing set via Archaius so initialize with default
                 propertiesFactory.compareAndSet(null, HystrixPropertiesStrategyDefault.getInstance());
@@ -212,6 +209,11 @@ public class HystrixPlugins {
             }
         }
         return propertiesFactory.get();
+    }
+    
+    
+    public HystrixDynamicProperties getDynamicProperties() {
+        return dynamicProperties;
     }
 
     /**
@@ -242,7 +244,7 @@ public class HystrixPlugins {
     public HystrixCommandExecutionHook getCommandExecutionHook() {
         if (commandExecutionHook.get() == null) {
             // check for an implementation from Archaius first
-            Object impl = getPluginImplementationViaArchaius(HystrixCommandExecutionHook.class);
+            Object impl = getPluginImplementation(HystrixCommandExecutionHook.class);
             if (impl == null) {
                 // nothing set via Archaius so initialize with default
                 commandExecutionHook.compareAndSet(null, HystrixCommandExecutionHookDefault.getInstance());
@@ -271,17 +273,29 @@ public class HystrixPlugins {
         }
     }
 
-    private static Object getPluginImplementationViaArchaius(Class<?> pluginClass) {
+    
+    private <T> T getPluginImplementation(Class<T> pluginClass) {
+        T p = getPluginImplementationViaProperties(pluginClass);
+        if (p != null) return p;
+        ServiceLoader<T> sl = ServiceLoader.load(pluginClass);
+        for(T plugin : sl) {
+            if (plugin != null) return plugin;
+        }
+        return null;
+    }
+    
+    @SuppressWarnings("unchecked")
+    private <T> T getPluginImplementationViaProperties(Class<T> pluginClass) {
         String classSimpleName = pluginClass.getSimpleName();
         // Check Archaius for plugin class.
         String propertyName = "hystrix.plugin." + classSimpleName + ".implementation";
-        String implementingClass = DynamicPropertyFactory.getInstance().getStringProperty(propertyName, null).get();
+        String implementingClass = dynamicProperties.getString(propertyName, null).get();
         if (implementingClass != null) {
             try {
                 Class<?> cls = Class.forName(implementingClass);
                 // narrow the scope (cast) to the type we're expecting
                 cls = cls.asSubclass(pluginClass);
-                return cls.newInstance();
+                return (T) cls.newInstance();
             } catch (ClassCastException e) {
                 throw new RuntimeException(classSimpleName + " implementation is not an instance of " + classSimpleName + ": " + implementingClass);
             } catch (ClassNotFoundException e) {
@@ -294,6 +308,16 @@ public class HystrixPlugins {
         } else {
             return null;
         }
+    }
+    
+    
+    
+    private static HystrixDynamicProperties resolveDynamicProperties() {
+        ServiceLoader<HystrixDynamicProperties> sl = ServiceLoader.load(HystrixDynamicProperties.class);
+        for(HystrixDynamicProperties hp : sl) {
+            if (hp != null) return hp;
+        }
+        return HystrixArchaiusHelper.createArchaiusDynamicProperties();
     }
 
 
