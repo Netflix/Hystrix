@@ -15,6 +15,7 @@
  */
 package com.netflix.hystrix.strategy;
 
+import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -47,23 +48,43 @@ import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategyDefault;
  * See the Hystrix GitHub Wiki for more information: <a href="https://github.com/Netflix/Hystrix/wiki/Plugins">https://github.com/Netflix/Hystrix/wiki/Plugins</a>.
  */
 public class HystrixPlugins {
-
-    private final static HystrixPlugins INSTANCE = new HystrixPlugins();
-
+    
+    //We should not load unless we are requested to. This avoids accidental initialization. @agentgt
+    //See https://en.wikipedia.org/wiki/Initialization-on-demand_holder_idiom
+    private static class LazyHolder { private static final HystrixPlugins INSTANCE = HystrixPlugins.create(); }
+    private final ClassLoader classLoader;
     /* package */ final AtomicReference<HystrixEventNotifier> notifier = new AtomicReference<HystrixEventNotifier>();
     /* package */ final AtomicReference<HystrixConcurrencyStrategy> concurrencyStrategy = new AtomicReference<HystrixConcurrencyStrategy>();
     /* package */ final AtomicReference<HystrixMetricsPublisher> metricsPublisher = new AtomicReference<HystrixMetricsPublisher>();
     /* package */ final AtomicReference<HystrixPropertiesStrategy> propertiesFactory = new AtomicReference<HystrixPropertiesStrategy>();
     /* package */ final AtomicReference<HystrixCommandExecutionHook> commandExecutionHook = new AtomicReference<HystrixCommandExecutionHook>();
-    /* package */ final HystrixDynamicProperties dynamicProperties;
+    private final HystrixDynamicProperties dynamicProperties;
 
-    private HystrixPlugins() {
+    
+    private HystrixPlugins(ClassLoader classLoader) {
         //This will load Archaius if its in the classpath.
-        dynamicProperties = resolveDynamicProperties();
+        this.classLoader = classLoader;
+        //N.B. Do not use a logger before this is loaded as it will most likely load the configuration system.
+        //The configuration system may need to do something prior to loading logging. @agentgt
+        dynamicProperties = resolveDynamicProperties(classLoader);
+    }
+    
+    /**
+     * For unit test purposes.
+     * @ExcludeFromJavadoc
+     */
+    /* private */ static HystrixPlugins create(ClassLoader classLoader) {
+        return new HystrixPlugins(classLoader);
+    }
+    /**
+     * @ExcludeFromJavadoc
+     */
+    /* private */ static HystrixPlugins create() {
+        return create(HystrixPlugins.class.getClassLoader());
     }
 
     public static HystrixPlugins getInstance() {
-        return INSTANCE;
+        return LazyHolder.INSTANCE;
     }
 
     /**
@@ -294,12 +315,8 @@ public class HystrixPlugins {
     
     private <T> T getPluginImplementation(Class<T> pluginClass) {
         T p = getPluginImplementationViaProperties(pluginClass);
-        if (p != null) return p;
-        ServiceLoader<T> sl = ServiceLoader.load(pluginClass);
-        for(T plugin : sl) {
-            if (plugin != null) return plugin;
-        }
-        return null;
+        if (p != null) return p;        
+        return findService(pluginClass, classLoader);
     }
     
     @SuppressWarnings("unchecked")
@@ -329,13 +346,24 @@ public class HystrixPlugins {
     }
     
     
-    
-    private static HystrixDynamicProperties resolveDynamicProperties() {
-        ServiceLoader<HystrixDynamicProperties> sl = ServiceLoader.load(HystrixDynamicProperties.class);
-        for(HystrixDynamicProperties hp : sl) {
-            if (hp != null) return hp;
-        }
+
+    private static HystrixDynamicProperties resolveDynamicProperties(ClassLoader classLoader) {
+        HystrixDynamicProperties hp = findService(HystrixDynamicProperties.class, classLoader);
+        if (hp != null) return hp;
         return HystrixArchaiusHelper.createArchaiusDynamicProperties();
+    }
+    
+    private static <T> T findService(
+            Class<T> spi, 
+            ClassLoader classLoader) throws ServiceConfigurationError {
+        
+        ServiceLoader<T> sl = ServiceLoader.load(spi,
+                classLoader);
+        for (T s : sl) {
+            if (s != null)
+                return s;
+        }
+        return null;
     }
 
 
