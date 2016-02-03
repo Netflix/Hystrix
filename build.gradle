@@ -8,7 +8,7 @@ buildscript {
 }
 
 plugins {
-    id 'nebula.netflixoss' version '3.1.2'
+    id 'nebula.netflixoss' version '3.2.0'
     id 'me.champeau.gradle.jmh' version '0.2.0'
     id 'net.saliman.cobertura' version '2.2.8'
 }
