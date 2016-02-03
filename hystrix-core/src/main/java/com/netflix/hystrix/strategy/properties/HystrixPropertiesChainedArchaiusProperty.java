@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 Netflix, Inc.
+ * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -322,7 +322,7 @@ public abstract class HystrixPropertiesChainedArchaiusProperty {
         }
     }
     
-    protected abstract static class DynamicPropertyWrapper<T> implements HystrixDynamicProperty<T> {
+    private abstract static class DynamicPropertyWrapper<T> implements HystrixDynamicProperty<T> {
         
         private final HystrixDynamicProperty<T> delegate;
         private final String propName;
@@ -352,17 +352,6 @@ public abstract class HystrixPropertiesChainedArchaiusProperty {
         }
         
     }
-    
-    /*
-     *         public Integer get() {
-            return prop.getInteger(defaultValue);
-        }
-
-        @Override
-        public Integer getValue() {
-            return get();
-        }
-     */
     
     private static <T> HystrixDynamicProperty<T> 
         getDynamicProperty(String propName, T defaultValue, Class<T> type) {

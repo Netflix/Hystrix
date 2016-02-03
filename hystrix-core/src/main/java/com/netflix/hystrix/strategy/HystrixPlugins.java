@@ -36,9 +36,14 @@ import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategyDefault;
  * Registry for plugin implementations that allows global override and handles the retrieval of correct implementation based on order of precedence:
  * <ol>
  * <li>plugin registered globally via <code>register</code> methods in this class</li>
- * <li>plugin registered and retrieved using Archaius (see get methods for property names)</li>
+ * <li>plugin registered and retrieved using the resolved {@link HystrixDynamicProperties} (usually Archaius, see get methods for property names)</li>
+ * <li>plugin registered and retrieved using the JDK {@link ServiceLoader}</li>
  * <li>default implementation</li>
  * </ol>
+ * 
+ * The exception to the above order is the {@link HystrixDynamicProperties} implmentation 
+ * which is only loaded through the ServiceLoader (see the {@link HystrixPlugins#getDynamicProperties() getter} for more details).
+ * <p>
  * See the Hystrix GitHub Wiki for more information: <a href="https://github.com/Netflix/Hystrix/wiki/Plugins">https://github.com/Netflix/Hystrix/wiki/Plugins</a>.
  */
 public class HystrixPlugins {
@@ -211,7 +216,20 @@ public class HystrixPlugins {
         return propertiesFactory.get();
     }
     
-    
+    /**
+     * Retrieves the instance of {@link HystrixDynamicProperties} to use.
+     * <p>
+     * Unlike the other plugins this plugin cannot be re-registered and is only loaded at creation 
+     * of the {@link HystrixPlugins} singleton.
+     * <p>
+     * The order of precedence for loading implementations is:
+     * <ol>
+     * <li>The {@link ServiceLoader}.</li>
+     * <li>An implementation based on Archaius if it is found in the classpath it is used.</li>
+     * <li>An implementation based on the {@link System#getProperties()}</li>
+     * </ol>
+     * @return never <code>null</code>
+     */
     public HystrixDynamicProperties getDynamicProperties() {
         return dynamicProperties;
     }

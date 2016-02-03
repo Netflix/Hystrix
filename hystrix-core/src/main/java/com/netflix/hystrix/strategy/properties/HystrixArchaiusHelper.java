@@ -1,9 +1,27 @@
+/**
+ * Copyright 2016 Netflix, Inc.
+ * <p/>
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * <p/>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p/>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.netflix.hystrix.strategy.properties;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-
+/**
+ * @ExcludeFromJavadoc
+ * @author agentgt
+ */
 public class HystrixArchaiusHelper {
     
     private final static Method loadCascadedPropertiesFromResources;
@@ -22,6 +40,9 @@ public class HystrixArchaiusHelper {
             loadCascadedPropertiesFromResources = load;
     }
     
+    /**
+     * @ExcludeFromJavadoc
+     */
     public static boolean isArchaiusV1Available() {
         return loadCascadedPropertiesFromResources != null;
     }
@@ -36,7 +57,10 @@ public class HystrixArchaiusHelper {
             }
         }
     }
-    
+
+   /**
+    * @ExcludeFromJavadoc
+    */
     public static HystrixDynamicProperties createArchaiusDynamicProperties() {
         if (isArchaiusV1Available()) {
             loadCascadedPropertiesFromResources("hystrix-plugins");
@@ -46,13 +70,10 @@ public class HystrixArchaiusHelper {
                                 + ".HystrixDynamicPropertiesArchaius");
                 return (HystrixDynamicProperties) defaultProperties.newInstance();
             } catch (ClassNotFoundException e) {
-                // TODO Auto-generated catch block
                 throw new RuntimeException(e);
             } catch (InstantiationException e) {
-                // TODO Auto-generated catch block
                 throw new RuntimeException(e);
             } catch (IllegalAccessException e) {
-                // TODO Auto-generated catch block
                 throw new RuntimeException(e);
             }
         }
@@ -61,7 +82,7 @@ public class HystrixArchaiusHelper {
     }
     
     private static class SystemPropertiesHystrixDynamicProperties implements HystrixDynamicProperties {
-
+        //TODO probably should not be anonymous classes for GC reasons and possible jit method eliding.
         @Override
         public HystrixDynamicProperty<Integer> getInteger(final String name, final Integer fallback) {
             return new HystrixDynamicProperty<Integer>() {
@@ -112,7 +133,7 @@ public class HystrixArchaiusHelper {
                 
                 @Override
                 public Boolean get() {
-                    return Boolean.getBoolean(name);
+                    return System.getProperty(name) == null ? null : Boolean.getBoolean(name);
                 }
                 
                 @Override
