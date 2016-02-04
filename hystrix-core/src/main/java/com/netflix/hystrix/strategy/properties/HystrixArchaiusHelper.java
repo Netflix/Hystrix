@@ -133,7 +133,10 @@ public class HystrixArchaiusHelper {
                 
                 @Override
                 public Boolean get() {
-                    return System.getProperty(name) == null ? null : Boolean.getBoolean(name);
+                    if (System.getProperty(name) == null) {
+                        return fallback;
+                    }
+                    return Boolean.getBoolean(name);
                 }
                 
                 @Override

@@ -163,6 +163,20 @@ public interface HystrixProperty<T> {
 
             };
         }
+        
+        /**
+         * @ExcludeFromJavadoc
+         */
+        public static <T> HystrixProperty<T> asProperty(final HystrixPropertiesChainedProperty.ChainLink<T> chainedProperty) {
+            return new HystrixProperty<T>() {
+
+                @Override
+                public T get() {
+                    return chainedProperty.get();
+                }
+
+            };
+        }
 
         public static <T> HystrixProperty<T> nullProperty() {
             return new HystrixProperty<T>() {

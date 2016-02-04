@@ -17,7 +17,7 @@ package com.netflix.hystrix;
 
 import static com.netflix.hystrix.strategy.properties.HystrixProperty.Factory.asProperty;
 
-import com.netflix.hystrix.strategy.properties.HystrixPropertiesChainedArchaiusProperty;
+import com.netflix.hystrix.strategy.properties.HystrixPropertiesChainedProperty;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 import com.netflix.hystrix.strategy.properties.HystrixProperty;
 import com.netflix.hystrix.util.HystrixRollingNumber;
@@ -72,22 +72,22 @@ public abstract class HystrixCollapserProperties {
     }
 
     private static HystrixProperty<Integer> getProperty(String propertyPrefix, HystrixCollapserKey key, String instanceProperty, Integer builderOverrideValue, Integer defaultValue) {
-        return asProperty(new HystrixPropertiesChainedArchaiusProperty.IntegerProperty(
-                new HystrixPropertiesChainedArchaiusProperty.DynamicIntegerProperty(propertyPrefix + ".collapser." + key.name() + "." + instanceProperty, builderOverrideValue),
-                new HystrixPropertiesChainedArchaiusProperty.DynamicIntegerProperty(propertyPrefix + ".collapser.default." + instanceProperty, defaultValue)));
+        return asProperty(new HystrixPropertiesChainedProperty.IntegerProperty(
+                new HystrixPropertiesChainedProperty.DynamicIntegerProperty(propertyPrefix + ".collapser." + key.name() + "." + instanceProperty, builderOverrideValue),
+                new HystrixPropertiesChainedProperty.DynamicIntegerProperty(propertyPrefix + ".collapser.default." + instanceProperty, defaultValue)));
     }
 
     private static HystrixProperty<Boolean> getProperty(String propertyPrefix, HystrixCollapserKey key, String instanceProperty, Boolean builderOverrideValue, Boolean defaultValue) {
-        return asProperty(new HystrixPropertiesChainedArchaiusProperty.BooleanProperty(
-                new HystrixPropertiesChainedArchaiusProperty.DynamicBooleanProperty(propertyPrefix + ".collapser." + key.name() + "." + instanceProperty, builderOverrideValue),
-                new HystrixPropertiesChainedArchaiusProperty.DynamicBooleanProperty(propertyPrefix + ".collapser.default." + instanceProperty, defaultValue)));
+        return asProperty(new HystrixPropertiesChainedProperty.BooleanProperty(
+                new HystrixPropertiesChainedProperty.DynamicBooleanProperty(propertyPrefix + ".collapser." + key.name() + "." + instanceProperty, builderOverrideValue),
+                new HystrixPropertiesChainedProperty.DynamicBooleanProperty(propertyPrefix + ".collapser.default." + instanceProperty, defaultValue)));
     }
 
     @SuppressWarnings("unused")
     private static HystrixProperty<String> getProperty(String propertyPrefix, HystrixCollapserKey key, String instanceProperty, String builderOverrideValue, String defaultValue) {
-        return asProperty(new HystrixPropertiesChainedArchaiusProperty.StringProperty(
-                new HystrixPropertiesChainedArchaiusProperty.DynamicStringProperty(propertyPrefix + ".collapser." + key.name() + "." + instanceProperty, builderOverrideValue),
-                new HystrixPropertiesChainedArchaiusProperty.DynamicStringProperty(propertyPrefix + ".collapser.default." + instanceProperty, defaultValue)));
+        return asProperty(new HystrixPropertiesChainedProperty.StringProperty(
+                new HystrixPropertiesChainedProperty.DynamicStringProperty(propertyPrefix + ".collapser." + key.name() + "." + instanceProperty, builderOverrideValue),
+                new HystrixPropertiesChainedProperty.DynamicStringProperty(propertyPrefix + ".collapser.default." + instanceProperty, defaultValue)));
     }
 
     /**

@@ -22,7 +22,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
-import com.netflix.hystrix.strategy.properties.HystrixPropertiesChainedArchaiusProperty;
+import com.netflix.hystrix.strategy.properties.HystrixPropertiesChainedProperty;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 import com.netflix.hystrix.strategy.properties.HystrixProperty;
 import com.netflix.hystrix.util.HystrixRollingNumber;
@@ -68,23 +68,23 @@ public abstract class HystrixThreadPoolProperties {
     }
 
     private static HystrixProperty<Integer> getProperty(String propertyPrefix, HystrixThreadPoolKey key, String instanceProperty, Integer builderOverrideValue, Integer defaultValue) {
-        return asProperty(new HystrixPropertiesChainedArchaiusProperty.IntegerProperty(
-                new HystrixPropertiesChainedArchaiusProperty.DynamicIntegerProperty(propertyPrefix + ".threadpool." + key.name() + "." + instanceProperty, builderOverrideValue),
-                new HystrixPropertiesChainedArchaiusProperty.DynamicIntegerProperty(propertyPrefix + ".threadpool.default." + instanceProperty, defaultValue)));
+        return asProperty(new HystrixPropertiesChainedProperty.IntegerProperty(
+                new HystrixPropertiesChainedProperty.DynamicIntegerProperty(propertyPrefix + ".threadpool." + key.name() + "." + instanceProperty, builderOverrideValue),
+                new HystrixPropertiesChainedProperty.DynamicIntegerProperty(propertyPrefix + ".threadpool.default." + instanceProperty, defaultValue)));
     }
 
     @SuppressWarnings("unused")
     private static HystrixProperty<Boolean> getProperty(String propertyPrefix, HystrixThreadPoolKey key, String instanceProperty, Boolean builderOverrideValue, Boolean defaultValue) {
-        return asProperty(new HystrixPropertiesChainedArchaiusProperty.BooleanProperty(
-                new HystrixPropertiesChainedArchaiusProperty.DynamicBooleanProperty(propertyPrefix + ".threadpool." + key.name() + "." + instanceProperty, builderOverrideValue),
-                new HystrixPropertiesChainedArchaiusProperty.DynamicBooleanProperty(propertyPrefix + ".threadpool.default." + instanceProperty, defaultValue)));
+        return asProperty(new HystrixPropertiesChainedProperty.BooleanProperty(
+                new HystrixPropertiesChainedProperty.DynamicBooleanProperty(propertyPrefix + ".threadpool." + key.name() + "." + instanceProperty, builderOverrideValue),
+                new HystrixPropertiesChainedProperty.DynamicBooleanProperty(propertyPrefix + ".threadpool.default." + instanceProperty, defaultValue)));
     }
 
     @SuppressWarnings("unused")
     private static HystrixProperty<String> getProperty(String propertyPrefix, HystrixThreadPoolKey key, String instanceProperty, String builderOverrideValue, String defaultValue) {
-        return asProperty(new HystrixPropertiesChainedArchaiusProperty.StringProperty(
-                new HystrixPropertiesChainedArchaiusProperty.DynamicStringProperty(propertyPrefix + ".threadpool." + key.name() + "." + instanceProperty, builderOverrideValue),
-                new HystrixPropertiesChainedArchaiusProperty.DynamicStringProperty(propertyPrefix + ".threadpool.default." + instanceProperty, defaultValue)));
+        return asProperty(new HystrixPropertiesChainedProperty.StringProperty(
+                new HystrixPropertiesChainedProperty.DynamicStringProperty(propertyPrefix + ".threadpool." + key.name() + "." + instanceProperty, builderOverrideValue),
+                new HystrixPropertiesChainedProperty.DynamicStringProperty(propertyPrefix + ".threadpool.default." + instanceProperty, defaultValue)));
     }
 
     /**
