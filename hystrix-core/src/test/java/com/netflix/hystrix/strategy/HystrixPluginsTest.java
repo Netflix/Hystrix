@@ -54,6 +54,8 @@ public class HystrixPluginsTest {
     
     @Test
     public void testDynamicProperties() throws Exception {
+        fakeServiceLoaderResource = 
+                "FAKE_META_INF_SERVICES/com.netflix.hystrix.strategy.properties.HystrixDynamicProperties";
         HystrixPlugins plugins = setupMockServiceLoader();
         HystrixDynamicProperties properties = plugins.getDynamicProperties();
         plugins.getCommandExecutionHook();
