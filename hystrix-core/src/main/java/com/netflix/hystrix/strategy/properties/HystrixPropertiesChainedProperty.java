@@ -16,6 +16,7 @@
 package com.netflix.hystrix.strategy.properties;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -25,7 +26,7 @@ import org.slf4j.LoggerFactory;
 import com.netflix.hystrix.strategy.HystrixPlugins;
 
 /**
- * Chained property allowing a chain of defaults using Archaius (https://github.com/Netflix/archaius) properties which is used by the default properties implementations.
+ * Chained property allowing a chain of defaults properties which is uses the properties plugin.
  * <p>
  * Instead of just a single dynamic property with a default this allows a sequence of properties that fallback to the farthest down the chain with a value.
  * 
@@ -39,7 +40,7 @@ public abstract class HystrixPropertiesChainedProperty {
     /**
      * @ExcludeFromJavadoc
      */
-    public static abstract class ChainLink<T> {
+    private static abstract class ChainLink<T> {
 
         private final AtomicReference<ChainLink<T>> pReference;
         private final ChainLink<T> next;
@@ -123,232 +124,135 @@ public abstract class HystrixPropertiesChainedProperty {
             return getName() + " = " + get();
         }
     }
-
-    /**
-     * @ExcludeFromJavadoc
-     */
-    public static class StringProperty extends ChainLink<String> {
-
-        private final DynamicStringProperty sProp;
-
-        public StringProperty(DynamicStringProperty sProperty) {
-            super();
-            sProp = sProperty;
+    
+    public static abstract class ChainBuilder<T> {
+        
+        private ChainBuilder() {
+            super();        
         }
-
-        public StringProperty(String name, DynamicStringProperty sProperty) {
-            this(name, new StringProperty(sProperty));
+        
+        private List<HystrixDynamicProperty<T>> properties = 
+                new ArrayList<HystrixDynamicProperty<T>>();
+        
+        
+        public ChainBuilder<T> add(HystrixDynamicProperty<T> property) {
+            properties.add(property);
+            return this;
         }
-
-        public StringProperty(String name, StringProperty next) {
-            this(new DynamicStringProperty(name, null), next);
+        
+        public ChainBuilder<T> add(String name, T defaultValue) {
+            properties.add(getDynamicProperty(name, defaultValue, getType()));
+            return this;
         }
-
-        public StringProperty(DynamicStringProperty sProperty, DynamicStringProperty next) {
-            this(sProperty, new StringProperty(next));
-        }
-
-        public StringProperty(DynamicStringProperty sProperty, StringProperty next) {
-            super(next); // setup next pointer
-
-            sProp = sProperty;
-            sProp.addCallback(new Runnable() {
-                @Override
-                public void run() {
-                    logger.debug("Property changed: '" + getName() + " = " + getValue() + "'");
-                    checkAndFlip();
+        
+        public HystrixDynamicProperty<T> build() {
+            if (properties.size() < 1) throw new IllegalArgumentException();
+            if (properties.size() == 1) return properties.get(0);
+            List<HystrixDynamicProperty<T>> reversed = 
+                    new ArrayList<HystrixDynamicProperty<T>>(properties);
+            Collections.reverse(reversed);
+            ChainProperty<T> current = null;
+            for (HystrixDynamicProperty<T> p : reversed) {
+                if (current == null) {
+                    current = new ChainProperty<T>(p);
                 }
-            });
-            checkAndFlip();
-        }
-
-        @Override
-        public boolean isValueAcceptable() {
-            return (sProp.get() != null);
-        }
-
-        @Override
-        protected String getValue() {
-            return sProp.get();
-        }
-
-        @Override
-        public String getName() {
-            return sProp.getName();
-        }
-    }
-
-    /**
-     * @ExcludeFromJavadoc
-     */
-    public static class IntegerProperty extends ChainLink<Integer> {
-
-        private final DynamicIntegerProperty sProp;
-
-        public IntegerProperty(DynamicIntegerProperty sProperty) {
-            super();
-            sProp = sProperty;
-        }
-
-        public IntegerProperty(String name, DynamicIntegerProperty sProperty) {
-            this(name, new IntegerProperty(sProperty));
-        }
-
-        public IntegerProperty(String name, IntegerProperty next) {
-            this(new DynamicIntegerProperty(name, null), next);
-        }
-
-        public IntegerProperty(DynamicIntegerProperty sProperty, DynamicIntegerProperty next) {
-            this(sProperty, new IntegerProperty(next));
-        }
-
-        public IntegerProperty(DynamicIntegerProperty sProperty, IntegerProperty next) {
-            super(next); // setup next pointer
-
-            sProp = sProperty;
-            sProp.addCallback(new Runnable() {
-                @Override
-                public void run() {
-                    logger.debug("Property changed: '" + getName() + " = " + getValue() + "'");
-                    checkAndFlip();
+                else {
+                    current = new ChainProperty<T>(p, current);
                 }
-            });
-            checkAndFlip();
+            }
+            
+            return new ChainHystrixProperty<T>(current);
+            
         }
-
-        @Override
-        public boolean isValueAcceptable() {
-            return (sProp.get() != null);
-        }
-
-        @Override
-        public Integer getValue() {
-            return sProp.get();
-        }
-
-        @Override
-        public String getName() {
-            return sProp.getName();
-        }
+        
+        protected abstract Class<T> getType();
+        
     }
 
-    /**
-     * @ExcludeFromJavadoc
-     */
-    public static class BooleanProperty extends ChainLink<Boolean> {
-
-        private final DynamicBooleanProperty sProp;
-
-        public BooleanProperty(DynamicBooleanProperty sProperty) {
-            super();
-            sProp = sProperty;
-        }
-
-        public BooleanProperty(String name, DynamicBooleanProperty sProperty) {
-            this(name, new BooleanProperty(sProperty));
-        }
-
-        public BooleanProperty(String name, BooleanProperty next) {
-            this(new DynamicBooleanProperty(name, null), next);
-        }
-
-        public BooleanProperty(DynamicBooleanProperty sProperty, DynamicBooleanProperty next) {
-            this(sProperty, new BooleanProperty(next));
-        }
-
-        public BooleanProperty(DynamicBooleanProperty sProperty, BooleanProperty next) {
-            super(next); // setup next pointer
-
-            sProp = sProperty;
-            sProp.addCallback(new Runnable() {
-                @Override
-                public void run() {
-                    logger.debug("Property changed: '" + getName() + " = " + getValue() + "'");
-                    checkAndFlip();
-                }
-            });
-            checkAndFlip();
-        }
-
-        @Override
-        public boolean isValueAcceptable() {
-            return (sProp.getValue() != null);
-        }
-
-        @Override
-        public Boolean getValue() {
-            return sProp.get();
-        }
-
-        @Override
-        public String getName() {
-            return sProp.getName();
-        }
-    }
-
-    /**
-     * @ExcludeFromJavadoc
-     */
-    public static class DynamicBooleanProperty extends DynamicPropertyWrapper<Boolean> {
-        public DynamicBooleanProperty(String propName, Boolean defaultValue) {
-            super(propName, defaultValue, Boolean.class);
-        }
-    }
-
-    /**
-     * @ExcludeFromJavadoc
-     */
-    public static class DynamicIntegerProperty extends DynamicPropertyWrapper<Integer> {
-        public DynamicIntegerProperty(String propName, Integer defaultValue) {
-            super(propName, defaultValue, Integer.class);
-        }
-    }
-
-    /**
-     * @ExcludeFromJavadoc
-     */
-    public static class DynamicLongProperty extends DynamicPropertyWrapper<Long> {
-        public DynamicLongProperty(String propName, Long defaultValue) {
-            super(propName, defaultValue, Long.class);
-        }
-    }
-
-    /**
-     * @ExcludeFromJavadoc
-     */
-    public static class DynamicStringProperty extends DynamicPropertyWrapper<String> {
-        public DynamicStringProperty(String propName, String defaultValue) {
-            super(propName, defaultValue, String.class);
-        }
+    private static <T> ChainBuilder<T> forType(final Class<T> type) {
+        return new ChainBuilder<T>() {
+            @Override
+            protected Class<T> getType() {
+                return type;
+            }
+        };
     }
     
-    private abstract static class DynamicPropertyWrapper<T> implements HystrixDynamicProperty<T> {
+    public static ChainBuilder<String> forString() {
+        return forType(String.class);
+    }
+    public static ChainBuilder<Integer> forInteger() {
+        return forType(Integer.class);
+    }
+    public static ChainBuilder<Boolean> forBoolean() {
+        return forType(Boolean.class);
+    }
+    public static ChainBuilder<Long> forLong() {
+        return forType(Long.class);
+    }    
+    
+    private static class ChainHystrixProperty<T> implements HystrixDynamicProperty<T> {
+        private final ChainProperty<T> property;
         
-        private final HystrixDynamicProperty<T> delegate;
-        private final String propName;
-        
-        protected DynamicPropertyWrapper(String propName, T defaultValue, Class<T> type) {
+        public ChainHystrixProperty(ChainProperty<T> property) {
             super();
-            this.propName = propName;
-            this.delegate = getDynamicProperty(propName, defaultValue, type);
+            this.property = property;
+        }
+        
+        @Override
+        public String getName() {
+            return property.getName();
         }
 
         @Override
         public T get() {
-            return delegate.get();
+            return property.get();
+        }
+        
+        @Override
+        public void addCallback(Runnable callback) {
+            property.addCallback(callback);
+        }
+        
+    }
+    
+    private static class ChainProperty<T> extends ChainLink<T> {
+
+        private final HystrixDynamicProperty<T> sProp;
+
+        public ChainProperty(HystrixDynamicProperty<T> sProperty) {
+            super();
+            sProp = sProperty;
+        }
+
+
+        public ChainProperty(HystrixDynamicProperty<T> sProperty, ChainProperty<T> next) {
+            super(next); // setup next pointer
+
+            sProp = sProperty;
+            sProp.addCallback(new Runnable() {
+                @Override
+                public void run() {
+                    logger.debug("Property changed: '" + getName() + " = " + getValue() + "'");
+                    checkAndFlip();
+                }
+            });
+            checkAndFlip();
         }
 
         @Override
-        public void addCallback(Runnable callback) {
-            delegate.addCallback(callback);
+        public boolean isValueAcceptable() {
+            return (sProp.get() != null);
         }
-        
+
+        @Override
+        protected T getValue() {
+            return sProp.get();
+        }
+
+        @Override
         public String getName() {
-            return this.propName;
-        }
-        
-        T getValue() {
-            return get();
+            return sProp.getName();
         }
         
     }

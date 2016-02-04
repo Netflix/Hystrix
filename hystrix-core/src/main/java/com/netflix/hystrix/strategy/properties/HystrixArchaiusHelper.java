@@ -88,6 +88,11 @@ public class HystrixArchaiusHelper {
             return new HystrixDynamicProperty<Integer>() {
                 
                 @Override
+                public String getName() {
+                    return name;
+                }
+                
+                @Override
                 public Integer get() {
                     return Integer.getInteger(name, fallback);
                 }
@@ -100,6 +105,11 @@ public class HystrixArchaiusHelper {
         @Override
         public HystrixDynamicProperty<String> getString(final String name, final String fallback) {
             return new HystrixDynamicProperty<String>() {
+                
+                @Override
+                public String getName() {
+                    return name;
+                }
                 
                 @Override
                 public String get() {
@@ -117,6 +127,11 @@ public class HystrixArchaiusHelper {
             return new HystrixDynamicProperty<Long>() {
                 
                 @Override
+                public String getName() {
+                    return name;
+                }
+                
+                @Override
                 public Long get() {
                     return Long.getLong(name, fallback);
                 }
@@ -131,6 +146,10 @@ public class HystrixArchaiusHelper {
         public HystrixDynamicProperty<Boolean> getBoolean(final String name, final Boolean fallback) {
             return new HystrixDynamicProperty<Boolean>() {
                 
+                @Override
+                public String getName() {
+                    return name;
+                }
                 @Override
                 public Boolean get() {
                     if (System.getProperty(name) == null) {

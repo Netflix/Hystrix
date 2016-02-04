@@ -15,15 +15,16 @@
  */
 package com.netflix.hystrix;
 
-import static com.netflix.hystrix.strategy.properties.HystrixProperty.Factory.asProperty;
+import static com.netflix.hystrix.strategy.properties.HystrixPropertiesChainedProperty.forBoolean;
+import static com.netflix.hystrix.strategy.properties.HystrixPropertiesChainedProperty.forInteger;
+import static com.netflix.hystrix.strategy.properties.HystrixPropertiesChainedProperty.forString;
 
 import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.netflix.hystrix.strategy.properties.HystrixPropertiesChainedProperty;
-import com.netflix.hystrix.strategy.properties.HystrixPropertiesChainedProperty.DynamicStringProperty;
+import com.netflix.hystrix.strategy.properties.HystrixDynamicProperty;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 import com.netflix.hystrix.strategy.properties.HystrixProperty;
 import com.netflix.hystrix.util.HystrixRollingNumber;
@@ -134,7 +135,7 @@ public abstract class HystrixCommandProperties {
         this.requestLogEnabled = getProperty(propertyPrefix, key, "requestLog.enabled", builder.getRequestLogEnabled(), default_requestLogEnabled);
 
         // threadpool doesn't have a global override, only instance level makes sense
-        this.executionIsolationThreadPoolKeyOverride = new DynamicStringProperty(propertyPrefix + ".command." + key.name() + ".threadPoolKeyOverride", null);
+        this.executionIsolationThreadPoolKeyOverride = forString().add(propertyPrefix + ".command." + key.name() + ".threadPoolKeyOverride", null).build();
     }
 
     /**
@@ -412,22 +413,25 @@ public abstract class HystrixCommandProperties {
     }
 
     private static HystrixProperty<Boolean> getProperty(String propertyPrefix, HystrixCommandKey key, String instanceProperty, Boolean builderOverrideValue, Boolean defaultValue) {
-        return asProperty(new HystrixPropertiesChainedProperty.BooleanProperty(
-                new HystrixPropertiesChainedProperty.DynamicBooleanProperty(propertyPrefix + ".command." + key.name() + "." + instanceProperty, builderOverrideValue),
-                new HystrixPropertiesChainedProperty.DynamicBooleanProperty(propertyPrefix + ".command.default." + instanceProperty, defaultValue)));
+        return forBoolean()
+                .add(propertyPrefix + ".command." + key.name() + "." + instanceProperty, builderOverrideValue)
+                .add(propertyPrefix + ".command.default." + instanceProperty, defaultValue)
+                .build();
     }
 
     private static HystrixProperty<Integer> getProperty(String propertyPrefix, HystrixCommandKey key, String instanceProperty, Integer builderOverrideValue, Integer defaultValue) {
-        return asProperty(new HystrixPropertiesChainedProperty.IntegerProperty(
-                new HystrixPropertiesChainedProperty.DynamicIntegerProperty(propertyPrefix + ".command." + key.name() + "." + instanceProperty, builderOverrideValue),
-                new HystrixPropertiesChainedProperty.DynamicIntegerProperty(propertyPrefix + ".command.default." + instanceProperty, defaultValue)));
+        return forInteger()
+                .add(propertyPrefix + ".command." + key.name() + "." + instanceProperty, builderOverrideValue)
+                .add(propertyPrefix + ".command.default." + instanceProperty, defaultValue)
+                .build();
     }
 
     @SuppressWarnings("unused")
     private static HystrixProperty<String> getProperty(String propertyPrefix, HystrixCommandKey key, String instanceProperty, String builderOverrideValue, String defaultValue) {
-        return asProperty(new HystrixPropertiesChainedProperty.StringProperty(
-                new HystrixPropertiesChainedProperty.DynamicStringProperty(propertyPrefix + ".command." + key.name() + "." + instanceProperty, builderOverrideValue),
-                new HystrixPropertiesChainedProperty.DynamicStringProperty(propertyPrefix + ".command.default." + instanceProperty, defaultValue)));
+        return forString()
+                .add(propertyPrefix + ".command." + key.name() + "." + instanceProperty, builderOverrideValue)
+                .add(propertyPrefix + ".command.default." + instanceProperty, defaultValue)
+                .build();
     }
 
     private static HystrixProperty<ExecutionIsolationStrategy> getProperty(final String propertyPrefix, final HystrixCommandKey key, final String instanceProperty, final ExecutionIsolationStrategy builderOverrideValue, final ExecutionIsolationStrategy defaultValue) {
@@ -439,7 +443,7 @@ public abstract class HystrixCommandProperties {
      * HystrixProperty that converts a String to ExecutionIsolationStrategy so we remain TypeSafe.
      */
     private static final class ExecutionIsolationStrategyHystrixProperty implements HystrixProperty<ExecutionIsolationStrategy> {
-        private final HystrixPropertiesChainedProperty.StringProperty property;
+        private final HystrixDynamicProperty<String> property;
         private volatile ExecutionIsolationStrategy value;
         private final ExecutionIsolationStrategy defaultValue;
 
@@ -449,9 +453,10 @@ public abstract class HystrixCommandProperties {
             if (builderOverrideValue != null) {
                 overrideValue = builderOverrideValue.name();
             }
-            property = new HystrixPropertiesChainedProperty.StringProperty(
-                    new HystrixPropertiesChainedProperty.DynamicStringProperty(propertyPrefix + ".command." + key.name() + "." + instanceProperty, overrideValue),
-                    new HystrixPropertiesChainedProperty.DynamicStringProperty(propertyPrefix + ".command.default." + instanceProperty, defaultValue.name()));
+            property = forString()
+                    .add(propertyPrefix + ".command." + key.name() + "." + instanceProperty, overrideValue)
+                    .add(propertyPrefix + ".command.default." + instanceProperty, defaultValue.name())
+                    .build();
 
             // initialize the enum value from the property
             parseProperty();

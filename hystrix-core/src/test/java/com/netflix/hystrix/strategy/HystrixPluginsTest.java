@@ -160,6 +160,11 @@ public class HystrixPluginsTest {
         @Override
         public void addCallback(Runnable callback) {
         }
+
+        @Override
+        public String getName() {
+            return "NOP";
+        }
         
     }
     
