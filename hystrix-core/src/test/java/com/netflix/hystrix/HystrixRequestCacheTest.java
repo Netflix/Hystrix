@@ -66,6 +66,14 @@ public class HystrixRequestCacheTest {
         }
     }
 
+    @Test(expected = IllegalStateException.class)
+    public void testCacheWithoutContext() {
+        HystrixRequestCache.getInstance(
+            HystrixCommandKey.Factory.asKey("command1"),
+            HystrixConcurrencyStrategyDefault.getInstance()
+        ).get("any");
+    }
+
     @Test
     public void testClearCache() {
         HystrixConcurrencyStrategy strategy = HystrixConcurrencyStrategyDefault.getInstance();
