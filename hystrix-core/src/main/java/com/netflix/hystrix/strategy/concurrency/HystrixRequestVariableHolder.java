@@ -65,11 +65,7 @@ public class HystrixRequestVariableHolder<T> {
             }
         }
 
-        T result = (T) requestVariableInstance.get(key).get();
-        if (result == null) {
-            throw new IllegalStateException("Failed to get HystrixRequestVariable. Maybe you need to initialize the HystrixRequestContext?");
-        }
-        return result;
+        return (T) requestVariableInstance.get(key).get();
     }
 
     private static class RVCacheKey {

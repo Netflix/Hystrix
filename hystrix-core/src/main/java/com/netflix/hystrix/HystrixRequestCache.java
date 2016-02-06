@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import rx.Observable;
 
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
+import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestVariableDefault;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestVariableHolder;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestVariableLifecycle;
@@ -100,6 +101,9 @@ public class HystrixRequestCache {
     /* package */<T> Observable<T> get(String cacheKey) {
         ValueCacheKey key = getRequestCacheKey(cacheKey);
         if (key != null) {
+            if (!HystrixRequestContext.isCurrentThreadInitialized()) {
+                throw new IllegalStateException("Failed to get HystrixRequestVariable. Maybe you need to initialize the HystrixRequestContext?");
+            }
             /* look for the stored value */
             return (Observable<T>) requestVariableForCache.get(concurrencyStrategy).get(key);
         }
