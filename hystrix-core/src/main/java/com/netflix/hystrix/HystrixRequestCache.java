@@ -102,7 +102,7 @@ public class HystrixRequestCache {
         ValueCacheKey key = getRequestCacheKey(cacheKey);
         if (key != null) {
             if (!HystrixRequestContext.isCurrentThreadInitialized()) {
-                throw new IllegalStateException("Failed to get HystrixRequestVariable. Maybe you need to initialize the HystrixRequestContext?");
+                throw new IllegalStateException("Request caching is not available. Maybe you need to initialize the HystrixRequestContext?");
             }
             /* look for the stored value */
             return (Observable<T>) requestVariableForCache.get(concurrencyStrategy).get(key);
