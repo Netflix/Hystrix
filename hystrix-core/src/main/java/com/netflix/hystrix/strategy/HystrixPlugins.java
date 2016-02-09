@@ -28,8 +28,8 @@ import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHookDef
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisher;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherDefault;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherFactory;
-import com.netflix.hystrix.strategy.properties.HystrixArchaiusHelper;
 import com.netflix.hystrix.strategy.properties.HystrixDynamicProperties;
+import com.netflix.hystrix.strategy.properties.HystrixDynamicPropertiesSystemProperties;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategyDefault;
 
@@ -42,8 +42,8 @@ import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategyDefault;
  * <li>default implementation</li>
  * </ol>
  * 
- * The exception to the above order is the {@link HystrixDynamicProperties} implmentation 
- * which is only loaded through the ServiceLoader (see the {@link HystrixPlugins#getDynamicProperties() getter} for more details).
+ * The exception to the above order is the {@link HystrixDynamicProperties} implementation 
+ * which is only loaded through <code>System.properties</code> or the ServiceLoader (see the {@link HystrixPlugins#getDynamicProperties() getter} for more details).
  * <p>
  * See the Hystrix GitHub Wiki for more information: <a href="https://github.com/Netflix/Hystrix/wiki/Plugins">https://github.com/Netflix/Hystrix/wiki/Plugins</a>.
  */
@@ -245,9 +245,10 @@ public class HystrixPlugins {
      * <p>
      * The order of precedence for loading implementations is:
      * <ol>
+     * <li>System property of key: <code>hystrix.plugin.HystrixDynamicProperties.implementation</code> with the class as a value.</li>
      * <li>The {@link ServiceLoader}.</li>
-     * <li>An implementation based on Archaius if it is found in the classpath it is used.</li>
-     * <li>An implementation based on the {@link System#getProperties()}</li>
+     * <li>An implementation based on Archaius if it is found in the classpath is used.</li>
+     * <li>A fallback implementation based on the {@link System#getProperties()}</li>
      * </ol>
      * @return never <code>null</code>
      */
@@ -314,13 +315,13 @@ public class HystrixPlugins {
 
     
     private <T> T getPluginImplementation(Class<T> pluginClass) {
-        T p = getPluginImplementationViaProperties(pluginClass);
+        T p = getPluginImplementationViaProperties(pluginClass, dynamicProperties);
         if (p != null) return p;        
         return findService(pluginClass, classLoader);
     }
     
     @SuppressWarnings("unchecked")
-    private <T> T getPluginImplementationViaProperties(Class<T> pluginClass) {
+    private static <T> T getPluginImplementationViaProperties(Class<T> pluginClass, HystrixDynamicProperties dynamicProperties) {
         String classSimpleName = pluginClass.getSimpleName();
         // Check Archaius for plugin class.
         String propertyName = "hystrix.plugin." + classSimpleName + ".implementation";
@@ -348,9 +349,14 @@ public class HystrixPlugins {
     
 
     private static HystrixDynamicProperties resolveDynamicProperties(ClassLoader classLoader) {
-        HystrixDynamicProperties hp = findService(HystrixDynamicProperties.class, classLoader);
+        HystrixDynamicProperties hp = getPluginImplementationViaProperties(HystrixDynamicProperties.class, 
+                HystrixDynamicPropertiesSystemProperties.getInstance());
         if (hp != null) return hp;
-        return HystrixArchaiusHelper.createArchaiusDynamicProperties();
+        hp = findService(HystrixDynamicProperties.class, classLoader);
+        if (hp != null) return hp;
+        hp = HystrixArchaiusHelper.createArchaiusDynamicProperties();
+        if (hp != null) return hp;
+        return HystrixDynamicPropertiesSystemProperties.getInstance();
     }
     
     private static <T> T findService(

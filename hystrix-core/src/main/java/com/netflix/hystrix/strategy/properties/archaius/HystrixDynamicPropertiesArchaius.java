@@ -16,7 +16,6 @@
 package com.netflix.hystrix.strategy.properties.archaius;
 
 import com.netflix.config.PropertyWrapper;
-import com.netflix.hystrix.strategy.properties.HystrixArchaiusHelper;
 import com.netflix.hystrix.strategy.properties.HystrixDynamicProperties;
 import com.netflix.hystrix.strategy.properties.HystrixDynamicProperty;
 

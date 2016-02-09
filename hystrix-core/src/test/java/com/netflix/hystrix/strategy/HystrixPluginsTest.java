@@ -15,8 +15,7 @@
  */
 package com.netflix.hystrix.strategy;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,6 +38,7 @@ import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
 import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisher;
 import com.netflix.hystrix.strategy.properties.HystrixDynamicProperties;
+import com.netflix.hystrix.strategy.properties.HystrixDynamicPropertiesSystemProperties;
 import com.netflix.hystrix.strategy.properties.HystrixDynamicProperty;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 
@@ -47,6 +47,7 @@ public class HystrixPluginsTest {
     public void reset() {
         //HystrixPlugins.reset();
         dynamicPropertyEvents.clear();
+        System.clearProperty("hystrix.plugin.HystrixDynamicProperties.implementation");
     }
     
     private static ConcurrentLinkedQueue<String> dynamicPropertyEvents = new ConcurrentLinkedQueue<String>();
@@ -85,6 +86,30 @@ public class HystrixPluginsTest {
 
     }
     
+    @Test
+    public void testDynamicSystemProperties() throws Exception {
+        //On the off chance this is the first test lets not screw up all the other tests
+        HystrixPlugins.getInstance();
+        
+        System.setProperty("hystrix.plugin.HystrixDynamicProperties.implementation", 
+                "com.netflix.hystrix.strategy.properties.HystrixDynamicPropertiesSystemProperties");
+        
+        HystrixPlugins plugins = setupMockServiceLoader();
+        assertTrue(plugins.getDynamicProperties() instanceof HystrixDynamicPropertiesSystemProperties);
+        
+        HystrixDynamicProperties p = plugins.getDynamicProperties();
+        //Some minimum testing of system properties wrapper
+        //this probably should be in its own test class.
+        assertTrue(p.getBoolean("USE_DEFAULT", true).get());
+        assertEquals("string", p.getString("USE_DEFAULT", "string").get());
+        assertEquals(1L, p.getLong("USE_DEFAULT", 1L).get().longValue());
+        assertEquals(1, p.getInteger("USE_DEFAULT", 1).get().intValue());
+        assertNotNull(p.getString("path.separator", null).get());
+
+        System.clearProperty("hystrix.plugin.HystrixDynamicProperties.implementation");
+
+    }
+        
     static String fakeServiceLoaderResource = 
             "FAKE_META_INF_SERVICES/com.netflix.hystrix.strategy.properties.HystrixDynamicProperties";
     
