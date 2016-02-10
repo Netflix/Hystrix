@@ -19,6 +19,9 @@ import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategyDefault;
 import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
@@ -61,12 +64,20 @@ public class HystrixPlugins {
     private final HystrixDynamicProperties dynamicProperties;
 
     
-    private HystrixPlugins(ClassLoader classLoader) {
+    private HystrixPlugins(ClassLoader classLoader, LoggerSupplier logSupplier) {
         //This will load Archaius if its in the classpath.
         this.classLoader = classLoader;
         //N.B. Do not use a logger before this is loaded as it will most likely load the configuration system.
         //The configuration system may need to do something prior to loading logging. @agentgt
-        dynamicProperties = resolveDynamicProperties(classLoader);
+        dynamicProperties = resolveDynamicProperties(classLoader, logSupplier);
+    }
+
+    /**
+     * For unit test purposes.
+     * @ExcludeFromJavadoc
+     */
+    /* private */ static HystrixPlugins create(ClassLoader classLoader, LoggerSupplier logSupplier) {
+        return new HystrixPlugins(classLoader, logSupplier);
     }
     
     /**
@@ -74,7 +85,12 @@ public class HystrixPlugins {
      * @ExcludeFromJavadoc
      */
     /* private */ static HystrixPlugins create(ClassLoader classLoader) {
-        return new HystrixPlugins(classLoader);
+        return new HystrixPlugins(classLoader, new LoggerSupplier() {
+            @Override
+            public Logger getLogger() {
+                return LoggerFactory.getLogger(HystrixPlugins.class);
+            }
+        });
     }
     /**
      * @ExcludeFromJavadoc
@@ -348,15 +364,33 @@ public class HystrixPlugins {
     
     
 
-    private static HystrixDynamicProperties resolveDynamicProperties(ClassLoader classLoader) {
+    private static HystrixDynamicProperties resolveDynamicProperties(ClassLoader classLoader, LoggerSupplier logSupplier) {
         HystrixDynamicProperties hp = getPluginImplementationViaProperties(HystrixDynamicProperties.class, 
                 HystrixDynamicPropertiesSystemProperties.getInstance());
-        if (hp != null) return hp;
+        if (hp != null) {
+            logSupplier.getLogger().debug(
+                    "Created HystrixDynamicProperties instance from System property named "
+                    + "\"hystrix.plugin.HystrixDynamicProperties.implementation\". Using class: {}", 
+                    hp.getClass().getCanonicalName());
+            return hp;
+        }
         hp = findService(HystrixDynamicProperties.class, classLoader);
-        if (hp != null) return hp;
+        if (hp != null) {
+            logSupplier.getLogger()
+                    .debug("Created HystrixDynamicProperties instance by loading from ServiceLoader. Using class: {}", 
+                            hp.getClass().getCanonicalName());
+            return hp;
+        }
         hp = HystrixArchaiusHelper.createArchaiusDynamicProperties();
-        if (hp != null) return hp;
-        return HystrixDynamicPropertiesSystemProperties.getInstance();
+        if (hp != null) {
+            logSupplier.getLogger().debug("Created HystrixDynamicProperties. Using class : {}", 
+                    hp.getClass().getCanonicalName());
+            return hp;
+        }
+        hp = HystrixDynamicPropertiesSystemProperties.getInstance();
+        logSupplier.getLogger().info("Using System Properties for HystrixDynamicProperties! Using class: {}", 
+                hp.getClass().getCanonicalName());
+        return hp;
     }
     
     private static <T> T findService(
@@ -370,6 +404,10 @@ public class HystrixPlugins {
                 return s;
         }
         return null;
+    }
+    
+    interface LoggerSupplier {
+        Logger getLogger();
     }
 
 

@@ -22,7 +22,6 @@ import com.netflix.hystrix.strategy.properties.HystrixDynamicProperty;
 /**
  * This class should not be imported from any class in core or else Archaius will be loaded.
  * @author agentgt
- * @see HystrixArchaiusHelper
  * @ExcludeFromJavadoc
  */
 /* package */ public class HystrixDynamicPropertiesArchaius implements HystrixDynamicProperties {
