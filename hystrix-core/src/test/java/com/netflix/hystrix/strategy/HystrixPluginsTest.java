@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Netflix, Inc.
+ * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,22 +15,270 @@
  */
 package com.netflix.hystrix.strategy;
 
+import static java.util.Arrays.asList;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.ServiceConfigurationError;
+import java.util.Vector;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.junit.After;
+import org.junit.Test;
+import org.slf4j.Logger;
 
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandGroupKey;
+import com.netflix.hystrix.strategy.HystrixPlugins.LoggerSupplier;
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
 import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
 import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisher;
+import com.netflix.hystrix.strategy.properties.HystrixDynamicProperties;
+import com.netflix.hystrix.strategy.properties.HystrixDynamicPropertiesSystemProperties;
+import com.netflix.hystrix.strategy.properties.HystrixDynamicProperty;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 
 public class HystrixPluginsTest {
     @After
     public void reset() {
-        HystrixPlugins.reset();
+        //HystrixPlugins.reset();
+        dynamicPropertyEvents.clear();
+        System.clearProperty("hystrix.plugin.HystrixDynamicProperties.implementation");
+    }
+    
+    private static ConcurrentLinkedQueue<String> dynamicPropertyEvents = new ConcurrentLinkedQueue<String>();
+
+    
+    @Test
+    public void testDynamicProperties() throws Exception {
+        fakeServiceLoaderResource = 
+                "FAKE_META_INF_SERVICES/com.netflix.hystrix.strategy.properties.HystrixDynamicProperties";
+        HystrixPlugins plugins = setupMockServiceLoader();
+        HystrixDynamicProperties properties = plugins.getDynamicProperties();
+        plugins.getCommandExecutionHook();
+        plugins.getPropertiesStrategy();
+        assertTrue(properties instanceof MockHystrixDynamicPropertiesTest);
+
+        assertEvents(
+                "[serviceloader: META-INF/services/com.netflix.hystrix.strategy.properties.HystrixDynamicProperties"
+                        + ", debug: [Created HystrixDynamicProperties instance by loading from ServiceLoader. Using class: {}, com.netflix.hystrix.strategy.HystrixPluginsTest.MockHystrixDynamicPropertiesTest]"
+                        + ", property: hystrix.plugin.HystrixCommandExecutionHook.implementation"
+                        + ", serviceloader: META-INF/services/com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook"
+                        + ", property: hystrix.plugin.HystrixPropertiesStrategy.implementation"
+                        + ", serviceloader: META-INF/services/com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy]");
+    }
+    
+    void assertEvents(String expect) throws Exception {
+        List<String> keys = getEvents();
+        String actual = keys.toString();
+        if (! actual.equals(expect)) {
+            javaPrintList(System.out, keys);
+        }
+        assertEquals(expect, actual);
+    }
+    
+    static List<String> getEvents() {
+        return new ArrayList<String>(dynamicPropertyEvents);
+    }
+    
+    static void javaPrintList(Appendable a, Iterable<String> list) throws IOException {
+        boolean first = true;
+        
+        for (String o : list) {
+            if (first) {
+                a.append("\"[");
+                first = false;
+            }
+            else {
+                a.append("\"");
+                a.append("\n+ \", ");
+            }
+            a.append(o);
+        }
+        a.append("]\"");
+    }
+    
+    @Test(expected=ServiceConfigurationError.class)
+    public void testDynamicPropertiesFailure() throws Exception {
+        /*
+         * James Bond: Do you expect me to talk?
+         * Auric Goldfinger: No, Mr. Bond, I expect you to die!
+         */
+        fakeServiceLoaderResource = 
+                "FAKE_META_INF_SERVICES/com.netflix.hystrix.strategy.properties.HystrixDynamicPropertiesFail";
+        HystrixPlugins plugins = setupMockServiceLoader();
+        plugins.getDynamicProperties();
+
+    }
+    
+    @Test
+    public void testDynamicSystemProperties() throws Exception {
+        //On the off chance this is the first test lets not screw up all the other tests
+        HystrixPlugins.getInstance();
+        
+        System.setProperty("hystrix.plugin.HystrixDynamicProperties.implementation", 
+                "com.netflix.hystrix.strategy.properties.HystrixDynamicPropertiesSystemProperties");
+        
+        HystrixPlugins plugins = setupMockServiceLoader();
+        assertTrue(plugins.getDynamicProperties() instanceof HystrixDynamicPropertiesSystemProperties);
+        
+        HystrixDynamicProperties p = plugins.getDynamicProperties();
+        //Some minimum testing of system properties wrapper
+        //this probably should be in its own test class.
+        assertTrue(p.getBoolean("USE_DEFAULT", true).get());
+        assertEquals("string", p.getString("USE_DEFAULT", "string").get());
+        assertEquals(1L, p.getLong("USE_DEFAULT", 1L).get().longValue());
+        assertEquals(1, p.getInteger("USE_DEFAULT", 1).get().intValue());
+        assertNotNull(p.getString("path.separator", null).get());
+        
+        assertEvents("[debug: [Created HystrixDynamicProperties instance from System property named \"hystrix.plugin.HystrixDynamicProperties.implementation\". Using class: {}, com.netflix.hystrix.strategy.properties.HystrixDynamicPropertiesSystemProperties]]");
+
+        System.clearProperty("hystrix.plugin.HystrixDynamicProperties.implementation");
+
+    }
+        
+    static String fakeServiceLoaderResource = 
+            "FAKE_META_INF_SERVICES/com.netflix.hystrix.strategy.properties.HystrixDynamicProperties";
+    
+    private HystrixPlugins setupMockServiceLoader() throws Exception {
+        final ClassLoader realLoader = HystrixPlugins.class.getClassLoader();
+        ClassLoader loader = new WrappedClassLoader(realLoader) {
+
+            @Override
+            public Enumeration<URL> getResources(String name) throws IOException {
+                dynamicPropertyEvents.add("serviceloader: " + name);
+                final Enumeration<URL> r;
+                if (name.endsWith("META-INF/services/com.netflix.hystrix.strategy.properties.HystrixDynamicProperties")) {
+                    Vector<URL> vs = new Vector<URL>();
+                    URL u = super.getResource(fakeServiceLoaderResource);
+                    vs.add(u);
+                    return vs.elements();
+                } else {
+                    r = super.getResources(name);
+                }
+                return r;
+            }
+        };
+        final Logger mockLogger = (Logger) 
+                Proxy.newProxyInstance(realLoader, new Class<?>[] {Logger.class}, new MockLoggerInvocationHandler());
+        return HystrixPlugins.create(loader, new LoggerSupplier() {
+            @Override
+            public Logger getLogger() {
+                return mockLogger;
+            }
+        });
+    }
+    
+    static class MockLoggerInvocationHandler implements InvocationHandler {
+
+        @Override
+        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+            dynamicPropertyEvents.offer(method.getName() + ": " + asList(args));
+            return null;
+        }
+        
+    }
+
+    static class WrappedClassLoader extends ClassLoader {
+
+        final ClassLoader delegate;
+
+        public WrappedClassLoader(ClassLoader delegate) {
+            super();
+            this.delegate = delegate;
+        }
+
+        public Class<?> loadClass(String name) throws ClassNotFoundException {
+            return delegate.loadClass(name);
+        }
+
+        public URL getResource(String name) {
+            return delegate.getResource(name);
+        }
+
+        public Enumeration<URL> getResources(String name) throws IOException {
+            return delegate.getResources(name);
+        }
+
+        public InputStream getResourceAsStream(String name) {
+            return delegate.getResourceAsStream(name);
+        }
+
+        public void setDefaultAssertionStatus(boolean enabled) {
+            delegate.setDefaultAssertionStatus(enabled);
+        }
+
+        public void setPackageAssertionStatus(String packageName, boolean enabled) {
+            delegate.setPackageAssertionStatus(packageName, enabled);
+        }
+
+        public void setClassAssertionStatus(String className, boolean enabled) {
+            delegate.setClassAssertionStatus(className, enabled);
+        }
+
+        public void clearAssertionStatus() {
+            delegate.clearAssertionStatus();
+        }
+    }
+
+    private static class NoOpProperty<T> implements HystrixDynamicProperty<T> {
+
+        @Override
+        public T get() {
+            return null;
+        }
+
+        @Override
+        public void addCallback(Runnable callback) {
+        }
+
+        @Override
+        public String getName() {
+            return "NOP";
+        }
+        
+    }
+    
+    public static class MockHystrixDynamicPropertiesTest implements HystrixDynamicProperties {
+
+        @Override
+        public HystrixDynamicProperty<String> getString(String name, String fallback) {
+            dynamicPropertyEvents.offer("property: " + name);
+            return new NoOpProperty<String>();
+        }
+
+        @Override
+        public HystrixDynamicProperty<Integer> getInteger(String name, Integer fallback) {
+            dynamicPropertyEvents.offer("property: " + name);
+            return new NoOpProperty<Integer>();
+        }
+
+        @Override
+        public HystrixDynamicProperty<Long> getLong(String name, Long fallback) {
+            dynamicPropertyEvents.offer("property: " + name);
+            return new NoOpProperty<Long>();
+
+        }
+
+        @Override
+        public HystrixDynamicProperty<Boolean> getBoolean(String name, Boolean fallback) {
+            dynamicPropertyEvents.offer("property: " + name);
+            return new NoOpProperty<Boolean>();
+
+        }
+        
     }
 
     /*    @Test
