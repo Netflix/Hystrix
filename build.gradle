@@ -58,22 +58,25 @@ subprojects {
     publishing {
         publications {
             nebula(MavenPublication) {
-                pom.withXml {
-                    configurations.compile.resolvedConfiguration.firstLevelModuleDependencies.each { dep ->
-                        if (dep.moduleName == "servlet-api") {
-                            asNode().dependencies[0].dependency.find {
-                                it.artifactId[0].text() == dep.moduleName &&
-                                        it.groupId[0].text() == dep.moduleGroup
-                            }.scope[0].value = 'provided'
-                        } else {
-                            asNode().dependencies[0].dependency.find {
-                                it.artifactId[0].text() == dep.moduleName &&
-                                        it.groupId[0].text() == dep.moduleGroup
-                            }.scope[0].value = 'compile'
-                        }
-                    }
-                }
-            }
+				println("project.name -> " + project.name)
+				if (!project.name.equals("hystrix-dashboard") && !project.name.equals("hystrix-examples-webapp")) {
+					pom.withXml {
+						configurations.compile.resolvedConfiguration.firstLevelModuleDependencies.each { dep ->
+							if (dep.moduleName == "servlet-api") {
+								asNode().dependencies[0].dependency.find {
+									it.artifactId[0].text() == dep.moduleName &&
+									it.groupId[0].text() == dep.moduleGroup
+								}.scope[0].value = 'provided'
+							} else {
+								asNode().dependencies[0].dependency.find {
+									it.artifactId[0].text() == dep.moduleName &&
+									it.groupId[0].text() == dep.moduleGroup
+								}.scope[0].value = 'compile'
+							}
+						}
+					}
+				}
+			}
         }
     }
 }
