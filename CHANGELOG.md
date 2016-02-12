@@ -1,5 +1,55 @@
 # Hystrix Releases #
 
+### Version 1.5.0-rc.3 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.5.0-rc.3%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.5.0-rc.3/)) ###
+
+This version does not have any known bugs, but is not recommended for production use until 1.5.0.
+
+A few dependency bumps, but the major change here is that Archaius is now a soft dependency of hystrix-core.  Thanks to @agentgt for the PR!. Thanks also to @caarlos0 for the NPE fix in HystrixRequestCache.
+ 
+Included changes: 
+
+* [Pull 1079](https://github.com/Netflix/Hystrix/pull/1079) Remove dynamic config lookup in HystrixThreadPool
+* [Pull 1081](https://github.com/Netflix/Hystrix/pull/1081) Cleanup hystrix-javanica BadRequest docs
+* [Pull 1093](https://github.com/Netflix/Hystrix/pull/1093) Fix NPE in HystrixRequestCache when HystrixRequestContext not initialized
+* [Pull 1083](https://github.com/Netflix/Hystrix/pull/1083) Made Archaius a soft dependency of hystrix-core.  It is now possible to run without Archaius and rely on j.u.l.ServiceLoader or system properties only
+* [Pull 1095](https://github.com/Netflix/Hystrix/pull/1095) Upgrade to Nebula netflixoss 3.2.3
+* [Pull 1096](https://github.com/Netflix/Hystrix/pull/1096) Upgrade to RxJava 1.1.1
+* [Pull 1097](https://github.com/Netflix/Hystrix/pull/1097) Fix POM generation by excluding WAR artifacts
+
+### Version 1.5.0-rc.2 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.5.0-rc.2%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.5.0-rc.2/)) ###
+
+This version does not have any known bugs, but is not recommended for production use until 1.5.0.
+
+This is mostly a new set of features building on top of Release Candidate 1.  Specifically, some sample streams ([Configuration](https://github.com/Netflix/Hystrix/wiki/Metrics-and-Monitoring#configuration-stream) and [Utilization](https://github.com/Netflix/Hystrix/wiki/Metrics-and-Monitoring#utilization-stream)) have been added, along with a [request-scoped stream](https://github.com/Netflix/Hystrix/wiki/Metrics-and-Monitoring#request-streams).
+ 
+Included changes: 
+
+* [Pull 1050](https://github.com/Netflix/Hystrix/pull/1050) Modular command construction
+* [Pull 1061](https://github.com/Netflix/Hystrix/pull/1061) Sample config/utilization streams, and request-scoped streams
+* [Pull 1064](https://github.com/Netflix/Hystrix/pull/1064) Safer enum references in case mismatched Hystrix jars are deployed together
+* [Pull 1066](https://github.com/Netflix/Hystrix/pull/1066) Layer of abstraction on top of ThreadFactory, so AppEngine can run Hystrix
+* [Pull 1067](https://github.com/Netflix/Hystrix/pull/1067) Decouple sample stream JSON from servlets
+* [Pull 1067](https://github.com/Netflix/Hystrix/pull/1068) Decouple request-scoped stream JSON from servlets
+* [Pull 1075](https://github.com/Netflix/Hystrix/pull/1075) Deprecate userThreadLatency, since it is practically identical to executionLatency now
+
+### Version 1.5.0-rc.1 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.5.0-rc.1%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.5.0-rc.1/)) ###
+
+This version does not have any known bugs, but *is not* recommended for production use until 1.5.0.
+
+The general premise of this release is to make metrics more flexible within Hystrix. See https://github.com/Netflix/Hystrix/wiki/Metrics-and-Monitoring for a deep dive on the new metrics architecture.  The high-level view is to make the metrics primitive a stream instead of an aggregate.  In 1.4.x and prior releases, `HystrixRollingNumber` and `HystrixRollingPercentile` were used to store aggregate command counters and command latencies, respectively.  These are no longer used.  
+
+Instead, new concepts like `HystrixCommandCompletionStream` are present.  These may be consumed by a rolling, summarizing data structure (like `HystrixRollingNumber`), or they may be consumed without any aggregation at all.  This should allow for all metrics processing to move off-box, if you desire to add that piece to your infrastructure.
+
+This version should be backwards-compatible with v1.4.x.  If you find otherwise, please submit a Hystrix issue as it was unintentional.
+
+Some known semantic changes:
+* Latencies for timeouts and bad-requests are now included in command latency
+* Latency distribution percentiles are now calculated with HdrHistogram library and don't have a max number of elements in the distribution
+* Previously, HealthCounts data allowed reads to see the value in the "hot" bucket.  (the one currently being written to).  That does not happen anymore - only full read-only buckets are available for reads.
+* Bucket rolling now happens via Rx background threads instead of unlucky Hystrix command threads.  This makes command performance more predictable.  User-thread latency is now practically indistinguishable from command latency.
+
+Artifacts: [Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.5.0-rc.1%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.5.0-rc.1/)
+
 ### Version 1.4.23 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.23%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.23/)) ###
 
 * [Pull 1032](https://github.com/Netflix/Hystrix/pull/1032) Make number of timer threads a piece of config (with Archaius integration)
