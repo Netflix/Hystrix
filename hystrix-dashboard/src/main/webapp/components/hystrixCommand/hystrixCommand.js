@@ -115,7 +115,6 @@
 		function convertAllAvg(data) {
 			convertAvg(data, "errorPercentage", true);
 			convertAvg(data, "latencyExecute_mean", false);
-			convertAvg(data, "latencyTotal_mean", false);
 			
 			// the following will break when it becomes a compound string if the property is dynamically changed
 			convertAvg(data, "propertyValue_metricsRollingStatisticalWindowInMilliseconds", false);
@@ -174,8 +173,6 @@
             assertNotNull(data,"currentConcurrentExecutionCount");
             assertNotNull(data,"latencyExecute_mean");
             assertNotNull(data,"latencyExecute");
-            assertNotNull(data,"latencyTotal_mean");
-            assertNotNull(data,"latencyTotal");
             assertNotNull(data,"propertyValue_circuitBreakerRequestVolumeThreshold");
             assertNotNull(data,"propertyValue_circuitBreakerSleepWindowInMilliseconds");
             assertNotNull(data,"propertyValue_circuitBreakerErrorThresholdPercentage");

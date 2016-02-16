@@ -58,7 +58,6 @@ subprojects {
     publishing {
         publications {
             nebula(MavenPublication) {
-				println("project.name -> " + project.name)
 				if (!project.name.equals("hystrix-dashboard") && !project.name.equals("hystrix-examples-webapp")) {
 					pom.withXml {
 						configurations.compile.resolvedConfiguration.firstLevelModuleDependencies.each { dep ->
