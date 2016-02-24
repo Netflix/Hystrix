@@ -206,7 +206,6 @@ public class Hystrix {
         }
     }
 
-
     public static <E> E execute(HystrixCommandGroupKey group, LambdaCommand<E> command) {
       return execute(group, command, null);
     }
