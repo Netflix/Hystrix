@@ -15,6 +15,7 @@
  */
 package com.netflix.hystrix.strategy.concurrency;
 
+import java.io.Closeable;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.netflix.hystrix.HystrixCollapser;
@@ -60,7 +61,7 @@ import com.netflix.hystrix.HystrixRequestLog;
  * <p>
  * <b>NOTE:</b> If <code>initializeContext()</code> is called then <code>shutdown()</code> must also be called or a memory leak will occur.
  */
-public class HystrixRequestContext {
+public class HystrixRequestContext implements Closeable {
 
     /*
      * ThreadLocal on each thread will hold the HystrixRequestVariableState.
@@ -142,4 +143,16 @@ public class HystrixRequestContext {
             state = null;
         }
     }
+
+    /**
+     * Shutdown {@link HystrixRequestVariableDefault} objects in this context.
+     * <p>
+     * <b>NOTE: This must be called if <code>initializeContext()</code> was called or a memory leak will occur.</b>
+     *
+     * This method invokes <code>shutdown()</code>
+     */
+    public void close() {
+      shutdown();
+    }
+
 }
