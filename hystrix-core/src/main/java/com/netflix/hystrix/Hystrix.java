@@ -205,4 +205,14 @@ public class Hystrix {
             }
         }
     }
+
+
+    public static <E> E execute(HystrixCommandGroupKey group, LambdaCommand<E> command) {
+      return execute(group, command, null);
+    }
+
+    public static <E> E execute(HystrixCommandGroupKey group, LambdaCommand<E> command, LambdaCommandFallback<E> fallback) {
+      return new HystrixLambdaCommand<E>(group, command, fallback).execute();
+    }
+
 }
