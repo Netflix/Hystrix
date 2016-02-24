@@ -1,5 +1,13 @@
 # Hystrix Releases #
 
+### Version 1.5.0-rc.5 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.5.0-rc.5%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.5.0-rc.5/)) ###
+
+This version does not have any known bugs, but is not recommended for production use until 1.5.0.
+
+Included changes: 
+
+* [Pull 1102](https://github.com/Netflix/Hystrix/pull/1102) Bugfix to null check on HystrixRequestCache context
+
 ### Version 1.5.0-rc.4 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.5.0-rc.4%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.5.0-rc.4/)) ###
 
 This version does not have any known bugs, but is not recommended for production use until 1.5.0.
