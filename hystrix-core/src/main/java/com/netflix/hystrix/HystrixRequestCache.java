@@ -15,18 +15,15 @@
  */
 package com.netflix.hystrix;
 
-import java.util.concurrent.ConcurrentHashMap;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import rx.Observable;
-
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
-import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestVariableDefault;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestVariableHolder;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestVariableLifecycle;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import rx.Observable;
+
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Cache that is scoped to the current request as managed by {@link HystrixRequestVariableDefault}.
@@ -101,11 +98,12 @@ public class HystrixRequestCache {
     /* package */<T> Observable<T> get(String cacheKey) {
         ValueCacheKey key = getRequestCacheKey(cacheKey);
         if (key != null) {
-            if (!HystrixRequestContext.isCurrentThreadInitialized()) {
+            ConcurrentHashMap<ValueCacheKey, Observable<?>> cacheInstance = requestVariableForCache.get(concurrencyStrategy);
+            if (cacheInstance == null) {
                 throw new IllegalStateException("Request caching is not available. Maybe you need to initialize the HystrixRequestContext?");
             }
             /* look for the stored value */
-            return (Observable<T>) requestVariableForCache.get(concurrencyStrategy).get(key);
+            return (Observable<T>) cacheInstance.get(key);
         }
         return null;
     }
@@ -128,7 +126,11 @@ public class HystrixRequestCache {
         ValueCacheKey key = getRequestCacheKey(cacheKey);
         if (key != null) {
             /* look for the stored value */
-            Observable<T> alreadySet = (Observable<T>) requestVariableForCache.get(concurrencyStrategy).putIfAbsent(key, f);
+            ConcurrentHashMap<ValueCacheKey, Observable<?>> cacheInstance = requestVariableForCache.get(concurrencyStrategy);
+            if (cacheInstance == null) {
+                throw new IllegalStateException("Request caching is not available.  Maybe you need to initialize the HystrixRequestContext?");
+            }
+            Observable<T> alreadySet = (Observable<T>) cacheInstance.putIfAbsent(key, f);
             if (alreadySet != null) {
                 // someone beat us so we didn't cache this
                 return alreadySet;
