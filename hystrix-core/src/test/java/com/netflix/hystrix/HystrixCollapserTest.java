@@ -371,7 +371,7 @@ public class HystrixCollapserTest {
         System.out.println("tasks in test: " + timer.tasks);
 
         // simulate request lifecycle
-        requestContext.shutdown();
+        requestContext.close();
 
         System.out.println("timer.tasks.size() B: " + timer.tasks.size());
 
@@ -454,7 +454,7 @@ public class HystrixCollapserTest {
         }
 
         // simulate request lifecycle
-        requestContext.shutdown();
+        requestContext.close();
 
         HystrixRequestVariableHolder<RequestCollapser<?, ?, ?>> rv = RequestCollapserFactory.getRequestVariable(new TestRequestCollapser(timer, 1).getCollapserKey().name());
 
