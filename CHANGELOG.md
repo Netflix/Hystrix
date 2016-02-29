@@ -1,5 +1,12 @@
 # Hystrix Releases #
 
+### Version 1.4.24 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.24%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.24/)) ###
+
+* [Pull 1113](https://github.com/Netflix/Hystrix/pull/1113) Make HystrixRequestContext implement Closeable
+* [Pull 1112](https://github.com/Netflix/Hystrix/pull/1112) Upgrade to latest Nebula Gradle plugin
+* [Pull 1110](https://github.com/Netflix/Hystrix/pull/1110) Upgrade to RxJava 1.1.1
+* [Pull 1108](https://github.com/Netflix/Hystrix/pull/1108) Javanica HystrixRequestCacheManager should use the concurrency strategy 
+
 ### Version 1.5.0-rc.5 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.5.0-rc.5%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.5.0-rc.5/)) ###
 
 This version does not have any known bugs, but is not recommended for production use until 1.5.0.
