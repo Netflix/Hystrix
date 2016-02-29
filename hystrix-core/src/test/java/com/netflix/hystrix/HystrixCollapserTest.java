@@ -369,7 +369,7 @@ public class HystrixCollapserTest {
         assertEquals(1, cmdIterator.next().getNumberCollapsed());
 
         // simulate request lifecycle
-        requestContext.shutdown();
+        requestContext.close();
 
         System.out.println("timer.tasks.size() B: " + timer.tasks.size());
 
@@ -452,7 +452,7 @@ public class HystrixCollapserTest {
         assertEquals(1, cmdIterator.next().getNumberCollapsed());
 
         // simulate request lifecycle
-        requestContext.shutdown();
+        requestContext.close();
 
         HystrixRequestVariableHolder<RequestCollapser<?, ?, ?>> rv = RequestCollapserFactory.getRequestVariable(new TestRequestCollapser(timer, 1).getCollapserKey().name());
 
