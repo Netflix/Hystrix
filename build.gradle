@@ -8,7 +8,7 @@ buildscript {
 }
 
 plugins {
-    id 'nebula.netflixoss' version '3.1.2'
+    id 'nebula.netflixoss' version '3.2.3'
     id 'me.champeau.gradle.jmh' version '0.2.0'
     id 'net.saliman.cobertura' version '2.2.8'
 }
@@ -58,22 +58,24 @@ subprojects {
     publishing {
         publications {
             nebula(MavenPublication) {
-                pom.withXml {
-                    configurations.compile.resolvedConfiguration.firstLevelModuleDependencies.each { dep ->
-                        if (dep.moduleName == "servlet-api") {
-                            asNode().dependencies[0].dependency.find {
-                                it.artifactId[0].text() == dep.moduleName &&
-                                        it.groupId[0].text() == dep.moduleGroup
-                            }.scope[0].value = 'provided'
-                        } else {
-                            asNode().dependencies[0].dependency.find {
-                                it.artifactId[0].text() == dep.moduleName &&
-                                        it.groupId[0].text() == dep.moduleGroup
-                            }.scope[0].value = 'compile'
-                        }
-                    }
-                }
-            }
+				if (!project.name.equals("hystrix-dashboard") && !project.name.equals("hystrix-examples-webapp")) {
+					pom.withXml {
+						configurations.compile.resolvedConfiguration.firstLevelModuleDependencies.each { dep ->
+							if (dep.moduleName == "servlet-api") {
+								asNode().dependencies[0].dependency.find {
+									it.artifactId[0].text() == dep.moduleName &&
+									it.groupId[0].text() == dep.moduleGroup
+								}.scope[0].value = 'provided'
+							} else {
+								asNode().dependencies[0].dependency.find {
+									it.artifactId[0].text() == dep.moduleName &&
+									it.groupId[0].text() == dep.moduleGroup
+								}.scope[0].value = 'compile'
+							}
+						}
+					}
+				}
+			}
         }
     }
 }
