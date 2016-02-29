@@ -133,7 +133,17 @@ public class HystrixMetricsStreamServlet extends HttpServlet {
                 response.setHeader("Cache-Control", "no-cache, no-store, max-age=0, must-revalidate");
                 response.setHeader("Pragma", "no-cache");
 
-                MetricJsonListener jsonListener = new MetricJsonListener();
+                int queueSize = 1000;
+                try {
+                    String q = request.getParameter("queueSize");
+                    if (q != null) {
+                        queueSize = Math.max(Integer.parseInt(q), queueSize);
+                    }
+                } catch (Exception e) {
+                    // ignore if it's not a number
+                }
+
+                MetricJsonListener jsonListener = new MetricJsonListener(queueSize);
                 poller = new HystrixMetricsPoller(jsonListener, delay);
                 // start polling and it will write directly to the output stream
                 poller.start();
@@ -205,7 +215,11 @@ public class HystrixMetricsStreamServlet extends HttpServlet {
          * <p>
          * This is a safety check against a runaway poller causing memory leaks.
          */
-        private final LinkedBlockingQueue<String> jsonMetrics = new LinkedBlockingQueue<String>(1000);
+        private LinkedBlockingQueue<String> jsonMetrics;
+
+        public MetricJsonListener(int queueSize) {
+            jsonMetrics = new LinkedBlockingQueue<String>(queueSize);
+        }
 
         /**
          * Store JSON messages in a queue.
