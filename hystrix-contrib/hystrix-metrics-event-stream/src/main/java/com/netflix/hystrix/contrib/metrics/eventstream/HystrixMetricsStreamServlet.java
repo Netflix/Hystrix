@@ -60,6 +60,7 @@ public class HystrixMetricsStreamServlet extends HttpServlet {
     /* used to track number of connections and throttle */
     private static AtomicInteger concurrentConnections = new AtomicInteger(0);
     private static DynamicIntProperty maxConcurrentConnections = DynamicPropertyFactory.getInstance().getIntProperty("hystrix.stream.maxConcurrentConnections", 5);
+    private static DynamicIntProperty defaultMetricListenerQueueSize = DynamicPropertyFactory.getInstance().getIntProperty("hystrix.stream.defaultMetricListenerQueueSize", 1000);
 
     private static volatile boolean isDestroyed = false;
     
@@ -133,11 +134,11 @@ public class HystrixMetricsStreamServlet extends HttpServlet {
                 response.setHeader("Cache-Control", "no-cache, no-store, max-age=0, must-revalidate");
                 response.setHeader("Pragma", "no-cache");
 
-                int queueSize = 1000;
+                int queueSize = defaultMetricListenerQueueSize.get();
                 try {
                     String q = request.getParameter("queueSize");
                     if (q != null) {
-                        queueSize = Math.max(Integer.parseInt(q), queueSize);
+                        queueSize = Integer.parseInt(q);
                     }
                 } catch (Exception e) {
                     // ignore if it's not a number
