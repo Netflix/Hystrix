@@ -1,6 +1,31 @@
 # Hystrix Releases #
 
-### Version 1.4.24 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.24%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.24/)) ###
+### Version 1.5.1 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.5.1%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.5.1/)) ###
+
+* [Pull 1118](https://github.com/Netflix/Hystrix/pull/1118) Revert #1075.  Return userThreadLatency to metrics, mostly to maintain format compatibility with data streams from 1.4.x
+* [Pull 1116](https://github.com/Netflix/Hystrix/pull/1116) Fix references to underscore.js over HTTPS
+* [Pull 1115](https://github.com/Netflix/Hystrix/pull/1115) Fix LICENSE reference in README
+* [Pull 1111](https://github.com/Netflix/Hystrix/pull/1111) HystrixRequestContext implements Closeable
+
+### Version 1.5.0 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.5.0%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.5.0/)) ###
+
+The general premise of this release is to make metrics more flexible within Hystrix. See https://github.com/Netflix/Hystrix/wiki/Metrics-and-Monitoring for a deep dive on the new metrics architecture.  The high-level approach is to model metrics directly as a stream, so that Hystrix metrics consumers may aggregate the metrics as they wish. In 1.4.x and prior releases, `HystrixRollingNumber` and `HystrixRollingPercentile` were used to store aggregate command counters and command latencies, respectively.  These are no longer used.  
+
+Instead, new concepts like `HystrixCommandCompletionStream` are present.  These may be consumed by a rolling, summarizing data structure (like `HystrixRollingNumber`), or they may be consumed without any aggregation at all.  This should allow for all metrics processing to move off-box, if you desire to add that piece to your infrastructure.
+
+This version should be backwards-compatible with v1.4.x.  If you find otherwise, please submit a Hystrix issue as it was unintentional.
+
+This version also introduces new metric streams: ([configuration](https://github.com/Netflix/Hystrix/wiki/Metrics-and-Monitoring#configuration-stream) and [Utilization](https://github.com/Netflix/Hystrix/wiki/Metrics-and-Monitoring#utilization-stream)) have been added, along with a [request-scoped stream](https://github.com/Netflix/Hystrix/wiki/Metrics-and-Monitoring#request-streams).
+
+Archaius is now a soft-dependency of Hystrix, so you can supply your own configuration mechanism.
+
+Some known semantic changes:
+* Latencies for timeouts and bad-requests are now included in command latency
+* Latency distribution percentiles are now calculated with HdrHistogram library and don't have a max number of elements in the distribution
+* Previously, HealthCounts data allowed reads to see the value in the "hot" bucket.  (the one currently being written to).  That does not happen anymore - only full read-only buckets are available for reads.
+* Bucket rolling now happens via Rx background threads instead of unlucky Hystrix command threads.  This makes command performance more predictable.  User-thread latency is now practically indistinguishable from command latency.
+
+Artifacts: [Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.5.0%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.5.0/)
 
 * [Pull 1113](https://github.com/Netflix/Hystrix/pull/1113) Make HystrixRequestContext implement Closeable
 * [Pull 1112](https://github.com/Netflix/Hystrix/pull/1112) Upgrade to latest Nebula Gradle plugin
