@@ -25,7 +25,7 @@ Some known semantic changes:
 * Previously, HealthCounts data allowed reads to see the value in the "hot" bucket.  (the one currently being written to).  That does not happen anymore - only full read-only buckets are available for reads.
 * Bucket rolling now happens via Rx background threads instead of unlucky Hystrix command threads.  This makes command performance more predictable.  User-thread latency is now practically indistinguishable from command latency.
 
-Artifacts: [Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.5.0%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.5.0/)
+### Version 1.4.24 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.24%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.24/)) ###
 
 * [Pull 1113](https://github.com/Netflix/Hystrix/pull/1113) Make HystrixRequestContext implement Closeable
 * [Pull 1112](https://github.com/Netflix/Hystrix/pull/1112) Upgrade to latest Nebula Gradle plugin
