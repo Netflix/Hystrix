@@ -931,8 +931,6 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
         return false;
     }
 
-    private static final HystrixTimeoutException TIMEOUT_EXCEPTION_INSTANCE = new HystrixTimeoutException();
-
     private static class HystrixObservableTimeoutOperator<R> implements Operator<R, R> {
 
         final AbstractCommand<R> originalCommand;
@@ -955,7 +953,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 
                 @Override
                 public void run() {
-                    child.onError(TIMEOUT_EXCEPTION_INSTANCE);
+                    child.onError(new HystrixTimeoutException());
                 }
             });
 
