@@ -928,8 +928,6 @@ import java.util.concurrent.atomic.AtomicReference;
         return false;
     }
 
-    private static final HystrixTimeoutException TIMEOUT_EXCEPTION_INSTANCE = new HystrixTimeoutException();
-
     private static class HystrixObservableTimeoutOperator<R> implements Operator<R, R> {
 
         final AbstractCommand<R> originalCommand;
@@ -952,7 +950,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
                 @Override
                 public void run() {
-                    child.onError(TIMEOUT_EXCEPTION_INSTANCE);
+                    child.onError(new HystrixTimeoutException());
                 }
             });
 
