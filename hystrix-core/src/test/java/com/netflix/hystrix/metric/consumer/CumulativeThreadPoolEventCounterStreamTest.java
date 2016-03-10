@@ -296,7 +296,7 @@ public class CumulativeThreadPoolEventCounterStreamTest extends CommandStreamTes
         List<Command> saturators = new ArrayList<Command>();
 
         for (int i = 0; i < 10; i++) {
-            saturators.add(CommandStreamTest.Command.from(groupKey, key, HystrixEventType.SUCCESS, 200, HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE));
+            saturators.add(CommandStreamTest.Command.from(groupKey, key, HystrixEventType.SUCCESS, 300, HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE));
         }
 
         CommandStreamTest.Command rejected1 = CommandStreamTest.Command.from(groupKey, key, HystrixEventType.SUCCESS, 0, HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE);
@@ -312,7 +312,7 @@ public class CumulativeThreadPoolEventCounterStreamTest extends CommandStreamTes
         }
 
         try {
-            Thread.sleep(100);
+            Thread.sleep(10);
         } catch (InterruptedException ie) {
             fail(ie.getMessage());
         }
