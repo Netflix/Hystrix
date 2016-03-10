@@ -137,7 +137,7 @@ public class HystrixMetricsStreamServlet extends HttpServlet {
                 poller = new HystrixMetricsPoller(jsonListener, delay);
                 // start polling and it will write directly to the output stream
                 poller.start();
-                logger.info("Starting poller");
+                logger.debug("Starting poller");
 
                 // we will use a "single-writer" approach where the Servlet thread does all the writing
                 // by fetching JSON messages from the MetricJsonListener to write them to the output
@@ -172,7 +172,7 @@ public class HystrixMetricsStreamServlet extends HttpServlet {
                     }
                 } catch (InterruptedException e) {
                     poller.shutdown();
-                    logger.debug("InterruptedException. Will stop polling.");	
+                    logger.debug("InterruptedException. Will stop polling.");
                     Thread.currentThread().interrupt();
                 } catch (IOException e) {
                     poller.shutdown();
@@ -180,7 +180,7 @@ public class HystrixMetricsStreamServlet extends HttpServlet {
                     logger.debug("IOException while trying to write (generally caused by client disconnecting). Will stop polling.", e);
                 } catch (Exception e) {
                     poller.shutdown();
-                    logger.error("Failed to write. Will stop polling.", e);
+                    logger.error("Failed to write Hystrix metrics. Will stop polling.", e);
                 }
                 logger.debug("Stopping Turbine stream to connection");
             }

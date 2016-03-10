@@ -93,7 +93,7 @@ public class HystrixMetricsPoller {
     public synchronized void start() {
         // use compareAndSet to make sure it starts only once and when not running
         if (running.compareAndSet(false, true)) {
-            logger.info("Starting HystrixMetricsPoller");
+            logger.debug("Starting HystrixMetricsPoller");
             try {
                 scheduledTask = executor.scheduleWithFixedDelay(new MetricsPoller(listener), 0, delay, TimeUnit.MILLISECONDS);
             } catch (Throwable ex) {
@@ -110,7 +110,7 @@ public class HystrixMetricsPoller {
     public synchronized void pause() {
         // use compareAndSet to make sure it stops only once and when running
         if (running.compareAndSet(true, false)) {
-            logger.info("Stopping the HystrixMetricsPoller");
+            logger.debug("Stopping the HystrixMetricsPoller");
             scheduledTask.cancel(true);
         } else {
             logger.debug("Attempted to pause a stopped poller");
