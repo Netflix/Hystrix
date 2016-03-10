@@ -55,6 +55,7 @@ public class HystrixCollapserTest {
         // since we're going to modify properties of the same class between tests, wipe the cache each time
         HystrixCollapser.reset();
         HystrixCollapserMetrics.reset();
+        HystrixCommandMetrics.reset();
         /* we must call this to simulate a new request lifecycle running and clearing caches */
         context = HystrixRequestContext.initializeContext();
     }
