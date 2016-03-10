@@ -36,6 +36,7 @@ public class HystrixTimerTest {
     public void setUp() {
         HystrixTimer timer = HystrixTimer.getInstance();
         HystrixTimer.reset();
+        HystrixPlugins.reset();
     }
 
     @After
