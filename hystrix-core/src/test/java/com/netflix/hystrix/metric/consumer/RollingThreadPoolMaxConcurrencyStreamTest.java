@@ -108,8 +108,8 @@ public class RollingThreadPoolMaxConcurrencyStreamTest extends CommandStreamTest
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
 
-        Command cmd1 = Command.from(groupKey, key, HystrixEventType.SUCCESS, 10);
-        Command cmd2 = Command.from(groupKey, key, HystrixEventType.SUCCESS, 14);
+        Command cmd1 = Command.from(groupKey, key, HystrixEventType.SUCCESS, 50);
+        Command cmd2 = Command.from(groupKey, key, HystrixEventType.SUCCESS, 40);
 
         cmd1.observe();
         Thread.sleep(1);
@@ -411,7 +411,7 @@ public class RollingThreadPoolMaxConcurrencyStreamTest extends CommandStreamTest
         System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
 
         for (Command rejectedCmd: rejected) {
-            assertTrue(rejectedCmd.isResponseSemaphoreRejected());
+            assertTrue(rejectedCmd.isResponseSemaphoreRejected() || rejectedCmd.isResponseShortCircuited());
         }
         //should be 0 since all are executed in a semaphore
         assertEquals(0, stream.getLatestRollingMax());
