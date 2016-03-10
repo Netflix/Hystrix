@@ -3,3 +3,6 @@ sudo: false
 
 jdk:
   - oraclejdk7
+
+script:
+  - ./gradlew --info check
