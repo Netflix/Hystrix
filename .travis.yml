@@ -5,4 +5,4 @@ jdk:
   - oraclejdk7
 
 script:
-  gradle --info check
+  ./gradlew --info check
