@@ -3124,7 +3124,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
                         if (acquired) {
                             try {
                                 numAcquired.incrementAndGet();
-                                Thread.sleep(10);
+                                Thread.sleep(100);
                             } catch (InterruptedException ex) {
                                 ex.printStackTrace();
                             } finally {
