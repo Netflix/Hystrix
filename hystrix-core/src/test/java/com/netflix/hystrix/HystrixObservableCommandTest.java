@@ -1409,7 +1409,6 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         assertTrue(command4.isResponseFromCache());
         assertTrue(command4.getExecutionTimeInMilliseconds() == -1);
 
-        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
         assertSaneHystrixRequestLog(4);
 
         // semaphore isolated
