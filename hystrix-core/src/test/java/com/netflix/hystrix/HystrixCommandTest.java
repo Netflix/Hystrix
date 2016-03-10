@@ -1093,7 +1093,8 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertCommandExecutionEvents(command1); //still in-flight, no events yet
         assertCommandExecutionEvents(command2); //still in-flight, no events yet
         assertCommandExecutionEvents(command3, HystrixEventType.THREAD_POOL_REJECTED, HystrixEventType.FALLBACK_FAILURE);
-        assertEquals(1, circuitBreaker.metrics.getCurrentConcurrentExecutionCount()); //pool-filler still going
+        int numInFlight = circuitBreaker.metrics.getCurrentConcurrentExecutionCount();
+        assertEquals("Expected 1 in flight but got : " + numInFlight, 1, numInFlight); //pool-filler still going
         //This is a case where we knowingly walk away from executing Hystrix threads. They should have an in-flight status ("Executed").  You should avoid this in a production environment
         HystrixRequestLog requestLog = HystrixRequestLog.getCurrentRequest();
         assertEquals(3, requestLog.getAllExecutedCommands().size());
@@ -1166,7 +1167,12 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
             }
         }
 
-        assertCommandExecutionEvents(command, HystrixEventType.THREAD_POOL_REJECTED, HystrixEventType.FALLBACK_MISSING);
+        try {
+            assertCommandExecutionEvents(command, HystrixEventType.THREAD_POOL_REJECTED, HystrixEventType.FALLBACK_MISSING);
+        } catch (Throwable ex) {
+            System.out.println("Unexpected command execution events : " + command.getExecutionEvents());
+            throw new RuntimeException(ex);
+        }
         assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
         assertSaneHystrixRequestLog(1);
     }

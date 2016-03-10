@@ -48,22 +48,20 @@ import rx.Observable;
 import static org.junit.Assert.*;
 
 public class HystrixCollapserTest {
+    private HystrixRequestContext context = null;
+
     @Before
     public void init() {
         // since we're going to modify properties of the same class between tests, wipe the cache each time
         HystrixCollapser.reset();
         HystrixCollapserMetrics.reset();
         /* we must call this to simulate a new request lifecycle running and clearing caches */
-        HystrixRequestContext.initializeContext();
+        context = HystrixRequestContext.initializeContext();
     }
 
     @After
     public void cleanup() {
-        // instead of storing the reference from initialize we'll just get the current state and shutdown
-        if (HystrixRequestContext.getContextForCurrentThread() != null) {
-            // it may be null if a test shuts the context down manually
-            HystrixRequestContext.getContextForCurrentThread().shutdown();
-        }
+        context.shutdown();
     }
 
     @Test
