@@ -15,22 +15,20 @@
  */
 package com.netflix.hystrix.contrib.metrics.eventstream;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicInteger;
+import com.netflix.config.DynamicIntProperty;
+import com.netflix.config.DynamicPropertyFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.netflix.config.DynamicIntProperty;
-import com.netflix.config.DynamicPropertyFactory;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Streams Hystrix metrics in text/event-stream format.
@@ -137,14 +135,6 @@ public class HystrixMetricsStreamServlet extends HttpServlet {
                 response.setHeader("Pragma", "no-cache");
 
                 int queueSize = defaultMetricListenerQueueSize.get();
-                try {
-                    String q = request.getParameter("queueSize");
-                    if (q != null) {
-                        queueSize = Integer.parseInt(q);
-                    }
-                } catch (Exception e) {
-                    // ignore if it's not a number
-                }
 
                 MetricJsonListener jsonListener = new MetricJsonListener(queueSize);
                 poller = new HystrixMetricsPoller(jsonListener, delay);
