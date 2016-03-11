@@ -1086,7 +1086,7 @@ public class HystrixCollapserTest {
                 }
                 if (request.getArgument().equals("TIMEOUT")) {
                     try {
-                        Thread.sleep(200);
+                        Thread.sleep(800);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
