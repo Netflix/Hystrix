@@ -15,22 +15,20 @@
  */
 package com.netflix.hystrix.contrib.metrics.eventstream;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicInteger;
+import com.netflix.config.DynamicIntProperty;
+import com.netflix.config.DynamicPropertyFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.netflix.config.DynamicIntProperty;
-import com.netflix.config.DynamicPropertyFactory;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Streams Hystrix metrics in text/event-stream format.
@@ -62,6 +60,7 @@ public class HystrixMetricsStreamServlet extends HttpServlet {
     /* used to track number of connections and throttle */
     private static AtomicInteger concurrentConnections = new AtomicInteger(0);
     private static DynamicIntProperty maxConcurrentConnections = DynamicPropertyFactory.getInstance().getIntProperty("hystrix.stream.maxConcurrentConnections", 5);
+    private static DynamicIntProperty defaultMetricListenerQueueSize = DynamicPropertyFactory.getInstance().getIntProperty("hystrix.stream.defaultMetricListenerQueueSize", 1000);
 
     private static volatile boolean isDestroyed = false;
     
@@ -135,7 +134,9 @@ public class HystrixMetricsStreamServlet extends HttpServlet {
                 response.setHeader("Cache-Control", "no-cache, no-store, max-age=0, must-revalidate");
                 response.setHeader("Pragma", "no-cache");
 
-                MetricJsonListener jsonListener = new MetricJsonListener();
+                int queueSize = defaultMetricListenerQueueSize.get();
+
+                MetricJsonListener jsonListener = new MetricJsonListener(queueSize);
                 poller = new HystrixMetricsPoller(jsonListener, delay);
                 // start polling and it will write directly to the output stream
                 poller.start();
@@ -207,7 +208,11 @@ public class HystrixMetricsStreamServlet extends HttpServlet {
          * <p>
          * This is a safety check against a runaway poller causing memory leaks.
          */
-        private final LinkedBlockingQueue<String> jsonMetrics = new LinkedBlockingQueue<String>(1000);
+        private LinkedBlockingQueue<String> jsonMetrics;
+
+        public MetricJsonListener(int queueSize) {
+            jsonMetrics = new LinkedBlockingQueue<String>(queueSize);
+        }
 
         /**
          * Store JSON messages in a queue.
