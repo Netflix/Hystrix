@@ -217,6 +217,7 @@ public class HystrixCircuitBreakerTest {
 
             // this should remain open as the failure threshold is below the percentage limit
             Thread.sleep(100);
+            System.out.println("Current CircuitBreaker Status : " + cmd1.getMetrics().getHealthCounts());
             assertTrue(cb.allowRequest());
             assertFalse(cb.isOpen());
         } catch (Exception e) {
