@@ -48,30 +48,40 @@ class TestableExecutionHook extends HystrixCommandExecutionHook {
     }
 
     private boolean eventsMatch(List<Notification<?>> l, int numOnNext, int numOnError, int numOnCompleted) {
-        if (numOnNext + numOnError + numOnCompleted != l.size()) {
-            System.err.println("Events : " + l.size() + " don't add up to the events you asked to verify");
-            return false;
-        }
-        boolean matchSoFar = true;
+        boolean matchFailed = false;
+        int actualOnNext = 0;
+        int actualOnError = 0;
+        int actualOnCompleted = 0;
+
         for (int n = 0; n < numOnNext; n++) {
             Notification<?> current = l.get(n);
             if (!current.isOnNext()) {
-                matchSoFar = false;
+                matchFailed = true;
+            } else {
+                actualOnNext++;
             }
         }
         for (int e = numOnNext; e < numOnNext + numOnError; e++) {
             Notification<?> current = l.get(e);
             if (!current.isOnError()) {
-                matchSoFar = false;
+                matchFailed = true;
+            } else {
+                actualOnError++;
             }
         }
         for (int c = numOnNext + numOnError; c < numOnNext + numOnError + numOnCompleted; c++) {
             Notification<?> current = l.get(c);
             if (!current.isOnCompleted()) {
-                matchSoFar = false;
+                matchFailed = true;
+            } else {
+                actualOnCompleted++;
             }
         }
-        return matchSoFar;
+        if (matchFailed) {
+            System.out.println("Expected : " + numOnNext + " OnNexts, " + numOnError + " OnErrors, and " + numOnCompleted);
+            System.out.println("Actual : " + actualOnNext + " OnNexts, " + actualOnError + " OnErrors, and " + actualOnCompleted);
+        }
+        return !matchFailed;
     }
 
     public Throwable getCommandException() {
