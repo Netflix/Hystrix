@@ -354,7 +354,7 @@ public class CumulativeThreadPoolEventCounterStreamTest extends CommandStreamTes
         List<CommandStreamTest.Command> saturators = new ArrayList<CommandStreamTest.Command>();
 
         for (int i = 0; i < 10; i++) {
-            saturators.add(CommandStreamTest.Command.from(groupKey, key, HystrixEventType.SUCCESS, 200));
+            saturators.add(CommandStreamTest.Command.from(groupKey, key, HystrixEventType.SUCCESS, 700));
         }
 
         CommandStreamTest.Command rejected1 = CommandStreamTest.Command.from(groupKey, key, HystrixEventType.SUCCESS, 0);
