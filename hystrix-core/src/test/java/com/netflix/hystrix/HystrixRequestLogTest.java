@@ -136,7 +136,7 @@ public class HystrixRequestLogTest {
 
     @Test
     public void testManyTimeouts() {
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 10; i++) {
             testTimeout();
             Hystrix.reset();
         }
@@ -228,7 +228,7 @@ public class HystrixRequestLogTest {
         }
 
         public TestCommand(String value, boolean fail, boolean failOnFallback, boolean timeout) {
-            super(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("RequestLogTestCommand")).andCommandPropertiesDefaults(new HystrixCommandProperties.Setter().withExecutionTimeoutInMilliseconds(20)));
+            super(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("RequestLogTestCommand")).andCommandPropertiesDefaults(new HystrixCommandProperties.Setter().withExecutionTimeoutInMilliseconds(500)));
             this.value = value;
             this.fail = fail;
             this.failOnFallback = failOnFallback;
