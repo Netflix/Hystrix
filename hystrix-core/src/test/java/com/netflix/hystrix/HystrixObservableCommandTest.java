@@ -925,7 +925,6 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
         assertCommandExecutionEvents(command1, HystrixEventType.SHORT_CIRCUITED, HystrixEventType.FALLBACK_EMIT, HystrixEventType.FALLBACK_SUCCESS);
         assertCommandExecutionEvents(command2, HystrixEventType.SHORT_CIRCUITED, HystrixEventType.FALLBACK_EMIT, HystrixEventType.FALLBACK_SUCCESS);
-        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
         assertSaneHystrixRequestLog(2);
     }
 
@@ -1182,7 +1181,6 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
             }
         }
         assertEquals("expected some of shared semaphore commands to get rejected", sharedSemaphore.numberOfPermits.get().longValue(), numSemaphoreRejected);
-        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
     }
 
     /**
