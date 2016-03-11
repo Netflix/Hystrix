@@ -1071,7 +1071,7 @@ public class HystrixCollapserTest {
         private final Collection<CollapsedRequest<String, String>> requests;
 
         TestCollapserCommand(Collection<CollapsedRequest<String, String>> requests) {
-            super(testPropsBuilder().setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionTimeoutInMilliseconds(50)));
+            super(testPropsBuilder().setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionTimeoutInMilliseconds(500)));
             this.requests = requests;
         }
 
@@ -1086,7 +1086,7 @@ public class HystrixCollapserTest {
                 }
                 if (request.getArgument().equals("TIMEOUT")) {
                     try {
-                        Thread.sleep(200);
+                        Thread.sleep(800);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
