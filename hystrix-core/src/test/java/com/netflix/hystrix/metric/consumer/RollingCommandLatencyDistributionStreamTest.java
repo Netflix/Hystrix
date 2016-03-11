@@ -133,9 +133,9 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
             fail("Interrupted ex");
         }
 
-        assertBetween(150, 250, stream.getLatestMean());
+        assertBetween(150, 400, stream.getLatestMean());
         assertBetween(10, 50, stream.getLatestPercentile(0.0));
-        assertBetween(300, 400, stream.getLatestPercentile(100.0));
+        assertBetween(300, 800, stream.getLatestPercentile(100.0));
     }
 
     /*
@@ -194,9 +194,9 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
-        assertBetween(95, 140, stream.getLatestMean()); //now timeout latency of 300ms is there
+        assertBetween(95, 250, stream.getLatestMean()); //now timeout latency of 300ms is there
         assertBetween(10, 40, stream.getLatestPercentile(0.0));
-        assertBetween(300, 400, stream.getLatestPercentile(100.0));
+        assertBetween(300, 800, stream.getLatestPercentile(100.0));
     }
 
     @Test
