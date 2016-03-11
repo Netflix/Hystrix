@@ -135,14 +135,6 @@ public class HystrixMetricsStreamServlet extends HttpServlet {
                 response.setHeader("Pragma", "no-cache");
 
                 int queueSize = defaultMetricListenerQueueSize.get();
-                try {
-                    String q = request.getParameter("queueSize");
-                    if (q != null) {
-                        queueSize = Integer.parseInt(q);
-                    }
-                } catch (Exception e) {
-                    // ignore if it's not a number
-                }
 
                 MetricJsonListener jsonListener = new MetricJsonListener(queueSize);
                 poller = new HystrixMetricsPoller(jsonListener, delay);
