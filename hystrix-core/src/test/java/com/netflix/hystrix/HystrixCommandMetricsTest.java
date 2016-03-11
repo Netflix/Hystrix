@@ -135,7 +135,7 @@ public class HystrixCommandMetricsTest {
 
         int NUM_CMDS = 8;
         for (int i = 0; i < NUM_CMDS; i++) {
-            HystrixCommand<Boolean> cmd = new SuccessCommand(key, 400);
+            HystrixCommand<Boolean> cmd = new SuccessCommand(key, 900);
             if (metrics == null) {
                 metrics = cmd.metrics;
             }
