@@ -268,7 +268,7 @@ public class HealthCountsStreamTest extends CommandStreamTest {
         List<Command> saturators = new ArrayList<Command>();
 
         for (int i = 0; i < 10; i++) {
-            saturators.add(CommandStreamTest.Command.from(groupKey, key, HystrixEventType.SUCCESS, 700, HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE));
+            saturators.add(CommandStreamTest.Command.from(groupKey, key, HystrixEventType.SUCCESS, 400, HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE));
         }
 
         CommandStreamTest.Command rejected1 = CommandStreamTest.Command.from(groupKey, key, HystrixEventType.SUCCESS, 0, HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE);
@@ -320,7 +320,7 @@ public class HealthCountsStreamTest extends CommandStreamTest {
         List<CommandStreamTest.Command> saturators = new ArrayList<CommandStreamTest.Command>();
 
         for (int i = 0; i < 10; i++) {
-            saturators.add(CommandStreamTest.Command.from(groupKey, key, HystrixEventType.SUCCESS, 700));
+            saturators.add(CommandStreamTest.Command.from(groupKey, key, HystrixEventType.SUCCESS, 400));
         }
 
         CommandStreamTest.Command rejected1 = CommandStreamTest.Command.from(groupKey, key, HystrixEventType.SUCCESS, 0);
