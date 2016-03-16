@@ -11,7 +11,8 @@ include 'hystrix-core', \
 'hystrix-contrib/hystrix-yammer-metrics-publisher', \
 'hystrix-contrib/hystrix-network-auditor-agent', \
 'hystrix-contrib/hystrix-javanica', \
-'hystrix-dashboard'
+'hystrix-contrib/hystrix-junit', \
+  'hystrix-dashboard'
 
 project(':hystrix-contrib/hystrix-clj').name = 'hystrix-clj'
 project(':hystrix-contrib/hystrix-request-servlet').name = 'hystrix-request-servlet'
@@ -22,3 +23,4 @@ project(':hystrix-contrib/hystrix-codahale-metrics-publisher').name = 'hystrix-c
 project(':hystrix-contrib/hystrix-yammer-metrics-publisher').name = 'hystrix-yammer-metrics-publisher'
 project(':hystrix-contrib/hystrix-network-auditor-agent').name = 'hystrix-network-auditor-agent'
 project(':hystrix-contrib/hystrix-javanica').name = 'hystrix-javanica'
+project(':hystrix-contrib/hystrix-junit').name = 'hystrix-junit'
