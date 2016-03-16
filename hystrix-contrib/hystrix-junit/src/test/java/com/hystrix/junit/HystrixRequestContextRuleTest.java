@@ -17,5 +17,7 @@ public final class HystrixRequestContextRuleTest {
     @Test
     public void manuallyShutdownContextDontBreak() {
         this.request.after();
+        this.request.after();
+        MatcherAssert.assertThat(this.request.context(), CoreMatchers.nullValue());
     }
 }

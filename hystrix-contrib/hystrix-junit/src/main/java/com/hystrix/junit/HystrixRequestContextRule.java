@@ -43,6 +43,7 @@ public final class HystrixRequestContextRule extends ExternalResource {
     protected void after() {
         if (this.context != null) {
             this.context.shutdown();
+            this.context = null;
         }
     }
 
