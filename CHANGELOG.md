@@ -1,5 +1,12 @@
 # Hystrix Releases #
 
+### Version 1.4.25 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.25%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.25/)) ###
+
+* [Pull 1114](https://github.com/Netflix/Hystrix/pull/1114) Make queue size of MetricsJsonListener configurable
+* [Pull 1121](https://github.com/Netflix/Hystrix/pull/1121) HystrixTimeoutException is non-static for better stacktrace
+
+Artifacts: [Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.25%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.25/)
+
 ### Version 1.5.1 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.5.1%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.5.1/)) ###
 
 * [Pull 1118](https://github.com/Netflix/Hystrix/pull/1118) Revert #1075.  Return userThreadLatency to metrics, mostly to maintain format compatibility with data streams from 1.4.x
