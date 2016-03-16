@@ -60,6 +60,7 @@ public class HystrixMetricsStreamServlet extends HttpServlet {
     /* used to track number of connections and throttle */
     private static AtomicInteger concurrentConnections = new AtomicInteger(0);
     private static DynamicIntProperty maxConcurrentConnections = DynamicPropertyFactory.getInstance().getIntProperty("hystrix.stream.maxConcurrentConnections", 5);
+    private static DynamicIntProperty defaultMetricListenerQueueSize = DynamicPropertyFactory.getInstance().getIntProperty("hystrix.stream.defaultMetricListenerQueueSize", 1000);
 
     private static volatile boolean isDestroyed = false;
     
@@ -133,7 +134,9 @@ public class HystrixMetricsStreamServlet extends HttpServlet {
                 response.setHeader("Cache-Control", "no-cache, no-store, max-age=0, must-revalidate");
                 response.setHeader("Pragma", "no-cache");
 
-                MetricJsonListener jsonListener = new MetricJsonListener();
+                int queueSize = defaultMetricListenerQueueSize.get();
+
+                MetricJsonListener jsonListener = new MetricJsonListener(queueSize);
                 poller = new HystrixMetricsPoller(jsonListener, delay);
                 // start polling and it will write directly to the output stream
                 poller.start();
@@ -205,7 +208,11 @@ public class HystrixMetricsStreamServlet extends HttpServlet {
          * <p>
          * This is a safety check against a runaway poller causing memory leaks.
          */
-        private final LinkedBlockingQueue<String> jsonMetrics = new LinkedBlockingQueue<String>(1000);
+        private LinkedBlockingQueue<String> jsonMetrics;
+
+        public MetricJsonListener(int queueSize) {
+            jsonMetrics = new LinkedBlockingQueue<String>(queueSize);
+        }
 
         /**
          * Store JSON messages in a queue.
