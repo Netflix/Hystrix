@@ -47,8 +47,6 @@ import com.netflix.hystrix.strategy.properties.HystrixProperty;
  * @ThreadSafe
  */
 public class HystrixRollingNumber {
-    @SuppressWarnings("unused")
-    private static final Logger logger = LoggerFactory.getLogger(HystrixRollingNumber.class);
 
     private static final Time ACTUAL_TIME = new ActualTime();
     private final Time time;

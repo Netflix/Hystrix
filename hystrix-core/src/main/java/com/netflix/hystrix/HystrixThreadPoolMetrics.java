@@ -37,9 +37,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class HystrixThreadPoolMetrics extends HystrixMetrics {
 
-    @SuppressWarnings("unused")
-    private static final Logger logger = LoggerFactory.getLogger(HystrixThreadPoolMetrics.class);
-
     private static final HystrixEventType[] ALL_COMMAND_EVENT_TYPES = HystrixEventType.values();
     private static final HystrixEventType.ThreadPool[] ALL_THREADPOOL_EVENT_TYPES = HystrixEventType.ThreadPool.values();
     private static final int NUMBER_THREADPOOL_EVENT_TYPES = ALL_THREADPOOL_EVENT_TYPES.length;

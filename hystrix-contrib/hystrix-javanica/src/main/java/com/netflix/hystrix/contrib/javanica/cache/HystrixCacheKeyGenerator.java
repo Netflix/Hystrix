@@ -48,8 +48,7 @@ public class HystrixCacheKeyGenerator {
         MethodExecutionAction cacheKeyMethod = cacheInvocationContext.getCacheKeyMethod();
         if (cacheKeyMethod != null) {
             try {
-                HystrixGeneratedCacheKey cacheKey = new DefaultHystrixGeneratedCacheKey((String) cacheKeyMethod.execute(cacheInvocationContext.getExecutionType()));
-                return cacheKey;
+                return new DefaultHystrixGeneratedCacheKey((String) cacheKeyMethod.execute(cacheInvocationContext.getExecutionType()));
             } catch (Throwable throwable) {
                 throw new HystrixCacheKeyGenerationException(throwable);
             }
