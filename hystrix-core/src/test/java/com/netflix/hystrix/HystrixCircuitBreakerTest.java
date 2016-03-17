@@ -372,6 +372,7 @@ public class HystrixCircuitBreakerTest {
 
             // everything has failed in the test window so we should return false now
             Thread.sleep(100);
+            System.out.println("CircuitBreaker state 1 : " + cmd1.getMetrics().getHealthCounts());
             assertFalse(cb.allowRequest());
             assertTrue(cb.isOpen());
 
@@ -391,6 +392,7 @@ public class HystrixCircuitBreakerTest {
             asyncResult.toBlocking().single();
 
             // all requests should be open again
+            System.out.println("CircuitBreaker state 2 : " + cmd1.getMetrics().getHealthCounts());
             assertTrue(cb.allowRequest());
             assertTrue(cb.allowRequest());
             assertTrue(cb.allowRequest());
