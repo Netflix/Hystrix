@@ -88,14 +88,6 @@ public abstract class HystrixCollapserProperties {
                 .build();
     }
 
-    @SuppressWarnings("unused")
-    private static HystrixProperty<String> getProperty(String propertyPrefix, HystrixCollapserKey key, String instanceProperty, String builderOverrideValue, String defaultValue) {
-        return forString()
-                .add(propertyPrefix + ".collapser." + key.name() + "." + instanceProperty, builderOverrideValue)
-                .add(propertyPrefix + ".collapser.default." + instanceProperty, defaultValue)
-                .build();
-    }
-
     /**
      * Whether request caching is enabled for {@link HystrixCollapser#execute} and {@link HystrixCollapser#queue} invocations.
      *
