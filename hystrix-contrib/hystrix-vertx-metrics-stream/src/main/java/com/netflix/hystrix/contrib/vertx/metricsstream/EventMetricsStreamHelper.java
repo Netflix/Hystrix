@@ -27,7 +27,7 @@ public class EventMetricsStreamHelper {
    * @param vertx            {@link Vertx} instance to deploy the {@link EventMetricsStreamVerticle}
    * @param completionFuture {@link Handler} to be notified when the deploy is done either with error or success.
    */
-  public void deployStandaloneMetricsStream(Vertx vertx, Handler<AsyncResult<String>> completionFuture) {
+  public static void deployStandaloneMetricsStream(Vertx vertx, Handler<AsyncResult<String>> completionFuture) {
     Objects.requireNonNull(vertx, "The Vertx instance can't be null!");
 
     final EventMetricsStreamVerticle verticle = new EventMetricsStreamVerticle();
@@ -45,7 +45,7 @@ public class EventMetricsStreamHelper {
    * <p>By default the server started will listen in {@code 8099} port, and answer in the path {@link EventMetricsStreamHandler#DEFAULT_HYSTRIX_PREFIX}, you can override
    * both behavior with Archaius properties {@code hystrix.vertx.stream.httpServer.port} and {@code hystrix.vertx.stream.httpServer.path} respectively.</p>
    */
-  public void deployStandaloneMetricsStream() {
+  public static void deployStandaloneMetricsStream() {
     final Vertx vertx = Vertx.vertx(new VertxOptions().setEventLoopPoolSize(1).setMetricsOptions(new MetricsOptions().setEnabled(false)));
     deployStandaloneMetricsStream(vertx, null);
   }
