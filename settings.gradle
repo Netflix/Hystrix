@@ -7,6 +7,7 @@ include 'hystrix-core', \
 'hystrix-contrib/hystrix-servo-metrics-publisher', \
 'hystrix-contrib/hystrix-metrics-event-stream', \
 'hystrix-contrib/hystrix-rx-netty-metrics-stream', \
+'hystrix-contrib/hystrix-vertx-metrics-stream', \
 'hystrix-contrib/hystrix-codahale-metrics-publisher', \
 'hystrix-contrib/hystrix-yammer-metrics-publisher', \
 'hystrix-contrib/hystrix-network-auditor-agent', \
@@ -18,6 +19,7 @@ project(':hystrix-contrib/hystrix-request-servlet').name = 'hystrix-request-serv
 project(':hystrix-contrib/hystrix-servo-metrics-publisher').name = 'hystrix-servo-metrics-publisher'
 project(':hystrix-contrib/hystrix-metrics-event-stream').name = 'hystrix-metrics-event-stream'
 project(':hystrix-contrib/hystrix-rx-netty-metrics-stream').name = 'hystrix-rx-netty-metrics-stream'
+project(':hystrix-contrib/hystrix-vertx-metrics-stream').name = 'hystrix-vertx-metrics-stream'
 project(':hystrix-contrib/hystrix-codahale-metrics-publisher').name = 'hystrix-codahale-metrics-publisher'
 project(':hystrix-contrib/hystrix-yammer-metrics-publisher').name = 'hystrix-yammer-metrics-publisher'
 project(':hystrix-contrib/hystrix-network-auditor-agent').name = 'hystrix-network-auditor-agent'
