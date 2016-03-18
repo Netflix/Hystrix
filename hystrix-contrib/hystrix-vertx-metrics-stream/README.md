@@ -106,7 +106,7 @@ data:
 # Setup
 
 First include `hystrix-vertx-metrics-stream-*.jar` in your classpath.
-Then you some ways for installation.
+Then you have some ways for deploying.
 
 1) Don't know anything about Vertx? No problem!
 Use the helper class `EventMetricsStreamHelper` and the method `deployStandaloneMetricsStream`.
@@ -115,7 +115,16 @@ It will create a and setup the environment, making the metrics available at `hos
 EventMetricsStreamHelper.deployStandaloneMetricsStream();
 ```
 
-2) Deploy a EventMetricsStreamVerticle in a Vertx application with full classified class name or programmatically created instance: 
+2) Do you have a Vertx app using vertx-web? Install a handler on your router!
+
+```java
+Router router = // your router already instantiated for http server
+router.route(EventMetricsStreamHandler.DEFAULT_HYSTRIX_PREFIX) // or in what path you want or use the dynamicProperty hystrix.vertx.stream.httpServer.path with archaius
+      .method(HttpMethod.GET)
+      .handler(EventMetricsStreamHandler.createHandler());
+```
+
+3) Deploy a EventMetricsStreamVerticle in a Vertx application with full classified class name or programmatically created instance: 
 Just use a vert-instance that you wanna, example:
 
 ```java
@@ -141,18 +150,9 @@ vertx.deployVerticle(new EventMetricsStreamVerticle(), result -> {
                      });
 ```
 
-3) Do you have a Vertx app using vertx-web? Install a handler on your router!
+4) Run a standalone instance with customized threads.
 
-```java
-Router router = // your router already instantiated for http server
-router.route(EventMetricsStreamHandler.DEFAULT_HYSTRIX_PREFIX) // or in what path you want or use the dynamicProperty hystrix.vertx.stream.httpServer.path with archaius
-      .method(HttpMethod.GET)
-      .handler(EventMetricsStreamHandler.createHandler());
-```
-
-
-4) Run a standalone instance with customized threads
-In Vertx you can customize how many event loop threads Vertx will spawn, when you deploy a verticle, the vertx will bind one event loop threads with this verticle, so, if you wanna use only one thread to handle all of the connections, you do the following:
+In Vertx you can customize how many event loop threads Vertx will spawn, when you deploy a verticle, the vertx will bind one event loop thread with this verticle, so, if you wanna use only one thread to handle all of the connections, you do the following:
 
 `Note on this example, i did not benchmark it, but usually one thread can handle alot of concurrency, so if you are not in a vertx app and just wanna use this vertx verticle to publish metrics for you, try configuring only one thread for the event loop and only one instance for the verticle.`
 
