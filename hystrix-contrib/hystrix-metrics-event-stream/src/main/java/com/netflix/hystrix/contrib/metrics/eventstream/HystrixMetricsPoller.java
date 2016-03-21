@@ -134,6 +134,19 @@ public class HystrixMetricsPoller {
     /**
      * Used to protect against leaking ExecutorServices and threads if this class is abandoned for GC without shutting down.
      */
+    @SuppressWarnings("unused")
+    private final Object finalizerGuardian = new Object() {
+        protected void finalize() throws Throwable {
+            if (!executor.isShutdown()) {
+                logger.warn(HystrixMetricsPoller.class.getSimpleName() + " was not shutdown. Caught in Finalize Guardian and shutting down.");
+                try {
+                    shutdown();
+                } catch (Exception e) {
+                    logger.error("Failed to shutdown " + HystrixMetricsPoller.class.getSimpleName(), e);
+                }
+            }
+        };
+    };
 
     public static interface MetricsAsJsonPollerListener {
         public void handleJsonMetric(String json);
