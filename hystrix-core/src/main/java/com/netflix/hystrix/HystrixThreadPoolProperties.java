@@ -75,22 +75,6 @@ public abstract class HystrixThreadPoolProperties {
                 .build();
     }
 
-    @SuppressWarnings("unused")
-    private static HystrixProperty<Boolean> getProperty(String propertyPrefix, HystrixThreadPoolKey key, String instanceProperty, Boolean builderOverrideValue, Boolean defaultValue) {
-        return forBoolean()
-                .add(propertyPrefix + ".threadpool." + key.name() + "." + instanceProperty, builderOverrideValue)
-                .add(propertyPrefix + ".threadpool.default." + instanceProperty, defaultValue)
-                .build();
-    }
-
-    @SuppressWarnings("unused")
-    private static HystrixProperty<String> getProperty(String propertyPrefix, HystrixThreadPoolKey key, String instanceProperty, String builderOverrideValue, String defaultValue) {
-        return forString()
-                .add(propertyPrefix + ".threadpool." + key.name() + "." + instanceProperty, builderOverrideValue)
-                .add(propertyPrefix + ".threadpool.default." + instanceProperty, defaultValue)
-                .build();
-    }
-
     /**
      * Core thread-pool size that gets passed to {@link ThreadPoolExecutor#setCorePoolSize(int)}
      * 
