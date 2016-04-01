@@ -71,7 +71,7 @@ public class GenericCommand extends AbstractHystrixCommand<Object> {
                     @Override
                     Object execute() {
                         MetaHolder metaHolder = commandAction.getMetaHolder();
-                        Object[] args = createArgsForFallback(metaHolder, getFailedExecutionException());
+                        Object[] args = createArgsForFallback(metaHolder, getExecutionException());
                         return commandAction.executeWithArgs(commandAction.getMetaHolder().getFallbackExecutionType(), args);
                     }
                 });
