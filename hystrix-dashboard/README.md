@@ -15,6 +15,9 @@ $ ../gradlew jettyRun
 
 Once running, open <a href="http://localhost:7979/hystrix-dashboard">http://localhost:7979/hystrix-dashboard</a>.
 
+# Run as standalone Java application
+
+@kennedyoliveira has written a standalone app, documented at : https://github.com/kennedyoliveira/standalone-hystrix-dashboard
 
 # Example
 
