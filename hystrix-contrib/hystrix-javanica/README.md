@@ -182,7 +182,7 @@ If fallback method was marked with `@HystrixCommand` then this fallback method (
     }
 ```
 
-Javanica provides an ability to get execution exception (exception thrown that caused the failure of a command) within a fallback is being executed. A fallback method signature can be extended with an additional parameter in order to get an exception thrown by a command. Javanica exposes execution exception through additional parameter of fallback method. Execution exception is derived by calling  method getFailedExecutionException() as in vanilla hystrix.
+Javanica provides an ability to get execution exception (exception thrown that caused the failure of a command) within a fallback is being executed. A fallback method signature can be extended with an additional parameter in order to get an exception thrown by a command. Javanica exposes execution exception through additional parameter of fallback method. Execution exception is derived by calling method getExecutionException() as in vanilla hystrix.
 
 Example:
 
