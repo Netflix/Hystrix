@@ -18,7 +18,7 @@ package com.netflix.hystrix.contrib.javanica.cache;
 import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixRequestCache;
 import com.netflix.hystrix.contrib.javanica.cache.annotation.CacheRemove;
-import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategyDefault;
+import com.netflix.hystrix.strategy.HystrixPlugins;
 
 
 /**
@@ -50,6 +50,6 @@ public final class HystrixRequestCacheManager {
                 defaultCacheKeyGenerator.generateCacheKey(context);
         String key = hystrixGeneratedCacheKey.getCacheKey();
         HystrixRequestCache.getInstance(HystrixCommandKey.Factory.asKey(cacheName),
-                HystrixConcurrencyStrategyDefault.getInstance()).clear(key);
+                HystrixPlugins.getInstance().getConcurrencyStrategy()).clear(key);
     }
 }
