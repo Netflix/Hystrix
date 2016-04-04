@@ -72,7 +72,7 @@ public class BatchHystrixCommand extends AbstractHystrixCommand<List<Object>> {
                     Object execute() {
                         MetaHolder metaHolder = commandAction.getMetaHolder();
                         Object[] args = toArgs(getCollapsedRequests());
-                        args = createArgsForFallback(args, metaHolder, getFailedExecutionException());
+                        args = createArgsForFallback(args, metaHolder, getExecutionException());
                         return commandAction.executeWithArgs(commandAction.getMetaHolder().getFallbackExecutionType(), args);
                     }
                 });
