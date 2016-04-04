@@ -85,7 +85,7 @@ public class GenericObservableCommand extends HystrixObservableCommand {
     protected Observable resumeWithFallback() {
         if (commandActions.hasFallbackAction()) {
             MetaHolder metaHolder = commandActions.getFallbackAction().getMetaHolder();
-            Throwable cause = getFailedExecutionException();
+            Throwable cause = getExecutionException();
             if (cause instanceof CommandActionExecutionException) {
                 cause = cause.getCause();
             }
