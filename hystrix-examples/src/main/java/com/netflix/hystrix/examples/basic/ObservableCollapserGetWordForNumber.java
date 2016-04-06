@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import org.junit.After;
 import org.junit.Before;
@@ -86,11 +87,7 @@ public class ObservableCollapserGetWordForNumber extends HystrixObservableCollap
 		final int count = counter.incrementAndGet();
 		System.out.println("Creating batch for " + requests.size() + " requests. Total invocations so far: " + count);
 
-		final List<Integer> numbers = new ArrayList<>();
-		for (final CollapsedRequest<String, Integer> request : requests)
-		{
-			numbers.add(request.getArgument());
-		}
+		final List<Integer> numbers = requests.stream().map(CollapsedRequest<String, Integer>::getArgument).collect(Collectors.toList());
 
 		return new ObservableCommandNumbersToWords(numbers);
 	}

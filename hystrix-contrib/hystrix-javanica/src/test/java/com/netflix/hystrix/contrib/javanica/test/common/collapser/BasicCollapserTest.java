@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 import static com.netflix.hystrix.contrib.javanica.test.common.CommonUtils.getHystrixCommandByKey;
 import static org.junit.Assert.assertEquals;
@@ -195,10 +196,7 @@ public abstract class BasicCollapserTest extends BasicHystrixTest {
             if (e.getMessage().equals("getUserByIdsFails failed")) {
                 throw new RuntimeException("getUserByIdsFallbackWithThrowableParam1 failed");
             }
-            List<User> users = new ArrayList<>();
-            for (String id : ids) {
-                users.add(new User(id, "name: " + id));
-            }
+            List<User> users = ids.stream().map(id -> new User(id, "name: " + id)).collect(Collectors.toList());
             return users;
         }
 
@@ -212,10 +210,7 @@ public abstract class BasicCollapserTest extends BasicHystrixTest {
             if (!e.getMessage().equals("getUserByIdsFallbackWithThrowableParam2 failed")) {
                 throw new RuntimeException("getUserByIdsFallbackWithThrowableParam3 failed");
             }
-            List<User> users = new ArrayList<>();
-            for (String id : ids) {
-                users.add(new User(id, "name: " + id));
-            }
+            List<User> users = ids.stream().map(id -> new User(id, "name: " + id)).collect(Collectors.toList());
             return users;
         }
 
@@ -223,10 +218,7 @@ public abstract class BasicCollapserTest extends BasicHystrixTest {
                 @HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "10000")// for debug
         })
         public List<User> getUserByIds(List<String> ids) {
-            List<User> users = new ArrayList<>();
-            for (String id : ids) {
-                users.add(new User(id, "name: " + id));
-            }
+            List<User> users = ids.stream().map(id -> new User(id, "name: " + id)).collect(Collectors.toList());
             return users;
         }
 
@@ -242,10 +234,7 @@ public abstract class BasicCollapserTest extends BasicHystrixTest {
 
         @HystrixCommand
         private List<User> getUserByIdsFallback(List<String> ids) {
-            List<User> users = new ArrayList<>();
-            for (String id : ids) {
-                users.add(new User(id, "name: " + id));
-            }
+            List<User> users = ids.stream().map(id -> new User(id, "name: " + id)).collect(Collectors.toList());
             return users;
         }
 

@@ -29,6 +29,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 import static com.netflix.hystrix.contrib.javanica.conf.HystrixPropertiesManager.MAX_REQUESTS_IN_BATCH;
 import static com.netflix.hystrix.contrib.javanica.conf.HystrixPropertiesManager.TIMER_DELAY_IN_MILLISECONDS;
@@ -86,10 +87,7 @@ public abstract class BasicCollapserPropertiesTest extends BasicHystrixTest {
 
         @HystrixCommand
         public List<User> getUsers(List<String> ids) {
-            List<User> users = new ArrayList<>();
-            for (String id : ids) {
-                users.add(new User(id, "name: " + id));
-            }
+            List<User> users = ids.stream().map(id -> new User(id, "name: " + id)).collect(Collectors.toList());
             return users;
         }
 

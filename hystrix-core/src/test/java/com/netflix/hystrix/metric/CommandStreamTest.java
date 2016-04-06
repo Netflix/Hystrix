@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 public abstract class CommandStreamTest {
 
@@ -196,10 +197,7 @@ public abstract class CommandStreamTest {
 
         @Override
         protected HystrixCommand<List<Integer>> createCommand(Collection<CollapsedRequest<Integer, Integer>> collapsedRequests) {
-            List<Integer> args = new ArrayList<>();
-            for (CollapsedRequest<Integer, Integer> collapsedReq: collapsedRequests) {
-                args.add(collapsedReq.getArgument());
-            }
+            List<Integer> args = collapsedRequests.stream().map(CollapsedRequest<Integer, Integer>::getArgument).collect(Collectors.toList());
             return new BatchCommand(args);
         }
 

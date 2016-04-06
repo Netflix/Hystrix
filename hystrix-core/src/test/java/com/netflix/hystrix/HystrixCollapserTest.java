@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesCollapserDefault;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
@@ -1288,10 +1289,7 @@ public class HystrixCollapserTest {
         @Override
         protected HystrixCommand<Void> createCommand(Collection<CollapsedRequest<Void, Integer>> requests) {
 
-            ArrayList<Integer> args = new ArrayList<>();
-            for (CollapsedRequest<Void, Integer> request : requests) {
-                args.add(request.getArgument());
-            }
+            List<Integer> args = requests.stream().map(CollapsedRequest::getArgument).collect(Collectors.toList());
             return new FireAndForgetCommand(args);
         }
 
@@ -1321,10 +1319,7 @@ public class HystrixCollapserTest {
         @Override
         protected HystrixCommand<Void> createCommand(Collection<CollapsedRequest<Void, Integer>> requests) {
 
-            ArrayList<Integer> args = new ArrayList<>();
-            for (CollapsedRequest<Void, Integer> request : requests) {
-                args.add(request.getArgument());
-            }
+            List<Integer> args = requests.stream().map(CollapsedRequest::getArgument).collect(Collectors.toList());
             return new FireAndForgetCommand(args);
         }
 

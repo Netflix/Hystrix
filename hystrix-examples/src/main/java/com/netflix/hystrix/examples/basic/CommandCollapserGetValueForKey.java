@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 import org.junit.Test;
 
@@ -74,11 +75,8 @@ public class CommandCollapserGetValueForKey extends HystrixCollapser<List<String
 
         @Override
         protected List<String> run() {
-            ArrayList<String> response = new ArrayList<>();
-            for (CollapsedRequest<String, Integer> request : requests) {
-                // artificial response for each argument received in the batch
-                response.add("ValueForKey: " + request.getArgument());
-            }
+            List<String> response = requests.stream().map(request -> "ValueForKey: " + request.getArgument()).collect(Collectors.toList());
+            // artificial response for each argument received in the batch
             return response;
         }
     }

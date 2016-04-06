@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class CollapserPerfTest {
     @State(Scope.Benchmark)
@@ -111,10 +112,7 @@ public class CollapserPerfTest {
 
         @Override
         protected HystrixCommand<List<String>> createCommand(Collection<CollapsedRequest<String, String>> collapsedRequests) {
-            List<String> args = new ArrayList<>();
-            for (CollapsedRequest<String, String> collapsedReq: collapsedRequests) {
-                args.add(collapsedReq.getArgument());
-            }
+            List<String> args = collapsedRequests.stream().map(CollapsedRequest<String, String>::getArgument).collect(Collectors.toList());
             return new BatchCommand(args, blackholeConsumption);
         }
 
@@ -147,10 +145,7 @@ public class CollapserPerfTest {
         @Override
         protected List<String> run() throws Exception {
             Blackhole.consumeCPU(blackholeConsumption);
-            List<String> toReturn = new ArrayList<>();
-            for (String inputArg: inputArgs) {
-                toReturn.add(inputArg + ":1");
-            }
+            List<String> toReturn = inputArgs.stream().map(inputArg -> inputArg + ":1").collect(Collectors.toList());
             return toReturn;
         }
     }
