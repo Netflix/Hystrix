@@ -115,9 +115,9 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
             public void onNext(CachedValuesHistogram distribution) {
                 System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Received distribution with count : " + distribution.getTotalCount() + " and mean : " + distribution.getMean());
                 if (distribution.getTotalCount() == 1) {
-                    assertBetween(10, 50, (int) distribution.getMean());
+                    assertBetween(10, 50, distribution.getMean());
                 } else if (distribution.getTotalCount() == 2) {
-                    assertBetween(300, 400, (int) distribution.getMean());
+                    assertBetween(300, 400, distribution.getMean());
                 }
             }
         });
@@ -172,7 +172,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
             public void onNext(CachedValuesHistogram distribution) {
                 System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Received distribution with count : " + distribution.getTotalCount() + " and mean : " + distribution.getMean());
                     if (distribution.getTotalCount() < 4 && distribution.getTotalCount() > 0) { //buckets before timeout latency registers
-                        assertBetween(10, 50, (int) distribution.getMean());
+                        assertBetween(10, 50, distribution.getMean());
                     } else if (distribution.getTotalCount() == 4){
                         assertBetween(150, 250, (int) distribution.getMean()); //now timeout latency of 600ms is there
                     }
@@ -227,7 +227,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
             @Override
             public void onNext(CachedValuesHistogram distribution) {
                 System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Received distribution with count : " + distribution.getTotalCount() + " and mean : " + distribution.getMean());
-                assertBetween(0, 30, (int) distribution.getMean());
+                assertBetween(0, 30, distribution.getMean());
             }
         });
 
@@ -342,7 +342,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
             public void onNext(CachedValuesHistogram distribution) {
                 System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Received distribution with count : " + distribution.getTotalCount() + " and mean : " + distribution.getMean());
                 if (distribution.getTotalCount() > 0) {
-                    assertBetween(200, 250, (int) distribution.getMean());
+                    assertBetween(200, 250, distribution.getMean());
                 }
             }
         });
@@ -436,7 +436,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
             public void onNext(CachedValuesHistogram distribution) {
                 System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Received distribution with count : " + distribution.getTotalCount() + " and mean : " + distribution.getMean());
                 if (distribution.getTotalCount() == 2) {
-                    assertBetween(55, 90, (int) distribution.getMean());
+                    assertBetween(55, 90, distribution.getMean());
                 }
                 if (distribution.getTotalCount() == 5) {
                     assertEquals(60, 90, (long) distribution.getMean());
@@ -500,7 +500,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
             public void onNext(CachedValuesHistogram distribution) {
                 System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Received distribution with count : " + distribution.getTotalCount() + " and mean : " + distribution.getMean());
                 if (distribution.getTotalCount() == 2) {
-                    assertBetween(55, 90, (int) distribution.getMean());
+                    assertBetween(55, 90, distribution.getMean());
                 }
                 if (distribution.getTotalCount() == 5) {
                     assertEquals(60, 90, (long) distribution.getMean());
