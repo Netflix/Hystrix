@@ -370,7 +370,7 @@ public class HystrixTest {
     @Test
     public void testMultipleSemaphoreObservableCommandsInFlight() throws InterruptedException {
         int NUM_COMMANDS = 50;
-        List<Observable<Integer>> commands = new ArrayList<Observable<Integer>>();
+        List<Observable<Integer>> commands = new ArrayList<>();
         for (int i = 0; i < NUM_COMMANDS; i++) {
             commands.add(Observable.defer(new Func0<Observable<Integer>>() {
                 @Override

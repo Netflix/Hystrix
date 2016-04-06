@@ -195,7 +195,7 @@ public abstract class BasicCollapserTest extends BasicHystrixTest {
             if (e.getMessage().equals("getUserByIdsFails failed")) {
                 throw new RuntimeException("getUserByIdsFallbackWithThrowableParam1 failed");
             }
-            List<User> users = new ArrayList<User>();
+            List<User> users = new ArrayList<>();
             for (String id : ids) {
                 users.add(new User(id, "name: " + id));
             }
@@ -212,7 +212,7 @@ public abstract class BasicCollapserTest extends BasicHystrixTest {
             if (!e.getMessage().equals("getUserByIdsFallbackWithThrowableParam2 failed")) {
                 throw new RuntimeException("getUserByIdsFallbackWithThrowableParam3 failed");
             }
-            List<User> users = new ArrayList<User>();
+            List<User> users = new ArrayList<>();
             for (String id : ids) {
                 users.add(new User(id, "name: " + id));
             }
@@ -223,7 +223,7 @@ public abstract class BasicCollapserTest extends BasicHystrixTest {
                 @HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "10000")// for debug
         })
         public List<User> getUserByIds(List<String> ids) {
-            List<User> users = new ArrayList<User>();
+            List<User> users = new ArrayList<>();
             for (String id : ids) {
                 users.add(new User(id, "name: " + id));
             }
@@ -242,7 +242,7 @@ public abstract class BasicCollapserTest extends BasicHystrixTest {
 
         @HystrixCommand
         private List<User> getUserByIdsFallback(List<String> ids) {
-            List<User> users = new ArrayList<User>();
+            List<User> users = new ArrayList<>();
             for (String id : ids) {
                 users.add(new User(id, "name: " + id));
             }

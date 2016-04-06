@@ -122,7 +122,7 @@ public class HystrixObservableCollapserTest {
         }
     };
 
-    private static ExecutorService threadPool = new ThreadPoolExecutor(100, 100, 10, TimeUnit.MINUTES, new SynchronousQueue<Runnable>());
+    private static ExecutorService threadPool = new ThreadPoolExecutor(100, 100, 10, TimeUnit.MINUTES, new SynchronousQueue<>());
 
     @Before
     public void init() {
@@ -176,8 +176,8 @@ public class HystrixObservableCollapserTest {
         HystrixObservableCollapser<String, String, String, String> collapser1 = new TestCollapserWithMultipleResponses(timer, 1, 3, false, false, prefixMapper, onMissingComplete);
         HystrixObservableCollapser<String, String, String, String> collapser2 = new TestCollapserWithMultipleResponses(timer, 2, 3, false, false, prefixMapper, onMissingComplete);
 
-        TestSubscriber<String> testSubscriber1 = new TestSubscriber<String>();
-        TestSubscriber<String> testSubscriber2 = new TestSubscriber<String>();
+        TestSubscriber<String> testSubscriber1 = new TestSubscriber<>();
+        TestSubscriber<String> testSubscriber2 = new TestSubscriber<>();
 
         System.out.println(System.currentTimeMillis() + "Starting to observe collapser1");
         collapser1.observe().subscribe(testSubscriber1);
@@ -208,10 +208,10 @@ public class HystrixObservableCollapserTest {
 
         timer.incrementTime(10); // let time pass that equals the default delay/period
 
-        TestSubscriber<String> testSubscriber1 = new TestSubscriber<String>();
+        TestSubscriber<String> testSubscriber1 = new TestSubscriber<>();
         result1.subscribe(testSubscriber1);
 
-        TestSubscriber<String> testSubscriber2 = new TestSubscriber<String>();
+        TestSubscriber<String> testSubscriber2 = new TestSubscriber<>();
         result2.subscribe(testSubscriber2);
 
         testSubscriber1.awaitTerminalEvent();
@@ -235,10 +235,10 @@ public class HystrixObservableCollapserTest {
 
         timer.incrementTime(10); // let time pass that equals the default delay/period
 
-        TestSubscriber<String> testSubscriber1 = new TestSubscriber<String>();
+        TestSubscriber<String> testSubscriber1 = new TestSubscriber<>();
         result1.subscribe(testSubscriber1);
 
-        TestSubscriber<String> testSubscriber2 = new TestSubscriber<String>();
+        TestSubscriber<String> testSubscriber2 = new TestSubscriber<>();
         result2.subscribe(testSubscriber2);
 
         testSubscriber1.awaitTerminalEvent();
@@ -263,10 +263,10 @@ public class HystrixObservableCollapserTest {
 
         timer.incrementTime(10); // let time pass that equals the default delay/period
 
-        TestSubscriber<String> testSubscriber1 = new TestSubscriber<String>();
+        TestSubscriber<String> testSubscriber1 = new TestSubscriber<>();
         result1.subscribe(testSubscriber1);
 
-        TestSubscriber<String> testSubscriber2 = new TestSubscriber<String>();
+        TestSubscriber<String> testSubscriber2 = new TestSubscriber<>();
         result2.subscribe(testSubscriber2);
 
         testSubscriber1.awaitTerminalEvent();
@@ -290,10 +290,10 @@ public class HystrixObservableCollapserTest {
 
         timer.incrementTime(10); // let time pass that equals the default delay/period
 
-        TestSubscriber<String> testSubscriber1 = new TestSubscriber<String>();
+        TestSubscriber<String> testSubscriber1 = new TestSubscriber<>();
         result1.subscribe(testSubscriber1);
 
-        TestSubscriber<String> testSubscriber2 = new TestSubscriber<String>();
+        TestSubscriber<String> testSubscriber2 = new TestSubscriber<>();
         result2.subscribe(testSubscriber2);
 
         testSubscriber1.awaitTerminalEvent();
@@ -317,10 +317,10 @@ public class HystrixObservableCollapserTest {
 
         timer.incrementTime(10); // let time pass that equals the default delay/period
 
-        TestSubscriber<String> testSubscriber1 = new TestSubscriber<String>();
+        TestSubscriber<String> testSubscriber1 = new TestSubscriber<>();
         result1.subscribe(testSubscriber1);
 
-        TestSubscriber<String> testSubscriber2 = new TestSubscriber<String>();
+        TestSubscriber<String> testSubscriber2 = new TestSubscriber<>();
         result2.subscribe(testSubscriber2);
 
         testSubscriber1.awaitTerminalEvent();
@@ -346,10 +346,10 @@ public class HystrixObservableCollapserTest {
 
         timer.incrementTime(10); // let time pass that equals the default delay/period
 
-        TestSubscriber<String> testSubscriber1 = new TestSubscriber<String>();
+        TestSubscriber<String> testSubscriber1 = new TestSubscriber<>();
         result1.subscribe(testSubscriber1);
 
-        TestSubscriber<String> testSubscriber2 = new TestSubscriber<String>();
+        TestSubscriber<String> testSubscriber2 = new TestSubscriber<>();
         result2.subscribe(testSubscriber2);
 
         testSubscriber1.awaitTerminalEvent();
@@ -375,10 +375,10 @@ public class HystrixObservableCollapserTest {
 
         timer.incrementTime(10); // let time pass that equals the default delay/period
 
-        TestSubscriber<String> testSubscriber1 = new TestSubscriber<String>();
+        TestSubscriber<String> testSubscriber1 = new TestSubscriber<>();
         result1.subscribe(testSubscriber1);
 
-        TestSubscriber<String> testSubscriber2 = new TestSubscriber<String>();
+        TestSubscriber<String> testSubscriber2 = new TestSubscriber<>();
         result2.subscribe(testSubscriber2);
 
         testSubscriber1.awaitTerminalEvent();
@@ -404,10 +404,10 @@ public class HystrixObservableCollapserTest {
 
         timer.incrementTime(10); // let time pass that equals the default delay/period
 
-        TestSubscriber<String> testSubscriber1 = new TestSubscriber<String>();
+        TestSubscriber<String> testSubscriber1 = new TestSubscriber<>();
         result1.subscribe(testSubscriber1);
 
-        TestSubscriber<String> testSubscriber2 = new TestSubscriber<String>();
+        TestSubscriber<String> testSubscriber2 = new TestSubscriber<>();
         result2.subscribe(testSubscriber2);
 
         testSubscriber1.awaitTerminalEvent();
@@ -433,10 +433,10 @@ public class HystrixObservableCollapserTest {
 
         timer.incrementTime(10); // let time pass that equals the default delay/period
 
-        TestSubscriber<String> testSubscriber1 = new TestSubscriber<String>();
+        TestSubscriber<String> testSubscriber1 = new TestSubscriber<>();
         result1.subscribe(testSubscriber1);
 
-        TestSubscriber<String> testSubscriber2 = new TestSubscriber<String>();
+        TestSubscriber<String> testSubscriber2 = new TestSubscriber<>();
         result2.subscribe(testSubscriber2);
 
         testSubscriber1.awaitTerminalEvent();
@@ -462,10 +462,10 @@ public class HystrixObservableCollapserTest {
 
         timer.incrementTime(10); // let time pass that equals the default delay/period
 
-        TestSubscriber<String> testSubscriber1 = new TestSubscriber<String>();
+        TestSubscriber<String> testSubscriber1 = new TestSubscriber<>();
         result1.subscribe(testSubscriber1);
 
-        TestSubscriber<String> testSubscriber2 = new TestSubscriber<String>();
+        TestSubscriber<String> testSubscriber2 = new TestSubscriber<>();
         result2.subscribe(testSubscriber2);
 
         testSubscriber1.awaitTerminalEvent();
@@ -491,10 +491,10 @@ public class HystrixObservableCollapserTest {
 
         timer.incrementTime(10); // let time pass that equals the default delay/period
 
-        TestSubscriber<String> testSubscriber1 = new TestSubscriber<String>();
+        TestSubscriber<String> testSubscriber1 = new TestSubscriber<>();
         result1.subscribe(testSubscriber1);
 
-        TestSubscriber<String> testSubscriber2 = new TestSubscriber<String>();
+        TestSubscriber<String> testSubscriber2 = new TestSubscriber<>();
         result2.subscribe(testSubscriber2);
 
         testSubscriber1.awaitTerminalEvent();
@@ -519,10 +519,10 @@ public class HystrixObservableCollapserTest {
 
         timer.incrementTime(10); // let time pass that equals the default delay/period
 
-        TestSubscriber<String> testSubscriber1 = new TestSubscriber<String>();
+        TestSubscriber<String> testSubscriber1 = new TestSubscriber<>();
         result1.subscribe(testSubscriber1);
 
-        TestSubscriber<String> testSubscriber2 = new TestSubscriber<String>();
+        TestSubscriber<String> testSubscriber2 = new TestSubscriber<>();
         result2.subscribe(testSubscriber2);
 
         testSubscriber1.awaitTerminalEvent();
@@ -547,10 +547,10 @@ public class HystrixObservableCollapserTest {
 
         timer.incrementTime(10); // let time pass that equals the default delay/period
 
-        TestSubscriber<String> testSubscriber1 = new TestSubscriber<String>();
+        TestSubscriber<String> testSubscriber1 = new TestSubscriber<>();
         result1.subscribe(testSubscriber1);
 
-        TestSubscriber<String> testSubscriber2 = new TestSubscriber<String>();
+        TestSubscriber<String> testSubscriber2 = new TestSubscriber<>();
         result2.subscribe(testSubscriber2);
 
         testSubscriber1.awaitTerminalEvent();
@@ -575,10 +575,10 @@ public class HystrixObservableCollapserTest {
 
         timer.incrementTime(10); // let time pass that equals the default delay/period
 
-        TestSubscriber<String> testSubscriber1 = new TestSubscriber<String>();
+        TestSubscriber<String> testSubscriber1 = new TestSubscriber<>();
         result1.subscribe(testSubscriber1);
 
-        TestSubscriber<String> testSubscriber2 = new TestSubscriber<String>();
+        TestSubscriber<String> testSubscriber2 = new TestSubscriber<>();
         result2.subscribe(testSubscriber2);
 
         testSubscriber1.awaitTerminalEvent();
@@ -600,8 +600,8 @@ public class HystrixObservableCollapserTest {
 
         final CountDownLatch latch = new CountDownLatch(NUM_THREADS_SUBMITTING_WORK);
 
-        List<Runnable> runnables = new ArrayList<Runnable>();
-        final ConcurrentLinkedQueue<TestSubscriber<String>> subscribers = new ConcurrentLinkedQueue<TestSubscriber<String>>();
+        List<Runnable> runnables = new ArrayList<>();
+        final ConcurrentLinkedQueue<TestSubscriber<String>> subscribers = new ConcurrentLinkedQueue<>();
 
         HystrixRequestContext context = HystrixRequestContext.initializeContext();
 
@@ -618,7 +618,7 @@ public class HystrixObservableCollapserTest {
                             HystrixObservableCollapser<String, String, String, String> collapser =
                                     new TestCollapserWithMultipleResponses(timer, uniqueInt.getAndIncrement(), 3, false);
                             Observable<String> o = collapser.toObservable();
-                            TestSubscriber<String> subscriber = new TestSubscriber<String>();
+                            TestSubscriber<String> subscriber = new TestSubscriber<>();
                             o.subscribe(subscriber);
                             subscribers.offer(subscriber);
                         }
@@ -828,7 +828,7 @@ public class HystrixObservableCollapserTest {
         private final static HystrixCollapserMetrics metrics = HystrixCollapserMetrics.getInstance(key, new HystrixPropertiesCollapserDefault(key, HystrixCollapserProperties.Setter()));
 
         static {
-            emitsPerArg = new ConcurrentHashMap<String, Integer>();
+            emitsPerArg = new ConcurrentHashMap<>();
         }
 
         public TestCollapserWithMultipleResponses(CollapserTimer timer, int arg, int numEmits, boolean commandConstructionFails) {
@@ -864,7 +864,7 @@ public class HystrixObservableCollapserTest {
             if (commandConstructionFails) {
                 throw new RuntimeException("Exception thrown in command construction");
             } else {
-                List<Integer> args = new ArrayList<Integer>();
+                List<Integer> args = new ArrayList<>();
 
                 for (CollapsedRequest<String, String> collapsedRequest : collapsedRequests) {
                     String stringArg = collapsedRequest.getArgument();

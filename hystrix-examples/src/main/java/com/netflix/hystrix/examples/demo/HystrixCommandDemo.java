@@ -57,7 +57,7 @@ public class HystrixCommandDemo {
      * 
      * Use CallerRunsPolicy so we can just keep iterating and adding to it and it will block when full.
      */
-    private final ThreadPoolExecutor pool = new ThreadPoolExecutor(5, 5, 5, TimeUnit.DAYS, new SynchronousQueue<Runnable>(), new ThreadPoolExecutor.CallerRunsPolicy());
+    private final ThreadPoolExecutor pool = new ThreadPoolExecutor(5, 5, 5, TimeUnit.DAYS, new SynchronousQueue<>(), new ThreadPoolExecutor.CallerRunsPolicy());
 
     public void startDemo() {
         startMetricsMonitor();

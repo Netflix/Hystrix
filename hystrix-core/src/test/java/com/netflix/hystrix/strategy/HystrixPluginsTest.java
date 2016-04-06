@@ -58,7 +58,7 @@ public class HystrixPluginsTest {
         System.clearProperty("hystrix.plugin.HystrixDynamicProperties.implementation");
     }
     
-    private static ConcurrentLinkedQueue<String> dynamicPropertyEvents = new ConcurrentLinkedQueue<String>();
+    private static ConcurrentLinkedQueue<String> dynamicPropertyEvents = new ConcurrentLinkedQueue<>();
 
     
     @Test
@@ -90,7 +90,7 @@ public class HystrixPluginsTest {
     }
     
     static List<String> getEvents() {
-        return new ArrayList<String>(dynamicPropertyEvents);
+        return new ArrayList<>(dynamicPropertyEvents);
     }
     
     static void javaPrintList(Appendable a, Iterable<String> list) throws IOException {
@@ -161,7 +161,7 @@ public class HystrixPluginsTest {
                 dynamicPropertyEvents.add("serviceloader: " + name);
                 final Enumeration<URL> r;
                 if (name.endsWith("META-INF/services/com.netflix.hystrix.strategy.properties.HystrixDynamicProperties")) {
-                    Vector<URL> vs = new Vector<URL>();
+                    Vector<URL> vs = new Vector<>();
                     URL u = super.getResource(fakeServiceLoaderResource);
                     vs.add(u);
                     return vs.elements();
@@ -256,26 +256,26 @@ public class HystrixPluginsTest {
         @Override
         public HystrixDynamicProperty<String> getString(String name, String fallback) {
             dynamicPropertyEvents.offer("property: " + name);
-            return new NoOpProperty<String>();
+            return new NoOpProperty<>();
         }
 
         @Override
         public HystrixDynamicProperty<Integer> getInteger(String name, Integer fallback) {
             dynamicPropertyEvents.offer("property: " + name);
-            return new NoOpProperty<Integer>();
+            return new NoOpProperty<>();
         }
 
         @Override
         public HystrixDynamicProperty<Long> getLong(String name, Long fallback) {
             dynamicPropertyEvents.offer("property: " + name);
-            return new NoOpProperty<Long>();
+            return new NoOpProperty<>();
 
         }
 
         @Override
         public HystrixDynamicProperty<Boolean> getBoolean(String name, Boolean fallback) {
             dynamicPropertyEvents.offer("property: " + name);
-            return new NoOpProperty<Boolean>();
+            return new NoOpProperty<>();
 
         }
         
@@ -470,7 +470,7 @@ public class HystrixPluginsTest {
         }
     }
     
-    private static final ThreadLocal<String> testRequestIdThreadLocal = new ThreadLocal<String>();
+    private static final ThreadLocal<String> testRequestIdThreadLocal = new ThreadLocal<>();
 
     public static class DummyCommand extends HystrixCommand<Void> {
 

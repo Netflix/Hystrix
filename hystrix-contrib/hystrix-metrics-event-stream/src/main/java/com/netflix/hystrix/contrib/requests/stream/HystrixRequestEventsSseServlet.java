@@ -54,7 +54,7 @@ public class HystrixRequestEventsSseServlet extends HttpServlet {
     private static DynamicIntProperty maxConcurrentConnections =
             DynamicPropertyFactory.getInstance().getIntProperty("hystrix.requests.stream.maxConcurrentConnections", 5);
 
-    private final LinkedBlockingQueue<HystrixRequestEvents> requestQueue = new LinkedBlockingQueue<HystrixRequestEvents>(DEFAULT_QUEUE_DEPTH);
+    private final LinkedBlockingQueue<HystrixRequestEvents> requestQueue = new LinkedBlockingQueue<>(DEFAULT_QUEUE_DEPTH);
     private final HystrixRequestEventsJsonStream requestEventsJsonStream;
 
     public HystrixRequestEventsSseServlet() {
@@ -181,7 +181,7 @@ public class HystrixRequestEventsSseServlet extends HttpServlet {
                                 throw new IOException("io error");
                             }
                         } else {
-                            List<HystrixRequestEvents> l = new ArrayList<HystrixRequestEvents>();
+                            List<HystrixRequestEvents> l = new ArrayList<>();
                             requestQueue.drainTo(l);
                             String requestEventsAsStr = HystrixRequestEventsJsonStream.convertRequestsToJson(l);
                             if (requestEventsAsStr != null) {

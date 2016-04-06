@@ -86,7 +86,7 @@ public abstract class BasicCollapserPropertiesTest extends BasicHystrixTest {
 
         @HystrixCommand
         public List<User> getUsers(List<String> ids) {
-            List<User> users = new ArrayList<User>();
+            List<User> users = new ArrayList<>();
             for (String id : ids) {
                 users.add(new User(id, "name: " + id));
             }

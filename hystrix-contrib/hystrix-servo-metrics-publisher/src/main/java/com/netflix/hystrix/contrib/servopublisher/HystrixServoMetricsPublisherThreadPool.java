@@ -156,7 +156,7 @@ public class HystrixServoMetricsPublisherThreadPool extends HystrixServoMetricsP
      */
     private List<Monitor<?>> getServoMonitors() {
 
-        List<Monitor<?>> monitors = new ArrayList<Monitor<?>>();
+        List<Monitor<?>> monitors = new ArrayList<>();
 
         monitors.add(new InformationalMetric<String>(MonitorConfig.builder("name").build()) {
             @Override

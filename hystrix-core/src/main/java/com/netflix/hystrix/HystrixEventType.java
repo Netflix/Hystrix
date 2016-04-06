@@ -79,7 +79,7 @@ public enum HystrixEventType {
     /**
      * List of events that throw an Exception to the caller
      */
-    public final static List<HystrixEventType> EXCEPTION_PRODUCING_EVENT_TYPES = new ArrayList<HystrixEventType>();
+    public final static List<HystrixEventType> EXCEPTION_PRODUCING_EVENT_TYPES = new ArrayList<>();
 
     static {
         EXCEPTION_PRODUCING_EVENT_TYPES.add(BAD_REQUEST);

@@ -86,7 +86,7 @@ public class ObservableCollapserGetWordForNumber extends HystrixObservableCollap
 		final int count = counter.incrementAndGet();
 		System.out.println("Creating batch for " + requests.size() + " requests. Total invocations so far: " + count);
 
-		final List<Integer> numbers = new ArrayList<Integer>();
+		final List<Integer> numbers = new ArrayList<>();
 		for (final CollapsedRequest<String, Integer> request : requests)
 		{
 			numbers.add(request.getArgument());
@@ -172,13 +172,13 @@ public class ObservableCollapserGetWordForNumber extends HystrixObservableCollap
 		public void shouldCollapseRequestsSync()
 		{
 			final int noOfRequests = 10;
-			final Map<Integer, TestSubscriber<String>> subscribersByNumber = new HashMap<Integer, TestSubscriber<String>>(
+			final Map<Integer, TestSubscriber<String>> subscribersByNumber = new HashMap<>(
 					noOfRequests);
 
 			TestSubscriber<String> subscriber;
 			for (int number = 0; number < noOfRequests; number++)
 			{
-				subscriber = new TestSubscriber<String>();
+				subscriber = new TestSubscriber<>();
 				new ObservableCollapserGetWordForNumber(number).toObservable().subscribe(subscriber);
 				subscribersByNumber.put(number, subscriber);
 
@@ -217,13 +217,13 @@ public class ObservableCollapserGetWordForNumber extends HystrixObservableCollap
 			final HystrixContextScheduler contextAwareScheduler = new HystrixContextScheduler(Schedulers.computation());
 
 			final int noOfRequests = 10;
-			final Map<Integer, TestSubscriber<String>> subscribersByNumber = new HashMap<Integer, TestSubscriber<String>>(
+			final Map<Integer, TestSubscriber<String>> subscribersByNumber = new HashMap<>(
 					noOfRequests);
 
 			TestSubscriber<String> subscriber;
 			for (int number = 0; number < noOfRequests; number++)
 			{
-				subscriber = new TestSubscriber<String>();
+				subscriber = new TestSubscriber<>();
 				final int finalNumber = number;
 
 				// defer and subscribe on specific scheduler

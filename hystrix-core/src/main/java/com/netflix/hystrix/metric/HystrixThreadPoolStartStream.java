@@ -35,7 +35,7 @@ public class HystrixThreadPoolStartStream implements HystrixEventStream<HystrixC
     private final Subject<HystrixCommandExecutionStarted, HystrixCommandExecutionStarted> writeOnlySubject;
     private final Observable<HystrixCommandExecutionStarted> readOnlyStream;
 
-    private static final ConcurrentMap<String, HystrixThreadPoolStartStream> streams = new ConcurrentHashMap<String, HystrixThreadPoolStartStream>();
+    private static final ConcurrentMap<String, HystrixThreadPoolStartStream> streams = new ConcurrentHashMap<>();
 
     public static HystrixThreadPoolStartStream getInstance(HystrixThreadPoolKey threadPoolKey) {
         HystrixThreadPoolStartStream initialStream = streams.get(threadPoolKey.name());
@@ -58,7 +58,7 @@ public class HystrixThreadPoolStartStream implements HystrixEventStream<HystrixC
     HystrixThreadPoolStartStream(final HystrixThreadPoolKey threadPoolKey) {
         this.threadPoolKey = threadPoolKey;
 
-        this.writeOnlySubject = new SerializedSubject<HystrixCommandExecutionStarted, HystrixCommandExecutionStarted>(PublishSubject.<HystrixCommandExecutionStarted>create());
+        this.writeOnlySubject = new SerializedSubject<>(PublishSubject.<HystrixCommandExecutionStarted>create());
         this.readOnlyStream = writeOnlySubject.share();
     }
 

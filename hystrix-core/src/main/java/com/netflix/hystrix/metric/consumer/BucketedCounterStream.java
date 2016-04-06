@@ -39,7 +39,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public abstract class BucketedCounterStream<Event extends HystrixEvent, Bucket, Output> {
     protected final int numBuckets;
     protected final Observable<Bucket> bucketedStream;
-    protected final AtomicReference<Subscription> subscription = new AtomicReference<Subscription>(null);
+    protected final AtomicReference<Subscription> subscription = new AtomicReference<>(null);
 
     private final Func1<Observable<Event>, Observable<Bucket>> reduceBucketToSummary;
 
@@ -55,7 +55,7 @@ public abstract class BucketedCounterStream<Event extends HystrixEvent, Bucket, 
             }
         };
 
-        final List<Bucket> emptyEventCountsToStart = new ArrayList<Bucket>();
+        final List<Bucket> emptyEventCountsToStart = new ArrayList<>();
         for (int i = 0; i < numBuckets; i++) {
             emptyEventCountsToStart.add(getEmptyBucketSummary());
         }

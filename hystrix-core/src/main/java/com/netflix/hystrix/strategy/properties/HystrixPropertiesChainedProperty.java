@@ -66,8 +66,8 @@ public abstract class HystrixPropertiesChainedProperty {
          */
         public ChainLink() {
             next = null;
-            pReference = new AtomicReference<ChainLink<T>>(this);
-            callbacks = new ArrayList<Runnable>();
+            pReference = new AtomicReference<>(this);
+            callbacks = new ArrayList<>();
         }
 
         /**
@@ -75,8 +75,8 @@ public abstract class HystrixPropertiesChainedProperty {
          */
         public ChainLink(ChainLink<T> nextProperty) {
             next = nextProperty;
-            pReference = new AtomicReference<ChainLink<T>>(next);
-            callbacks = new ArrayList<Runnable>();
+            pReference = new AtomicReference<>(next);
+            callbacks = new ArrayList<>();
         }
 
         protected void checkAndFlip() {
@@ -131,8 +131,8 @@ public abstract class HystrixPropertiesChainedProperty {
             super();        
         }
         
-        private List<HystrixDynamicProperty<T>> properties = 
-                new ArrayList<HystrixDynamicProperty<T>>();
+        private List<HystrixDynamicProperty<T>> properties =
+                new ArrayList<>();
         
         
         public ChainBuilder<T> add(HystrixDynamicProperty<T> property) {
@@ -148,20 +148,20 @@ public abstract class HystrixPropertiesChainedProperty {
         public HystrixDynamicProperty<T> build() {
             if (properties.size() < 1) throw new IllegalArgumentException();
             if (properties.size() == 1) return properties.get(0);
-            List<HystrixDynamicProperty<T>> reversed = 
-                    new ArrayList<HystrixDynamicProperty<T>>(properties);
+            List<HystrixDynamicProperty<T>> reversed =
+                    new ArrayList<>(properties);
             Collections.reverse(reversed);
             ChainProperty<T> current = null;
             for (HystrixDynamicProperty<T> p : reversed) {
                 if (current == null) {
-                    current = new ChainProperty<T>(p);
+                    current = new ChainProperty<>(p);
                 }
                 else {
-                    current = new ChainProperty<T>(p, current);
+                    current = new ChainProperty<>(p, current);
                 }
             }
             
-            return new ChainHystrixProperty<T>(current);
+            return new ChainHystrixProperty<>(current);
             
         }
         

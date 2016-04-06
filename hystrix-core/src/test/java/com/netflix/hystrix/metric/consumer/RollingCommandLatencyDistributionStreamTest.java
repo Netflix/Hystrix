@@ -207,7 +207,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
 
         //3 failures is enough to trigger short-circuit.  execute those, then wait for bucket to roll
         //next command should be a short-circuit
-        List<Command> commands = new ArrayList<Command>();
+        List<Command> commands = new ArrayList<>();
         for (int i = 0; i < 3; i++) {
             commands.add(Command.from(groupKey, key, HystrixEventType.FAILURE, 0));
         }
@@ -263,7 +263,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
 
         //10 commands with latency should occupy the entire threadpool.  execute those, then wait for bucket to roll
         //next command should be a thread-pool rejection
-        List<Command> commands = new ArrayList<Command>();
+        List<Command> commands = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             commands.add(Command.from(groupKey, key, HystrixEventType.SUCCESS, 200));
         }
@@ -321,7 +321,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
 
         //10 commands with latency should occupy all semaphores.  execute those, then wait for bucket to roll
         //next command should be a semaphore rejection
-        List<Command> commands = new ArrayList<Command>();
+        List<Command> commands = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             commands.add(Command.from(groupKey, key, HystrixEventType.SUCCESS, 200, HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE));
         }

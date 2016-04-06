@@ -34,7 +34,7 @@ class ObservableCommandNumbersToWords extends HystrixObservableCommand<NumberWor
 	private final List<Integer> numbers;
 
 	// in the real world you'd probably want to replace this very simple code by using ICU or similar
-	static Map<Integer, String> dict = new HashMap<Integer, String>(11);
+	static Map<Integer, String> dict = new HashMap<>(11);
 	static
 	{
 		dict.put(0, "zero");

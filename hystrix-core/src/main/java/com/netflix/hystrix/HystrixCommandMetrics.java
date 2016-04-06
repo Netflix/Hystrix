@@ -82,7 +82,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     };
 
     // String is HystrixCommandKey.name() (we can't use HystrixCommandKey directly as we can't guarantee it implements hashcode/equals correctly)
-    private static final ConcurrentHashMap<String, HystrixCommandMetrics> metrics = new ConcurrentHashMap<String, HystrixCommandMetrics>();
+    private static final ConcurrentHashMap<String, HystrixCommandMetrics> metrics = new ConcurrentHashMap<>();
 
     /**
      * Get or create the {@link HystrixCommandMetrics} instance for a given {@link HystrixCommandKey}.

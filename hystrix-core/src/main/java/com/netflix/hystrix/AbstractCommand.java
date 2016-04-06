@@ -82,16 +82,16 @@ import java.util.concurrent.atomic.AtomicReference;
     /* FALLBACK Semaphore */
     protected final TryableSemaphore fallbackSemaphoreOverride;
     /* each circuit has a semaphore to restrict concurrent fallback execution */
-    protected static final ConcurrentHashMap<String, TryableSemaphore> fallbackSemaphorePerCircuit = new ConcurrentHashMap<String, TryableSemaphore>();
+    protected static final ConcurrentHashMap<String, TryableSemaphore> fallbackSemaphorePerCircuit = new ConcurrentHashMap<>();
     /* END FALLBACK Semaphore */
 
     /* EXECUTION Semaphore */
     protected final TryableSemaphore executionSemaphoreOverride;
     /* each circuit has a semaphore to restrict concurrent fallback execution */
-    protected static final ConcurrentHashMap<String, TryableSemaphore> executionSemaphorePerCircuit = new ConcurrentHashMap<String, TryableSemaphore>();
+    protected static final ConcurrentHashMap<String, TryableSemaphore> executionSemaphorePerCircuit = new ConcurrentHashMap<>();
     /* END EXECUTION Semaphore */
 
-    protected final AtomicReference<Reference<TimerListener>> timeoutTimer = new AtomicReference<Reference<TimerListener>>();
+    protected final AtomicReference<Reference<TimerListener>> timeoutTimer = new AtomicReference<>();
 
     protected AtomicBoolean started = new AtomicBoolean();
 
@@ -99,9 +99,9 @@ import java.util.concurrent.atomic.AtomicReference;
     protected volatile ExecutionResult executionResult = ExecutionResult.EMPTY;
 
     /* If this command executed and timed-out */
-    protected final AtomicReference<TimedOutStatus> isCommandTimedOut = new AtomicReference<TimedOutStatus>(TimedOutStatus.NOT_EXECUTED);
+    protected final AtomicReference<TimedOutStatus> isCommandTimedOut = new AtomicReference<>(TimedOutStatus.NOT_EXECUTED);
     protected final AtomicBoolean isExecutionComplete = new AtomicBoolean(false);
-    protected final AtomicReference<Action0> endCurrentThreadExecutingCommand = new AtomicReference<Action0>(); // don't like how this is being done
+    protected final AtomicReference<Action0> endCurrentThreadExecutingCommand = new AtomicReference<>(); // don't like how this is being done
 
     /**
      * Instance of RequestCache logic
@@ -111,9 +111,9 @@ import java.util.concurrent.atomic.AtomicReference;
 
     // this is a micro-optimization but saves about 1-2microseconds (on 2011 MacBook Pro) 
     // on the repetitive string processing that will occur on the same classes over and over again
-    private static ConcurrentHashMap<Class<?>, String> defaultNameCache = new ConcurrentHashMap<Class<?>, String>();
+    private static ConcurrentHashMap<Class<?>, String> defaultNameCache = new ConcurrentHashMap<>();
 
-    private static ConcurrentHashMap<HystrixCommandKey, Boolean> commandContainsFallback = new ConcurrentHashMap<HystrixCommandKey, Boolean>();
+    private static ConcurrentHashMap<HystrixCommandKey, Boolean> commandContainsFallback = new ConcurrentHashMap<>();
 
     /* package */static String getDefaultNameFromClass(Class<?> cls) {
         String fromCache = defaultNameCache.get(cls);
@@ -361,7 +361,7 @@ import java.util.concurrent.atomic.AtomicReference;
                 } catch (Throwable hookEx) {
                     logger.warn("Error calling HystrixCommandExecutionHook.onCacheHit", hookEx);
                 }
-                return new CachedObservableResponse<R>((CachedObservableOriginal<R>) fromCache, this);
+                return new CachedObservableResponse<>((CachedObservableOriginal<R>) fromCache, this);
             }
         }
 
@@ -466,17 +466,17 @@ import java.util.concurrent.atomic.AtomicReference;
         // put in cache
         if (requestCacheEnabled) {
             // wrap it for caching
-            o = new CachedObservableOriginal<R>(o.cache(), this);
+            o = new CachedObservableOriginal<>(o.cache(), this);
             Observable<R> fromCache = requestCache.putIfAbsent(getCacheKey(), o);
             if (fromCache != null) {
                 // another thread beat us so we'll use the cached value instead
-                o = new CachedObservableResponse<R>((CachedObservableOriginal<R>) fromCache, this);
+                o = new CachedObservableResponse<>((CachedObservableOriginal<R>) fromCache, this);
             }
             // we just created an ObservableCommand so we cast and return it
             return o;
         } else {
             // no request caching so a simple wrapper just to pass 'this' along with the Observable
-            return new ObservableCommand<R>(o, this);
+            return new ObservableCommand<>(o, this);
         }
     }
 
@@ -556,7 +556,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
         });
         if (properties.executionTimeoutEnabled().get()) {
-            run = run.lift(new HystrixObservableTimeoutOperator<R>(_self));
+            run = run.lift(new HystrixObservableTimeoutOperator<>(_self));
         }
         run = run.doOnNext(new Action1<R>() {
             @Override

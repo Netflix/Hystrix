@@ -34,7 +34,7 @@ public class HystrixCollapserEventStream implements HystrixEventStream<HystrixCo
     private final Subject<HystrixCollapserEvent, HystrixCollapserEvent> writeOnlyStream;
     private final Observable<HystrixCollapserEvent> readOnlyStream;
 
-    private static final ConcurrentMap<String, HystrixCollapserEventStream> streams = new ConcurrentHashMap<String, HystrixCollapserEventStream>();
+    private static final ConcurrentMap<String, HystrixCollapserEventStream> streams = new ConcurrentHashMap<>();
 
     public static HystrixCollapserEventStream getInstance(HystrixCollapserKey collapserKey) {
         HystrixCollapserEventStream initialStream = streams.get(collapserKey.name());
@@ -57,7 +57,7 @@ public class HystrixCollapserEventStream implements HystrixEventStream<HystrixCo
     HystrixCollapserEventStream(final HystrixCollapserKey collapserKey) {
         this.collapserKey = collapserKey;
 
-        this.writeOnlyStream = new SerializedSubject<HystrixCollapserEvent, HystrixCollapserEvent>(PublishSubject.<HystrixCollapserEvent>create());
+        this.writeOnlyStream = new SerializedSubject<>(PublishSubject.<HystrixCollapserEvent>create());
         this.readOnlyStream = writeOnlyStream.share();
     }
 

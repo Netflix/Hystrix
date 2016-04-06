@@ -41,7 +41,7 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class RollingThreadPoolEventCounterStream extends BucketedRollingCounterStream<HystrixCommandCompletion, long[], long[]> {
 
-    private static final ConcurrentMap<String, RollingThreadPoolEventCounterStream> streams = new ConcurrentHashMap<String, RollingThreadPoolEventCounterStream>();
+    private static final ConcurrentMap<String, RollingThreadPoolEventCounterStream> streams = new ConcurrentHashMap<>();
 
     private static final int ALL_EVENT_TYPES_SIZE = HystrixEventType.ThreadPool.values().length;
 

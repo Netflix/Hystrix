@@ -31,7 +31,7 @@ public class HystrixCommandTimeoutConcurrencyTesting {
         final int NUM_TRIALS = 10;
 
         for (int i = 0; i < NUM_TRIALS; i++) {
-            List<Observable<String>> observables = new ArrayList<Observable<String>>();
+            List<Observable<String>> observables = new ArrayList<>();
             HystrixRequestContext context = null;
 
             try {

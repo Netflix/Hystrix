@@ -180,7 +180,7 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
         boolean fallbackEmitExpected = false;
         int expectedFallbackEmitCount = 0;
 
-        List<HystrixEventType> condensedEmitExpectedEventTypes = new ArrayList<HystrixEventType>();
+        List<HystrixEventType> condensedEmitExpectedEventTypes = new ArrayList<>();
 
         for (HystrixEventType expectedEventType: expectedEventTypes) {
             if (expectedEventType.equals(HystrixEventType.EMIT)) {
@@ -221,7 +221,7 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
         }
 
         public SingleThreadedPoolWithQueue(int queueSize, int rejectionQueueSizeThreshold) {
-            queue = new LinkedBlockingQueue<Runnable>(queueSize);
+            queue = new LinkedBlockingQueue<>(queueSize);
             pool = new ThreadPoolExecutor(1, 1, 1, TimeUnit.MINUTES, queue);
             this.rejectionQueueSizeThreshold = rejectionQueueSizeThreshold;
         }
@@ -272,7 +272,7 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
         final ThreadPoolExecutor pool;
 
         public SingleThreadedPoolWithNoQueue() {
-            queue = new SynchronousQueue<Runnable>();
+            queue = new SynchronousQueue<>();
             pool = new ThreadPoolExecutor(1, 1, 1, TimeUnit.MINUTES, queue);
         }
 

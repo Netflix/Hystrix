@@ -34,7 +34,7 @@ public class HystrixCommandCompletionStream implements HystrixEventStream<Hystri
     private final Subject<HystrixCommandCompletion, HystrixCommandCompletion> writeOnlySubject;
     private final Observable<HystrixCommandCompletion> readOnlyStream;
 
-    private static final ConcurrentMap<String, HystrixCommandCompletionStream> streams = new ConcurrentHashMap<String, HystrixCommandCompletionStream>();
+    private static final ConcurrentMap<String, HystrixCommandCompletionStream> streams = new ConcurrentHashMap<>();
 
     public static HystrixCommandCompletionStream getInstance(HystrixCommandKey commandKey) {
         HystrixCommandCompletionStream initialStream = streams.get(commandKey.name());
@@ -57,7 +57,7 @@ public class HystrixCommandCompletionStream implements HystrixEventStream<Hystri
     HystrixCommandCompletionStream(final HystrixCommandKey commandKey) {
         this.commandKey = commandKey;
 
-        this.writeOnlySubject = new SerializedSubject<HystrixCommandCompletion, HystrixCommandCompletion>(PublishSubject.<HystrixCommandCompletion>create());
+        this.writeOnlySubject = new SerializedSubject<>(PublishSubject.<HystrixCommandCompletion>create());
         this.readOnlyStream = writeOnlySubject.share();
     }
 

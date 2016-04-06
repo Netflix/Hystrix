@@ -56,11 +56,11 @@ public class HystrixPlugins {
     //See https://en.wikipedia.org/wiki/Initialization-on-demand_holder_idiom
     private static class LazyHolder { private static final HystrixPlugins INSTANCE = HystrixPlugins.create(); }
     private final ClassLoader classLoader;
-    /* package */ final AtomicReference<HystrixEventNotifier> notifier = new AtomicReference<HystrixEventNotifier>();
-    /* package */ final AtomicReference<HystrixConcurrencyStrategy> concurrencyStrategy = new AtomicReference<HystrixConcurrencyStrategy>();
-    /* package */ final AtomicReference<HystrixMetricsPublisher> metricsPublisher = new AtomicReference<HystrixMetricsPublisher>();
-    /* package */ final AtomicReference<HystrixPropertiesStrategy> propertiesFactory = new AtomicReference<HystrixPropertiesStrategy>();
-    /* package */ final AtomicReference<HystrixCommandExecutionHook> commandExecutionHook = new AtomicReference<HystrixCommandExecutionHook>();
+    /* package */ final AtomicReference<HystrixEventNotifier> notifier = new AtomicReference<>();
+    /* package */ final AtomicReference<HystrixConcurrencyStrategy> concurrencyStrategy = new AtomicReference<>();
+    /* package */ final AtomicReference<HystrixMetricsPublisher> metricsPublisher = new AtomicReference<>();
+    /* package */ final AtomicReference<HystrixPropertiesStrategy> propertiesFactory = new AtomicReference<>();
+    /* package */ final AtomicReference<HystrixCommandExecutionHook> commandExecutionHook = new AtomicReference<>();
     private final HystrixDynamicProperties dynamicProperties;
 
     

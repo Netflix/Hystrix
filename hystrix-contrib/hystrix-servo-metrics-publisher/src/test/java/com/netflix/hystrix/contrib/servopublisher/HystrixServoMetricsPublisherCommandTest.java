@@ -152,8 +152,8 @@ public class HystrixServoMetricsPublisherCommandTest {
 
         Thread.sleep(2000);
 
-        List<Observable<Integer>> os = new ArrayList<Observable<Integer>>();
-        TestSubscriber<Integer> testSubscriber = new TestSubscriber<Integer>();
+        List<Observable<Integer>> os = new ArrayList<>();
+        TestSubscriber<Integer> testSubscriber = new TestSubscriber<>();
 
         os.add(new SuccessCommand(key, 10).observe());
         os.add(new SuccessCommand(key, 20).observe());

@@ -293,7 +293,7 @@ public class CumulativeThreadPoolEventCounterStreamTest extends CommandStreamTes
         //submit 2 more requests and they should be SEMAPHORE_REJECTED
         //should see 10 SUCCESSes, 2 SEMAPHORE_REJECTED and 2 FALLBACK_SUCCESSes
 
-        List<Command> saturators = new ArrayList<Command>();
+        List<Command> saturators = new ArrayList<>();
 
         for (int i = 0; i < 10; i++) {
             saturators.add(CommandStreamTest.Command.from(groupKey, key, HystrixEventType.SUCCESS, 300, HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE));
@@ -351,7 +351,7 @@ public class CumulativeThreadPoolEventCounterStreamTest extends CommandStreamTes
         //submit 2 more requests and they should be THREADPOOL_REJECTED
         //should see 10 SUCCESSes, 2 THREADPOOL_REJECTED and 2 FALLBACK_SUCCESSes
 
-        List<CommandStreamTest.Command> saturators = new ArrayList<CommandStreamTest.Command>();
+        List<CommandStreamTest.Command> saturators = new ArrayList<>();
 
         for (int i = 0; i < 10; i++) {
             saturators.add(CommandStreamTest.Command.from(groupKey, key, HystrixEventType.SUCCESS, 700));
@@ -453,7 +453,7 @@ public class CumulativeThreadPoolEventCounterStreamTest extends CommandStreamTes
         //fallback semaphore size is 5.  So let 5 commands saturate that semaphore, then
         //let 2 more commands go to fallback.  they should get rejected by the fallback-semaphore
 
-        List<CommandStreamTest.Command> fallbackSaturators = new ArrayList<CommandStreamTest.Command>();
+        List<CommandStreamTest.Command> fallbackSaturators = new ArrayList<>();
         for (int i = 0; i < 5; i++) {
             fallbackSaturators.add(CommandStreamTest.Command.from(groupKey, key, HystrixEventType.FAILURE, 20, HystrixEventType.FALLBACK_SUCCESS, 400));
         }

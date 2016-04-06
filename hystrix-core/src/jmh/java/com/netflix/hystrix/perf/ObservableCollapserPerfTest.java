@@ -74,7 +74,7 @@ public class ObservableCollapserPerfTest {
         public void setUp() {
             reqContext = HystrixRequestContext.initializeContext();
 
-            List<Observable<String>> os = new ArrayList<Observable<String>>();
+            List<Observable<String>> os = new ArrayList<>();
 
             for (int i = 0; i < numToCollapse; i++) {
                 TestCollapserWithMultipleResponses collapser = new TestCollapserWithMultipleResponses(i, numResponsesPerArg, blackholeConsumption);
@@ -102,7 +102,7 @@ public class ObservableCollapserPerfTest {
         private final Action1<HystrixCollapser.CollapsedRequest<String, String>> onMissingResponseHandler;
 
         static {
-            emitsPerArg = new HashMap<String, Integer>();
+            emitsPerArg = new HashMap<>();
         }
 
         public TestCollapserWithMultipleResponses(int arg, int numResponsePerArg, int blackholeConsumption) {
@@ -136,7 +136,7 @@ public class ObservableCollapserPerfTest {
             if (commandConstructionFails) {
                 throw new RuntimeException("Exception thrown in command construction");
             } else {
-                List<Integer> args = new ArrayList<Integer>();
+                List<Integer> args = new ArrayList<>();
 
                 for (HystrixCollapser.CollapsedRequest<String, String> collapsedRequest : collapsedRequests) {
                     String stringArg = collapsedRequest.getArgument();

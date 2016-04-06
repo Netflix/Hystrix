@@ -126,7 +126,7 @@ public abstract class HystrixObservableCollapser<K, BatchReturnType, ResponseTyp
         }
 
         HystrixCollapserProperties properties = HystrixPropertiesFactory.getCollapserProperties(collapserKey, propertiesBuilder);
-        this.collapserFactory = new RequestCollapserFactory<BatchReturnType, ResponseType, RequestArgumentType>(collapserKey, scope, timer, properties);
+        this.collapserFactory = new RequestCollapserFactory<>(collapserKey, scope, timer, properties);
         this.requestCache = HystrixRequestCache.getInstance(collapserKey, HystrixPlugins.getInstance().getConcurrencyStrategy());
 
         if (metrics == null) {
@@ -170,12 +170,12 @@ public abstract class HystrixObservableCollapser<K, BatchReturnType, ResponseTyp
                 final Func1<BatchReturnType, ResponseType> mapBatchTypeToResponseType = self.getBatchReturnTypeToResponseTypeMapper();
 
                 // index the requests by key
-                final Map<K, CollapsedRequest<ResponseType, RequestArgumentType>> requestsByKey = new HashMap<K, CollapsedRequest<ResponseType, RequestArgumentType>>(requests.size());
+                final Map<K, CollapsedRequest<ResponseType, RequestArgumentType>> requestsByKey = new HashMap<>(requests.size());
                 for (CollapsedRequest<ResponseType, RequestArgumentType> cr : requests) {
                     K requestArg = requestKeySelector.call(cr.getArgument());
                     requestsByKey.put(requestArg, cr);
                 }
-                final Set<K> seenKeys = new HashSet<K>();
+                final Set<K> seenKeys = new HashSet<>();
 
                 // observe the responses and join with the requests by key
                 return batchResponse
@@ -573,6 +573,6 @@ public abstract class HystrixObservableCollapser<K, BatchReturnType, ResponseTyp
     // this is a micro-optimization but saves about 1-2microseconds (on 2011 MacBook Pro) 
     // on the repetitive string processing that will occur on the same classes over and over again
     @SuppressWarnings("rawtypes")
-    private static ConcurrentHashMap<Class<? extends HystrixObservableCollapser>, String> defaultNameCache = new ConcurrentHashMap<Class<? extends HystrixObservableCollapser>, String>();
+    private static ConcurrentHashMap<Class<? extends HystrixObservableCollapser>, String> defaultNameCache = new ConcurrentHashMap<>();
 
 }

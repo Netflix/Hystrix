@@ -328,7 +328,7 @@ public class ExecutionResult {
     }
 
     public List<HystrixEventType> getOrderedList() {
-        List<HystrixEventType> eventList = new ArrayList<HystrixEventType>();
+        List<HystrixEventType> eventList = new ArrayList<>();
         for (HystrixEventType eventType: ALL_EVENT_TYPES) {
             if (eventCounts.contains(eventType)) {
                 eventList.add(eventType);

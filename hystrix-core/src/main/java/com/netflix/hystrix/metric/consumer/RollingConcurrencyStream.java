@@ -43,7 +43,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * This is a stable value - there's no peeking into a bucket until it is emitted
  */
 public abstract class RollingConcurrencyStream {
-    private AtomicReference<Subscription> rollingMaxSubscription = new AtomicReference<Subscription>(null);
+    private AtomicReference<Subscription> rollingMaxSubscription = new AtomicReference<>(null);
     private final BehaviorSubject<Integer> rollingMax = BehaviorSubject.create(0);
     private final Observable<Integer> rollingMaxStream;
 
@@ -71,7 +71,7 @@ public abstract class RollingConcurrencyStream {
 
 
     protected RollingConcurrencyStream(final HystrixEventStream<HystrixCommandExecutionStarted> inputEventStream, final int numBuckets, final int bucketSizeInMs) {
-        final List<Integer> emptyRollingMaxBuckets = new ArrayList<Integer>();
+        final List<Integer> emptyRollingMaxBuckets = new ArrayList<>();
         for (int i = 0; i < numBuckets; i++) {
             emptyRollingMaxBuckets.add(0);
         }

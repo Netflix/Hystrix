@@ -88,7 +88,7 @@ public class HystrixConfigurationStream {
             new Func1<Long, Map<HystrixCommandKey, HystrixCommandConfiguration>>() {
                 @Override
                 public Map<HystrixCommandKey, HystrixCommandConfiguration> call(Long timestamp) {
-                    Map<HystrixCommandKey, HystrixCommandConfiguration> commandConfigPerKey = new HashMap<HystrixCommandKey, HystrixCommandConfiguration>();
+                    Map<HystrixCommandKey, HystrixCommandConfiguration> commandConfigPerKey = new HashMap<>();
                     for (HystrixCommandMetrics commandMetrics: HystrixCommandMetrics.getInstances()) {
                         HystrixCommandKey commandKey = commandMetrics.getCommandKey();
                         HystrixThreadPoolKey threadPoolKey = commandMetrics.getThreadPoolKey();
@@ -103,7 +103,7 @@ public class HystrixConfigurationStream {
             new Func1<Long, Map<HystrixThreadPoolKey, HystrixThreadPoolConfiguration>>() {
                 @Override
                 public Map<HystrixThreadPoolKey, HystrixThreadPoolConfiguration> call(Long timestamp) {
-                    Map<HystrixThreadPoolKey, HystrixThreadPoolConfiguration> threadPoolConfigPerKey = new HashMap<HystrixThreadPoolKey, HystrixThreadPoolConfiguration>();
+                    Map<HystrixThreadPoolKey, HystrixThreadPoolConfiguration> threadPoolConfigPerKey = new HashMap<>();
                     for (HystrixThreadPoolMetrics threadPoolMetrics: HystrixThreadPoolMetrics.getInstances()) {
                         HystrixThreadPoolKey threadPoolKey = threadPoolMetrics.getThreadPoolKey();
                         threadPoolConfigPerKey.put(threadPoolKey, sampleThreadPoolConfiguration(threadPoolKey, threadPoolMetrics.getProperties()));
@@ -116,7 +116,7 @@ public class HystrixConfigurationStream {
             new Func1<Long, Map<HystrixCollapserKey, HystrixCollapserConfiguration>>() {
                 @Override
                 public Map<HystrixCollapserKey, HystrixCollapserConfiguration> call(Long timestamp) {
-                    Map<HystrixCollapserKey, HystrixCollapserConfiguration> collapserConfigPerKey = new HashMap<HystrixCollapserKey, HystrixCollapserConfiguration>();
+                    Map<HystrixCollapserKey, HystrixCollapserConfiguration> collapserConfigPerKey = new HashMap<>();
                     for (HystrixCollapserMetrics collapserMetrics: HystrixCollapserMetrics.getInstances()) {
                         HystrixCollapserKey collapserKey = collapserMetrics.getCollapserKey();
                         collapserConfigPerKey.put(collapserKey, sampleCollapserConfiguration(collapserKey, collapserMetrics.getProperties()));

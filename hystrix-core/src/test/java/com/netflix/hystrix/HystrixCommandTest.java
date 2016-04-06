@@ -398,8 +398,8 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
     @Test
     public void testCallbackThreadForThreadIsolation() throws Exception {
 
-        final AtomicReference<Thread> commandThread = new AtomicReference<Thread>();
-        final AtomicReference<Thread> subscribeThread = new AtomicReference<Thread>();
+        final AtomicReference<Thread> commandThread = new AtomicReference<>();
+        final AtomicReference<Thread> subscribeThread = new AtomicReference<>();
 
         TestHystrixCommand<Boolean> command = new TestHystrixCommand<Boolean>(TestHystrixCommand.testPropsBuilder()) {
 
@@ -451,8 +451,8 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
     @Test
     public void testCallbackThreadForSemaphoreIsolation() throws Exception {
 
-        final AtomicReference<Thread> commandThread = new AtomicReference<Thread>();
-        final AtomicReference<Thread> subscribeThread = new AtomicReference<Thread>();
+        final AtomicReference<Thread> commandThread = new AtomicReference<>();
+        final AtomicReference<Thread> subscribeThread = new AtomicReference<>();
 
         TestHystrixCommand<Boolean> command = new TestHystrixCommand<Boolean>(TestHystrixCommand.testPropsBuilder()
                 .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionIsolationStrategy(ExecutionIsolationStrategy.SEMAPHORE))) {
@@ -1388,7 +1388,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertFalse(command1.isExecutedInThread());
         assertTrue(result);
 
-        final ArrayBlockingQueue<Boolean> results = new ArrayBlockingQueue<Boolean>(2);
+        final ArrayBlockingQueue<Boolean> results = new ArrayBlockingQueue<>(2);
 
         final AtomicBoolean exceptionReceived = new AtomicBoolean();
 
@@ -1459,7 +1459,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
     @Test
     public void testRejectedExecutionSemaphoreWithFallbackViaExecute() throws InterruptedException {
         final TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
-        final ArrayBlockingQueue<Boolean> results = new ArrayBlockingQueue<Boolean>(2);
+        final ArrayBlockingQueue<Boolean> results = new ArrayBlockingQueue<>(2);
 
         final AtomicBoolean exceptionReceived = new AtomicBoolean();
 
@@ -1527,7 +1527,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
     @Test
     public void testRejectedExecutionSemaphoreWithFallbackViaObserve() throws InterruptedException {
         final TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
-        final ArrayBlockingQueue<Observable<Boolean>> results = new ArrayBlockingQueue<Observable<Boolean>>(2);
+        final ArrayBlockingQueue<Observable<Boolean>> results = new ArrayBlockingQueue<>(2);
 
         final AtomicBoolean exceptionReceived = new AtomicBoolean();
 
@@ -1753,8 +1753,8 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
     @Test
     public void testRequestCache1() {
         TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
-        SuccessfulCacheableCommand<String> command1 = new SuccessfulCacheableCommand<String>(circuitBreaker, true, "A");
-        SuccessfulCacheableCommand<String> command2 = new SuccessfulCacheableCommand<String>(circuitBreaker, true, "A");
+        SuccessfulCacheableCommand<String> command1 = new SuccessfulCacheableCommand<>(circuitBreaker, true, "A");
+        SuccessfulCacheableCommand<String> command2 = new SuccessfulCacheableCommand<>(circuitBreaker, true, "A");
 
         assertTrue(command1.isCommandRunningInThread());
 
@@ -1787,8 +1787,8 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
     @Test
     public void testRequestCache2() {
         TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
-        SuccessfulCacheableCommand<String> command1 = new SuccessfulCacheableCommand<String>(circuitBreaker, true, "A");
-        SuccessfulCacheableCommand<String> command2 = new SuccessfulCacheableCommand<String>(circuitBreaker, true, "B");
+        SuccessfulCacheableCommand<String> command1 = new SuccessfulCacheableCommand<>(circuitBreaker, true, "A");
+        SuccessfulCacheableCommand<String> command2 = new SuccessfulCacheableCommand<>(circuitBreaker, true, "B");
 
         assertTrue(command1.isCommandRunningInThread());
 
@@ -1822,9 +1822,9 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
     @Test
     public void testRequestCache3() {
         TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
-        SuccessfulCacheableCommand<String> command1 = new SuccessfulCacheableCommand<String>(circuitBreaker, true, "A");
-        SuccessfulCacheableCommand<String> command2 = new SuccessfulCacheableCommand<String>(circuitBreaker, true, "B");
-        SuccessfulCacheableCommand<String> command3 = new SuccessfulCacheableCommand<String>(circuitBreaker, true, "A");
+        SuccessfulCacheableCommand<String> command1 = new SuccessfulCacheableCommand<>(circuitBreaker, true, "A");
+        SuccessfulCacheableCommand<String> command2 = new SuccessfulCacheableCommand<>(circuitBreaker, true, "B");
+        SuccessfulCacheableCommand<String> command3 = new SuccessfulCacheableCommand<>(circuitBreaker, true, "A");
 
         assertTrue(command1.isCommandRunningInThread());
 
@@ -1908,9 +1908,9 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
     @Test
     public void testNoRequestCache3() {
         TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
-        SuccessfulCacheableCommand<String> command1 = new SuccessfulCacheableCommand<String>(circuitBreaker, false, "A");
-        SuccessfulCacheableCommand<String> command2 = new SuccessfulCacheableCommand<String>(circuitBreaker, false, "B");
-        SuccessfulCacheableCommand<String> command3 = new SuccessfulCacheableCommand<String>(circuitBreaker, false, "A");
+        SuccessfulCacheableCommand<String> command1 = new SuccessfulCacheableCommand<>(circuitBreaker, false, "A");
+        SuccessfulCacheableCommand<String> command2 = new SuccessfulCacheableCommand<>(circuitBreaker, false, "B");
+        SuccessfulCacheableCommand<String> command3 = new SuccessfulCacheableCommand<>(circuitBreaker, false, "A");
 
         assertTrue(command1.isCommandRunningInThread());
 
@@ -2323,10 +2323,10 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
 
             TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
 
-            SuccessfulCacheableCommand command = new SuccessfulCacheableCommand<String>(circuitBreaker, true, "one");
+            SuccessfulCacheableCommand command = new SuccessfulCacheableCommand<>(circuitBreaker, true, "one");
             assertEquals("one", command.execute());
 
-            SuccessfulCacheableCommand command2 = new SuccessfulCacheableCommand<String>(circuitBreaker, true, "two");
+            SuccessfulCacheableCommand command2 = new SuccessfulCacheableCommand<>(circuitBreaker, true, "two");
             assertEquals("two", command2.queue().get());
 
             fail("We expect an exception because cacheKey requires RequestVariable.");
@@ -2484,7 +2484,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
     public void testCheckedExceptionViaObserve() throws InterruptedException {
         TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
         CommandWithCheckedException command = new CommandWithCheckedException(circuitBreaker);
-        final AtomicReference<Throwable> t = new AtomicReference<Throwable>();
+        final AtomicReference<Throwable> t = new AtomicReference<>();
         final CountDownLatch latch = new CountDownLatch(1);
         try {
             command.observe().subscribe(new Observer<Boolean>() {
@@ -2893,9 +2893,9 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
      */
     @Test
     public void testObservableTimeoutNoFallbackThreadContext() {
-        TestSubscriber<Object> ts = new TestSubscriber<Object>();
+        TestSubscriber<Object> ts = new TestSubscriber<>();
 
-        final AtomicReference<Thread> onErrorThread = new AtomicReference<Thread>();
+        final AtomicReference<Thread> onErrorThread = new AtomicReference<>();
         final AtomicBoolean isRequestContextInitialized = new AtomicBoolean();
 
         TestHystrixCommand<Integer> command = getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.SUCCESS, 200, AbstractTestHystrixCommand.FallbackResult.UNIMPLEMENTED, 50);

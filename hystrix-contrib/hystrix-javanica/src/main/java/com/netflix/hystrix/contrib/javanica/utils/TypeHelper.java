@@ -66,7 +66,7 @@ public final class TypeHelper {
     @ParametersAreNonnullByDefault
     public static List<Type> getAllParameterizedTypes(Type type) {
         Validate.notNull(type, "type cannot be null");
-        List<Type> types = new ArrayList<Type>();
+        List<Type> types = new ArrayList<>();
         TreeTraverser<Type> typeTraverser = new TreeTraverser<Type>() {
             @Override
             public Iterable<Type> children(Type root) {

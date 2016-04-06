@@ -227,7 +227,7 @@ public abstract class BasicCacheTest extends BasicHystrixTest {
     }
 
     public static class UserService {
-        private Map<String, User> storage = new ConcurrentHashMap<String, User>();
+        private Map<String, User> storage = new ConcurrentHashMap<>();
 
         @PostConstruct
         public void init() {

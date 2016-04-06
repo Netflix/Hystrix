@@ -73,7 +73,7 @@ public class HystrixUtilizationStream {
             new Func1<Long, Map<HystrixCommandKey, HystrixCommandUtilization>>() {
                 @Override
                 public Map<HystrixCommandKey, HystrixCommandUtilization> call(Long timestamp) {
-                    Map<HystrixCommandKey, HystrixCommandUtilization> commandUtilizationPerKey = new HashMap<HystrixCommandKey, HystrixCommandUtilization>();
+                    Map<HystrixCommandKey, HystrixCommandUtilization> commandUtilizationPerKey = new HashMap<>();
                     for (HystrixCommandMetrics commandMetrics: HystrixCommandMetrics.getInstances()) {
                         HystrixCommandKey commandKey = commandMetrics.getCommandKey();
                         commandUtilizationPerKey.put(commandKey, sampleCommandUtilization(commandMetrics));
@@ -86,7 +86,7 @@ public class HystrixUtilizationStream {
             new Func1<Long, Map<HystrixThreadPoolKey, HystrixThreadPoolUtilization>>() {
                 @Override
                 public Map<HystrixThreadPoolKey, HystrixThreadPoolUtilization> call(Long timestamp) {
-                    Map<HystrixThreadPoolKey, HystrixThreadPoolUtilization> threadPoolUtilizationPerKey = new HashMap<HystrixThreadPoolKey, HystrixThreadPoolUtilization>();
+                    Map<HystrixThreadPoolKey, HystrixThreadPoolUtilization> threadPoolUtilizationPerKey = new HashMap<>();
                     for (HystrixThreadPoolMetrics threadPoolMetrics: HystrixThreadPoolMetrics.getInstances()) {
                         HystrixThreadPoolKey threadPoolKey = threadPoolMetrics.getThreadPoolKey();
                         threadPoolUtilizationPerKey.put(threadPoolKey, sampleThreadPoolUtilization(threadPoolMetrics));
