@@ -354,7 +354,9 @@ public class RollingCommandEventCounterStreamTest extends CommandStreamTest {
         CommandStreamTest.Command rejected1 = CommandStreamTest.Command.from(groupKey, key, HystrixEventType.SUCCESS, 0);
         CommandStreamTest.Command rejected2 = CommandStreamTest.Command.from(groupKey, key, HystrixEventType.SUCCESS, 0);
 
-        saturators.forEach(CommandStreamTest.Command::observe);
+        for (CommandStreamTest.Command saturator: saturators) {
+            saturator.observe();
+        }
 
         try {
             Thread.sleep(100);
@@ -455,7 +457,9 @@ public class RollingCommandEventCounterStreamTest extends CommandStreamTest {
         CommandStreamTest.Command rejection1 = CommandStreamTest.Command.from(groupKey, key, HystrixEventType.FAILURE, 20, HystrixEventType.FALLBACK_SUCCESS, 0);
         CommandStreamTest.Command rejection2 = CommandStreamTest.Command.from(groupKey, key, HystrixEventType.FAILURE, 20, HystrixEventType.FALLBACK_SUCCESS, 0);
 
-        fallbackSaturators.forEach(CommandStreamTest.Command::observe);
+        for (CommandStreamTest.Command saturator: fallbackSaturators) {
+            saturator.observe();
+        }
 
         try {
             Thread.sleep(70);
