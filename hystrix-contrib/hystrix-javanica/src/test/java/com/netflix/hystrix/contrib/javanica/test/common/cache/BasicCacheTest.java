@@ -263,12 +263,7 @@ public abstract class BasicCacheTest extends BasicHystrixTest {
         @CacheResult(cacheKeyMethod = "getUserByEmailCacheKey")
         @HystrixCommand
         public User getUserByEmail(final String email) {
-            return Iterables.tryFind(storage.values(), new Predicate<User>() {
-                @Override
-                public boolean apply(User input) {
-                    return input.getProfile().getEmail().equalsIgnoreCase(email);
-                }
-            }).orNull();
+            return Iterables.tryFind(storage.values(), input -> input.getProfile().getEmail().equalsIgnoreCase(email)).orNull();
         }
 
         private String getUserByEmailCacheKey(String email) {

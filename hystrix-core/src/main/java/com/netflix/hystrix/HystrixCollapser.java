@@ -161,12 +161,9 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
 
             @Override
             public Observable<Void> mapResponseToRequests(Observable<BatchReturnType> batchResponse, final Collection<CollapsedRequest<ResponseType, RequestArgumentType>> requests) {
-                return batchResponse.single().doOnNext(new Action1<BatchReturnType>() {
-                    @Override
-                    public void call(BatchReturnType batchReturnType) {
-                        // this is a blocking call in HystrixCollapser
-                        self.mapResponseToRequests(batchReturnType, requests);
-                    }
+                return batchResponse.single().doOnNext(batchReturnType -> {
+                    // this is a blocking call in HystrixCollapser
+                    self.mapResponseToRequests(batchReturnType, requests);
                 }).ignoreElements().cast(Void.class);
             }
 

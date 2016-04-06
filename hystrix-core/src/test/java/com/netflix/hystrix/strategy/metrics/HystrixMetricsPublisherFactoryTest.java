@@ -51,15 +51,10 @@ public class HystrixMetricsPublisherFactoryTest {
         final HystrixMetricsPublisherFactory factory = new HystrixMetricsPublisherFactory();
         ArrayList<Thread> threads = new ArrayList<>();
         for (int i = 0; i < 20; i++) {
-            threads.add(new Thread(new Runnable() {
-
-                @Override
-                public void run() {
-                    factory.getPublisherForCommand(TestCommandKey.TEST_A, null, null, null, null);
-                    factory.getPublisherForCommand(TestCommandKey.TEST_B, null, null, null, null);
-                    factory.getPublisherForThreadPool(TestThreadPoolKey.TEST_A, null, null);
-                }
-
+            threads.add(new Thread(() -> {
+                factory.getPublisherForCommand(TestCommandKey.TEST_A, null, null, null, null);
+                factory.getPublisherForCommand(TestCommandKey.TEST_B, null, null, null, null);
+                factory.getPublisherForThreadPool(TestThreadPoolKey.TEST_A, null, null);
             }));
         }
 
@@ -115,22 +110,12 @@ public class HystrixMetricsPublisherFactoryTest {
 
         @Override
         public HystrixMetricsPublisherCommand getMetricsPublisherForCommand(HystrixCommandKey commandKey, HystrixCommandGroupKey commandOwner, HystrixCommandMetrics metrics, HystrixCircuitBreaker circuitBreaker, HystrixCommandProperties properties) {
-            return new HystrixMetricsPublisherCommand() {
-                @Override
-                public void initialize() {
-                    commandCounter.incrementAndGet();
-                }
-            };
+            return () -> commandCounter.incrementAndGet();
         }
 
         @Override
         public HystrixMetricsPublisherThreadPool getMetricsPublisherForThreadPool(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolMetrics metrics, HystrixThreadPoolProperties properties) {
-            return new HystrixMetricsPublisherThreadPool() {
-                @Override
-                public void initialize() {
-                    threadCounter.incrementAndGet();
-                }
-            };
+            return () -> threadCounter.incrementAndGet();
         }
 
     }

@@ -100,14 +100,7 @@ public class ObservableCollapserGetWordForNumber extends HystrixObservableCollap
 	{
 		// Java 8: (final NumberWord nw) -> nw.getNumber();
 
-		return new Func1<NumberWord, Integer>()
-		{
-			@Override
-			public Integer call(final NumberWord nw)
-			{
-				return nw.getNumber();
-			}
-		};
+		return nw -> nw.getNumber();
 	}
 
 	@Override
@@ -115,15 +108,7 @@ public class ObservableCollapserGetWordForNumber extends HystrixObservableCollap
 	{
 		// Java 8: return (final Integer no) -> no;
 
-		return new Func1<Integer, Integer>()
-		{
-			@Override
-			public Integer call(final Integer no)
-			{
-				return no;
-			}
-
-		};
+		return no -> no;
 	}
 
 	@Override
@@ -131,14 +116,7 @@ public class ObservableCollapserGetWordForNumber extends HystrixObservableCollap
 	{
 		// Java 8: return (final NumberWord nw) -> nw.getWord();
 
-		return new Func1<NumberWord, String>()
-		{
-			@Override
-			public String call(final NumberWord nw)
-			{
-				return nw.getWord();
-			}
-		};
+		return nw -> nw.getWord();
 	}
 
 	@Override
@@ -227,14 +205,7 @@ public class ObservableCollapserGetWordForNumber extends HystrixObservableCollap
 				final int finalNumber = number;
 
 				// defer and subscribe on specific scheduler
-				Observable.defer(new Func0<Observable<String>>()
-				{
-					@Override
-					public Observable<String> call()
-					{
-						return new ObservableCollapserGetWordForNumber(finalNumber).toObservable();
-					}
-				}).subscribeOn(contextAwareScheduler).subscribe(subscriber);
+				Observable.defer(() -> new ObservableCollapserGetWordForNumber(finalNumber).toObservable()).subscribeOn(contextAwareScheduler).subscribe(subscriber);
 
 				subscribersByNumber.put(number, subscriber);
 

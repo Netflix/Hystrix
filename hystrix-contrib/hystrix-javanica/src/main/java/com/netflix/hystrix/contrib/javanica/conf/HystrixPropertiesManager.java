@@ -137,245 +137,60 @@ public final class HystrixPropertiesManager {
 
     private static final Map<String, PropSetter<HystrixCommandProperties.Setter, String>> CMD_PROP_MAP =
             ImmutableMap.<String, PropSetter<HystrixCommandProperties.Setter, String>>builder()
-                    .put(EXECUTION_ISOLATION_STRATEGY, new PropSetter<HystrixCommandProperties.Setter, String>() {
-                        @Override
-                        public void set(HystrixCommandProperties.Setter setter, String value) throws IllegalArgumentException {
-                            setter.withExecutionIsolationStrategy(toEnum(EXECUTION_ISOLATION_STRATEGY, value, HystrixCommandProperties.ExecutionIsolationStrategy.class,
-                                    HystrixCommandProperties.ExecutionIsolationStrategy.values()));
-                        }
-                    })
-                    .put(EXECUTION_ISOLATION_THREAD_TIMEOUT_IN_MILLISECONDS, new PropSetter<HystrixCommandProperties.Setter, String>() {
-                        @Override
-                        public void set(HystrixCommandProperties.Setter setter, String value) throws IllegalArgumentException {
-                            setter.withExecutionTimeoutInMilliseconds(toInt(EXECUTION_ISOLATION_THREAD_TIMEOUT_IN_MILLISECONDS, value));
-                        }
-                    })
-                    .put(EXECUTION_TIMEOUT_ENABLED, new PropSetter<HystrixCommandProperties.Setter, String>() {
-                        @Override
-                        public void set(HystrixCommandProperties.Setter setter, String value) throws IllegalArgumentException {
-                            setter.withExecutionTimeoutEnabled(toBoolean(value));
-                        }
-                    })
-                    .put(EXECUTION_ISOLATION_THREAD_INTERRUPT_ON_TIMEOUT, new PropSetter<HystrixCommandProperties.Setter, String>() {
-                        @Override
-                        public void set(HystrixCommandProperties.Setter setter, String value) throws IllegalArgumentException {
-                            setter.withExecutionIsolationThreadInterruptOnTimeout(toBoolean(value));
-                        }
-                    })
-                    .put(EXECUTION_ISOLATION_SEMAPHORE_MAX_CONCURRENT_REQUESTS, new PropSetter<HystrixCommandProperties.Setter, String>() {
-                        @Override
-                        public void set(HystrixCommandProperties.Setter setter, String value) throws IllegalArgumentException {
-                            setter.withExecutionIsolationSemaphoreMaxConcurrentRequests(toInt(EXECUTION_ISOLATION_SEMAPHORE_MAX_CONCURRENT_REQUESTS, value));
-                        }
-                    })
-                    .put(FALLBACK_ISOLATION_SEMAPHORE_MAX_CONCURRENT_REQUESTS, new PropSetter<HystrixCommandProperties.Setter, String>() {
-                        @Override
-                        public void set(HystrixCommandProperties.Setter setter, String value) throws IllegalArgumentException {
-                            setter.withFallbackIsolationSemaphoreMaxConcurrentRequests(toInt(FALLBACK_ISOLATION_SEMAPHORE_MAX_CONCURRENT_REQUESTS, value));
-                        }
-                    })
-                    .put(FALLBACK_ENABLED, new PropSetter<HystrixCommandProperties.Setter, String>() {
-                        @Override
-                        public void set(HystrixCommandProperties.Setter setter, String value) throws IllegalArgumentException {
-                            setter.withFallbackEnabled(toBoolean(value));
-                        }
-                    })
-                    .put(CIRCUIT_BREAKER_ENABLED, new PropSetter<HystrixCommandProperties.Setter, String>() {
-                        @Override
-                        public void set(HystrixCommandProperties.Setter setter, String value) throws IllegalArgumentException {
-                            setter.withCircuitBreakerEnabled(toBoolean(value));
-                        }
-                    })
-                    .put(CIRCUIT_BREAKER_REQUEST_VOLUME_THRESHOLD, new PropSetter<HystrixCommandProperties.Setter, String>() {
-                        @Override
-                        public void set(HystrixCommandProperties.Setter setter, String value) throws IllegalArgumentException {
-                            setter.withCircuitBreakerRequestVolumeThreshold(toInt(CIRCUIT_BREAKER_REQUEST_VOLUME_THRESHOLD, value));
-                        }
-                    })
-                    .put(CIRCUIT_BREAKER_SLEEP_WINDOW_IN_MILLISECONDS, new PropSetter<HystrixCommandProperties.Setter, String>() {
-                        @Override
-                        public void set(HystrixCommandProperties.Setter setter, String value) throws IllegalArgumentException {
-                            setter.withCircuitBreakerSleepWindowInMilliseconds(toInt(CIRCUIT_BREAKER_SLEEP_WINDOW_IN_MILLISECONDS, value));
-                        }
-                    })
-                    .put(CIRCUIT_BREAKER_ERROR_THRESHOLD_PERCENTAGE, new PropSetter<HystrixCommandProperties.Setter, String>() {
-                        @Override
-                        public void set(HystrixCommandProperties.Setter setter, String value) throws IllegalArgumentException {
-                            setter.withCircuitBreakerErrorThresholdPercentage(toInt(CIRCUIT_BREAKER_ERROR_THRESHOLD_PERCENTAGE, value));
-                        }
-                    })
-                    .put(CIRCUIT_BREAKER_FORCE_OPEN, new PropSetter<HystrixCommandProperties.Setter, String>() {
-                        @Override
-                        public void set(HystrixCommandProperties.Setter setter, String value) throws IllegalArgumentException {
-                            setter.withCircuitBreakerForceOpen(toBoolean(value));
-                        }
-                    })
-                    .put(CIRCUIT_BREAKER_FORCE_CLOSED, new PropSetter<HystrixCommandProperties.Setter, String>() {
-                        @Override
-                        public void set(HystrixCommandProperties.Setter setter, String value) throws IllegalArgumentException {
-                            setter.withCircuitBreakerForceClosed(toBoolean(value));
-                        }
-                    })
-                    .put(METRICS_ROLLING_STATS_TIME_IN_MILLISECONDS, new PropSetter<HystrixCommandProperties.Setter, String>() {
-                        @Override
-                        public void set(HystrixCommandProperties.Setter setter, String value) throws IllegalArgumentException {
-                            setter.withMetricsRollingStatisticalWindowInMilliseconds(toInt(METRICS_ROLLING_STATS_TIME_IN_MILLISECONDS, value));
-                        }
-                    })
-                    .put(METRICS_ROLLING_STATS_NUM_BUCKETS, new PropSetter<HystrixCommandProperties.Setter, String>() {
-                        @Override
-                        public void set(HystrixCommandProperties.Setter setter, String value) throws IllegalArgumentException {
-                            setter.withMetricsRollingStatisticalWindowBuckets(toInt(METRICS_ROLLING_STATS_NUM_BUCKETS, value));
-                        }
-                    })
-                    .put(METRICS_ROLLING_PERCENTILE_ENABLED, new PropSetter<HystrixCommandProperties.Setter, String>() {
-                        @Override
-                        public void set(HystrixCommandProperties.Setter setter, String value) throws IllegalArgumentException {
-                            setter.withMetricsRollingPercentileEnabled(toBoolean(value));
-                        }
-                    })
-                    .put(METRICS_ROLLING_PERCENTILE_TIME_IN_MILLISECONDS, new PropSetter<HystrixCommandProperties.Setter, String>() {
-                        @Override
-                        public void set(HystrixCommandProperties.Setter setter, String value) throws IllegalArgumentException {
-                            setter.withMetricsRollingPercentileWindowInMilliseconds(toInt(METRICS_ROLLING_PERCENTILE_TIME_IN_MILLISECONDS, value));
-                        }
-                    })
-                    .put(METRICS_ROLLING_PERCENTILE_NUM_BUCKETS, new PropSetter<HystrixCommandProperties.Setter, String>() {
-                        @Override
-                        public void set(HystrixCommandProperties.Setter setter, String value) throws IllegalArgumentException {
-                            setter.withMetricsRollingPercentileWindowBuckets(toInt(METRICS_ROLLING_PERCENTILE_NUM_BUCKETS, value));
-                        }
-                    })
-                    .put(METRICS_ROLLING_PERCENTILE_BUCKET_SIZE, new PropSetter<HystrixCommandProperties.Setter, String>() {
-                        @Override
-                        public void set(HystrixCommandProperties.Setter setter, String value) throws IllegalArgumentException {
-                            setter.withMetricsRollingPercentileBucketSize(toInt(METRICS_ROLLING_PERCENTILE_BUCKET_SIZE, value));
-                        }
-                    })
-                    .put(METRICS_HEALTH_SNAPSHOT_INTERVAL_IN_MILLISECONDS, new PropSetter<HystrixCommandProperties.Setter, String>() {
-                        @Override
-                        public void set(HystrixCommandProperties.Setter setter, String value) throws IllegalArgumentException {
-                            setter.withMetricsHealthSnapshotIntervalInMilliseconds(toInt(METRICS_HEALTH_SNAPSHOT_INTERVAL_IN_MILLISECONDS, value));
-                        }
-                    })
-                    .put(REQUEST_CACHE_ENABLED, new PropSetter<HystrixCommandProperties.Setter, String>() {
-                        @Override
-                        public void set(HystrixCommandProperties.Setter setter, String value) throws IllegalArgumentException {
-                            setter.withRequestCacheEnabled(toBoolean(value));
-                        }
-                    })
-                    .put(REQUEST_LOG_ENABLED, new PropSetter<HystrixCommandProperties.Setter, String>() {
-                        @Override
-                        public void set(HystrixCommandProperties.Setter setter, String value) throws IllegalArgumentException {
-                            setter.withRequestLogEnabled(toBoolean(value));
-                        }
-                    })
+                    .put(EXECUTION_ISOLATION_STRATEGY, (setter, value) -> setter.withExecutionIsolationStrategy(toEnum(EXECUTION_ISOLATION_STRATEGY, value, HystrixCommandProperties.ExecutionIsolationStrategy.class,
+                            HystrixCommandProperties.ExecutionIsolationStrategy.values())))
+                    .put(EXECUTION_ISOLATION_THREAD_TIMEOUT_IN_MILLISECONDS, (setter, value) -> setter.withExecutionTimeoutInMilliseconds(toInt(EXECUTION_ISOLATION_THREAD_TIMEOUT_IN_MILLISECONDS, value)))
+                    .put(EXECUTION_TIMEOUT_ENABLED, (setter, value) -> setter.withExecutionTimeoutEnabled(toBoolean(value)))
+                    .put(EXECUTION_ISOLATION_THREAD_INTERRUPT_ON_TIMEOUT, (setter, value) -> setter.withExecutionIsolationThreadInterruptOnTimeout(toBoolean(value)))
+                    .put(EXECUTION_ISOLATION_SEMAPHORE_MAX_CONCURRENT_REQUESTS, (setter, value) -> setter.withExecutionIsolationSemaphoreMaxConcurrentRequests(toInt(EXECUTION_ISOLATION_SEMAPHORE_MAX_CONCURRENT_REQUESTS, value)))
+                    .put(FALLBACK_ISOLATION_SEMAPHORE_MAX_CONCURRENT_REQUESTS, (setter, value) -> setter.withFallbackIsolationSemaphoreMaxConcurrentRequests(toInt(FALLBACK_ISOLATION_SEMAPHORE_MAX_CONCURRENT_REQUESTS, value)))
+                    .put(FALLBACK_ENABLED, (setter, value) -> setter.withFallbackEnabled(toBoolean(value)))
+                    .put(CIRCUIT_BREAKER_ENABLED, (setter, value) -> setter.withCircuitBreakerEnabled(toBoolean(value)))
+                    .put(CIRCUIT_BREAKER_REQUEST_VOLUME_THRESHOLD, (setter, value) -> setter.withCircuitBreakerRequestVolumeThreshold(toInt(CIRCUIT_BREAKER_REQUEST_VOLUME_THRESHOLD, value)))
+                    .put(CIRCUIT_BREAKER_SLEEP_WINDOW_IN_MILLISECONDS, (setter, value) -> setter.withCircuitBreakerSleepWindowInMilliseconds(toInt(CIRCUIT_BREAKER_SLEEP_WINDOW_IN_MILLISECONDS, value)))
+                    .put(CIRCUIT_BREAKER_ERROR_THRESHOLD_PERCENTAGE, (setter, value) -> setter.withCircuitBreakerErrorThresholdPercentage(toInt(CIRCUIT_BREAKER_ERROR_THRESHOLD_PERCENTAGE, value)))
+                    .put(CIRCUIT_BREAKER_FORCE_OPEN, (setter, value) -> setter.withCircuitBreakerForceOpen(toBoolean(value)))
+                    .put(CIRCUIT_BREAKER_FORCE_CLOSED, (setter, value) -> setter.withCircuitBreakerForceClosed(toBoolean(value)))
+                    .put(METRICS_ROLLING_STATS_TIME_IN_MILLISECONDS, (setter, value) -> setter.withMetricsRollingStatisticalWindowInMilliseconds(toInt(METRICS_ROLLING_STATS_TIME_IN_MILLISECONDS, value)))
+                    .put(METRICS_ROLLING_STATS_NUM_BUCKETS, (setter, value) -> setter.withMetricsRollingStatisticalWindowBuckets(toInt(METRICS_ROLLING_STATS_NUM_BUCKETS, value)))
+                    .put(METRICS_ROLLING_PERCENTILE_ENABLED, (setter, value) -> setter.withMetricsRollingPercentileEnabled(toBoolean(value)))
+                    .put(METRICS_ROLLING_PERCENTILE_TIME_IN_MILLISECONDS, (setter, value) -> setter.withMetricsRollingPercentileWindowInMilliseconds(toInt(METRICS_ROLLING_PERCENTILE_TIME_IN_MILLISECONDS, value)))
+                    .put(METRICS_ROLLING_PERCENTILE_NUM_BUCKETS, (setter, value) -> setter.withMetricsRollingPercentileWindowBuckets(toInt(METRICS_ROLLING_PERCENTILE_NUM_BUCKETS, value)))
+                    .put(METRICS_ROLLING_PERCENTILE_BUCKET_SIZE, (setter, value) -> setter.withMetricsRollingPercentileBucketSize(toInt(METRICS_ROLLING_PERCENTILE_BUCKET_SIZE, value)))
+                    .put(METRICS_HEALTH_SNAPSHOT_INTERVAL_IN_MILLISECONDS, (setter, value) -> setter.withMetricsHealthSnapshotIntervalInMilliseconds(toInt(METRICS_HEALTH_SNAPSHOT_INTERVAL_IN_MILLISECONDS, value)))
+                    .put(REQUEST_CACHE_ENABLED, (setter, value) -> setter.withRequestCacheEnabled(toBoolean(value)))
+                    .put(REQUEST_LOG_ENABLED, (setter, value) -> setter.withRequestLogEnabled(toBoolean(value)))
                     .build();
 
 
     private static final Map<String, PropSetter<HystrixThreadPoolProperties.Setter, String>> TP_PROP_MAP =
             ImmutableMap.<String, PropSetter<HystrixThreadPoolProperties.Setter, String>>builder()
-                    .put(MAX_QUEUE_SIZE, new PropSetter<HystrixThreadPoolProperties.Setter, String>() {
-                        @Override
-                        public void set(HystrixThreadPoolProperties.Setter setter, String value) {
-                            setter.withMaxQueueSize(toInt(MAX_QUEUE_SIZE, value));
-                        }
-                    })
-                    .put(CORE_SIZE, new PropSetter<HystrixThreadPoolProperties.Setter, String>() {
-                                @Override
-                                public void set(HystrixThreadPoolProperties.Setter setter, String value) {
-                                    setter.withCoreSize(toInt(CORE_SIZE, value));
-                                }
-                            }
+                    .put(MAX_QUEUE_SIZE, (setter, value) -> setter.withMaxQueueSize(toInt(MAX_QUEUE_SIZE, value)))
+                    .put(CORE_SIZE, (setter, value) -> setter.withCoreSize(toInt(CORE_SIZE, value))
                     )
-                    .put(KEEP_ALIVE_TIME_MINUTES, new PropSetter<HystrixThreadPoolProperties.Setter, String>() {
-                                @Override
-                                public void set(HystrixThreadPoolProperties.Setter setter, String value) {
-                                    setter.withKeepAliveTimeMinutes(toInt(KEEP_ALIVE_TIME_MINUTES, value));
-                                }
-                            }
+                    .put(KEEP_ALIVE_TIME_MINUTES, (setter, value) -> setter.withKeepAliveTimeMinutes(toInt(KEEP_ALIVE_TIME_MINUTES, value))
                     )
-                    .put(QUEUE_SIZE_REJECTION_THRESHOLD, new PropSetter<HystrixThreadPoolProperties.Setter, String>() {
-                                @Override
-                                public void set(HystrixThreadPoolProperties.Setter setter, String value) {
-                                    setter.withQueueSizeRejectionThreshold(toInt(QUEUE_SIZE_REJECTION_THRESHOLD, value));
-                                }
-                            }
+                    .put(QUEUE_SIZE_REJECTION_THRESHOLD, (setter, value) -> setter.withQueueSizeRejectionThreshold(toInt(QUEUE_SIZE_REJECTION_THRESHOLD, value))
                     )
-                    .put(METRICS_ROLLING_STATS_NUM_BUCKETS, new PropSetter<HystrixThreadPoolProperties.Setter, String>() {
-                                @Override
-                                public void set(HystrixThreadPoolProperties.Setter setter, String value) {
-                                    setter.withMetricsRollingStatisticalWindowBuckets(toInt(METRICS_ROLLING_STATS_NUM_BUCKETS, value));
-                                }
-                            }
+                    .put(METRICS_ROLLING_STATS_NUM_BUCKETS, (setter, value) -> setter.withMetricsRollingStatisticalWindowBuckets(toInt(METRICS_ROLLING_STATS_NUM_BUCKETS, value))
                     )
-                    .put(METRICS_ROLLING_STATS_TIME_IN_MILLISECONDS, new PropSetter<HystrixThreadPoolProperties.Setter, String>() {
-                                @Override
-                                public void set(HystrixThreadPoolProperties.Setter setter, String value) {
-                                    setter.withMetricsRollingStatisticalWindowInMilliseconds(toInt(METRICS_ROLLING_STATS_TIME_IN_MILLISECONDS, value));
-                                }
-                            }
+                    .put(METRICS_ROLLING_STATS_TIME_IN_MILLISECONDS, (setter, value) -> setter.withMetricsRollingStatisticalWindowInMilliseconds(toInt(METRICS_ROLLING_STATS_TIME_IN_MILLISECONDS, value))
                     )
                     .build();
 
 
     private static final Map<String, PropSetter<HystrixCollapserProperties.Setter, String>> COLLAPSER_PROP_MAP =
             ImmutableMap.<String, PropSetter<HystrixCollapserProperties.Setter, String>>builder()
-                    .put(TIMER_DELAY_IN_MILLISECONDS, new PropSetter<HystrixCollapserProperties.Setter, String>() {
-                        @Override
-                        public void set(HystrixCollapserProperties.Setter setter, String value) {
-                            setter.withTimerDelayInMilliseconds(toInt(TIMER_DELAY_IN_MILLISECONDS, value));
-                        }
-                    })
-                    .put(MAX_REQUESTS_IN_BATCH, new PropSetter<HystrixCollapserProperties.Setter, String>() {
-                                @Override
-                                public void set(HystrixCollapserProperties.Setter setter, String value) {
-                                    setter.withMaxRequestsInBatch(toInt(MAX_REQUESTS_IN_BATCH, value));
-                                }
-                            }
+                    .put(TIMER_DELAY_IN_MILLISECONDS, (setter, value) -> setter.withTimerDelayInMilliseconds(toInt(TIMER_DELAY_IN_MILLISECONDS, value)))
+                    .put(MAX_REQUESTS_IN_BATCH, (setter, value) -> setter.withMaxRequestsInBatch(toInt(MAX_REQUESTS_IN_BATCH, value))
                     )
-                    .put(METRICS_ROLLING_STATS_TIME_IN_MILLISECONDS, new PropSetter<HystrixCollapserProperties.Setter, String>() {
-                        @Override
-                        public void set(HystrixCollapserProperties.Setter setter, String value) throws IllegalArgumentException {
-                            setter.withMetricsRollingStatisticalWindowInMilliseconds(toInt(METRICS_ROLLING_STATS_TIME_IN_MILLISECONDS, value));
-                        }
-                    })
-                    .put(METRICS_ROLLING_STATS_NUM_BUCKETS, new PropSetter<HystrixCollapserProperties.Setter, String>() {
-                        @Override
-                        public void set(HystrixCollapserProperties.Setter setter, String value) throws IllegalArgumentException {
-                            setter.withMetricsRollingStatisticalWindowBuckets(toInt(METRICS_ROLLING_STATS_NUM_BUCKETS, value));
-                        }
-                    })
-                    .put(METRICS_ROLLING_PERCENTILE_ENABLED, new PropSetter<HystrixCollapserProperties.Setter, String>() {
-                        @Override
-                        public void set(HystrixCollapserProperties.Setter setter, String value) throws IllegalArgumentException {
-                            setter.withMetricsRollingPercentileEnabled(toBoolean(value));
-                        }
-                    })
-                    .put(METRICS_ROLLING_PERCENTILE_TIME_IN_MILLISECONDS, new PropSetter<HystrixCollapserProperties.Setter, String>() {
-                        @Override
-                        public void set(HystrixCollapserProperties.Setter setter, String value) throws IllegalArgumentException {
-                            setter.withMetricsRollingPercentileWindowInMilliseconds(toInt(METRICS_ROLLING_PERCENTILE_TIME_IN_MILLISECONDS, value));
-                        }
-                    })
-                    .put(METRICS_ROLLING_PERCENTILE_NUM_BUCKETS, new PropSetter<HystrixCollapserProperties.Setter, String>() {
-                        @Override
-                        public void set(HystrixCollapserProperties.Setter setter, String value) throws IllegalArgumentException {
-                            setter.withMetricsRollingPercentileWindowBuckets(toInt(METRICS_ROLLING_PERCENTILE_NUM_BUCKETS, value));
-                        }
-                    })
-                    .put(METRICS_ROLLING_PERCENTILE_BUCKET_SIZE, new PropSetter<HystrixCollapserProperties.Setter, String>() {
-                        @Override
-                        public void set(HystrixCollapserProperties.Setter setter, String value) throws IllegalArgumentException {
-                            setter.withMetricsRollingPercentileBucketSize(toInt(METRICS_ROLLING_PERCENTILE_BUCKET_SIZE, value));
-                        }
-                    })
-                    .put(REQUEST_CACHE_ENABLED, new PropSetter<HystrixCollapserProperties.Setter, String>() {
-                        @Override
-                        public void set(HystrixCollapserProperties.Setter setter, String value) throws IllegalArgumentException {
-                            setter.withRequestCacheEnabled(toBoolean(value));
-                        }
-                    })
+                    .put(METRICS_ROLLING_STATS_TIME_IN_MILLISECONDS, (setter, value) -> setter.withMetricsRollingStatisticalWindowInMilliseconds(toInt(METRICS_ROLLING_STATS_TIME_IN_MILLISECONDS, value)))
+                    .put(METRICS_ROLLING_STATS_NUM_BUCKETS, (setter, value) -> setter.withMetricsRollingStatisticalWindowBuckets(toInt(METRICS_ROLLING_STATS_NUM_BUCKETS, value)))
+                    .put(METRICS_ROLLING_PERCENTILE_ENABLED, (setter, value) -> setter.withMetricsRollingPercentileEnabled(toBoolean(value)))
+                    .put(METRICS_ROLLING_PERCENTILE_TIME_IN_MILLISECONDS, (setter, value) -> setter.withMetricsRollingPercentileWindowInMilliseconds(toInt(METRICS_ROLLING_PERCENTILE_TIME_IN_MILLISECONDS, value)))
+                    .put(METRICS_ROLLING_PERCENTILE_NUM_BUCKETS, (setter, value) -> setter.withMetricsRollingPercentileWindowBuckets(toInt(METRICS_ROLLING_PERCENTILE_NUM_BUCKETS, value)))
+                    .put(METRICS_ROLLING_PERCENTILE_BUCKET_SIZE, (setter, value) -> setter.withMetricsRollingPercentileBucketSize(toInt(METRICS_ROLLING_PERCENTILE_BUCKET_SIZE, value)))
+                    .put(REQUEST_CACHE_ENABLED, (setter, value) -> setter.withRequestCacheEnabled(toBoolean(value)))
                     .build();
 
 

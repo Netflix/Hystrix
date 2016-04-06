@@ -59,15 +59,7 @@ class ObservableCommandNumbersToWords extends HystrixObservableCommand<NumberWor
 	@Override
 	protected Observable<NumberWord> construct()
 	{
-		return Observable.from(numbers).map(new Func1<Integer, NumberWord>()
-		{
-			@Override
-			public NumberWord call(final Integer number)
-			{
-				return new NumberWord(number, dict.get(number));
-			}
-
-		});
+		return Observable.from(numbers).map(number -> new NumberWord(number, dict.get(number)));
 	}
 
 	static class NumberWord

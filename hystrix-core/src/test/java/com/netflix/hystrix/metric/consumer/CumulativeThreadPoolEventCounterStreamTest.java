@@ -303,12 +303,7 @@ public class CumulativeThreadPoolEventCounterStreamTest extends CommandStreamTes
         CommandStreamTest.Command rejected2 = CommandStreamTest.Command.from(groupKey, key, HystrixEventType.SUCCESS, 0, HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE);
 
         for (final CommandStreamTest.Command saturator : saturators) {
-            new Thread(new HystrixContextRunnable(new Runnable() {
-                @Override
-                public void run() {
-                    saturator.observe();
-                }
-            })).start();
+            new Thread(new HystrixContextRunnable(() -> saturator.observe())).start();
         }
 
         try {

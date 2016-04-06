@@ -80,188 +80,38 @@ public class HystrixYammerMetricsPublisherCommand implements HystrixMetricsPubli
         });
 
         // cumulative counts
-        safelyCreateCumulativeGauge("countBadRequests", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.BAD_REQUEST;
-            }
-        });
-        safelyCreateCumulativeGauge("countCollapsedRequests", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.COLLAPSED;
-            }
-        });
-        safelyCreateCumulativeGauge("countEmit", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.EMIT;
-            }
-        });
-        safelyCreateCumulativeGauge("countExceptionsThrown", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.EXCEPTION_THROWN;
-            }
-        });
-        safelyCreateCumulativeGauge("countFailure", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.FAILURE;
-            }
-        });
-        safelyCreateCumulativeGauge("countFallbackEmit", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.FALLBACK_EMIT;
-            }
-        });
-        safelyCreateCumulativeGauge("countFallbackFailure", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.FALLBACK_FAILURE;
-            }
-        });
-        safelyCreateCumulativeGauge("countFallbackMissing", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.FALLBACK_MISSING;
-            }
-        });
-        safelyCreateCumulativeGauge("countFallbackRejection", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.FALLBACK_REJECTION;
-            }
-        });
-        safelyCreateCumulativeGauge("countFallbackSuccess", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.FALLBACK_SUCCESS;
-            }
-        });
-        safelyCreateCumulativeGauge("countResponsesFromCache", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.RESPONSE_FROM_CACHE;
-            }
-        });
-        safelyCreateCumulativeGauge("countSemaphoreRejected", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.SEMAPHORE_REJECTED;
-            }
-        });
-        safelyCreateCumulativeGauge("countShortCircuited", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.SHORT_CIRCUITED;
-            }
-        });
-        safelyCreateCumulativeGauge("countSuccess", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.SUCCESS;
-            }
-        });
-        safelyCreateCumulativeGauge("countThreadPoolRejected", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.THREAD_POOL_REJECTED;
-            }
-        });
-        safelyCreateCumulativeGauge("countTimeout", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.TIMEOUT;
-            }
-        });
+        safelyCreateCumulativeGauge("countBadRequests", () -> HystrixEventType.BAD_REQUEST);
+        safelyCreateCumulativeGauge("countCollapsedRequests", () -> HystrixEventType.COLLAPSED);
+        safelyCreateCumulativeGauge("countEmit", () -> HystrixEventType.EMIT);
+        safelyCreateCumulativeGauge("countExceptionsThrown", () -> HystrixEventType.EXCEPTION_THROWN);
+        safelyCreateCumulativeGauge("countFailure", () -> HystrixEventType.FAILURE);
+        safelyCreateCumulativeGauge("countFallbackEmit", () -> HystrixEventType.FALLBACK_EMIT);
+        safelyCreateCumulativeGauge("countFallbackFailure", () -> HystrixEventType.FALLBACK_FAILURE);
+        safelyCreateCumulativeGauge("countFallbackMissing", () -> HystrixEventType.FALLBACK_MISSING);
+        safelyCreateCumulativeGauge("countFallbackRejection", () -> HystrixEventType.FALLBACK_REJECTION);
+        safelyCreateCumulativeGauge("countFallbackSuccess", () -> HystrixEventType.FALLBACK_SUCCESS);
+        safelyCreateCumulativeGauge("countResponsesFromCache", () -> HystrixEventType.RESPONSE_FROM_CACHE);
+        safelyCreateCumulativeGauge("countSemaphoreRejected", () -> HystrixEventType.SEMAPHORE_REJECTED);
+        safelyCreateCumulativeGauge("countShortCircuited", () -> HystrixEventType.SHORT_CIRCUITED);
+        safelyCreateCumulativeGauge("countSuccess", () -> HystrixEventType.SUCCESS);
+        safelyCreateCumulativeGauge("countThreadPoolRejected", () -> HystrixEventType.THREAD_POOL_REJECTED);
+        safelyCreateCumulativeGauge("countTimeout", () -> HystrixEventType.TIMEOUT);
 
         // rolling counts
-        safelyCreateRollingGauge("rollingCountBadRequests", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.BAD_REQUEST;
-            }
-        });
-        safelyCreateRollingGauge("rollingCountCollapsedRequests", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.COLLAPSED;
-            }
-        });
-        safelyCreateRollingGauge("rollingCountExceptionsThrown", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.EXCEPTION_THROWN;
-            }
-        });
-        safelyCreateRollingGauge("rollingCountFailure", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.FAILURE;
-            }
-        });
-        safelyCreateRollingGauge("rollingCountFallbackFailure", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.FALLBACK_FAILURE;
-            }
-        });
-        safelyCreateRollingGauge("rollingCountFallbackMissing", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.FALLBACK_MISSING;
-            }
-        });
-        safelyCreateRollingGauge("rollingCountFallbackRejection", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.FALLBACK_REJECTION;
-            }
-        });
-        safelyCreateRollingGauge("rollingCountFallbackSuccess", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.FALLBACK_SUCCESS;
-            }
-        });
-        safelyCreateRollingGauge("rollingCountResponsesFromCache", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.RESPONSE_FROM_CACHE;
-            }
-        });
-        safelyCreateRollingGauge("rollingCountSemaphoreRejected", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.SEMAPHORE_REJECTED;
-            }
-        });
-        safelyCreateRollingGauge("rollingCountShortCircuited", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.SHORT_CIRCUITED;
-            }
-        });
-        safelyCreateRollingGauge("rollingCountSuccess", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.SUCCESS;
-            }
-        });
-        safelyCreateRollingGauge("rollingCountThreadPoolRejected", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.THREAD_POOL_REJECTED;
-            }
-        });
-        safelyCreateRollingGauge("rollingCountTimeout", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.TIMEOUT;
-            }
-        });
+        safelyCreateRollingGauge("rollingCountBadRequests", () -> HystrixEventType.BAD_REQUEST);
+        safelyCreateRollingGauge("rollingCountCollapsedRequests", () -> HystrixEventType.COLLAPSED);
+        safelyCreateRollingGauge("rollingCountExceptionsThrown", () -> HystrixEventType.EXCEPTION_THROWN);
+        safelyCreateRollingGauge("rollingCountFailure", () -> HystrixEventType.FAILURE);
+        safelyCreateRollingGauge("rollingCountFallbackFailure", () -> HystrixEventType.FALLBACK_FAILURE);
+        safelyCreateRollingGauge("rollingCountFallbackMissing", () -> HystrixEventType.FALLBACK_MISSING);
+        safelyCreateRollingGauge("rollingCountFallbackRejection", () -> HystrixEventType.FALLBACK_REJECTION);
+        safelyCreateRollingGauge("rollingCountFallbackSuccess", () -> HystrixEventType.FALLBACK_SUCCESS);
+        safelyCreateRollingGauge("rollingCountResponsesFromCache", () -> HystrixEventType.RESPONSE_FROM_CACHE);
+        safelyCreateRollingGauge("rollingCountSemaphoreRejected", () -> HystrixEventType.SEMAPHORE_REJECTED);
+        safelyCreateRollingGauge("rollingCountShortCircuited", () -> HystrixEventType.SHORT_CIRCUITED);
+        safelyCreateRollingGauge("rollingCountSuccess", () -> HystrixEventType.SUCCESS);
+        safelyCreateRollingGauge("rollingCountThreadPoolRejected", () -> HystrixEventType.THREAD_POOL_REJECTED);
+        safelyCreateRollingGauge("rollingCountTimeout", () -> HystrixEventType.TIMEOUT);
 
         // the number of executionSemaphorePermits in use right now 
         createCurrentValueGauge("executionSemaphorePermitsInUse", currentConcurrentExecutionCountThunk);

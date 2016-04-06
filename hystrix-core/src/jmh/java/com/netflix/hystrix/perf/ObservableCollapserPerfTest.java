@@ -111,18 +111,8 @@ public class ObservableCollapserPerfTest {
             emitsPerArg.put(this.arg, numResponsePerArg);
             this.blackholeConsumption = blackholeConsumption;
             commandConstructionFails = false;
-            keyMapper = new Func1<String, String>() {
-                @Override
-                public String call(String s) {
-                    return s.substring(0, s.indexOf(":"));
-                }
-            };
-            onMissingResponseHandler = new Action1<HystrixCollapser.CollapsedRequest<String, String>>() {
-                @Override
-                public void call(HystrixCollapser.CollapsedRequest<String, String> collapsedReq) {
-                    collapsedReq.setResponse("missing:missing");
-                }
-            };
+            keyMapper = s -> s.substring(0, s.indexOf(":"));
+            onMissingResponseHandler = collapsedReq -> collapsedReq.setResponse("missing:missing");
 
         }
 
@@ -158,14 +148,7 @@ public class ObservableCollapserPerfTest {
 
         @Override
         protected Func1<String, String> getRequestArgumentKeySelector() {
-            return new Func1<String, String>() {
-
-                @Override
-                public String call(String s) {
-                    return s;
-                }
-
-            };
+            return s -> s;
         }
 
         @Override
@@ -176,14 +159,7 @@ public class ObservableCollapserPerfTest {
 
         @Override
         protected Func1<String, String> getBatchReturnTypeToResponseTypeMapper() {
-            return new Func1<String, String>() {
-
-                @Override
-                public String call(String s) {
-                    return s;
-                }
-
-            };
+            return s -> s;
         }
     }
 

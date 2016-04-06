@@ -54,71 +54,37 @@ import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import static org.junit.Assert.*;
 
 public class HystrixObservableCollapserTest {
-    private static Action1<CollapsedRequest<String, String>> onMissingError = new Action1<CollapsedRequest<String, String>>() {
-        @Override
-        public void call(CollapsedRequest<String, String> collapsedReq) {
-            collapsedReq.setException(new IllegalStateException("must have a value"));
-        }
-    };
+    private static Action1<CollapsedRequest<String, String>> onMissingError = collapsedReq -> collapsedReq.setException(new IllegalStateException("must have a value"));
 
-     private static Action1<CollapsedRequest<String, String>> onMissingThrow = new Action1<CollapsedRequest<String, String>>() {
-         @Override
-         public void call(CollapsedRequest<String, String> collapsedReq) {
-            throw new RuntimeException("synchronous error in onMissingResponse handler");
-         }
+     private static Action1<CollapsedRequest<String, String>> onMissingThrow = collapsedReq -> {
+        throw new RuntimeException("synchronous error in onMissingResponse handler");
      };
 
-    private static Action1<CollapsedRequest<String, String>> onMissingComplete = new Action1<CollapsedRequest<String, String>>() {
-        @Override
-        public void call(CollapsedRequest<String, String> collapsedReq) {
-            collapsedReq.setComplete();
+    private static Action1<CollapsedRequest<String, String>> onMissingComplete = collapsedReq -> collapsedReq.setComplete();
+
+    private static Action1<CollapsedRequest<String, String>> onMissingIgnore = collapsedReq -> {
+        //do nothing
+    };
+
+    private static Action1<CollapsedRequest<String, String>> onMissingFillIn = collapsedReq -> collapsedReq.setResponse("fillin");
+
+    private static Func1<String, String> prefixMapper = s -> s.substring(0, s.indexOf(":"));
+
+    private static Func1<String, String> map1To3And2To2 = s -> {
+        String prefix = s.substring(0, s.indexOf(":"));
+        if (prefix.equals("2")) {
+            return "2";
+        } else {
+            return "3";
         }
     };
 
-    private static Action1<CollapsedRequest<String, String>> onMissingIgnore = new Action1<CollapsedRequest<String, String>>() {
-        @Override
-        public void call(CollapsedRequest<String, String> collapsedReq) {
-            //do nothing
-        }
-    };
-
-    private static Action1<CollapsedRequest<String, String>> onMissingFillIn = new Action1<CollapsedRequest<String, String>>() {
-        @Override
-        public void call(CollapsedRequest<String, String> collapsedReq) {
-            collapsedReq.setResponse("fillin");
-        }
-    };
-
-    private static Func1<String, String> prefixMapper = new Func1<String, String>() {
-
-        @Override
-        public String call(String s) {
-            return s.substring(0, s.indexOf(":"));
-        }
-
-    };
-
-    private static Func1<String, String> map1To3And2To2 = new Func1<String, String>() {
-        @Override
-        public String call(String s) {
-            String prefix = s.substring(0, s.indexOf(":"));
-            if (prefix.equals("2")) {
-                return "2";
-            } else {
-                return "3";
-            }
-        }
-    };
-
-    private static Func1<String, String> mapWithErrorOn1 = new Func1<String, String>() {
-        @Override
-        public String call(String s) {
-            String prefix = s.substring(0, s.indexOf(":"));
-            if (prefix.equals("1")) {
-                throw new RuntimeException("poorly implemented demultiplexer");
-            } else {
-                return "2";
-            }
+    private static Func1<String, String> mapWithErrorOn1 = s -> {
+        String prefix = s.substring(0, s.indexOf(":"));
+        if (prefix.equals("1")) {
+            throw new RuntimeException("poorly implemented demultiplexer");
+        } else {
+            return "2";
         }
     };
 
@@ -608,24 +574,21 @@ public class HystrixObservableCollapserTest {
         final AtomicInteger uniqueInt = new AtomicInteger(0);
 
         for (int i = 0; i < NUM_THREADS_SUBMITTING_WORK; i++) {
-            runnables.add(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        //System.out.println("Runnable starting on thread : " + Thread.currentThread().getName());
+            runnables.add(() -> {
+                try {
+                    //System.out.println("Runnable starting on thread : " + Thread.currentThread().getName());
 
-                        for (int j = 0; j < NUM_REQUESTS_PER_THREAD; j++) {
-                            HystrixObservableCollapser<String, String, String, String> collapser =
-                                    new TestCollapserWithMultipleResponses(timer, uniqueInt.getAndIncrement(), 3, false);
-                            Observable<String> o = collapser.toObservable();
-                            TestSubscriber<String> subscriber = new TestSubscriber<>();
-                            o.subscribe(subscriber);
-                            subscribers.offer(subscriber);
-                        }
-                        //System.out.println("Runnable done on thread : " + Thread.currentThread().getName());
-                    } finally {
-                        latch.countDown();
+                    for (int j = 0; j < NUM_REQUESTS_PER_THREAD; j++) {
+                        HystrixObservableCollapser<String, String, String, String> collapser =
+                                new TestCollapserWithMultipleResponses(timer, uniqueInt.getAndIncrement(), 3, false);
+                        Observable<String> o = collapser.toObservable();
+                        TestSubscriber<String> subscriber = new TestSubscriber<>();
+                        o.subscribe(subscriber);
+                        subscribers.offer(subscriber);
                     }
+                    //System.out.println("Runnable done on thread : " + Thread.currentThread().getName());
+                } finally {
+                    latch.countDown();
                 }
             });
         }
@@ -724,38 +687,17 @@ public class HystrixObservableCollapserTest {
 
         @Override
         protected Func1<String, String> getBatchReturnTypeToResponseTypeMapper() {
-            return new Func1<String, String>() {
-
-                @Override
-                public String call(String s) {
-                    return s;
-                }
-
-            };
+            return s -> s;
         }
 
         @Override
         protected Func1<String, String> getBatchReturnTypeKeySelector() {
-            return new Func1<String, String>() {
-
-                @Override
-                public String call(String s) {
-                    return s;
-                }
-
-            };
+            return s -> s;
         }
 
         @Override
         protected Func1<String, String> getRequestArgumentKeySelector() {
-            return new Func1<String, String>() {
-
-                @Override
-                public String call(String s) {
-                    return s;
-                }
-
-            };
+            return s -> s;
         }
 
         @Override
@@ -765,14 +707,7 @@ public class HystrixObservableCollapserTest {
     }
 
     private static HystrixCollapserKey collapserKeyFromString(final Object o) {
-        return new HystrixCollapserKey() {
-
-            @Override
-            public String name() {
-                return String.valueOf(o);
-            }
-
-        };
+        return () -> String.valueOf(o);
     }
 
     private static class TestCollapserCommand extends TestHystrixObservableCommand<String> {
@@ -886,14 +821,7 @@ public class HystrixObservableCollapserTest {
 
         @Override
         protected Func1<String, String> getRequestArgumentKeySelector() {
-            return new Func1<String, String>() {
-
-                @Override
-                public String call(String s) {
-                    return s;
-                }
-
-            };
+            return s -> s;
         }
 
         @Override
@@ -904,14 +832,7 @@ public class HystrixObservableCollapserTest {
 
         @Override
         protected Func1<String, String> getBatchReturnTypeToResponseTypeMapper() {
-            return new Func1<String, String>() {
-
-                @Override
-                public String call(String s) {
-                    return s;
-                }
-
-            };
+            return s -> s;
         }
     }
 

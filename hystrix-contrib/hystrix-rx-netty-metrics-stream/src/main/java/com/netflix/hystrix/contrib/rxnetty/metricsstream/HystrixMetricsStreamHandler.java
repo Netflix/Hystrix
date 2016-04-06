@@ -87,26 +87,23 @@ public class HystrixMetricsStreamHandler<I, O> implements RequestHandler<I, O> {
         final Subject<Void, Void> subject = PublishSubject.create();
         final MultipleAssignmentSubscription subscription = new MultipleAssignmentSubscription();
         Subscription actionSubscription = Observable.timer(0, interval, TimeUnit.MILLISECONDS, Schedulers.computation())
-                .subscribe(new Action1<Long>() {
-                    @Override
-                    public void call(Long tick) {
-                        if (!response.getChannel().isOpen()) {
-                            subscription.unsubscribe();
-                            return;
+                .subscribe(tick -> {
+                    if (!response.getChannel().isOpen()) {
+                        subscription.unsubscribe();
+                        return;
+                    }
+                    try {
+                        for (HystrixCommandMetrics commandMetrics : HystrixCommandMetrics.getInstances()) {
+                            writeMetric(toJson(commandMetrics), response);
                         }
-                        try {
-                            for (HystrixCommandMetrics commandMetrics : HystrixCommandMetrics.getInstances()) {
-                                writeMetric(toJson(commandMetrics), response);
-                            }
-                            for (HystrixThreadPoolMetrics threadPoolMetrics : HystrixThreadPoolMetrics.getInstances()) {
-                                writeMetric(toJson(threadPoolMetrics), response);
-                            }
-                            for (HystrixCollapserMetrics collapserMetrics : HystrixCollapserMetrics.getInstances()) {
-                                writeMetric(toJson(collapserMetrics), response);
-                            }
-                        } catch (Exception e) {
-                            subject.onError(e);
+                        for (HystrixThreadPoolMetrics threadPoolMetrics : HystrixThreadPoolMetrics.getInstances()) {
+                            writeMetric(toJson(threadPoolMetrics), response);
                         }
+                        for (HystrixCollapserMetrics collapserMetrics : HystrixCollapserMetrics.getInstances()) {
+                            writeMetric(toJson(collapserMetrics), response);
+                        }
+                    } catch (Exception e) {
+                        subject.onError(e);
                     }
                 });
         subscription.set(actionSubscription);

@@ -173,12 +173,7 @@ public class HystrixPluginsTest {
         };
         final Logger mockLogger = (Logger) 
                 Proxy.newProxyInstance(realLoader, new Class<?>[] {Logger.class}, new MockLoggerInvocationHandler());
-        return HystrixPlugins.create(loader, new LoggerSupplier() {
-            @Override
-            public Logger getLogger() {
-                return mockLogger;
-            }
-        });
+        return HystrixPlugins.create(loader, () -> mockLogger);
     }
     
     static class MockLoggerInvocationHandler implements InvocationHandler {

@@ -70,11 +70,8 @@ public class CacheInvocationContext<A extends Annotation> {
             }
             parameters = parametersBuilder.build();
             // get key parameters
-            Iterable<CacheInvocationParameter> filtered = Iterables.filter(parameters, new Predicate<CacheInvocationParameter>() {
-                @Override
-                public boolean apply(CacheInvocationParameter input) {
-                    return input.hasCacheKeyAnnotation();
-                }
+            Iterable<CacheInvocationParameter> filtered = Iterables.filter(parameters, input -> {
+                return input.hasCacheKeyAnnotation();
             });
             if (filtered.iterator().hasNext()) {
                 keyParameters = ImmutableList.<CacheInvocationParameter>builder().addAll(filtered).build();

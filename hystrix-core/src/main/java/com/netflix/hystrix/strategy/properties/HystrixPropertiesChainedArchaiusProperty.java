@@ -152,12 +152,9 @@ public abstract class HystrixPropertiesChainedArchaiusProperty {
             super(next); // setup next pointer
 
             sProp = sProperty;
-            sProp.addCallback(new Runnable() {
-                @Override
-                public void run() {
-                    logger.debug("Property changed: '" + getName() + " = " + getValue() + "'");
-                    checkAndFlip();
-                }
+            sProp.addCallback(() -> {
+                logger.debug("Property changed: '" + getName() + " = " + getValue() + "'");
+                checkAndFlip();
             });
             checkAndFlip();
         }
@@ -206,12 +203,9 @@ public abstract class HystrixPropertiesChainedArchaiusProperty {
             super(next); // setup next pointer
 
             sProp = sProperty;
-            sProp.addCallback(new Runnable() {
-                @Override
-                public void run() {
-                    logger.debug("Property changed: '" + getName() + " = " + getValue() + "'");
-                    checkAndFlip();
-                }
+            sProp.addCallback(() -> {
+                logger.debug("Property changed: '" + getName() + " = " + getValue() + "'");
+                checkAndFlip();
             });
             checkAndFlip();
         }
@@ -260,12 +254,9 @@ public abstract class HystrixPropertiesChainedArchaiusProperty {
             super(next); // setup next pointer
 
             sProp = sProperty;
-            sProp.addCallback(new Runnable() {
-                @Override
-                public void run() {
-                    logger.debug("Property changed: '" + getName() + " = " + getValue() + "'");
-                    checkAndFlip();
-                }
+            sProp.addCallback(() -> {
+                logger.debug("Property changed: '" + getName() + " = " + getValue() + "'");
+                checkAndFlip();
             });
             checkAndFlip();
         }

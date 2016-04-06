@@ -93,12 +93,7 @@ public class HystrixMetricsStreamHandlerTest {
         replayAll();
 
         Observable<ServerSentEvent> objectObservable = client.submit(HttpClientRequest.createGet(DEFAULT_HYSTRIX_PREFIX))
-                .flatMap(new Func1<HttpClientResponse<ServerSentEvent>, Observable<? extends ServerSentEvent>>() {
-                    @Override
-                    public Observable<? extends ServerSentEvent> call(HttpClientResponse<ServerSentEvent> httpClientResponse) {
-                        return httpClientResponse.getContent().take(1);
-                    }
-                });
+                .flatMap(httpClientResponse -> httpClientResponse.getContent().take(1));
 
         Object first = Observable.amb(objectObservable, Observable.timer(1000, TimeUnit.MILLISECONDS)).toBlocking().first();
 
@@ -115,15 +110,10 @@ public class HystrixMetricsStreamHandlerTest {
         for (int i = 0; i < 3 && server == null; i++) {
             port = 10000 + random.nextInt(50000);
             try {
-                return RxNetty.newHttpServerBuilder(port, new HystrixMetricsStreamHandler<>(
+                return RxNetty.<ByteBuf, ByteBuf>newHttpServerBuilder(port, new HystrixMetricsStreamHandler<>(
                         DEFAULT_HYSTRIX_PREFIX,
                         DEFAULT_INTERVAL,
-                        new RequestHandler<ByteBuf, ByteBuf>() {  // Application handler
-                            @Override
-                            public Observable<Void> handle(HttpServerRequest<ByteBuf> request, HttpServerResponse<ByteBuf> response) {
-                                return Observable.empty();
-                            }
-                        }
+                        (request, response) -> Observable.empty()
                 )).build().start();
             } catch (Exception e) {
                 error = e;

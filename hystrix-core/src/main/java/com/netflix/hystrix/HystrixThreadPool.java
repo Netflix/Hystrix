@@ -187,12 +187,7 @@ public interface HystrixThreadPool {
         @Override
         public Scheduler getScheduler() {
             //by default, interrupt underlying threads on timeout
-            return getScheduler(new Func0<Boolean>() {
-                @Override
-                public Boolean call() {
-                    return true;
-                }
-            });
+            return getScheduler(() -> true);
         }
 
         @Override

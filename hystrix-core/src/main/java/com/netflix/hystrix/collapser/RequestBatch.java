@@ -121,52 +121,36 @@ public class RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> {
                         // create a new command to handle this batch of requests
                         Observable<BatchReturnType> o = commandCollapser.createObservableCommand(shardRequests);
 
-                        commandCollapser.mapResponseToRequests(o, shardRequests).doOnError(new Action1<Throwable>() {
-
-                            /**
-                             * This handles failed completions
-                             */
-                            @Override
-                            public void call(Throwable e) {
-                                // handle Throwable in case anything is thrown so we don't block Observers waiting for onError/onCompleted
-                                Exception ee;
-                                if (e instanceof Exception) {
-                                    ee = (Exception) e;
-                                } else {
-                                    ee = new RuntimeException("Throwable caught while executing batch and mapping responses.", e);
-                                }
-                                logger.debug("Exception mapping responses to requests.", e);
-                                // if a failure occurs we want to pass that exception to all of the Futures that we've returned
-                                for (CollapsedRequest<ResponseType, RequestArgumentType> request : requests) {
-                                    try {
-                                        ((CollapsedRequestObservableFunction<ResponseType, RequestArgumentType>) request).setExceptionIfResponseNotReceived(ee);
-                                    } catch (IllegalStateException e2) {
-                                        // if we have partial responses set in mapResponseToRequests
-                                        // then we may get IllegalStateException as we loop over them
-                                        // so we'll log but continue to the rest
-                                        logger.error("Partial success of 'mapResponseToRequests' resulted in IllegalStateException while setting Exception. Continuing ... ", e2);
-                                    }
+                        commandCollapser.mapResponseToRequests(o, shardRequests).doOnError(e -> {
+                            // handle Throwable in case anything is thrown so we don't block Observers waiting for onError/onCompleted
+                            Exception ee;
+                            if (e instanceof Exception) {
+                                ee = (Exception) e;
+                            } else {
+                                ee = new RuntimeException("Throwable caught while executing batch and mapping responses.", e);
+                            }
+                            logger.debug("Exception mapping responses to requests.", e);
+                            // if a failure occurs we want to pass that exception to all of the Futures that we've returned
+                            for (CollapsedRequest<ResponseType, RequestArgumentType> request : requests) {
+                                try {
+                                    ((CollapsedRequestObservableFunction<ResponseType, RequestArgumentType>) request).setExceptionIfResponseNotReceived(ee);
+                                } catch (IllegalStateException e2) {
+                                    // if we have partial responses set in mapResponseToRequests
+                                    // then we may get IllegalStateException as we loop over them
+                                    // so we'll log but continue to the rest
+                                    logger.error("Partial success of 'mapResponseToRequests' resulted in IllegalStateException while setting Exception. Continuing ... ", e2);
                                 }
                             }
-
-                        }).doOnCompleted(new Action0() {
-
-                            /**
-                             * This handles successful completions
-                             */
-                            @Override
-                            public void call() {
-                                // check that all requests had setResponse or setException invoked in case 'mapResponseToRequests' was implemented poorly
-                                Exception e = null;
-                                for (CollapsedRequest<ResponseType, RequestArgumentType> request : shardRequests) {
-                                    try {
-                                       e = ((CollapsedRequestObservableFunction<ResponseType, RequestArgumentType>) request).setExceptionIfResponseNotReceived(e,"No response set by " + commandCollapser.getCollapserKey().name() + " 'mapResponseToRequests' implementation.");
-                                    } catch (IllegalStateException e2) {
-                                        logger.debug("Partial success of 'mapResponseToRequests' resulted in IllegalStateException while setting 'No response set' Exception. Continuing ... ", e2);
-                                    }
+                        }).doOnCompleted(() -> {
+                            // check that all requests had setResponse or setException invoked in case 'mapResponseToRequests' was implemented poorly
+                            Exception e = null;
+                            for (CollapsedRequest<ResponseType, RequestArgumentType> request : shardRequests) {
+                                try {
+                                   e = ((CollapsedRequestObservableFunction<ResponseType, RequestArgumentType>) request).setExceptionIfResponseNotReceived(e,"No response set by " + commandCollapser.getCollapserKey().name() + " 'mapResponseToRequests' implementation.");
+                                } catch (IllegalStateException e2) {
+                                    logger.debug("Partial success of 'mapResponseToRequests' resulted in IllegalStateException while setting 'No response set' Exception. Continuing ... ", e2);
                                 }
                             }
-
                         }).subscribe();
                         
                     } catch (Exception e) {

@@ -152,12 +152,7 @@ public class HystrixServoMetricsPublisherCommand extends HystrixServoMetricsPubl
         }
     };
 
-    protected final Func0<Number> currentTimeThunk = new Func0<Number>() {
-        @Override
-        public Number call() {
-            return System.currentTimeMillis();
-        }
-    };
+    protected final Func0<Number> currentTimeThunk = () -> System.currentTimeMillis();
 
     /**
      * Convert from HystrixEventType to HystrixRollingNumberEvent
@@ -296,200 +291,40 @@ public class HystrixServoMetricsPublisherCommand extends HystrixServoMetricsPubl
         monitors.add(getCurrentValueMonitor("currentTime", currentTimeThunk, DataSourceLevel.DEBUG));
 
         // cumulative counts
-        monitors.add(safelyGetCumulativeMonitor("countBadRequests", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.BAD_REQUEST;
-            }
-        }));
-        monitors.add(safelyGetCumulativeMonitor("countCollapsedRequests", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.COLLAPSED;
-            }
-        }));
-        monitors.add(safelyGetCumulativeMonitor("countEmit", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.EMIT;
-            }
-        }));
-        monitors.add(safelyGetCumulativeMonitor("countExceptionsThrown", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.EXCEPTION_THROWN;
-            }
-        }));
-        monitors.add(safelyGetCumulativeMonitor("countFailure", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.FAILURE;
-            }
-        }));
-        monitors.add(safelyGetCumulativeMonitor("countFallbackEmit", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.FALLBACK_EMIT;
-            }
-        }));
-        monitors.add(safelyGetCumulativeMonitor("countFallbackFailure", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.FALLBACK_FAILURE;
-            }
-        }));
-        monitors.add(safelyGetCumulativeMonitor("countFallbackMissing", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.FALLBACK_MISSING;
-            }
-        }));
-        monitors.add(safelyGetCumulativeMonitor("countFallbackRejection", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.FALLBACK_REJECTION;
-            }
-        }));
-        monitors.add(safelyGetCumulativeMonitor("countFallbackSuccess", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.FALLBACK_SUCCESS;
-            }
-        }));
-        monitors.add(safelyGetCumulativeMonitor("countResponsesFromCache", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.RESPONSE_FROM_CACHE;
-            }
-        }));
-        monitors.add(safelyGetCumulativeMonitor("countSemaphoreRejected", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.SEMAPHORE_REJECTED;
-            }
-        }));
-        monitors.add(safelyGetCumulativeMonitor("countShortCircuited", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.SHORT_CIRCUITED;
-            }
-        }));
-        monitors.add(safelyGetCumulativeMonitor("countSuccess", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.SUCCESS;
-            }
-        }));
-        monitors.add(safelyGetCumulativeMonitor("countThreadPoolRejected", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.THREAD_POOL_REJECTED;
-            }
-        }));
-        monitors.add(safelyGetCumulativeMonitor("countTimeout", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.TIMEOUT;
-            }
-        }));
+        monitors.add(safelyGetCumulativeMonitor("countBadRequests", () -> HystrixEventType.BAD_REQUEST));
+        monitors.add(safelyGetCumulativeMonitor("countCollapsedRequests", () -> HystrixEventType.COLLAPSED));
+        monitors.add(safelyGetCumulativeMonitor("countEmit", () -> HystrixEventType.EMIT));
+        monitors.add(safelyGetCumulativeMonitor("countExceptionsThrown", () -> HystrixEventType.EXCEPTION_THROWN));
+        monitors.add(safelyGetCumulativeMonitor("countFailure", () -> HystrixEventType.FAILURE));
+        monitors.add(safelyGetCumulativeMonitor("countFallbackEmit", () -> HystrixEventType.FALLBACK_EMIT));
+        monitors.add(safelyGetCumulativeMonitor("countFallbackFailure", () -> HystrixEventType.FALLBACK_FAILURE));
+        monitors.add(safelyGetCumulativeMonitor("countFallbackMissing", () -> HystrixEventType.FALLBACK_MISSING));
+        monitors.add(safelyGetCumulativeMonitor("countFallbackRejection", () -> HystrixEventType.FALLBACK_REJECTION));
+        monitors.add(safelyGetCumulativeMonitor("countFallbackSuccess", () -> HystrixEventType.FALLBACK_SUCCESS));
+        monitors.add(safelyGetCumulativeMonitor("countResponsesFromCache", () -> HystrixEventType.RESPONSE_FROM_CACHE));
+        monitors.add(safelyGetCumulativeMonitor("countSemaphoreRejected", () -> HystrixEventType.SEMAPHORE_REJECTED));
+        monitors.add(safelyGetCumulativeMonitor("countShortCircuited", () -> HystrixEventType.SHORT_CIRCUITED));
+        monitors.add(safelyGetCumulativeMonitor("countSuccess", () -> HystrixEventType.SUCCESS));
+        monitors.add(safelyGetCumulativeMonitor("countThreadPoolRejected", () -> HystrixEventType.THREAD_POOL_REJECTED));
+        monitors.add(safelyGetCumulativeMonitor("countTimeout", () -> HystrixEventType.TIMEOUT));
 
         // rolling counts
-        monitors.add(safelyGetRollingMonitor("rollingCountBadRequests", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.BAD_REQUEST;
-            }
-        }));
-        monitors.add(safelyGetRollingMonitor("rollingCountCollapsedRequests", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.COLLAPSED;
-            }
-        }));
-        monitors.add(safelyGetRollingMonitor("rollingCountEmit", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.EMIT;
-            }
-        }));
-        monitors.add(safelyGetRollingMonitor("rollingCountExceptionsThrown", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.EXCEPTION_THROWN;
-            }
-        }));
-        monitors.add(safelyGetRollingMonitor("rollingCountFailure", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.FAILURE;
-            }
-        }));
-        monitors.add(safelyGetRollingMonitor("rollingCountFallbackEmit", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.FALLBACK_EMIT;
-            }
-        }));
-        monitors.add(safelyGetRollingMonitor("rollingCountFallbackFailure", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.FALLBACK_FAILURE;
-            }
-        }));
-        monitors.add(safelyGetRollingMonitor("rollingCountFallbackMissing", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.FALLBACK_MISSING;
-            }
-        }));
-        monitors.add(safelyGetRollingMonitor("rollingCountFallbackRejection", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.FALLBACK_REJECTION;
-            }
-        }));
-        monitors.add(safelyGetRollingMonitor("rollingCountFallbackSuccess", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.FALLBACK_SUCCESS;
-            }
-        }));
-        monitors.add(safelyGetRollingMonitor("rollingCountResponsesFromCache", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.RESPONSE_FROM_CACHE;
-            }
-        }));
-        monitors.add(safelyGetRollingMonitor("rollingCountSemaphoreRejected", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.SEMAPHORE_REJECTED;
-            }
-        }));
-        monitors.add(safelyGetRollingMonitor("rollingCountShortCircuited", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.SHORT_CIRCUITED;
-            }
-        }));
-        monitors.add(safelyGetRollingMonitor("rollingCountSuccess", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.SUCCESS;
-            }
-        }));
-        monitors.add(safelyGetRollingMonitor("rollingCountThreadPoolRejected", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.THREAD_POOL_REJECTED;
-            }
-        }));
-        monitors.add(safelyGetRollingMonitor("rollingCountTimeout", new Func0<HystrixEventType>() {
-            @Override
-            public HystrixEventType call() {
-                return HystrixEventType.TIMEOUT;
-            }
-        }));
+        monitors.add(safelyGetRollingMonitor("rollingCountBadRequests", () -> HystrixEventType.BAD_REQUEST));
+        monitors.add(safelyGetRollingMonitor("rollingCountCollapsedRequests", () -> HystrixEventType.COLLAPSED));
+        monitors.add(safelyGetRollingMonitor("rollingCountEmit", () -> HystrixEventType.EMIT));
+        monitors.add(safelyGetRollingMonitor("rollingCountExceptionsThrown", () -> HystrixEventType.EXCEPTION_THROWN));
+        monitors.add(safelyGetRollingMonitor("rollingCountFailure", () -> HystrixEventType.FAILURE));
+        monitors.add(safelyGetRollingMonitor("rollingCountFallbackEmit", () -> HystrixEventType.FALLBACK_EMIT));
+        monitors.add(safelyGetRollingMonitor("rollingCountFallbackFailure", () -> HystrixEventType.FALLBACK_FAILURE));
+        monitors.add(safelyGetRollingMonitor("rollingCountFallbackMissing", () -> HystrixEventType.FALLBACK_MISSING));
+        monitors.add(safelyGetRollingMonitor("rollingCountFallbackRejection", () -> HystrixEventType.FALLBACK_REJECTION));
+        monitors.add(safelyGetRollingMonitor("rollingCountFallbackSuccess", () -> HystrixEventType.FALLBACK_SUCCESS));
+        monitors.add(safelyGetRollingMonitor("rollingCountResponsesFromCache", () -> HystrixEventType.RESPONSE_FROM_CACHE));
+        monitors.add(safelyGetRollingMonitor("rollingCountSemaphoreRejected", () -> HystrixEventType.SEMAPHORE_REJECTED));
+        monitors.add(safelyGetRollingMonitor("rollingCountShortCircuited", () -> HystrixEventType.SHORT_CIRCUITED));
+        monitors.add(safelyGetRollingMonitor("rollingCountSuccess", () -> HystrixEventType.SUCCESS));
+        monitors.add(safelyGetRollingMonitor("rollingCountThreadPoolRejected", () -> HystrixEventType.THREAD_POOL_REJECTED));
+        monitors.add(safelyGetRollingMonitor("rollingCountTimeout", () -> HystrixEventType.TIMEOUT));
 
         // the number of executionSemaphorePermits in use right now
         monitors.add(getCurrentValueMonitor("executionSemaphorePermitsInUse", currentConcurrentExecutionCountThunk));

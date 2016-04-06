@@ -44,24 +44,16 @@ public class HystrixUtilizationJsonStream {
 
     private static final JsonFactory jsonFactory = new JsonFactory();
 
-    private static final Func1<HystrixUtilization, String> convertToJsonFunc = new Func1<HystrixUtilization, String>() {
-        @Override
-        public String call(HystrixUtilization utilization) {
-            try {
-                return convertToJson(utilization);
-            } catch (IOException ioe) {
-                throw new RuntimeException(ioe);
-            }
+    private static final Func1<HystrixUtilization, String> convertToJsonFunc = utilization -> {
+        try {
+            return convertToJson(utilization);
+        } catch (IOException ioe) {
+            throw new RuntimeException(ioe);
         }
     };
 
     public HystrixUtilizationJsonStream() {
-        this.streamGenerator = new Func1<Integer, Observable<HystrixUtilization>>() {
-            @Override
-            public Observable<HystrixUtilization> call(Integer delay) {
-                return new HystrixUtilizationStream(delay).observe();
-            }
-        };
+        this.streamGenerator = delay -> new HystrixUtilizationStream(delay).observe();
     }
 
     public HystrixUtilizationJsonStream(Func1<Integer, Observable<HystrixUtilization>> streamGenerator) {

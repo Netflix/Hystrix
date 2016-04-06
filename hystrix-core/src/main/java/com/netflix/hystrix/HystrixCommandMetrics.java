@@ -46,39 +46,33 @@ public class HystrixCommandMetrics extends HystrixMetrics {
 
     private static final HystrixEventType[] ALL_EVENT_TYPES = HystrixEventType.values();
 
-    public static final Func2<long[], HystrixCommandCompletion, long[]> appendEventToBucket = new Func2<long[], HystrixCommandCompletion, long[]>() {
-        @Override
-        public long[] call(long[] initialCountArray, HystrixCommandCompletion execution) {
-            ExecutionResult.EventCounts eventCounts = execution.getEventCounts();
-            for (HystrixEventType eventType: ALL_EVENT_TYPES) {
-                switch (eventType) {
-                    case EXCEPTION_THROWN: break; //this is just a sum of other anyway - don't do the work here
-                    default:
-                        initialCountArray[eventType.ordinal()] += eventCounts.getCount(eventType);
-                        break;
-                }
+    public static final Func2<long[], HystrixCommandCompletion, long[]> appendEventToBucket = (initialCountArray, execution) -> {
+        ExecutionResult.EventCounts eventCounts = execution.getEventCounts();
+        for (HystrixEventType eventType: ALL_EVENT_TYPES) {
+            switch (eventType) {
+                case EXCEPTION_THROWN: break; //this is just a sum of other anyway - don't do the work here
+                default:
+                    initialCountArray[eventType.ordinal()] += eventCounts.getCount(eventType);
+                    break;
             }
-            return initialCountArray;
         }
+        return initialCountArray;
     };
 
-    public static final Func2<long[], long[], long[]> bucketAggregator = new Func2<long[], long[], long[]>() {
-        @Override
-        public long[] call(long[] cumulativeEvents, long[] bucketEventCounts) {
-            for (HystrixEventType eventType: ALL_EVENT_TYPES) {
-                switch (eventType) {
-                    case EXCEPTION_THROWN:
-                        for (HystrixEventType exceptionEventType: HystrixEventType.EXCEPTION_PRODUCING_EVENT_TYPES) {
-                            cumulativeEvents[eventType.ordinal()] += bucketEventCounts[exceptionEventType.ordinal()];
-                        }
-                        break;
-                    default:
-                        cumulativeEvents[eventType.ordinal()] += bucketEventCounts[eventType.ordinal()];
-                        break;
-                }
+    public static final Func2<long[], long[], long[]> bucketAggregator = (cumulativeEvents, bucketEventCounts) -> {
+        for (HystrixEventType eventType: ALL_EVENT_TYPES) {
+            switch (eventType) {
+                case EXCEPTION_THROWN:
+                    for (HystrixEventType exceptionEventType: HystrixEventType.EXCEPTION_PRODUCING_EVENT_TYPES) {
+                        cumulativeEvents[eventType.ordinal()] += bucketEventCounts[exceptionEventType.ordinal()];
+                    }
+                    break;
+                default:
+                    cumulativeEvents[eventType.ordinal()] += bucketEventCounts[eventType.ordinal()];
+                    break;
             }
-            return cumulativeEvents;
         }
+        return cumulativeEvents;
     };
 
     // String is HystrixCommandKey.name() (we can't use HystrixCommandKey directly as we can't guarantee it implements hashcode/equals correctly)

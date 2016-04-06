@@ -216,30 +216,10 @@ public class HystrixServoMetricsPublisherThreadPool extends HystrixServoMetricsP
         });
 
         //thread pool event monitors
-        monitors.add(safelyGetCumulativeMonitor("countThreadsExecuted", new Func0<HystrixEventType.ThreadPool>() {
-            @Override
-            public HystrixEventType.ThreadPool call() {
-                return HystrixEventType.ThreadPool.EXECUTED;
-            }
-        }));
-        monitors.add(safelyGetCumulativeMonitor("countThreadsRejected", new Func0<HystrixEventType.ThreadPool>() {
-            @Override
-            public HystrixEventType.ThreadPool call() {
-                return HystrixEventType.ThreadPool.REJECTED;
-            }
-        }));
-        monitors.add(safelyGetRollingMonitor("rollingCountThreadsExecuted", new Func0<HystrixEventType.ThreadPool>() {
-            @Override
-            public HystrixEventType.ThreadPool call() {
-                return HystrixEventType.ThreadPool.EXECUTED;
-            }
-        }));
-        monitors.add(safelyGetRollingMonitor("rollingCountCommandsRejected", new Func0<HystrixEventType.ThreadPool>() {
-            @Override
-            public HystrixEventType.ThreadPool call() {
-                return HystrixEventType.ThreadPool.REJECTED;
-            }
-        }));
+        monitors.add(safelyGetCumulativeMonitor("countThreadsExecuted", () -> HystrixEventType.ThreadPool.EXECUTED));
+        monitors.add(safelyGetCumulativeMonitor("countThreadsRejected", () -> HystrixEventType.ThreadPool.REJECTED));
+        monitors.add(safelyGetRollingMonitor("rollingCountThreadsExecuted", () -> HystrixEventType.ThreadPool.EXECUTED));
+        monitors.add(safelyGetRollingMonitor("rollingCountCommandsRejected", () -> HystrixEventType.ThreadPool.REJECTED));
 
         // properties
         monitors.add(new InformationalMetric<Number>(MonitorConfig.builder("propertyValue_corePoolSize").build()) {

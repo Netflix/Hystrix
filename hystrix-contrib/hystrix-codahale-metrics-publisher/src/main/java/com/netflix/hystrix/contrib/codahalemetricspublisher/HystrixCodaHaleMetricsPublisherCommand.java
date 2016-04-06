@@ -62,425 +62,90 @@ public class HystrixCodaHaleMetricsPublisherCommand implements HystrixMetricsPub
      */
     @Override
     public void initialize() {
-        metricRegistry.register(createMetricName("isCircuitBreakerOpen"), new Gauge<Boolean>() {
-            @Override
-            public Boolean getValue() {
-                return circuitBreaker.isOpen();
-            }
-        });
+        metricRegistry.register(createMetricName("isCircuitBreakerOpen"), (Gauge<Boolean>) () -> circuitBreaker.isOpen());
 
         // allow monitor to know exactly at what point in time these stats are for so they can be plotted accurately
-        metricRegistry.register(createMetricName("currentTime"), new Gauge<Long>() {
-            @Override
-            public Long getValue() {
-                return System.currentTimeMillis();
-            }
-        });
+        metricRegistry.register(createMetricName("currentTime"), (Gauge<Long>) () -> System.currentTimeMillis());
 
         // cumulative counts
-        safelyCreateCumulativeCountForEvent("countBadRequests", new Func0<HystrixRollingNumberEvent>() {
-            @Override
-            public HystrixRollingNumberEvent call() {
-                return HystrixRollingNumberEvent.BAD_REQUEST;
-            }
-        });
-        safelyCreateCumulativeCountForEvent("countCollapsedRequests", new Func0<HystrixRollingNumberEvent>() {
-            @Override
-            public HystrixRollingNumberEvent call() {
-                return HystrixRollingNumberEvent.COLLAPSED;
-            }
-        });
-        safelyCreateCumulativeCountForEvent("countEmit", new Func0<HystrixRollingNumberEvent>() {
-            @Override
-            public HystrixRollingNumberEvent call() {
-                return HystrixRollingNumberEvent.EMIT;
-            }
-        });
-        safelyCreateCumulativeCountForEvent("countExceptionsThrown", new Func0<HystrixRollingNumberEvent>() {
-            @Override
-            public HystrixRollingNumberEvent call() {
-                return HystrixRollingNumberEvent.EXCEPTION_THROWN;
-            }
-        });
-        safelyCreateCumulativeCountForEvent("countFailure", new Func0<HystrixRollingNumberEvent>() {
-            @Override
-            public HystrixRollingNumberEvent call() {
-                return HystrixRollingNumberEvent.FAILURE;
-            }
-        });
-        safelyCreateCumulativeCountForEvent("countFallbackEmit", new Func0<HystrixRollingNumberEvent>() {
-            @Override
-            public HystrixRollingNumberEvent call() {
-                return HystrixRollingNumberEvent.FALLBACK_EMIT;
-            }
-        });
-        safelyCreateCumulativeCountForEvent("countFallbackFailure", new Func0<HystrixRollingNumberEvent>() {
-            @Override
-            public HystrixRollingNumberEvent call() {
-                return HystrixRollingNumberEvent.FALLBACK_FAILURE;
-            }
-        });
-        safelyCreateCumulativeCountForEvent("countFallbackMissing", new Func0<HystrixRollingNumberEvent>() {
-            @Override
-            public HystrixRollingNumberEvent call() {
-                return HystrixRollingNumberEvent.FALLBACK_MISSING;
-            }
-        });
-        safelyCreateCumulativeCountForEvent("countFallbackRejection", new Func0<HystrixRollingNumberEvent>() {
-            @Override
-            public HystrixRollingNumberEvent call() {
-                return HystrixRollingNumberEvent.FALLBACK_REJECTION;
-            }
-        });
-        safelyCreateCumulativeCountForEvent("countFallbackSuccess", new Func0<HystrixRollingNumberEvent>() {
-            @Override
-            public HystrixRollingNumberEvent call() {
-                return HystrixRollingNumberEvent.FALLBACK_SUCCESS;
-            }
-        });
-        safelyCreateCumulativeCountForEvent("countResponsesFromCache", new Func0<HystrixRollingNumberEvent>() {
-            @Override
-            public HystrixRollingNumberEvent call() {
-                return HystrixRollingNumberEvent.RESPONSE_FROM_CACHE;
-            }
-        });
-        safelyCreateCumulativeCountForEvent("countSemaphoreRejected", new Func0<HystrixRollingNumberEvent>() {
-            @Override
-            public HystrixRollingNumberEvent call() {
-                return HystrixRollingNumberEvent.SEMAPHORE_REJECTED;
-            }
-        });
-        safelyCreateCumulativeCountForEvent("countShortCircuited", new Func0<HystrixRollingNumberEvent>() {
-            @Override
-            public HystrixRollingNumberEvent call() {
-                return HystrixRollingNumberEvent.SHORT_CIRCUITED;
-            }
-        });
-        safelyCreateCumulativeCountForEvent("countSuccess", new Func0<HystrixRollingNumberEvent>() {
-            @Override
-            public HystrixRollingNumberEvent call() {
-                return HystrixRollingNumberEvent.SUCCESS;
-            }
-        });
-        safelyCreateCumulativeCountForEvent("countThreadPoolRejected", new Func0<HystrixRollingNumberEvent>() {
-            @Override
-            public HystrixRollingNumberEvent call() {
-                return HystrixRollingNumberEvent.THREAD_POOL_REJECTED;
-            }
-        });
-        safelyCreateCumulativeCountForEvent("countTimeout", new Func0<HystrixRollingNumberEvent>() {
-            @Override
-            public HystrixRollingNumberEvent call() {
-                return HystrixRollingNumberEvent.TIMEOUT;
-            }
-        });
+        safelyCreateCumulativeCountForEvent("countBadRequests", () -> HystrixRollingNumberEvent.BAD_REQUEST);
+        safelyCreateCumulativeCountForEvent("countCollapsedRequests", () -> HystrixRollingNumberEvent.COLLAPSED);
+        safelyCreateCumulativeCountForEvent("countEmit", () -> HystrixRollingNumberEvent.EMIT);
+        safelyCreateCumulativeCountForEvent("countExceptionsThrown", () -> HystrixRollingNumberEvent.EXCEPTION_THROWN);
+        safelyCreateCumulativeCountForEvent("countFailure", () -> HystrixRollingNumberEvent.FAILURE);
+        safelyCreateCumulativeCountForEvent("countFallbackEmit", () -> HystrixRollingNumberEvent.FALLBACK_EMIT);
+        safelyCreateCumulativeCountForEvent("countFallbackFailure", () -> HystrixRollingNumberEvent.FALLBACK_FAILURE);
+        safelyCreateCumulativeCountForEvent("countFallbackMissing", () -> HystrixRollingNumberEvent.FALLBACK_MISSING);
+        safelyCreateCumulativeCountForEvent("countFallbackRejection", () -> HystrixRollingNumberEvent.FALLBACK_REJECTION);
+        safelyCreateCumulativeCountForEvent("countFallbackSuccess", () -> HystrixRollingNumberEvent.FALLBACK_SUCCESS);
+        safelyCreateCumulativeCountForEvent("countResponsesFromCache", () -> HystrixRollingNumberEvent.RESPONSE_FROM_CACHE);
+        safelyCreateCumulativeCountForEvent("countSemaphoreRejected", () -> HystrixRollingNumberEvent.SEMAPHORE_REJECTED);
+        safelyCreateCumulativeCountForEvent("countShortCircuited", () -> HystrixRollingNumberEvent.SHORT_CIRCUITED);
+        safelyCreateCumulativeCountForEvent("countSuccess", () -> HystrixRollingNumberEvent.SUCCESS);
+        safelyCreateCumulativeCountForEvent("countThreadPoolRejected", () -> HystrixRollingNumberEvent.THREAD_POOL_REJECTED);
+        safelyCreateCumulativeCountForEvent("countTimeout", () -> HystrixRollingNumberEvent.TIMEOUT);
 
         // rolling counts
-        safelyCreateRollingCountForEvent("rollingCountBadRequests", new Func0<HystrixRollingNumberEvent>() {
-            @Override
-            public HystrixRollingNumberEvent call() {
-                return HystrixRollingNumberEvent.BAD_REQUEST;
-            }
-        });
-        safelyCreateRollingCountForEvent("rollingCountCollapsedRequests", new Func0<HystrixRollingNumberEvent>() {
-            @Override
-            public HystrixRollingNumberEvent call() {
-                return HystrixRollingNumberEvent.COLLAPSED;
-            }
-        });
-        safelyCreateRollingCountForEvent("rollingCountEmit", new Func0<HystrixRollingNumberEvent>() {
-            @Override
-            public HystrixRollingNumberEvent call() {
-                return HystrixRollingNumberEvent.EMIT;
-            }
-        });
-        safelyCreateRollingCountForEvent("rollingCountExceptionsThrown", new Func0<HystrixRollingNumberEvent>() {
-            @Override
-            public HystrixRollingNumberEvent call() {
-                return HystrixRollingNumberEvent.EXCEPTION_THROWN;
-            }
-        });
-        safelyCreateRollingCountForEvent("rollingCountFailure", new Func0<HystrixRollingNumberEvent>() {
-            @Override
-            public HystrixRollingNumberEvent call() {
-                return HystrixRollingNumberEvent.FAILURE;
-            }
-        });
-        safelyCreateRollingCountForEvent("rollingCountFallbackEmit", new Func0<HystrixRollingNumberEvent>() {
-            @Override
-            public HystrixRollingNumberEvent call() {
-                return HystrixRollingNumberEvent.FALLBACK_EMIT;
-            }
-        });
-        safelyCreateRollingCountForEvent("rollingCountFallbackFailure", new Func0<HystrixRollingNumberEvent>() {
-            @Override
-            public HystrixRollingNumberEvent call() {
-                return HystrixRollingNumberEvent.FALLBACK_FAILURE;
-            }
-        });
-        safelyCreateRollingCountForEvent("rollingCountFallbackMissing", new Func0<HystrixRollingNumberEvent>() {
-            @Override
-            public HystrixRollingNumberEvent call() {
-                return HystrixRollingNumberEvent.FALLBACK_MISSING;
-            }
-        });
-        safelyCreateRollingCountForEvent("rollingCountFallbackRejection", new Func0<HystrixRollingNumberEvent>() {
-            @Override
-            public HystrixRollingNumberEvent call() {
-                return HystrixRollingNumberEvent.FALLBACK_REJECTION;
-            }
-        });
-        safelyCreateRollingCountForEvent("rollingCountFallbackSuccess", new Func0<HystrixRollingNumberEvent>() {
-            @Override
-            public HystrixRollingNumberEvent call() {
-                return HystrixRollingNumberEvent.FALLBACK_SUCCESS;
-            }
-        });
-        safelyCreateRollingCountForEvent("rollingCountResponsesFromCache", new Func0<HystrixRollingNumberEvent>() {
-            @Override
-            public HystrixRollingNumberEvent call() {
-                return HystrixRollingNumberEvent.RESPONSE_FROM_CACHE;
-            }
-        });
-        safelyCreateRollingCountForEvent("rollingCountSemaphoreRejected", new Func0<HystrixRollingNumberEvent>() {
-            @Override
-            public HystrixRollingNumberEvent call() {
-                return HystrixRollingNumberEvent.SEMAPHORE_REJECTED;
-            }
-        });
-        safelyCreateRollingCountForEvent("rollingCountShortCircuited", new Func0<HystrixRollingNumberEvent>() {
-            @Override
-            public HystrixRollingNumberEvent call() {
-                return HystrixRollingNumberEvent.SHORT_CIRCUITED;
-            }
-        });
-        safelyCreateRollingCountForEvent("rollingCountSuccess", new Func0<HystrixRollingNumberEvent>() {
-            @Override
-            public HystrixRollingNumberEvent call() {
-                return HystrixRollingNumberEvent.SUCCESS;
-            }
-        });
-        safelyCreateRollingCountForEvent("rollingCountThreadPoolRejected", new Func0<HystrixRollingNumberEvent>() {
-            @Override
-            public HystrixRollingNumberEvent call() {
-                return HystrixRollingNumberEvent.THREAD_POOL_REJECTED;
-            }
-        });
-        safelyCreateRollingCountForEvent("rollingCountTimeout", new Func0<HystrixRollingNumberEvent>() {
-            @Override
-            public HystrixRollingNumberEvent call() {
-                return HystrixRollingNumberEvent.TIMEOUT;
-            }
-        });
+        safelyCreateRollingCountForEvent("rollingCountBadRequests", () -> HystrixRollingNumberEvent.BAD_REQUEST);
+        safelyCreateRollingCountForEvent("rollingCountCollapsedRequests", () -> HystrixRollingNumberEvent.COLLAPSED);
+        safelyCreateRollingCountForEvent("rollingCountEmit", () -> HystrixRollingNumberEvent.EMIT);
+        safelyCreateRollingCountForEvent("rollingCountExceptionsThrown", () -> HystrixRollingNumberEvent.EXCEPTION_THROWN);
+        safelyCreateRollingCountForEvent("rollingCountFailure", () -> HystrixRollingNumberEvent.FAILURE);
+        safelyCreateRollingCountForEvent("rollingCountFallbackEmit", () -> HystrixRollingNumberEvent.FALLBACK_EMIT);
+        safelyCreateRollingCountForEvent("rollingCountFallbackFailure", () -> HystrixRollingNumberEvent.FALLBACK_FAILURE);
+        safelyCreateRollingCountForEvent("rollingCountFallbackMissing", () -> HystrixRollingNumberEvent.FALLBACK_MISSING);
+        safelyCreateRollingCountForEvent("rollingCountFallbackRejection", () -> HystrixRollingNumberEvent.FALLBACK_REJECTION);
+        safelyCreateRollingCountForEvent("rollingCountFallbackSuccess", () -> HystrixRollingNumberEvent.FALLBACK_SUCCESS);
+        safelyCreateRollingCountForEvent("rollingCountResponsesFromCache", () -> HystrixRollingNumberEvent.RESPONSE_FROM_CACHE);
+        safelyCreateRollingCountForEvent("rollingCountSemaphoreRejected", () -> HystrixRollingNumberEvent.SEMAPHORE_REJECTED);
+        safelyCreateRollingCountForEvent("rollingCountShortCircuited", () -> HystrixRollingNumberEvent.SHORT_CIRCUITED);
+        safelyCreateRollingCountForEvent("rollingCountSuccess", () -> HystrixRollingNumberEvent.SUCCESS);
+        safelyCreateRollingCountForEvent("rollingCountThreadPoolRejected", () -> HystrixRollingNumberEvent.THREAD_POOL_REJECTED);
+        safelyCreateRollingCountForEvent("rollingCountTimeout", () -> HystrixRollingNumberEvent.TIMEOUT);
 
         // the number of executionSemaphorePermits in use right now
-        metricRegistry.register(createMetricName("executionSemaphorePermitsInUse"), new Gauge<Integer>() {
-            @Override
-            public Integer getValue() {
-                return metrics.getCurrentConcurrentExecutionCount();
-            }
-        });
+        metricRegistry.register(createMetricName("executionSemaphorePermitsInUse"), (Gauge<Integer>) () -> metrics.getCurrentConcurrentExecutionCount());
 
         // error percentage derived from current metrics
-        metricRegistry.register(createMetricName("errorPercentage"), new Gauge<Integer>() {
-            @Override
-            public Integer getValue() {
-                return metrics.getHealthCounts().getErrorPercentage();
-            }
-        });
+        metricRegistry.register(createMetricName("errorPercentage"), (Gauge<Integer>) () -> metrics.getHealthCounts().getErrorPercentage());
 
         // latency metrics
-        metricRegistry.register(createMetricName("latencyExecute_mean"), new Gauge<Integer>() {
-            @Override
-            public Integer getValue() {
-                return metrics.getExecutionTimeMean();
-            }
-        });
-        metricRegistry.register(createMetricName("latencyExecute_percentile_5"), new Gauge<Integer>() {
-            @Override
-            public Integer getValue() {
-                return metrics.getExecutionTimePercentile(5);
-            }
-        });
-        metricRegistry.register(createMetricName("latencyExecute_percentile_25"), new Gauge<Integer>() {
-            @Override
-            public Integer getValue() {
-                return metrics.getExecutionTimePercentile(25);
-            }
-        });
-        metricRegistry.register(createMetricName("latencyExecute_percentile_50"), new Gauge<Integer>() {
-            @Override
-            public Integer getValue() {
-                return metrics.getExecutionTimePercentile(50);
-            }
-        });
-        metricRegistry.register(createMetricName("latencyExecute_percentile_75"), new Gauge<Integer>() {
-            @Override
-            public Integer getValue() {
-                return metrics.getExecutionTimePercentile(75);
-            }
-        });
-        metricRegistry.register(createMetricName("latencyExecute_percentile_90"), new Gauge<Integer>() {
-            @Override
-            public Integer getValue() {
-                return metrics.getExecutionTimePercentile(90);
-            }
-        });
-        metricRegistry.register(createMetricName("latencyExecute_percentile_99"), new Gauge<Integer>() {
-            @Override
-            public Integer getValue() {
-                return metrics.getExecutionTimePercentile(99);
-            }
-        });
-        metricRegistry.register(createMetricName("latencyExecute_percentile_995"), new Gauge<Integer>() {
-            @Override
-            public Integer getValue() {
-                return metrics.getExecutionTimePercentile(99.5);
-            }
-        });
+        metricRegistry.register(createMetricName("latencyExecute_mean"), (Gauge<Integer>) () -> metrics.getExecutionTimeMean());
+        metricRegistry.register(createMetricName("latencyExecute_percentile_5"), (Gauge<Integer>) () -> metrics.getExecutionTimePercentile(5));
+        metricRegistry.register(createMetricName("latencyExecute_percentile_25"), (Gauge<Integer>) () -> metrics.getExecutionTimePercentile(25));
+        metricRegistry.register(createMetricName("latencyExecute_percentile_50"), (Gauge<Integer>) () -> metrics.getExecutionTimePercentile(50));
+        metricRegistry.register(createMetricName("latencyExecute_percentile_75"), (Gauge<Integer>) () -> metrics.getExecutionTimePercentile(75));
+        metricRegistry.register(createMetricName("latencyExecute_percentile_90"), (Gauge<Integer>) () -> metrics.getExecutionTimePercentile(90));
+        metricRegistry.register(createMetricName("latencyExecute_percentile_99"), (Gauge<Integer>) () -> metrics.getExecutionTimePercentile(99));
+        metricRegistry.register(createMetricName("latencyExecute_percentile_995"), (Gauge<Integer>) () -> metrics.getExecutionTimePercentile(99.5));
 
-        metricRegistry.register(createMetricName("latencyTotal_mean"), new Gauge<Integer>() {
-            @Override
-            public Integer getValue() {
-                return metrics.getTotalTimeMean();
-            }
-        });
-        metricRegistry.register(createMetricName("latencyTotal_percentile_5"), new Gauge<Integer>() {
-            @Override
-            public Integer getValue() {
-                return metrics.getTotalTimePercentile(5);
-            }
-        });
-        metricRegistry.register(createMetricName("latencyTotal_percentile_25"), new Gauge<Integer>() {
-            @Override
-            public Integer getValue() {
-                return metrics.getTotalTimePercentile(25);
-            }
-        });
-        metricRegistry.register(createMetricName("latencyTotal_percentile_50"), new Gauge<Integer>() {
-            @Override
-            public Integer getValue() {
-                return metrics.getTotalTimePercentile(50);
-            }
-        });
-        metricRegistry.register(createMetricName("latencyTotal_percentile_75"), new Gauge<Integer>() {
-            @Override
-            public Integer getValue() {
-                return metrics.getTotalTimePercentile(75);
-            }
-        });
-        metricRegistry.register(createMetricName("latencyTotal_percentile_90"), new Gauge<Integer>() {
-            @Override
-            public Integer getValue() {
-                return metrics.getTotalTimePercentile(90);
-            }
-        });
-        metricRegistry.register(createMetricName("latencyTotal_percentile_99"), new Gauge<Integer>() {
-            @Override
-            public Integer getValue() {
-                return metrics.getTotalTimePercentile(99);
-            }
-        });
-        metricRegistry.register(createMetricName("latencyTotal_percentile_995"), new Gauge<Integer>() {
-            @Override
-            public Integer getValue() {
-                return metrics.getTotalTimePercentile(99.5);
-            }
-        });
+        metricRegistry.register(createMetricName("latencyTotal_mean"), (Gauge<Integer>) () -> metrics.getTotalTimeMean());
+        metricRegistry.register(createMetricName("latencyTotal_percentile_5"), (Gauge<Integer>) () -> metrics.getTotalTimePercentile(5));
+        metricRegistry.register(createMetricName("latencyTotal_percentile_25"), (Gauge<Integer>) () -> metrics.getTotalTimePercentile(25));
+        metricRegistry.register(createMetricName("latencyTotal_percentile_50"), (Gauge<Integer>) () -> metrics.getTotalTimePercentile(50));
+        metricRegistry.register(createMetricName("latencyTotal_percentile_75"), (Gauge<Integer>) () -> metrics.getTotalTimePercentile(75));
+        metricRegistry.register(createMetricName("latencyTotal_percentile_90"), (Gauge<Integer>) () -> metrics.getTotalTimePercentile(90));
+        metricRegistry.register(createMetricName("latencyTotal_percentile_99"), (Gauge<Integer>) () -> metrics.getTotalTimePercentile(99));
+        metricRegistry.register(createMetricName("latencyTotal_percentile_995"), (Gauge<Integer>) () -> metrics.getTotalTimePercentile(99.5));
 
         // group
-        metricRegistry.register(createMetricName("commandGroup"), new Gauge<String>() {
-            @Override
-            public String getValue() {
-                return commandGroupKey != null ? commandGroupKey.name() : null;
-            }
-        });
+        metricRegistry.register(createMetricName("commandGroup"), (Gauge<String>) () -> commandGroupKey != null ? commandGroupKey.name() : null);
 
         // properties (so the values can be inspected and monitored)
-        metricRegistry.register(createMetricName("propertyValue_rollingStatisticalWindowInMilliseconds"), new Gauge<Number>() {
-            @Override
-            public Number getValue() {
-                return properties.metricsRollingStatisticalWindowInMilliseconds().get();
-            }
-        });
-        metricRegistry.register(createMetricName("propertyValue_circuitBreakerRequestVolumeThreshold"), new Gauge<Number>() {
-            @Override
-            public Number getValue() {
-                return properties.circuitBreakerRequestVolumeThreshold().get();
-            }
-        });
-        metricRegistry.register(createMetricName("propertyValue_circuitBreakerSleepWindowInMilliseconds"), new Gauge<Number>() {
-            @Override
-            public Number getValue() {
-                return properties.circuitBreakerSleepWindowInMilliseconds().get();
-            }
-        });
-        metricRegistry.register(createMetricName("propertyValue_circuitBreakerErrorThresholdPercentage"), new Gauge<Number>() {
-            @Override
-            public Number getValue() {
-                return properties.circuitBreakerErrorThresholdPercentage().get();
-            }
-        });
-        metricRegistry.register(createMetricName("propertyValue_circuitBreakerForceOpen"), new Gauge<Boolean>() {
-            @Override
-            public Boolean getValue() {
-                return properties.circuitBreakerForceOpen().get();
-            }
-        });
-        metricRegistry.register(createMetricName("propertyValue_circuitBreakerForceClosed"), new Gauge<Boolean>() {
-            @Override
-            public Boolean getValue() {
-                return properties.circuitBreakerForceClosed().get();
-            }
-        });
-        metricRegistry.register(createMetricName("propertyValue_executionIsolationThreadTimeoutInMilliseconds"), new Gauge<Number>() {
-            @Override
-            public Number getValue() {
-                return properties.executionTimeoutInMilliseconds().get();
-            }
-        });
-        metricRegistry.register(createMetricName("propertyValue_executionTimeoutInMilliseconds"), new Gauge<Number>() {
-            @Override
-            public Number getValue() {
-                return properties.executionTimeoutInMilliseconds().get();
-            }
-        });
-        metricRegistry.register(createMetricName("propertyValue_executionIsolationStrategy"), new Gauge<String>() {
-            @Override
-            public String getValue() {
-                return properties.executionIsolationStrategy().get().name();
-            }
-        });
-        metricRegistry.register(createMetricName("propertyValue_metricsRollingPercentileEnabled"), new Gauge<Boolean>() {
-            @Override
-            public Boolean getValue() {
-                return properties.metricsRollingPercentileEnabled().get();
-            }
-        });
-        metricRegistry.register(createMetricName("propertyValue_requestCacheEnabled"), new Gauge<Boolean>() {
-            @Override
-            public Boolean getValue() {
-                return properties.requestCacheEnabled().get();
-            }
-        });
-        metricRegistry.register(createMetricName("propertyValue_requestLogEnabled"), new Gauge<Boolean>() {
-            @Override
-            public Boolean getValue() {
-                return properties.requestLogEnabled().get();
-            }
-        });
-        metricRegistry.register(createMetricName("propertyValue_executionIsolationSemaphoreMaxConcurrentRequests"), new Gauge<Number>() {
-            @Override
-            public Number getValue() {
-                return properties.executionIsolationSemaphoreMaxConcurrentRequests().get();
-            }
-        });
-        metricRegistry.register(createMetricName("propertyValue_fallbackIsolationSemaphoreMaxConcurrentRequests"), new Gauge<Number>() {
-            @Override
-            public Number getValue() {
-                return properties.fallbackIsolationSemaphoreMaxConcurrentRequests().get();
-            }
-        });
+        metricRegistry.register(createMetricName("propertyValue_rollingStatisticalWindowInMilliseconds"), (Gauge<Number>) () -> properties.metricsRollingStatisticalWindowInMilliseconds().get());
+        metricRegistry.register(createMetricName("propertyValue_circuitBreakerRequestVolumeThreshold"), (Gauge<Number>) () -> properties.circuitBreakerRequestVolumeThreshold().get());
+        metricRegistry.register(createMetricName("propertyValue_circuitBreakerSleepWindowInMilliseconds"), (Gauge<Number>) () -> properties.circuitBreakerSleepWindowInMilliseconds().get());
+        metricRegistry.register(createMetricName("propertyValue_circuitBreakerErrorThresholdPercentage"), (Gauge<Number>) () -> properties.circuitBreakerErrorThresholdPercentage().get());
+        metricRegistry.register(createMetricName("propertyValue_circuitBreakerForceOpen"), (Gauge<Boolean>) () -> properties.circuitBreakerForceOpen().get());
+        metricRegistry.register(createMetricName("propertyValue_circuitBreakerForceClosed"), (Gauge<Boolean>) () -> properties.circuitBreakerForceClosed().get());
+        metricRegistry.register(createMetricName("propertyValue_executionIsolationThreadTimeoutInMilliseconds"), (Gauge<Number>) () -> properties.executionTimeoutInMilliseconds().get());
+        metricRegistry.register(createMetricName("propertyValue_executionTimeoutInMilliseconds"), (Gauge<Number>) () -> properties.executionTimeoutInMilliseconds().get());
+        metricRegistry.register(createMetricName("propertyValue_executionIsolationStrategy"), (Gauge<String>) () -> properties.executionIsolationStrategy().get().name());
+        metricRegistry.register(createMetricName("propertyValue_metricsRollingPercentileEnabled"), (Gauge<Boolean>) () -> properties.metricsRollingPercentileEnabled().get());
+        metricRegistry.register(createMetricName("propertyValue_requestCacheEnabled"), (Gauge<Boolean>) () -> properties.requestCacheEnabled().get());
+        metricRegistry.register(createMetricName("propertyValue_requestLogEnabled"), (Gauge<Boolean>) () -> properties.requestLogEnabled().get());
+        metricRegistry.register(createMetricName("propertyValue_executionIsolationSemaphoreMaxConcurrentRequests"), (Gauge<Number>) () -> properties.executionIsolationSemaphoreMaxConcurrentRequests().get());
+        metricRegistry.register(createMetricName("propertyValue_fallbackIsolationSemaphoreMaxConcurrentRequests"), (Gauge<Number>) () -> properties.fallbackIsolationSemaphoreMaxConcurrentRequests().get());
     }
 
     protected String createMetricName(String name) {
@@ -488,47 +153,31 @@ public class HystrixCodaHaleMetricsPublisherCommand implements HystrixMetricsPub
     }
 
     protected void createCumulativeCountForEvent(final String name, final HystrixRollingNumberEvent event) {
-        metricRegistry.register(createMetricName(name), new Gauge<Long>() {
-            @Override
-            public Long getValue() {
-                return metrics.getCumulativeCount(event);
-            }
-        });
+        metricRegistry.register(createMetricName(name), (Gauge<Long>) () -> metrics.getCumulativeCount(event));
     }
 
     protected void safelyCreateCumulativeCountForEvent(final String name, final Func0<HystrixRollingNumberEvent> eventThunk) {
-        metricRegistry.register(createMetricName(name), new Gauge<Long>() {
-            @Override
-            public Long getValue() {
-                try {
-                    return metrics.getCumulativeCount(eventThunk.call());
-                } catch (NoSuchFieldError error) {
-                    logger.error("While publishing CodaHale metrics, error looking up eventType for : " + name + ".  Please check that all Hystrix versions are the same!");
-                    return 0L;
-                }
+        metricRegistry.register(createMetricName(name), (Gauge<Long>) () -> {
+            try {
+                return metrics.getCumulativeCount(eventThunk.call());
+            } catch (NoSuchFieldError error) {
+                logger.error("While publishing CodaHale metrics, error looking up eventType for : " + name + ".  Please check that all Hystrix versions are the same!");
+                return 0L;
             }
         });
     }
 
     protected void createRollingCountForEvent(final String name, final HystrixRollingNumberEvent event) {
-        metricRegistry.register(createMetricName(name), new Gauge<Long>() {
-            @Override
-            public Long getValue() {
-                return metrics.getRollingCount(event);
-            }
-        });
+        metricRegistry.register(createMetricName(name), (Gauge<Long>) () -> metrics.getRollingCount(event));
     }
 
     protected void safelyCreateRollingCountForEvent(final String name, final Func0<HystrixRollingNumberEvent> eventThunk) {
-        metricRegistry.register(createMetricName(name), new Gauge<Long>() {
-            @Override
-            public Long getValue() {
-                try {
-                    return metrics.getRollingCount(eventThunk.call());
-                } catch (NoSuchFieldError error) {
-                    logger.error("While publishing CodaHale metrics, error looking up eventType for : " + name + ".  Please check that all Hystrix versions are the same!");
-                    return 0L;
-                }
+        metricRegistry.register(createMetricName(name), (Gauge<Long>) () -> {
+            try {
+                return metrics.getRollingCount(eventThunk.call());
+            } catch (NoSuchFieldError error) {
+                logger.error("While publishing CodaHale metrics, error looking up eventType for : " + name + ".  Please check that all Hystrix versions are the same!");
+                return 0L;
             }
         });
     }

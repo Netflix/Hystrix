@@ -302,23 +302,13 @@ public class RollingCommandMaxConcurrencyStreamTest extends CommandStreamTest {
         }
 
         for (final Command saturatingCmd: saturators) {
-            threadPool.submit(new HystrixContextRunnable(new Runnable() {
-                @Override
-                public void run() {
-                    saturatingCmd.observe();
-                }
-            }));
+            threadPool.submit(new HystrixContextRunnable(() -> saturatingCmd.observe()));
         }
 
         Thread.sleep(30);
 
         for (final Command rejectedCmd: rejected) {
-            threadPool.submit(new HystrixContextRunnable(new Runnable() {
-                @Override
-                public void run() {
-                    rejectedCmd.observe();
-                }
-            }));
+            threadPool.submit(new HystrixContextRunnable(() -> rejectedCmd.observe()));
         }
 
         assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));

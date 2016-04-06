@@ -55,117 +55,44 @@ public class HystrixCodaHaleMetricsPublisherThreadPool implements HystrixMetrics
      */
     @Override
     public void initialize() {
-        metricRegistry.register(createMetricName("name"), new Gauge<String>() {
-            @Override
-            public String getValue() {
-                return key.name();
-            }
-        });
+        metricRegistry.register(createMetricName("name"), (Gauge<String>) () -> key.name());
 
         // allow monitor to know exactly at what point in time these stats are for so they can be plotted accurately
-        metricRegistry.register(createMetricName("currentTime"), new Gauge<Long>() {
-            @Override
-            public Long getValue() {
-                return System.currentTimeMillis();
+        metricRegistry.register(createMetricName("currentTime"), (Gauge<Long>) () -> System.currentTimeMillis());
+
+        metricRegistry.register(createMetricName("threadActiveCount"), (Gauge<Number>) () -> metrics.getCurrentActiveCount());
+
+        metricRegistry.register(createMetricName("completedTaskCount"), (Gauge<Number>) () -> metrics.getCurrentCompletedTaskCount());
+
+        metricRegistry.register(createMetricName("largestPoolSize"), (Gauge<Number>) () -> metrics.getCurrentLargestPoolSize());
+
+        metricRegistry.register(createMetricName("totalTaskCount"), (Gauge<Number>) () -> metrics.getCurrentTaskCount());
+
+        metricRegistry.register(createMetricName("queueSize"), (Gauge<Number>) () -> metrics.getCurrentQueueSize());
+
+        metricRegistry.register(createMetricName("rollingMaxActiveThreads"), (Gauge<Number>) () -> metrics.getRollingMaxActiveThreads());
+
+        metricRegistry.register(createMetricName("countThreadsExecuted"), (Gauge<Number>) () -> metrics.getCumulativeCountThreadsExecuted());
+
+        metricRegistry.register(createMetricName("rollingCountCommandsRejected"), (Gauge<Number>) () -> {
+            try {
+                return metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED);
+            } catch (NoSuchFieldError error) {
+                logger.error("While publishing CodaHale metrics, error looking up eventType for : rollingCountCommandsRejected.  Please check that all Hystrix versions are the same!");
+                return 0L;
             }
         });
 
-        metricRegistry.register(createMetricName("threadActiveCount"), new Gauge<Number>() {
-            @Override
-            public Number getValue() {
-                return metrics.getCurrentActiveCount();
-            }
-        });
-
-        metricRegistry.register(createMetricName("completedTaskCount"), new Gauge<Number>() {
-            @Override
-            public Number getValue() {
-                return metrics.getCurrentCompletedTaskCount();
-            }
-        });
-
-        metricRegistry.register(createMetricName("largestPoolSize"), new Gauge<Number>() {
-            @Override
-            public Number getValue() {
-                return metrics.getCurrentLargestPoolSize();
-            }
-        });
-
-        metricRegistry.register(createMetricName("totalTaskCount"), new Gauge<Number>() {
-            @Override
-            public Number getValue() {
-                return metrics.getCurrentTaskCount();
-            }
-        });
-
-        metricRegistry.register(createMetricName("queueSize"), new Gauge<Number>() {
-            @Override
-            public Number getValue() {
-                return metrics.getCurrentQueueSize();
-            }
-        });
-
-        metricRegistry.register(createMetricName("rollingMaxActiveThreads"), new Gauge<Number>() {
-            @Override
-            public Number getValue() {
-                return metrics.getRollingMaxActiveThreads();
-            }
-        });
-
-        metricRegistry.register(createMetricName("countThreadsExecuted"), new Gauge<Number>() {
-            @Override
-            public Number getValue() {
-                return metrics.getCumulativeCountThreadsExecuted();
-            }
-        });
-
-        metricRegistry.register(createMetricName("rollingCountCommandsRejected"), new Gauge<Number>() {
-            @Override
-            public Number getValue() {
-                try {
-                    return metrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED);
-                } catch (NoSuchFieldError error) {
-                    logger.error("While publishing CodaHale metrics, error looking up eventType for : rollingCountCommandsRejected.  Please check that all Hystrix versions are the same!");
-                    return 0L;
-                }
-            }
-        });
-
-        metricRegistry.register(createMetricName("rollingCountThreadsExecuted"), new Gauge<Number>() {
-            @Override
-            public Number getValue() {
-                return metrics.getRollingCountThreadsExecuted();
-            }
-        });
+        metricRegistry.register(createMetricName("rollingCountThreadsExecuted"), (Gauge<Number>) () -> metrics.getRollingCountThreadsExecuted());
 
         // properties
-        metricRegistry.register(createMetricName("propertyValue_corePoolSize"), new Gauge<Number>() {
-            @Override
-            public Number getValue() {
-                return properties.coreSize().get();
-            }
-        });
+        metricRegistry.register(createMetricName("propertyValue_corePoolSize"), (Gauge<Number>) () -> properties.coreSize().get());
 
-        metricRegistry.register(createMetricName("propertyValue_keepAliveTimeInMinutes"), new Gauge<Number>() {
-            @Override
-            public Number getValue() {
-                return properties.keepAliveTimeMinutes().get();
-            }
-        });
+        metricRegistry.register(createMetricName("propertyValue_keepAliveTimeInMinutes"), (Gauge<Number>) () -> properties.keepAliveTimeMinutes().get());
 
-        metricRegistry.register(createMetricName("propertyValue_queueSizeRejectionThreshold"), new Gauge<Number>() {
-            @Override
-            public Number getValue() {
-                return properties.queueSizeRejectionThreshold().get();
-            }
-        });
+        metricRegistry.register(createMetricName("propertyValue_queueSizeRejectionThreshold"), (Gauge<Number>) () -> properties.queueSizeRejectionThreshold().get());
 
-        metricRegistry.register(createMetricName("propertyValue_maxQueueSize"), new Gauge<Number>() {
-            @Override
-            public Number getValue() {
-                return properties.maxQueueSize().get();
-            }
-        });
+        metricRegistry.register(createMetricName("propertyValue_maxQueueSize"), (Gauge<Number>) () -> properties.maxQueueSize().get());
     }
 
     protected String createMetricName(String name) {

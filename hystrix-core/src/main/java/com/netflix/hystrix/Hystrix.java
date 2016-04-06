@@ -114,14 +114,7 @@ public class Hystrix {
         } catch (Exception e) {
             logger.warn("Unable to record command starting", e);
         }
-        return new Action0() {
-
-            @Override
-            public void call() {
-                endCurrentThreadExecutingCommand(list);
-            }
-
-        };
+        return () -> endCurrentThreadExecutingCommand(list);
     }
 
     /* package */static void endCurrentThreadExecutingCommand() {

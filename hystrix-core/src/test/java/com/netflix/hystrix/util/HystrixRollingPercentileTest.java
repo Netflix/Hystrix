@@ -367,30 +367,24 @@ public class HystrixRollingPercentileTest {
 
         final Random r = new Random();
 
-        Future<?> metricsPoller = threadPool.submit(new Runnable() {
-            @Override
-            public void run() {
-                while (!Thread.currentThread().isInterrupted()) {
-                    aggregateMetrics.addAndGet(p.getMean() + p.getPercentile(10) + p.getPercentile(50) + p.getPercentile(90));
-                    //System.out.println("AGGREGATE : " + p.getPercentile(10) + " : " + p.getPercentile(50) + " : " + p.getPercentile(90));
-                }
+        Future<?> metricsPoller = threadPool.submit(() -> {
+            while (!Thread.currentThread().isInterrupted()) {
+                aggregateMetrics.addAndGet(p.getMean() + p.getPercentile(10) + p.getPercentile(50) + p.getPercentile(90));
+                //System.out.println("AGGREGATE : " + p.getPercentile(10) + " : " + p.getPercentile(50) + " : " + p.getPercentile(90));
             }
         });
 
         for (int i = 0; i < NUM_THREADS; i++) {
             final int threadId = i;
-            threadPool.submit(new Runnable() {
-                @Override
-                public void run() {
-                    for (int j = 1; j < NUM_ITERATIONS / NUM_THREADS + 1; j++) {
-                        int nextInt = r.nextInt(100);
-                        p.addValue(nextInt);
-                        if (threadId == 0) {
-                            time.increment(1);
-                        }
+            threadPool.submit(() -> {
+                for (int j = 1; j < NUM_ITERATIONS / NUM_THREADS + 1; j++) {
+                    int nextInt = r.nextInt(100);
+                    p.addValue(nextInt);
+                    if (threadId == 0) {
+                        time.increment(1);
                     }
-                    latch.countDown();
                 }
+                latch.countDown();
             });
         }
 
@@ -420,16 +414,13 @@ public class HystrixRollingPercentileTest {
         final AtomicInteger added = new AtomicInteger(0);
 
         for (int i = 0; i < NUM_THREADS; i++) {
-            threadPool.submit(new Runnable() {
-                @Override
-                public void run() {
-                    for (int j = 1; j < NUM_ITERATIONS / NUM_THREADS + 1; j++) {
-                        int nextInt = r.nextInt(100);
-                        p.addValue(nextInt);
-                        added.getAndIncrement();
-                    }
-                    latch.countDown();
+            threadPool.submit(() -> {
+                for (int j = 1; j < NUM_ITERATIONS / NUM_THREADS + 1; j++) {
+                    int nextInt = r.nextInt(100);
+                    p.addValue(nextInt);
+                    added.getAndIncrement();
                 }
+                latch.countDown();
             });
         }
 

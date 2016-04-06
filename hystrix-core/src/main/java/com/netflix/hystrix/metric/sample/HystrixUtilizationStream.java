@@ -37,12 +37,7 @@ public class HystrixUtilizationStream {
 
     public HystrixUtilizationStream(final int intervalInMilliseconds) {
         this.intervalInMilliseconds = intervalInMilliseconds;
-        this.timer = Observable.defer(new Func0<Observable<Long>>() {
-            @Override
-            public Observable<Long> call() {
-                return Observable.interval(intervalInMilliseconds, TimeUnit.MILLISECONDS);
-            }
-        });
+        this.timer = Observable.defer(() -> Observable.interval(intervalInMilliseconds, TimeUnit.MILLISECONDS));
     }
 
     public Observable<HystrixUtilization> observe() {
@@ -70,39 +65,28 @@ public class HystrixUtilizationStream {
     }
 
     private static final Func1<Long, Map<HystrixCommandKey, HystrixCommandUtilization>> getAllCommandUtilization =
-            new Func1<Long, Map<HystrixCommandKey, HystrixCommandUtilization>>() {
-                @Override
-                public Map<HystrixCommandKey, HystrixCommandUtilization> call(Long timestamp) {
-                    Map<HystrixCommandKey, HystrixCommandUtilization> commandUtilizationPerKey = new HashMap<>();
-                    for (HystrixCommandMetrics commandMetrics: HystrixCommandMetrics.getInstances()) {
-                        HystrixCommandKey commandKey = commandMetrics.getCommandKey();
-                        commandUtilizationPerKey.put(commandKey, sampleCommandUtilization(commandMetrics));
-                    }
-                    return commandUtilizationPerKey;
+            timestamp -> {
+                Map<HystrixCommandKey, HystrixCommandUtilization> commandUtilizationPerKey = new HashMap<>();
+                for (HystrixCommandMetrics commandMetrics: HystrixCommandMetrics.getInstances()) {
+                    HystrixCommandKey commandKey = commandMetrics.getCommandKey();
+                    commandUtilizationPerKey.put(commandKey, sampleCommandUtilization(commandMetrics));
                 }
+                return commandUtilizationPerKey;
             };
 
     private static final Func1<Long, Map<HystrixThreadPoolKey, HystrixThreadPoolUtilization>> getAllThreadPoolUtilization =
-            new Func1<Long, Map<HystrixThreadPoolKey, HystrixThreadPoolUtilization>>() {
-                @Override
-                public Map<HystrixThreadPoolKey, HystrixThreadPoolUtilization> call(Long timestamp) {
-                    Map<HystrixThreadPoolKey, HystrixThreadPoolUtilization> threadPoolUtilizationPerKey = new HashMap<>();
-                    for (HystrixThreadPoolMetrics threadPoolMetrics: HystrixThreadPoolMetrics.getInstances()) {
-                        HystrixThreadPoolKey threadPoolKey = threadPoolMetrics.getThreadPoolKey();
-                        threadPoolUtilizationPerKey.put(threadPoolKey, sampleThreadPoolUtilization(threadPoolMetrics));
-                    }
-                    return threadPoolUtilizationPerKey;
+            timestamp -> {
+                Map<HystrixThreadPoolKey, HystrixThreadPoolUtilization> threadPoolUtilizationPerKey = new HashMap<>();
+                for (HystrixThreadPoolMetrics threadPoolMetrics: HystrixThreadPoolMetrics.getInstances()) {
+                    HystrixThreadPoolKey threadPoolKey = threadPoolMetrics.getThreadPoolKey();
+                    threadPoolUtilizationPerKey.put(threadPoolKey, sampleThreadPoolUtilization(threadPoolMetrics));
                 }
+                return threadPoolUtilizationPerKey;
             };
 
     private static final Func1<Long, HystrixUtilization> getAllUtilization =
-            new Func1<Long, HystrixUtilization>() {
-                @Override
-                public HystrixUtilization call(Long timestamp) {
-                    return HystrixUtilization.from(
-                            getAllCommandUtilization.call(timestamp),
-                            getAllThreadPoolUtilization.call(timestamp)
-                    );
-                }
-            };
+            timestamp -> HystrixUtilization.from(
+                    getAllCommandUtilization.call(timestamp),
+                    getAllThreadPoolUtilization.call(timestamp)
+            );
 }

@@ -227,24 +227,9 @@ public class HystrixServoMetricsPublisherCollapser extends HystrixServoMetricsPu
         });
 
         //collapser event cumulative metrics
-        monitors.add(safelyGetCumulativeMonitor("countRequestsBatched", new Func0<HystrixEventType.Collapser>() {
-            @Override
-            public HystrixEventType.Collapser call() {
-                return HystrixEventType.Collapser.ADDED_TO_BATCH;
-            }
-        }));
-        monitors.add(safelyGetCumulativeMonitor("countBatches", new Func0<HystrixEventType.Collapser>() {
-            @Override
-            public HystrixEventType.Collapser call() {
-                return HystrixEventType.Collapser.BATCH_EXECUTED;
-            }
-        }));
-        monitors.add(safelyGetCumulativeMonitor("countResponsesFromCache", new Func0<HystrixEventType.Collapser>() {
-            @Override
-            public HystrixEventType.Collapser call() {
-                return HystrixEventType.Collapser.RESPONSE_FROM_CACHE;
-            }
-        }));
+        monitors.add(safelyGetCumulativeMonitor("countRequestsBatched", () -> HystrixEventType.Collapser.ADDED_TO_BATCH));
+        monitors.add(safelyGetCumulativeMonitor("countBatches", () -> HystrixEventType.Collapser.BATCH_EXECUTED));
+        monitors.add(safelyGetCumulativeMonitor("countResponsesFromCache", () -> HystrixEventType.Collapser.RESPONSE_FROM_CACHE));
 
         //batch size distribution metrics
         monitors.add(getBatchSizeMeanMonitor("batchSize_mean"));

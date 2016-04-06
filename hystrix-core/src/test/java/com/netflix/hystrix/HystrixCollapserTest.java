@@ -390,13 +390,9 @@ public class HystrixCollapserTest {
 
         // kick off work (simulating a single request with multiple threads)
         for (int t = 0; t < 5; t++) {
-            Thread th = new Thread(new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), new Runnable() {
-
-                @Override
-                public void run() {
-                    for (int i = 0; i < 100; i++) {
-                        responses.add(new TestRequestCollapser(timer, 1).queue());
-                    }
+            Thread th = new Thread(new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), () -> {
+                for (int i = 0; i < 100; i++) {
+                    responses.add(new TestRequestCollapser(timer, 1).queue());
                 }
             }));
 
@@ -1272,14 +1268,7 @@ public class HystrixCollapserTest {
     }
 
     private static HystrixCollapserKey collapserKeyFromString(final Object o) {
-        return new HystrixCollapserKey() {
-
-            @Override
-            public String name() {
-                return String.valueOf(o);
-            }
-
-        };
+        return () -> String.valueOf(o);
     }
 
     private static class TestCollapserWithVoidResponseType extends HystrixCollapser<Void, Void, Integer> {

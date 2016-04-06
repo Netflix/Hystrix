@@ -48,27 +48,19 @@ public abstract class BucketedCounterStream<Event extends HystrixEvent, Bucket, 
     protected BucketedCounterStream(final HystrixEventStream<Event> inputEventStream, final int numBuckets, final int bucketSizeInMs,
                                     final Func2<Bucket, Event, Bucket> appendRawEventToBucket) {
         this.numBuckets = numBuckets;
-        this.reduceBucketToSummary = new Func1<Observable<Event>, Observable<Bucket>>() {
-            @Override
-            public Observable<Bucket> call(Observable<Event> eventBucket) {
-                return eventBucket.reduce(getEmptyBucketSummary(), appendRawEventToBucket);
-            }
-        };
+        this.reduceBucketToSummary = eventBucket -> eventBucket.reduce(getEmptyBucketSummary(), appendRawEventToBucket);
 
         final List<Bucket> emptyEventCountsToStart = new ArrayList<>();
         for (int i = 0; i < numBuckets; i++) {
             emptyEventCountsToStart.add(getEmptyBucketSummary());
         }
 
-        this.bucketedStream = Observable.defer(new Func0<Observable<Bucket>>() {
-            @Override
-            public Observable<Bucket> call() {
-                return inputEventStream
-                        .observe()
-                        .window(bucketSizeInMs, TimeUnit.MILLISECONDS) //bucket it by the counter window so we can emit to the next operator in time chunks, not on every OnNext
-                        .flatMap(reduceBucketToSummary)                //for a given bucket, turn it into a long array containing counts of event types
-                        .startWith(emptyEventCountsToStart);           //start it with empty arrays to make consumer logic as generic as possible (windows are always full)
-            }
+        this.bucketedStream = Observable.defer(() -> {
+            return inputEventStream
+                    .observe()
+                    .window(bucketSizeInMs, TimeUnit.MILLISECONDS) //bucket it by the counter window so we can emit to the next operator in time chunks, not on every OnNext
+                    .flatMap(reduceBucketToSummary)                //for a given bucket, turn it into a long array containing counts of event types
+                    .startWith(emptyEventCountsToStart);           //start it with empty arrays to make consumer logic as generic as possible (windows are always full)
         });
     }
 

@@ -91,15 +91,11 @@ public class HystrixTimer {
         startThreadIfNeeded();
         // add the listener
 
-        Runnable r = new Runnable() {
-
-            @Override
-            public void run() {
-                try {
-                    listener.tick();
-                } catch (Exception e) {
-                    logger.error("Failed while ticking TimerListener", e);
-                }
+        Runnable r = () -> {
+            try {
+                listener.tick();
+            } catch (Exception e) {
+                logger.error("Failed while ticking TimerListener", e);
             }
         };
 

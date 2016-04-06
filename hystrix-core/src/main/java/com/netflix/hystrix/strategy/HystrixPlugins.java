@@ -85,12 +85,7 @@ public class HystrixPlugins {
      * @ExcludeFromJavadoc
      */
     /* private */ static HystrixPlugins create(ClassLoader classLoader) {
-        return new HystrixPlugins(classLoader, new LoggerSupplier() {
-            @Override
-            public Logger getLogger() {
-                return LoggerFactory.getLogger(HystrixPlugins.class);
-            }
-        });
+        return new HystrixPlugins(classLoader, () -> LoggerFactory.getLogger(HystrixPlugins.class));
     }
     /**
      * @ExcludeFromJavadoc

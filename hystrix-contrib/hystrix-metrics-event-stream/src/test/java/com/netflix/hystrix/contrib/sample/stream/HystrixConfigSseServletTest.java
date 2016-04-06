@@ -59,12 +59,7 @@ public class HystrixConfigSseServletTest {
     });
 
     private Func1<Integer, Observable<HystrixConfiguration>> generateStream(final Observable<HystrixConfiguration> o) {
-        return new Func1<Integer, Observable<HystrixConfiguration>>() {
-            @Override
-            public Observable<HystrixConfiguration> call(Integer integer) {
-                return o;
-            }
-        };
+        return integer -> o;
     }
 
     private final Observable<HystrixConfiguration> streamOfOnNextThenOnError = Observable.create(new Observable.OnSubscribe<HystrixConfiguration>() {
@@ -137,29 +132,23 @@ public class HystrixConfigSseServletTest {
 
         when(mockReq.getParameter("delay")).thenReturn("100");
         when(mockResp.getWriter()).thenReturn(mockPrintWriter);
-        Mockito.doAnswer(new Answer<Void>() {
-            @Override
-            public Void answer(InvocationOnMock invocation) throws Throwable {
-                String written = (String) invocation.getArguments()[0];
-                System.out.println("ARG : " + written);
+        Mockito.doAnswer(invocation -> {
+            String written = (String) invocation.getArguments()[0];
+            System.out.println("ARG : " + written);
 
-                if (!written.contains("ping")) {
-                    writes.incrementAndGet();
-                }
-                return null;
+            if (!written.contains("ping")) {
+                writes.incrementAndGet();
             }
+            return null;
         }).when(mockPrintWriter).print(Mockito.anyString());
 
-        Runnable simulateClient = new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    servlet.doGet(mockReq, mockResp);
-                } catch (ServletException ex) {
-                    fail(ex.getMessage());
-                } catch (IOException ex) {
-                    fail(ex.getMessage());
-                }
+        Runnable simulateClient = () -> {
+            try {
+                servlet.doGet(mockReq, mockResp);
+            } catch (ServletException ex) {
+                fail(ex.getMessage());
+            } catch (IOException ex) {
+                fail(ex.getMessage());
             }
         };
 
@@ -199,29 +188,23 @@ public class HystrixConfigSseServletTest {
 
         when(mockReq.getParameter("delay")).thenReturn("100");
         when(mockResp.getWriter()).thenReturn(mockPrintWriter);
-        Mockito.doAnswer(new Answer<Void>() {
-            @Override
-            public Void answer(InvocationOnMock invocation) throws Throwable {
-                String written = (String) invocation.getArguments()[0];
-                System.out.println("ARG : " + written);
+        Mockito.doAnswer(invocation -> {
+            String written = (String) invocation.getArguments()[0];
+            System.out.println("ARG : " + written);
 
-                if (!written.contains("ping")) {
-                    writes.incrementAndGet();
-                }
-                return null;
+            if (!written.contains("ping")) {
+                writes.incrementAndGet();
             }
+            return null;
         }).when(mockPrintWriter).print(Mockito.anyString());
 
-        Runnable simulateClient = new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    servlet.doGet(mockReq, mockResp);
-                } catch (ServletException ex) {
-                    fail(ex.getMessage());
-                } catch (IOException ex) {
-                    fail(ex.getMessage());
-                }
+        Runnable simulateClient = () -> {
+            try {
+                servlet.doGet(mockReq, mockResp);
+            } catch (ServletException ex) {
+                fail(ex.getMessage());
+            } catch (IOException ex) {
+                fail(ex.getMessage());
             }
         };
 
@@ -252,29 +235,23 @@ public class HystrixConfigSseServletTest {
 
         when(mockReq.getParameter("delay")).thenReturn("100");
         when(mockResp.getWriter()).thenReturn(mockPrintWriter);
-        Mockito.doAnswer(new Answer<Void>() {
-            @Override
-            public Void answer(InvocationOnMock invocation) throws Throwable {
-                String written = (String) invocation.getArguments()[0];
-                System.out.println("ARG : " + written);
+        Mockito.doAnswer(invocation -> {
+            String written = (String) invocation.getArguments()[0];
+            System.out.println("ARG : " + written);
 
-                if (!written.contains("ping")) {
-                    writes.incrementAndGet();
-                }
-                return null;
+            if (!written.contains("ping")) {
+                writes.incrementAndGet();
             }
+            return null;
         }).when(mockPrintWriter).print(Mockito.anyString());
 
-        Runnable simulateClient = new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    servlet.doGet(mockReq, mockResp);
-                } catch (ServletException ex) {
-                    fail(ex.getMessage());
-                } catch (IOException ex) {
-                    fail(ex.getMessage());
-                }
+        Runnable simulateClient = () -> {
+            try {
+                servlet.doGet(mockReq, mockResp);
+            } catch (ServletException ex) {
+                fail(ex.getMessage());
+            } catch (IOException ex) {
+                fail(ex.getMessage());
             }
         };
 
@@ -305,29 +282,23 @@ public class HystrixConfigSseServletTest {
 
         when(mockReq.getParameter("delay")).thenReturn("100");
         when(mockResp.getWriter()).thenReturn(mockPrintWriter);
-        Mockito.doAnswer(new Answer<Void>() {
-            @Override
-            public Void answer(InvocationOnMock invocation) throws Throwable {
-                String written = (String) invocation.getArguments()[0];
-                System.out.println("ARG : " + written);
+        Mockito.doAnswer(invocation -> {
+            String written = (String) invocation.getArguments()[0];
+            System.out.println("ARG : " + written);
 
-                if (!written.contains("ping")) {
-                    writes.incrementAndGet();
-                }
-                throw new IOException("simulated IO Exception");
+            if (!written.contains("ping")) {
+                writes.incrementAndGet();
             }
+            throw new IOException("simulated IO Exception");
         }).when(mockPrintWriter).print(Mockito.anyString());
 
-        Runnable simulateClient = new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    servlet.doGet(mockReq, mockResp);
-                } catch (ServletException ex) {
-                    fail(ex.getMessage());
-                } catch (IOException ex) {
-                    fail(ex.getMessage());
-                }
+        Runnable simulateClient = () -> {
+            try {
+                servlet.doGet(mockReq, mockResp);
+            } catch (ServletException ex) {
+                fail(ex.getMessage());
+            } catch (IOException ex) {
+                fail(ex.getMessage());
             }
         };
 

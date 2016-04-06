@@ -67,22 +67,17 @@ public class HystrixCommandDemo {
     }
 
     public void runSimulatedRequestOnThread() {
-        pool.execute(new Runnable() {
+        pool.execute(() -> {
+            HystrixRequestContext context = HystrixRequestContext.initializeContext();
+            try {
+                executeSimulatedUserRequestForOrderConfirmationAndCreditCardPayment();
 
-            @Override
-            public void run() {
-                HystrixRequestContext context = HystrixRequestContext.initializeContext();
-                try {
-                    executeSimulatedUserRequestForOrderConfirmationAndCreditCardPayment();
-
-                    System.out.println("Request => " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
-                } catch (Exception e) {
-                    e.printStackTrace();
-                } finally {
-                    context.shutdown();
-                }
+                System.out.println("Request => " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                context.shutdown();
             }
-
         });
     }
 

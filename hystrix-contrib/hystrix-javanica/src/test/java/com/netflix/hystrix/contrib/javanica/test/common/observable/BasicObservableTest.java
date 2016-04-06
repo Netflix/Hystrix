@@ -80,12 +80,8 @@ public abstract class BasicObservableTest extends BasicHystrixTest {
         });
 
         Observable<User> fs = userService.getUser("1", "name: ");
-        fs.subscribe(new Action1<User>() {
-
-            @Override
-            public void call(User user) {
-                assertEquals("name: 1", user.getName());
-            }
+        fs.subscribe(user -> {
+            assertEquals("name: 1", user.getName());
         });
         assertEquals(3, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
         com.netflix.hystrix.HystrixInvokableInfo getUserCommand = getHystrixCommandByKey("getUser");

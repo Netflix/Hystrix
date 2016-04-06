@@ -109,14 +109,9 @@ public class HystrixRequestCacheTest {
 
     private static class TestObservable extends Observable<String> {
         public TestObservable(final String value) {
-            super(new OnSubscribe<String>() {
-
-                @Override
-                public void call(Subscriber<? super String> observer) {
-                    observer.onNext(value);
-                    observer.onCompleted();
-                }
-
+            super(observer -> {
+                observer.onNext(value);
+                observer.onCompleted();
             });
         }
     }

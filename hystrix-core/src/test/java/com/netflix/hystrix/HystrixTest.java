@@ -372,12 +372,7 @@ public class HystrixTest {
         int NUM_COMMANDS = 50;
         List<Observable<Integer>> commands = new ArrayList<>();
         for (int i = 0; i < NUM_COMMANDS; i++) {
-            commands.add(Observable.defer(new Func0<Observable<Integer>>() {
-                @Override
-                public Observable<Integer> call() {
-                    return new AsynchronousObservableCommand().observe();
-                }
-            }));
+            commands.add(Observable.defer(() -> new AsynchronousObservableCommand().observe()));
         }
 
         final AtomicBoolean exceptionFound = new AtomicBoolean(false);
