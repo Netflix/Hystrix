@@ -386,13 +386,7 @@ import java.util.concurrent.atomic.AtomicReference;
                             /* used to track userThreadExecutionTime */
                             executionResult = executionResult.setInvocationStartTime(System.currentTimeMillis());
                             getRunObservableDecoratedForMetricsAndErrorHandling()
-                                    .doOnTerminate(() -> {
-                                        // release the semaphore
-                                        // this is done here instead of below so that the acquire/release happens where it is guaranteed
-                                        // and not affected by the conditional circuit-breaker checks, timeouts, etc
-                                        executionSemaphore.release();
-
-                                    }).unsafeSubscribe(observer);
+                                    .doOnTerminate(executionSemaphore::release).unsafeSubscribe(observer);
                         } catch (RuntimeException e) {
                             observer.onError(e);
                         }
@@ -702,7 +696,7 @@ import java.util.concurrent.atomic.AtomicReference;
                     fallbackExecutionChain =  fallbackExecutionChain
                             .lift(new FallbackHookApplication(_cmd))
                             .lift(new DeprecatedOnFallbackHookApplication(_cmd))
-                            .doOnTerminate(() -> fallbackSemaphore.release());
+                            .doOnTerminate(fallbackSemaphore::release);
                 } else {
                     long latencyWithFallback = System.currentTimeMillis() - executionResult.getStartTimestamp();
                     eventNotifier.markEvent(HystrixEventType.FALLBACK_REJECTION, commandKey);
@@ -1033,7 +1027,7 @@ import java.util.concurrent.atomic.AtomicReference;
         }
 
         ObservableCommand(final Observable<R> originalObservable, final AbstractCommand<R> command) {
-            super(observer -> originalObservable.unsafeSubscribe(observer));
+            super(originalObservable::unsafeSubscribe);
             this.command = command;
         }
 
@@ -1051,9 +1045,7 @@ import java.util.concurrent.atomic.AtomicReference;
         final AbstractCommand<R> originalCommand;
 
         CachedObservableOriginal(final Observable<R> actual, AbstractCommand<R> command) {
-            super(observer -> {
-                actual.unsafeSubscribe(observer);
-            }, command);
+            super(actual::unsafeSubscribe, command);
             this.originalCommand = command;
         }
     }

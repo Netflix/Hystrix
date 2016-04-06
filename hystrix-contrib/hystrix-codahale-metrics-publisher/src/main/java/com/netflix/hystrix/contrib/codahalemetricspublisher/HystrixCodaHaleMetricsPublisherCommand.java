@@ -62,10 +62,10 @@ public class HystrixCodaHaleMetricsPublisherCommand implements HystrixMetricsPub
      */
     @Override
     public void initialize() {
-        metricRegistry.register(createMetricName("isCircuitBreakerOpen"), (Gauge<Boolean>) () -> circuitBreaker.isOpen());
+        metricRegistry.register(createMetricName("isCircuitBreakerOpen"), (Gauge<Boolean>) circuitBreaker::isOpen);
 
         // allow monitor to know exactly at what point in time these stats are for so they can be plotted accurately
-        metricRegistry.register(createMetricName("currentTime"), (Gauge<Long>) () -> System.currentTimeMillis());
+        metricRegistry.register(createMetricName("currentTime"), (Gauge<Long>) System::currentTimeMillis);
 
         // cumulative counts
         safelyCreateCumulativeCountForEvent("countBadRequests", () -> HystrixRollingNumberEvent.BAD_REQUEST);
@@ -104,13 +104,13 @@ public class HystrixCodaHaleMetricsPublisherCommand implements HystrixMetricsPub
         safelyCreateRollingCountForEvent("rollingCountTimeout", () -> HystrixRollingNumberEvent.TIMEOUT);
 
         // the number of executionSemaphorePermits in use right now
-        metricRegistry.register(createMetricName("executionSemaphorePermitsInUse"), (Gauge<Integer>) () -> metrics.getCurrentConcurrentExecutionCount());
+        metricRegistry.register(createMetricName("executionSemaphorePermitsInUse"), (Gauge<Integer>) metrics::getCurrentConcurrentExecutionCount);
 
         // error percentage derived from current metrics
         metricRegistry.register(createMetricName("errorPercentage"), (Gauge<Integer>) () -> metrics.getHealthCounts().getErrorPercentage());
 
         // latency metrics
-        metricRegistry.register(createMetricName("latencyExecute_mean"), (Gauge<Integer>) () -> metrics.getExecutionTimeMean());
+        metricRegistry.register(createMetricName("latencyExecute_mean"), (Gauge<Integer>) metrics::getExecutionTimeMean);
         metricRegistry.register(createMetricName("latencyExecute_percentile_5"), (Gauge<Integer>) () -> metrics.getExecutionTimePercentile(5));
         metricRegistry.register(createMetricName("latencyExecute_percentile_25"), (Gauge<Integer>) () -> metrics.getExecutionTimePercentile(25));
         metricRegistry.register(createMetricName("latencyExecute_percentile_50"), (Gauge<Integer>) () -> metrics.getExecutionTimePercentile(50));
@@ -119,7 +119,7 @@ public class HystrixCodaHaleMetricsPublisherCommand implements HystrixMetricsPub
         metricRegistry.register(createMetricName("latencyExecute_percentile_99"), (Gauge<Integer>) () -> metrics.getExecutionTimePercentile(99));
         metricRegistry.register(createMetricName("latencyExecute_percentile_995"), (Gauge<Integer>) () -> metrics.getExecutionTimePercentile(99.5));
 
-        metricRegistry.register(createMetricName("latencyTotal_mean"), (Gauge<Integer>) () -> metrics.getTotalTimeMean());
+        metricRegistry.register(createMetricName("latencyTotal_mean"), (Gauge<Integer>) metrics::getTotalTimeMean);
         metricRegistry.register(createMetricName("latencyTotal_percentile_5"), (Gauge<Integer>) () -> metrics.getTotalTimePercentile(5));
         metricRegistry.register(createMetricName("latencyTotal_percentile_25"), (Gauge<Integer>) () -> metrics.getTotalTimePercentile(25));
         metricRegistry.register(createMetricName("latencyTotal_percentile_50"), (Gauge<Integer>) () -> metrics.getTotalTimePercentile(50));

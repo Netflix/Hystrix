@@ -110,12 +110,12 @@ public class HystrixMetricsPublisherFactoryTest {
 
         @Override
         public HystrixMetricsPublisherCommand getMetricsPublisherForCommand(HystrixCommandKey commandKey, HystrixCommandGroupKey commandOwner, HystrixCommandMetrics metrics, HystrixCircuitBreaker circuitBreaker, HystrixCommandProperties properties) {
-            return () -> commandCounter.incrementAndGet();
+            return commandCounter::incrementAndGet;
         }
 
         @Override
         public HystrixMetricsPublisherThreadPool getMetricsPublisherForThreadPool(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolMetrics metrics, HystrixThreadPoolProperties properties) {
-            return () -> threadCounter.incrementAndGet();
+            return threadCounter::incrementAndGet;
         }
 
     }

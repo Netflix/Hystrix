@@ -192,7 +192,7 @@ public class HystrixPropertiesChainedArchaiusPropertyTest {
 
         final AtomicInteger callbackCount = new AtomicInteger(0);
 
-        node2.addCallback(() -> callbackCount.incrementAndGet());
+        node2.addCallback(callbackCount::incrementAndGet);
 
         assertTrue(0 == callbackCount.get());
 

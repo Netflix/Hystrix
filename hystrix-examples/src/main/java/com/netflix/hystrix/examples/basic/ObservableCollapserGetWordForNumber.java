@@ -100,7 +100,7 @@ public class ObservableCollapserGetWordForNumber extends HystrixObservableCollap
 	{
 		// Java 8: (final NumberWord nw) -> nw.getNumber();
 
-		return nw -> nw.getNumber();
+		return NumberWord::getNumber;
 	}
 
 	@Override
@@ -116,7 +116,7 @@ public class ObservableCollapserGetWordForNumber extends HystrixObservableCollap
 	{
 		// Java 8: return (final NumberWord nw) -> nw.getWord();
 
-		return nw -> nw.getWord();
+		return NumberWord::getWord;
 	}
 
 	@Override

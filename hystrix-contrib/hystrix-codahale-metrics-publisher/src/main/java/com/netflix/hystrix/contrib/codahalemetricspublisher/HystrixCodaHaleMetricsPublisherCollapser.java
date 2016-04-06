@@ -55,7 +55,7 @@ public class HystrixCodaHaleMetricsPublisherCollapser implements HystrixMetricsP
     @Override
     public void initialize() {
         // allow monitor to know exactly at what point in time these stats are for so they can be plotted accurately
-        metricRegistry.register(createMetricName("currentTime"), (Gauge<Long>) () -> System.currentTimeMillis());
+        metricRegistry.register(createMetricName("currentTime"), (Gauge<Long>) System::currentTimeMillis);
 
         // cumulative counts
         safelyCreateCumulativeCountForEvent("countRequestsBatched", () -> HystrixRollingNumberEvent.COLLAPSER_REQUEST_BATCHED);
@@ -68,7 +68,7 @@ public class HystrixCodaHaleMetricsPublisherCollapser implements HystrixMetricsP
         safelyCreateRollingCountForEvent("rollingCountResponsesFromCache", () -> HystrixRollingNumberEvent.RESPONSE_FROM_CACHE);
 
         // batch size metrics
-        metricRegistry.register(createMetricName("batchSize_mean"), (Gauge<Integer>) () -> metrics.getBatchSizeMean());
+        metricRegistry.register(createMetricName("batchSize_mean"), (Gauge<Integer>) metrics::getBatchSizeMean);
         metricRegistry.register(createMetricName("batchSize_percentile_25"), (Gauge<Integer>) () -> metrics.getBatchSizePercentile(25));
         metricRegistry.register(createMetricName("batchSize_percentile_50"), (Gauge<Integer>) () -> metrics.getBatchSizePercentile(50));
         metricRegistry.register(createMetricName("batchSize_percentile_75"), (Gauge<Integer>) () -> metrics.getBatchSizePercentile(75));
@@ -77,7 +77,7 @@ public class HystrixCodaHaleMetricsPublisherCollapser implements HystrixMetricsP
         metricRegistry.register(createMetricName("batchSize_percentile_995"), (Gauge<Integer>) () -> metrics.getBatchSizePercentile(99.5));
 
         // shard size metrics
-        metricRegistry.register(createMetricName("shardSize_mean"), (Gauge<Integer>) () -> metrics.getShardSizeMean());
+        metricRegistry.register(createMetricName("shardSize_mean"), (Gauge<Integer>) metrics::getShardSizeMean);
         metricRegistry.register(createMetricName("shardSize_percentile_25"), (Gauge<Integer>) () -> metrics.getShardSizePercentile(25));
         metricRegistry.register(createMetricName("shardSize_percentile_50"), (Gauge<Integer>) () -> metrics.getShardSizePercentile(50));
         metricRegistry.register(createMetricName("shardSize_percentile_75"), (Gauge<Integer>) () -> metrics.getShardSizePercentile(75));

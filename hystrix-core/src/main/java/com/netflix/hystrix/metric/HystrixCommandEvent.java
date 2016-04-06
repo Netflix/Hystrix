@@ -50,7 +50,7 @@ public abstract class HystrixCommandEvent implements HystrixEvent {
 
     public abstract boolean didCommandExecute();
 
-    public static final Func1<HystrixCommandEvent, Boolean> filterCompletionsOnly = commandEvent -> commandEvent.isCommandCompletion();
+    public static final Func1<HystrixCommandEvent, Boolean> filterCompletionsOnly = HystrixCommandEvent::isCommandCompletion;
 
-    public static final Func1<HystrixCommandEvent, Boolean> filterActualExecutions = commandEvent -> commandEvent.didCommandExecute();
+    public static final Func1<HystrixCommandEvent, Boolean> filterActualExecutions = HystrixCommandEvent::didCommandExecute;
 }

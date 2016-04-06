@@ -43,28 +43,28 @@ public interface HystrixProperty<T> {
          * @ExcludeFromJavadoc
          */
         public static HystrixProperty<Integer> asProperty(final DynamicIntegerProperty value) {
-            return () -> value.get();
+            return value::get;
         }
 
         /**
          * @ExcludeFromJavadoc
          */
         public static HystrixProperty<Long> asProperty(final DynamicLongProperty value) {
-            return () -> value.get();
+            return value::get;
         }
 
         /**
          * @ExcludeFromJavadoc
          */
         public static HystrixProperty<String> asProperty(final DynamicStringProperty value) {
-            return () -> value.get();
+            return value::get;
         }
 
         /**
          * @ExcludeFromJavadoc
          */
         public static HystrixProperty<Boolean> asProperty(final DynamicBooleanProperty value) {
-            return () -> value.get();
+            return value::get;
         }
 
         /**
@@ -109,7 +109,7 @@ public interface HystrixProperty<T> {
          * @ExcludeFromJavadoc
          */
         public static <T> HystrixProperty<T> asProperty(final HystrixPropertiesChainedArchaiusProperty.ChainLink<T> chainedProperty) {
-            return () -> chainedProperty.get();
+            return chainedProperty::get;
         }
 
         public static <T> HystrixProperty<T> nullProperty() {

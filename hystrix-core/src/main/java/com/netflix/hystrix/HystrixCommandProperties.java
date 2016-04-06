@@ -462,10 +462,7 @@ public abstract class HystrixCommandProperties {
             parseProperty();
 
             // use a callback to handle changes so we only handle the parse cost on updates rather than every fetch
-            property.addCallback(() -> {
-                // when the property value changes we'll update the value
-                parseProperty();
-            });
+            property.addCallback(this::parseProperty);
         }
 
         @Override

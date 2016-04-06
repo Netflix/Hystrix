@@ -349,7 +349,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
 
         for (final Command cmd: commands) {
             //since these are blocking calls on the caller thread, we need a new caller thread for each command to actually get the desired concurrency
-            new Thread(new HystrixContextRunnable(() -> cmd.observe())).start();
+            new Thread(new HystrixContextRunnable(cmd::observe)).start();
         }
 
         Command semaphoreRejected = Command.from(groupKey, key, HystrixEventType.SUCCESS);

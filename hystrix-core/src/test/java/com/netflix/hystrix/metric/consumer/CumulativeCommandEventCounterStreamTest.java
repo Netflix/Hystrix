@@ -295,7 +295,7 @@ public class CumulativeCommandEventCounterStreamTest extends CommandStreamTest {
         Command rejected2 = Command.from(groupKey, key, HystrixEventType.SUCCESS, 0, HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE);
 
         for (final Command saturator : saturators) {
-            new Thread(new HystrixContextRunnable(() -> saturator.observe())).start();
+            new Thread(new HystrixContextRunnable(saturator::observe)).start();
         }
 
         try {

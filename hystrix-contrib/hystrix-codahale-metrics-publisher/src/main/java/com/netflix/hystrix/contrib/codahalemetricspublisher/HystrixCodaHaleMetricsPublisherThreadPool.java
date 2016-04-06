@@ -55,24 +55,24 @@ public class HystrixCodaHaleMetricsPublisherThreadPool implements HystrixMetrics
      */
     @Override
     public void initialize() {
-        metricRegistry.register(createMetricName("name"), (Gauge<String>) () -> key.name());
+        metricRegistry.register(createMetricName("name"), (Gauge<String>) key::name);
 
         // allow monitor to know exactly at what point in time these stats are for so they can be plotted accurately
-        metricRegistry.register(createMetricName("currentTime"), (Gauge<Long>) () -> System.currentTimeMillis());
+        metricRegistry.register(createMetricName("currentTime"), (Gauge<Long>) System::currentTimeMillis);
 
-        metricRegistry.register(createMetricName("threadActiveCount"), (Gauge<Number>) () -> metrics.getCurrentActiveCount());
+        metricRegistry.register(createMetricName("threadActiveCount"), (Gauge<Number>) metrics::getCurrentActiveCount);
 
-        metricRegistry.register(createMetricName("completedTaskCount"), (Gauge<Number>) () -> metrics.getCurrentCompletedTaskCount());
+        metricRegistry.register(createMetricName("completedTaskCount"), (Gauge<Number>) metrics::getCurrentCompletedTaskCount);
 
-        metricRegistry.register(createMetricName("largestPoolSize"), (Gauge<Number>) () -> metrics.getCurrentLargestPoolSize());
+        metricRegistry.register(createMetricName("largestPoolSize"), (Gauge<Number>) metrics::getCurrentLargestPoolSize);
 
-        metricRegistry.register(createMetricName("totalTaskCount"), (Gauge<Number>) () -> metrics.getCurrentTaskCount());
+        metricRegistry.register(createMetricName("totalTaskCount"), (Gauge<Number>) metrics::getCurrentTaskCount);
 
-        metricRegistry.register(createMetricName("queueSize"), (Gauge<Number>) () -> metrics.getCurrentQueueSize());
+        metricRegistry.register(createMetricName("queueSize"), (Gauge<Number>) metrics::getCurrentQueueSize);
 
-        metricRegistry.register(createMetricName("rollingMaxActiveThreads"), (Gauge<Number>) () -> metrics.getRollingMaxActiveThreads());
+        metricRegistry.register(createMetricName("rollingMaxActiveThreads"), (Gauge<Number>) metrics::getRollingMaxActiveThreads);
 
-        metricRegistry.register(createMetricName("countThreadsExecuted"), (Gauge<Number>) () -> metrics.getCumulativeCountThreadsExecuted());
+        metricRegistry.register(createMetricName("countThreadsExecuted"), (Gauge<Number>) metrics::getCumulativeCountThreadsExecuted);
 
         metricRegistry.register(createMetricName("rollingCountCommandsRejected"), (Gauge<Number>) () -> {
             try {
@@ -83,7 +83,7 @@ public class HystrixCodaHaleMetricsPublisherThreadPool implements HystrixMetrics
             }
         });
 
-        metricRegistry.register(createMetricName("rollingCountThreadsExecuted"), (Gauge<Number>) () -> metrics.getRollingCountThreadsExecuted());
+        metricRegistry.register(createMetricName("rollingCountThreadsExecuted"), (Gauge<Number>) metrics::getRollingCountThreadsExecuted);
 
         // properties
         metricRegistry.register(createMetricName("propertyValue_corePoolSize"), (Gauge<Number>) () -> properties.coreSize().get());

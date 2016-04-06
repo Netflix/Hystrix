@@ -60,7 +60,7 @@ public class HystrixObservableCollapserTest {
         throw new RuntimeException("synchronous error in onMissingResponse handler");
      };
 
-    private static Action1<CollapsedRequest<String, String>> onMissingComplete = collapsedReq -> collapsedReq.setComplete();
+    private static Action1<CollapsedRequest<String, String>> onMissingComplete = CollapsedRequest::setComplete;
 
     private static Action1<CollapsedRequest<String, String>> onMissingIgnore = collapsedReq -> {
         //do nothing

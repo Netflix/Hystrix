@@ -152,7 +152,7 @@ public class HystrixServoMetricsPublisherCommand extends HystrixServoMetricsPubl
         }
     };
 
-    protected final Func0<Number> currentTimeThunk = () -> System.currentTimeMillis();
+    protected final Func0<Number> currentTimeThunk = System::currentTimeMillis;
 
     /**
      * Convert from HystrixEventType to HystrixRollingNumberEvent
