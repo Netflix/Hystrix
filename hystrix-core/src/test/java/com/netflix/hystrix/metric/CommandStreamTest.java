@@ -197,7 +197,7 @@ public abstract class CommandStreamTest {
 
         @Override
         protected HystrixCommand<List<Integer>> createCommand(Collection<CollapsedRequest<Integer, Integer>> collapsedRequests) {
-            List<Integer> args = collapsedRequests.stream().map(CollapsedRequest<Integer, Integer>::getArgument).collect(Collectors.toList());
+            List<Integer> args = collapsedRequests.stream().map(CollapsedRequest::getArgument).collect(Collectors.toList());
             return new BatchCommand(args);
         }
 

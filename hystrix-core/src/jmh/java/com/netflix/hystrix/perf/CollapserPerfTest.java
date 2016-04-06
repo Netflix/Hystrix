@@ -112,7 +112,7 @@ public class CollapserPerfTest {
 
         @Override
         protected HystrixCommand<List<String>> createCommand(Collection<CollapsedRequest<String, String>> collapsedRequests) {
-            List<String> args = collapsedRequests.stream().map(CollapsedRequest<String, String>::getArgument).collect(Collectors.toList());
+            List<String> args = collapsedRequests.stream().map(CollapsedRequest::getArgument).collect(Collectors.toList());
             return new BatchCommand(args, blackholeConsumption);
         }
 

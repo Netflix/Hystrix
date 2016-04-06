@@ -87,7 +87,7 @@ public class ObservableCollapserGetWordForNumber extends HystrixObservableCollap
 		final int count = counter.incrementAndGet();
 		System.out.println("Creating batch for " + requests.size() + " requests. Total invocations so far: " + count);
 
-		final List<Integer> numbers = requests.stream().map(CollapsedRequest<String, Integer>::getArgument).collect(Collectors.toList());
+		final List<Integer> numbers = requests.stream().map(CollapsedRequest::getArgument).collect(Collectors.toList());
 
 		return new ObservableCommandNumbersToWords(numbers);
 	}
