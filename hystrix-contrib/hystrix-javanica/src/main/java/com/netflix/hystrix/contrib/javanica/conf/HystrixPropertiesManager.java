@@ -198,6 +198,7 @@ public final class HystrixPropertiesManager {
         void set(S setter, V value) throws IllegalArgumentException;
     }
 
+    @SafeVarargs
     private static <E extends Enum<E>> E toEnum(String propName, String propValue, Class<E> enumType, E... values) throws IllegalArgumentException {
         try {
             return Enum.valueOf(enumType, propValue);
