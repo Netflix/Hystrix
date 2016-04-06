@@ -231,9 +231,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
             }
         });
 
-        for (Command cmd: commands) {
-            cmd.observe();
-        }
+        commands.forEach(CommandStreamTest.Command::observe);
 
         Command shortCircuit = Command.from(groupKey, key, HystrixEventType.SUCCESS);
 
@@ -289,9 +287,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
             }
         });
 
-        for (Command cmd: commands) {
-            cmd.observe();
-        }
+        commands.forEach(CommandStreamTest.Command::observe);
 
         Command threadPoolRejected = Command.from(groupKey, key, HystrixEventType.SUCCESS);
 
@@ -400,9 +396,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
             }
         });
 
-        for (Command cmd: commands) {
-            cmd.observe();
-        }
+        commands.forEach(CommandStreamTest.Command::observe);
 
         try {
             assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));

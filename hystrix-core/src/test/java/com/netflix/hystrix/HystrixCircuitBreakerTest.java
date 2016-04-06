@@ -41,9 +41,7 @@ public class HystrixCircuitBreakerTest {
 
     @Before
     public void init() {
-        for (HystrixCommandMetrics metricsInstance: HystrixCommandMetrics.getInstances()) {
-            metricsInstance.resetStream();
-        }
+        HystrixCommandMetrics.getInstances().forEach(com.netflix.hystrix.HystrixCommandMetrics::resetStream);
 
         HystrixCommandMetrics.reset();
         HystrixCircuitBreaker.Factory.reset();

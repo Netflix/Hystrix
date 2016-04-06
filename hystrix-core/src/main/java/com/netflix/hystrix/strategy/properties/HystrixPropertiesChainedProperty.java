@@ -94,9 +94,7 @@ public abstract class HystrixPropertiesChainedProperty {
                 pReference.set(next);
             }
 
-            for (Runnable r : callbacks) {
-                r.run();
-            }
+            callbacks.forEach(java.lang.Runnable::run);
         }
 
         /**

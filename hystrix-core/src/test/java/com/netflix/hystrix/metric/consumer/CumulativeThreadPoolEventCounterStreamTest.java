@@ -355,9 +355,7 @@ public class CumulativeThreadPoolEventCounterStreamTest extends CommandStreamTes
         CommandStreamTest.Command rejected1 = CommandStreamTest.Command.from(groupKey, key, HystrixEventType.SUCCESS, 0);
         CommandStreamTest.Command rejected2 = CommandStreamTest.Command.from(groupKey, key, HystrixEventType.SUCCESS, 0);
 
-        for (final CommandStreamTest.Command saturator : saturators) {
-            saturator.observe();
-        }
+        saturators.forEach(CommandStreamTest.Command::observe);
 
         try {
             Thread.sleep(100);
@@ -456,9 +454,7 @@ public class CumulativeThreadPoolEventCounterStreamTest extends CommandStreamTes
         CommandStreamTest.Command rejection1 = CommandStreamTest.Command.from(groupKey, key, HystrixEventType.FAILURE, 20, HystrixEventType.FALLBACK_SUCCESS, 0);
         CommandStreamTest.Command rejection2 = CommandStreamTest.Command.from(groupKey, key, HystrixEventType.FAILURE, 20, HystrixEventType.FALLBACK_SUCCESS, 0);
 
-        for (CommandStreamTest.Command saturator: fallbackSaturators) {
-            saturator.observe();
-        }
+        fallbackSaturators.forEach(CommandStreamTest.Command::observe);
 
         try {
             Thread.sleep(70);

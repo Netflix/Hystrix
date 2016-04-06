@@ -59,9 +59,7 @@ public class HystrixMetricsPublisherFactoryTest {
         }
 
         // start them
-        for (Thread t : threads) {
-            t.start();
-        }
+        threads.forEach(java.lang.Thread::start);
 
         // wait for them to finish
         for (Thread t : threads) {

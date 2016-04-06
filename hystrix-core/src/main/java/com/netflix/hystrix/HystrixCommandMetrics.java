@@ -157,9 +157,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      * Clears all state from metrics. If new requests come in instances will be recreated and metrics started from scratch.
      */
     /* package */ static void reset() {
-        for (HystrixCommandMetrics metricsInstance: getInstances()) {
-            metricsInstance.unsubscribeAll();
-        }
+        getInstances().forEach(com.netflix.hystrix.HystrixCommandMetrics::unsubscribeAll);
         metrics.clear();
     }
 

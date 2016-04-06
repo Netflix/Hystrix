@@ -603,9 +603,7 @@ public class HystrixObservableCollapserTest {
             subscriber.awaitTerminalEvent();
             if (subscriber.getOnErrorEvents().size() > 0) {
                 System.out.println("ERROR : " + subscriber.getOnErrorEvents());
-                for (Throwable ex: subscriber.getOnErrorEvents()) {
-                    ex.printStackTrace();
-                }
+                subscriber.getOnErrorEvents().forEach(java.lang.Throwable::printStackTrace);
             }
             subscriber.assertCompleted();
             subscriber.assertNoErrors();

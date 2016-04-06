@@ -1179,11 +1179,7 @@ public class HystrixCollapserTest {
                     System.out.println("tasks: " + tasks);
                     System.out.println("**** clear TimerListener: tasks.size => " + tasks.size());
                     // super.clear();
-                    for (ATask t : tasks) {
-                        if (t.task.actualListener.equals(collapseTask)) {
-                            tasks.remove(t);
-                        }
-                    }
+                    tasks.stream().filter(t -> t.task.actualListener.equals(collapseTask)).forEach(tasks::remove);
                 }
 
             };
