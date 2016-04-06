@@ -64,11 +64,7 @@ public class PlatformSpecific {
             return (ThreadFactory) Class.forName("com.google.appengine.api.ThreadManager")
                     .getMethod("currentRequestThreadFactory")
                     .invoke(null);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException("Couldn't invoke ThreadManager.currentRequestThreadFactory", e);
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException("Couldn't invoke ThreadManager.currentRequestThreadFactory", e);
-        } catch (NoSuchMethodException e) {
+        } catch (IllegalAccessException | NoSuchMethodException | ClassNotFoundException e) {
             throw new RuntimeException("Couldn't invoke ThreadManager.currentRequestThreadFactory", e);
         } catch (InvocationTargetException e) {
             throw new RuntimeException(e.getCause());

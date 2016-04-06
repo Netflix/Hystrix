@@ -107,9 +107,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         for (Future<Boolean> future : futures) {
             try {
                 future.get();
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            } catch (ExecutionException e) {
+            } catch (InterruptedException | ExecutionException e) {
                 throw new RuntimeException(e);
             }
         }

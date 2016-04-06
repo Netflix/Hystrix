@@ -145,9 +145,7 @@ public class HystrixConfigSseServletTest {
         Runnable simulateClient = () -> {
             try {
                 servlet.doGet(mockReq, mockResp);
-            } catch (ServletException ex) {
-                fail(ex.getMessage());
-            } catch (IOException ex) {
+            } catch (ServletException | IOException ex) {
                 fail(ex.getMessage());
             }
         };
@@ -201,9 +199,7 @@ public class HystrixConfigSseServletTest {
         Runnable simulateClient = () -> {
             try {
                 servlet.doGet(mockReq, mockResp);
-            } catch (ServletException ex) {
-                fail(ex.getMessage());
-            } catch (IOException ex) {
+            } catch (ServletException | IOException ex) {
                 fail(ex.getMessage());
             }
         };
@@ -248,9 +244,7 @@ public class HystrixConfigSseServletTest {
         Runnable simulateClient = () -> {
             try {
                 servlet.doGet(mockReq, mockResp);
-            } catch (ServletException ex) {
-                fail(ex.getMessage());
-            } catch (IOException ex) {
+            } catch (ServletException | IOException ex) {
                 fail(ex.getMessage());
             }
         };
@@ -295,9 +289,7 @@ public class HystrixConfigSseServletTest {
         Runnable simulateClient = () -> {
             try {
                 servlet.doGet(mockReq, mockResp);
-            } catch (ServletException ex) {
-                fail(ex.getMessage());
-            } catch (IOException ex) {
+            } catch (ServletException | IOException ex) {
                 fail(ex.getMessage());
             }
         };

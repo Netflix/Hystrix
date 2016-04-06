@@ -58,9 +58,7 @@ class HystrixArchaiusHelper {
         if (isArchaiusV1Available()) {
             try {
                 LazyHolder.loadCascadedPropertiesFromResources.invoke(null, name);
-            } catch (IllegalAccessException e) {
-            } catch (IllegalArgumentException e) {
-            } catch (InvocationTargetException e) {
+            } catch (IllegalAccessException | InvocationTargetException | IllegalArgumentException e) {
             }
         }
     }
@@ -75,11 +73,7 @@ class HystrixArchaiusHelper {
                 Class<?> defaultProperties = Class.forName(
                         "com.netflix.hystrix.strategy.properties.archaius" + ".HystrixDynamicPropertiesArchaius");
                 return (HystrixDynamicProperties) defaultProperties.newInstance();
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e);
-            } catch (InstantiationException e) {
-                throw new RuntimeException(e);
-            } catch (IllegalAccessException e) {
+            } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
                 throw new RuntimeException(e);
             }
         }
