@@ -84,7 +84,7 @@ public class HealthCountsStreamTest extends CommandStreamTest {
         //no writes
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
@@ -106,7 +106,7 @@ public class HealthCountsStreamTest extends CommandStreamTest {
         cmd.observe();
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
@@ -128,7 +128,7 @@ public class HealthCountsStreamTest extends CommandStreamTest {
         cmd.observe();
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
@@ -150,7 +150,7 @@ public class HealthCountsStreamTest extends CommandStreamTest {
         cmd.observe();
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
@@ -172,7 +172,7 @@ public class HealthCountsStreamTest extends CommandStreamTest {
         cmd.observe();
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
@@ -198,7 +198,7 @@ public class HealthCountsStreamTest extends CommandStreamTest {
         cmd3.observe();
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
@@ -240,7 +240,7 @@ public class HealthCountsStreamTest extends CommandStreamTest {
         shortCircuit2.observe();
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
@@ -293,7 +293,7 @@ public class HealthCountsStreamTest extends CommandStreamTest {
         rejected2.observe();
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
@@ -340,7 +340,7 @@ public class HealthCountsStreamTest extends CommandStreamTest {
         rejected2.observe();
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
@@ -365,7 +365,7 @@ public class HealthCountsStreamTest extends CommandStreamTest {
         cmd.observe();
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
@@ -387,7 +387,7 @@ public class HealthCountsStreamTest extends CommandStreamTest {
         cmd.observe();
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
@@ -428,7 +428,7 @@ public class HealthCountsStreamTest extends CommandStreamTest {
         rejection2.observe();
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
@@ -454,7 +454,7 @@ public class HealthCountsStreamTest extends CommandStreamTest {
         cmd2.observe();
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }

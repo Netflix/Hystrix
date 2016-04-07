@@ -50,6 +50,7 @@ public class CachedValuesHistogram {
     private final int p100;
 
     public static CachedValuesHistogram backedBy(Histogram underlying) {
+        //System.out.println("^^^ " + underlying.hashCode() + " : backedBy : " + Thread.currentThread().getName());
         return new CachedValuesHistogram(underlying);
     }
 
@@ -92,6 +93,7 @@ public class CachedValuesHistogram {
     }
 
     public Histogram getUnderlying() {
+        //System.out.println("^^^ " + underlying.hashCode() + " : getUnderlying : " + Thread.currentThread().getName());
         return underlying;
     }
 

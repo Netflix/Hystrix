@@ -90,7 +90,7 @@ public class RollingThreadPoolMaxConcurrencyStreamTest extends CommandStreamTest
         //no writes
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
@@ -115,7 +115,7 @@ public class RollingThreadPoolMaxConcurrencyStreamTest extends CommandStreamTest
         Thread.sleep(1);
         cmd2.observe();
 
-        latch.await(10000, TimeUnit.MILLISECONDS);
+        assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         assertEquals(2, stream.getLatestRollingMax());
     }
 
@@ -137,7 +137,7 @@ public class RollingThreadPoolMaxConcurrencyStreamTest extends CommandStreamTest
         Thread.sleep(1);
         cmd2.observe();
 
-        latch.await(10000, TimeUnit.MILLISECONDS);
+        assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         //since commands run in semaphore isolation, they are not tracked by threadpool metrics
         assertEquals(0, stream.getLatestRollingMax());
     }
@@ -169,7 +169,7 @@ public class RollingThreadPoolMaxConcurrencyStreamTest extends CommandStreamTest
         Thread.sleep(1);
         cmd3.observe();
 
-        latch.await(10000, TimeUnit.MILLISECONDS);
+        assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         assertEquals(3, stream.getLatestRollingMax());
     }
 
@@ -207,7 +207,7 @@ public class RollingThreadPoolMaxConcurrencyStreamTest extends CommandStreamTest
         Thread.sleep(100);
         cmd4.observe();
 
-        latch.await(10000, TimeUnit.MILLISECONDS);
+        assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         assertEquals(3, stream.getLatestRollingMax());
     }
 
@@ -248,7 +248,7 @@ public class RollingThreadPoolMaxConcurrencyStreamTest extends CommandStreamTest
         Thread.sleep(100);
         cmd4.observe();
 
-        latch.await(10000, TimeUnit.MILLISECONDS);
+        assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         assertEquals(2, stream.getLatestRollingMax());
     }
 
@@ -286,7 +286,7 @@ public class RollingThreadPoolMaxConcurrencyStreamTest extends CommandStreamTest
         Thread.sleep(100);
         cmd4.observe();
 
-        latch.await();
+        assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         assertEquals(0, stream.getLatestRollingMax());
     }
 
@@ -312,7 +312,7 @@ public class RollingThreadPoolMaxConcurrencyStreamTest extends CommandStreamTest
         cmd3.observe();
         cmd4.observe();
 
-        latch.await(10000, TimeUnit.MILLISECONDS);
+        assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
         assertTrue(cmd2.isResponseFromCache());
         assertTrue(cmd3.isResponseFromCache());
@@ -354,7 +354,7 @@ public class RollingThreadPoolMaxConcurrencyStreamTest extends CommandStreamTest
             cmd.observe();
         }
 
-        latch.await(10000, TimeUnit.MILLISECONDS);
+        assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
         for (Command cmd: shortCircuited) {
             assertTrue(cmd.isResponseShortCircuited());
@@ -407,7 +407,7 @@ public class RollingThreadPoolMaxConcurrencyStreamTest extends CommandStreamTest
             }));
         }
 
-        latch.await(10000, TimeUnit.MILLISECONDS);
+        assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
 
         for (Command rejectedCmd: rejected) {
@@ -452,7 +452,7 @@ public class RollingThreadPoolMaxConcurrencyStreamTest extends CommandStreamTest
             rejectedCmd.observe();
         }
 
-        latch.await(10000, TimeUnit.MILLISECONDS);
+        assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
         for (Command rejectedCmd: rejected) {
             assertTrue(rejectedCmd.isResponseThreadPoolRejected());

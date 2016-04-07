@@ -90,7 +90,7 @@ public class CumulativeCollapserEventCounterStreamTest extends CommandStreamTest
         //no writes
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
@@ -116,7 +116,7 @@ public class CumulativeCollapserEventCounterStreamTest extends CommandStreamTest
         }
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
@@ -144,7 +144,7 @@ public class CumulativeCollapserEventCounterStreamTest extends CommandStreamTest
         }
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
@@ -174,7 +174,7 @@ public class CumulativeCollapserEventCounterStreamTest extends CommandStreamTest
         }
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }

@@ -81,7 +81,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
         //no writes
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
@@ -117,18 +117,18 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
                 if (distribution.getTotalCount() == 1) {
                     assertBetween(10, 50, (int) distribution.getMean());
                 } else if (distribution.getTotalCount() == 2) {
-                    assertBetween(150, 250, (int) distribution.getMean());
+                    assertBetween(300, 400, (int) distribution.getMean());
                 }
             }
         });
 
         Command cmd1 = Command.from(groupKey, key, HystrixEventType.SUCCESS, 10);
-        Command cmd2 = Command.from(groupKey, key, HystrixEventType.TIMEOUT); //latency = 300
+        Command cmd2 = Command.from(groupKey, key, HystrixEventType.TIMEOUT); //latency = 600
         cmd1.observe();
         cmd2.observe();
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
@@ -174,13 +174,13 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
                     if (distribution.getTotalCount() < 4 && distribution.getTotalCount() > 0) { //buckets before timeout latency registers
                         assertBetween(10, 50, (int) distribution.getMean());
                     } else if (distribution.getTotalCount() == 4){
-                        assertBetween(95, 140, (int) distribution.getMean()); //now timeout latency of 500ms is there
+                        assertBetween(150, 250, (int) distribution.getMean()); //now timeout latency of 600ms is there
                     }
             }
         });
 
         Command cmd1 = Command.from(groupKey, key, HystrixEventType.SUCCESS, 10);
-        Command cmd2 = Command.from(groupKey, key, HystrixEventType.TIMEOUT); //latency = 300
+        Command cmd2 = Command.from(groupKey, key, HystrixEventType.TIMEOUT); //latency = 600
         Command cmd3 = Command.from(groupKey, key, HystrixEventType.FAILURE, 30);
         Command cmd4 = Command.from(groupKey, key, HystrixEventType.BAD_REQUEST, 40);
 
@@ -190,13 +190,13 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
         cmd4.observe();
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
-        assertBetween(95, 250, stream.getLatestMean()); //now timeout latency of 300ms is there
+        assertBetween(150, 350, stream.getLatestMean()); //now timeout latency of 600ms is there
         assertBetween(10, 40, stream.getLatestPercentile(0.0));
-        assertBetween(300, 800, stream.getLatestPercentile(100.0));
+        assertBetween(600, 800, stream.getLatestPercentile(100.0));
     }
 
     @Test
@@ -245,7 +245,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
         }
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
@@ -303,7 +303,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
         }
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
@@ -367,7 +367,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
         }
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
@@ -410,7 +410,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
         }
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
@@ -470,7 +470,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
         cmd5.observe();
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
@@ -535,7 +535,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
 
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
