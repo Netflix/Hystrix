@@ -28,6 +28,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class RollingCollapserBatchSizeDistributionStreamTest extends CommandStreamTest {
@@ -74,7 +75,7 @@ public class RollingCollapserBatchSizeDistributionStreamTest extends CommandStre
         //no writes
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
@@ -140,7 +141,7 @@ public class RollingCollapserBatchSizeDistributionStreamTest extends CommandStre
         Collapser.from(key, 12).observe();
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
@@ -211,7 +212,7 @@ public class RollingCollapserBatchSizeDistributionStreamTest extends CommandStre
         Collapser.from(key, 12).observe();
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }

@@ -85,7 +85,7 @@ public class CumulativeCommandEventCounterStreamTest extends CommandStreamTest {
         //no writes
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
@@ -107,7 +107,7 @@ public class CumulativeCommandEventCounterStreamTest extends CommandStreamTest {
         cmd.observe();
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
@@ -131,7 +131,7 @@ public class CumulativeCommandEventCounterStreamTest extends CommandStreamTest {
         cmd.observe();
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
@@ -156,7 +156,7 @@ public class CumulativeCommandEventCounterStreamTest extends CommandStreamTest {
         cmd.observe();
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
@@ -181,7 +181,7 @@ public class CumulativeCommandEventCounterStreamTest extends CommandStreamTest {
         cmd.observe();
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
@@ -210,7 +210,7 @@ public class CumulativeCommandEventCounterStreamTest extends CommandStreamTest {
         cmd3.observe();
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
@@ -256,7 +256,7 @@ public class CumulativeCommandEventCounterStreamTest extends CommandStreamTest {
         shortCircuit2.observe();
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
@@ -313,7 +313,7 @@ public class CumulativeCommandEventCounterStreamTest extends CommandStreamTest {
         rejected2.observe();
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
@@ -365,7 +365,7 @@ public class CumulativeCommandEventCounterStreamTest extends CommandStreamTest {
         rejected2.observe();
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
@@ -395,7 +395,7 @@ public class CumulativeCommandEventCounterStreamTest extends CommandStreamTest {
         cmd.observe();
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
@@ -421,7 +421,7 @@ public class CumulativeCommandEventCounterStreamTest extends CommandStreamTest {
         cmd.observe();
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
@@ -467,7 +467,7 @@ public class CumulativeCommandEventCounterStreamTest extends CommandStreamTest {
         rejection2.observe();
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
@@ -494,7 +494,7 @@ public class CumulativeCommandEventCounterStreamTest extends CommandStreamTest {
         }
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
@@ -524,7 +524,7 @@ public class CumulativeCommandEventCounterStreamTest extends CommandStreamTest {
         cmd2.observe();
 
         try {
-            latch.await(10000, TimeUnit.MILLISECONDS);
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
