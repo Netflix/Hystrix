@@ -17,9 +17,18 @@ package com.netflix.hystrix.metric;
 
 import org.HdrHistogram.Histogram;
 
+import java.util.concurrent.ConcurrentLinkedQueue;
+
 public class CachedValuesHistogram {
 
-    private final Histogram underlying;
+    static int POOL_SIZE = 1000;
+    static ConcurrentLinkedQueue<Histogram> HISTOGRAM_POOL = new ConcurrentLinkedQueue<Histogram>();
+
+    static {
+        for (int i = 0; i < POOL_SIZE; i++) {
+            HISTOGRAM_POOL.add(new Histogram(3));
+        }
+    }
 
     private final int mean;
     private final int p0;
@@ -49,13 +58,13 @@ public class CachedValuesHistogram {
     private final int p99_99;
     private final int p100;
 
+    private final long totalCount;
+
     public static CachedValuesHistogram backedBy(Histogram underlying) {
         return new CachedValuesHistogram(underlying);
     }
 
     private CachedValuesHistogram(Histogram underlying) {
-        this.underlying = underlying;
-
         /**
          * Single thread calculates a variety of commonly-accessed quantities.
          * This way, all threads can access the cached values without synchronization
@@ -89,10 +98,10 @@ public class CachedValuesHistogram {
         p99_95 = (int) underlying.getValueAtPercentile(99.95);
         p99_99 = (int) underlying.getValueAtPercentile(99.99);
         p100 = (int) underlying.getValueAtPercentile(100);
-    }
 
-    public Histogram getUnderlying() {
-        return underlying;
+        totalCount = underlying.getTotalCount();
+
+        release(underlying);
     }
 
     /**
@@ -138,20 +147,24 @@ public class CachedValuesHistogram {
             case 9995: return p99_95;
             case 9999: return p99_99;
             case 10000: return p100;
-            default: return getArbitraryPercentile(percentile);
+            default: throw new IllegalArgumentException("Percentile (" + percentile + ") is not currently cached");
         }
     }
 
-    /**
-     * Since this can be accessed by any thread, need external synchronization
-     * @param percentile percentile of distribution
-     * @return value at percentile
-     */
-    private synchronized int getArbitraryPercentile(double percentile) {
-        return (int) underlying.getValueAtPercentile(percentile);
+    public long getTotalCount() {
+        return totalCount;
     }
 
-    public synchronized long getTotalCount() {
-        return underlying.getTotalCount();
+    private static void release(Histogram histogram) {
+        histogram.reset();
+        HISTOGRAM_POOL.offer(histogram);
+    }
+
+    public static Histogram getNewHistogram() {
+        Histogram histogram = HISTOGRAM_POOL.poll();
+        if (histogram == null) {
+            histogram = new Histogram(3);
+        }
+        return histogram;
     }
 }

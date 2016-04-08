@@ -22,16 +22,13 @@ import com.netflix.hystrix.metric.HystrixEventStream;
 import org.HdrHistogram.Histogram;
 import rx.Observable;
 import rx.Subscription;
-import rx.functions.Action1;
 import rx.functions.Func0;
 import rx.functions.Func1;
 import rx.functions.Func2;
-import rx.observers.Subscribers;
 import rx.subjects.BehaviorSubject;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -49,7 +46,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class RollingDistributionStream<Event extends HystrixEvent> {
     private AtomicReference<Subscription> rollingDistributionSubscription = new AtomicReference<Subscription>(null);
-    private final BehaviorSubject<CachedValuesHistogram> rollingDistribution = BehaviorSubject.create(CachedValuesHistogram.backedBy(getNewHistogram()));
+    private final BehaviorSubject<CachedValuesHistogram> rollingDistribution = BehaviorSubject.create(CachedValuesHistogram.backedBy(CachedValuesHistogram.getNewHistogram()));
     private final Observable<CachedValuesHistogram> rollingDistributionStream;
 
     private static final Func2<Histogram, Histogram, Histogram> distributionAggregator = new Func2<Histogram, Histogram, Histogram>() {
@@ -64,15 +61,6 @@ public class RollingDistributionStream<Event extends HystrixEvent> {
         @Override
         public Observable<Histogram> call(Observable<Histogram> window) {
             return window.reduce(distributionAggregator);
-        }
-    };
-
-    private static final Action1<List<CachedValuesHistogram>> releaseOlderOfTwoDistributions = new Action1<List<CachedValuesHistogram>>() {
-        @Override
-        public void call(List<CachedValuesHistogram> histograms) {
-            if (histograms != null && histograms.size() == 2) {
-                releaseHistogram(histograms.get(0).getUnderlying());
-            }
         }
     };
 
@@ -95,13 +83,13 @@ public class RollingDistributionStream<Event extends HystrixEvent> {
                                         final Func2<Histogram, Event, Histogram> addValuesToBucket) {
         final List<Histogram> emptyDistributionsToStart = new ArrayList<Histogram>();
         for (int i = 0; i < numBuckets; i++) {
-            emptyDistributionsToStart.add(getNewHistogram());
+            emptyDistributionsToStart.add(CachedValuesHistogram.getNewHistogram());
         }
 
         final Func1<Observable<Event>, Observable<Histogram>> reduceBucketToSingleDistribution = new Func1<Observable<Event>, Observable<Histogram>>() {
             @Override
             public Observable<Histogram> call(Observable<Event> bucket) {
-                return bucket.reduce(getNewHistogram(), addValuesToBucket);
+                return bucket.reduce(CachedValuesHistogram.getNewHistogram(), addValuesToBucket);
             }
         };
 
@@ -148,13 +136,6 @@ public class RollingDistributionStream<Event extends HystrixEvent> {
             Subscription candidateSubscription = observe().subscribe(rollingDistribution);
             if (rollingDistributionSubscription.compareAndSet(null, candidateSubscription)) {
                 //won the race to set the subscription
-
-                //as soon as subject receives a new Histogram, old one may be released
-                rollingDistribution
-                        .window(2, 1)                              //subject is used as a single-value, but can be viewed as a stream.  Here, get the latest 2 values of the subject
-                        .flatMap(convertToList)                    //convert to list (of length 2)
-                        .doOnNext(releaseOlderOfTwoDistributions)  //if there are 2, then the oldest one will never be read, so we can reclaim its memory
-                        .unsafeSubscribe(Subscribers.empty());     //no need to emit anywhere, this is side-effect only (release the reference to the old Histogram)
             } else {
                 //lost the race to set the subscription, so we need to cancel this one
                 candidateSubscription.unsubscribe();
@@ -176,28 +157,6 @@ public class RollingDistributionStream<Event extends HystrixEvent> {
         if (s != null) {
             s.unsubscribe();
             rollingDistributionSubscription.compareAndSet(s, null);
-        }
-    }
-
-    private static Histogram getNewHistogram() {
-        Histogram histogram = HISTOGRAM_POOL.poll();
-        if (histogram == null) {
-            histogram = new Histogram(3);
-        }
-        return histogram;
-    }
-
-    private static void releaseHistogram(Histogram histogram) {
-        histogram.reset();
-        HISTOGRAM_POOL.offer(histogram);
-    }
-
-    static int POOL_SIZE = 1000;
-    static ConcurrentLinkedQueue<Histogram> HISTOGRAM_POOL = new ConcurrentLinkedQueue<Histogram>();
-
-    static {
-        for (int i = 0; i < POOL_SIZE; i++) {
-            HISTOGRAM_POOL.add(new Histogram(3));
         }
     }
 }
