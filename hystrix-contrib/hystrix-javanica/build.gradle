@@ -27,12 +27,12 @@ sourceSets {
 
 compileAjcTestJava {
 
-    sourceCompatibility = "1.6"
-    targetCompatibility = "1.6"
+    sourceCompatibility = "1.8"
+    targetCompatibility = "1.8"
 
     doLast {
         ant.taskdef(resource: "org/aspectj/tools/ant/taskdefs/aspectjTaskdefs.properties", classpath: configurations.ajtools.asPath)
-        ant.iajc(source: "1.6", target: "1.6",
+        ant.iajc(source: "1.8", target: "1.8",
                 destDir: "${sourceSets.ajcTest.output.classesDir.absolutePath}", maxmem: "512m", fork: "true",
                 classpath: "${sourceSets.main.output.classesDir.absolutePath};${configurations.testCompile.asPath}")
                 {
@@ -47,8 +47,8 @@ compileAjcTestJava {
 }
 
 compileAjcJava {
-    sourceCompatibility = "1.6"
-    targetCompatibility = "1.6"
+    sourceCompatibility = "1.8"
+    targetCompatibility = "1.8"
 
     doLast {
         ant.taskdef(resource: "org/aspectj/tools/ant/taskdefs/aspectjTaskdefs.properties", classpath: configurations.ajtools.asPath)
