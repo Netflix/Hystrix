@@ -61,7 +61,7 @@ import com.netflix.hystrix.HystrixRequestLog;
  * <p>
  * <b>NOTE:</b> If <code>initializeContext()</code> is called then <code>shutdown()</code> must also be called or a memory leak will occur.
  */
-public class HystrixRequestContext implements Closeable {
+public class HystrixRequestContext implements Closeable, AutoCloseable {
 
     /*
      * ThreadLocal on each thread will hold the HystrixRequestVariableState.
