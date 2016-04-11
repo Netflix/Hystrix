@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesCollapserDefault;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
@@ -385,18 +386,14 @@ public class HystrixCollapserTest {
         HystrixRequestContext requestContext = HystrixRequestContext.initializeContext();
 
         final TestCollapserTimer timer = new TestCollapserTimer();
-        final ConcurrentLinkedQueue<Future<String>> responses = new ConcurrentLinkedQueue<Future<String>>();
-        ConcurrentLinkedQueue<Thread> threads = new ConcurrentLinkedQueue<Thread>();
+        final ConcurrentLinkedQueue<Future<String>> responses = new ConcurrentLinkedQueue<>();
+        ConcurrentLinkedQueue<Thread> threads = new ConcurrentLinkedQueue<>();
 
         // kick off work (simulating a single request with multiple threads)
         for (int t = 0; t < 5; t++) {
-            Thread th = new Thread(new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), new Runnable() {
-
-                @Override
-                public void run() {
-                    for (int i = 0; i < 100; i++) {
-                        responses.add(new TestRequestCollapser(timer, 1).queue());
-                    }
+            Thread th = new Thread(new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), () -> {
+                for (int i = 0; i < 100; i++) {
+                    responses.add(new TestRequestCollapser(timer, 1).queue());
                 }
             }));
 
@@ -685,7 +682,7 @@ public class HystrixCollapserTest {
         // simulate request lifecycle
         HystrixRequestContext.initializeContext();
 
-        ConcurrentLinkedQueue<HystrixCommand<List<String>>> commands = new ConcurrentLinkedQueue<HystrixCommand<List<String>>>();
+        ConcurrentLinkedQueue<HystrixCommand<List<String>>> commands = new ConcurrentLinkedQueue<>();
 
         final TestCollapserTimer timer = new TestCollapserTimer();
         // pass in 'null' which will cause an NPE to be thrown
@@ -746,7 +743,7 @@ public class HystrixCollapserTest {
         // simulate request lifecycle
         HystrixRequestContext.initializeContext();
 
-        ConcurrentLinkedQueue<HystrixCommand<List<String>>> commands = new ConcurrentLinkedQueue<HystrixCommand<List<String>>>();
+        ConcurrentLinkedQueue<HystrixCommand<List<String>>> commands = new ConcurrentLinkedQueue<>();
 
         final TestCollapserTimer timer = new TestCollapserTimer();
         // pass in 'null' which will cause an NPE to be thrown
@@ -986,8 +983,8 @@ public class HystrixCollapserTest {
 
         @Override
         protected Collection<Collection<CollapsedRequest<String, String>>> shardRequests(Collection<CollapsedRequest<String, String>> requests) {
-            Collection<CollapsedRequest<String, String>> typeA = new ArrayList<CollapsedRequest<String, String>>();
-            Collection<CollapsedRequest<String, String>> typeB = new ArrayList<CollapsedRequest<String, String>>();
+            Collection<CollapsedRequest<String, String>> typeA = new ArrayList<>();
+            Collection<CollapsedRequest<String, String>> typeB = new ArrayList<>();
 
             for (CollapsedRequest<String, String> request : requests) {
                 if (request.getArgument().endsWith("a")) {
@@ -997,7 +994,7 @@ public class HystrixCollapserTest {
                 }
             }
 
-            ArrayList<Collection<CollapsedRequest<String, String>>> shards = new ArrayList<Collection<CollapsedRequest<String, String>>>();
+            ArrayList<Collection<CollapsedRequest<String, String>>> shards = new ArrayList<>();
             shards.add(typeA);
             shards.add(typeB);
             return shards;
@@ -1079,7 +1076,7 @@ public class HystrixCollapserTest {
         protected List<String> run() {
             System.out.println(">>> TestCollapserCommand run() ... batch size: " + requests.size());
             // simulate a batch request
-            ArrayList<String> response = new ArrayList<String>();
+            ArrayList<String> response = new ArrayList<>();
             for (CollapsedRequest<String, String> request : requests) {
                 if (request.getArgument() == null) {
                     throw new NullPointerException("Simulated Error");
@@ -1138,7 +1135,7 @@ public class HystrixCollapserTest {
         protected List<String> run() throws Exception {
             System.out.println("*** execution (this shouldn't happen)");
             // this won't ever get called as we're forcing short-circuiting
-            ArrayList<String> values = new ArrayList<String>();
+            ArrayList<String> values = new ArrayList<>();
             values.add("hello");
             return values;
         }
@@ -1163,7 +1160,7 @@ public class HystrixCollapserTest {
 
     /* package */ static class TestCollapserTimer implements CollapserTimer {
 
-        private final ConcurrentLinkedQueue<ATask> tasks = new ConcurrentLinkedQueue<ATask>();
+        private final ConcurrentLinkedQueue<ATask> tasks = new ConcurrentLinkedQueue<>();
 
         @Override
         public Reference<TimerListener> addListener(final TimerListener collapseTask) {
@@ -1182,11 +1179,7 @@ public class HystrixCollapserTest {
                     System.out.println("tasks: " + tasks);
                     System.out.println("**** clear TimerListener: tasks.size => " + tasks.size());
                     // super.clear();
-                    for (ATask t : tasks) {
-                        if (t.task.actualListener.equals(collapseTask)) {
-                            tasks.remove(t);
-                        }
-                    }
+                    tasks.stream().filter(t -> t.task.actualListener.equals(collapseTask)).forEach(tasks::remove);
                 }
 
             };
@@ -1272,14 +1265,7 @@ public class HystrixCollapserTest {
     }
 
     private static HystrixCollapserKey collapserKeyFromString(final Object o) {
-        return new HystrixCollapserKey() {
-
-            @Override
-            public String name() {
-                return String.valueOf(o);
-            }
-
-        };
+        return () -> String.valueOf(o);
     }
 
     private static class TestCollapserWithVoidResponseType extends HystrixCollapser<Void, Void, Integer> {
@@ -1299,10 +1285,7 @@ public class HystrixCollapserTest {
         @Override
         protected HystrixCommand<Void> createCommand(Collection<CollapsedRequest<Void, Integer>> requests) {
 
-            ArrayList<Integer> args = new ArrayList<Integer>();
-            for (CollapsedRequest<Void, Integer> request : requests) {
-                args.add(request.getArgument());
-            }
+            List<Integer> args = requests.stream().map(CollapsedRequest::getArgument).collect(Collectors.toList());
             return new FireAndForgetCommand(args);
         }
 
@@ -1332,10 +1315,7 @@ public class HystrixCollapserTest {
         @Override
         protected HystrixCommand<Void> createCommand(Collection<CollapsedRequest<Void, Integer>> requests) {
 
-            ArrayList<Integer> args = new ArrayList<Integer>();
-            for (CollapsedRequest<Void, Integer> request : requests) {
-                args.add(request.getArgument());
-            }
+            List<Integer> args = requests.stream().map(CollapsedRequest::getArgument).collect(Collectors.toList());
             return new FireAndForgetCommand(args);
         }
 

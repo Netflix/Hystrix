@@ -115,9 +115,9 @@ public abstract class HystrixConcurrencyStrategy {
          * and rejecting is the preferred solution.
          */
         if (maxQueueSize <= 0) {
-            return new SynchronousQueue<Runnable>();
+            return new SynchronousQueue<>();
         } else {
-            return new LinkedBlockingQueue<Runnable>(maxQueueSize);
+            return new LinkedBlockingQueue<>(maxQueueSize);
         }
     }
 
@@ -153,7 +153,7 @@ public abstract class HystrixConcurrencyStrategy {
      * @return {@code HystrixRequestVariable<T>}
      */
     public <T> HystrixRequestVariable<T> getRequestVariable(final HystrixRequestVariableLifecycle<T> rv) {
-        return new HystrixLifecycleForwardingRequestVariable<T>(rv);
+        return new HystrixLifecycleForwardingRequestVariable<>(rv);
     }
     
 }

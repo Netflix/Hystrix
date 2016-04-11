@@ -64,7 +64,7 @@ public class HystrixTimer {
         }
     }
 
-    /* package */ AtomicReference<ScheduledExecutor> executor = new AtomicReference<ScheduledExecutor>();
+    /* package */ AtomicReference<ScheduledExecutor> executor = new AtomicReference<>();
 
     /**
      * Add a {@link TimerListener} that will be executed until it is garbage collected or removed by clearing the returned {@link Reference}.
@@ -91,15 +91,11 @@ public class HystrixTimer {
         startThreadIfNeeded();
         // add the listener
 
-        Runnable r = new Runnable() {
-
-            @Override
-            public void run() {
-                try {
-                    listener.tick();
-                } catch (Exception e) {
-                    logger.error("Failed while ticking TimerListener", e);
-                }
+        Runnable r = () -> {
+            try {
+                listener.tick();
+            } catch (Exception e) {
+                logger.error("Failed while ticking TimerListener", e);
             }
         };
 

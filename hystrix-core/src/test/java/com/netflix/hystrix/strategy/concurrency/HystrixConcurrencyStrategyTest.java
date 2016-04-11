@@ -58,20 +58,10 @@ public class HystrixConcurrencyStrategyTest {
     @Test
     public void testRequestContextPropagatesAcrossObserveOnPool() {
         new SimpleCommand().execute();
-        new SimpleCommand().observe().map(new Func1<String, String>() {
-
-            @Override
-            public String call(String s) {
-                System.out.println("Map => Commands: " + HystrixRequestLog.getCurrentRequest().getAllExecutedCommands());
-                return s;
-            }
-        }).toBlocking().forEach(new Action1<String>() {
-
-            @Override
-            public void call(String s) {
-                System.out.println("Result [" + s + "] => Commands: " + HystrixRequestLog.getCurrentRequest().getAllExecutedCommands());
-            }
-        });
+        new SimpleCommand().observe().map(s -> {
+            System.out.println("Map => Commands: " + HystrixRequestLog.getCurrentRequest().getAllExecutedCommands());
+            return s;
+        }).toBlocking().forEach(s -> System.out.println("Result [" + s + "] => Commands: " + HystrixRequestLog.getCurrentRequest().getAllExecutedCommands()));
     }
 
     private static class SimpleCommand extends HystrixCommand<String> {
@@ -94,12 +84,7 @@ public class HystrixConcurrencyStrategyTest {
     public void testThreadContextOnTimeout() {
         final AtomicBoolean isInitialized = new AtomicBoolean();
         new TimeoutCommand().toObservable()
-                .doOnError(new Action1<Throwable>() {
-                    @Override
-                    public void call(Throwable throwable) {
-                        isInitialized.set(HystrixRequestContext.isCurrentThreadInitialized());
-                    }
-                })
+                .doOnError(throwable -> isInitialized.set(HystrixRequestContext.isCurrentThreadInitialized()))
                 .materialize()
                 .toBlocking().single();
 

@@ -43,35 +43,20 @@ import java.util.concurrent.atomic.AtomicReference;
  * This is a stable value - there's no peeking into a bucket until it is emitted
  */
 public abstract class RollingConcurrencyStream {
-    private AtomicReference<Subscription> rollingMaxSubscription = new AtomicReference<Subscription>(null);
+    private AtomicReference<Subscription> rollingMaxSubscription = new AtomicReference<>(null);
     private final BehaviorSubject<Integer> rollingMax = BehaviorSubject.create(0);
     private final Observable<Integer> rollingMaxStream;
 
-    private static final Func2<Integer, Integer, Integer> reduceToMax = new Func2<Integer, Integer, Integer>() {
-        @Override
-        public Integer call(Integer a, Integer b) {
-            return Math.max(a, b);
-        }
-    };
+    private static final Func2<Integer, Integer, Integer> reduceToMax = Math::max;
 
-    private static final Func1<Observable<Integer>, Observable<Integer>> reduceStreamToMax = new Func1<Observable<Integer>, Observable<Integer>>() {
-        @Override
-        public Observable<Integer> call(Observable<Integer> observedConcurrency) {
-            return observedConcurrency.reduce(0, reduceToMax);
-        }
-    };
+    private static final Func1<Observable<Integer>, Observable<Integer>> reduceStreamToMax = observedConcurrency -> observedConcurrency.reduce(0, reduceToMax);
 
-    private static final Func1<HystrixCommandExecutionStarted, Integer> getConcurrencyCountFromEvent = new Func1<HystrixCommandExecutionStarted, Integer>() {
-        @Override
-        public Integer call(HystrixCommandExecutionStarted event) {
-            return event.getCurrentConcurrency();
-        }
-    };
+    private static final Func1<HystrixCommandExecutionStarted, Integer> getConcurrencyCountFromEvent = HystrixCommandExecutionStarted::getCurrentConcurrency;
 
 
 
     protected RollingConcurrencyStream(final HystrixEventStream<HystrixCommandExecutionStarted> inputEventStream, final int numBuckets, final int bucketSizeInMs) {
-        final List<Integer> emptyRollingMaxBuckets = new ArrayList<Integer>();
+        final List<Integer> emptyRollingMaxBuckets = new ArrayList<>();
         for (int i = 0; i < numBuckets; i++) {
             emptyRollingMaxBuckets.add(0);
         }

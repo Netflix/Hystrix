@@ -93,9 +93,7 @@ public final class AopUtils {
             if (superclass != null) {
                 method = getDeclaredMethod(superclass, methodName, parameterTypes);
             }
-        } catch (ClassNotFoundException e) {
-            Throwables.propagate(e);
-        } catch (IOException e) {
+        } catch (ClassNotFoundException | IOException e) {
             Throwables.propagate(e);
         }
         return method;

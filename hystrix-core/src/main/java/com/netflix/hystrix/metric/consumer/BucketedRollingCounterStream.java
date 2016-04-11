@@ -35,12 +35,7 @@ public abstract class BucketedRollingCounterStream<Event extends HystrixEvent, B
                                            final Func2<Bucket, Event, Bucket> appendRawEventToBucket,
                                            final Func2<Output, Bucket, Output> reduceBucket) {
         super(stream, numBuckets, bucketSizeInMs, appendRawEventToBucket);
-        this.reduceWindowToSummary = new Func1<Observable<Bucket>, Observable<Output>>() {
-            @Override
-            public Observable<Output> call(Observable<Bucket> window) {
-                return window.scan(getEmptyOutputValue(), reduceBucket).skip(numBuckets);
-            }
-        };
+        this.reduceWindowToSummary = window -> window.scan(getEmptyOutputValue(), reduceBucket).skip(numBuckets);
     }
 
     @Override

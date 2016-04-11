@@ -47,26 +47,18 @@ public class HystrixConfigurationJsonStream {
     private final Func1<Integer, Observable<HystrixConfiguration>> streamGenerator;
 
     public HystrixConfigurationJsonStream() {
-        this.streamGenerator = new Func1<Integer, Observable<HystrixConfiguration>>() {
-            @Override
-            public Observable<HystrixConfiguration> call(Integer delay) {
-                return new HystrixConfigurationStream(delay).observe();
-            }
-        };
+        this.streamGenerator = delay -> new HystrixConfigurationStream(delay).observe();
     }
 
     public HystrixConfigurationJsonStream(Func1<Integer, Observable<HystrixConfiguration>> streamGenerator) {
         this.streamGenerator = streamGenerator;
     }
 
-    private static final Func1<HystrixConfiguration, String> convertToJson = new Func1<HystrixConfiguration, String>() {
-        @Override
-        public String call(HystrixConfiguration hystrixConfiguration) {
-            try {
-                return convertToString(hystrixConfiguration);
-            } catch (IOException ioe) {
-                throw new RuntimeException(ioe);
-            }
+    private static final Func1<HystrixConfiguration, String> convertToJson = hystrixConfiguration -> {
+        try {
+            return convertToString(hystrixConfiguration);
+        } catch (IOException ioe) {
+            throw new RuntimeException(ioe);
         }
     };
 

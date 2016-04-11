@@ -22,13 +22,8 @@ import java.lang.instrument.Instrumentation;
  */
 public class HystrixNetworkAuditorAgent {
 
-    private static final HystrixNetworkAuditorEventListener DEFAULT_BRIDGE = new HystrixNetworkAuditorEventListener() {
-
-        @Override
-        public void handleNetworkEvent() {
-            // do nothing
-        }
-
+    private static final HystrixNetworkAuditorEventListener DEFAULT_BRIDGE = () -> {
+        // do nothing
     };
     private static volatile HystrixNetworkAuditorEventListener bridge = DEFAULT_BRIDGE;
 

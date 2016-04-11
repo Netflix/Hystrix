@@ -49,7 +49,7 @@ public final class MethodProvider {
         return INSTANCE;
     }
 
-    private Map<Method, Method> cache = new ConcurrentHashMap<Method, Method>();
+    private Map<Method, Method> cache = new ConcurrentHashMap<>();
 
     public FallbackMethod getFallbackMethod(Class<?> type, Method commandMethod) {
         return getFallbackMethod(type, commandMethod, false);

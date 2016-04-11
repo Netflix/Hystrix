@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 public abstract class CommandStreamTest {
 
@@ -132,7 +133,7 @@ public abstract class CommandStreamTest {
         public static List<Command> getCommandsWithResponseFromCache(HystrixCommandGroupKey groupKey, HystrixCommandKey key) {
             Command cmd1 = Command.from(groupKey, key, HystrixEventType.SUCCESS);
             Command cmd2 = Command.from(groupKey, key, HystrixEventType.RESPONSE_FROM_CACHE);
-            List<Command> cmds = new ArrayList<Command>();
+            List<Command> cmds = new ArrayList<>();
             cmds.add(cmd1);
             cmds.add(cmd2);
             return cmds;
@@ -196,10 +197,7 @@ public abstract class CommandStreamTest {
 
         @Override
         protected HystrixCommand<List<Integer>> createCommand(Collection<CollapsedRequest<Integer, Integer>> collapsedRequests) {
-            List<Integer> args = new ArrayList<Integer>();
-            for (CollapsedRequest<Integer, Integer> collapsedReq: collapsedRequests) {
-                args.add(collapsedReq.getArgument());
-            }
+            List<Integer> args = collapsedRequests.stream().map(CollapsedRequest::getArgument).collect(Collectors.toList());
             return new BatchCommand(args);
         }
 

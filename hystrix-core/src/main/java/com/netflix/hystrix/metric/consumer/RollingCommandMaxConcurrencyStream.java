@@ -36,7 +36,7 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class RollingCommandMaxConcurrencyStream extends RollingConcurrencyStream {
 
-    private static final ConcurrentMap<String, RollingCommandMaxConcurrencyStream> streams = new ConcurrentHashMap<String, RollingCommandMaxConcurrencyStream>();
+    private static final ConcurrentMap<String, RollingCommandMaxConcurrencyStream> streams = new ConcurrentHashMap<>();
 
     public static RollingCommandMaxConcurrencyStream getInstance(HystrixCommandKey commandKey, HystrixCommandProperties properties) {
         final int counterMetricWindow = properties.metricsRollingStatisticalWindowInMilliseconds().get();

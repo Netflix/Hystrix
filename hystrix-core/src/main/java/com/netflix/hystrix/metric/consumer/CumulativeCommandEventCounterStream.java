@@ -42,7 +42,7 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class CumulativeCommandEventCounterStream extends BucketedCumulativeCounterStream<HystrixCommandCompletion, long[], long[]> {
 
-    private static final ConcurrentMap<String, CumulativeCommandEventCounterStream> streams = new ConcurrentHashMap<String, CumulativeCommandEventCounterStream>();
+    private static final ConcurrentMap<String, CumulativeCommandEventCounterStream> streams = new ConcurrentHashMap<>();
 
     private static final int NUM_EVENT_TYPES = HystrixEventType.values().length;
 

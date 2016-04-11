@@ -38,8 +38,8 @@ public class HystrixRequestEvents {
     }
 
     public Map<ExecutionSignature, List<Integer>> getExecutionsMappedToLatencies() {
-        Map<CommandAndCacheKey, Integer> cachingDetector = new HashMap<CommandAndCacheKey, Integer>();
-        List<HystrixInvokableInfo<?>> nonCachedExecutions = new ArrayList<HystrixInvokableInfo<?>>(executions.size());
+        Map<CommandAndCacheKey, Integer> cachingDetector = new HashMap<>();
+        List<HystrixInvokableInfo<?>> nonCachedExecutions = new ArrayList<>(executions.size());
         for (HystrixInvokableInfo<?> execution: executions) {
             if (execution.getPublicCacheKey() != null) {
                 //eligible for caching - might be the initial, or might be from cache
@@ -58,7 +58,7 @@ public class HystrixRequestEvents {
             }
         }
 
-        Map<ExecutionSignature, List<Integer>> commandDeduper = new HashMap<ExecutionSignature, List<Integer>>();
+        Map<ExecutionSignature, List<Integer>> commandDeduper = new HashMap<>();
         for (HystrixInvokableInfo<?> execution: nonCachedExecutions) {
             int cachedCount = 0;
             String cacheKey = null;
@@ -81,7 +81,7 @@ public class HystrixRequestEvents {
             if (currentLatencyList != null) {
                 currentLatencyList.add(execution.getExecutionTimeInMilliseconds());
             } else {
-                List<Integer> newLatencyList = new ArrayList<Integer>();
+                List<Integer> newLatencyList = new ArrayList<>();
                 newLatencyList.add(execution.getExecutionTimeInMilliseconds());
                 commandDeduper.put(signature, newLatencyList);
             }

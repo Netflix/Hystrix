@@ -74,7 +74,7 @@ public class ObservableCollapserPerfTest {
         public void setUp() {
             reqContext = HystrixRequestContext.initializeContext();
 
-            List<Observable<String>> os = new ArrayList<Observable<String>>();
+            List<Observable<String>> os = new ArrayList<>();
 
             for (int i = 0; i < numToCollapse; i++) {
                 TestCollapserWithMultipleResponses collapser = new TestCollapserWithMultipleResponses(i, numResponsesPerArg, blackholeConsumption);
@@ -102,7 +102,7 @@ public class ObservableCollapserPerfTest {
         private final Action1<HystrixCollapser.CollapsedRequest<String, String>> onMissingResponseHandler;
 
         static {
-            emitsPerArg = new HashMap<String, Integer>();
+            emitsPerArg = new HashMap<>();
         }
 
         public TestCollapserWithMultipleResponses(int arg, int numResponsePerArg, int blackholeConsumption) {
@@ -111,18 +111,8 @@ public class ObservableCollapserPerfTest {
             emitsPerArg.put(this.arg, numResponsePerArg);
             this.blackholeConsumption = blackholeConsumption;
             commandConstructionFails = false;
-            keyMapper = new Func1<String, String>() {
-                @Override
-                public String call(String s) {
-                    return s.substring(0, s.indexOf(":"));
-                }
-            };
-            onMissingResponseHandler = new Action1<HystrixCollapser.CollapsedRequest<String, String>>() {
-                @Override
-                public void call(HystrixCollapser.CollapsedRequest<String, String> collapsedReq) {
-                    collapsedReq.setResponse("missing:missing");
-                }
-            };
+            keyMapper = s -> s.substring(0, s.indexOf(":"));
+            onMissingResponseHandler = collapsedReq -> collapsedReq.setResponse("missing:missing");
 
         }
 
@@ -136,7 +126,7 @@ public class ObservableCollapserPerfTest {
             if (commandConstructionFails) {
                 throw new RuntimeException("Exception thrown in command construction");
             } else {
-                List<Integer> args = new ArrayList<Integer>();
+                List<Integer> args = new ArrayList<>();
 
                 for (HystrixCollapser.CollapsedRequest<String, String> collapsedRequest : collapsedRequests) {
                     String stringArg = collapsedRequest.getArgument();
@@ -158,14 +148,7 @@ public class ObservableCollapserPerfTest {
 
         @Override
         protected Func1<String, String> getRequestArgumentKeySelector() {
-            return new Func1<String, String>() {
-
-                @Override
-                public String call(String s) {
-                    return s;
-                }
-
-            };
+            return s -> s;
         }
 
         @Override
@@ -176,14 +159,7 @@ public class ObservableCollapserPerfTest {
 
         @Override
         protected Func1<String, String> getBatchReturnTypeToResponseTypeMapper() {
-            return new Func1<String, String>() {
-
-                @Override
-                public String call(String s) {
-                    return s;
-                }
-
-            };
+            return s -> s;
         }
     }
 

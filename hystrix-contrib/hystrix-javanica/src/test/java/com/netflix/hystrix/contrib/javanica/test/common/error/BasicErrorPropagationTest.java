@@ -46,7 +46,7 @@ public abstract class BasicErrorPropagationTest extends BasicHystrixTest {
     private static final Map<String, User> USERS;
 
     static {
-        USERS = new HashMap<String, User>();
+        USERS = new HashMap<>();
         USERS.put("1", new User("1", "user_1"));
         USERS.put("2", new User("2", "user_2"));
         USERS.put("3", new User("3", "user_3"));

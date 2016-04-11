@@ -42,7 +42,7 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class CumulativeCollapserEventCounterStream extends BucketedCumulativeCounterStream<HystrixCollapserEvent, long[], long[]> {
 
-    private static final ConcurrentMap<String, CumulativeCollapserEventCounterStream> streams = new ConcurrentHashMap<String, CumulativeCollapserEventCounterStream>();
+    private static final ConcurrentMap<String, CumulativeCollapserEventCounterStream> streams = new ConcurrentHashMap<>();
 
     private static final int NUM_EVENT_TYPES = HystrixEventType.Collapser.values().length;
 

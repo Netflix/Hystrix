@@ -211,7 +211,7 @@ public class HystrixMetricsStreamServlet extends HttpServlet {
         private LinkedBlockingQueue<String> jsonMetrics;
 
         public MetricJsonListener(int queueSize) {
-            jsonMetrics = new LinkedBlockingQueue<String>(queueSize);
+            jsonMetrics = new LinkedBlockingQueue<>(queueSize);
         }
 
         /**
@@ -228,7 +228,7 @@ public class HystrixMetricsStreamServlet extends HttpServlet {
          * @return
          */
         public List<String> getJsonMetrics() {
-            ArrayList<String> metrics = new ArrayList<String>();
+            ArrayList<String> metrics = new ArrayList<>();
             jsonMetrics.drainTo(metrics);
             return metrics;
         }

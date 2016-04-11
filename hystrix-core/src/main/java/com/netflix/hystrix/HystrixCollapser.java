@@ -123,7 +123,7 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
         }
 
         HystrixCollapserProperties properties = HystrixPropertiesFactory.getCollapserProperties(collapserKey, propertiesBuilder);
-        this.collapserFactory = new RequestCollapserFactory<BatchReturnType, ResponseType, RequestArgumentType>(collapserKey, scope, timer, properties);
+        this.collapserFactory = new RequestCollapserFactory<>(collapserKey, scope, timer, properties);
         this.requestCache = HystrixRequestCache.getInstance(collapserKey, HystrixPlugins.getInstance().getConcurrencyStrategy());
 
         if (metrics == null) {
@@ -161,12 +161,9 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
 
             @Override
             public Observable<Void> mapResponseToRequests(Observable<BatchReturnType> batchResponse, final Collection<CollapsedRequest<ResponseType, RequestArgumentType>> requests) {
-                return batchResponse.single().doOnNext(new Action1<BatchReturnType>() {
-                    @Override
-                    public void call(BatchReturnType batchReturnType) {
-                        // this is a blocking call in HystrixCollapser
-                        self.mapResponseToRequests(batchReturnType, requests);
-                    }
+                return batchResponse.single().doOnNext(batchReturnType -> {
+                    // this is a blocking call in HystrixCollapser
+                    self.mapResponseToRequests(batchReturnType, requests);
                 }).ignoreElements().cast(Void.class);
             }
 
@@ -606,6 +603,6 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
     // this is a micro-optimization but saves about 1-2microseconds (on 2011 MacBook Pro) 
     // on the repetitive string processing that will occur on the same classes over and over again
     @SuppressWarnings("rawtypes")
-    private static ConcurrentHashMap<Class<? extends HystrixCollapser>, String> defaultNameCache = new ConcurrentHashMap<Class<? extends HystrixCollapser>, String>();
+    private static ConcurrentHashMap<Class<? extends HystrixCollapser>, String> defaultNameCache = new ConcurrentHashMap<>();
 
 }

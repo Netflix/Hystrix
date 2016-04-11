@@ -36,7 +36,7 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class RollingThreadPoolMaxConcurrencyStream extends RollingConcurrencyStream {
 
-    private static final ConcurrentMap<String, RollingThreadPoolMaxConcurrencyStream> streams = new ConcurrentHashMap<String, RollingThreadPoolMaxConcurrencyStream>();
+    private static final ConcurrentMap<String, RollingThreadPoolMaxConcurrencyStream> streams = new ConcurrentHashMap<>();
 
     public static RollingThreadPoolMaxConcurrencyStream getInstance(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolProperties properties) {
         final int counterMetricWindow = properties.metricsRollingStatisticalWindowInMilliseconds().get();

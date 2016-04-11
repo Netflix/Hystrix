@@ -40,16 +40,11 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class HealthCountsStream extends BucketedRollingCounterStream<HystrixCommandCompletion, long[], HystrixCommandMetrics.HealthCounts> {
 
-    private static final ConcurrentMap<String, HealthCountsStream> streams = new ConcurrentHashMap<String, HealthCountsStream>();
+    private static final ConcurrentMap<String, HealthCountsStream> streams = new ConcurrentHashMap<>();
 
     private static final int NUM_EVENT_TYPES = HystrixEventType.values().length;
 
-    private static final Func2<HystrixCommandMetrics.HealthCounts, long[], HystrixCommandMetrics.HealthCounts> healthCheckAccumulator = new Func2<HystrixCommandMetrics.HealthCounts, long[], HystrixCommandMetrics.HealthCounts>() {
-        @Override
-        public HystrixCommandMetrics.HealthCounts call(HystrixCommandMetrics.HealthCounts healthCounts, long[] bucketEventCounts) {
-            return healthCounts.plus(bucketEventCounts);
-        }
-    };
+    private static final Func2<HystrixCommandMetrics.HealthCounts, long[], HystrixCommandMetrics.HealthCounts> healthCheckAccumulator = HystrixCommandMetrics.HealthCounts::plus;
 
 
     public static HealthCountsStream getInstance(HystrixCommandKey commandKey, HystrixCommandProperties properties) {

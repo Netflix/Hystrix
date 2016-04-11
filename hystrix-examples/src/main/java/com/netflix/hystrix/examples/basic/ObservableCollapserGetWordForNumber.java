@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import org.junit.After;
 import org.junit.Before;
@@ -86,11 +87,7 @@ public class ObservableCollapserGetWordForNumber extends HystrixObservableCollap
 		final int count = counter.incrementAndGet();
 		System.out.println("Creating batch for " + requests.size() + " requests. Total invocations so far: " + count);
 
-		final List<Integer> numbers = new ArrayList<Integer>();
-		for (final CollapsedRequest<String, Integer> request : requests)
-		{
-			numbers.add(request.getArgument());
-		}
+		final List<Integer> numbers = requests.stream().map(CollapsedRequest::getArgument).collect(Collectors.toList());
 
 		return new ObservableCommandNumbersToWords(numbers);
 	}
@@ -100,14 +97,7 @@ public class ObservableCollapserGetWordForNumber extends HystrixObservableCollap
 	{
 		// Java 8: (final NumberWord nw) -> nw.getNumber();
 
-		return new Func1<NumberWord, Integer>()
-		{
-			@Override
-			public Integer call(final NumberWord nw)
-			{
-				return nw.getNumber();
-			}
-		};
+		return NumberWord::getNumber;
 	}
 
 	@Override
@@ -115,15 +105,7 @@ public class ObservableCollapserGetWordForNumber extends HystrixObservableCollap
 	{
 		// Java 8: return (final Integer no) -> no;
 
-		return new Func1<Integer, Integer>()
-		{
-			@Override
-			public Integer call(final Integer no)
-			{
-				return no;
-			}
-
-		};
+		return no -> no;
 	}
 
 	@Override
@@ -131,14 +113,7 @@ public class ObservableCollapserGetWordForNumber extends HystrixObservableCollap
 	{
 		// Java 8: return (final NumberWord nw) -> nw.getWord();
 
-		return new Func1<NumberWord, String>()
-		{
-			@Override
-			public String call(final NumberWord nw)
-			{
-				return nw.getWord();
-			}
-		};
+		return NumberWord::getWord;
 	}
 
 	@Override
@@ -172,13 +147,13 @@ public class ObservableCollapserGetWordForNumber extends HystrixObservableCollap
 		public void shouldCollapseRequestsSync()
 		{
 			final int noOfRequests = 10;
-			final Map<Integer, TestSubscriber<String>> subscribersByNumber = new HashMap<Integer, TestSubscriber<String>>(
+			final Map<Integer, TestSubscriber<String>> subscribersByNumber = new HashMap<>(
 					noOfRequests);
 
 			TestSubscriber<String> subscriber;
 			for (int number = 0; number < noOfRequests; number++)
 			{
-				subscriber = new TestSubscriber<String>();
+				subscriber = new TestSubscriber<>();
 				new ObservableCollapserGetWordForNumber(number).toObservable().subscribe(subscriber);
 				subscribersByNumber.put(number, subscriber);
 
@@ -217,24 +192,17 @@ public class ObservableCollapserGetWordForNumber extends HystrixObservableCollap
 			final HystrixContextScheduler contextAwareScheduler = new HystrixContextScheduler(Schedulers.computation());
 
 			final int noOfRequests = 10;
-			final Map<Integer, TestSubscriber<String>> subscribersByNumber = new HashMap<Integer, TestSubscriber<String>>(
+			final Map<Integer, TestSubscriber<String>> subscribersByNumber = new HashMap<>(
 					noOfRequests);
 
 			TestSubscriber<String> subscriber;
 			for (int number = 0; number < noOfRequests; number++)
 			{
-				subscriber = new TestSubscriber<String>();
+				subscriber = new TestSubscriber<>();
 				final int finalNumber = number;
 
 				// defer and subscribe on specific scheduler
-				Observable.defer(new Func0<Observable<String>>()
-				{
-					@Override
-					public Observable<String> call()
-					{
-						return new ObservableCollapserGetWordForNumber(finalNumber).toObservable();
-					}
-				}).subscribeOn(contextAwareScheduler).subscribe(subscriber);
+				Observable.defer(() -> new ObservableCollapserGetWordForNumber(finalNumber).toObservable()).subscribeOn(contextAwareScheduler).subscribe(subscriber);
 
 				subscribersByNumber.put(number, subscriber);
 

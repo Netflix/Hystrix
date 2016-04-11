@@ -285,7 +285,7 @@ public class CumulativeCommandEventCounterStreamTest extends CommandStreamTest {
         //submit 2 more requests and they should be SEMAPHORE_REJECTED
         //should see 10 SUCCESSes, 2 SEMAPHORE_REJECTED and 2 FALLBACK_SUCCESSes
 
-        List<Command> saturators = new ArrayList<Command>();
+        List<Command> saturators = new ArrayList<>();
 
         for (int i = 0; i < 10; i++) {
             saturators.add(Command.from(groupKey, key, HystrixEventType.SUCCESS, 200, HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE));
@@ -295,12 +295,7 @@ public class CumulativeCommandEventCounterStreamTest extends CommandStreamTest {
         Command rejected2 = Command.from(groupKey, key, HystrixEventType.SUCCESS, 0, HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE);
 
         for (final Command saturator : saturators) {
-            new Thread(new HystrixContextRunnable(new Runnable() {
-                @Override
-                public void run() {
-                    saturator.observe();
-                }
-            })).start();
+            new Thread(new HystrixContextRunnable(saturator::observe)).start();
         }
 
         try {
@@ -342,7 +337,7 @@ public class CumulativeCommandEventCounterStreamTest extends CommandStreamTest {
         //submit 2 more requests and they should be THREADPOOL_REJECTED
         //should see 10 SUCCESSes, 2 THREADPOOL_REJECTED and 2 FALLBACK_SUCCESSes
 
-        List<Command> saturators = new ArrayList<Command>();
+        List<Command> saturators = new ArrayList<>();
 
         for (int i = 0; i < 10; i++) {
             saturators.add(Command.from(groupKey, key, HystrixEventType.SUCCESS, 200));
@@ -351,7 +346,7 @@ public class CumulativeCommandEventCounterStreamTest extends CommandStreamTest {
         Command rejected1 = Command.from(groupKey, key, HystrixEventType.SUCCESS, 0);
         Command rejected2 = Command.from(groupKey, key, HystrixEventType.SUCCESS, 0);
 
-        for (final Command saturator : saturators) {
+        for (CommandStreamTest.Command saturator: saturators) {
             saturator.observe();
         }
 
@@ -445,7 +440,7 @@ public class CumulativeCommandEventCounterStreamTest extends CommandStreamTest {
         //fallback semaphore size is 5.  So let 5 commands saturate that semaphore, then
         //let 2 more commands go to fallback.  they should get rejected by the fallback-semaphore
 
-        List<Command> fallbackSaturators = new ArrayList<Command>();
+        List<Command> fallbackSaturators = new ArrayList<>();
         for (int i = 0; i < 5; i++) {
             fallbackSaturators.add(Command.from(groupKey, key, HystrixEventType.FAILURE, 20, HystrixEventType.FALLBACK_SUCCESS, 400));
         }
@@ -453,7 +448,7 @@ public class CumulativeCommandEventCounterStreamTest extends CommandStreamTest {
         Command rejection1 = Command.from(groupKey, key, HystrixEventType.FAILURE, 20, HystrixEventType.FALLBACK_SUCCESS, 0);
         Command rejection2 = Command.from(groupKey, key, HystrixEventType.FAILURE, 20, HystrixEventType.FALLBACK_SUCCESS, 0);
 
-        for (Command saturator: fallbackSaturators) {
+        for (CommandStreamTest.Command saturator: fallbackSaturators) {
             saturator.observe();
         }
 

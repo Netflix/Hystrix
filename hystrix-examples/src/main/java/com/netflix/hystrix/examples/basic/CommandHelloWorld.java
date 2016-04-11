@@ -103,13 +103,8 @@ public class CommandHelloWorld extends HystrixCommand<String> {
             // non-blocking
             // - also verbose anonymous inner-class
             // - ignore errors and onCompleted signal
-            fBob.subscribe(new Action1<String>() {
-
-                @Override
-                public void call(String v) {
-                    System.out.println("onNext: " + v);
-                }
-
+            fBob.subscribe(v -> {
+                System.out.println("onNext: " + v);
             });
 
             // non-blocking

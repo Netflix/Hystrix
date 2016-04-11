@@ -115,9 +115,9 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
             public void onNext(CachedValuesHistogram distribution) {
                 System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Received distribution with count : " + distribution.getTotalCount() + " and mean : " + distribution.getMean());
                 if (distribution.getTotalCount() == 1) {
-                    assertBetween(10, 50, (int) distribution.getMean());
+                    assertBetween(10, 50, distribution.getMean());
                 } else if (distribution.getTotalCount() == 2) {
-                    assertBetween(300, 400, (int) distribution.getMean());
+                    assertBetween(300, 400, distribution.getMean());
                 }
             }
         });
@@ -172,7 +172,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
             public void onNext(CachedValuesHistogram distribution) {
                 System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Received distribution with count : " + distribution.getTotalCount() + " and mean : " + distribution.getMean());
                     if (distribution.getTotalCount() < 4 && distribution.getTotalCount() > 0) { //buckets before timeout latency registers
-                        assertBetween(10, 50, (int) distribution.getMean());
+                        assertBetween(10, 50, distribution.getMean());
                     } else if (distribution.getTotalCount() == 4){
                         assertBetween(150, 250, (int) distribution.getMean()); //now timeout latency of 600ms is there
                     }
@@ -207,7 +207,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
 
         //3 failures is enough to trigger short-circuit.  execute those, then wait for bucket to roll
         //next command should be a short-circuit
-        List<Command> commands = new ArrayList<Command>();
+        List<Command> commands = new ArrayList<>();
         for (int i = 0; i < 3; i++) {
             commands.add(Command.from(groupKey, key, HystrixEventType.FAILURE, 0));
         }
@@ -227,12 +227,12 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
             @Override
             public void onNext(CachedValuesHistogram distribution) {
                 System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Received distribution with count : " + distribution.getTotalCount() + " and mean : " + distribution.getMean());
-                assertBetween(0, 30, (int) distribution.getMean());
+                assertBetween(0, 30, distribution.getMean());
             }
         });
 
-        for (Command cmd: commands) {
-            cmd.observe();
+        for (CommandStreamTest.Command command: commands) {
+            command.observe();
         }
 
         Command shortCircuit = Command.from(groupKey, key, HystrixEventType.SUCCESS);
@@ -263,7 +263,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
 
         //10 commands with latency should occupy the entire threadpool.  execute those, then wait for bucket to roll
         //next command should be a thread-pool rejection
-        List<Command> commands = new ArrayList<Command>();
+        List<Command> commands = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             commands.add(Command.from(groupKey, key, HystrixEventType.SUCCESS, 200));
         }
@@ -289,8 +289,8 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
             }
         });
 
-        for (Command cmd: commands) {
-            cmd.observe();
+        for (CommandStreamTest.Command command: commands) {
+            command.observe();
         }
 
         Command threadPoolRejected = Command.from(groupKey, key, HystrixEventType.SUCCESS);
@@ -321,7 +321,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
 
         //10 commands with latency should occupy all semaphores.  execute those, then wait for bucket to roll
         //next command should be a semaphore rejection
-        List<Command> commands = new ArrayList<Command>();
+        List<Command> commands = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             commands.add(Command.from(groupKey, key, HystrixEventType.SUCCESS, 200, HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE));
         }
@@ -342,19 +342,14 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
             public void onNext(CachedValuesHistogram distribution) {
                 System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Received distribution with count : " + distribution.getTotalCount() + " and mean : " + distribution.getMean());
                 if (distribution.getTotalCount() > 0) {
-                    assertBetween(200, 250, (int) distribution.getMean());
+                    assertBetween(200, 250, distribution.getMean());
                 }
             }
         });
 
         for (final Command cmd: commands) {
             //since these are blocking calls on the caller thread, we need a new caller thread for each command to actually get the desired concurrency
-            new Thread(new HystrixContextRunnable(new Runnable() {
-                @Override
-                public void run() {
-                    cmd.observe();
-                }
-            })).start();
+            new Thread(new HystrixContextRunnable(cmd::observe)).start();
         }
 
         Command semaphoreRejected = Command.from(groupKey, key, HystrixEventType.SUCCESS);
@@ -405,8 +400,8 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
             }
         });
 
-        for (Command cmd: commands) {
-            cmd.observe();
+        for (CommandStreamTest.Command command: commands) {
+            command.observe();
         }
 
         try {
@@ -441,7 +436,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
             public void onNext(CachedValuesHistogram distribution) {
                 System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Received distribution with count : " + distribution.getTotalCount() + " and mean : " + distribution.getMean());
                 if (distribution.getTotalCount() == 2) {
-                    assertBetween(55, 90, (int) distribution.getMean());
+                    assertBetween(55, 90, distribution.getMean());
                 }
                 if (distribution.getTotalCount() == 5) {
                     assertEquals(60, 90, (long) distribution.getMean());
@@ -505,7 +500,7 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
             public void onNext(CachedValuesHistogram distribution) {
                 System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Received distribution with count : " + distribution.getTotalCount() + " and mean : " + distribution.getMean());
                 if (distribution.getTotalCount() == 2) {
-                    assertBetween(55, 90, (int) distribution.getMean());
+                    assertBetween(55, 90, distribution.getMean());
                 }
                 if (distribution.getTotalCount() == 5) {
                     assertEquals(60, 90, (long) distribution.getMean());

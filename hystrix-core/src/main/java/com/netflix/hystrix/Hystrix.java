@@ -76,13 +76,13 @@ public class Hystrix {
         HystrixCircuitBreaker.Factory.reset();
         HystrixPlugins.reset();
         HystrixPropertiesFactory.reset();
-        currentCommand.set(new ConcurrentStack<HystrixCommandKey>());
+        currentCommand.set(new ConcurrentStack<>());
     }
 
     private static ThreadLocal<ConcurrentStack<HystrixCommandKey>> currentCommand = new ThreadLocal<ConcurrentStack<HystrixCommandKey>>() {
         @Override
         protected ConcurrentStack<HystrixCommandKey> initialValue() {
-            return new ConcurrentStack<HystrixCommandKey>();
+            return new ConcurrentStack<>();
         }
     };
 
@@ -114,14 +114,7 @@ public class Hystrix {
         } catch (Exception e) {
             logger.warn("Unable to record command starting", e);
         }
-        return new Action0() {
-
-            @Override
-            public void call() {
-                endCurrentThreadExecutingCommand(list);
-            }
-
-        };
+        return () -> endCurrentThreadExecutingCommand(list);
     }
 
     /* package */static void endCurrentThreadExecutingCommand() {
@@ -150,10 +143,10 @@ public class Hystrix {
      * @param <E>
      */
     private static class ConcurrentStack<E> {
-        AtomicReference<Node<E>> top = new AtomicReference<Node<E>>();
+        AtomicReference<Node<E>> top = new AtomicReference<>();
 
         public void push(E item) {
-            Node<E> newHead = new Node<E>(item);
+            Node<E> newHead = new Node<>(item);
             Node<E> oldHead;
             do {
                 oldHead = top.get();

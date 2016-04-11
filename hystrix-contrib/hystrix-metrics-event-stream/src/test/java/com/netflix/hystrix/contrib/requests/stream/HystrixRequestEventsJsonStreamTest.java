@@ -44,14 +44,14 @@ public class HystrixRequestEventsJsonStreamTest {
 
     @Test
     public void testEmpty() throws IOException {
-        HystrixRequestEvents request = new HystrixRequestEvents(new ArrayList<HystrixInvokableInfo<?>>());
+        HystrixRequestEvents request = new HystrixRequestEvents(new ArrayList<>());
         String actual = HystrixRequestEventsJsonStream.convertRequestToJson(request);
         assertEquals("[]", actual);
     }
 
     @Test
     public void testSingleSuccess() throws IOException {
-        List<HystrixInvokableInfo<?>> executions = new ArrayList<HystrixInvokableInfo<?>>();
+        List<HystrixInvokableInfo<?>> executions = new ArrayList<>();
         executions.add(new SimpleExecution(fooKey, 100, HystrixEventType.SUCCESS));
         HystrixRequestEvents request = new HystrixRequestEvents(executions);
         String actual = HystrixRequestEventsJsonStream.convertRequestToJson(request);
@@ -60,7 +60,7 @@ public class HystrixRequestEventsJsonStreamTest {
 
     @Test
     public void testSingleFailureFallbackMissing() throws IOException {
-        List<HystrixInvokableInfo<?>> executions = new ArrayList<HystrixInvokableInfo<?>>();
+        List<HystrixInvokableInfo<?>> executions = new ArrayList<>();
         executions.add(new SimpleExecution(fooKey, 101, HystrixEventType.FAILURE, HystrixEventType.FALLBACK_MISSING));
         HystrixRequestEvents request = new HystrixRequestEvents(executions);
         String actual = HystrixRequestEventsJsonStream.convertRequestToJson(request);
@@ -69,7 +69,7 @@ public class HystrixRequestEventsJsonStreamTest {
 
     @Test
     public void testSingleFailureFallbackSuccess() throws IOException {
-        List<HystrixInvokableInfo<?>> executions = new ArrayList<HystrixInvokableInfo<?>>();
+        List<HystrixInvokableInfo<?>> executions = new ArrayList<>();
         executions.add(new SimpleExecution(fooKey, 102, HystrixEventType.FAILURE, HystrixEventType.FALLBACK_SUCCESS));
         HystrixRequestEvents request = new HystrixRequestEvents(executions);
         String actual = HystrixRequestEventsJsonStream.convertRequestToJson(request);
@@ -78,7 +78,7 @@ public class HystrixRequestEventsJsonStreamTest {
 
     @Test
     public void testSingleFailureFallbackRejected() throws IOException {
-        List<HystrixInvokableInfo<?>> executions = new ArrayList<HystrixInvokableInfo<?>>();
+        List<HystrixInvokableInfo<?>> executions = new ArrayList<>();
         executions.add(new SimpleExecution(fooKey, 103, HystrixEventType.FAILURE, HystrixEventType.FALLBACK_REJECTION));
         HystrixRequestEvents request = new HystrixRequestEvents(executions);
         String actual = HystrixRequestEventsJsonStream.convertRequestToJson(request);
@@ -87,7 +87,7 @@ public class HystrixRequestEventsJsonStreamTest {
 
     @Test
     public void testSingleFailureFallbackFailure() throws IOException {
-        List<HystrixInvokableInfo<?>> executions = new ArrayList<HystrixInvokableInfo<?>>();
+        List<HystrixInvokableInfo<?>> executions = new ArrayList<>();
         executions.add(new SimpleExecution(fooKey, 104, HystrixEventType.FAILURE, HystrixEventType.FALLBACK_FAILURE));
         HystrixRequestEvents request = new HystrixRequestEvents(executions);
         String actual = HystrixRequestEventsJsonStream.convertRequestToJson(request);
@@ -96,7 +96,7 @@ public class HystrixRequestEventsJsonStreamTest {
 
     @Test
     public void testSingleTimeoutFallbackSuccess() throws IOException {
-        List<HystrixInvokableInfo<?>> executions = new ArrayList<HystrixInvokableInfo<?>>();
+        List<HystrixInvokableInfo<?>> executions = new ArrayList<>();
         executions.add(new SimpleExecution(fooKey, 105, HystrixEventType.TIMEOUT, HystrixEventType.FALLBACK_SUCCESS));
         HystrixRequestEvents request = new HystrixRequestEvents(executions);
         String actual = HystrixRequestEventsJsonStream.convertRequestToJson(request);
@@ -105,7 +105,7 @@ public class HystrixRequestEventsJsonStreamTest {
 
     @Test
     public void testSingleSemaphoreRejectedFallbackSuccess() throws IOException {
-        List<HystrixInvokableInfo<?>> executions = new ArrayList<HystrixInvokableInfo<?>>();
+        List<HystrixInvokableInfo<?>> executions = new ArrayList<>();
         executions.add(new SimpleExecution(fooKey, 1, HystrixEventType.SEMAPHORE_REJECTED, HystrixEventType.FALLBACK_SUCCESS));
         HystrixRequestEvents request = new HystrixRequestEvents(executions);
         String actual = HystrixRequestEventsJsonStream.convertRequestToJson(request);
@@ -114,7 +114,7 @@ public class HystrixRequestEventsJsonStreamTest {
 
     @Test
     public void testSingleThreadPoolRejectedFallbackSuccess() throws IOException {
-        List<HystrixInvokableInfo<?>> executions = new ArrayList<HystrixInvokableInfo<?>>();
+        List<HystrixInvokableInfo<?>> executions = new ArrayList<>();
         executions.add(new SimpleExecution(fooKey, 1, HystrixEventType.THREAD_POOL_REJECTED, HystrixEventType.FALLBACK_SUCCESS));
         HystrixRequestEvents request = new HystrixRequestEvents(executions);
         String actual = HystrixRequestEventsJsonStream.convertRequestToJson(request);
@@ -123,7 +123,7 @@ public class HystrixRequestEventsJsonStreamTest {
 
     @Test
     public void testSingleShortCircuitedFallbackSuccess() throws IOException {
-        List<HystrixInvokableInfo<?>> executions = new ArrayList<HystrixInvokableInfo<?>>();
+        List<HystrixInvokableInfo<?>> executions = new ArrayList<>();
         executions.add(new SimpleExecution(fooKey, 1, HystrixEventType.SHORT_CIRCUITED, HystrixEventType.FALLBACK_SUCCESS));
         HystrixRequestEvents request = new HystrixRequestEvents(executions);
         String actual = HystrixRequestEventsJsonStream.convertRequestToJson(request);
@@ -132,7 +132,7 @@ public class HystrixRequestEventsJsonStreamTest {
 
     @Test
     public void testSingleBadRequest() throws IOException {
-        List<HystrixInvokableInfo<?>> executions = new ArrayList<HystrixInvokableInfo<?>>();
+        List<HystrixInvokableInfo<?>> executions = new ArrayList<>();
         executions.add(new SimpleExecution(fooKey, 50, HystrixEventType.BAD_REQUEST));
         HystrixRequestEvents request = new HystrixRequestEvents(executions);
         String actual = HystrixRequestEventsJsonStream.convertRequestToJson(request);
@@ -141,7 +141,7 @@ public class HystrixRequestEventsJsonStreamTest {
 
     @Test
     public void testTwoSuccessesSameKey() throws IOException {
-        List<HystrixInvokableInfo<?>> executions = new ArrayList<HystrixInvokableInfo<?>>();
+        List<HystrixInvokableInfo<?>> executions = new ArrayList<>();
         HystrixInvokableInfo<Integer> foo1 = new SimpleExecution(fooKey, 23, HystrixEventType.SUCCESS);
         HystrixInvokableInfo<Integer> foo2 = new SimpleExecution(fooKey, 34, HystrixEventType.SUCCESS);
         executions.add(foo1);
@@ -153,7 +153,7 @@ public class HystrixRequestEventsJsonStreamTest {
 
     @Test
     public void testTwoSuccessesDifferentKey() throws IOException {
-        List<HystrixInvokableInfo<?>> executions = new ArrayList<HystrixInvokableInfo<?>>();
+        List<HystrixInvokableInfo<?>> executions = new ArrayList<>();
         HystrixInvokableInfo<Integer> foo1 = new SimpleExecution(fooKey, 23, HystrixEventType.SUCCESS);
         HystrixInvokableInfo<Integer> bar1 = new SimpleExecution(barKey, 34, HystrixEventType.SUCCESS);
         executions.add(foo1);
@@ -166,7 +166,7 @@ public class HystrixRequestEventsJsonStreamTest {
 
     @Test
     public void testTwoFailuresSameKey() throws IOException {
-        List<HystrixInvokableInfo<?>> executions = new ArrayList<HystrixInvokableInfo<?>>();
+        List<HystrixInvokableInfo<?>> executions = new ArrayList<>();
         HystrixInvokableInfo<Integer> foo1 = new SimpleExecution(fooKey, 56, HystrixEventType.FAILURE, HystrixEventType.FALLBACK_SUCCESS);
         HystrixInvokableInfo<Integer> foo2 = new SimpleExecution(fooKey, 67, HystrixEventType.FAILURE, HystrixEventType.FALLBACK_SUCCESS);
         executions.add(foo1);
@@ -178,7 +178,7 @@ public class HystrixRequestEventsJsonStreamTest {
 
     @Test
     public void testTwoSuccessesOneFailureSameKey() throws IOException {
-        List<HystrixInvokableInfo<?>> executions = new ArrayList<HystrixInvokableInfo<?>>();
+        List<HystrixInvokableInfo<?>> executions = new ArrayList<>();
         HystrixInvokableInfo<Integer> foo1 = new SimpleExecution(fooKey, 10, HystrixEventType.SUCCESS);
         HystrixInvokableInfo<Integer> foo2 = new SimpleExecution(fooKey, 67, HystrixEventType.FAILURE, HystrixEventType.FALLBACK_SUCCESS);
         HystrixInvokableInfo<Integer> foo3 = new SimpleExecution(fooKey, 11, HystrixEventType.SUCCESS);
@@ -193,7 +193,7 @@ public class HystrixRequestEventsJsonStreamTest {
 
     @Test
     public void testSingleResponseFromCache() throws IOException {
-        List<HystrixInvokableInfo<?>> executions = new ArrayList<HystrixInvokableInfo<?>>();
+        List<HystrixInvokableInfo<?>> executions = new ArrayList<>();
         HystrixInvokableInfo<Integer> foo1 = new SimpleExecution(fooKey, 23, "cacheKeyA", HystrixEventType.SUCCESS);
         HystrixInvokableInfo<Integer> cachedFoo1 = new SimpleExecution(fooKey, "cacheKeyA");
         executions.add(foo1);
@@ -205,7 +205,7 @@ public class HystrixRequestEventsJsonStreamTest {
 
     @Test
     public void testMultipleResponsesFromCache() throws IOException {
-        List<HystrixInvokableInfo<?>> executions = new ArrayList<HystrixInvokableInfo<?>>();
+        List<HystrixInvokableInfo<?>> executions = new ArrayList<>();
         HystrixInvokableInfo<Integer> foo1 = new SimpleExecution(fooKey, 23, "cacheKeyA", HystrixEventType.SUCCESS);
         HystrixInvokableInfo<Integer> cachedFoo1 = new SimpleExecution(fooKey, "cacheKeyA");
         HystrixInvokableInfo<Integer> anotherCachedFoo1 = new SimpleExecution(fooKey, "cacheKeyA");
@@ -219,7 +219,7 @@ public class HystrixRequestEventsJsonStreamTest {
 
     @Test
     public void testMultipleCacheKeys() throws IOException {
-        List<HystrixInvokableInfo<?>> executions = new ArrayList<HystrixInvokableInfo<?>>();
+        List<HystrixInvokableInfo<?>> executions = new ArrayList<>();
         HystrixInvokableInfo<Integer> foo1 = new SimpleExecution(fooKey, 23, "cacheKeyA", HystrixEventType.SUCCESS);
         HystrixInvokableInfo<Integer> cachedFoo1 = new SimpleExecution(fooKey, "cacheKeyA");
         HystrixInvokableInfo<Integer> foo2 = new SimpleExecution(fooKey, 67, "cacheKeyB", HystrixEventType.SUCCESS);
@@ -236,7 +236,7 @@ public class HystrixRequestEventsJsonStreamTest {
 
     @Test
     public void testSingleSuccessMultipleEmits() throws IOException {
-        List<HystrixInvokableInfo<?>> executions = new ArrayList<HystrixInvokableInfo<?>>();
+        List<HystrixInvokableInfo<?>> executions = new ArrayList<>();
         executions.add(new SimpleExecution(fooKey, 100, HystrixEventType.EMIT, HystrixEventType.EMIT, HystrixEventType.EMIT, HystrixEventType.SUCCESS));
         HystrixRequestEvents request = new HystrixRequestEvents(executions);
         String actual = HystrixRequestEventsJsonStream.convertRequestToJson(request);
@@ -245,7 +245,7 @@ public class HystrixRequestEventsJsonStreamTest {
 
     @Test
     public void testSingleSuccessMultipleEmitsAndFallbackEmits() throws IOException {
-        List<HystrixInvokableInfo<?>> executions = new ArrayList<HystrixInvokableInfo<?>>();
+        List<HystrixInvokableInfo<?>> executions = new ArrayList<>();
         executions.add(new SimpleExecution(fooKey, 100, HystrixEventType.EMIT, HystrixEventType.EMIT, HystrixEventType.EMIT, HystrixEventType.FAILURE, HystrixEventType.FALLBACK_EMIT, HystrixEventType.FALLBACK_EMIT, HystrixEventType.FALLBACK_SUCCESS));
         HystrixRequestEvents request = new HystrixRequestEvents(executions);
         String actual = HystrixRequestEventsJsonStream.convertRequestToJson(request);
@@ -254,7 +254,7 @@ public class HystrixRequestEventsJsonStreamTest {
 
     @Test
     public void testCollapsedBatchOfOne() throws IOException {
-        List<HystrixInvokableInfo<?>> executions = new ArrayList<HystrixInvokableInfo<?>>();
+        List<HystrixInvokableInfo<?>> executions = new ArrayList<>();
         executions.add(new SimpleExecution(fooKey, 53, collapserKey, 1, HystrixEventType.SUCCESS));
         HystrixRequestEvents request = new HystrixRequestEvents(executions);
         String actual = HystrixRequestEventsJsonStream.convertRequestToJson(request);
@@ -263,7 +263,7 @@ public class HystrixRequestEventsJsonStreamTest {
 
     @Test
     public void testCollapsedBatchOfSix() throws IOException {
-        List<HystrixInvokableInfo<?>> executions = new ArrayList<HystrixInvokableInfo<?>>();
+        List<HystrixInvokableInfo<?>> executions = new ArrayList<>();
         executions.add(new SimpleExecution(fooKey, 53, collapserKey, 6, HystrixEventType.SUCCESS));
         HystrixRequestEvents request = new HystrixRequestEvents(executions);
         String actual = HystrixRequestEventsJsonStream.convertRequestToJson(request);

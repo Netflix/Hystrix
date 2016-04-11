@@ -150,11 +150,6 @@ public class CacheInvocationContextFactoryTest {
     }
 
     private static boolean isAnnotationPresent(CacheInvocationParameter parameter, final Class<?> annotation) {
-        return Iterables.tryFind(parameter.getAnnotations(), new Predicate<Annotation>() {
-            @Override
-            public boolean apply(Annotation input) {
-                return input.annotationType().equals(annotation);
-            }
-        }).isPresent();
+        return Iterables.tryFind(parameter.getAnnotations(), input -> input.annotationType().equals(annotation)).isPresent();
     }
 }

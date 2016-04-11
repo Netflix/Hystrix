@@ -35,13 +35,9 @@ public class HystrixMetricsPollerTest {
     public void testStartStopStart() {
         final AtomicInteger metricsCount = new AtomicInteger();
 
-        HystrixMetricsPoller poller = new HystrixMetricsPoller(new HystrixMetricsPoller.MetricsAsJsonPollerListener() {
-
-            @Override
-            public void handleJsonMetric(String json) {
-                System.out.println("Received: " + json);
-                metricsCount.incrementAndGet();
-            }
+        HystrixMetricsPoller poller = new HystrixMetricsPoller(json -> {
+            System.out.println("Received: " + json);
+            metricsCount.incrementAndGet();
         }, 100);
         try {
 

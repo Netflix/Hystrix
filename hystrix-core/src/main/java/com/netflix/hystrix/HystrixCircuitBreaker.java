@@ -55,7 +55,7 @@ public interface HystrixCircuitBreaker {
      */
     public static class Factory {
         // String is HystrixCommandKey.name() (we can't use HystrixCommandKey directly as we can't guarantee it implements hashcode/equals correctly)
-        private static ConcurrentHashMap<String, HystrixCircuitBreaker> circuitBreakersByCommand = new ConcurrentHashMap<String, HystrixCircuitBreaker>();
+        private static ConcurrentHashMap<String, HystrixCircuitBreaker> circuitBreakersByCommand = new ConcurrentHashMap<>();
 
         /**
          * Get the {@link HystrixCircuitBreaker} instance for a given {@link HystrixCommandKey}.

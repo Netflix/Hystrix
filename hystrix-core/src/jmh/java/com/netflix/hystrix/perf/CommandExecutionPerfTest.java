@@ -155,12 +155,9 @@ public class CommandExecutionPerfTest {
             ) {
                 @Override
                 protected Observable<Integer> construct() {
-                    return Observable.defer(new Func0<Observable<Integer>>() {
-                        @Override
-                        public Observable<Integer> call() {
-                            Blackhole.consumeCPU(blackholeConsumption);
-                            return Observable.just(1);
-                        }
+                    return Observable.defer(() -> {
+                        Blackhole.consumeCPU(blackholeConsumption);
+                        return Observable.just(1);
                     });
                 }
             };
@@ -219,12 +216,9 @@ public class CommandExecutionPerfTest {
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public Integer baselineQueue(ExecutorState state, final BlackholeState bhState) throws InterruptedException, ExecutionException {
         try {
-            return state.executorService.submit(new Callable<Integer>() {
-                @Override
-                public Integer call() throws Exception {
-                    Blackhole.consumeCPU(bhState.blackholeConsumption);
-                    return 1;
-                }
+            return state.executorService.submit(() -> {
+                Blackhole.consumeCPU(bhState.blackholeConsumption);
+                return 1;
             }).get();
         } catch (Throwable t) {
             return 2;
@@ -235,12 +229,9 @@ public class CommandExecutionPerfTest {
     @BenchmarkMode({Mode.Throughput})
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public Integer baselineSyncObserve(final BlackholeState bhState) throws InterruptedException {
-        Observable<Integer> syncObservable = Observable.defer(new Func0<Observable<Integer>>() {
-            @Override
-            public Observable<Integer> call() {
-                Blackhole.consumeCPU(bhState.blackholeConsumption);
-                return Observable.just(1);
-            }
+        Observable<Integer> syncObservable = Observable.defer(() -> {
+            Blackhole.consumeCPU(bhState.blackholeConsumption);
+            return Observable.just(1);
         });
 
         try {
@@ -254,12 +245,9 @@ public class CommandExecutionPerfTest {
     @BenchmarkMode({Mode.Throughput})
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public Integer baselineAsyncComputationObserve(final BlackholeState bhState) throws InterruptedException {
-        Observable<Integer> asyncObservable = Observable.defer(new Func0<Observable<Integer>>() {
-            @Override
-            public Observable<Integer> call() {
-                Blackhole.consumeCPU(bhState.blackholeConsumption);
-                return Observable.just(1);
-            }
+        Observable<Integer> asyncObservable = Observable.defer(() -> {
+            Blackhole.consumeCPU(bhState.blackholeConsumption);
+            return Observable.just(1);
         }).subscribeOn(Schedulers.computation());
 
         try {
@@ -273,12 +261,9 @@ public class CommandExecutionPerfTest {
     @BenchmarkMode({Mode.Throughput})
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public Integer baselineAsyncCustomThreadPoolObserve(ThreadPoolState state, final BlackholeState bhState) {
-        Observable<Integer> asyncObservable = Observable.defer(new Func0<Observable<Integer>>() {
-            @Override
-            public Observable<Integer> call() {
-                Blackhole.consumeCPU(bhState.blackholeConsumption);
-                return Observable.just(1);
-            }
+        Observable<Integer> asyncObservable = Observable.defer(() -> {
+            Blackhole.consumeCPU(bhState.blackholeConsumption);
+            return Observable.just(1);
         }).subscribeOn(state.hystrixThreadPool.getScheduler());
         try {
             return asyncObservable.toBlocking().first();

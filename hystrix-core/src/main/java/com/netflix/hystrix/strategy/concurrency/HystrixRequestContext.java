@@ -73,7 +73,7 @@ public class HystrixRequestContext implements Closeable {
      * HystrixRequestContext object with the ConcurrentHashMap within it nulled out since once it is nullified
      * from the parent thread it is shared across all child threads.
      */
-    private static ThreadLocal<HystrixRequestContext> requestVariables = new ThreadLocal<HystrixRequestContext>();
+    private static ThreadLocal<HystrixRequestContext> requestVariables = new ThreadLocal<>();
 
     public static boolean isCurrentThreadInitialized() {
         HystrixRequestContext context = requestVariables.get();
@@ -116,7 +116,7 @@ public class HystrixRequestContext implements Closeable {
      * 
      * Only HystrixRequestVariable has a reason to be accessing this field.
      */
-    /* package */ConcurrentHashMap<HystrixRequestVariableDefault<?>, HystrixRequestVariableDefault.LazyInitializer<?>> state = new ConcurrentHashMap<HystrixRequestVariableDefault<?>, HystrixRequestVariableDefault.LazyInitializer<?>>();
+    /* package */ConcurrentHashMap<HystrixRequestVariableDefault<?>, HystrixRequestVariableDefault.LazyInitializer<?>> state = new ConcurrentHashMap<>();
 
     // instantiation should occur via static factory methods.
     private HystrixRequestContext() {

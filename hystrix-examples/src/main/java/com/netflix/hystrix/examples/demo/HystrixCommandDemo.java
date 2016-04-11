@@ -57,7 +57,7 @@ public class HystrixCommandDemo {
      * 
      * Use CallerRunsPolicy so we can just keep iterating and adding to it and it will block when full.
      */
-    private final ThreadPoolExecutor pool = new ThreadPoolExecutor(5, 5, 5, TimeUnit.DAYS, new SynchronousQueue<Runnable>(), new ThreadPoolExecutor.CallerRunsPolicy());
+    private final ThreadPoolExecutor pool = new ThreadPoolExecutor(5, 5, 5, TimeUnit.DAYS, new SynchronousQueue<>(), new ThreadPoolExecutor.CallerRunsPolicy());
 
     public void startDemo() {
         startMetricsMonitor();
@@ -67,22 +67,17 @@ public class HystrixCommandDemo {
     }
 
     public void runSimulatedRequestOnThread() {
-        pool.execute(new Runnable() {
+        pool.execute(() -> {
+            HystrixRequestContext context = HystrixRequestContext.initializeContext();
+            try {
+                executeSimulatedUserRequestForOrderConfirmationAndCreditCardPayment();
 
-            @Override
-            public void run() {
-                HystrixRequestContext context = HystrixRequestContext.initializeContext();
-                try {
-                    executeSimulatedUserRequestForOrderConfirmationAndCreditCardPayment();
-
-                    System.out.println("Request => " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
-                } catch (Exception e) {
-                    e.printStackTrace();
-                } finally {
-                    context.shutdown();
-                }
+                System.out.println("Request => " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                context.shutdown();
             }
-
         });
     }
 

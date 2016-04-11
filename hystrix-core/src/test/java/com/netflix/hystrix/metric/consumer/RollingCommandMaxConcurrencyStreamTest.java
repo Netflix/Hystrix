@@ -257,7 +257,7 @@ public class RollingCommandMaxConcurrencyStreamTest extends CommandStreamTest {
         Command failure2 = Command.from(groupKey, key, HystrixEventType.FAILURE);
         Command failure3 = Command.from(groupKey, key, HystrixEventType.FAILURE);
 
-        List<Command> shortCircuited = new ArrayList<Command>();
+        List<Command> shortCircuited = new ArrayList<>();
 
         for (int i = 0; i < 20; i++) {
             shortCircuited.add(Command.from(groupKey, key, HystrixEventType.SUCCESS, 100));
@@ -269,8 +269,8 @@ public class RollingCommandMaxConcurrencyStreamTest extends CommandStreamTest {
 
         Thread.sleep(150);
 
-        for (Command cmd: shortCircuited) {
-            cmd.observe();
+        for (CommandStreamTest.Command command: shortCircuited) {
+            command.observe();
         }
 
         assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
@@ -291,34 +291,24 @@ public class RollingCommandMaxConcurrencyStreamTest extends CommandStreamTest {
         //once these are in-flight, execute 10 more concurrently on new caller threads.
         //since these are semaphore-rejected, the max concurrency should be 10
 
-        List<Command> saturators = new ArrayList<Command>();
+        List<Command> saturators = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             saturators.add(Command.from(groupKey, key, HystrixEventType.SUCCESS, 400, HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE));
         }
 
-        final List<Command> rejected = new ArrayList<Command>();
+        final List<Command> rejected = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             rejected.add(Command.from(groupKey, key, HystrixEventType.SUCCESS, 100, HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE));
         }
 
         for (final Command saturatingCmd: saturators) {
-            threadPool.submit(new HystrixContextRunnable(new Runnable() {
-                @Override
-                public void run() {
-                    saturatingCmd.observe();
-                }
-            }));
+            threadPool.submit(new HystrixContextRunnable(saturatingCmd::observe));
         }
 
         Thread.sleep(30);
 
         for (final Command rejectedCmd: rejected) {
-            threadPool.submit(new HystrixContextRunnable(new Runnable() {
-                @Override
-                public void run() {
-                    rejectedCmd.observe();
-                }
-            }));
+            threadPool.submit(new HystrixContextRunnable(rejectedCmd::observe));
         }
 
         assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
@@ -339,24 +329,24 @@ public class RollingCommandMaxConcurrencyStreamTest extends CommandStreamTest {
         //once these are in-flight, execute 10 more concurrently
         //since these are threadpool-rejected, the max concurrency should be 10
 
-        List<Command> saturators = new ArrayList<Command>();
+        List<Command> saturators = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             saturators.add(Command.from(groupKey, key, HystrixEventType.SUCCESS, 400));
         }
 
-        final List<Command> rejected = new ArrayList<Command>();
+        final List<Command> rejected = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             rejected.add(Command.from(groupKey, key, HystrixEventType.SUCCESS, 100));
         }
 
-        for (final Command saturatingCmd: saturators) {
-            saturatingCmd.observe();
+        for (CommandStreamTest.Command saturator: saturators) {
+            saturator.observe();
         }
 
         Thread.sleep(30);
 
-        for (final Command rejectedCmd: rejected) {
-            rejectedCmd.observe();
+        for (CommandStreamTest.Command command: rejected) {
+            command.observe();
         }
 
         assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));

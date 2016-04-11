@@ -40,7 +40,7 @@ public class HystrixCollapserMetrics extends HystrixMetrics {
     private static final Logger logger = LoggerFactory.getLogger(HystrixCollapserMetrics.class);
 
     // String is HystrixCollapserKey.name() (we can't use HystrixCollapserKey directly as we can't guarantee it implements hashcode/equals correctly)
-    private static final ConcurrentHashMap<String, HystrixCollapserMetrics> metrics = new ConcurrentHashMap<String, HystrixCollapserMetrics>();
+    private static final ConcurrentHashMap<String, HystrixCollapserMetrics> metrics = new ConcurrentHashMap<>();
 
     /**
      * Get or create the {@link HystrixCollapserMetrics} instance for a given {@link HystrixCollapserKey}.
@@ -81,24 +81,18 @@ public class HystrixCollapserMetrics extends HystrixMetrics {
 
     private static final HystrixEventType.Collapser[] ALL_EVENT_TYPES = HystrixEventType.Collapser.values();
 
-    public static final Func2<long[], HystrixCollapserEvent, long[]> appendEventToBucket = new Func2<long[], HystrixCollapserEvent, long[]>() {
-        @Override
-        public long[] call(long[] initialCountArray, HystrixCollapserEvent collapserEvent) {
-            HystrixEventType.Collapser eventType = collapserEvent.getEventType();
-            int count = collapserEvent.getCount();
-            initialCountArray[eventType.ordinal()] += count;
-            return initialCountArray;
-        }
+    public static final Func2<long[], HystrixCollapserEvent, long[]> appendEventToBucket = (initialCountArray, collapserEvent) -> {
+        HystrixEventType.Collapser eventType = collapserEvent.getEventType();
+        int count = collapserEvent.getCount();
+        initialCountArray[eventType.ordinal()] += count;
+        return initialCountArray;
     };
 
-    public static final Func2<long[], long[], long[]> bucketAggregator = new Func2<long[], long[], long[]>() {
-        @Override
-        public long[] call(long[] cumulativeEvents, long[] bucketEventCounts) {
-            for (HystrixEventType.Collapser eventType: ALL_EVENT_TYPES) {
-                cumulativeEvents[eventType.ordinal()] += bucketEventCounts[eventType.ordinal()];
-            }
-            return cumulativeEvents;
+    public static final Func2<long[], long[], long[]> bucketAggregator = (cumulativeEvents, bucketEventCounts) -> {
+        for (HystrixEventType.Collapser eventType: ALL_EVENT_TYPES) {
+            cumulativeEvents[eventType.ordinal()] += bucketEventCounts[eventType.ordinal()];
         }
+        return cumulativeEvents;
     };
 
     /**

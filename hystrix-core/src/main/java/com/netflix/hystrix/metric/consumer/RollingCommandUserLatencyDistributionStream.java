@@ -49,16 +49,13 @@ import java.util.concurrent.ConcurrentMap;
  * ** Total time is the time spent from the perspecitve of the consumer, and includes all Hystrix bookkeeping.
  */
 public class RollingCommandUserLatencyDistributionStream extends RollingDistributionStream<HystrixCommandCompletion> {
-    private static final ConcurrentMap<String, RollingCommandUserLatencyDistributionStream> streams = new ConcurrentHashMap<String, RollingCommandUserLatencyDistributionStream>();
+    private static final ConcurrentMap<String, RollingCommandUserLatencyDistributionStream> streams = new ConcurrentHashMap<>();
 
-    private static final Func2<Histogram, HystrixCommandCompletion, Histogram> addValuesToBucket = new Func2<Histogram, HystrixCommandCompletion, Histogram>() {
-        @Override
-        public Histogram call(Histogram initialDistribution, HystrixCommandCompletion event) {
-            if (event.didCommandExecute() && event.getTotalLatency() > -1) {
-                initialDistribution.recordValue(event.getTotalLatency());
-            }
-            return initialDistribution;
+    private static final Func2<Histogram, HystrixCommandCompletion, Histogram> addValuesToBucket = (initialDistribution, event) -> {
+        if (event.didCommandExecute() && event.getTotalLatency() > -1) {
+            initialDistribution.recordValue(event.getTotalLatency());
         }
+        return initialDistribution;
     };
 
     public static RollingCommandUserLatencyDistributionStream getInstance(HystrixCommandKey commandKey, HystrixCommandProperties properties) {

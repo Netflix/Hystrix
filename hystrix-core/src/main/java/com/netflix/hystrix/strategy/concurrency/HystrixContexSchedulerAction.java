@@ -44,21 +44,17 @@ public class HystrixContexSchedulerAction implements Action0 {
         this.actual = action;
         this.parentThreadState = HystrixRequestContext.getContextForCurrentThread();
 
-        this.c = concurrencyStrategy.wrapCallable(new Callable<Void>() {
-
-            @Override
-            public Void call() throws Exception {
-                HystrixRequestContext existingState = HystrixRequestContext.getContextForCurrentThread();
-                try {
-                    // set the state of this thread to that of its parent
-                    HystrixRequestContext.setContextOnCurrentThread(parentThreadState);
-                    // execute actual Action0 with the state of the parent
-                    actual.call();
-                    return null;
-                } finally {
-                    // restore this thread back to its original state
-                    HystrixRequestContext.setContextOnCurrentThread(existingState);
-                }
+        this.c = concurrencyStrategy.wrapCallable(() -> {
+            HystrixRequestContext existingState = HystrixRequestContext.getContextForCurrentThread();
+            try {
+                // set the state of this thread to that of its parent
+                HystrixRequestContext.setContextOnCurrentThread(parentThreadState);
+                // execute actual Action0 with the state of the parent
+                actual.call();
+                return null;
+            } finally {
+                // restore this thread back to its original state
+                HystrixRequestContext.setContextOnCurrentThread(existingState);
             }
         });
     }

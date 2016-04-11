@@ -137,19 +137,16 @@ public class HystrixThreadPoolTest {
         Scheduler.Worker w = hcs.createWorker();
 
         try {
-            w.schedule(new Action0() {
-                @Override
-                public void call() {
-                    start.countDown();
+            w.schedule(() -> {
+                start.countDown();
+                try {
                     try {
-                        try {
-                            Thread.sleep(5000);
-                        } catch (InterruptedException ex) {
-                            interrupted.set(true);
-                        }
-                    } finally {
-                        end.countDown();
+                        Thread.sleep(5000);
+                    } catch (InterruptedException ex) {
+                        interrupted.set(true);
                     }
+                } finally {
+                    end.countDown();
                 }
             });
             

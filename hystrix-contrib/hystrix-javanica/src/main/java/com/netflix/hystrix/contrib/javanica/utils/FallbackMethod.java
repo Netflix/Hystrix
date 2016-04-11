@@ -174,7 +174,7 @@ public class FallbackMethod {
             Type fallbackParametrizedType = fallbackParametrizedTypes.get(i);
             if (!commandParametrizedType.equals(fallbackParametrizedType)) {
                 if (Collections.<String>emptyList() == msg) {
-                    msg = new ArrayList<String>();
+                    msg = new ArrayList<>();
                 }
                 msg.add("wrong parametrized type. Expected: '" + commandParametrizedType + "' but in fallback '" +
                         fallbackParametrizedType + "', position: " + i);

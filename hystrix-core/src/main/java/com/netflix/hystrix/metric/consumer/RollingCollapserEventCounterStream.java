@@ -40,7 +40,7 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class RollingCollapserEventCounterStream extends BucketedRollingCounterStream<HystrixCollapserEvent, long[], long[]> {
 
-    private static final ConcurrentMap<String, RollingCollapserEventCounterStream> streams = new ConcurrentHashMap<String, RollingCollapserEventCounterStream>();
+    private static final ConcurrentMap<String, RollingCollapserEventCounterStream> streams = new ConcurrentHashMap<>();
 
     private static final int NUM_EVENT_TYPES = HystrixEventType.Collapser.values().length;
 
