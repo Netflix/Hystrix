@@ -742,7 +742,7 @@ public class HystrixCircuitBreakerTest {
     public class MyHystrixCommandExecutionHook extends HystrixCommandExecutionHook {
 
         @Override
-        public <T> T onComplete(final HystrixInvokable<T> command, final T response) {
+        public <T> T onComplete(final HystrixInvokableInfo<T> command, final T response) {
 
             logHC(command, response);
 
@@ -751,7 +751,7 @@ public class HystrixCircuitBreakerTest {
 
         private int counter = 0;
 
-        private <T> void logHC(HystrixInvokable<T> command, T response) {
+        private <T> void logHC(HystrixInvokableInfo<T> command, T response) {
 
             if(command instanceof HystrixInvokableInfo) {
                 HystrixInvokableInfo<T> commandInfo = (HystrixInvokableInfo<T>)command;

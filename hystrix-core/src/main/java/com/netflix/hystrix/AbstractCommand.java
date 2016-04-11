@@ -343,7 +343,7 @@ import java.util.concurrent.atomic.AtomicReference;
             throw new IllegalStateException("This instance can only be executed once. Please instantiate a new instance.");
         }
 
-        final HystrixInvokable<R> _this = this;
+        final HystrixInvokableInfo<R> _this = this;
         final boolean requestCacheEnabled = isRequestCachingEnabled();
 
         /* try from cache first */
@@ -612,7 +612,7 @@ import java.util.concurrent.atomic.AtomicReference;
     }
 
     private Observable<R> getExecutionObservableWithLifecycle() {
-        final HystrixInvokable<R> _self = this;
+        final HystrixInvokableInfo<R> _self = this;
 
         Observable<R> userObservable;
 
@@ -1174,9 +1174,9 @@ import java.util.concurrent.atomic.AtomicReference;
     /* ******************************************************************************** */
 
     private class CommandHookApplication implements Operator<R, R> {
-        private final HystrixInvokable<R> cmd;
+        private final HystrixInvokableInfo<R> cmd;
 
-        CommandHookApplication(HystrixInvokable<R> cmd) {
+        CommandHookApplication(HystrixInvokableInfo<R> cmd) {
             this.cmd = cmd;
         }
 
@@ -1209,9 +1209,9 @@ import java.util.concurrent.atomic.AtomicReference;
     }
 
     private class ExecutionHookApplication implements Operator<R, R> {
-        private final HystrixInvokable<R> cmd;
+        private final HystrixInvokableInfo<R> cmd;
 
-        ExecutionHookApplication(HystrixInvokable<R> cmd) {
+        ExecutionHookApplication(HystrixInvokableInfo<R> cmd) {
             this.cmd = cmd;
         }
 
@@ -1244,9 +1244,9 @@ import java.util.concurrent.atomic.AtomicReference;
     }
 
     private class FallbackHookApplication implements Operator<R, R> {
-        private final HystrixInvokable<R> cmd;
+        private final HystrixInvokableInfo<R> cmd;
 
-        FallbackHookApplication(HystrixInvokable<R> cmd) {
+        FallbackHookApplication(HystrixInvokableInfo<R> cmd) {
             this.cmd = cmd;
         }
 
@@ -1280,9 +1280,9 @@ import java.util.concurrent.atomic.AtomicReference;
 
     @Deprecated //separated out to make it cleanly removable
     private class DeprecatedOnCompleteWithValueHookApplication implements Operator<R, R> {
-        private final HystrixInvokable<R> cmd;
+        private final HystrixInvokableInfo<R> cmd;
 
-        DeprecatedOnCompleteWithValueHookApplication(HystrixInvokable<R> cmd) {
+        DeprecatedOnCompleteWithValueHookApplication(HystrixInvokableInfo<R> cmd) {
             this.cmd = cmd;
         }
 
@@ -1316,9 +1316,9 @@ import java.util.concurrent.atomic.AtomicReference;
     @Deprecated //separated out to make it cleanly removable
     private class DeprecatedOnRunHookApplication implements Operator<R, R> {
 
-        private final HystrixInvokable<R> cmd;
+        private final HystrixInvokableInfo<R> cmd;
 
-        DeprecatedOnRunHookApplication(HystrixInvokable<R> cmd) {
+        DeprecatedOnRunHookApplication(HystrixInvokableInfo<R> cmd) {
             this.cmd = cmd;
         }
 
@@ -1359,9 +1359,9 @@ import java.util.concurrent.atomic.AtomicReference;
     @Deprecated //separated out to make it cleanly removable
     private class DeprecatedOnFallbackHookApplication implements Operator<R, R> {
 
-        private final HystrixInvokable<R> cmd;
+        private final HystrixInvokableInfo<R> cmd;
 
-        DeprecatedOnFallbackHookApplication(HystrixInvokable<R> cmd) {
+        DeprecatedOnFallbackHookApplication(HystrixInvokableInfo<R> cmd) {
             this.cmd = cmd;
         }
 
@@ -1873,42 +1873,42 @@ import java.util.concurrent.atomic.AtomicReference;
         }
 
         @Override
-        public <T> T onEmit(HystrixInvokable<T> commandInstance, T value) {
+        public <T> T onEmit(HystrixInvokableInfo<T> commandInstance, T value) {
             return actual.onEmit(commandInstance, value);
         }
 
         @Override
-        public <T> void onSuccess(HystrixInvokable<T> commandInstance) {
+        public <T> void onSuccess(HystrixInvokableInfo<T> commandInstance) {
             actual.onSuccess(commandInstance);
         }
 
         @Override
-        public <T> void onExecutionStart(HystrixInvokable<T> commandInstance) {
+        public <T> void onExecutionStart(HystrixInvokableInfo<T> commandInstance) {
             actual.onExecutionStart(commandInstance);
         }
 
         @Override
-        public <T> T onExecutionEmit(HystrixInvokable<T> commandInstance, T value) {
+        public <T> T onExecutionEmit(HystrixInvokableInfo<T> commandInstance, T value) {
             return actual.onExecutionEmit(commandInstance, value);
         }
 
         @Override
-        public <T> Exception onExecutionError(HystrixInvokable<T> commandInstance, Exception e) {
+        public <T> Exception onExecutionError(HystrixInvokableInfo<T> commandInstance, Exception e) {
             return actual.onExecutionError(commandInstance, e);
         }
 
         @Override
-        public <T> void onExecutionSuccess(HystrixInvokable<T> commandInstance) {
+        public <T> void onExecutionSuccess(HystrixInvokableInfo<T> commandInstance) {
             actual.onExecutionSuccess(commandInstance);
         }
 
         @Override
-        public <T> T onFallbackEmit(HystrixInvokable<T> commandInstance, T value) {
+        public <T> T onFallbackEmit(HystrixInvokableInfo<T> commandInstance, T value) {
             return actual.onFallbackEmit(commandInstance, value);
         }
 
         @Override
-        public <T> void onFallbackSuccess(HystrixInvokable<T> commandInstance) {
+        public <T> void onFallbackSuccess(HystrixInvokableInfo<T> commandInstance) {
             actual.onFallbackSuccess(commandInstance);
         }
 
@@ -1919,7 +1919,7 @@ import java.util.concurrent.atomic.AtomicReference;
         }
 
         @Override
-        public <T> void onRunStart(HystrixInvokable<T> commandInstance) {
+        public <T> void onRunStart(HystrixInvokableInfo<T> commandInstance) {
             HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
             if (c != null) {
                 onRunStart(c);
@@ -1935,7 +1935,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
         @Override
         @Deprecated
-        public <T> T onRunSuccess(HystrixInvokable<T> commandInstance, T response) {
+        public <T> T onRunSuccess(HystrixInvokableInfo<T> commandInstance, T response) {
             HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
             if (c != null) {
                 response = onRunSuccess(c, response);
@@ -1951,7 +1951,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
         @Override
         @Deprecated
-        public <T> Exception onRunError(HystrixInvokable<T> commandInstance, Exception e) {
+        public <T> Exception onRunError(HystrixInvokableInfo<T> commandInstance, Exception e) {
             HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
             if (c != null) {
                 e = onRunError(c, e);
@@ -1966,7 +1966,7 @@ import java.util.concurrent.atomic.AtomicReference;
         }
 
         @Override
-        public <T> void onFallbackStart(HystrixInvokable<T> commandInstance) {
+        public <T> void onFallbackStart(HystrixInvokableInfo<T> commandInstance) {
             HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
             if (c != null) {
                 onFallbackStart(c);
@@ -1982,7 +1982,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
         @Override
         @Deprecated
-        public <T> T onFallbackSuccess(HystrixInvokable<T> commandInstance, T fallbackResponse) {
+        public <T> T onFallbackSuccess(HystrixInvokableInfo<T> commandInstance, T fallbackResponse) {
             HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
             if (c != null) {
                 fallbackResponse = onFallbackSuccess(c, fallbackResponse);
@@ -1997,7 +1997,7 @@ import java.util.concurrent.atomic.AtomicReference;
         }
 
         @Override
-        public <T> Exception onFallbackError(HystrixInvokable<T> commandInstance, Exception e) {
+        public <T> Exception onFallbackError(HystrixInvokableInfo<T> commandInstance, Exception e) {
             HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
             if (c != null) {
                 e = onFallbackError(c, e);
@@ -2012,7 +2012,7 @@ import java.util.concurrent.atomic.AtomicReference;
         }
 
         @Override
-        public <T> void onStart(HystrixInvokable<T> commandInstance) {
+        public <T> void onStart(HystrixInvokableInfo<T> commandInstance) {
             HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
             if (c != null) {
                 onStart(c);
@@ -2028,7 +2028,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
         @Override
         @Deprecated
-        public <T> T onComplete(HystrixInvokable<T> commandInstance, T response) {
+        public <T> T onComplete(HystrixInvokableInfo<T> commandInstance, T response) {
             HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
             if (c != null) {
                 response = onComplete(c, response);
@@ -2043,7 +2043,7 @@ import java.util.concurrent.atomic.AtomicReference;
         }
 
         @Override
-        public <T> Exception onError(HystrixInvokable<T> commandInstance, FailureType failureType, Exception e) {
+        public <T> Exception onError(HystrixInvokableInfo<T> commandInstance, FailureType failureType, Exception e) {
             HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
             if (c != null) {
                 e = onError(c, failureType, e);
@@ -2058,7 +2058,7 @@ import java.util.concurrent.atomic.AtomicReference;
         }
 
         @Override
-        public <T> void onThreadStart(HystrixInvokable<T> commandInstance) {
+        public <T> void onThreadStart(HystrixInvokableInfo<T> commandInstance) {
             HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
             if (c != null) {
                 onThreadStart(c);
@@ -2073,7 +2073,7 @@ import java.util.concurrent.atomic.AtomicReference;
         }
 
         @Override
-        public <T> void onThreadComplete(HystrixInvokable<T> commandInstance) {
+        public <T> void onThreadComplete(HystrixInvokableInfo<T> commandInstance) {
             HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
             if (c != null) {
                 onThreadComplete(c);
@@ -2082,12 +2082,12 @@ import java.util.concurrent.atomic.AtomicReference;
         }
 
         @Override
-        public <T> void onCacheHit(HystrixInvokable<T> commandInstance) {
+        public <T> void onCacheHit(HystrixInvokableInfo<T> commandInstance) {
             actual.onCacheHit(commandInstance);
         }
 
         @SuppressWarnings({ "unchecked", "rawtypes" })
-        private <T> HystrixCommand<T> getHystrixCommandFromAbstractIfApplicable(HystrixInvokable<T> commandInstance) {
+        private <T> HystrixCommand<T> getHystrixCommandFromAbstractIfApplicable(HystrixInvokableInfo<T> commandInstance) {
             if (commandInstance instanceof HystrixCommand) {
                 return (HystrixCommand) commandInstance;
             } else {

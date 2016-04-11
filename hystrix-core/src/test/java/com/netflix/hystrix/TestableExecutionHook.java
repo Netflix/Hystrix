@@ -107,100 +107,100 @@ class TestableExecutionHook extends HystrixCommandExecutionHook {
     }
 
     @Override
-    public <T> void onStart(HystrixInvokable<T> commandInstance) {
+    public <T> void onStart(HystrixInvokableInfo<T> commandInstance) {
         super.onStart(commandInstance);
         recordHookCall(executionSequence, "onStart");
     }
 
     @Override
-    public <T> T onEmit(HystrixInvokable<T> commandInstance, T value) {
+    public <T> T onEmit(HystrixInvokableInfo<T> commandInstance, T value) {
         commandEmissions.add(Notification.createOnNext(value));
         recordHookCall(executionSequence, "onEmit");
         return super.onEmit(commandInstance, value);
     }
 
     @Override
-    public <T> Exception onError(HystrixInvokable<T> commandInstance, FailureType failureType, Exception e) {
+    public <T> Exception onError(HystrixInvokableInfo<T> commandInstance, FailureType failureType, Exception e) {
         commandEmissions.add(Notification.createOnError(e));
         recordHookCall(executionSequence, "onError");
         return super.onError(commandInstance, failureType, e);
     }
 
     @Override
-    public <T> void onSuccess(HystrixInvokable<T> commandInstance) {
+    public <T> void onSuccess(HystrixInvokableInfo<T> commandInstance) {
         commandEmissions.add(Notification.createOnCompleted());
         recordHookCall(executionSequence, "onSuccess");
         super.onSuccess(commandInstance);
     }
 
     @Override
-    public <T> void onThreadStart(HystrixInvokable<T> commandInstance) {
+    public <T> void onThreadStart(HystrixInvokableInfo<T> commandInstance) {
         super.onThreadStart(commandInstance);
         recordHookCall(executionSequence, "onThreadStart");
     }
 
     @Override
-    public <T> void onThreadComplete(HystrixInvokable<T> commandInstance) {
+    public <T> void onThreadComplete(HystrixInvokableInfo<T> commandInstance) {
         super.onThreadComplete(commandInstance);
         recordHookCall(executionSequence, "onThreadComplete");
     }
 
     @Override
-    public <T> void onExecutionStart(HystrixInvokable<T> commandInstance) {
+    public <T> void onExecutionStart(HystrixInvokableInfo<T> commandInstance) {
         recordHookCall(executionSequence, "onExecutionStart");
         super.onExecutionStart(commandInstance);
     }
 
     @Override
-    public <T> T onExecutionEmit(HystrixInvokable<T> commandInstance, T value) {
+    public <T> T onExecutionEmit(HystrixInvokableInfo<T> commandInstance, T value) {
         executionEmissions.add(Notification.createOnNext(value));
         recordHookCall(executionSequence, "onExecutionEmit");
         return super.onExecutionEmit(commandInstance, value);
     }
 
     @Override
-    public <T> Exception onExecutionError(HystrixInvokable<T> commandInstance, Exception e) {
+    public <T> Exception onExecutionError(HystrixInvokableInfo<T> commandInstance, Exception e) {
         executionEmissions.add(Notification.createOnError(e));
         recordHookCall(executionSequence, "onExecutionError");
         return super.onExecutionError(commandInstance, e);
     }
 
     @Override
-    public <T> void onExecutionSuccess(HystrixInvokable<T> commandInstance) {
+    public <T> void onExecutionSuccess(HystrixInvokableInfo<T> commandInstance) {
         executionEmissions.add(Notification.createOnCompleted());
         recordHookCall(executionSequence, "onExecutionSuccess");
         super.onExecutionSuccess(commandInstance);
     }
 
     @Override
-    public <T> void onFallbackStart(HystrixInvokable<T> commandInstance) {
+    public <T> void onFallbackStart(HystrixInvokableInfo<T> commandInstance) {
         super.onFallbackStart(commandInstance);
         recordHookCall(executionSequence, "onFallbackStart");
     }
 
     @Override
-    public <T> T onFallbackEmit(HystrixInvokable<T> commandInstance, T value) {
+    public <T> T onFallbackEmit(HystrixInvokableInfo<T> commandInstance, T value) {
         fallbackEmissions.add(Notification.createOnNext(value));
         recordHookCall(executionSequence, "onFallbackEmit");
         return super.onFallbackEmit(commandInstance, value);
     }
 
     @Override
-    public <T> Exception onFallbackError(HystrixInvokable<T> commandInstance, Exception e) {
+    public <T> Exception onFallbackError(HystrixInvokableInfo<T> commandInstance, Exception e) {
         fallbackEmissions.add(Notification.createOnError(e));
         recordHookCall(executionSequence, "onFallbackError");
         return super.onFallbackError(commandInstance, e);
     }
 
     @Override
-    public <T> void onFallbackSuccess(HystrixInvokable<T> commandInstance) {
+    public <T> void onFallbackSuccess(HystrixInvokableInfo<T> commandInstance) {
         fallbackEmissions.add(Notification.createOnCompleted());
         recordHookCall(executionSequence, "onFallbackSuccess");
         super.onFallbackSuccess(commandInstance);
     }
 
     @Override
-    public <T> void onCacheHit(HystrixInvokable<T> commandInstance) {
+    public <T> void onCacheHit(HystrixInvokableInfo<T> commandInstance) {
         super.onCacheHit(commandInstance);
         recordHookCall(executionSequence, "onCacheHit");
     }
@@ -224,31 +224,31 @@ class TestableExecutionHook extends HystrixCommandExecutionHook {
     AtomicInteger cacheHit = new AtomicInteger();
 
     @Override
-    public <T> T onFallbackSuccess(HystrixInvokable<T> commandInstance, T response) {
+    public <T> T onFallbackSuccess(HystrixInvokableInfo<T> commandInstance, T response) {
         recordHookCall(executionSequence, "!onFallbackSuccess");
         return super.onFallbackSuccess(commandInstance, response);
     }
 
     @Override
-    public <T> T onComplete(HystrixInvokable<T> commandInstance, T response) {
+    public <T> T onComplete(HystrixInvokableInfo<T> commandInstance, T response) {
         recordHookCall(executionSequence, "!onComplete");
         return super.onComplete(commandInstance, response);
     }
 
     @Override
-    public <T> void onRunStart(HystrixInvokable<T> commandInstance) {
+    public <T> void onRunStart(HystrixInvokableInfo<T> commandInstance) {
         super.onRunStart(commandInstance);
         recordHookCall(executionSequence, "!onRunStart");
     }
 
     @Override
-    public <T> T onRunSuccess(HystrixInvokable<T> commandInstance, T response) {
+    public <T> T onRunSuccess(HystrixInvokableInfo<T> commandInstance, T response) {
         recordHookCall(executionSequence, "!onRunSuccess");
         return super.onRunSuccess(commandInstance, response);
     }
 
     @Override
-    public <T> Exception onRunError(HystrixInvokable<T> commandInstance, Exception e) {
+    public <T> Exception onRunError(HystrixInvokableInfo<T> commandInstance, Exception e) {
         recordHookCall(executionSequence, "!onRunError");
         return super.onRunError(commandInstance, e);
     }

@@ -18,6 +18,7 @@ package com.netflix.hystrix.strategy.executionhook;
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
 import com.netflix.hystrix.HystrixInvokable;
+import com.netflix.hystrix.HystrixInvokableInfo;
 import com.netflix.hystrix.HystrixObservableCommand;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
 import com.netflix.hystrix.exception.HystrixRuntimeException.FailureType;
@@ -48,7 +49,7 @@ public abstract class HystrixCommandExecutionHook {
      *
      * @since 1.2
      */
-    public <T> void onStart(HystrixInvokable<T> commandInstance) {
+    public <T> void onStart(HystrixInvokableInfo<T> commandInstance) {
         //do nothing by default
     }
 
@@ -60,7 +61,7 @@ public abstract class HystrixCommandExecutionHook {
      *
      * @since 1.4
      */
-    public <T> T onEmit(HystrixInvokable<T> commandInstance, T value) {
+    public <T> T onEmit(HystrixInvokableInfo<T> commandInstance, T value) {
         return value; //by default, just pass through
     }
 
@@ -73,7 +74,7 @@ public abstract class HystrixCommandExecutionHook {
      *
      * @since 1.2
      */
-    public <T> Exception onError(HystrixInvokable<T> commandInstance, FailureType failureType, Exception e) {
+    public <T> Exception onError(HystrixInvokableInfo<T> commandInstance, FailureType failureType, Exception e) {
         return e; //by default, just pass through
     }
 
@@ -84,7 +85,7 @@ public abstract class HystrixCommandExecutionHook {
      *
      * @since 1.4
      */
-    public <T> void onSuccess(HystrixInvokable<T> commandInstance) {
+    public <T> void onSuccess(HystrixInvokableInfo<T> commandInstance) {
         //do nothing by default
     }
 
@@ -95,7 +96,7 @@ public abstract class HystrixCommandExecutionHook {
      *
      * @since 1.2
      */
-    public <T> void onThreadStart(HystrixInvokable<T> commandInstance) {
+    public <T> void onThreadStart(HystrixInvokableInfo<T> commandInstance) {
         //do nothing by default
     }
 
@@ -108,7 +109,7 @@ public abstract class HystrixCommandExecutionHook {
      *
      * @since 1.2
      */
-    public <T> void onThreadComplete(HystrixInvokable<T> commandInstance) {
+    public <T> void onThreadComplete(HystrixInvokableInfo<T> commandInstance) {
         // do nothing by default
     }
 
@@ -119,7 +120,7 @@ public abstract class HystrixCommandExecutionHook {
      *
      * @since 1.4
      */
-    public <T> void onExecutionStart(HystrixInvokable<T> commandInstance) {
+    public <T> void onExecutionStart(HystrixInvokableInfo<T> commandInstance) {
         //do nothing by default
     }
 
@@ -131,7 +132,7 @@ public abstract class HystrixCommandExecutionHook {
      *
      * @since 1.4
      */
-    public <T> T onExecutionEmit(HystrixInvokable<T> commandInstance, T value) {
+    public <T> T onExecutionEmit(HystrixInvokableInfo<T> commandInstance, T value) {
         return value; //by default, just pass through
     }
 
@@ -143,7 +144,7 @@ public abstract class HystrixCommandExecutionHook {
      *
      * @since 1.4
      */
-    public <T> Exception onExecutionError(HystrixInvokable<T> commandInstance, Exception e) {
+    public <T> Exception onExecutionError(HystrixInvokableInfo<T> commandInstance, Exception e) {
         return e; //by default, just pass through
     }
 
@@ -154,7 +155,7 @@ public abstract class HystrixCommandExecutionHook {
      *
      * @since 1.4
      */
-    public <T> void onExecutionSuccess(HystrixInvokable<T> commandInstance) {
+    public <T> void onExecutionSuccess(HystrixInvokableInfo<T> commandInstance) {
         //do nothing by default
     }
 
@@ -165,7 +166,7 @@ public abstract class HystrixCommandExecutionHook {
      *
      * @since 1.2
      */
-    public <T> void onFallbackStart(HystrixInvokable<T> commandInstance) {
+    public <T> void onFallbackStart(HystrixInvokableInfo<T> commandInstance) {
         //do nothing by default
     }
 
@@ -177,7 +178,7 @@ public abstract class HystrixCommandExecutionHook {
      *
      * @since 1.4
      */
-    public <T> T onFallbackEmit(HystrixInvokable<T> commandInstance, T value) {
+    public <T> T onFallbackEmit(HystrixInvokableInfo<T> commandInstance, T value) {
         return value; //by default, just pass through
     }
 
@@ -189,7 +190,7 @@ public abstract class HystrixCommandExecutionHook {
      *
      * @since 1.2
      */
-    public <T> Exception onFallbackError(HystrixInvokable<T> commandInstance, Exception e) {
+    public <T> Exception onFallbackError(HystrixInvokableInfo<T> commandInstance, Exception e) {
         //by default, just pass through
         return e;
     }
@@ -201,7 +202,7 @@ public abstract class HystrixCommandExecutionHook {
      *
      * @since 1.4
      */
-    public <T> void onFallbackSuccess(HystrixInvokable<T> commandInstance) {
+    public <T> void onFallbackSuccess(HystrixInvokableInfo<T> commandInstance) {
         //do nothing by default
     }
 
@@ -212,7 +213,7 @@ public abstract class HystrixCommandExecutionHook {
      *
      * @since 1.4
      */
-    public <T> void onCacheHit(HystrixInvokable<T> commandInstance) {
+    public <T> void onCacheHit(HystrixInvokableInfo<T> commandInstance) {
         //do nothing by default
     }
 
@@ -242,7 +243,7 @@ public abstract class HystrixCommandExecutionHook {
      * @since 1.2
      */
     @Deprecated
-    public <T> void onRunStart(HystrixInvokable<T> commandInstance) {
+    public <T> void onRunStart(HystrixInvokableInfo<T> commandInstance) {
         // do nothing by default
     }
 
@@ -285,7 +286,7 @@ public abstract class HystrixCommandExecutionHook {
      * @since 1.2
      */
     @Deprecated
-    public <T> T onRunSuccess(HystrixInvokable<T> commandInstance, T response) {
+    public <T> T onRunSuccess(HystrixInvokableInfo<T> commandInstance, T response) {
         // pass-thru by default
         return response;
     }
@@ -323,7 +324,7 @@ public abstract class HystrixCommandExecutionHook {
      * @since 1.2
      */
     @Deprecated
-    public <T> Exception onRunError(HystrixInvokable<T> commandInstance, Exception e) {
+    public <T> Exception onRunError(HystrixInvokableInfo<T> commandInstance, Exception e) {
         // pass-thru by default
         return e;
     }
@@ -378,7 +379,7 @@ public abstract class HystrixCommandExecutionHook {
      * @since 1.2
      */
     @Deprecated
-    public <T> T onFallbackSuccess(HystrixInvokable<T> commandInstance, T fallbackResponse) {
+    public <T> T onFallbackSuccess(HystrixInvokableInfo<T> commandInstance, T fallbackResponse) {
         // pass-thru by default
         return fallbackResponse;
     }
@@ -456,7 +457,7 @@ public abstract class HystrixCommandExecutionHook {
      * @since 1.2
      */
     @Deprecated
-    public <T> T onComplete(HystrixInvokable<T> commandInstance, T response) {
+    public <T> T onComplete(HystrixInvokableInfo<T> commandInstance, T response) {
         // pass-thru by default
         return response;
     }
