@@ -1,5 +1,9 @@
 # Hystrix Releases #
 
+### Version 1.4.26 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.26%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.26/)) ###
+
+* [Pull 1169](https://github.com/Netflix/Hystrix/pull/1169) Javanica: Switch hystrix-javanica to use getExecutionException, which returns Exception object even when command is not executed
+
 ### Version 1.5.2 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.5.2%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.5.2/)) ###
 
 * [Pull 1171](https://github.com/Netflix/Hystrix/pull/1171) Do all histogram latency summarization upfront to minimize storage/operations on them
