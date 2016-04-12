@@ -2895,7 +2895,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
             fail("We expect a " + HystrixBadRequestException.class.getSimpleName() + " but got a " + e.getClass().getSimpleName());
         }
 
-        assertCommandExecutionEvents(command, HystrixEventType.BAD_REQUEST);
+        assertCommandExecutionEvents(command, HystrixEventType.FAILURE, HystrixEventType.BAD_REQUEST, HystrixEventType.FALLBACK_MISSING);
         assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
         assertSaneHystrixRequestLog(1);
     }
@@ -3983,8 +3983,8 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
                     .setMetrics(circuitBreaker.metrics)
                     .setExecutionHook(new TestableExecutionHook(){
                         @Override
-                        public <T> Exception onRunError(HystrixInvokableInfo<T> commandInstance, Exception e) {
-                            super.onRunError(commandInstance, e);
+                        public <T> Exception onError(HystrixInvokableInfo<T> commandInstance, HystrixRuntimeException.FailureType failureType, Exception e) {
+                            super.onError(commandInstance, failureType, e);
                             return new HystrixBadRequestException("autoconverted exception", e);
                         }
                     }));

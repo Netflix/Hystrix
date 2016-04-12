@@ -28,9 +28,7 @@ import org.junit.Test;
 
 import com.netflix.hystrix.HystrixCircuitBreaker.HystrixCircuitBreakerImpl;
 import com.netflix.hystrix.strategy.HystrixPlugins;
-import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifierDefault;
 import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
-import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 import rx.Observable;
 
 /**
@@ -742,26 +740,17 @@ public class HystrixCircuitBreakerTest {
     public class MyHystrixCommandExecutionHook extends HystrixCommandExecutionHook {
 
         @Override
-        public <T> T onComplete(final HystrixInvokableInfo<T> command, final T response) {
-
-            logHC(command, response);
-
-            return super.onComplete(command, response);
+        public <T> void onSuccess(final HystrixInvokableInfo<T> command) {
+            logHC(command);
         }
 
-        private int counter = 0;
-
-        private <T> void logHC(HystrixInvokableInfo<T> command, T response) {
-
-            if(command instanceof HystrixInvokableInfo) {
-                HystrixInvokableInfo<T> commandInfo = (HystrixInvokableInfo<T>)command;
-            HystrixCommandMetrics metrics = commandInfo.getMetrics();
+        private <T> void logHC(HystrixInvokableInfo<T> command) {
+            HystrixCommandMetrics metrics = command.getMetrics();
             System.out.println("cb/error-count/%/total: "
-                    + commandInfo.isCircuitBreakerOpen() + " "
+                    + command.isCircuitBreakerOpen() + " "
                     + metrics.getHealthCounts().getErrorCount() + " "
                     + metrics.getHealthCounts().getErrorPercentage() + " "
-                    + metrics.getHealthCounts().getTotalRequests() + "  => " + response + "  " + commandInfo.getExecutionEvents());
-            }
+                    + metrics.getHealthCounts().getTotalRequests() + "  => " + command.getExecutionEvents());
         }
     }
 }

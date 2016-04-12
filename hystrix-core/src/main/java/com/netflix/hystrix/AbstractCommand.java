@@ -241,14 +241,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
     private static HystrixCommandExecutionHook initExecutionHook(HystrixCommandExecutionHook fromConstructor) {
         if (fromConstructor == null) {
-            return new ExecutionHookDeprecationWrapper(HystrixPlugins.getInstance().getCommandExecutionHook());
+            return HystrixPlugins.getInstance().getCommandExecutionHook();
         } else {
             // used for unit testing
-            if (fromConstructor instanceof ExecutionHookDeprecationWrapper) {
-                return fromConstructor;
-            } else {
-                return new ExecutionHookDeprecationWrapper(fromConstructor);
-            }
+            return fromConstructor;
         }
     }
 
@@ -398,7 +394,6 @@ import java.util.concurrent.atomic.AtomicReference;
                         // retrieve a fallback or throw an exception if no fallback available
                         getFallbackOrThrowException(HystrixEventType.SEMAPHORE_REJECTED, FailureType.REJECTED_SEMAPHORE_EXECUTION,
                                 "could not acquire a semaphore for execution", semaphoreRejectionException)
-                                .lift(new DeprecatedOnCompleteWithValueHookApplication(_this))
                                 .unsafeSubscribe(observer);
                     }
                 } else {
@@ -410,7 +405,6 @@ import java.util.concurrent.atomic.AtomicReference;
                     try {
                         getFallbackOrThrowException(HystrixEventType.SHORT_CIRCUITED, FailureType.SHORTCIRCUIT,
                                 "short-circuited", shortCircuitException)
-                                .lift(new DeprecatedOnCompleteWithValueHookApplication(_this))
                                 .unsafeSubscribe(observer);
                     } catch (Exception e) {
                         observer.onError(e);
@@ -496,7 +490,6 @@ import java.util.concurrent.atomic.AtomicReference;
                          */
                         try {
                             executionHook.onThreadStart(_self);
-                            executionHook.onRunStart(_self);
                             executionHook.onExecutionStart(_self);
                             getExecutionObservableWithLifecycle().unsafeSubscribe(s);
                         } catch (Throwable ex) {
@@ -511,7 +504,6 @@ import java.util.concurrent.atomic.AtomicReference;
             // store the command that is being run
             endCurrentThreadExecutingCommand.set(Hystrix.startCurrentThreadExecutingCommand(getCommandKey()));
             try {
-                executionHook.onRunStart(_self);
                 executionHook.onExecutionStart(_self);
                 run = getExecutionObservableWithLifecycle();  //the getExecutionObservableWithLifecycle method already wraps sync exceptions, so this shouldn't throw
             } catch (Throwable ex) {
@@ -578,13 +570,6 @@ import java.util.concurrent.atomic.AtomicReference;
                  */
                 return Observable.error(t);
             } else {
-                /*
-                 * Treat HystrixBadRequestException from ExecutionHook like a plain HystrixBadRequestException.
-                 */
-                if (e instanceof HystrixBadRequestException) {
-                    eventNotifier.markEvent(HystrixEventType.BAD_REQUEST, commandKey);
-                    return Observable.error(e);
-                }
 
                 /**
                  * All other error handling
@@ -606,7 +591,7 @@ import java.util.concurrent.atomic.AtomicReference;
             if (!isCommandTimedOut.get().equals(TimedOutStatus.TIMED_OUT)) {
                 handleThreadEnd();
             }
-        }).lift(new DeprecatedOnCompleteWithValueHookApplication(_self));
+        });
 
         return run;
     }
@@ -624,7 +609,6 @@ import java.util.concurrent.atomic.AtomicReference;
             userObservable = Observable.error(ex);
         }
         return userObservable.lift(new ExecutionHookApplication(_self))
-                .lift(new DeprecatedOnRunHookApplication(_self))
                 .doOnTerminate(() -> {
                     //If the command timed out, then the calling thread has already walked away so we need
                     //to handle these markers.  Otherwise, the calling thread will perform these for us.
@@ -664,7 +648,16 @@ import java.util.concurrent.atomic.AtomicReference;
 
             /* executionHook for all errors */
             e = wrapWithOnErrorHook(failureType, e);
-            fallbackLogicApplied = Observable.<R> error(new HystrixRuntimeException(failureType, this.getClass(), getLogMessagePrefix() + " " + message + " and encountered unrecoverable error.", e, null));
+            if (e instanceof HystrixBadRequestException) {
+                /*
+                 * Treat HystrixBadRequestException from ExecutionHook like a plain HystrixBadRequestException.
+                 */
+                eventNotifier.markEvent(HystrixEventType.BAD_REQUEST, commandKey);
+                executionResult.addEvent(HystrixEventType.BAD_REQUEST);
+                fallbackLogicApplied = Observable.error(e);
+            } else {
+                fallbackLogicApplied = Observable.<R>error(new HystrixRuntimeException(failureType, this.getClass(), getLogMessagePrefix() + " " + message + " and encountered unrecoverable error.", e, null));
+            }
         } else {
             if (isRecoverableError(originalException)) {
                 logger.warn("Recovered from java.lang.Error by serving Hystrix fallback", originalException);
@@ -695,7 +688,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
                     fallbackExecutionChain =  fallbackExecutionChain
                             .lift(new FallbackHookApplication(_cmd))
-                            .lift(new DeprecatedOnFallbackHookApplication(_cmd))
                             .doOnTerminate(fallbackSemaphore::release);
                 } else {
                     long latencyWithFallback = System.currentTimeMillis() - executionResult.getStartTimestamp();
@@ -729,6 +721,14 @@ import java.util.concurrent.atomic.AtomicReference;
 
                         /* executionHook for all errors */
                         e = wrapWithOnErrorHook(failureType, e);
+                        if (e instanceof HystrixBadRequestException) {
+                            /*
+                             * Treat HystrixBadRequestException from ExecutionHook like a plain HystrixBadRequestException.
+                             */
+                            eventNotifier.markEvent(HystrixEventType.BAD_REQUEST, commandKey);
+                            executionResult = executionResult.addEvent(HystrixEventType.BAD_REQUEST);
+                            return Observable.error(e);
+                        }
 
                         return Observable.error(new HystrixRuntimeException(failureType, _cmd.getClass(), getLogMessagePrefix() + " " + message + " and no fallback available.", e, fe));
                     } else {
@@ -740,6 +740,14 @@ import java.util.concurrent.atomic.AtomicReference;
 
                         /* executionHook for all errors */
                         e = wrapWithOnErrorHook(failureType, e);
+                        if (e instanceof HystrixBadRequestException) {
+                            /*
+                             * Treat HystrixBadRequestException from ExecutionHook like a plain HystrixBadRequestException.
+                             */
+                            eventNotifier.markEvent(HystrixEventType.BAD_REQUEST, commandKey);
+                            executionResult = executionResult.addEvent(HystrixEventType.BAD_REQUEST);
+                            return Observable.error(e);
+                        }
 
                         return Observable.error(new HystrixRuntimeException(failureType, _cmd.getClass(), getLogMessagePrefix() + " " + message + " and fallback failed.", e, fe));
                     }
@@ -756,7 +764,16 @@ import java.util.concurrent.atomic.AtomicReference;
 
                 /* executionHook for all errors */
                 e = wrapWithOnErrorHook(failureType, e);
-                fallbackLogicApplied = Observable.<R> error(new HystrixRuntimeException(failureType, this.getClass(), getLogMessagePrefix() + " " + message + " and fallback disabled.", e, null));
+                if (e instanceof HystrixBadRequestException) {
+                    /*
+                     * Treat HystrixBadRequestException from ExecutionHook like a plain HystrixBadRequestException.
+                     */
+                    eventNotifier.markEvent(HystrixEventType.BAD_REQUEST, commandKey);
+                    executionResult = executionResult.addEvent(HystrixEventType.BAD_REQUEST);
+                    fallbackLogicApplied = Observable.error(e);
+                } else {
+                    fallbackLogicApplied = Observable.<R>error(new HystrixRuntimeException(failureType, this.getClass(), getLogMessagePrefix() + " " + message + " and fallback disabled.", e, null));
+                }
             }
         }
 
@@ -1278,121 +1295,6 @@ import java.util.concurrent.atomic.AtomicReference;
         }
     }
 
-    @Deprecated //separated out to make it cleanly removable
-    private class DeprecatedOnCompleteWithValueHookApplication implements Operator<R, R> {
-        private final HystrixInvokableInfo<R> cmd;
-
-        DeprecatedOnCompleteWithValueHookApplication(HystrixInvokableInfo<R> cmd) {
-            this.cmd = cmd;
-        }
-
-        @Override
-        public Subscriber<? super R> call(final Subscriber<? super R> subscriber) {
-            return new Subscriber<R>(subscriber) {
-                @Override
-                public void onCompleted() {
-                    subscriber.onCompleted();
-                }
-
-                @Override
-                public void onError(Throwable e) {
-                    subscriber.onError(e);
-                }
-
-                @Override
-                public void onNext(R r) {
-                    try {
-                        R wrappedValue = executionHook.onComplete(cmd, r);
-                        subscriber.onNext(wrappedValue);
-                    } catch (Throwable hookEx) {
-                        logger.warn("Error calling HystrixCommandExecutionHook.onComplete", hookEx);
-                        subscriber.onNext(r);
-                    }
-                }
-            };
-        }
-    }
-
-    @Deprecated //separated out to make it cleanly removable
-    private class DeprecatedOnRunHookApplication implements Operator<R, R> {
-
-        private final HystrixInvokableInfo<R> cmd;
-
-        DeprecatedOnRunHookApplication(HystrixInvokableInfo<R> cmd) {
-            this.cmd = cmd;
-        }
-
-        @Override
-        public Subscriber<? super R> call(final Subscriber<? super R> subscriber) {
-            return new Subscriber<R>(subscriber) {
-                @Override
-                public void onCompleted() {
-                    subscriber.onCompleted();
-                }
-
-                @Override
-                public void onError(Throwable t) {
-                    Exception e = getExceptionFromThrowable(t);
-                    try {
-                        Exception wrappedEx = executionHook.onRunError(cmd, e);
-                        subscriber.onError(wrappedEx);
-                    } catch (Throwable hookEx) {
-                        logger.warn("Error calling HystrixCommandExecutionHook.onRunError", hookEx);
-                        subscriber.onError(e);
-                    }
-                }
-
-                @Override
-                public void onNext(R r) {
-                    try {
-                        R wrappedValue = executionHook.onRunSuccess(cmd, r);
-                        subscriber.onNext(wrappedValue);
-                    } catch (Throwable hookEx) {
-                        logger.warn("Error calling HystrixCommandExecutionHook.onRunSuccess", hookEx);
-                        subscriber.onNext(r);
-                    }
-                }
-            };
-        }
-    }
-
-    @Deprecated //separated out to make it cleanly removable
-    private class DeprecatedOnFallbackHookApplication implements Operator<R, R> {
-
-        private final HystrixInvokableInfo<R> cmd;
-
-        DeprecatedOnFallbackHookApplication(HystrixInvokableInfo<R> cmd) {
-            this.cmd = cmd;
-        }
-
-        @Override
-        public Subscriber<? super R> call(final Subscriber<? super R> subscriber) {
-            return new Subscriber<R>(subscriber) {
-                @Override
-                public void onCompleted() {
-                    subscriber.onCompleted();
-                }
-
-                @Override
-                public void onError(Throwable t) {
-                    //no need to call a hook here.  FallbackHookApplication is already calling the proper and non-deprecated hook
-                    subscriber.onError(t);
-                }
-
-                @Override
-                public void onNext(R r) {
-                    try {
-                        R wrappedValue = executionHook.onFallbackSuccess(cmd, r);
-                        subscriber.onNext(wrappedValue);
-                    } catch (Throwable hookEx) {
-                        logger.warn("Error calling HystrixCommandExecutionHook.onFallbackSuccess", hookEx);
-                        subscriber.onNext(r);
-                    }
-                }
-            };
-        }
-    }
-
     private Exception wrapWithOnExecutionErrorHook(Throwable t) {
         Exception e = getExceptionFromThrowable(t);
         try {
@@ -1421,6 +1323,8 @@ import java.util.concurrent.atomic.AtomicReference;
         Exception e = getExceptionFromThrowable(t);
         try {
             return executionHook.onError(this, failureType, e);
+        } catch (HystrixBadRequestException badRequestException) {
+            return badRequestException;
         } catch (Throwable hookEx) {
             logger.warn("Error calling HystrixCommandExecutionHook.onError", hookEx);
             return e;
@@ -1862,237 +1766,5 @@ import java.util.concurrent.atomic.AtomicReference;
             e = new Exception("Throwable caught while executing.", t);
         }
         return e;
-    }
-
-    private static class ExecutionHookDeprecationWrapper extends HystrixCommandExecutionHook {
-
-        private final HystrixCommandExecutionHook actual;
-
-        ExecutionHookDeprecationWrapper(HystrixCommandExecutionHook actual) {
-            this.actual = actual;
-        }
-
-        @Override
-        public <T> T onEmit(HystrixInvokableInfo<T> commandInstance, T value) {
-            return actual.onEmit(commandInstance, value);
-        }
-
-        @Override
-        public <T> void onSuccess(HystrixInvokableInfo<T> commandInstance) {
-            actual.onSuccess(commandInstance);
-        }
-
-        @Override
-        public <T> void onExecutionStart(HystrixInvokableInfo<T> commandInstance) {
-            actual.onExecutionStart(commandInstance);
-        }
-
-        @Override
-        public <T> T onExecutionEmit(HystrixInvokableInfo<T> commandInstance, T value) {
-            return actual.onExecutionEmit(commandInstance, value);
-        }
-
-        @Override
-        public <T> Exception onExecutionError(HystrixInvokableInfo<T> commandInstance, Exception e) {
-            return actual.onExecutionError(commandInstance, e);
-        }
-
-        @Override
-        public <T> void onExecutionSuccess(HystrixInvokableInfo<T> commandInstance) {
-            actual.onExecutionSuccess(commandInstance);
-        }
-
-        @Override
-        public <T> T onFallbackEmit(HystrixInvokableInfo<T> commandInstance, T value) {
-            return actual.onFallbackEmit(commandInstance, value);
-        }
-
-        @Override
-        public <T> void onFallbackSuccess(HystrixInvokableInfo<T> commandInstance) {
-            actual.onFallbackSuccess(commandInstance);
-        }
-
-        @Override
-        @Deprecated
-        public <T> void onRunStart(HystrixCommand<T> commandInstance) {
-            actual.onRunStart(commandInstance);
-        }
-
-        @Override
-        public <T> void onRunStart(HystrixInvokableInfo<T> commandInstance) {
-            HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
-            if (c != null) {
-                onRunStart(c);
-            }
-            actual.onRunStart(commandInstance);
-        }
-
-        @Override
-        @Deprecated
-        public <T> T onRunSuccess(HystrixCommand<T> commandInstance, T response) {
-            return actual.onRunSuccess(commandInstance, response);
-        }
-
-        @Override
-        @Deprecated
-        public <T> T onRunSuccess(HystrixInvokableInfo<T> commandInstance, T response) {
-            HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
-            if (c != null) {
-                response = onRunSuccess(c, response);
-            }
-            return actual.onRunSuccess(commandInstance, response);
-        }
-
-        @Override
-        @Deprecated
-        public <T> Exception onRunError(HystrixCommand<T> commandInstance, Exception e) {
-            return actual.onRunError(commandInstance, e);
-        }
-
-        @Override
-        @Deprecated
-        public <T> Exception onRunError(HystrixInvokableInfo<T> commandInstance, Exception e) {
-            HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
-            if (c != null) {
-                e = onRunError(c, e);
-            }
-            return actual.onRunError(commandInstance, e);
-        }
-
-        @Override
-        @Deprecated
-        public <T> void onFallbackStart(HystrixCommand<T> commandInstance) {
-            actual.onFallbackStart(commandInstance);
-        }
-
-        @Override
-        public <T> void onFallbackStart(HystrixInvokableInfo<T> commandInstance) {
-            HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
-            if (c != null) {
-                onFallbackStart(c);
-            }
-            actual.onFallbackStart(commandInstance);
-        }
-
-        @Override
-        @Deprecated
-        public <T> T onFallbackSuccess(HystrixCommand<T> commandInstance, T fallbackResponse) {
-            return actual.onFallbackSuccess(commandInstance, fallbackResponse);
-        }
-
-        @Override
-        @Deprecated
-        public <T> T onFallbackSuccess(HystrixInvokableInfo<T> commandInstance, T fallbackResponse) {
-            HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
-            if (c != null) {
-                fallbackResponse = onFallbackSuccess(c, fallbackResponse);
-            }
-            return actual.onFallbackSuccess(commandInstance, fallbackResponse);
-        }
-
-        @Override
-        @Deprecated
-        public <T> Exception onFallbackError(HystrixCommand<T> commandInstance, Exception e) {
-            return actual.onFallbackError(commandInstance, e);
-        }
-
-        @Override
-        public <T> Exception onFallbackError(HystrixInvokableInfo<T> commandInstance, Exception e) {
-            HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
-            if (c != null) {
-                e = onFallbackError(c, e);
-            }
-            return actual.onFallbackError(commandInstance, e);
-        }
-
-        @Override
-        @Deprecated
-        public <T> void onStart(HystrixCommand<T> commandInstance) {
-            actual.onStart(commandInstance);
-        }
-
-        @Override
-        public <T> void onStart(HystrixInvokableInfo<T> commandInstance) {
-            HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
-            if (c != null) {
-                onStart(c);
-            }
-            actual.onStart(commandInstance);
-        }
-
-        @Override
-        @Deprecated
-        public <T> T onComplete(HystrixCommand<T> commandInstance, T response) {
-            return actual.onComplete(commandInstance, response);
-        }
-
-        @Override
-        @Deprecated
-        public <T> T onComplete(HystrixInvokableInfo<T> commandInstance, T response) {
-            HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
-            if (c != null) {
-                response = onComplete(c, response);
-            }
-            return actual.onComplete(commandInstance, response);
-        }
-
-        @Override
-        @Deprecated
-        public <T> Exception onError(HystrixCommand<T> commandInstance, FailureType failureType, Exception e) {
-            return actual.onError(commandInstance, failureType, e);
-        }
-
-        @Override
-        public <T> Exception onError(HystrixInvokableInfo<T> commandInstance, FailureType failureType, Exception e) {
-            HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
-            if (c != null) {
-                e = onError(c, failureType, e);
-            }
-            return actual.onError(commandInstance, failureType, e);
-        }
-
-        @Override
-        @Deprecated
-        public <T> void onThreadStart(HystrixCommand<T> commandInstance) {
-            actual.onThreadStart(commandInstance);
-        }
-
-        @Override
-        public <T> void onThreadStart(HystrixInvokableInfo<T> commandInstance) {
-            HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
-            if (c != null) {
-                onThreadStart(c);
-            }
-            actual.onThreadStart(commandInstance);
-        }
-
-        @Override
-        @Deprecated
-        public <T> void onThreadComplete(HystrixCommand<T> commandInstance) {
-            actual.onThreadComplete(commandInstance);
-        }
-
-        @Override
-        public <T> void onThreadComplete(HystrixInvokableInfo<T> commandInstance) {
-            HystrixCommand<T> c = getHystrixCommandFromAbstractIfApplicable(commandInstance);
-            if (c != null) {
-                onThreadComplete(c);
-            }
-            actual.onThreadComplete(commandInstance);
-        }
-
-        @Override
-        public <T> void onCacheHit(HystrixInvokableInfo<T> commandInstance) {
-            actual.onCacheHit(commandInstance);
-        }
-
-        @SuppressWarnings({ "unchecked", "rawtypes" })
-        private <T> HystrixCommand<T> getHystrixCommandFromAbstractIfApplicable(HystrixInvokableInfo<T> commandInstance) {
-            if (commandInstance instanceof HystrixCommand) {
-                return (HystrixCommand) commandInstance;
-            } else {
-                return null;
-            }
-        }
     }
 }
