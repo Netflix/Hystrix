@@ -1,5 +1,16 @@
 # Hystrix Releases #
 
+### Version 1.5.2 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.5.2%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.5.2/)) ###
+
+* [Pull 1171](https://github.com/Netflix/Hystrix/pull/1171) Do all histogram latency summarization upfront to minimize storage/operations on them
+* [Pull 1167](https://github.com/Netflix/Hystrix/pull/1167) Javanica: Switch hystrix-javanica to use getExecutionException, which returns Exception object even when command is not executed
+* [Pull 1157](https://github.com/Netflix/Hystrix/pull/1157) Make HystrixMetricsPoller a daemon thread
+* [Pull 1154](https://github.com/Netflix/Hystrix/pull/1154) Remove more unused methods
+* [Pull 1151](https://github.com/Netflix/Hystrix/pull/1151) Remove unused method in HystrixCollapserProperties
+* [Pull 1149](https://github.com/Netflix/Hystrix/pull/1149) Make queue size of MetricJsonListener configurable
+* [Pull 1124](https://github.com/Netflix/Hystrix/pull/1124) Turning down loglevels of metrics streams
+* [Pull 1120](https://github.com/Netflix/Hystrix/pull/1120) Making the HystrixTimeoutException instance per-command, not static
+
 ### Version 1.4.25 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.25%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.25/)) ###
 
 * [Pull 1114](https://github.com/Netflix/Hystrix/pull/1114) Make queue size of MetricsJsonListener configurable
