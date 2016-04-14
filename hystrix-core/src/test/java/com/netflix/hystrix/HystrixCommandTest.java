@@ -2895,7 +2895,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
             fail("We expect a " + HystrixBadRequestException.class.getSimpleName() + " but got a " + e.getClass().getSimpleName());
         }
 
-        assertCommandExecutionEvents(command, HystrixEventType.BAD_REQUEST);
+        assertCommandExecutionEvents(command, HystrixEventType.FAILURE, HystrixEventType.BAD_REQUEST, HystrixEventType.FALLBACK_MISSING);
         assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
         assertSaneHystrixRequestLog(1);
     }
@@ -3094,18 +3094,18 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
 
         class FailureInjectionHook extends HystrixCommandExecutionHook {
             @Override
-            public <T> void onExecutionStart(HystrixInvokable<T> commandInstance) {
+            public <T> void onExecutionStart(HystrixInvokableInfo<T> commandInstance) {
                 throw new HystrixRuntimeException(HystrixRuntimeException.FailureType.COMMAND_EXCEPTION, commandInstance.getClass(), "Injected Failure", null, null);
             }
 
             @Override
-            public <T> void onThreadStart(HystrixInvokable<T> commandInstance) {
+            public <T> void onThreadStart(HystrixInvokableInfo<T> commandInstance) {
                 onThreadStartInvoked.set(true);
                 super.onThreadStart(commandInstance);
             }
 
             @Override
-            public <T> void onThreadComplete(HystrixInvokable<T> commandInstance) {
+            public <T> void onThreadComplete(HystrixInvokableInfo<T> commandInstance) {
                 onThreadCompleteInvoked.set(true);
                 super.onThreadComplete(commandInstance);
             }
@@ -3148,18 +3148,18 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
 
         class FailureInjectionHook extends HystrixCommandExecutionHook {
             @Override
-            public <T> void onExecutionStart(HystrixInvokable<T> commandInstance) {
+            public <T> void onExecutionStart(HystrixInvokableInfo<T> commandInstance) {
                 throw new HystrixRuntimeException(HystrixRuntimeException.FailureType.COMMAND_EXCEPTION, commandInstance.getClass(), "Injected Failure", null, null);
             }
 
             @Override
-            public <T> void onThreadStart(HystrixInvokable<T> commandInstance) {
+            public <T> void onThreadStart(HystrixInvokableInfo<T> commandInstance) {
                 onThreadStartInvoked.set(true);
                 super.onThreadStart(commandInstance);
             }
 
             @Override
-            public <T> void onThreadComplete(HystrixInvokable<T> commandInstance) {
+            public <T> void onThreadComplete(HystrixInvokableInfo<T> commandInstance) {
                 onThreadCompleteInvoked.set(true);
                 super.onThreadComplete(commandInstance);
             }
@@ -3983,8 +3983,8 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
                     .setMetrics(circuitBreaker.metrics)
                     .setExecutionHook(new TestableExecutionHook(){
                         @Override
-                        public <T> Exception onRunError(HystrixInvokable<T> commandInstance, Exception e) {
-                            super.onRunError(commandInstance, e);
+                        public <T> Exception onError(HystrixInvokableInfo<T> commandInstance, HystrixRuntimeException.FailureType failureType, Exception e) {
+                            super.onError(commandInstance, failureType, e);
                             return new HystrixBadRequestException("autoconverted exception", e);
                         }
                     }));

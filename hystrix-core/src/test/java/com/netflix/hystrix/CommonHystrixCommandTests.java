@@ -335,7 +335,7 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                     assertTrue(hook.commandEmissionsMatch(1, 0, 1));
                     assertTrue(hook.executionEventsMatch(1, 0, 1));
                     assertTrue(hook.fallbackEventsMatch(0, 0, 0));
-                    assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onExecutionEmit - !onRunSuccess - !onComplete - onEmit - onExecutionSuccess - onThreadComplete - onSuccess - ", hook.executionSequence.toString());
+                    assertEquals("onStart - onThreadStart - onExecutionStart - onExecutionEmit - onEmit - onExecutionSuccess - onThreadComplete - onSuccess - ", hook.executionSequence.toString());
                 });
     }
 
@@ -358,7 +358,7 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                     assertTrue(hook.fallbackEventsMatch(0, 0, 0));
                     assertEquals(HystrixBadRequestException.class, hook.getCommandException().getClass());
                     assertEquals(HystrixBadRequestException.class, hook.getExecutionException().getClass());
-                    assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onExecutionError - !onRunError - onError - onThreadComplete - ", hook.executionSequence.toString());
+                    assertEquals("onStart - onThreadStart - onExecutionStart - onExecutionError - onError - onThreadComplete - ", hook.executionSequence.toString());
                 });
     }
 
@@ -385,7 +385,7 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                     assertEquals(RuntimeException.class, hook.getCommandException().getClass());
                     assertEquals(RuntimeException.class, hook.getExecutionException().getClass());
                     assertNull(hook.getFallbackException());
-                    assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onExecutionError - !onRunError - onError - onThreadComplete - ", hook.executionSequence.toString());
+                    assertEquals("onStart - onThreadStart - onExecutionStart - onExecutionError - onError - onThreadComplete - ", hook.executionSequence.toString());
                 });
     }
 
@@ -408,7 +408,7 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                     assertTrue(hook.executionEventsMatch(0, 1, 0));
                     assertTrue(hook.fallbackEventsMatch(1, 0, 1));
                     assertEquals(RuntimeException.class, hook.getExecutionException().getClass());
-                    assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onExecutionError - !onRunError - onFallbackStart - onFallbackEmit - !onFallbackSuccess - !onComplete - onEmit - onFallbackSuccess - onThreadComplete - onSuccess - ", hook.executionSequence.toString());
+                    assertEquals("onStart - onThreadStart - onExecutionStart - onExecutionError - onFallbackStart - onFallbackEmit - onEmit - onFallbackSuccess - onThreadComplete - onSuccess - ", hook.executionSequence.toString());
                 });
     }
 
@@ -433,7 +433,7 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                     assertEquals(RuntimeException.class, hook.getCommandException().getClass());
                     assertEquals(RuntimeException.class, hook.getExecutionException().getClass());
                     assertEquals(RuntimeException.class, hook.getFallbackException().getClass());
-                    assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onExecutionError - !onRunError - onFallbackStart - onFallbackError - onError - onThreadComplete - ", hook.executionSequence.toString());
+                    assertEquals("onStart - onThreadStart - onExecutionStart - onExecutionError - onFallbackStart - onFallbackError - onError - onThreadComplete - ", hook.executionSequence.toString());
                 });
     }
 
@@ -457,7 +457,7 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                     assertTrue(hook.fallbackEventsMatch(0, 0, 0));
                     assertEquals(TimeoutException.class, hook.getCommandException().getClass());
                     assertNull(hook.getFallbackException());
-                    assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onError - ", hook.executionSequence.toString());
+                    assertEquals("onStart - onThreadStart - onExecutionStart - onError - ", hook.executionSequence.toString());
 
                     try {
                         Thread.sleep(300);
@@ -468,7 +468,7 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                     assertTrue(hook.commandEmissionsMatch(0, 1, 0));
                     assertTrue(hook.executionEventsMatch(1, 0, 1));
                     assertTrue(hook.fallbackEventsMatch(0, 0, 0));
-                    assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onError - onExecutionEmit - !onRunSuccess - onExecutionSuccess - onThreadComplete - ", hook.executionSequence.toString());
+                    assertEquals("onStart - onThreadStart - onExecutionStart - onError - onExecutionEmit - onExecutionSuccess - onThreadComplete - ", hook.executionSequence.toString());
 
                 });
     }
@@ -491,7 +491,7 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                     assertTrue(hook.commandEmissionsMatch(1, 0, 1));
                     assertTrue(hook.executionEventsMatch(0, 0, 0));
                     assertTrue(hook.fallbackEventsMatch(1, 0, 1));
-                    assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onFallbackStart - onFallbackEmit - !onFallbackSuccess - !onComplete - onEmit - onFallbackSuccess - onSuccess - ", hook.executionSequence.toString());
+                    assertEquals("onStart - onThreadStart - onExecutionStart - onFallbackStart - onFallbackEmit - onEmit - onFallbackSuccess - onSuccess - ", hook.executionSequence.toString());
 
                     try {
                         Thread.sleep(300);
@@ -502,7 +502,7 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                     assertTrue(hook.commandEmissionsMatch(1, 0, 1));
                     assertTrue(hook.executionEventsMatch(1, 0, 1));
                     assertTrue(hook.fallbackEventsMatch(1, 0, 1));
-                    assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onFallbackStart - onFallbackEmit - !onFallbackSuccess - !onComplete - onEmit - onFallbackSuccess - onSuccess - onExecutionEmit - !onRunSuccess - onExecutionSuccess - onThreadComplete - ", hook.executionSequence.toString());
+                    assertEquals("onStart - onThreadStart - onExecutionStart - onFallbackStart - onFallbackEmit - onEmit - onFallbackSuccess - onSuccess - onExecutionEmit - onExecutionSuccess - onThreadComplete - ", hook.executionSequence.toString());
 
                 });
     }
@@ -527,7 +527,7 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                     assertTrue(hook.fallbackEventsMatch(0, 1, 0));
                     assertEquals(TimeoutException.class, hook.getCommandException().getClass());
                     assertEquals(RuntimeException.class, hook.getFallbackException().getClass());
-                    assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onFallbackStart - onFallbackError - onError - ", hook.executionSequence.toString());
+                    assertEquals("onStart - onThreadStart - onExecutionStart - onFallbackStart - onFallbackError - onError - ", hook.executionSequence.toString());
 
                     try {
                         Thread.sleep(300);
@@ -537,7 +537,7 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                     assertTrue(hook.commandEmissionsMatch(0, 1, 0));
                     assertTrue(hook.executionEventsMatch(1, 0, 1));
                     assertTrue(hook.fallbackEventsMatch(0, 1, 0));
-                    assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onFallbackStart - onFallbackError - onError - onExecutionEmit - !onRunSuccess - onExecutionSuccess - onThreadComplete - ", hook.executionSequence.toString());
+                    assertEquals("onStart - onThreadStart - onExecutionStart - onFallbackStart - onFallbackError - onError - onExecutionEmit - onExecutionSuccess - onThreadComplete - ", hook.executionSequence.toString());
 
                 });
     }
@@ -562,7 +562,7 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                     assertTrue(hook.fallbackEventsMatch(0, 0, 0));
                     assertEquals(TimeoutException.class, hook.getCommandException().getClass());
                     assertNull(hook.getFallbackException());
-                    assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onError - ", hook.executionSequence.toString());
+                    assertEquals("onStart - onThreadStart - onExecutionStart - onError - ", hook.executionSequence.toString());
 
                     try {
                         Thread.sleep(300);
@@ -573,7 +573,7 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                     assertTrue(hook.executionEventsMatch(0, 1, 0));
                     assertTrue(hook.fallbackEventsMatch(0, 0, 0));
                     assertEquals(RuntimeException.class, hook.getExecutionException().getClass());
-                    assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onError - onExecutionError - !onRunError - onThreadComplete - ", hook.executionSequence.toString());
+                    assertEquals("onStart - onThreadStart - onExecutionStart - onError - onExecutionError - onThreadComplete - ", hook.executionSequence.toString());
 
                 });
     }
@@ -596,7 +596,7 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                     assertTrue(hook.commandEmissionsMatch(1, 0, 1));
                     assertTrue(hook.executionEventsMatch(0, 0, 0));
                     assertTrue(hook.fallbackEventsMatch(1, 0, 1));
-                    assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onFallbackStart - onFallbackEmit - !onFallbackSuccess - !onComplete - onEmit - onFallbackSuccess - onSuccess - ", hook.executionSequence.toString());
+                    assertEquals("onStart - onThreadStart - onExecutionStart - onFallbackStart - onFallbackEmit - onEmit - onFallbackSuccess - onSuccess - ", hook.executionSequence.toString());
 
                     try {
                         Thread.sleep(300);
@@ -607,7 +607,7 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                     assertTrue(hook.executionEventsMatch(0, 1, 0));
                     assertTrue(hook.fallbackEventsMatch(1, 0, 1));
                     assertEquals(RuntimeException.class, hook.getExecutionException().getClass());
-                    assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onFallbackStart - onFallbackEmit - !onFallbackSuccess - !onComplete - onEmit - onFallbackSuccess - onSuccess - onExecutionError - !onRunError - onThreadComplete - ", hook.executionSequence.toString());
+                    assertEquals("onStart - onThreadStart - onExecutionStart - onFallbackStart - onFallbackEmit - onEmit - onFallbackSuccess - onSuccess - onExecutionError - onThreadComplete - ", hook.executionSequence.toString());
 
                 });
     }
@@ -632,7 +632,7 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                     assertTrue(hook.fallbackEventsMatch(0, 1, 0));
                     assertEquals(TimeoutException.class, hook.getCommandException().getClass());
                     assertEquals(RuntimeException.class, hook.getFallbackException().getClass());
-                    assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onFallbackStart - onFallbackError - onError - ", hook.executionSequence.toString());
+                    assertEquals("onStart - onThreadStart - onExecutionStart - onFallbackStart - onFallbackError - onError - ", hook.executionSequence.toString());
 
                     try {
                         Thread.sleep(300);
@@ -643,7 +643,7 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                     assertTrue(hook.executionEventsMatch(0, 1, 0));
                     assertTrue(hook.fallbackEventsMatch(0, 1, 0));
                     assertEquals(RuntimeException.class, hook.getExecutionException().getClass());
-                    assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onFallbackStart - onFallbackError - onError - onExecutionError - !onRunError - onThreadComplete - ", hook.executionSequence.toString());
+                    assertEquals("onStart - onThreadStart - onExecutionStart - onFallbackStart - onFallbackError - onError - onExecutionError - onThreadComplete - ", hook.executionSequence.toString());
 
                 });
     }
@@ -711,7 +711,7 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                     assertTrue(hook.commandEmissionsMatch(1, 0, 1));
                     assertTrue(hook.executionEventsMatch(0, 0, 0));
                     assertTrue(hook.fallbackEventsMatch(1, 0, 1));
-                    assertEquals("onStart - onFallbackStart - onFallbackEmit - !onFallbackSuccess - !onComplete - onEmit - onFallbackSuccess - onSuccess - ", hook.executionSequence.toString());
+                    assertEquals("onStart - onFallbackStart - onFallbackEmit - onEmit - onFallbackSuccess - onSuccess - ", hook.executionSequence.toString());
                 });
     }
 
@@ -809,7 +809,7 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                     TestableExecutionHook hook = command.getBuilder().executionHook;
                     assertTrue(hook.commandEmissionsMatch(1, 0, 1));
                     assertTrue(hook.executionEventsMatch(0, 0, 0));
-                    assertEquals("onStart - onFallbackStart - onFallbackEmit - !onFallbackSuccess - !onComplete - onEmit - onFallbackSuccess - onSuccess - ", hook.executionSequence.toString());
+                    assertEquals("onStart - onFallbackStart - onFallbackEmit - onEmit - onFallbackSuccess - onSuccess - ", hook.executionSequence.toString());
                 });
     }
 
@@ -880,7 +880,7 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                     assertTrue(hook.commandEmissionsMatch(1, 0, 1));
                     assertTrue(hook.executionEventsMatch(0, 0, 0));
                     assertTrue(hook.fallbackEventsMatch(1, 0, 1));
-                    assertEquals("onStart - onFallbackStart - onFallbackEmit - !onFallbackSuccess - !onComplete - onEmit - onFallbackSuccess - onSuccess - ", hook.executionSequence.toString());
+                    assertEquals("onStart - onFallbackStart - onFallbackEmit - onEmit - onFallbackSuccess - onSuccess - ", hook.executionSequence.toString());
                 });
     }
 
@@ -952,7 +952,7 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                     assertTrue(hook.commandEmissionsMatch(1, 0, 1));
                     assertTrue(hook.executionEventsMatch(1, 0, 1));
                     assertTrue(hook.fallbackEventsMatch(0, 0, 0));
-                    assertEquals("onStart - !onRunStart - onExecutionStart - onExecutionEmit - !onRunSuccess - !onComplete - onEmit - onExecutionSuccess - onSuccess - ", hook.executionSequence.toString());
+                    assertEquals("onStart - onExecutionStart - onExecutionEmit - onEmit - onExecutionSuccess - onSuccess - ", hook.executionSequence.toString());
                 });
     }
 
@@ -973,7 +973,7 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                     assertTrue(hook.fallbackEventsMatch(0, 0, 0));
                     assertEquals(HystrixBadRequestException.class, hook.getCommandException().getClass());
                     assertEquals(HystrixBadRequestException.class, hook.getExecutionException().getClass());
-                    assertEquals("onStart - !onRunStart - onExecutionStart - onExecutionError - !onRunError - onError - ", hook.executionSequence.toString());
+                    assertEquals("onStart - onExecutionStart - onExecutionError - onError - ", hook.executionSequence.toString());
                 });
     }
 
@@ -996,7 +996,7 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                     assertEquals(RuntimeException.class, hook.getCommandException().getClass());
                     assertEquals(RuntimeException.class, hook.getExecutionException().getClass());
                     assertNull(hook.getFallbackException());
-                    assertEquals("onStart - !onRunStart - onExecutionStart - onExecutionError - !onRunError - onError - ", hook.executionSequence.toString());
+                    assertEquals("onStart - onExecutionStart - onExecutionError - onError - ", hook.executionSequence.toString());
                 });
     }
 
@@ -1017,7 +1017,7 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                     assertTrue(hook.executionEventsMatch(0, 1, 0));
                     assertTrue(hook.fallbackEventsMatch(1, 0, 1));
                     assertEquals(RuntimeException.class, hook.getExecutionException().getClass());
-                    assertEquals("onStart - !onRunStart - onExecutionStart - onExecutionError - !onRunError - onFallbackStart - onFallbackEmit - !onFallbackSuccess - !onComplete - onEmit - onFallbackSuccess - onSuccess - ", hook.executionSequence.toString());
+                    assertEquals("onStart - onExecutionStart - onExecutionError - onFallbackStart - onFallbackEmit - onEmit - onFallbackSuccess - onSuccess - ", hook.executionSequence.toString());
                 });
     }
 
@@ -1040,7 +1040,7 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                     assertEquals(RuntimeException.class, hook.getCommandException().getClass());
                     assertEquals(RuntimeException.class, hook.getExecutionException().getClass());
                     assertEquals(RuntimeException.class, hook.getFallbackException().getClass());
-                    assertEquals("onStart - !onRunStart - onExecutionStart - onExecutionError - !onRunError - onFallbackStart - onFallbackError - onError - ", hook.executionSequence.toString());
+                    assertEquals("onStart - onExecutionStart - onExecutionError - onFallbackStart - onFallbackError - onError - ", hook.executionSequence.toString());
                 });
     }
 
@@ -1138,7 +1138,7 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                     assertTrue(hook.commandEmissionsMatch(1, 0, 1));
                     assertTrue(hook.executionEventsMatch(0, 0, 0));
                     assertTrue(hook.fallbackEventsMatch(1, 0, 1));
-                    assertEquals("onStart - onFallbackStart - onFallbackEmit - !onFallbackSuccess - !onComplete - onEmit - onFallbackSuccess - onSuccess - ", hook.executionSequence.toString());
+                    assertEquals("onStart - onFallbackStart - onFallbackEmit - onEmit - onFallbackSuccess - onSuccess - ", hook.executionSequence.toString());
                 });
     }
 
@@ -1225,7 +1225,7 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                     assertTrue(hook.commandEmissionsMatch(1, 0, 1));
                     assertTrue(hook.executionEventsMatch(0, 0, 0));
                     assertTrue(hook.fallbackEventsMatch(1, 0, 1));
-                    assertEquals("onStart - onFallbackStart - onFallbackEmit - !onFallbackSuccess - !onComplete - onEmit - onFallbackSuccess - onSuccess - ", hook.executionSequence.toString());
+                    assertEquals("onStart - onFallbackStart - onFallbackEmit - onEmit - onFallbackSuccess - onSuccess - ", hook.executionSequence.toString());
                 });
     }
 
