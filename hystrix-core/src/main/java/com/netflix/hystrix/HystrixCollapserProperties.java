@@ -213,7 +213,7 @@ public abstract class HystrixCollapserProperties {
      * @NotThreadSafe
      */
     public static class Setter {
-        private Boolean collapsingEnabled = null;
+        @Deprecated private Boolean collapsingEnabled = null;
         private Integer maxRequestsInBatch = null;
         private Integer timerDelayInMilliseconds = null;
         private Boolean requestCacheEnabled = null;
@@ -227,6 +227,10 @@ public abstract class HystrixCollapserProperties {
         private Setter() {
         }
 
+        /**
+         * Deprecated because the collapsingEnabled setting doesn't do anything.
+         */
+        @Deprecated
         public Boolean getCollapsingEnabled() {
             return collapsingEnabled;
         }
@@ -267,7 +271,10 @@ public abstract class HystrixCollapserProperties {
             return metricsRollingPercentileWindowBuckets;
         }
 
-
+        /**
+         * Deprecated because the collapsingEnabled setting doesn't do anything.
+         */
+        @Deprecated
         public Setter withCollapsingEnabled(boolean value) {
             this.collapsingEnabled = value;
             return this;
