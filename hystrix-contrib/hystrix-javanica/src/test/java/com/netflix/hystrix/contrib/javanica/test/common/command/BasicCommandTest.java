@@ -40,7 +40,6 @@ public abstract class BasicCommandTest extends BasicHystrixTest {
 
     @Before
     public void setUp() throws Exception {
-        super.setUp();
         userService = createUserService();
         advancedUserService = createAdvancedUserServiceService();
         genericUserService = createGenericUserService();

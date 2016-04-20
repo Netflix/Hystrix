@@ -105,6 +105,7 @@ dependencies {
     compile 'com.google.code.findbugs:jsr305:2.0.0'
     compile 'org.ow2.asm:asm:5.0.4'
     testCompile 'junit:junit-dep:4.10'
+    testCompile project(':hystrix-junit')
     testCompile 'org.springframework:spring-core:4.0.0.RELEASE'
     testCompile 'org.springframework:spring-context:4.0.0.RELEASE'
     testCompile 'org.springframework:spring-aop:4.0.0.RELEASE'

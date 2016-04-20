@@ -46,7 +46,6 @@ public abstract class BasicCollapserPropertiesTest extends BasicHystrixTest {
 
     @Before
     public void setUp() throws Exception {
-        super.setUp();
         userService = createUserService();
     }
 

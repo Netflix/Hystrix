@@ -61,7 +61,6 @@ public abstract class BasicErrorPropagationTest extends BasicHystrixTest {
 
     @Before
     public void setUp() throws Exception {
-        super.setUp();
         MockitoAnnotations.initMocks(this);
         userService = createUserService();
         userService.setFailoverService(failoverService);
