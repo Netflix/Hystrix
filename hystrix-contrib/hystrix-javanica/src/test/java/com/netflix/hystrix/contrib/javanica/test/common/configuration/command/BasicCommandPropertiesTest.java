@@ -67,7 +67,6 @@ public abstract class BasicCommandPropertiesTest extends BasicHystrixTest {
     @Before
     public void setUp() throws Exception {
         userService = createUserService();
-        super.setUp();
     }
 
     @Test
