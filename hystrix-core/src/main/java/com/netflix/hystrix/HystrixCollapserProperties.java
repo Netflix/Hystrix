@@ -213,7 +213,6 @@ public abstract class HystrixCollapserProperties {
      * @NotThreadSafe
      */
     public static class Setter {
-        private Boolean collapsingEnabled = null;
         private Integer maxRequestsInBatch = null;
         private Integer timerDelayInMilliseconds = null;
         private Boolean requestCacheEnabled = null;
@@ -225,10 +224,6 @@ public abstract class HystrixCollapserProperties {
         private Integer metricsRollingPercentileWindowBuckets = null;
 
         private Setter() {
-        }
-
-        public Boolean getCollapsingEnabled() {
-            return collapsingEnabled;
         }
 
         public Integer getMaxRequestsInBatch() {
@@ -267,11 +262,6 @@ public abstract class HystrixCollapserProperties {
             return metricsRollingPercentileWindowBuckets;
         }
 
-
-        public Setter withCollapsingEnabled(boolean value) {
-            this.collapsingEnabled = value;
-            return this;
-        }
 
         public Setter withMaxRequestsInBatch(int value) {
             this.maxRequestsInBatch = value;
