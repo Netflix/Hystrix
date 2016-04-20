@@ -70,7 +70,7 @@ public class HystrixServoMetricsPublisherCommand extends HystrixServoMetricsPubl
 
             @Override
             public String getKey() {
-                return "instance";
+                return "id";
             }
 
             @Override
@@ -88,7 +88,7 @@ public class HystrixServoMetricsPublisherCommand extends HystrixServoMetricsPubl
 
             @Override
             public String getKey() {
-                return "type";
+                return "class";
             }
 
             @Override
