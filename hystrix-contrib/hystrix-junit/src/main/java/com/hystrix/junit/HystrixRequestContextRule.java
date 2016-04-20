@@ -15,6 +15,7 @@
  */
 package com.hystrix.junit;
 
+import com.netflix.hystrix.Hystrix;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import org.junit.rules.ExternalResource;
 
@@ -35,8 +36,9 @@ public final class HystrixRequestContextRule extends ExternalResource {
     private HystrixRequestContext context;
 
     @Override
-    protected void before() throws Throwable {
+    protected void before() {
         this.context = HystrixRequestContext.initializeContext();
+        Hystrix.reset();
     }
 
     @Override
@@ -49,5 +51,10 @@ public final class HystrixRequestContextRule extends ExternalResource {
 
     public HystrixRequestContext context() {
         return this.context;
+    }
+
+    public void reset() {
+        after();
+        before();
     }
 }
