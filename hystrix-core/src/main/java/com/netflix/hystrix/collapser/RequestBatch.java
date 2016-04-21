@@ -171,7 +171,7 @@ public class RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> {
                         // create a new command to handle this batch of requests
                         Observable<BatchReturnType> o = commandCollapser.createObservableCommand(shardRequests);
 
-                        commandCollapser.mapResponseToRequests(o, shardRequests).doOnError(new Action1<Throwable>() {
+                        commandCollapser.handleResponse(o, shardRequests).doOnError(new Action1<Throwable>() {
 
                             /**
                              * This handles failed completions
