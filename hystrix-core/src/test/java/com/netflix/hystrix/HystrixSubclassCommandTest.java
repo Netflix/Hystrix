@@ -16,9 +16,8 @@
 
 package com.netflix.hystrix;
 
-import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
-import org.junit.After;
-import org.junit.Before;
+import com.hystrix.junit.HystrixRequestContextRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -29,17 +28,8 @@ import static org.junit.Assert.assertEquals;
 public class HystrixSubclassCommandTest {
 
     private final static HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("GROUP");
-    private HystrixRequestContext requestContext;
-
-    @Before
-    public void setUp() {
-        requestContext = HystrixRequestContext.initializeContext();
-    }
-
-    @After
-    public void tearDown() {
-        requestContext.shutdown();
-    }
+    @Rule
+    public HystrixRequestContextRule ctx = new HystrixRequestContextRule();
 
     @Test
     public void testFallback() {

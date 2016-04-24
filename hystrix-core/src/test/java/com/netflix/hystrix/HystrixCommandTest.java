@@ -15,6 +15,7 @@
  */
 package com.netflix.hystrix;
 
+import com.hystrix.junit.HystrixRequestContextRule;
 import com.netflix.config.ConfigurationManager;
 import com.netflix.hystrix.AbstractCommand.TryableSemaphore;
 import com.netflix.hystrix.AbstractCommand.TryableSemaphoreActual;
@@ -29,7 +30,7 @@ import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
 import com.netflix.hystrix.strategy.properties.HystrixProperty;
 import org.junit.After;
-import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import rx.Observable;
 import rx.Observer;
@@ -57,21 +58,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.Assert.*;
 
 public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCommand<Integer>> {
-
-    @Before
-    public void prepareForTest() {
-        /* we must call this to simulate a new request lifecycle running and clearing caches */
-        HystrixRequestContext.initializeContext();
-    }
+    @Rule
+    public HystrixRequestContextRule ctx = new HystrixRequestContextRule();
 
     @After
     public void cleanup() {
-        // instead of storing the reference from initialize we'll just get the current state and shutdown
-        if (HystrixRequestContext.getContextForCurrentThread() != null) {
-            // it could have been set NULL by the test
-            HystrixRequestContext.getContextForCurrentThread().shutdown();
-        }
-
         // force properties to be clean as well
         ConfigurationManager.getConfigInstance().clear();
 
@@ -2374,7 +2365,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         } catch (ExecutionException e) {
             e.printStackTrace();
             if (e.getCause() instanceof HystrixBadRequestException) {
-                // success    
+                // success
             } else {
                 fail("We expect a " + HystrixBadRequestException.class.getSimpleName() + " but got a " + e.getClass().getSimpleName());
             }
@@ -2413,7 +2404,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         } catch (ExecutionException e) {
             e.printStackTrace();
             if (e.getCause() instanceof HystrixBadRequestException) {
-                // success    
+                // success
             } else {
                 fail("We expect a " + HystrixBadRequestException.class.getSimpleName() + " but got a " + e.getClass().getSimpleName());
             }
@@ -2477,7 +2468,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
 
     /**
      * Test a java.lang.Error being thrown
-     * 
+     *
      * @throws InterruptedException
      */
     @Test
@@ -3809,7 +3800,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         private final CountDownLatch startLatch, waitLatch;
 
         /**
-         * 
+         *
          * @param circuitBreaker circuit breaker (passed in so it may be shared)
          * @param semaphore semaphore (passed in so it may be shared)
          * @param startLatch

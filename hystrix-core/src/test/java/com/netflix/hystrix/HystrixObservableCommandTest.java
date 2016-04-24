@@ -15,6 +15,7 @@
  */
 package com.netflix.hystrix;
 
+import com.hystrix.junit.HystrixRequestContextRule;
 import com.netflix.config.ConfigurationManager;
 import com.netflix.hystrix.AbstractCommand.TryableSemaphoreActual;
 import com.netflix.hystrix.HystrixCircuitBreakerTest.TestCircuitBreaker;
@@ -28,6 +29,7 @@ import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import com.netflix.hystrix.strategy.properties.HystrixProperty;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import rx.Notification;
 import rx.Observable;
@@ -62,20 +64,11 @@ import static org.junit.Assert.*;
 
 public class HystrixObservableCommandTest extends CommonHystrixCommandTests<TestHystrixObservableCommand<Integer>> {
 
-    @Before
-    public void prepareForTest() {
-        /* we must call this to simulate a new request lifecycle running and clearing caches */
-        HystrixRequestContext.initializeContext();
-    }
+    @Rule
+    public HystrixRequestContextRule ctx = new HystrixRequestContextRule();
 
     @After
     public void cleanup() {
-        // instead of storing the reference from initialize we'll just get the current state and shutdown
-        if (HystrixRequestContext.getContextForCurrentThread() != null) {
-            // it could have been set NULL by the test
-            HystrixRequestContext.getContextForCurrentThread().shutdown();
-        }
-
         // force properties to be clean as well
         ConfigurationManager.getConfigInstance().clear();
 
@@ -1834,7 +1827,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         } catch (ExecutionException e) {
             e.printStackTrace();
             if (e.getCause() instanceof HystrixBadRequestException) {
-                // success    
+                // success
             } else {
                 fail("We expect a " + HystrixBadRequestException.class.getSimpleName() + " but got a " + e.getClass().getSimpleName());
             }
@@ -1876,7 +1869,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     /**
      * Test a java.lang.Error being thrown
-     * 
+     *
      * @throws InterruptedException
      */
     @Test
@@ -1929,7 +1922,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     /**
      * Test a java.lang.Error being thrown
-     * 
+     *
      * @throws InterruptedException
      */
     @Test
@@ -3478,9 +3471,9 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     /**
      * Async Observable and semaphore isolation. User provided thread [RxNewThread] does everything.
-     * 
+     *
      * NOTE: RequestContext will NOT exist on that thread.
-     * 
+     *
      * An async Observable running on its own thread will not have access to the request context unless the user manages the context.
      */
     @Test
@@ -3499,7 +3492,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     /**
      * Async Observable and semaphore isolation WITH functioning RequestContext
-     * 
+     *
      * Use HystrixContextScheduler to make the user provided scheduler capture context.
      */
     @Test
@@ -3535,9 +3528,9 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     /**
      * Async Observable and thread isolation. User provided thread [RxNetThread] executes Observable and then [RxComputation] observes the onNext calls.
-     * 
+     *
      * NOTE: RequestContext will NOT exist on that thread.
-     * 
+     *
      * An async Observable running on its own thread will not have access to the request context unless the user manages the context.
      */
     @Test
@@ -3556,7 +3549,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     /**
      * Async Observable and semaphore isolation WITH functioning RequestContext
-     * 
+     *
      * Use HystrixContextScheduler to make the user provided scheduler capture context.
      */
     @Test
@@ -3594,9 +3587,9 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     /**
      * Async Observable and semaphore isolation. User provided thread [RxNewThread] does everything.
-     * 
+     *
      * NOTE: RequestContext will NOT exist on that thread.
-     * 
+     *
      * An async Observable running on its own thread will not have access to the request context unless the user manages the context.
      */
     @Test
@@ -3615,7 +3608,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     /**
      * Async Observable and semaphore isolation WITH functioning RequestContext
-     * 
+     *
      * Use HystrixContextScheduler to make the user provided scheduler capture context.
      */
     @Test
@@ -3651,9 +3644,9 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     /**
      * Async Observable and thread isolation. User provided thread [RxNetThread] executes Observable and then [RxComputation] observes the onNext calls.
-     * 
+     *
      * NOTE: RequestContext will NOT exist on that thread.
-     * 
+     *
      * An async Observable running on its own thread will not have access to the request context unless the user manages the context.
      */
     @Test
@@ -3672,7 +3665,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     /**
      * Async Observable and semaphore isolation WITH functioning RequestContext
-     * 
+     *
      * Use HystrixContextScheduler to make the user provided scheduler capture context.
      */
     @Test
@@ -3710,9 +3703,9 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     /**
      * Async Observable and semaphore isolation. User provided thread [RxNewThread] does everything.
-     * 
+     *
      * NOTE: RequestContext will NOT exist on that thread.
-     * 
+     *
      * An async Observable running on its own thread will not have access to the request context unless the user manages the context.
      */
     @Test
@@ -3731,7 +3724,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     /**
      * Async Observable and semaphore isolation WITH functioning RequestContext
-     * 
+     *
      * Use HystrixContextScheduler to make the user provided scheduler capture context.
      */
     @Test
@@ -3767,9 +3760,9 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     /**
      * Async Observable and thread isolation. User provided thread [RxNetThread] executes Observable and then [RxComputation] observes the onNext calls.
-     * 
+     *
      * NOTE: RequestContext will NOT exist on that thread.
-     * 
+     *
      * An async Observable running on its own thread will not have access to the request context unless the user manages the context.
      */
     @Test
@@ -3788,7 +3781,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     /**
      * Async Observable and semaphore isolation WITH functioning RequestContext
-     * 
+     *
      * Use HystrixContextScheduler to make the user provided scheduler capture context.
      */
     @Test
@@ -3826,9 +3819,9 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     /**
      * Async Observable and semaphore isolation. User provided thread [RxNewThread] does everything.
-     * 
+     *
      * NOTE: RequestContext will NOT exist on that thread.
-     * 
+     *
      * An async Observable running on its own thread will not have access to the request context unless the user manages the context.
      */
     @Test
@@ -3847,7 +3840,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     /**
      * Async Observable and semaphore isolation WITH functioning RequestContext
-     * 
+     *
      * Use HystrixContextScheduler to make the user provided scheduler capture context.
      */
     @Test
@@ -3883,9 +3876,9 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     /**
      * Async Observable and thread isolation. User provided thread [RxNetThread] executes Observable and then [RxComputation] observes the onNext calls.
-     * 
+     *
      * NOTE: RequestContext will NOT exist on that thread.
-     * 
+     *
      * An async Observable running on its own thread will not have access to the request context unless the user manages the context.
      */
     @Test
@@ -3904,7 +3897,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     /**
      * Async Observable and semaphore isolation WITH functioning RequestContext
-     * 
+     *
      * Use HystrixContextScheduler to make the user provided scheduler capture context.
      */
     @Test
@@ -3942,9 +3935,9 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     /**
      * Async Observable and semaphore isolation. User provided thread [RxNewThread] does everything.
-     * 
+     *
      * NOTE: RequestContext will NOT exist on that thread.
-     * 
+     *
      * An async Observable running on its own thread will not have access to the request context unless the user manages the context.
      */
     @Test
@@ -3963,7 +3956,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     /**
      * Async Observable and semaphore isolation WITH functioning RequestContext
-     * 
+     *
      * Use HystrixContextScheduler to make the user provided scheduler capture context.
      */
     @Test
@@ -4000,9 +3993,9 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     /**
      * Async Observable and thread isolation. User provided thread [RxNetThread] executes Observable and then [RxComputation] observes the onNext calls.
-     * 
+     *
      * NOTE: RequestContext will NOT exist on that thread.
-     * 
+     *
      * An async Observable running on its own thread will not have access to the request context unless the user manages the context.
      */
     @Test
@@ -4021,7 +4014,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     /**
      * Async Observable and semaphore isolation WITH functioning RequestContext
-     * 
+     *
      * Use HystrixContextScheduler to make the user provided scheduler capture context.
      */
     @Test
@@ -4059,9 +4052,9 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     /**
      * Async Observable and semaphore isolation. User provided thread [RxNewThread] does everything.
-     * 
+     *
      * NOTE: RequestContext will NOT exist on that thread.
-     * 
+     *
      * An async Observable running on its own thread will not have access to the request context unless the user manages the context.
      */
     @Test
@@ -4080,7 +4073,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     /**
      * Async Observable and semaphore isolation WITH functioning RequestContext
-     * 
+     *
      * Use HystrixContextScheduler to make the user provided scheduler capture context.
      */
     @Test
@@ -4116,9 +4109,9 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     /**
      * Async Observable and thread isolation. User provided thread [RxNetThread] executes Observable and then [RxComputation] observes the onNext calls.
-     * 
+     *
      * NOTE: RequestContext will NOT exist on that thread.
-     * 
+     *
      * An async Observable running on its own thread will not have access to the request context unless the user manages the context.
      */
     @Test
@@ -4137,7 +4130,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     /**
      * Async Observable and semaphore isolation WITH functioning RequestContext
-     * 
+     *
      * Use HystrixContextScheduler to make the user provided scheduler capture context.
      */
     @Test
@@ -4177,9 +4170,9 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     /**
      * Async Observable and semaphore isolation. User provided thread [RxNewThread] does everything.
-     * 
+     *
      * NOTE: RequestContext will NOT exist on that thread.
-     * 
+     *
      * An async Observable running on its own thread will not have access to the request context unless the user manages the context.
      */
     @Test
@@ -4200,7 +4193,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     /**
      * Async Observable and semaphore isolation WITH functioning RequestContext
-     * 
+     *
      * Use HystrixContextScheduler to make the user provided scheduler capture context.
      */
     @Test
@@ -4240,9 +4233,9 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     /**
      * Async Observable and thread isolation. User provided thread [RxNetThread] executes Observable and then [RxComputation] observes the onNext calls.
-     * 
+     *
      * NOTE: RequestContext will NOT exist on that thread.
-     * 
+     *
      * An async Observable running on its own thread will not have access to the request context unless the user manages the context.
      */
     @Test
@@ -4263,7 +4256,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     /**
      * Async Observable and semaphore isolation WITH functioning RequestContext
-     * 
+     *
      * Use HystrixContextScheduler to make the user provided scheduler capture context.
      */
     @Test
@@ -4285,14 +4278,14 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
     /* *************************************** testTimeoutWithFallbackRequestContext *********************************** */
 
     /**
-     * Synchronous Observable and semaphore isolation. 
+     * Synchronous Observable and semaphore isolation.
      */
     @Test
     public void testTimeoutWithFallbackRequestContextWithSemaphoreIsolatedSynchronousObservable() {
         RequestContextTestResults results = testRequestContextOnTimeoutWithFallback(ExecutionIsolationStrategy.SEMAPHORE, Schedulers.immediate());
 
         assertTrue(results.isContextInitialized.get());
-        assertTrue(results.originThread.get().getName().startsWith("HystrixTimer")); // timeout uses HystrixTimer thread 
+        assertTrue(results.originThread.get().getName().startsWith("HystrixTimer")); // timeout uses HystrixTimer thread
         //(this use case is a little odd as it should generally not be the case that we are "timing out" a synchronous observable on semaphore isolation)
 
         assertTrue(results.isContextInitializedObserveOn.get());
@@ -4306,9 +4299,9 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     /**
      * Async Observable and semaphore isolation. User provided thread [RxNewThread] does everything.
-     * 
+     *
      * NOTE: RequestContext will NOT exist on that thread.
-     * 
+     *
      * An async Observable running on its own thread will not have access to the request context unless the user manages the context.
      */
     @Test
@@ -4329,7 +4322,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     /**
      * Async Observable and semaphore isolation WITH functioning RequestContext
-     * 
+     *
      * Use HystrixContextScheduler to make the user provided scheduler capture context.
      */
     @Test
@@ -4369,9 +4362,9 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     /**
      * Async Observable and thread isolation. User provided thread [RxNetThread] executes Observable and then [RxComputation] observes the onNext calls.
-     * 
+     *
      * NOTE: RequestContext will NOT exist on that thread.
-     * 
+     *
      * An async Observable running on its own thread will not have access to the request context unless the user manages the context.
      */
     @Test
@@ -4392,7 +4385,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     /**
      * Async Observable and semaphore isolation WITH functioning RequestContext
-     * 
+     *
      * Use HystrixContextScheduler to make the user provided scheduler capture context.
      */
     @Test
@@ -4470,7 +4463,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
             fail("We received an exception.");
         }
     }
-    
+
     /**
      * Test behavior when some onNext are received and then a failure.
      */
@@ -4483,10 +4476,10 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
             ts.awaitTerminalEvent();
             ts.assertReceivedOnNext(Arrays.asList(false, true, false, true, false, true, false));
             ts.assertNoErrors();
-            
+
             assertFalse(command.isSuccessfulExecution());
             assertTrue(command.isFailedExecution());
-            
+
             assertNotNull(command.getFailedExecutionException());
             assertTrue(command.getExecutionTimeInMilliseconds() > -1);
             assertCommandExecutionEvents(command, HystrixEventType.EMIT, HystrixEventType.EMIT, HystrixEventType.EMIT, HystrixEventType.FAILURE,
@@ -4749,7 +4742,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         }
 
     }
-    
+
     private static class TestPartialSuccessWithFallback extends TestHystrixObservableCommand<Boolean> {
 
         TestPartialSuccessWithFallback() {
@@ -4770,14 +4763,14 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
                     .concatWith(Observable.<Boolean> error(new RuntimeException("forced error")))
                     .subscribeOn(Schedulers.computation());
         }
-        
+
         @Override
         protected Observable<Boolean> resumeWithFallback() {
             return Observable.just(true, false, true, false);
         }
 
     }
-    
+
     /**
      * Test how a fallback could be done on a streaming response where it is partially successful
      * by retaining state of what has been seen.
@@ -4789,7 +4782,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         }
 
         volatile int lastSeen = 0;
-        
+
         @Override
         protected Observable<Integer> construct() {
             return Observable.just(1, 2, 3)
@@ -4800,11 +4793,11 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
                         public void call(Integer t1) {
                             lastSeen = t1;
                         }
-                        
+
                     })
                     .subscribeOn(Schedulers.computation());
         }
-        
+
         @Override
         protected Observable<Integer> resumeWithFallback() {
             if (lastSeen < 4) {
@@ -5247,7 +5240,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     /**
      * The construct() will take time once subscribed to. No fallback implementation.
-     * 
+     *
      * Used for making sure Thread and Semaphore isolation are separated from each other.
      */
     private static class TestThreadIsolationWithSemaphoreSetSmallCommand extends TestHystrixObservableCommand<Boolean> {
@@ -5289,7 +5282,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         private final CountDownLatch startLatch, waitLatch;
 
         /**
-         * 
+         *
          * @param circuitBreaker circuit breaker (passed in so it may be shared)
          * @param semaphore semaphore (passed in so it may be shared)
          * @param startLatch

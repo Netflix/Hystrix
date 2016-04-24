@@ -1,12 +1,12 @@
 /**
  * Copyright 2014 Netflix, Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,6 +15,7 @@
  */
 package com.netflix.hystrix;
 
+import com.hystrix.junit.HystrixRequestContextRule;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -35,8 +36,8 @@ import com.netflix.hystrix.collapser.CollapserTimer;
 import com.netflix.hystrix.collapser.RealCollapserTimer;
 import com.netflix.hystrix.strategy.concurrency.HystrixContextRunnable;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesCollapserDefault;
-import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import rx.Observable;
@@ -122,24 +123,14 @@ public class HystrixObservableCollapserTest {
         }
     };
 
+    @Rule
+    public HystrixRequestContextRule ctx = new HystrixRequestContextRule();
     private static ExecutorService threadPool = new ThreadPoolExecutor(100, 100, 10, TimeUnit.MINUTES, new SynchronousQueue<Runnable>());
 
     @Before
     public void init() {
         // since we're going to modify properties of the same class between tests, wipe the cache each time
         HystrixCollapser.reset();
-        Hystrix.reset();
-        /* we must call this to simulate a new request lifecycle running and clearing caches */
-        HystrixRequestContext.initializeContext();
-    }
-
-    @After
-    public void cleanup() {
-        // instead of storing the reference from initialize we'll just get the current state and shutdown
-        if (HystrixRequestContext.getContextForCurrentThread() != null) {
-            // it may be null if a test shuts the context down manually
-            HystrixRequestContext.getContextForCurrentThread().shutdown();
-        }
     }
 
     @Test
@@ -165,7 +156,7 @@ public class HystrixObservableCollapserTest {
         for(int i = 0; i < 10; i++) {
             init();
             testTwoRequests();
-            cleanup();
+            ctx.reset();
         }
     }
 
@@ -805,7 +796,7 @@ public class HystrixObservableCollapserTest {
                         }
                         s.onNext(request.getArgument());
                     }
-                    
+
                     s.onCompleted();
                 }
 
