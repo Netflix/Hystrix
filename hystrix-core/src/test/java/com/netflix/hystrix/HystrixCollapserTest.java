@@ -15,6 +15,7 @@
  */
 package com.netflix.hystrix;
 
+import com.hystrix.junit.HystrixRequestContextRule;
 import java.lang.ref.Reference;
 import java.lang.ref.SoftReference;
 import java.util.ArrayList;
@@ -28,9 +29,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesCollapserDefault;
-import com.netflix.hystrix.util.HystrixRollingNumberEvent;
-import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
@@ -48,21 +48,13 @@ import rx.Observable;
 import static org.junit.Assert.*;
 
 public class HystrixCollapserTest {
-    private HystrixRequestContext context = null;
+    @Rule
+    public HystrixRequestContextRule context = new HystrixRequestContextRule();
 
     @Before
     public void init() {
-        // since we're going to modify properties of the same class between tests, wipe the cache each time
-        HystrixCollapser.reset();
         HystrixCollapserMetrics.reset();
         HystrixCommandMetrics.reset();
-        /* we must call this to simulate a new request lifecycle running and clearing caches */
-        context = HystrixRequestContext.initializeContext();
-    }
-
-    @After
-    public void cleanup() {
-        context.shutdown();
     }
 
     @Test
@@ -827,7 +819,7 @@ public class HystrixCollapserTest {
 
     /**
      * Test a Void response type - null being set as response.
-     * 
+     *
      * @throws Exception
      */
     @Test
@@ -851,7 +843,7 @@ public class HystrixCollapserTest {
 
     /**
      * Test a Void response type - response never being set in mapResponseToRequest
-     * 
+     *
      * @throws Exception
      */
     @Test
@@ -879,7 +871,7 @@ public class HystrixCollapserTest {
 
     /**
      * Test a Void response type with execute - response being set in mapResponseToRequest to null
-     * 
+     *
      * @throws Exception
      */
     @Test
@@ -1198,7 +1190,7 @@ public class HystrixCollapserTest {
          * You must call incrementTime multiple times each increment being larger than 'period' on subsequent calls to cause multiple executions.
          * <p>
          * This is because executing multiple times in a tight-loop would not achieve the correct behavior, such as batching, since it will all execute "now" not after intervals of time.
-         * 
+         *
          * @param timeInMilliseconds amount of time to increment
          */
         public synchronized void incrementTime(int timeInMilliseconds) {
