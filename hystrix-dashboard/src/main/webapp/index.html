@@ -46,6 +46,22 @@
 				}
 			});
 		});
+		
+		$.get( "http://127.0.0.1:8080/eureka/v2/apps", function( data ) {
+			   $.each(data, function(i, item){
+			     $('#eurekaApp').append($("<option></option>")
+			                    .attr("value",item.name)
+			                    .text(item.name)); 
+
+			    $('#repos').bind('change',function(item){
+			        var $this = $(this),
+			        $value = $this.val();
+			        $('#eurekaApp').text($value)
+			    });
+
+			   });
+			});
+		
 	</script>
 </head>
 <body>
@@ -57,6 +73,7 @@
 	<br>
 	
 	<h2>Hystrix Dashboard</h2>
+	<select id="eurekaApp" name="eurekaApp"class="eurekaApp"></select>
 	<input id="stream" type="textfield" size="120" placeholder="http://hostname:port/turbine/turbine.stream"></input>
 	<br><br>
 	<i>Cluster via Turbine (default cluster):</i> http://turbine-hostname:port/turbine.stream
