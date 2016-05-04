@@ -46,14 +46,12 @@
 				}
 			});
 		});
-		
-		console.log(2);
 
 		$(document).ready(function(){
 
 				$('#eurekaURL').on('input',function(e){
-
-					$.get($('#eurekaURL').val(), function( data ) {
+					url = window.location.pathname + "eureka?url=" + $('#eurekaURL').val()
+					$.get(url,function( data ) {
 
 				   		$(data.children).find("application").each(function(index,item){
 					   	  appName = $(item).find("name")[0].innerHTML
