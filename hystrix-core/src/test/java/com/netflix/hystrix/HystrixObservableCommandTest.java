@@ -37,6 +37,7 @@ import rx.Observable.OnSubscribe;
 import rx.Observer;
 import rx.Scheduler;
 import rx.Subscriber;
+import rx.Subscription;
 import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func0;
@@ -4494,6 +4495,150 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         }
     }
 
+    @Test
+    public void testEarlyUnsubscribeDuringExecution() {
+        class AsyncCommand extends HystrixObservableCommand<Boolean> {
+
+            public AsyncCommand() {
+                super(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("ASYNC")));
+            }
+
+            @Override
+            protected Observable<Boolean> construct() {
+                return Observable.defer(new Func0<Observable<Boolean>>() {
+                    @Override
+                    public Observable<Boolean> call() {
+                        try {
+                            Thread.sleep(100);
+                            return Observable.just(true);
+                        } catch (InterruptedException ex) {
+                            return Observable.error(ex);
+                        }
+                    }
+                }).subscribeOn(Schedulers.io());
+            }
+        }
+
+        HystrixObservableCommand<Boolean> cmd = new AsyncCommand();
+
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        Observable<Boolean> o = cmd.toObservable();
+        Subscription s = o.
+                doOnUnsubscribe(new Action0() {
+                    @Override
+                    public void call() {
+                        System.out.println("OnUnsubscribe");
+                        latch.countDown();
+                    }
+                }).
+                subscribe(new Subscriber<Boolean>() {
+                    @Override
+                    public void onCompleted() {
+                        System.out.println("OnCompleted");
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        System.out.println("OnError : " + e);
+                    }
+
+                    @Override
+                    public void onNext(Boolean b) {
+                        System.out.println("OnNext : " + b);
+                    }
+                });
+
+        try {
+            s.unsubscribe();
+            assertTrue(latch.await(200, TimeUnit.MILLISECONDS));
+            assertEquals("Number of execution semaphores in use", 0, cmd.getExecutionSemaphore().getNumberOfPermitsUsed());
+            assertEquals("Number of fallback semaphores in use", 0, cmd.getFallbackSemaphore().getNumberOfPermitsUsed());
+            assertTrue(cmd.isExecutionComplete());
+            assertFalse(cmd.isExecutedInThread());
+            System.out.println("EventCounts : " + cmd.getEventCounts());
+            System.out.println("Execution Time : " + cmd.getExecutionTimeInMilliseconds());
+            System.out.println("Is Successful : " + cmd.isSuccessfulExecution());
+        } catch (InterruptedException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    @Test
+    public void testEarlyUnsubscribeDuringFallback() {
+        class AsyncCommand extends HystrixObservableCommand<Boolean> {
+
+            public AsyncCommand() {
+                super(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("ASYNC")));
+            }
+
+            @Override
+            protected Observable<Boolean> construct() {
+                return Observable.error(new RuntimeException("construct failure"));
+            }
+
+            @Override
+            protected Observable<Boolean> resumeWithFallback() {
+                return Observable.defer(new Func0<Observable<Boolean>>() {
+                    @Override
+                    public Observable<Boolean> call() {
+                        try {
+                            Thread.sleep(100);
+                            return Observable.just(false);
+                        } catch (InterruptedException ex) {
+                            return Observable.error(ex);
+                        }
+                    }
+                }).subscribeOn(Schedulers.io());
+            }
+        }
+
+        HystrixObservableCommand<Boolean> cmd = new AsyncCommand();
+
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        Observable<Boolean> o = cmd.toObservable();
+        Subscription s = o.
+                doOnUnsubscribe(new Action0() {
+                    @Override
+                    public void call() {
+                        System.out.println("OnUnsubscribe");
+                        latch.countDown();
+                    }
+                }).
+                subscribe(new Subscriber<Boolean>() {
+                    @Override
+                    public void onCompleted() {
+                        System.out.println("OnCompleted");
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        System.out.println("OnError : " + e);
+                    }
+
+                    @Override
+                    public void onNext(Boolean b) {
+                        System.out.println("OnNext : " + b);
+                    }
+                });
+
+        try {
+            Thread.sleep(10); //give fallback a chance to fire
+            s.unsubscribe();
+            assertTrue(latch.await(200, TimeUnit.MILLISECONDS));
+            assertEquals("Number of execution semaphores in use", 0, cmd.getExecutionSemaphore().getNumberOfPermitsUsed());
+            assertEquals("Number of fallback semaphores in use", 0, cmd.getFallbackSemaphore().getNumberOfPermitsUsed());
+            assertTrue(cmd.isExecutionComplete());
+            assertFalse(cmd.isExecutedInThread());
+        } catch (InterruptedException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+
     /* ******************************************************************************** */
     /* ******************************************************************************** */
     /* private HystrixCommand class implementations for unit testing */
@@ -4760,7 +4905,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         @Override
         protected Observable<Boolean> construct() {
             return Observable.just(false, true, false)
-                    .concatWith(Observable.<Boolean> error(new RuntimeException("forced error")))
+                    .concatWith(Observable.<Boolean>error(new RuntimeException("forced error")))
                     .subscribeOn(Schedulers.computation());
         }
 
@@ -4771,43 +4916,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     }
 
-    /**
-     * Test how a fallback could be done on a streaming response where it is partially successful
-     * by retaining state of what has been seen.
-     */
-    private static class TestPartialSuccessWithIntelligentFallback extends TestHystrixObservableCommand<Integer> {
 
-        TestPartialSuccessWithIntelligentFallback() {
-            super(TestHystrixObservableCommand.testPropsBuilder());
-        }
-
-        volatile int lastSeen = 0;
-
-        @Override
-        protected Observable<Integer> construct() {
-            return Observable.just(1, 2, 3)
-                    .concatWith(Observable.<Integer> error(new RuntimeException("forced error")))
-                    .doOnNext(new Action1<Integer>() {
-
-                        @Override
-                        public void call(Integer t1) {
-                            lastSeen = t1;
-                        }
-
-                    })
-                    .subscribeOn(Schedulers.computation());
-        }
-
-        @Override
-        protected Observable<Integer> resumeWithFallback() {
-            if (lastSeen < 4) {
-                return Observable.range(lastSeen + 1, 4 - lastSeen);
-            } else {
-                return Observable.empty();
-            }
-        }
-
-    }
 
     /**
      * Successful execution - no fallback implementation.

@@ -380,6 +380,7 @@ import java.util.concurrent.atomic.AtomicReference;
                 /* determine if we're allowed to execute */
                 if (circuitBreaker.allowRequest()) {
                     final TryableSemaphore executionSemaphore = getExecutionSemaphore();
+                    final AtomicBoolean semaphoreHasBeenReleased = new AtomicBoolean(false);
                     // acquire a permit
                     if (executionSemaphore.tryAcquire()) {
                         try {
@@ -393,10 +394,21 @@ import java.util.concurrent.atomic.AtomicReference;
                                             // release the semaphore
                                             // this is done here instead of below so that the acquire/release happens where it is guaranteed
                                             // and not affected by the conditional circuit-breaker checks, timeouts, etc
-                                            executionSemaphore.release();
+                                            if (semaphoreHasBeenReleased.compareAndSet(false, true)) {
+                                                executionSemaphore.release();
+                                            }
 
                                         }
-                                    }).unsafeSubscribe(observer);
+                                    })
+                                    .doOnUnsubscribe(new Action0() {
+                                        @Override
+                                        public void call() {
+                                            if (semaphoreHasBeenReleased.compareAndSet(false, true)) {
+                                                executionSemaphore.release();
+                                            }
+                                        }
+                                    })
+                                    .unsafeSubscribe(observer);
                         } catch (RuntimeException e) {
                             observer.onError(e);
                         }
@@ -444,24 +456,29 @@ import java.util.concurrent.atomic.AtomicReference;
 
         });
 
-        // any final cleanup needed
-        o = o.doOnTerminate(new Action0() {
+        final AtomicBoolean commandCleanupExecuted = new AtomicBoolean(false);
+        final Action0 commandCleanup = new Action0() {
 
             @Override
             public void call() {
-                Reference<TimerListener> tl = timeoutTimer.get();
-                if (tl != null) {
-                    tl.clear();
-                }
+                if (commandCleanupExecuted.compareAndSet(false, true)) {
+                    Reference<TimerListener> tl = timeoutTimer.get();
+                    if (tl != null) {
+                        tl.clear();
+                    }
 
-                long userThreadLatency = System.currentTimeMillis() - executionResult.getStartTimestamp();
-                executionResult = executionResult.markUserThreadCompletion((int) userThreadLatency);
-                metrics.markCommandDone(executionResult, commandKey, threadPoolKey);
-                // record that we're completed
-                isExecutionComplete.set(true);
+                    long userThreadLatency = System.currentTimeMillis() - executionResult.getStartTimestamp();
+                    executionResult = executionResult.markUserThreadCompletion((int) userThreadLatency);
+                    metrics.markCommandDone(executionResult, commandKey, threadPoolKey);
+                    // record that we're completed
+                    isExecutionComplete.set(true);
+                }
             }
 
-        });
+        };
+
+        // any final cleanup needed
+        o = o.doOnTerminate(commandCleanup).doOnUnsubscribe(commandCleanup);
 
         // put in cache
         if (requestCacheEnabled) {
@@ -546,15 +563,6 @@ import java.util.concurrent.atomic.AtomicReference;
             }
         }
 
-        run = run.doOnEach(new Action1<Notification<? super R>>() {
-
-            @Override
-            public void call(Notification<? super R> n) {
-                setRequestContextIfNeeded(currentRequestContext);
-            }
-
-
-        });
         if (properties.executionTimeoutEnabled().get()) {
             run = run.lift(new HystrixObservableTimeoutOperator<R>(_self));
         }
@@ -652,8 +660,6 @@ import java.util.concurrent.atomic.AtomicReference;
         }).doOnTerminate(new Action0() {
             @Override
             public void call() {
-                //if the command timed out, then we've reached this point in the calling thread
-                //but the Hystrix thread is still doing work.  Let it handle these markers.
                 if (!isCommandTimedOut.get().equals(TimedOutStatus.TIMED_OUT)) {
                     handleThreadEnd();
                 }
@@ -684,7 +690,6 @@ import java.util.concurrent.atomic.AtomicReference;
                         //to handle these markers.  Otherwise, the calling thread will perform these for us.
                         if (isCommandTimedOut.get().equals(TimedOutStatus.TIMED_OUT)) {
                             handleThreadEnd();
-
                         }
                     }
                 });
@@ -730,6 +735,7 @@ import java.util.concurrent.atomic.AtomicReference;
                 final AbstractCommand<R> _cmd = this;
 
                 final TryableSemaphore fallbackSemaphore = getFallbackSemaphore();
+                final AtomicBoolean semaphoreHasBeenReleased = new AtomicBoolean(false);
 
                 Observable<R> fallbackExecutionChain;
 
@@ -755,7 +761,18 @@ import java.util.concurrent.atomic.AtomicReference;
 
                                 @Override
                                 public void call() {
-                                    fallbackSemaphore.release();
+                                    if (semaphoreHasBeenReleased.compareAndSet(false, true)) {
+                                        fallbackSemaphore.release();
+                                    }
+                                }
+                            })
+                            .doOnUnsubscribe(new Action0() {
+
+                                @Override
+                                public void call() {
+                                    if (semaphoreHasBeenReleased.compareAndSet(false, true)) {
+                                        fallbackSemaphore.release();
+                                    }
                                 }
                             });
                 } else {
@@ -817,21 +834,6 @@ import java.util.concurrent.atomic.AtomicReference;
                         }
                     }
 
-                }).doOnTerminate(new Action0() {
-
-                    @Override
-                    public void call() {
-                        // record that we're completed (to handle non-successful events we do it here as well as at the end of executeCommand
-                        isExecutionComplete.set(true);
-                    }
-
-                }).doOnEach(new Action1<Notification<? super R>>() {
-
-                    @Override
-                    public void call(Notification<? super R> n) {
-                        setRequestContextIfNeeded(currentRequestContext);
-                    }
-
                 });
             } else {
                 /* fallback is disabled so throw HystrixRuntimeException */
@@ -844,15 +846,7 @@ import java.util.concurrent.atomic.AtomicReference;
             }
         }
 
-        return fallbackLogicApplied.doOnTerminate(new Action0() {
-
-            @Override
-            public void call() {
-                // record that we're completed (to handle non-successful events we do it here as well as at the end of executeCommand
-                isExecutionComplete.set(true);
-            }
-
-        }).doOnEach(new Action1<Notification<? super R>>() {
+        return fallbackLogicApplied.doOnEach(new Action1<Notification<? super R>>() {
 
             @Override
             public void call(Notification<? super R> n) {

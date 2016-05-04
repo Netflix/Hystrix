@@ -35,9 +35,13 @@ import org.junit.Test;
 import rx.Observable;
 import rx.Observer;
 import rx.Scheduler;
+import rx.Subscriber;
+import rx.Subscription;
+import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func0;
 import rx.observers.TestSubscriber;
+import rx.schedulers.Schedulers;
 
 import java.io.IOException;
 import java.util.List;
@@ -2978,6 +2982,139 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertTrue(onThreadStartInvoked.get());
         assertTrue(onThreadCompleteInvoked.get());
         assertFalse(executionAttempted.get());
+    }
+
+    @Test
+    public void testEarlyUnsubscribeDuringExecution() {
+        class AsyncCommand extends HystrixCommand<Boolean> {
+
+            public AsyncCommand() {
+                super(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("ASYNC")));
+            }
+
+            @Override
+            protected Boolean run() {
+                try {
+                    Thread.sleep(100);
+                    return true;
+                } catch (InterruptedException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
+        }
+
+        HystrixCommand<Boolean> cmd = new AsyncCommand();
+
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        Observable<Boolean> o = cmd.toObservable();
+        Subscription s = o.
+                doOnUnsubscribe(new Action0() {
+                    @Override
+                    public void call() {
+                        System.out.println("OnUnsubscribe");
+                        latch.countDown();
+                    }
+                }).
+                subscribe(new Subscriber<Boolean>() {
+                    @Override
+                    public void onCompleted() {
+                        System.out.println("OnCompleted");
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        System.out.println("OnError : " + e);
+                    }
+
+                    @Override
+                    public void onNext(Boolean b) {
+                        System.out.println("OnNext : " + b);
+                    }
+                });
+
+        try {
+            s.unsubscribe();
+            assertTrue(latch.await(200, TimeUnit.MILLISECONDS));
+            assertEquals("Number of execution semaphores in use", 0, cmd.getExecutionSemaphore().getNumberOfPermitsUsed());
+            assertEquals("Number of fallback semaphores in use", 0, cmd.getFallbackSemaphore().getNumberOfPermitsUsed());
+            assertTrue(cmd.isExecutionComplete());
+            assertTrue(cmd.isExecutedInThread());
+            System.out.println("EventCounts : " + cmd.getEventCounts());
+            System.out.println("Execution Time : " + cmd.getExecutionTimeInMilliseconds());
+            System.out.println("Is Successful : " + cmd.isSuccessfulExecution());
+        } catch (InterruptedException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    @Test
+    public void testEarlyUnsubscribeDuringFallback() {
+        class AsyncCommand extends HystrixCommand<Boolean> {
+
+            public AsyncCommand() {
+                super(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("ASYNC")));
+            }
+
+            @Override
+            protected Boolean run() {
+                throw new RuntimeException("run failure");
+            }
+
+            @Override
+            protected Boolean getFallback() {
+                try {
+                    Thread.sleep(100);
+                    return false;
+                } catch (InterruptedException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
+        }
+
+        HystrixCommand<Boolean> cmd = new AsyncCommand();
+
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        Observable<Boolean> o = cmd.toObservable();
+        Subscription s = o.
+                doOnUnsubscribe(new Action0() {
+                    @Override
+                    public void call() {
+                        System.out.println("OnUnsubscribe");
+                        latch.countDown();
+                    }
+                }).
+                subscribe(new Subscriber<Boolean>() {
+                    @Override
+                    public void onCompleted() {
+                        System.out.println("OnCompleted");
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        System.out.println("OnError : " + e);
+                    }
+
+                    @Override
+                    public void onNext(Boolean b) {
+                        System.out.println("OnNext : " + b);
+                    }
+                });
+
+        try {
+            Thread.sleep(10); //give fallback a chance to fire
+            s.unsubscribe();
+            assertTrue(latch.await(200, TimeUnit.MILLISECONDS));
+            assertEquals("Number of execution semaphores in use", 0, cmd.getExecutionSemaphore().getNumberOfPermitsUsed());
+            assertEquals("Number of fallback semaphores in use", 0, cmd.getFallbackSemaphore().getNumberOfPermitsUsed());
+            assertTrue(cmd.isExecutionComplete());
+            assertTrue(cmd.isExecutedInThread());
+        } catch (InterruptedException ex) {
+            ex.printStackTrace();
+        }
     }
 
     /* ******************************************************************************** */
