@@ -807,9 +807,9 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                     @Override
                     public void call(C command) {
                         TestableExecutionHook hook = command.getBuilder().executionHook;
-                        //assertTrue(hook.commandEmissionsMatch(1, 0, 1));
-                        //assertTrue(hook.executionEventsMatch(0, 0, 0));
-                        //assertTrue(hook.fallbackEventsMatch(1, 0, 1));
+                        assertTrue(hook.commandEmissionsMatch(1, 0, 1));
+                        assertTrue(hook.executionEventsMatch(0, 0, 0));
+                        assertTrue(hook.fallbackEventsMatch(1, 0, 1));
                         assertEquals("onStart - onFallbackStart - onFallbackEmit - !onFallbackSuccess - !onComplete - onEmit - onFallbackSuccess - onSuccess - ", hook.executionSequence.toString());
                     }
                 });
