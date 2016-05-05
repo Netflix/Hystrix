@@ -1489,7 +1489,6 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
      ********************* END SEMAPHORE-ISOLATED Execution Hook Tests ***********************************
      */
 
-
     /**
      * Abstract methods defining a way to instantiate each of the described commands.
      * {@link HystrixCommandTest} and {@link HystrixObservableCommandTest} should each provide concrete impls for
