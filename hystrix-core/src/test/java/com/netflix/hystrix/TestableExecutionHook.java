@@ -53,6 +53,11 @@ class TestableExecutionHook extends HystrixCommandExecutionHook {
         int actualOnError = 0;
         int actualOnCompleted = 0;
 
+
+        if (l.size() != numOnNext + numOnError + numOnCompleted) {
+            System.out.println("Actual : " + l + ", Expected : " + numOnNext + " OnNexts, " + numOnError + " OnErrors, " + numOnCompleted + " OnCompleted");
+            return false;
+        }
         for (int n = 0; n < numOnNext; n++) {
             Notification<?> current = l.get(n);
             if (!current.isOnNext()) {

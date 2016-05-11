@@ -201,9 +201,6 @@ public class ExecutionResult {
     public static ExecutionResult from(HystrixEventType... eventTypes) {
         boolean didExecutionOccur = false;
         for (HystrixEventType eventType: eventTypes) {
-            /*if (isFallbackEvent(eventType)) {
-
-            }*/
             if (didExecutionOccur(eventType)) {
                 didExecutionOccur = true;
             }
@@ -217,6 +214,7 @@ public class ExecutionResult {
             case FAILURE: return true;
             case BAD_REQUEST: return true;
             case TIMEOUT: return true;
+            case CANCELLED: return true;
             default: return false;
         }
     }
@@ -244,6 +242,11 @@ public class ExecutionResult {
     public ExecutionResult setExecutedInThread() {
         return new ExecutionResult(eventCounts, startTimestamp, executionLatency, userThreadLatency,
                 failedExecutionException, executionException, executionOccurred, true, collapserKey);
+    }
+
+    public ExecutionResult setNotExecutedInThread() {
+        return new ExecutionResult(eventCounts, startTimestamp, executionLatency, userThreadLatency,
+                failedExecutionException, executionException, executionOccurred, false, collapserKey);
     }
 
     public ExecutionResult markCollapsed(HystrixCollapserKey collapserKey, int sizeOfBatch) {

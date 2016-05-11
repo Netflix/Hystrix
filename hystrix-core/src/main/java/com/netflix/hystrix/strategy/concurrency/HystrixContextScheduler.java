@@ -162,9 +162,6 @@ public class HystrixContextScheduler extends Scheduler {
                 return Subscriptions.unsubscribed();
             }
 
-            //Schedulers.submitTo(executor, action, subscription, shouldInterrupt);
-
-
             // This is internal RxJava API but it is too useful.
             ScheduledAction sa = new ScheduledAction(action);
             

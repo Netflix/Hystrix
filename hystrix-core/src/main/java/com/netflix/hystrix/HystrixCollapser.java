@@ -376,10 +376,10 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
 
         /* try from cache first */
         if (isRequestCacheEnabled) {
-            Observable<ResponseType> fromCache = requestCache.get(getCacheKey());
+            HystrixCachedObservable<ResponseType> fromCache = requestCache.get(getCacheKey());
             if (fromCache != null) {
                 metrics.markResponseFromCache();
-                return fromCache;
+                return fromCache.toObservable();
             }
         }
 
@@ -396,12 +396,12 @@ public abstract class HystrixCollapser<BatchReturnType, ResponseType, RequestArg
              * If this is an issue we can make a lazy-future that gets set in the cache
              * then only the winning 'put' will be invoked to actually call 'submitRequest'
              */
-            Observable<ResponseType> o = response.cache();
-            Observable<ResponseType> fromCache = requestCache.putIfAbsent(getCacheKey(), o);
+            HystrixCachedObservable<ResponseType> toCache = HystrixCachedObservable.from(response, this);
+            HystrixCachedObservable<ResponseType> fromCache = requestCache.putIfAbsent(getCacheKey(), toCache);
             if (fromCache == null) {
-                response = o;
+                return toCache.toObservable();
             } else {
-                response = fromCache;
+                return fromCache.toObservable();
             }
         }
         return response;
