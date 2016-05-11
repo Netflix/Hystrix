@@ -3062,6 +3062,8 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
 
     @Test
     public void testEarlyUnsubscribeDuringExecutionViaObserve() {
+        final AtomicBoolean hystrixThreadStartedExecuting = new AtomicBoolean(false);
+
         class AsyncCommand extends HystrixCommand<Boolean> {
 
             public AsyncCommand() {
@@ -3071,6 +3073,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
             @Override
             protected Boolean run() {
                 try {
+                    hystrixThreadStartedExecuting.set(true);
                     Thread.sleep(100);
                     return true;
                 } catch (InterruptedException ex) {
@@ -3110,12 +3113,13 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
                 });
 
         try {
+            Thread.sleep(10);
             s.unsubscribe();
             assertTrue(latch.await(200, TimeUnit.MILLISECONDS));
             assertEquals("Number of execution semaphores in use", 0, cmd.getExecutionSemaphore().getNumberOfPermitsUsed());
             assertEquals("Number of fallback semaphores in use", 0, cmd.getFallbackSemaphore().getNumberOfPermitsUsed());
             assertFalse(cmd.isExecutionComplete());
-            assertTrue(cmd.isExecutedInThread());
+            assertEquals(hystrixThreadStartedExecuting.get(), cmd.isExecutedInThread());
             assertEquals(null, cmd.getFailedExecutionException());
             assertNull(cmd.getExecutionException());
             assertTrue(cmd.getExecutionTimeInMilliseconds() > -1);
