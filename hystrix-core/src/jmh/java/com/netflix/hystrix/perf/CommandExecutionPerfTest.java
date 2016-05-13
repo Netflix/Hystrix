@@ -161,7 +161,7 @@ public class CommandExecutionPerfTest {
                             Blackhole.consumeCPU(blackholeConsumption);
                             return Observable.just(1);
                         }
-                    });
+                    }).subscribeOn(Schedulers.computation());
                 }
             };
         }
