@@ -54,7 +54,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 /* package */abstract class AbstractCommand<R> implements HystrixInvokableInfo<R>, HystrixObservable<R> {
@@ -95,7 +94,6 @@ import java.util.concurrent.atomic.AtomicReference;
     protected final AtomicReference<Reference<TimerListener>> timeoutTimer = new AtomicReference<Reference<TimerListener>>();
 
     protected final AtomicBoolean commandStarted = new AtomicBoolean();
-    protected volatile boolean executionStarted = false;
     protected volatile boolean isExecutionComplete = false;
 
     /*
@@ -361,8 +359,7 @@ import java.util.concurrent.atomic.AtomicReference;
             throw new IllegalStateException("This instance can only be executed once. Please instantiate a new instance.");
         }
 
-        final long startTimestamp = System.currentTimeMillis();
-        commandStartTimestamp = startTimestamp;
+        commandStartTimestamp = System.currentTimeMillis();
 
         if (properties.requestLogEnabled().get()) {
             // log this command execution regardless of what happened
@@ -449,21 +446,7 @@ import java.util.concurrent.atomic.AtomicReference;
             .doOnUnsubscribe(unsubscribeCommandCleanup); // perform cleanup once
     }
 
-    private void handleCommandEnd() {
-        Reference<TimerListener> tl = timeoutTimer.get();
-        if (tl != null) {
-            tl.clear();
-        }
 
-        long userThreadLatency = System.currentTimeMillis() - commandStartTimestamp;
-        executionResult = executionResult.markUserThreadCompletion((int) userThreadLatency);
-        ExecutionResult cancelled = executionResultAtTimeOfCancellation;
-        if (cancelled == null) {
-            metrics.markCommandDone(executionResult, commandKey, threadPoolKey, executionStarted);
-        } else {
-            metrics.markCommandDone(cancelled, commandKey, threadPoolKey, executionStarted);
-        }
-    }
 
     private Observable<R> applyHystrixSemantics(final AbstractCommand<R> _cmd) {
         // mark that we're starting execution on the ExecutionHook
@@ -601,7 +584,7 @@ import java.util.concurrent.atomic.AtomicReference;
             return Observable.defer(new Func0<Observable<R>>() {
                 @Override
                 public Observable<R> call() {
-                    executionStarted = true;
+                    executionResult = executionResult.setExecutionOccurred();
                     metrics.markCommandStart(commandKey, threadPoolKey, ExecutionIsolationStrategy.THREAD);
 
                     if (isCommandTimedOut.get() == TimedOutStatus.TIMED_OUT) {
@@ -639,7 +622,7 @@ import java.util.concurrent.atomic.AtomicReference;
             return Observable.defer(new Func0<Observable<R>>() {
                 @Override
                 public Observable<R> call() {
-                    executionStarted = true;
+                    executionResult = executionResult.setExecutionOccurred();
                     metrics.markCommandStart(commandKey, threadPoolKey, ExecutionIsolationStrategy.SEMAPHORE);
                     // semaphore isolated
                     // store the command that is being run
@@ -849,6 +832,11 @@ import java.util.concurrent.atomic.AtomicReference;
     }
 
     private void cleanUpAfterResponseFromCache() {
+        Reference<TimerListener> tl = timeoutTimer.get();
+        if (tl != null) {
+            tl.clear();
+        }
+
         final long latency = System.currentTimeMillis() - commandStartTimestamp;
         executionResult = executionResult
                 .addEvent(-1, HystrixEventType.RESPONSE_FROM_CACHE)
@@ -856,8 +844,24 @@ import java.util.concurrent.atomic.AtomicReference;
                 .setNotExecutedInThread();
         ExecutionResult cacheOnlyForMetrics = ExecutionResult.from(HystrixEventType.RESPONSE_FROM_CACHE)
                 .markUserThreadCompletion(latency);
-        metrics.markCommandDone(cacheOnlyForMetrics, commandKey, threadPoolKey, executionStarted);
+        metrics.markCommandDone(cacheOnlyForMetrics, commandKey, threadPoolKey);
         eventNotifier.markEvent(HystrixEventType.RESPONSE_FROM_CACHE, commandKey);
+    }
+
+    private void handleCommandEnd() {
+        Reference<TimerListener> tl = timeoutTimer.get();
+        if (tl != null) {
+            tl.clear();
+        }
+
+        long userThreadLatency = System.currentTimeMillis() - commandStartTimestamp;
+        executionResult = executionResult.markUserThreadCompletion((int) userThreadLatency);
+        ExecutionResult cancelled = executionResultAtTimeOfCancellation;
+        if (cancelled == null) {
+            metrics.markCommandDone(executionResult, commandKey, threadPoolKey);
+        } else {
+            metrics.markCommandDone(cancelled, commandKey, threadPoolKey);
+        }
     }
 
     private Observable<R> handleSemaphoreRejectionViaFallback() {

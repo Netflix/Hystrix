@@ -343,9 +343,9 @@ public class HystrixCommandMetrics extends HystrixMetrics {
         HystrixThreadEventStream.getInstance().commandExecutionStarted(commandKey, threadPoolKey, isolationStrategy, currentCount);
     }
 
-    /* package-private */ void markCommandDone(ExecutionResult executionResult, HystrixCommandKey commandKey, HystrixThreadPoolKey threadPoolKey, boolean executionStarted) {
+    /* package-private */ void markCommandDone(ExecutionResult executionResult, HystrixCommandKey commandKey, HystrixThreadPoolKey threadPoolKey) {
         HystrixThreadEventStream.getInstance().executionDone(executionResult, commandKey, threadPoolKey);
-        if (executionStarted) {
+        if (executionResult.executionOccurred()) {
             concurrentExecutionCount.decrementAndGet();
         }
     }

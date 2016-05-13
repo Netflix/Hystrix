@@ -219,6 +219,11 @@ public class ExecutionResult {
         }
     }
 
+    public ExecutionResult setExecutionOccurred() {
+        return new ExecutionResult(eventCounts, startTimestamp, executionLatency, userThreadLatency,
+                failedExecutionException, executionException, true, isExecutedInThread, collapserKey);
+    }
+
     public ExecutionResult setExecutionLatency(int executionLatency) {
         return new ExecutionResult(eventCounts, startTimestamp, executionLatency, userThreadLatency,
                 failedExecutionException, executionException, executionOccurred, isExecutedInThread, collapserKey);
@@ -273,14 +278,14 @@ public class ExecutionResult {
     public ExecutionResult addEvent(HystrixEventType eventType) {
         return new ExecutionResult(eventCounts.plus(eventType), startTimestamp, executionLatency,
                 userThreadLatency, failedExecutionException, executionException,
-                executionOccurred ? executionOccurred : didExecutionOccur(eventType), isExecutedInThread, collapserKey);
+                executionOccurred, isExecutedInThread, collapserKey);
     }
 
     public ExecutionResult addEvent(int executionLatency, HystrixEventType eventType) {
         if (startTimestamp >= 0 && !isResponseRejected()) {
             return new ExecutionResult(eventCounts.plus(eventType), startTimestamp, executionLatency,
                     userThreadLatency, failedExecutionException, executionException,
-                    executionOccurred ? executionOccurred : didExecutionOccur(eventType), isExecutedInThread, collapserKey);
+                    executionOccurred, isExecutedInThread, collapserKey);
         } else {
             return addEvent(eventType);
         }

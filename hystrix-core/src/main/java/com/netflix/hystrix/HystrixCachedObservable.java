@@ -84,11 +84,6 @@ public class HystrixCachedObservable<R> {
                             completionLogicRun.set(true);
                         }
                     }
-                })
-                .doOnSubscribe(new Action0() {
-                    @Override
-                    public void call() {
-                    }
                 });
     }
 
