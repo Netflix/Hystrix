@@ -158,7 +158,6 @@ import java.util.concurrent.atomic.AtomicReference;
         this.circuitBreaker = initCircuitBreaker(this.properties.circuitBreakerEnabled().get(), circuitBreaker, this.commandGroup, this.commandKey, this.properties, this.metrics);
         this.threadPool = initThreadPool(threadPool, this.threadPoolKey, threadPoolPropertiesDefaults);
 
-
         //Strategies from plugins
         this.eventNotifier = HystrixPlugins.getInstance().getEventNotifier();
         this.concurrencyStrategy = HystrixPlugins.getInstance().getConcurrencyStrategy();
