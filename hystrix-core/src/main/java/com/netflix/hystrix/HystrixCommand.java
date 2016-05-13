@@ -27,6 +27,7 @@ import com.netflix.hystrix.exception.HystrixRuntimeException;
 import com.netflix.hystrix.exception.HystrixRuntimeException.FailureType;
 import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
+import rx.functions.Func0;
 
 /**
  * Used to wrap code that will execute potentially risky functionality (typically meaning a service call over the network)
@@ -285,35 +286,29 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
 
     @Override
     final protected Observable<R> getExecutionObservable() {
-        return Observable.create(new OnSubscribe<R>() {
-
+        return Observable.defer(new Func0<Observable<R>>() {
             @Override
-            public void call(Subscriber<? super R> s) {
+            public Observable<R> call() {
                 try {
-                    s.onNext(run());
-                    s.onCompleted();
-                } catch (Throwable e) {
-                    s.onError(e);
+                    return Observable.just(run());
+                } catch (Throwable ex) {
+                    return Observable.error(ex);
                 }
             }
-
         });
     }
 
     @Override
     final protected Observable<R> getFallbackObservable() {
-        return Observable.create(new OnSubscribe<R>() {
-
+        return Observable.defer(new Func0<Observable<R>>() {
             @Override
-            public void call(Subscriber<? super R> s) {
+            public Observable<R> call() {
                 try {
-                    s.onNext(getFallback());
-                    s.onCompleted();
-                } catch (Throwable e) {
-                    s.onError(e);
+                    return Observable.just(getFallback());
+                } catch (Throwable ex) {
+                    return Observable.error(ex);
                 }
             }
-
         });
     }
 

@@ -28,6 +28,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import rx.Subscriber;
+import rx.Subscription;
+import rx.functions.Action0;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -481,6 +483,56 @@ public class CumulativeCommandEventCounterStreamTest extends CommandStreamTest {
     }
 
     @Test
+    public void testCancelled() {
+        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-CumulativeCounter-M");
+        stream = CumulativeCommandEventCounterStream.getInstance(key, 10, 100);
+        stream.startCachingStreamValuesIfUnstarted();
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        stream.observe().take(10).subscribe(getSubscriber(latch));
+
+        Command toCancel = Command.from(groupKey, key, HystrixEventType.SUCCESS, 500);
+
+        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : about to observe and subscribe");
+        Subscription s = toCancel.observe().
+                doOnUnsubscribe(new Action0() {
+                    @Override
+                    public void call() {
+                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : UnSubscribe from command.observe()");
+                    }
+                }).
+                subscribe(new Subscriber<Integer>() {
+            @Override
+            public void onCompleted() {
+                System.out.println("Command OnCompleted");
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                System.out.println("Command OnError : " + e);
+            }
+
+            @Override
+            public void onNext(Integer i) {
+                System.out.println("Command OnNext : " + i);
+            }
+        });
+
+        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : about to unsubscribe");
+        s.unsubscribe();
+
+        try {
+            assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
+        } catch (InterruptedException ex) {
+            fail("Interrupted ex");
+        }
+        assertEquals(HystrixEventType.values().length, stream.getLatest().length);
+        long[] expected = new long[HystrixEventType.values().length];
+        expected[HystrixEventType.CANCELLED.ordinal()] = 1;
+        assertArrayEquals(expected, stream.getLatest());
+    }
+
+    @Test
     public void testCollapsed() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("BatchCommand");
         stream = CumulativeCommandEventCounterStream.getInstance(key, 10, 100);
@@ -508,7 +560,7 @@ public class CumulativeCommandEventCounterStreamTest extends CommandStreamTest {
 
     @Test
     public void testMultipleEventsOverTimeGetStoredAndNeverAgeOut() {
-        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-CumulativeCounter-M");
+        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-CumulativeCounter-N");
         stream = CumulativeCommandEventCounterStream.getInstance(key, 10, 100);
         stream.startCachingStreamValuesIfUnstarted();
 

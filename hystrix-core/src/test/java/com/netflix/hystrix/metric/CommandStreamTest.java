@@ -140,12 +140,21 @@ public abstract class CommandStreamTest {
 
         @Override
         protected Integer run() throws Exception {
-            Thread.sleep(executionLatency);
-            switch (executionResult) {
-                case SUCCESS: return 1;
-                case FAILURE: throw new RuntimeException("induced failure");
-                case BAD_REQUEST: throw new HystrixBadRequestException("induced bad request");
-                default: throw new RuntimeException("unhandled HystrixEventType : " + executionResult);
+            try {
+                Thread.sleep(executionLatency);
+                switch (executionResult) {
+                    case SUCCESS:
+                        return 1;
+                    case FAILURE:
+                        throw new RuntimeException("induced failure");
+                    case BAD_REQUEST:
+                        throw new HystrixBadRequestException("induced bad request");
+                    default:
+                        throw new RuntimeException("unhandled HystrixEventType : " + executionResult);
+                }
+            } catch (InterruptedException ex) {
+                System.out.println("Received InterruptedException : " + ex);
+                throw ex;
             }
         }
 

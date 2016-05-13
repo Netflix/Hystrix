@@ -355,19 +355,20 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      *
      * This metrics should measure the actual health of a {@link HystrixCommand}.  For that reason, the following are included:
      * <p><ul>
-     * <li>{@link HystrixRollingNumberEvent#SUCCESS}
-     * <li>{@link HystrixRollingNumberEvent#FAILURE}
-     * <li>{@link HystrixRollingNumberEvent#TIMEOUT}
-     * <li>{@link HystrixRollingNumberEvent#THREAD_POOL_REJECTED}
-     * <li>{@link HystrixRollingNumberEvent#SEMAPHORE_REJECTED}
+     * <li>{@link HystrixEventType#SUCCESS}
+     * <li>{@link HystrixEventType#FAILURE}
+     * <li>{@link HystrixEventType#TIMEOUT}
+     * <li>{@link HystrixEventType#THREAD_POOL_REJECTED}
+     * <li>{@link HystrixEventType#SEMAPHORE_REJECTED}
      * </ul><p>
      * The following are not included in either attempts/failures:
      * <p><ul>
-     * <li>{@link HystrixRollingNumberEvent#BAD_REQUEST} - this event denotes bad arguments to the command and not a problem with the command
-     * <li>{@link HystrixRollingNumberEvent#SHORT_CIRCUITED} - this event measures a health problem in the past, not a problem with the current state
+     * <li>{@link HystrixEventType#BAD_REQUEST} - this event denotes bad arguments to the command and not a problem with the command
+     * <li>{@link HystrixEventType#SHORT_CIRCUITED} - this event measures a health problem in the past, not a problem with the current state
+     * <li>{@link HystrixEventType#CANCELLED} - this event denotes a user-cancelled command.  It's not known if it would have been a success or failure, so it shouldn't count for either
      * <li>All Fallback metrics
-     * <li>{@link HystrixRollingNumberEvent#EMIT} - this event is not a terminal state for the command
-     * <li>{@link HystrixRollingNumberEvent#COLLAPSED} - this event is about the batching process, not the command execution
+     * <li>{@link HystrixEventType#EMIT} - this event is not a terminal state for the command
+     * <li>{@link HystrixEventType#COLLAPSED} - this event is about the batching process, not the command execution
      * </ul><p>
      * 
      * @return {@link HealthCounts}

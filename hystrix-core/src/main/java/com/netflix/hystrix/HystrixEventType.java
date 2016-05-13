@@ -41,6 +41,7 @@ public enum HystrixEventType {
     FALLBACK_MISSING(true),
     EXCEPTION_THROWN(false),
     RESPONSE_FROM_CACHE(true),
+    CANCELLED(true),
     COLLAPSED(false);
 
     private final boolean isTerminal;

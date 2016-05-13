@@ -53,7 +53,6 @@ public abstract class BasicObservableTest extends BasicHystrixTest {
     public void testGetUserByIdSuccess() {
         // blocking
         Observable<User> observable = userService.getUser("1", "name: ");
-        assertObservableExecutionMode(observable, ObservableExecutionMode.EAGER);
         assertEquals("name: 1", observable.toBlocking().single().getName());
 
         // non-blocking
@@ -96,7 +95,6 @@ public abstract class BasicObservableTest extends BasicHystrixTest {
     public void testGetUserWithRegularFallback() {
         final User exUser = new User("def", "def");
         Observable<User> userObservable = userService.getUserRegularFallback(" ", "");
-        assertObservableExecutionMode(userObservable, ObservableExecutionMode.LAZY);
         // blocking
         assertEquals(exUser, userObservable.toBlocking().single());
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
@@ -127,7 +125,6 @@ public abstract class BasicObservableTest extends BasicHystrixTest {
 
         // blocking
         Observable<User> userObservable = userService.getUserRxCommandFallback(" ", "");
-        assertObservableExecutionMode(userObservable, ObservableExecutionMode.LAZY);
         assertEquals(exUser, userObservable.toBlocking().single());
         assertEquals(2, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
         com.netflix.hystrix.HystrixInvokableInfo getUserRxCommandFallback = getHystrixCommandByKey("getUserRxCommandFallback");
@@ -139,20 +136,6 @@ public abstract class BasicObservableTest extends BasicHystrixTest {
         assertTrue(rxCommandFallback.getExecutionEvents().contains(HystrixEventType.SUCCESS));
     }
 
-
-    private static void assertObservableExecutionMode(Observable observable, ObservableExecutionMode mode) {
-        // todo find better way to figure it out
-        boolean eager = observable instanceof ReplaySubject;
-        if (ObservableExecutionMode.EAGER == mode) {
-            if (!eager) {
-                throw new AssertionError("observable must be instance of ReplaySubject");
-            }
-        } else {
-            if (eager) {
-                throw new AssertionError("observable must not be instance of ReplaySubject");
-            }
-        }
-    }
 
     public static class UserService {
 

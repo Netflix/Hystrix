@@ -22,6 +22,7 @@ import com.netflix.hystrix.strategy.concurrency.HystrixRequestVariableLifecycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
+import rx.internal.operators.CachedObservable;
 
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -45,15 +46,15 @@ public class HystrixRequestCache {
      * <p>
      * Key => CommandPrefix + CacheKey : Future<?> from queue()
      */
-    private static final HystrixRequestVariableHolder<ConcurrentHashMap<ValueCacheKey, Observable<?>>> requestVariableForCache = new HystrixRequestVariableHolder<ConcurrentHashMap<ValueCacheKey, Observable<?>>>(new HystrixRequestVariableLifecycle<ConcurrentHashMap<ValueCacheKey, Observable<?>>>() {
+    private static final HystrixRequestVariableHolder<ConcurrentHashMap<ValueCacheKey, HystrixCachedObservable<?>>> requestVariableForCache = new HystrixRequestVariableHolder<ConcurrentHashMap<ValueCacheKey, HystrixCachedObservable<?>>>(new HystrixRequestVariableLifecycle<ConcurrentHashMap<ValueCacheKey, HystrixCachedObservable<?>>>() {
 
         @Override
-        public ConcurrentHashMap<ValueCacheKey, Observable<?>> initialValue() {
-            return new ConcurrentHashMap<ValueCacheKey, Observable<?>>();
+        public ConcurrentHashMap<ValueCacheKey, HystrixCachedObservable<?>> initialValue() {
+            return new ConcurrentHashMap<ValueCacheKey, HystrixCachedObservable<?>>();
         }
 
         @Override
-        public void shutdown(ConcurrentHashMap<ValueCacheKey, Observable<?>> value) {
+        public void shutdown(ConcurrentHashMap<ValueCacheKey, HystrixCachedObservable<?>> value) {
             // nothing to shutdown
         }
 
@@ -95,15 +96,15 @@ public class HystrixRequestCache {
      */
     // suppressing warnings because we are using a raw Future since it's in a heterogeneous ConcurrentHashMap cache
     @SuppressWarnings({ "unchecked" })
-    /* package */<T> Observable<T> get(String cacheKey) {
+    /* package */<T> HystrixCachedObservable<T> get(String cacheKey) {
         ValueCacheKey key = getRequestCacheKey(cacheKey);
         if (key != null) {
-            ConcurrentHashMap<ValueCacheKey, Observable<?>> cacheInstance = requestVariableForCache.get(concurrencyStrategy);
+            ConcurrentHashMap<ValueCacheKey, HystrixCachedObservable<?>> cacheInstance = requestVariableForCache.get(concurrencyStrategy);
             if (cacheInstance == null) {
                 throw new IllegalStateException("Request caching is not available. Maybe you need to initialize the HystrixRequestContext?");
             }
             /* look for the stored value */
-            return (Observable<T>) cacheInstance.get(key);
+            return (HystrixCachedObservable<T>) cacheInstance.get(key);
         }
         return null;
     }
@@ -122,15 +123,15 @@ public class HystrixRequestCache {
      */
     // suppressing warnings because we are using a raw Future since it's in a heterogeneous ConcurrentHashMap cache
     @SuppressWarnings({ "unchecked" })
-    /* package */<T> Observable<T> putIfAbsent(String cacheKey, Observable<T> f) {
+    /* package */<T> HystrixCachedObservable<T> putIfAbsent(String cacheKey, HystrixCachedObservable<T> f) {
         ValueCacheKey key = getRequestCacheKey(cacheKey);
         if (key != null) {
             /* look for the stored value */
-            ConcurrentHashMap<ValueCacheKey, Observable<?>> cacheInstance = requestVariableForCache.get(concurrencyStrategy);
+            ConcurrentHashMap<ValueCacheKey, HystrixCachedObservable<?>> cacheInstance = requestVariableForCache.get(concurrencyStrategy);
             if (cacheInstance == null) {
                 throw new IllegalStateException("Request caching is not available.  Maybe you need to initialize the HystrixRequestContext?");
             }
-            Observable<T> alreadySet = (Observable<T>) cacheInstance.putIfAbsent(key, f);
+            HystrixCachedObservable<T> alreadySet = (HystrixCachedObservable<T>) cacheInstance.putIfAbsent(key, f);
             if (alreadySet != null) {
                 // someone beat us so we didn't cache this
                 return alreadySet;
