@@ -96,7 +96,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
     protected final AtomicBoolean commandStarted = new AtomicBoolean();
     protected volatile boolean executionStarted = false;
-    protected final AtomicBoolean isExecutionComplete = new AtomicBoolean(false);
+    protected volatile boolean isExecutionComplete = false;
 
     /*
      * {@link ExecutionResult} refers to what happened as the user-provided code ran.  If request-caching is used,
@@ -110,13 +110,13 @@ import java.util.concurrent.atomic.AtomicReference;
      */
     protected volatile ExecutionResult executionResult = ExecutionResult.EMPTY; //state on shared execution
 
-    protected AtomicBoolean isResponseFromCache = new AtomicBoolean(false);
-    protected AtomicReference<ExecutionResult> executionResultAtTimeOfCancellation = new AtomicReference<ExecutionResult>(null);
-    protected AtomicLong commandStartTimestamp = new AtomicLong(-1L);
+    protected volatile boolean isResponseFromCache = false;
+    protected volatile ExecutionResult executionResultAtTimeOfCancellation;
+    protected volatile long commandStartTimestamp = -1L;
 
     /* If this command executed and timed-out */
     protected final AtomicReference<TimedOutStatus> isCommandTimedOut = new AtomicReference<TimedOutStatus>(TimedOutStatus.NOT_EXECUTED);
-    protected final AtomicReference<Action0> endCurrentThreadExecutingCommand = new AtomicReference<Action0>(); // don't like how this is being done
+    protected volatile Action0 endCurrentThreadExecutingCommand;
 
     /**
      * Instance of RequestCache logic
@@ -362,7 +362,7 @@ import java.util.concurrent.atomic.AtomicReference;
         }
 
         final long startTimestamp = System.currentTimeMillis();
-        commandStartTimestamp.set(startTimestamp);
+        commandStartTimestamp = startTimestamp;
 
         if (properties.requestLogEnabled().get()) {
             // log this command execution regardless of what happened
@@ -379,7 +379,7 @@ import java.util.concurrent.atomic.AtomicReference;
         if (requestCacheEnabled) {
             HystrixCachedObservable<R> fromCache = requestCache.get(getCacheKey());
             if (fromCache != null) {
-                isResponseFromCache.set(true);
+                isResponseFromCache = true;
                 return handleRequestCacheHitAndEmitValues(fromCache);
             }
         }
@@ -394,7 +394,7 @@ import java.util.concurrent.atomic.AtomicReference;
             @Override
             public void call() {
                 if (commandCleanupExecuted.compareAndSet(false, true)) {
-                    isExecutionComplete.set(true);
+                    isExecutionComplete = true;
                     handleCommandEnd();
                 }
             }
@@ -406,8 +406,8 @@ import java.util.concurrent.atomic.AtomicReference;
             public void call() {
                 if (commandCleanupExecuted.compareAndSet(false, true)) {
                     eventNotifier.markEvent(HystrixEventType.CANCELLED, commandKey);
-                    executionResultAtTimeOfCancellation.set(executionResult
-                            .addEvent((int) (System.currentTimeMillis() - commandStartTimestamp.get()), HystrixEventType.CANCELLED));
+                    executionResultAtTimeOfCancellation = executionResult
+                            .addEvent((int) (System.currentTimeMillis() - commandStartTimestamp), HystrixEventType.CANCELLED);
                     handleCommandEnd();
                 }
             }
@@ -434,7 +434,7 @@ import java.util.concurrent.atomic.AtomicReference;
             if (fromCache != null) {
                 // another thread beat us so we'll use the cached value instead
                 toCache.originalSubscription.unsubscribe();
-                isResponseFromCache.set(true);
+                isResponseFromCache = true;
                 return handleRequestCacheHitAndEmitValues(fromCache);
             } else {
                 // we just created an ObservableCommand so we cast and return it
@@ -455,9 +455,9 @@ import java.util.concurrent.atomic.AtomicReference;
             tl.clear();
         }
 
-        long userThreadLatency = System.currentTimeMillis() - commandStartTimestamp.get();
+        long userThreadLatency = System.currentTimeMillis() - commandStartTimestamp;
         executionResult = executionResult.markUserThreadCompletion((int) userThreadLatency);
-        ExecutionResult cancelled = executionResultAtTimeOfCancellation.get();
+        ExecutionResult cancelled = executionResultAtTimeOfCancellation;
         if (cancelled == null) {
             metrics.markCommandDone(executionResult, commandKey, threadPoolKey, executionStarted);
         } else {
@@ -613,7 +613,7 @@ import java.util.concurrent.atomic.AtomicReference;
                         HystrixCounters.incrementGlobalConcurrentThreads();
                         threadPool.markThreadExecution();
                         // store the command that is being run
-                        endCurrentThreadExecutingCommand.set(Hystrix.startCurrentThreadExecutingCommand(getCommandKey()));
+                        endCurrentThreadExecutingCommand = Hystrix.startCurrentThreadExecutingCommand(getCommandKey());
                         executionResult = executionResult.setExecutedInThread();
                         /**
                          * If any of these hooks throw an exception, then it appears as if the actual execution threw an error
@@ -643,7 +643,7 @@ import java.util.concurrent.atomic.AtomicReference;
                     metrics.markCommandStart(commandKey, threadPoolKey, ExecutionIsolationStrategy.SEMAPHORE);
                     // semaphore isolated
                     // store the command that is being run
-                    endCurrentThreadExecutingCommand.set(Hystrix.startCurrentThreadExecutingCommand(getCommandKey()));
+                    endCurrentThreadExecutingCommand = Hystrix.startCurrentThreadExecutingCommand(getCommandKey());
                     try {
                         executionHook.onRunStart(_cmd);
                         executionHook.onExecutionStart(_cmd);
@@ -833,7 +833,7 @@ import java.util.concurrent.atomic.AtomicReference;
             public void call() {
                 if (!cleanupCompleted.get()) {
                     cleanUpAfterResponseFromCache();
-                    isExecutionComplete.set(true);
+                    isExecutionComplete = true;
                     cleanupCompleted.set(true);
                 }
             }
@@ -849,7 +849,7 @@ import java.util.concurrent.atomic.AtomicReference;
     }
 
     private void cleanUpAfterResponseFromCache() {
-        final long latency = System.currentTimeMillis() - commandStartTimestamp.get();
+        final long latency = System.currentTimeMillis() - commandStartTimestamp;
         executionResult = executionResult
                 .addEvent(-1, HystrixEventType.RESPONSE_FROM_CACHE)
                 .markUserThreadCompletion(latency)
@@ -995,8 +995,8 @@ import java.util.concurrent.atomic.AtomicReference;
     }
 
     protected void handleThreadEnd() {
-        if (endCurrentThreadExecutingCommand.get() != null) {
-            endCurrentThreadExecutingCommand.get().call();
+        if (endCurrentThreadExecutingCommand != null) {
+            endCurrentThreadExecutingCommand.call();
         }
         if (executionResult.isExecutedInThread()) {
             HystrixCounters.decrementGlobalConcurrentThreads();
@@ -1733,7 +1733,7 @@ import java.util.concurrent.atomic.AtomicReference;
      * @return boolean
      */
     public boolean isExecutionComplete() {
-        return isExecutionComplete.get();
+        return isExecutionComplete;
     }
 
     /**
@@ -1836,7 +1836,7 @@ import java.util.concurrent.atomic.AtomicReference;
      * @return boolean
      */
     public boolean isResponseFromCache() {
-        return isResponseFromCache.get();
+        return isResponseFromCache;
     }
 
     /**
@@ -1879,13 +1879,13 @@ import java.util.concurrent.atomic.AtomicReference;
 
     private ExecutionResult getCommandResult() {
         ExecutionResult resultToReturn;
-        if (executionResultAtTimeOfCancellation.get() == null) {
+        if (executionResultAtTimeOfCancellation == null) {
             resultToReturn = executionResult;
         } else {
-            resultToReturn = executionResultAtTimeOfCancellation.get();
+            resultToReturn = executionResultAtTimeOfCancellation;
         }
 
-        if (isResponseFromCache.get()) {
+        if (isResponseFromCache) {
             resultToReturn = resultToReturn.addEvent(HystrixEventType.RESPONSE_FROM_CACHE);
         }
 
