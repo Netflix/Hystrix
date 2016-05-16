@@ -94,6 +94,7 @@ import java.util.concurrent.atomic.AtomicReference;
     protected final AtomicReference<Reference<TimerListener>> timeoutTimer = new AtomicReference<Reference<TimerListener>>();
 
     protected final AtomicBoolean commandStarted = new AtomicBoolean();
+    protected volatile boolean executionStarted = false;
     protected volatile boolean isExecutionComplete = false;
 
     /*
@@ -445,8 +446,6 @@ import java.util.concurrent.atomic.AtomicReference;
             .doOnUnsubscribe(unsubscribeCommandCleanup); // perform cleanup once
     }
 
-
-
     private Observable<R> applyHystrixSemantics(final AbstractCommand<R> _cmd) {
         // mark that we're starting execution on the ExecutionHook
         // if this hook throws an exception, then a fast-fail occurs with no fallback.  No state is left inconsistent
@@ -584,6 +583,7 @@ import java.util.concurrent.atomic.AtomicReference;
                 @Override
                 public Observable<R> call() {
                     executionResult = executionResult.setExecutionOccurred();
+                    executionStarted = true;
                     metrics.markCommandStart(commandKey, threadPoolKey, ExecutionIsolationStrategy.THREAD);
 
                     if (isCommandTimedOut.get() == TimedOutStatus.TIMED_OUT) {
@@ -622,6 +622,7 @@ import java.util.concurrent.atomic.AtomicReference;
                 @Override
                 public Observable<R> call() {
                     executionResult = executionResult.setExecutionOccurred();
+                    executionStarted = true;
                     metrics.markCommandStart(commandKey, threadPoolKey, ExecutionIsolationStrategy.SEMAPHORE);
                     // semaphore isolated
                     // store the command that is being run
@@ -843,7 +844,7 @@ import java.util.concurrent.atomic.AtomicReference;
                 .setNotExecutedInThread();
         ExecutionResult cacheOnlyForMetrics = ExecutionResult.from(HystrixEventType.RESPONSE_FROM_CACHE)
                 .markUserThreadCompletion(latency);
-        metrics.markCommandDone(cacheOnlyForMetrics, commandKey, threadPoolKey);
+        metrics.markCommandDone(cacheOnlyForMetrics, commandKey, threadPoolKey, executionStarted);
         eventNotifier.markEvent(HystrixEventType.RESPONSE_FROM_CACHE, commandKey);
     }
 
@@ -857,9 +858,9 @@ import java.util.concurrent.atomic.AtomicReference;
         executionResult = executionResult.markUserThreadCompletion((int) userThreadLatency);
         ExecutionResult cancelled = executionResultAtTimeOfCancellation;
         if (cancelled == null) {
-            metrics.markCommandDone(executionResult, commandKey, threadPoolKey);
+            metrics.markCommandDone(executionResult, commandKey, threadPoolKey, executionStarted);
         } else {
-            metrics.markCommandDone(cancelled, commandKey, threadPoolKey);
+            metrics.markCommandDone(cancelled, commandKey, threadPoolKey, executionStarted);
         }
     }
 
