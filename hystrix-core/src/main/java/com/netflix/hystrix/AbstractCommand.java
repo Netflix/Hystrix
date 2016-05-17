@@ -369,12 +369,12 @@ import java.util.concurrent.atomic.AtomicReference;
         }
 
         final boolean requestCacheEnabled = isRequestCachingEnabled();
-
+        final String cacheKey = getCacheKey();
         final AbstractCommand<R> _cmd = this;
 
          /* try from cache first */
         if (requestCacheEnabled) {
-            HystrixCachedObservable<R> fromCache = requestCache.get(getCacheKey());
+            HystrixCommandResponseFromCache<R> fromCache = (HystrixCommandResponseFromCache<R>) requestCache.get(cacheKey);
             if (fromCache != null) {
                 isResponseFromCache = true;
                 return handleRequestCacheHitAndEmitValues(fromCache);
@@ -424,13 +424,13 @@ import java.util.concurrent.atomic.AtomicReference;
         Observable<R> afterCache;
 
         // put in cache
-        if (requestCacheEnabled) {
+        if (requestCacheEnabled && cacheKey != null) {
             // wrap it for caching
             HystrixCachedObservable<R> toCache = HystrixCachedObservable.from(hystrixObservable, this);
-            HystrixCachedObservable<R> fromCache = requestCache.putIfAbsent(getCacheKey(), toCache);
+            .HystrixCommandResponseFromCache<R> fromCache = (HystrixCommandResponseFromCache<R>) requestCache.putIfAbsent(cacheKey, toCache);
             if (fromCache != null) {
                 // another thread beat us so we'll use the cached value instead
-                toCache.originalSubscription.unsubscribe();
+                toCache.unsubscribe();
                 isResponseFromCache = true;
                 return handleRequestCacheHitAndEmitValues(fromCache);
             } else {
@@ -802,7 +802,7 @@ import java.util.concurrent.atomic.AtomicReference;
                 });
     }
 
-    private Observable<R> handleRequestCacheHitAndEmitValues(final HystrixCachedObservable<R> fromCache) {
+    private Observable<R> handleRequestCacheHitAndEmitValues(final HystrixCommandResponseFromCache<R> fromCache) {
         try {
             executionHook.onCacheHit(this);
         } catch (Throwable hookEx) {
@@ -811,7 +811,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
         final AtomicBoolean cleanupCompleted = new AtomicBoolean(false);
 
-        return fromCache.toObservable(this).doOnTerminate(new Action0() {
+        return fromCache.toObservableWithStateCopiedInto(this).doOnTerminate(new Action0() {
             @Override
             public void call() {
                 if (!cleanupCompleted.get()) {
