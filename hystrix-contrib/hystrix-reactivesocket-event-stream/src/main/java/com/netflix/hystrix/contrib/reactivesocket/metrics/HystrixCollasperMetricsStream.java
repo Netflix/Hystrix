@@ -104,4 +104,3 @@ public class HystrixCollasperMetricsStream extends StreamingSupplier<HystrixColl
     }
 
 }
-}

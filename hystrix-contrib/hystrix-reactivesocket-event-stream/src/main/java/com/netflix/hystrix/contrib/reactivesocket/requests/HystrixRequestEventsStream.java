@@ -1,23 +1,52 @@
 package com.netflix.hystrix.contrib.reactivesocket.requests;
 
+import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.netflix.hystrix.ExecutionResult;
 import com.netflix.hystrix.HystrixEventType;
-import com.netflix.hystrix.HystrixThreadPoolKey;
-import com.netflix.hystrix.HystrixThreadPoolMetrics;
-import com.netflix.hystrix.contrib.reactivesocket.StreamingSupplier;
+import com.netflix.hystrix.metric.HystrixRequestEvents;
+import io.reactivesocket.Frame;
 import io.reactivesocket.Payload;
 import org.agrona.LangUtil;
 import rx.Observable;
-import rx.functions.Func0;
+import rx.schedulers.Schedulers;
+import rx.subjects.BehaviorSubject;
 
 import java.io.ByteArrayOutputStream;
-import java.util.stream.Stream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Supplier;
 
-public class HystrixRequestEventsStream extends StreamingSupplier<HystrixThreadPoolMetrics> {
+public class HystrixRequestEventsStream implements Supplier<Observable<Payload>> {
     private static HystrixRequestEventsStream INSTANCE = new HystrixRequestEventsStream();
 
+    private BehaviorSubject<Payload> subject;
+
+    private JsonFactory jsonFactory;
+
     private HystrixRequestEventsStream() {
-        super();
+        this.jsonFactory = new JsonFactory();
+        this.subject = BehaviorSubject.create();
+
+        com.netflix.hystrix.metric.HystrixRequestEventsStream.getInstance()
+            .observe()
+            .observeOn(Schedulers.computation())
+            .map(this::getPayloadData)
+            .map(b ->
+                new Payload() {
+                    @Override
+                    public ByteBuffer getData() {
+                        return ByteBuffer.wrap(b);
+                    }
+
+                    @Override
+                    public ByteBuffer getMetadata() {
+                        return Frame.NULL_BYTEBUFFER;
+                    }
+            })
+            .subscribe(subject);
     }
 
     public static HystrixRequestEventsStream getInstance() {
@@ -25,61 +54,20 @@ public class HystrixRequestEventsStream extends StreamingSupplier<HystrixThreadP
     }
 
     @Override
-    public boolean filter(HystrixThreadPoolMetrics threadPoolMetrics) {
-        return threadPoolMetrics.getCurrentCompletedTaskCount().intValue() > 0;
-    }
-
-    @Override
     public Observable<Payload> get() {
-        return super.get();
+        return subject;
     }
 
-    @Override
-    protected byte[] getPayloadData(HystrixThreadPoolMetrics threadPoolMetrics) {
+    public byte[] getPayloadData(HystrixRequestEvents requestEvents) {
         byte[] retVal = null;
 
         try {
-            HystrixThreadPoolKey key = threadPoolMetrics.getThreadPoolKey();
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             JsonGenerator json = jsonFactory.createGenerator(bos);
-            json.writeStartObject();
-
-            json.writeStringField("type", "HystrixThreadPool");
-            json.writeStringField("name", key.name());
-            json.writeNumberField("currentTime", System.currentTimeMillis());
-
-            json.writeNumberField("currentActiveCount", threadPoolMetrics.getCurrentActiveCount().intValue());
-            json.writeNumberField("currentCompletedTaskCount", threadPoolMetrics.getCurrentCompletedTaskCount().longValue());
-            json.writeNumberField("currentCorePoolSize", threadPoolMetrics.getCurrentCorePoolSize().intValue());
-            json.writeNumberField("currentLargestPoolSize", threadPoolMetrics.getCurrentLargestPoolSize().intValue());
-            json.writeNumberField("currentMaximumPoolSize", threadPoolMetrics.getCurrentMaximumPoolSize().intValue());
-            json.writeNumberField("currentPoolSize", threadPoolMetrics.getCurrentPoolSize().intValue());
-            json.writeNumberField("currentQueueSize", threadPoolMetrics.getCurrentQueueSize().intValue());
-            json.writeNumberField("currentTaskCount", threadPoolMetrics.getCurrentTaskCount().longValue());
-            safelyWriteNumberField(json, "rollingCountThreadsExecuted", new Func0<Long>() {
-                @Override
-                public Long call() {
-                    return threadPoolMetrics.getRollingCount(HystrixEventType.ThreadPool.EXECUTED);
-                }
-            });
-            json.writeNumberField("rollingMaxActiveThreads", threadPoolMetrics.getRollingMaxActiveThreads());
-            safelyWriteNumberField(json, "rollingCountCommandRejections", new Func0<Long>() {
-                @Override
-                public Long call() {
-                    return threadPoolMetrics.getRollingCount(HystrixEventType.ThreadPool.REJECTED);
-                }
-            });
-
-            json.writeNumberField("propertyValue_queueSizeRejectionThreshold", threadPoolMetrics.getProperties().queueSizeRejectionThreshold().get());
-            json.writeNumberField("propertyValue_metricsRollingStatisticalWindowInMilliseconds", threadPoolMetrics.getProperties().metricsRollingStatisticalWindowInMilliseconds().get());
-
-            json.writeNumberField("reportingHosts", 1); // this will get summed across all instances in a cluster
-
-            json.writeEndObject();
+            writeRequestAsJson(json, requestEvents);
             json.close();
 
             retVal = bos.toByteArray();
-
         } catch (Exception e) {
             LangUtil.rethrowUnchecked(e);
         }
@@ -87,8 +75,51 @@ public class HystrixRequestEventsStream extends StreamingSupplier<HystrixThreadP
         return retVal;
     }
 
-    @Override
-    protected Stream<HystrixThreadPoolMetrics> getStream() {
-        return HystrixThreadPoolMetrics.getInstances().stream();
+    private void writeRequestAsJson(JsonGenerator json, HystrixRequestEvents request) throws IOException {
+        json.writeStartArray();
+
+        for (Map.Entry<HystrixRequestEvents.ExecutionSignature, List<Integer>> entry: request.getExecutionsMappedToLatencies().entrySet()) {
+            convertExecutionToJson(json, entry.getKey(), entry.getValue());
+        }
+
+        json.writeEndArray();
+    }
+
+    private void convertExecutionToJson(JsonGenerator json, HystrixRequestEvents.ExecutionSignature executionSignature, List<Integer> latencies) throws IOException {
+        json.writeStartObject();
+        json.writeStringField("name", executionSignature.getCommandName());
+        json.writeArrayFieldStart("events");
+        ExecutionResult.EventCounts eventCounts = executionSignature.getEventCounts();
+        for (HystrixEventType eventType: HystrixEventType.values()) {
+            if (!eventType.equals(HystrixEventType.COLLAPSED)) {
+                if (eventCounts.contains(eventType)) {
+                    int eventCount = eventCounts.getCount(eventType);
+                    if (eventCount > 1) {
+                        json.writeStartObject();
+                        json.writeStringField("name", eventType.name());
+                        json.writeNumberField("count", eventCount);
+                        json.writeEndObject();
+                    } else {
+                        json.writeString(eventType.name());
+                    }
+                }
+            }
+        }
+        json.writeEndArray();
+        json.writeArrayFieldStart("latencies");
+        for (int latency: latencies) {
+            json.writeNumber(latency);
+        }
+        json.writeEndArray();
+        if (executionSignature.getCachedCount() > 0) {
+            json.writeNumberField("cached", executionSignature.getCachedCount());
+        }
+        if (executionSignature.getEventCounts().contains(HystrixEventType.COLLAPSED)) {
+            json.writeObjectFieldStart("collapsed");
+            json.writeStringField("name", executionSignature.getCollapserKey().name());
+            json.writeNumberField("count", executionSignature.getCollapserBatchSize());
+            json.writeEndObject();
+        }
+        json.writeEndObject();
     }
 }
