@@ -427,7 +427,7 @@ import java.util.concurrent.atomic.AtomicReference;
         if (requestCacheEnabled && cacheKey != null) {
             // wrap it for caching
             HystrixCachedObservable<R> toCache = HystrixCachedObservable.from(hystrixObservable, this);
-            .HystrixCommandResponseFromCache<R> fromCache = (HystrixCommandResponseFromCache<R>) requestCache.putIfAbsent(cacheKey, toCache);
+            HystrixCommandResponseFromCache<R> fromCache = (HystrixCommandResponseFromCache<R>) requestCache.putIfAbsent(cacheKey, toCache);
             if (fromCache != null) {
                 // another thread beat us so we'll use the cached value instead
                 toCache.unsubscribe();
