@@ -74,7 +74,7 @@ public class RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType
      * @throws IllegalStateException
      *             if submitting after shutdown
      */
-    public Observable<ResponseType> submitRequest(RequestArgumentType arg) {
+    public Observable<ResponseType> submitRequest(final RequestArgumentType arg) {
         /*
          * We only want the timer ticking if there are actually things to do so we register it the first time something is added.
          */
@@ -85,10 +85,11 @@ public class RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType
 
         // loop until succeed (compare-and-set spin-loop)
         while (true) {
-            RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> b = batch.get();
+            final RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> b = batch.get();
             if (b == null) {
                 return Observable.error(new IllegalStateException("Submitting requests after collapser is shutdown"));
             }
+
             Observable<ResponseType> f = b.offer(arg);
             // it will always get an Observable unless we hit the max batch size
             if (f != null) {
@@ -145,7 +146,7 @@ public class RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType
                         RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> currentBatch = batch.get();
                         // 1) it can be null if it got shutdown
                         // 2) we don't execute this batch if it has no requests and let it wait until next tick to be executed
-                        if (currentBatch != null && currentBatch.requests.size() > 0) {
+                        if (currentBatch != null && currentBatch.getSize() > 0) {
                             // do execution within context of wrapped Callable
                             createNewBatchAndExecutePreviousIfNeeded(currentBatch);
                         }

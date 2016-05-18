@@ -39,11 +39,8 @@ import rx.Subscriber;
 import rx.Subscription;
 import rx.functions.Action0;
 import rx.functions.Action1;
-import rx.functions.Action2;
 import rx.functions.Func0;
-import rx.observables.AsyncOnSubscribe;
 import rx.observers.TestSubscriber;
-import rx.schedulers.Schedulers;
 
 import java.io.IOException;
 import java.util.List;

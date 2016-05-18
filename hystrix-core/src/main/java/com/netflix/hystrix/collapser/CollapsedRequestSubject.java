@@ -16,9 +16,9 @@
 package com.netflix.hystrix.collapser;
 
 import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
-import rx.Observable.OnSubscribe;
-import rx.Subscriber;
-import rx.subjects.PublishSubject;
+import rx.Observable;
+import rx.functions.Action0;
+import rx.subjects.ReplaySubject;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -34,31 +34,51 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * 4) {@link #setComplete()}: mark that no more values will be emitted.  Should be used in conjunction with {@link #emitResponse(T)}.  equivalent to OnCompleted()
  *
  * <p>
- * This is an internal implementation class that combines the Observable<T> and CollapsedRequest<T, R> functionality.
+ * This is an internal implementation of CollapsedRequest<T, R> functionality.  Instead of directly extending {@link rx.Observable},
+ * it provides a {@link #toObservable()} method
  * <p>
- * We publicly expose these via interfaces only since we want clients to only see Observable<T> and implementors to only see CollapsedRequest<T, R>, not the combination of the two.
- * 
+ *
  * @param <T>
  * 
  * @param <R>
  */
-/* package */class CollapsedRequestObservableFunction<T, R> implements CollapsedRequest<T, R>, OnSubscribe<T> {
+/* package */class CollapsedRequestSubject<T, R> implements CollapsedRequest<T, R> {
     private final R argument;
-    private AtomicBoolean valueSet = new AtomicBoolean(false);
-    private final PublishSubject<T> responseSubject = PublishSubject.create();
 
-    public CollapsedRequestObservableFunction(R arg) {
+    private AtomicBoolean valueSet = new AtomicBoolean(false);
+    private final ReplaySubject<T> subject = ReplaySubject.create();
+    private final Observable<T> subjectWithAccounting;
+
+    private volatile boolean subscribedTo = false;
+    private volatile int outstandingSubscriptions = 0;
+
+    public CollapsedRequestSubject(final R arg, final RequestBatch<?, T, R> containingBatch) {
+        this.subjectWithAccounting = subject
+                .doOnSubscribe(new Action0() {
+                    @Override
+                    public void call() {
+                        outstandingSubscriptions++;
+                        if (!subscribedTo) {
+                            subscribedTo = true;
+                            //containingBatch.add(arg, this);
+                        }
+                    }
+                })
+                .doOnUnsubscribe(new Action0() {
+                    @Override
+                    public void call() {
+                        outstandingSubscriptions--;
+                        if (outstandingSubscriptions == 0) {
+                            containingBatch.remove(arg);
+                        }
+                    }
+                });
         this.argument = arg;
     }
 
-    /**
-     * This is a passthrough that allows a Subscriber to receive values from the Subject that collapsers are writing values/errors into
-     * The one interesting bit is that they may do so in a completely unbounded way.  There's no way to express
-     * backpressure currently that makes sense other than to buffer this stream and allow it to grow unboundedly
-     */
-    @Override
-    public void call(Subscriber<? super T> observer) {
-        responseSubject.unsafeSubscribe(observer);
+    public CollapsedRequestSubject(final R arg) {
+        this.subjectWithAccounting = subject;
+        this.argument = arg;
     }
 
     /**
@@ -81,9 +101,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
     @Override
     public void setResponse(T response) {
         if (!isTerminated()) {
-            responseSubject.onNext(response);
+            subject.onNext(response);
             valueSet.set(true);
-            responseSubject.onCompleted();
+            subject.onCompleted();
         } else {
             throw new IllegalStateException("Response has already terminated so response can not be set : " + response);
         }
@@ -96,7 +116,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
     @Override
     public void emitResponse(T response) {
         if (!isTerminated()) {
-            responseSubject.onNext(response);
+            subject.onNext(response);
             valueSet.set(true);
         } else {
             throw new IllegalStateException("Response has already terminated so response can not be set : " + response);
@@ -106,7 +126,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
     @Override
     public void setComplete() {
         if (!isTerminated()) {
-            responseSubject.onCompleted();
+            subject.onCompleted();
         }
     }
 
@@ -117,7 +137,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
      */
     public void setExceptionIfResponseNotReceived(Exception e) {
         if (!valueSet.get() && !isTerminated()) {
-            responseSubject.onError(e);
+            subject.onError(e);
         }
     }
 
@@ -150,13 +170,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
     @Override
     public void setException(Exception e) {
         if (!isTerminated()) {
-            responseSubject.onError(e);
+            subject.onError(e);
         } else {
             throw new IllegalStateException("Response has already terminated so exception can not be set", e);
         }
     }
 
     private boolean isTerminated() {
-        return (responseSubject.hasCompleted() || responseSubject.hasThrowable());
+        return (subject.hasCompleted() || subject.hasThrowable());
+    }
+
+    public Observable<T> toObservable() {
+        return subjectWithAccounting;
     }
 }

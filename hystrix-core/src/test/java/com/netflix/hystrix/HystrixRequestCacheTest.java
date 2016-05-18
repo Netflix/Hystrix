@@ -27,6 +27,8 @@ import rx.Subscriber;
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategyDefault;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
+import rx.Subscription;
+import rx.subjects.ReplaySubject;
 
 public class HystrixRequestCacheTest {
 
@@ -109,8 +111,7 @@ public class HystrixRequestCacheTest {
 
     private static class TestObservable extends HystrixCachedObservable<String> {
         public TestObservable(String arg) {
-            super(Observable.just(arg), null);
+            super(Observable.just(arg));
         }
     }
-
 }
