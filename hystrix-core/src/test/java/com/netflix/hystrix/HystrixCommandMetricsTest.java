@@ -143,7 +143,7 @@ public class HystrixCommandMetricsTest {
         }
 
         try {
-            Thread.sleep(25);
+            Thread.sleep(150);
         } catch (InterruptedException ie) {
             fail(ie.getMessage());
         }
