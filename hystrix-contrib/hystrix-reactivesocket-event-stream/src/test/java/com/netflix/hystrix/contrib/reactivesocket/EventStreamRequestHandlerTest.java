@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class EventStreamRequestHandlerTest {
-    @Test
+    @Test(timeout = 5_000)
     public void testEventStream() throws Exception {
         Payload payload = new Payload() {
             @Override
