@@ -50,7 +50,9 @@ public abstract class StreamingSupplier<T> implements Supplier<Observable<Payloa
 
                         subject.onNext(p);
                     })
-            );
+            )
+            .retry()
+            .subscribe();
     }
 
     public boolean filter(T t) {

@@ -53,10 +53,14 @@ public enum EventStreamEnum implements Supplier<Observable<Payload>> {
 
     public static EventStreamEnum findByTypeId(int typeId) {
         return Arrays
-            .asList(EventStreamEnum.findByTypeId(typeId))
+            .asList(EventStreamEnum.values())
             .stream()
             .filter(t -> t.typeId == typeId)
             .findAny()
             .orElseThrow(() -> new IllegalStateException("no type id found for id => " + typeId));
+    }
+
+    public int getTypeId() {
+        return typeId;
     }
 }

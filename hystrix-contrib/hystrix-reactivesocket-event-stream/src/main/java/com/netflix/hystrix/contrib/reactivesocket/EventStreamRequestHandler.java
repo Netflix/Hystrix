@@ -41,9 +41,11 @@ public class EventStreamRequestHandler extends RequestHandler {
                     logger.error(t.getMessage(), t);
                     return Observable.error(t);
                 }
-            });
+            })
+            .onBackpressureDrop();
 
-        return RxReactiveStreams.toPublisher(defer);
+        return RxReactiveStreams
+            .toPublisher(defer);
     }
 
     @Override
