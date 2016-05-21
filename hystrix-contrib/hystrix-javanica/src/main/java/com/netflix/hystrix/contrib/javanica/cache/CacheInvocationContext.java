@@ -59,9 +59,9 @@ public class CacheInvocationContext<A extends Annotation> {
         this.cacheKeyMethod = cacheKeyMethod;
         this.cacheAnnotation = cacheAnnotation;
         Class<?>[] parametersTypes = method.getParameterTypes();
-        Annotation[][] parametersAnnotations = method.getParameterAnnotations();
         int parameterCount = parametersTypes.length;
         if (parameterCount > 0) {
+            Annotation[][] parametersAnnotations = method.getParameterAnnotations();
             ImmutableList.Builder<CacheInvocationParameter> parametersBuilder = ImmutableList.builder();
             for (int pos = 0; pos < parameterCount; pos++) {
                 Class<?> paramType = parametersTypes[pos];
