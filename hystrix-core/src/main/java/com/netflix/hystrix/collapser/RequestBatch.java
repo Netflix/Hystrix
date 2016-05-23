@@ -28,7 +28,6 @@ import rx.Observable;
 import rx.functions.Action0;
 import rx.functions.Action1;
 
-import com.netflix.hystrix.HystrixCollapser;
 import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
 import com.netflix.hystrix.HystrixCollapserProperties;
 
@@ -41,7 +40,7 @@ import com.netflix.hystrix.HystrixCollapserProperties;
  */
 public class RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> {
 
-    private static final Logger logger = LoggerFactory.getLogger(HystrixCollapser.class);
+    private static final Logger logger = LoggerFactory.getLogger(RequestBatch.class);
 
     private final HystrixCollapserBridge<BatchReturnType, ResponseType, RequestArgumentType> commandCollapser;
     private final int maxBatchSize;
