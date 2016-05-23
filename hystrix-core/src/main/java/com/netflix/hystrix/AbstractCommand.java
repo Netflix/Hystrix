@@ -63,8 +63,16 @@ import java.util.concurrent.atomic.AtomicReference;
     protected final HystrixThreadPoolKey threadPoolKey;
     protected final HystrixCommandProperties properties;
 
-    protected static enum TimedOutStatus {
+    protected enum TimedOutStatus {
         NOT_EXECUTED, COMPLETED, TIMED_OUT
+    }
+
+    protected enum CommandState {
+        NOT_STARTED, OBSERVABLE_CHAIN_CREATED, USER_CODE_EXECUTED, UNSUBSCRIBED, TERMINAL
+    }
+
+    protected enum ThreadState {
+        NOT_USING_THREAD, STARTED, UNSUBSCRIBED, TERMINAL
     }
 
     protected final HystrixCommandMetrics metrics;
@@ -93,10 +101,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
     protected final AtomicReference<Reference<TimerListener>> timeoutTimer = new AtomicReference<Reference<TimerListener>>();
 
-    protected final AtomicBoolean commandStarted = new AtomicBoolean();
-    protected volatile boolean executionStarted = false;
-    protected volatile boolean threadExecutionStarted = false;
-    protected volatile boolean isExecutionComplete = false;
+    protected AtomicReference<CommandState> commandState = new AtomicReference<CommandState>(CommandState.NOT_STARTED);
+    protected AtomicReference<ThreadState> threadState = new AtomicReference<ThreadState>(ThreadState.NOT_USING_THREAD);
 
     /*
      * {@link ExecutionResult} refers to what happened as the user-provided code ran.  If request-caching is used,
@@ -356,7 +362,7 @@ import java.util.concurrent.atomic.AtomicReference;
      */
     public Observable<R> toObservable() {
         /* this is a stateful object so can only be used once */
-        if (!commandStarted.compareAndSet(false, true)) {
+        if (!commandState.compareAndSet(CommandState.NOT_STARTED, CommandState.OBSERVABLE_CHAIN_CREATED)) {
             throw new IllegalStateException("This instance can only be executed once. Please instantiate a new instance.");
         }
 
@@ -382,18 +388,16 @@ import java.util.concurrent.atomic.AtomicReference;
             }
         }
 
-        // ensure that cleanup code only runs exactly once
-        final AtomicBoolean commandCleanupExecuted = new AtomicBoolean(false);
-
         //doOnCompleted handler already did all of the SUCCESS work
         //doOnError handler already did all of the FAILURE/TIMEOUT/REJECTION/BAD_REQUEST work
         final Action0 terminateCommandCleanup = new Action0() {
 
             @Override
             public void call() {
-                if (commandCleanupExecuted.compareAndSet(false, true)) {
-                    isExecutionComplete = true;
-                    handleCommandEnd(_cmd);
+                if (_cmd.commandState.compareAndSet(CommandState.OBSERVABLE_CHAIN_CREATED, CommandState.TERMINAL)) {
+                    handleCommandEnd(_cmd, false); //user code never ran
+                } else if (_cmd.commandState.compareAndSet(CommandState.USER_CODE_EXECUTED, CommandState.TERMINAL)) {
+                    handleCommandEnd(_cmd, true); //user code did run
                 }
             }
         };
@@ -402,11 +406,16 @@ import java.util.concurrent.atomic.AtomicReference;
         final Action0 unsubscribeCommandCleanup = new Action0() {
             @Override
             public void call() {
-                if (commandCleanupExecuted.compareAndSet(false, true)) {
-                    eventNotifier.markEvent(HystrixEventType.CANCELLED, commandKey);
-                    executionResultAtTimeOfCancellation = executionResult
-                            .addEvent((int) (System.currentTimeMillis() - commandStartTimestamp), HystrixEventType.CANCELLED);
-                    handleCommandEnd(_cmd);
+                if (_cmd.commandState.compareAndSet(CommandState.OBSERVABLE_CHAIN_CREATED, CommandState.UNSUBSCRIBED)) {
+                    _cmd.eventNotifier.markEvent(HystrixEventType.CANCELLED, _cmd.commandKey);
+                    _cmd.executionResultAtTimeOfCancellation = _cmd.executionResult
+                            .addEvent((int) (System.currentTimeMillis() - _cmd.commandStartTimestamp), HystrixEventType.CANCELLED);
+                    handleCommandEnd(_cmd, false); //user code never ran
+                } else if (_cmd.commandState.compareAndSet(CommandState.USER_CODE_EXECUTED, CommandState.UNSUBSCRIBED)) {
+                    _cmd.eventNotifier.markEvent(HystrixEventType.CANCELLED, _cmd.commandKey);
+                    _cmd.executionResultAtTimeOfCancellation = _cmd.executionResult
+                            .addEvent((int) (System.currentTimeMillis() - _cmd.commandStartTimestamp), HystrixEventType.CANCELLED);
+                    handleCommandEnd(_cmd, true); //user code did run
                 }
             }
         };
@@ -449,13 +458,6 @@ import java.util.concurrent.atomic.AtomicReference;
             }
         };
 
-        final Action1<Throwable> fireOnErrorHook = new Action1<Throwable>() {
-            @Override
-            public void call(Throwable throwable) {
-
-            }
-        };
-
         Observable<R> hystrixObservable =
                 Observable.defer(applyHystrixSemantics)
                         .map(wrapWithAllOnNextHooks);
@@ -484,8 +486,7 @@ import java.util.concurrent.atomic.AtomicReference;
         return afterCache
                 .doOnTerminate(terminateCommandCleanup)     // perform cleanup once (either on normal terminal state (this line), or unsubscribe (next line))
                 .doOnUnsubscribe(unsubscribeCommandCleanup) // perform cleanup once
-                .doOnCompleted(fireOnCompletedHook)
-                .doOnError(fireOnErrorHook);
+                .doOnCompleted(fireOnCompletedHook);
     }
 
     private Observable<R> applyHystrixSemantics(final AbstractCommand<R> _cmd) {
@@ -614,16 +615,19 @@ import java.util.concurrent.atomic.AtomicReference;
                 @Override
                 public Observable<R> call() {
                     executionResult = executionResult.setExecutionOccurred();
-                    executionStarted = true;
+                    if (!commandState.compareAndSet(CommandState.OBSERVABLE_CHAIN_CREATED, CommandState.USER_CODE_EXECUTED)) {
+                        return Observable.error(new IllegalStateException("execution attempted while in state : " + commandState.get().name()));
+                    }
+
                     metrics.markCommandStart(commandKey, threadPoolKey, ExecutionIsolationStrategy.THREAD);
 
                     if (isCommandTimedOut.get() == TimedOutStatus.TIMED_OUT) {
                         // the command timed out in the wrapping thread so we will return immediately
                         // and not increment any of the counters below or other such logic
                         return Observable.error(new RuntimeException("timed out before executing run()"));
-                    } else {
-                        // not timed out so execute
-                        threadExecutionStarted = true;
+                    }
+                    if (threadState.compareAndSet(ThreadState.NOT_USING_THREAD, ThreadState.STARTED)) {
+                        //we have not been unsubscribed, so should proceed
                         HystrixCounters.incrementGlobalConcurrentThreads();
                         threadPool.markThreadExecution();
                         // store the command that is being run
@@ -640,10 +644,34 @@ import java.util.concurrent.atomic.AtomicReference;
                         } catch (Throwable ex) {
                             return Observable.error(ex);
                         }
+                    } else {
+                        //command has already been unsubscribed, so return immediately
+                        return Observable.error(new RuntimeException("unsubscribed before executing run()"));
                     }
                 }
+            }).doOnTerminate(new Action0() {
+                @Override
+                public void call() {
+                    if (threadState.compareAndSet(ThreadState.STARTED, ThreadState.TERMINAL)) {
+                        handleThreadEnd(_cmd);
+                    }
+                    if (threadState.compareAndSet(ThreadState.NOT_USING_THREAD, ThreadState.TERMINAL)) {
+                        //if it was never started and received terminal, then no need to clean up (I don't think this is possible)
+                    }
+                    //if it was unsubscribed, then other cleanup handled it
+                }
+            }).doOnUnsubscribe(new Action0() {
+                @Override
+                public void call() {
+                    if (threadState.compareAndSet(ThreadState.STARTED, ThreadState.UNSUBSCRIBED)) {
+                        handleThreadEnd(_cmd);
+                    }
+                    if (threadState.compareAndSet(ThreadState.NOT_USING_THREAD, ThreadState.UNSUBSCRIBED)) {
+                        //if it was never started and was cancelled, then no need to clean up
+                    }
+                    //if it was terminal, then other cleanup handled it
+                }
             }).subscribeOn(threadPool.getScheduler(new Func0<Boolean>() {
-
                 @Override
                 public Boolean call() {
                     return properties.executionIsolationThreadInterruptOnTimeout().get() && _cmd.isCommandTimedOut.get().equals(TimedOutStatus.TIMED_OUT);
@@ -654,7 +682,10 @@ import java.util.concurrent.atomic.AtomicReference;
                 @Override
                 public Observable<R> call() {
                     executionResult = executionResult.setExecutionOccurred();
-                    executionStarted = true;
+                    if (!commandState.compareAndSet(CommandState.OBSERVABLE_CHAIN_CREATED, CommandState.USER_CODE_EXECUTED)) {
+                        return Observable.error(new IllegalStateException("execution attempted while in state : " + commandState.get().name()));
+                    }
+
                     metrics.markCommandStart(commandKey, threadPoolKey, ExecutionIsolationStrategy.SEMAPHORE);
                     // semaphore isolated
                     // store the command that is being run
@@ -821,34 +852,9 @@ import java.util.concurrent.atomic.AtomicReference;
             userObservable = Observable.error(ex);
         }
 
-        final AtomicBoolean threadStateCleanedUp = new AtomicBoolean(false);
-
         return userObservable
                 .lift(new ExecutionHookApplication(_cmd))
-                .lift(new DeprecatedOnRunHookApplication(_cmd))
-                .doOnTerminate(new Action0() {
-                    @Override
-                    public void call() {
-                        //If the command timed out, then the calling thread has already walked away so we need
-                        //to handle these markers.  Otherwise, the calling thread will perform these for us.
-
-                        if (threadExecutionStarted && isCommandTimedOut.get().equals(TimedOutStatus.TIMED_OUT)) {
-                            if (threadStateCleanedUp.compareAndSet(false, true)) {
-                                handleThreadEnd(_cmd);
-                            }
-                        }
-                    }
-                })
-                .doOnUnsubscribe(new Action0() {
-                    @Override
-                    public void call() {
-                        if (threadExecutionStarted && isCommandTimedOut.get().equals(TimedOutStatus.TIMED_OUT)) {
-                            if (threadStateCleanedUp.compareAndSet(false, true)) {
-                                handleThreadEnd(_cmd);
-                            }
-                        }
-                    }
-                });
+                .lift(new DeprecatedOnRunHookApplication(_cmd));
     }
 
     private Observable<R> handleRequestCacheHitAndEmitValues(final HystrixCommandResponseFromCache<R> fromCache, final AbstractCommand<R> _cmd) {
@@ -858,29 +864,30 @@ import java.util.concurrent.atomic.AtomicReference;
             logger.warn("Error calling HystrixCommandExecutionHook.onCacheHit", hookEx);
         }
 
-        final AtomicBoolean cleanupCompleted = new AtomicBoolean(false);
-
-        return fromCache.toObservableWithStateCopiedInto(this).doOnTerminate(new Action0() {
-            @Override
-            public void call() {
-                if (!cleanupCompleted.get()) {
-                    cleanUpAfterResponseFromCache(_cmd);
-                    isExecutionComplete = true;
-                    cleanupCompleted.set(true);
-                }
-            }
-        }).doOnUnsubscribe(new Action0() {
-            @Override
-            public void call() {
-                if (!cleanupCompleted.get()) {
-                    cleanUpAfterResponseFromCache(_cmd);
-                    cleanupCompleted.set(true);
-                }
-            }
-        });
+        return fromCache.toObservableWithStateCopiedInto(this)
+                .doOnTerminate(new Action0() {
+                    @Override
+                    public void call() {
+                        if (commandState.compareAndSet(CommandState.OBSERVABLE_CHAIN_CREATED, CommandState.TERMINAL)) {
+                            cleanUpAfterResponseFromCache(_cmd, false); //user code never ran
+                        } else if (commandState.compareAndSet(CommandState.USER_CODE_EXECUTED, CommandState.TERMINAL)) {
+                            cleanUpAfterResponseFromCache(_cmd, true); //user code did run
+                        }
+                    }
+                })
+                .doOnUnsubscribe(new Action0() {
+                    @Override
+                    public void call() {
+                        if (commandState.compareAndSet(CommandState.OBSERVABLE_CHAIN_CREATED, CommandState.UNSUBSCRIBED)) {
+                            cleanUpAfterResponseFromCache(_cmd, false); //user code never ran
+                        } else if (commandState.compareAndSet(CommandState.USER_CODE_EXECUTED, CommandState.UNSUBSCRIBED)) {
+                            cleanUpAfterResponseFromCache(_cmd, true); //user code did run
+                        }
+                    }
+                });
     }
 
-    private void cleanUpAfterResponseFromCache(AbstractCommand<R> _cmd) {
+    private void cleanUpAfterResponseFromCache(final AbstractCommand<R> _cmd, boolean commandExecutionStarted) {
         Reference<TimerListener> tl = timeoutTimer.get();
         if (tl != null) {
             tl.clear();
@@ -893,16 +900,11 @@ import java.util.concurrent.atomic.AtomicReference;
                 .setNotExecutedInThread();
         ExecutionResult cacheOnlyForMetrics = ExecutionResult.from(HystrixEventType.RESPONSE_FROM_CACHE)
                 .markUserThreadCompletion(latency);
-        metrics.markCommandDone(cacheOnlyForMetrics, commandKey, threadPoolKey, executionStarted);
+        metrics.markCommandDone(cacheOnlyForMetrics, commandKey, threadPoolKey, commandExecutionStarted);
         eventNotifier.markEvent(HystrixEventType.RESPONSE_FROM_CACHE, commandKey);
-
-        //in case of timeout, the work chained onto the Hystrix thread has the responsibility of this cleanup
-        if (threadExecutionStarted && !isCommandTimedOut.get().equals(TimedOutStatus.TIMED_OUT)) {
-            handleThreadEnd(_cmd);
-        }
     }
 
-    private void handleCommandEnd(AbstractCommand<R> _cmd) {
+    private void handleCommandEnd(final AbstractCommand _cmd, boolean commandExecutionStarted) {
         Reference<TimerListener> tl = timeoutTimer.get();
         if (tl != null) {
             tl.clear();
@@ -911,18 +913,13 @@ import java.util.concurrent.atomic.AtomicReference;
         long userThreadLatency = System.currentTimeMillis() - commandStartTimestamp;
         executionResult = executionResult.markUserThreadCompletion((int) userThreadLatency);
         if (executionResultAtTimeOfCancellation == null) {
-            metrics.markCommandDone(executionResult, commandKey, threadPoolKey, executionStarted);
+            metrics.markCommandDone(executionResult, commandKey, threadPoolKey, commandExecutionStarted);
         } else {
-            metrics.markCommandDone(executionResultAtTimeOfCancellation, commandKey, threadPoolKey, executionStarted);
+            metrics.markCommandDone(executionResultAtTimeOfCancellation, commandKey, threadPoolKey, commandExecutionStarted);
         }
 
         if (endCurrentThreadExecutingCommand != null) {
             endCurrentThreadExecutingCommand.call();
-        }
-
-        //in case of timeout, the work chained onto the Hystrix thread has the responsibility of this cleanup
-        if (threadExecutionStarted && !isCommandTimedOut.get().equals(TimedOutStatus.TIMED_OUT)) {
-            handleThreadEnd(_cmd);
         }
     }
 
@@ -1722,7 +1719,7 @@ import java.util.concurrent.atomic.AtomicReference;
      * @return boolean
      */
     public boolean isExecutionComplete() {
-        return isExecutionComplete;
+        return commandState.get().equals(CommandState.TERMINAL);
     }
 
     /**
