@@ -1,7 +1,7 @@
 package com.netflix.hystrix.contrib.reactivesocket;
 
 
-import com.netflix.hystrix.contrib.reactivesocket.metrics.HystrixCollasperMetricsStream;
+import com.netflix.hystrix.contrib.reactivesocket.metrics.HystrixCollapserMetricsStream;
 import com.netflix.hystrix.contrib.reactivesocket.metrics.HystrixCommandMetricsStream;
 import com.netflix.hystrix.contrib.reactivesocket.metrics.HystrixThreadPoolMetricsStream;
 import com.netflix.hystrix.contrib.reactivesocket.requests.HystrixRequestEventsStream;
@@ -45,7 +45,7 @@ public enum EventStreamEnum implements Supplier<Observable<Payload>> {
             return Observable.merge(
                     HystrixCommandMetricsStream.getInstance().get(),
                     HystrixThreadPoolMetricsStream.getInstance().get(),
-                    HystrixCollasperMetricsStream.getInstance().get());
+                    HystrixCollapserMetricsStream.getInstance().get());
         }
     }
 

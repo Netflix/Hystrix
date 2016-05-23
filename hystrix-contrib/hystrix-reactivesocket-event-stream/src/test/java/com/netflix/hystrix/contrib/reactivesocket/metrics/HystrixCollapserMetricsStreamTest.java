@@ -7,7 +7,7 @@ import org.junit.Test;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 
-public class HystrixCollasperMetricsStreamTest {
+public class HystrixCollapserMetricsStreamTest {
 
     @Test
     public void test() throws Exception {

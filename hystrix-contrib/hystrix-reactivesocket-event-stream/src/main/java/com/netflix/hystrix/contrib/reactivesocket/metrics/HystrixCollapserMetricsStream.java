@@ -12,14 +12,14 @@ import rx.functions.Func0;
 import java.io.ByteArrayOutputStream;
 import java.util.stream.Stream;
 
-public class HystrixCollasperMetricsStream extends StreamingSupplier<HystrixCollapserMetrics> {
-    private static HystrixCollasperMetricsStream INSTANCE = new HystrixCollasperMetricsStream();
+public class HystrixCollapserMetricsStream extends StreamingSupplier<HystrixCollapserMetrics> {
+    private static HystrixCollapserMetricsStream INSTANCE = new HystrixCollapserMetricsStream();
 
-    private HystrixCollasperMetricsStream() {
+    private HystrixCollapserMetricsStream() {
         super();
     }
 
-    public static HystrixCollasperMetricsStream getInstance() {
+    public static HystrixCollapserMetricsStream getInstance() {
         return INSTANCE;
     }
 
