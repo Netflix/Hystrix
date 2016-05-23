@@ -143,7 +143,7 @@ public class HystrixCommandMetricsTest {
         }
 
         try {
-            Thread.sleep(25);
+            Thread.sleep(150);
         } catch (InterruptedException ie) {
             fail(ie.getMessage());
         }
@@ -160,7 +160,7 @@ public class HystrixCommandMetricsTest {
             super(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("Command"))
                     .andCommandKey(HystrixCommandKey.Factory.asKey(commandKey))
                     .andCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter()
-                            .withExecutionTimeoutInMilliseconds(100)
+                            .withExecutionTimeoutInMilliseconds(1000)
                             .withCircuitBreakerRequestVolumeThreshold(20)));
             this.shouldFail = shouldFail;
             this.shouldFailWithBadRequest = shouldFailWithBadRequest;

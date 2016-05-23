@@ -39,11 +39,8 @@ import rx.Subscriber;
 import rx.Subscription;
 import rx.functions.Action0;
 import rx.functions.Action1;
-import rx.functions.Action2;
 import rx.functions.Func0;
-import rx.observables.AsyncOnSubscribe;
 import rx.observers.TestSubscriber;
-import rx.schedulers.Schedulers;
 
 import java.io.IOException;
 import java.util.List;
@@ -820,7 +817,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
      * indefinitely by skipping the timeout protection of the execute() command.
      */
     @Test
-    public void testObservedExecutionTimeoutWithFallback() {
+    public void testObservedExecutionTimeoutWithFallback() throws Exception {
         TestHystrixCommand<Integer> command = getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.SUCCESS, 200, AbstractTestHystrixCommand.FallbackResult.SUCCESS, 50);
         assertEquals(FlexibleTestHystrixCommand.FALLBACK_VALUE, command.observe().toBlocking().single());
 
@@ -3897,20 +3894,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
                         assertTrue(hook.fallbackEventsMatch(0, 0, 0));
                         assertEquals(TimeoutException.class, hook.getCommandException().getClass());
                         assertNull(hook.getFallbackException());
-                        assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onError - ", hook.executionSequence.toString());
-
-                        try {
-                            Thread.sleep(300);
-                        } catch (Exception ex) {
-                            throw new RuntimeException(ex);
-                        }
-
-                        //should be the same as above, since Hystrix thread is unsubscribed from by timeout
-                        assertTrue(hook.commandEmissionsMatch(0, 1, 0));
-                        assertTrue(hook.executionEventsMatch(0, 0, 0));
-                        assertTrue(hook.fallbackEventsMatch(0, 0, 0));
-                        assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onError - ", hook.executionSequence.toString());
-
+                        assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onThreadComplete - onError - ", hook.executionSequence.toString());
                     }
                 });
     }
@@ -3940,20 +3924,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
                         assertTrue(hook.commandEmissionsMatch(1, 0, 1));
                         assertTrue(hook.executionEventsMatch(0, 0, 0));
                         assertTrue(hook.fallbackEventsMatch(1, 0, 1));
-                        assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onFallbackStart - onFallbackEmit - !onFallbackSuccess - !onComplete - onEmit - onFallbackSuccess - onSuccess - ", hook.executionSequence.toString());
-
-                        try {
-                            Thread.sleep(300);
-                        } catch (Exception ex) {
-                            throw new RuntimeException(ex);
-                        }
-
-                        //should be the same as above, since Hystrix thread is unsubscribed from by timeout
-                        assertTrue(hook.commandEmissionsMatch(1, 0, 1));
-                        assertTrue(hook.executionEventsMatch(0, 0, 0));
-                        assertTrue(hook.fallbackEventsMatch(1, 0, 1));
-                        assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onFallbackStart - onFallbackEmit - !onFallbackSuccess - !onComplete - onEmit - onFallbackSuccess - onSuccess - ", hook.executionSequence.toString());
-
+                        assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onThreadComplete - onFallbackStart - onFallbackEmit - !onFallbackSuccess - !onComplete - onEmit - onFallbackSuccess - onSuccess - ", hook.executionSequence.toString());
                     }
                 });
     }
@@ -3985,20 +3956,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
                         assertTrue(hook.fallbackEventsMatch(0, 1, 0));
                         assertEquals(TimeoutException.class, hook.getCommandException().getClass());
                         assertEquals(RuntimeException.class, hook.getFallbackException().getClass());
-                        assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onFallbackStart - onFallbackError - onError - ", hook.executionSequence.toString());
-
-                        try {
-                            Thread.sleep(300);
-                        } catch (Exception ex) {
-                            throw new RuntimeException(ex);
-                        }
-
-                        //should be the same as above, since Hystrix thread is unsubscribed from by timeout
-                        assertTrue(hook.commandEmissionsMatch(0, 1, 0));
-                        assertTrue(hook.executionEventsMatch(0, 0, 0));
-                        assertTrue(hook.fallbackEventsMatch(0, 1, 0));
-                        assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onFallbackStart - onFallbackError - onError - ", hook.executionSequence.toString());
-
+                        assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onThreadComplete - onFallbackStart - onFallbackError - onError - ", hook.executionSequence.toString());
                     }
                 });
     }
@@ -4030,18 +3988,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
                         assertTrue(hook.fallbackEventsMatch(0, 0, 0));
                         assertEquals(TimeoutException.class, hook.getCommandException().getClass());
                         assertNull(hook.getFallbackException());
-                        assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onError - ", hook.executionSequence.toString());
-
-                        try {
-                            Thread.sleep(300);
-                        } catch (Exception ex) {
-                            throw new RuntimeException(ex);
-                        }
-                        assertTrue(hook.commandEmissionsMatch(0, 1, 0));
-                        assertTrue(hook.executionEventsMatch(0, 1, 0));
-                        assertTrue(hook.fallbackEventsMatch(0, 0, 0));
-                        assertEquals(RuntimeException.class, hook.getExecutionException().getClass());
-                        assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onError - onExecutionError - !onRunError - onThreadComplete - ", hook.executionSequence.toString());
+                        assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onThreadComplete - onError - ", hook.executionSequence.toString());
 
                     }
                 });
@@ -4072,19 +4019,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
                         assertTrue(hook.commandEmissionsMatch(1, 0, 1));
                         assertTrue(hook.executionEventsMatch(0, 0, 0));
                         assertTrue(hook.fallbackEventsMatch(1, 0, 1));
-                        assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onFallbackStart - onFallbackEmit - !onFallbackSuccess - !onComplete - onEmit - onFallbackSuccess - onSuccess - ", hook.executionSequence.toString());
-
-                        try {
-                            Thread.sleep(300);
-                        } catch (Exception ex) {
-                            throw new RuntimeException(ex);
-                        }
-                        assertTrue(hook.commandEmissionsMatch(1, 0, 1));
-                        assertTrue(hook.executionEventsMatch(0, 1, 0));
-                        assertTrue(hook.fallbackEventsMatch(1, 0, 1));
-                        assertEquals(RuntimeException.class, hook.getExecutionException().getClass());
-                        assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onFallbackStart - onFallbackEmit - !onFallbackSuccess - !onComplete - onEmit - onFallbackSuccess - onSuccess - onExecutionError - !onRunError - onThreadComplete - ", hook.executionSequence.toString());
-
+                        assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onThreadComplete - onFallbackStart - onFallbackEmit - !onFallbackSuccess - !onComplete - onEmit - onFallbackSuccess - onSuccess - ", hook.executionSequence.toString());
                     }
                 });
     }
@@ -4116,19 +4051,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
                         assertTrue(hook.fallbackEventsMatch(0, 1, 0));
                         assertEquals(TimeoutException.class, hook.getCommandException().getClass());
                         assertEquals(RuntimeException.class, hook.getFallbackException().getClass());
-                        assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onFallbackStart - onFallbackError - onError - ", hook.executionSequence.toString());
-
-                        try {
-                            Thread.sleep(300);
-                        } catch (Exception ex) {
-                            throw new RuntimeException(ex);
-                        }
-                        assertTrue(hook.commandEmissionsMatch(0, 1, 0));
-                        assertTrue(hook.executionEventsMatch(0, 1, 0));
-                        assertTrue(hook.fallbackEventsMatch(0, 1, 0));
-                        assertEquals(RuntimeException.class, hook.getExecutionException().getClass());
-                        assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onFallbackStart - onFallbackError - onError - onExecutionError - !onRunError - onThreadComplete - ", hook.executionSequence.toString());
-
+                        assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onThreadComplete - onFallbackStart - onFallbackError - onError - ", hook.executionSequence.toString());
                     }
                 });
     }

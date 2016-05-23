@@ -101,8 +101,8 @@ public abstract class HystrixCommandExecutionHook {
 
     /**
      * Invoked at completion of thread execution when {@link HystrixCommand} is executed using {@link ExecutionIsolationStrategy#THREAD}.
-     * This will get invoked if the Hystrix thread successfully executes, regardless of whether the calling thread
-     * encountered a timeout.
+     * This will get invoked whenever the Hystrix thread is done executing, regardless of whether the thread finished
+     * naturally, or was unsubscribed externally
      *
      * @param commandInstance The executing HystrixCommand instance.
      *

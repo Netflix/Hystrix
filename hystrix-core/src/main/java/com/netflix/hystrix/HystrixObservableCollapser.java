@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Scheduler;
+import rx.Subscription;
 import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func1;
@@ -392,12 +393,17 @@ public abstract class HystrixObservableCollapser<K, BatchReturnType, ResponseTyp
      *         the {@code <BatchReturnType>} into {@code <ResponseType>}
      */
     public Observable<ResponseType> observe() {
-        // us a ReplaySubject to buffer the eagerly subscribed-to Observable
+        // use a ReplaySubject to buffer the eagerly subscribed-to Observable
         ReplaySubject<ResponseType> subject = ReplaySubject.create();
         // eagerly kick off subscription
-        toObservable().subscribe(subject);
+        final Subscription underlyingSubscription = toObservable().subscribe(subject);
         // return the subject that can be subscribed to later while the execution has already started
-        return subject;
+        return subject.doOnUnsubscribe(new Action0() {
+            @Override
+            public void call() {
+                underlyingSubscription.unsubscribe();
+            }
+        });
     }
 
     /**
@@ -457,7 +463,7 @@ public abstract class HystrixObservableCollapser<K, BatchReturnType, ResponseTyp
              * If this is an issue we can make a lazy-future that gets set in the cache
              * then only the winning 'put' will be invoked to actually call 'submitRequest'
              */
-            HystrixCachedObservable<ResponseType> toCache = HystrixCachedObservable.from(response, this);
+            HystrixCachedObservable<ResponseType> toCache = HystrixCachedObservable.from(response);
             HystrixCachedObservable<ResponseType> fromCache = requestCache.putIfAbsent(getCacheKey(), toCache);
             if (fromCache == null) {
                 return toCache.toObservable();
