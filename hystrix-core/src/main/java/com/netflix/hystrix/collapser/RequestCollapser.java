@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory;
 
 import rx.Observable;
 
-import com.netflix.hystrix.HystrixCollapser;
 import com.netflix.hystrix.HystrixCollapserProperties;
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
 import com.netflix.hystrix.strategy.concurrency.HystrixContextCallable;
@@ -41,7 +40,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
  * @ThreadSafe
  */
 public class RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType> {
-    static final Logger logger = LoggerFactory.getLogger(HystrixCollapser.class);
+    static final Logger logger = LoggerFactory.getLogger(RequestCollapser.class);
 
     private final HystrixCollapserBridge<BatchReturnType, ResponseType, RequestArgumentType> commandCollapser;
     // batch can be null once shutdown

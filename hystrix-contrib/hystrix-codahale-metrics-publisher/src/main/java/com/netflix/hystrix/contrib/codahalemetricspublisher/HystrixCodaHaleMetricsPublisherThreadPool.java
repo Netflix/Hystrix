@@ -36,7 +36,7 @@ public class HystrixCodaHaleMetricsPublisherThreadPool implements HystrixMetrics
     private final String metricGroup;
     private final String metricType;
 
-    static final Logger logger = LoggerFactory.getLogger(HystrixCodaHaleMetricsPublisherCollapser.class);
+    static final Logger logger = LoggerFactory.getLogger(HystrixCodaHaleMetricsPublisherThreadPool.class);
 
     public HystrixCodaHaleMetricsPublisherThreadPool(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolMetrics metrics, HystrixThreadPoolProperties properties, MetricRegistry metricRegistry) {
         this.key = threadPoolKey;

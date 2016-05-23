@@ -34,7 +34,7 @@ import static com.netflix.hystrix.contrib.javanica.utils.CommonUtils.createArgsF
 @ThreadSafe
 public class BatchHystrixCommand extends AbstractHystrixCommand<List<Object>> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(GenericCommand.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(BatchHystrixCommand.class);
 
     public BatchHystrixCommand(HystrixCommandBuilder builder) {
         super(builder);
