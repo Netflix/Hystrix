@@ -9,8 +9,9 @@ import rx.Observable;
 import rx.RxReactiveStreams;
 
 /**
- * An implementation of {@link RequestHandler} that provides a Hystrix Stream. Takes an integer which corresponds to
- * an id in {@link EventStreamEnum}. If the id is found it will be again stream the events to the subscriber.
+ * An implementation of {@link RequestHandler} that provides a Hystrix Stream. Takes an 32-bit integer in the {@link Payload}
+ * data of a ReactiveSocket {@link io.reactivesocket.Frame} which corresponds to an id in {@link EventStreamEnum}. If
+ * the id is found it will begin to stream the events to the subscriber.
  */
 public class EventStreamRequestHandler extends RequestHandler {
     private static final Logger logger = LoggerFactory.getLogger(EventStreamRequestHandler.class);

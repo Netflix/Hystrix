@@ -1,34 +1,27 @@
 package com.netflix.hystrix.contrib.reactivesocket.requests;
 
-import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.netflix.hystrix.ExecutionResult;
 import com.netflix.hystrix.HystrixEventType;
+import com.netflix.hystrix.contrib.reactivesocket.BasePayloadSupplier;
 import com.netflix.hystrix.metric.HystrixRequestEvents;
 import io.reactivesocket.Frame;
 import io.reactivesocket.Payload;
 import org.agrona.LangUtil;
 import rx.Observable;
 import rx.schedulers.Schedulers;
-import rx.subjects.BehaviorSubject;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
 
-public class HystrixRequestEventsStream implements Supplier<Observable<Payload>> {
+public class HystrixRequestEventsStream extends BasePayloadSupplier {
     private static HystrixRequestEventsStream INSTANCE = new HystrixRequestEventsStream();
 
-    private BehaviorSubject<Payload> subject;
-
-    private JsonFactory jsonFactory;
-
     private HystrixRequestEventsStream() {
-        this.jsonFactory = new JsonFactory();
-        this.subject = BehaviorSubject.create();
+        super();
 
         com.netflix.hystrix.metric.HystrixRequestEventsStream.getInstance()
             .observe()

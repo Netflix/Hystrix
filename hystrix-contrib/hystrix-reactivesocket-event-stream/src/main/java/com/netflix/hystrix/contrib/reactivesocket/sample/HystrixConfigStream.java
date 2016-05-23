@@ -1,6 +1,5 @@
 package com.netflix.hystrix.contrib.reactivesocket.sample;
 
-import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.netflix.hystrix.HystrixCollapserKey;
 import com.netflix.hystrix.HystrixCommandKey;
@@ -10,28 +9,22 @@ import com.netflix.hystrix.config.HystrixCommandConfiguration;
 import com.netflix.hystrix.config.HystrixConfiguration;
 import com.netflix.hystrix.config.HystrixConfigurationStream;
 import com.netflix.hystrix.config.HystrixThreadPoolConfiguration;
+import com.netflix.hystrix.contrib.reactivesocket.BasePayloadSupplier;
 import io.reactivesocket.Frame;
 import io.reactivesocket.Payload;
 import org.agrona.LangUtil;
 import rx.Observable;
-import rx.subjects.BehaviorSubject;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
-import java.util.function.Supplier;
 
-public class HystrixConfigStream implements Supplier<Observable<Payload>> {
+public class HystrixConfigStream extends BasePayloadSupplier {
     private static final HystrixConfigStream INSTANCE = new HystrixConfigStream();
 
-    private BehaviorSubject<Payload> subject;
-
-    private JsonFactory jsonFactory;
-
     private HystrixConfigStream() {
-        this.subject = BehaviorSubject.create();
-        this.jsonFactory = new JsonFactory();
+        super();
 
         HystrixConfigurationStream stream = new HystrixConfigurationStream(100);
         stream

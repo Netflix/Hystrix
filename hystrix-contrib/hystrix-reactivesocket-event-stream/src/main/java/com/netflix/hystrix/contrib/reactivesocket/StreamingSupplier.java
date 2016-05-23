@@ -1,6 +1,5 @@
 package com.netflix.hystrix.contrib.reactivesocket;
 
-import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import io.reactivesocket.Frame;
 import io.reactivesocket.Payload;
@@ -9,25 +8,17 @@ import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.functions.Func0;
 import rx.schedulers.Schedulers;
-import rx.subjects.BehaviorSubject;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-public abstract class StreamingSupplier<T> implements Supplier<Observable<Payload>> {
+public abstract class StreamingSupplier<T> extends BasePayloadSupplier {
 
     protected Logger logger = LoggerFactory.getLogger(StreamingSupplier.class);
 
-    protected BehaviorSubject<Payload> subject;
-
-    protected final JsonFactory jsonFactory;
-
     protected StreamingSupplier() {
-        subject = BehaviorSubject.create();
-        jsonFactory = new JsonFactory();
 
         Observable
             .interval(500, TimeUnit.MILLISECONDS, Schedulers.computation())
