@@ -19,8 +19,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class EventStreamRequestHandlerTest {
-    @Test(timeout = 5_000)
-    public void testEventStream() throws Exception {
+    @Test(timeout = 10_000)
+    public void testEventStreamRequestN() throws Exception {
         Payload payload = new Payload() {
             @Override
             public ByteBuffer getData() {
@@ -95,6 +95,77 @@ public class EventStreamRequestHandlerTest {
         subscription.request(100);
 
         latch2.await();
+
+    }
+
+    @Test(timeout = 10_000)
+    public void testEventStreamFireHose() throws Exception {
+        Payload payload = new Payload() {
+            @Override
+            public ByteBuffer getData() {
+                return ByteBuffer
+                    .allocate(BitUtil.SIZE_OF_INT)
+                    .putInt(EventStreamEnum.METRICS_STREAM.getTypeId());
+            }
+
+            @Override
+            public ByteBuffer getMetadata() {
+                return Frame.NULL_BYTEBUFFER;
+            }
+        };
+
+        Schedulers
+            .io()
+            .createWorker()
+            .schedulePeriodically(() -> {
+                TestCommand testCommand = new TestCommand();
+                testCommand.execute();
+            }, 0, 1, TimeUnit.MILLISECONDS);
+
+        CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch1 = new CountDownLatch(25);
+
+        AtomicReference<Subscription> subscriptionAtomicReference = new AtomicReference<>();
+
+        EventStreamRequestHandler handler = new EventStreamRequestHandler();
+        Publisher<Payload> payloadPublisher = handler.handleSubscription(payload);
+
+        payloadPublisher
+            .subscribe(new Subscriber<Payload>() {
+                @Override
+                public void onSubscribe(Subscription s) {
+                    subscriptionAtomicReference.set(s);
+                    latch.countDown();
+                }
+
+                @Override
+                public void onNext(Payload payload) {
+                    ByteBuffer data = payload.getData();
+                    String s = new String(data.array());
+
+                    System.out.println(s);
+
+                    latch1.countDown();
+                }
+
+                @Override
+                public void onError(Throwable t) {
+
+                }
+
+                @Override
+                public void onComplete() {
+
+                }
+            });
+
+        latch.await();
+
+        Subscription subscription = subscriptionAtomicReference.get();
+        subscription.request(Long.MAX_VALUE);
+
+        latch1.await();
+
 
     }
 

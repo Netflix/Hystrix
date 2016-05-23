@@ -8,6 +8,8 @@ import com.netflix.hystrix.contrib.reactivesocket.requests.HystrixRequestEventsS
 import com.netflix.hystrix.contrib.reactivesocket.sample.HystrixConfigStream;
 import com.netflix.hystrix.contrib.reactivesocket.sample.HystrixUtilizationStream;
 import io.reactivesocket.Payload;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rx.Observable;
 
 import java.util.Arrays;
@@ -18,24 +20,28 @@ public enum EventStreamEnum implements Supplier<Observable<Payload>> {
     CONFIG_STREAM(1) {
         @Override
         public Observable<Payload> get() {
+            logger.info("streaming config data");
             return HystrixConfigStream.getInstance().get();
         }
     },
     REQUEST_EVENT_STREAM(2) {
         @Override
         public Observable<Payload> get() {
+            logger.info("streaming request events");
             return HystrixRequestEventsStream.getInstance().get();
         }
     },
     UTILIZATION_EVENT_STREAM(3) {
         @Override
         public Observable<Payload> get() {
+            logger.info("streaming utilization events");
             return HystrixUtilizationStream.getInstance().get();
         }
     },
     METRICS_STREAM(4) {
         @Override
         public Observable<Payload> get() {
+            logger.info("streaming metrics");
             return Observable.merge(
                     HystrixCommandMetricsStream.getInstance().get(),
                     HystrixThreadPoolMetricsStream.getInstance().get(),
@@ -44,6 +50,8 @@ public enum EventStreamEnum implements Supplier<Observable<Payload>> {
     }
 
     ;
+
+    private static final Logger logger = LoggerFactory.getLogger(EventStreamEnum.class);
 
     private int typeId;
 
