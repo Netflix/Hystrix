@@ -515,7 +515,7 @@ public class HystrixServoMetricsPublisherCommand extends HystrixServoMetricsPubl
         monitors.add(getTotalLatencyPercentileMonitor("latencyTotal_percentile_75", 75));
         monitors.add(getTotalLatencyPercentileMonitor("latencyTotal_percentile_90", 90));
         monitors.add(getTotalLatencyPercentileMonitor("latencyTotal_percentile_99", 99));
-        monitors.add(getTotalLatencyPercentileMonitor("latencyTotal_percentile_995", 995));
+        monitors.add(getTotalLatencyPercentileMonitor("latencyTotal_percentile_995", 99.5));
 
         // group
         monitors.add(new InformationalMetric<String>(MonitorConfig.builder("commandGroup").build()) {
