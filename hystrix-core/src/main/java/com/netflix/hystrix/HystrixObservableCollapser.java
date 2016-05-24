@@ -191,7 +191,7 @@ public abstract class HystrixObservableCollapser<K, BatchReturnType, ResponseTyp
                                         // now add this to seenKeys, so we can later check what was seen, and what was unseen
                                         seenKeys.add(responseKey);
                                     } else {
-                                        logger.warn("Batch Response contained a response key not in request batch : " + responseKey);
+                                        logger.warn("Batch Response contained a response key not in request batch : {}", responseKey);
                                     }
                                 } catch (Throwable ex) {
                                     logger.warn("Uncaught error during demultiplexing of BatchResponse", ex);

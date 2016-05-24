@@ -90,7 +90,7 @@ public class ProxyStreamServlet extends HttpServlet {
             }
         }
         String proxyUrl = url.toString();
-        logger.info("\n\nProxy opening connection to: " + proxyUrl + "\n\n");
+        logger.info("\n\nProxy opening connection to: {}\n\n", proxyUrl);
         try {
             httpget = new HttpGet(proxyUrl);
             if (authorization != null) {

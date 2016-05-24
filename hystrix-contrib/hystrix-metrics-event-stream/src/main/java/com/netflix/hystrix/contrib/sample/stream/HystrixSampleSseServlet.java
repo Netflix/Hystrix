@@ -143,7 +143,7 @@ public abstract class HystrixSampleSseServlet<SampleData> extends HttpServlet {
                         .subscribe(new Subscriber<SampleData>() {
                             @Override
                             public void onCompleted() {
-                                logger.error("HystrixSampleSseServlet: (" + getClass().getSimpleName() + ") received unexpected OnCompleted from sample stream");
+                                logger.error("HystrixSampleSseServlet: ({}) received unexpected OnCompleted from sample stream", getClass().getSimpleName());
                                 moreDataWillBeSent.set(false);
                             }
 

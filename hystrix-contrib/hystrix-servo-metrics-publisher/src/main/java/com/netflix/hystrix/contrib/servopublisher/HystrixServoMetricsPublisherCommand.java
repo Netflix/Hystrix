@@ -187,7 +187,7 @@ public class HystrixServoMetricsPublisherCommand extends HystrixServoMetricsPubl
                     HystrixEventType eventType = eventThunk.call();
                     return metrics.getCumulativeCount(HystrixRollingNumberEvent.from(eventType));
                 } catch (NoSuchFieldError error) {
-                    logger.error("While publishing Servo metrics, error looking up eventType for : " + name + ".  Please check that all Hystrix versions are the same!");
+                    logger.error("While publishing Servo metrics, error looking up eventType for : {}.  Please check that all Hystrix versions are the same!", name);
                     return 0L;
                 }
             }
@@ -211,7 +211,7 @@ public class HystrixServoMetricsPublisherCommand extends HystrixServoMetricsPubl
                     HystrixEventType eventType = eventThunk.call();
                     return metrics.getRollingCount(HystrixRollingNumberEvent.from(eventType));
                 } catch (NoSuchFieldError error) {
-                    logger.error("While publishing Servo metrics, error looking up eventType for : " + name + ".  Please check that all Hystrix versions are the same!");
+                    logger.error("While publishing Servo metrics, error looking up eventType for : {}.  Please check that all Hystrix versions are the same!", name);
                     return 0L;
                 }
             }

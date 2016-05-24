@@ -87,10 +87,10 @@ public abstract class HystrixPropertiesChainedProperty {
             }
 
             if (this.isValueAcceptable()) {
-                logger.debug("Flipping property: " + getName() + " to use it's current value:" + getValue());
+                logger.debug("Flipping property: {} to use it's current value: {}", getName(), getValue());
                 pReference.set(this);
             } else {
-                logger.debug("Flipping property: " + getName() + " to use NEXT property: " + next);
+                logger.debug("Flipping property: {} to use NEXT property: {}", getName(), next);
                 pReference.set(next);
             }
 
@@ -233,7 +233,7 @@ public abstract class HystrixPropertiesChainedProperty {
             sProp.addCallback(new Runnable() {
                 @Override
                 public void run() {
-                    logger.debug("Property changed: '" + getName() + " = " + getValue() + "'");
+                    logger.debug("Property changed: '{} = {}'", getName(), getValue());
                     checkAndFlip();
                 }
             });
