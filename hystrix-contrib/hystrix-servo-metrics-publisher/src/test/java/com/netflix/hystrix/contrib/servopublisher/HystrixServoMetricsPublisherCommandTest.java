@@ -175,20 +175,50 @@ public class HystrixServoMetricsPublisherCommandTest {
         Thread.sleep(100); //1 bucket roll
 
         int meanExecutionLatency = servoPublisher.getExecutionLatencyMeanMonitor("meanExecutionLatency").getValue().intValue();
+        int p5ExecutionLatency = servoPublisher.getExecutionLatencyPercentileMonitor("p5ExecutionLatency", 5).getValue().intValue();
+        int p25ExecutionLatency = servoPublisher.getExecutionLatencyPercentileMonitor("p25ExecutionLatency", 25).getValue().intValue();
         int p50ExecutionLatency = servoPublisher.getExecutionLatencyPercentileMonitor("p50ExecutionLatency", 50).getValue().intValue();
+        int p75ExecutionLatency = servoPublisher.getExecutionLatencyPercentileMonitor("p75ExecutionLatency", 75).getValue().intValue();
+        int p90ExecutionLatency = servoPublisher.getExecutionLatencyPercentileMonitor("p90ExecutionLatency", 90).getValue().intValue();
         int p99ExecutionLatency = servoPublisher.getExecutionLatencyPercentileMonitor("p99ExecutionLatency", 99).getValue().intValue();
-        System.out.println("Execution:           Mean : " + meanExecutionLatency + ", p50 : " + p50ExecutionLatency + ", p99 : " + p99ExecutionLatency);
+        int p995ExecutionLatency = servoPublisher.getExecutionLatencyPercentileMonitor("p995ExecutionLatency", 99.5).getValue().intValue();
+        System.out.println("Execution:           Mean : " + meanExecutionLatency + ", p5 : " + p5ExecutionLatency + ", p25 : " + p25ExecutionLatency + ", p50 : " + p50ExecutionLatency + ", p75 : " + p75ExecutionLatency + ", p90 : " + p90ExecutionLatency + ", p99 : " + p99ExecutionLatency + ", p99.5 : " + p995ExecutionLatency);
 
         int meanTotalLatency = servoPublisher.getTotalLatencyMeanMonitor("meanTotalLatency").getValue().intValue();
+        int p5TotalLatency = servoPublisher.getTotalLatencyPercentileMonitor("p5TotalLatency", 5).getValue().intValue();
+        int p25TotalLatency = servoPublisher.getTotalLatencyPercentileMonitor("p25TotalLatency", 25).getValue().intValue();
         int p50TotalLatency = servoPublisher.getTotalLatencyPercentileMonitor("p50TotalLatency", 50).getValue().intValue();
+        int p75TotalLatency = servoPublisher.getTotalLatencyPercentileMonitor("p75TotalLatency", 75).getValue().intValue();
+        int p90TotalLatency = servoPublisher.getTotalLatencyPercentileMonitor("p90TotalLatency", 90).getValue().intValue();
         int p99TotalLatency = servoPublisher.getTotalLatencyPercentileMonitor("p99TotalLatency", 99).getValue().intValue();
-        System.out.println("Total (User-Thread): Mean : " + meanTotalLatency +", p50 : " + p50TotalLatency + ", p99 : " + p99TotalLatency);
+        int p995TotalLatency = servoPublisher.getTotalLatencyPercentileMonitor("p995TotalLatency", 99.5).getValue().intValue();
+        System.out.println("Total:           Mean : " + meanTotalLatency + ", p5 : " + p5TotalLatency + ", p25 : " + p25TotalLatency + ", p50 : " + p50TotalLatency + ", p75 : " + p75TotalLatency + ", p90 : " + p90TotalLatency + ", p99 : " + p99TotalLatency + ", p99.5 : " + p995TotalLatency);
+
 
         assertTrue(meanExecutionLatency > 10);
-        assertTrue(p50ExecutionLatency < p99ExecutionLatency);
+        assertTrue(p5ExecutionLatency <= p25ExecutionLatency);
+        assertTrue(p25ExecutionLatency <= p50ExecutionLatency);
+        assertTrue(p50ExecutionLatency <= p75ExecutionLatency);
+        assertTrue(p75ExecutionLatency <= p90ExecutionLatency);
+        assertTrue(p90ExecutionLatency <= p99ExecutionLatency);
+        assertTrue(p99ExecutionLatency <= p995ExecutionLatency);
+
+        assertTrue(meanTotalLatency > 10);
+        assertTrue(p5TotalLatency <= p25TotalLatency);
+        assertTrue(p25TotalLatency <= p50TotalLatency);
+        assertTrue(p50TotalLatency <= p75TotalLatency);
+        assertTrue(p75TotalLatency <= p90TotalLatency);
+        assertTrue(p90TotalLatency <= p99TotalLatency);
+        assertTrue(p99TotalLatency <= p995TotalLatency);
+
         assertTrue(meanExecutionLatency <= meanTotalLatency);
+        assertTrue(p5ExecutionLatency <= p5TotalLatency);
+        assertTrue(p25ExecutionLatency <= p25TotalLatency);
         assertTrue(p50ExecutionLatency <= p50TotalLatency);
+        assertTrue(p75ExecutionLatency <= p75TotalLatency);
+        assertTrue(p90ExecutionLatency <= p90TotalLatency);
         assertTrue(p99ExecutionLatency <= p99TotalLatency);
+        assertTrue(p995ExecutionLatency <= p995TotalLatency);
     }
 
     static class SampleCommand extends HystrixCommand<Integer> {
