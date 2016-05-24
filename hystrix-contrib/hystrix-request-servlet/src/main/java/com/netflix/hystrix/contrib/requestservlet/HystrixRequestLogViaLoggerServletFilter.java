@@ -80,7 +80,7 @@ public class HystrixRequestLogViaLoggerServletFilter implements Filter {
             try {
                 if (HystrixRequestContext.isCurrentThreadInitialized()) {
                     HystrixRequestLog log = HystrixRequestLog.getCurrentRequest();
-                    logger.info("Hystrix Executions [" + requestURL.toString() + "] => " + log.getExecutedCommandsAsString());
+                    logger.info("Hystrix Executions [{}] => {}", requestURL.toString(), log.getExecutedCommandsAsString());
                 }
             } catch (Exception e) {
                 logger.warn("Unable to append HystrixRequestLog", e);

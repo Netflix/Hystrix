@@ -246,7 +246,7 @@ public class HystrixCodaHaleMetricsPublisherCollapser implements HystrixMetricsP
                 try {
                     return metrics.getCumulativeCount(eventThunk.call());
                 } catch (NoSuchFieldError error) {
-                    logger.error("While publishing CodaHale metrics, error looking up eventType for : " + name + ".  Please check that all Hystrix versions are the same!");
+                    logger.error("While publishing CodaHale metrics, error looking up eventType for : {}.  Please check that all Hystrix versions are the same!", name);
                     return 0L;
                 }
             }
@@ -269,7 +269,7 @@ public class HystrixCodaHaleMetricsPublisherCollapser implements HystrixMetricsP
                 try {
                     return metrics.getRollingCount(eventThunk.call());
                 } catch (NoSuchFieldError error) {
-                    logger.error("While publishing CodaHale metrics, error looking up eventType for : " + name + ".  Please check that all Hystrix versions are the same!");
+                    logger.error("While publishing CodaHale metrics, error looking up eventType for : {}.  Please check that all Hystrix versions are the same!", name);
                     return 0L;
                 }
             }

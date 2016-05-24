@@ -89,7 +89,7 @@ public class RequestCollapserFactory<BatchReturnType, ResponseType, RequestArgum
         } else if (Scopes.GLOBAL == Scopes.valueOf(getScope().name())) {
             return getCollapserForGlobalScope(commandCollapser);
         } else {
-            logger.warn("Invalid Scope: " + getScope() + "  Defaulting to REQUEST scope.");
+            logger.warn("Invalid Scope: {}  Defaulting to REQUEST scope.", getScope());
             return getCollapserForUserRequest(commandCollapser);
         }
     }

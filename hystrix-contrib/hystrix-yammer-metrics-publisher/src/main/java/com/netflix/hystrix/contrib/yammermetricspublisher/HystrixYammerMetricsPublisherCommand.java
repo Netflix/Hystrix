@@ -416,7 +416,7 @@ public class HystrixYammerMetricsPublisherCommand implements HystrixMetricsPubli
                     HystrixRollingNumberEvent eventType = HystrixRollingNumberEvent.from(eventThunk.call());
                     return metrics.getCumulativeCount(eventType);
                 } catch (NoSuchFieldError error) {
-                    logger.error("While publishing Yammer metrics, error looking up eventType for : " + name + ".  Please check that all Hystrix versions are the same!");
+                    logger.error("While publishing Yammer metrics, error looking up eventType for : {}.  Please check that all Hystrix versions are the same!", name);
                     return 0L;
                 }
             }
@@ -450,7 +450,7 @@ public class HystrixYammerMetricsPublisherCommand implements HystrixMetricsPubli
                     HystrixRollingNumberEvent eventType = HystrixRollingNumberEvent.from(eventThunk.call());
                     return metrics.getRollingCount(eventType);
                 } catch (NoSuchFieldError error) {
-                    logger.error("While publishing Yammer metrics, error looking up eventType for : " + name + ".  Please check that all Hystrix versions are the same!");
+                    logger.error("While publishing Yammer metrics, error looking up eventType for : {}.  Please check that all Hystrix versions are the same!", name);
                     return 0L;
                 }
             }
