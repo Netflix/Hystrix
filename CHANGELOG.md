@@ -1,5 +1,27 @@
 # Hystrix Releases #
 
+### Version 1.5.3 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.5.3%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.5.3/)) ###
+
+The largest new feature in this release is that cancellation is now supported.  Either calling `cancel()` on the result of `HystrixCommand.queue()` or `unsubscribe()` on the result of `HystrixCommand.toObservable().subscribe()` will propagate the cancellation to the underlying work.
+
+* [Pull 1218](https://github.com/Netflix/Hystrix/pull/1218) Fixing unsubscription races by modeling explicit FSMs for command and thread execution state
+* [Pull 1217](https://github.com/Netflix/Hystrix/pull/1217) Remove dead code in RequestEventsStream.  Thanks @mebigfatguy!
+* [Pull 1214](https://github.com/Netflix/Hystrix/pull/1214) Fix Servo metric calculation.  Bug identified by @AchimWe.
+* [Pull 1213](https://github.com/Netflix/Hystrix/pull/1213) Use parameterized logging.  Thanks @mebigfatguy!
+* [Pull 1212](https://github.com/Netflix/Hystrix/pull/1212) Correct logging contexts.  Thanks @mebigfatguy!
+* [Pull 1210](https://github.com/Netflix/Hystrix/pull/1210) Javanica: code optimization to fetch parameters only if needed.  Thanks @mebigfatguy!
+* [Pull 1209](https://github.com/Netflix/Hystrix/pull/1209) Fixed thread-state cleanup to happen on unsubscribe or terminate
+* [Pull 1208](https://github.com/Netflix/Hystrix/pull/1208) Reorganization of HystrixCollapser/HystrixObservableCollapser logic to support cancellation
+* [Pull 1207](https://github.com/Netflix/Hystrix/pull/1207) Fix command concurrency metric in light of cancellation
+* [Pull 1206](https://github.com/Netflix/Hystrix/pull/1206) Added subscribeOn to HystrixObservableCommand in JMH test to make it async
+* [Pull 1204](https://github.com/Netflix/Hystrix/pull/1204) Reorganization of AbstractCommand logic to support cancellation
+* [Pull 1198](https://github.com/Netflix/Hystrix/pull/1198) Release semaphores upon cancellation.
+* [Pull 1194](https://github.com/Netflix/Hystrix/pull/1194) Improved tests readability a bit by letting exceptions propagate out.  Thanks @caarlos0!
+* [Pull 1193](https://github.com/Netflix/Hystrix/pull/1193) More tests using HystrixRequestContext rule.  Thanks @caarlos0!
+* [Pull 1181](https://github.com/Netflix/Hystrix/pull/1181) Deprecate getter and setter for unused collapsingEnabled property in Collapser Setter.  Thanks @nluchs!
+* [Pull 1184](https://github.com/Netflix/Hystrix/pull/1184) migrating all hystrix-javanica tests to hystrix-junit.  Thanks @caarlos0!
+* [Pull 1147](https://github.com/Netflix/Hystrix/pull/1147) Added hystrix-junit.  Thanks @caarlos0!
+
 ### Version 1.4.26 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.26%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.26/)) ###
 
 * [Pull 1169](https://github.com/Netflix/Hystrix/pull/1169) Javanica: Switch hystrix-javanica to use getExecutionException, which returns Exception object even when command is not executed
