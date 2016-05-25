@@ -68,8 +68,6 @@ public class HystrixRequestEvents {
                 cachedCount = cachingDetector.get(key);
             }
             ExecutionSignature signature;
-            HystrixCollapserKey collapserKey = execution.getOriginatingCollapserKey();
-            int collapserBatchCount = execution.getNumberCollapsed();
             if (cachedCount > 0) {
                 //this has a RESPONSE_FROM_CACHE and needs to get split off
                 signature = ExecutionSignature.from(execution, cacheKey, cachedCount);
