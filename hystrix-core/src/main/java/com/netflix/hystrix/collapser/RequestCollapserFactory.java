@@ -168,7 +168,6 @@ public class RequestCollapserFactory<BatchReturnType, ResponseType, RequestArgum
      * Clears all state. If new requests come in instances will be recreated and metrics started from scratch.
      */
     public static void reset() {
-        defaultNameCache.clear();
         globalScopedCollapsers.clear();
         requestScopedCollapsers.clear();
         HystrixTimer.reset();
@@ -283,10 +282,4 @@ public class RequestCollapserFactory<BatchReturnType, ResponseType, RequestArgum
         }
 
     }
-
-    // this is a micro-optimization but saves about 1-2microseconds (on 2011 MacBook Pro) 
-    // on the repetitive string processing that will occur on the same classes over and over again
-    @SuppressWarnings("rawtypes")
-    private static ConcurrentHashMap<Class<? extends HystrixCollapser>, String> defaultNameCache = new ConcurrentHashMap<Class<? extends HystrixCollapser>, String>();
-
 }
