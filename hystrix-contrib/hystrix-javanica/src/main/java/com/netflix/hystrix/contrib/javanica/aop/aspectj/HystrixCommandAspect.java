@@ -172,7 +172,7 @@ public class HystrixCommandAspect {
                 throw new IllegalStateException("batch method must be annotated with HystrixCommand annotation");
             }
             // method of batch hystrix command must be passed to metaholder because basically collapser doesn't have any actions
-            // that should be invoked upon intercepted method, its required only for underlying batch command
+            // that should be invoked upon intercepted method, it's required only for underlying batch command
             MetaHolder.Builder builder = MetaHolder.builder()
                     .args(args).method(batchCommandMethod).obj(obj).proxyObj(proxy)
                     .defaultGroupKey(obj.getClass().getSimpleName())

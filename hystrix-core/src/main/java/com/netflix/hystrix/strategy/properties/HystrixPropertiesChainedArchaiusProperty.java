@@ -86,7 +86,7 @@ public abstract class HystrixPropertiesChainedArchaiusProperty {
             }
 
             if (this.isValueAcceptable()) {
-                logger.debug("Flipping property: {} to use it's current value: {}", getName(), getValue());
+                logger.debug("Flipping property: {} to use its current value: {}", getName(), getValue());
                 pReference.set(this);
             } else {
                 logger.debug("Flipping property: {} to use NEXT property: {}", getName(), next);
