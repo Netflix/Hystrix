@@ -3,7 +3,7 @@ apply plugin: 'me.champeau.gradle.jmh'
 
 dependencies {
     compile 'com.netflix.archaius:archaius-core:0.4.1'
-    compile 'io.reactivex:rxjava:1.1.1'
+    compile 'io.reactivex:rxjava:1.1.5'
     compile 'org.slf4j:slf4j-api:1.7.0'
 	compile 'org.hdrhistogram:HdrHistogram:2.1.7'
     testCompile 'junit:junit-dep:4.10'
