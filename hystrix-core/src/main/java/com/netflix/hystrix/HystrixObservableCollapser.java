@@ -202,8 +202,7 @@ public abstract class HystrixObservableCollapser<K, BatchReturnType, ResponseTyp
                             @Override
                             public void call(Throwable t) {
                                 Exception ex = getExceptionFromThrowable(t);
-                                for (K key: requestsByKey.keySet()) {
-                                    CollapsedRequest<ResponseType, RequestArgumentType> collapsedReq = requestsByKey.get(key);
+                                for (CollapsedRequest<ResponseType, RequestArgumentType> collapsedReq : requestsByKey.values()) {
                                     collapsedReq.setException(ex);
                                 }
                             }
@@ -212,8 +211,9 @@ public abstract class HystrixObservableCollapser<K, BatchReturnType, ResponseTyp
                             @Override
                             public void call() {
 
-                                for (K key : requestsByKey.keySet()) {
-                                    CollapsedRequest<ResponseType, RequestArgumentType> collapsedReq = requestsByKey.get(key);
+                                for (Map.Entry<K, CollapsedRequest<ResponseType, RequestArgumentType>> entry : requestsByKey.entrySet()) {
+                                    K key = entry.getKey();
+                                    CollapsedRequest<ResponseType, RequestArgumentType> collapsedReq = entry.getValue();
                                     if (!seenKeys.contains(key)) {
                                         try {
                                             onMissingResponse(collapsedReq);
