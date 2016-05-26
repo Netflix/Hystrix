@@ -2,7 +2,7 @@ language: java
 sudo: false
 
 jdk:
-  - oraclejdk7
+  - oraclejdk8
 
 script:
   - ./gradlew --info check
