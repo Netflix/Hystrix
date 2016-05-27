@@ -189,13 +189,6 @@ public class HystrixCommandMetrics extends HystrixMetrics {
         this.threadPoolKey = threadPoolKey;
         this.properties = properties;
 
-        Func0<Integer> concurrentExecutionThunk = new Func0<Integer>() {
-            @Override
-            public Integer call() {
-                return HystrixCommandMetrics.getInstance(key).concurrentExecutionCount.get();
-            }
-        };
-
         healthCountsStream = HealthCountsStream.getInstance(key, properties);
         rollingCommandEventCounterStream = RollingCommandEventCounterStream.getInstance(key, properties);
         cumulativeCommandEventCounterStream = CumulativeCommandEventCounterStream.getInstance(key, properties);
