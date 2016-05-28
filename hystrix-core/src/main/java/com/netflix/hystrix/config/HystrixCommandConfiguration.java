@@ -30,7 +30,7 @@ public class HystrixCommandConfiguration {
     private final HystrixCommandCircuitBreakerConfig circuitBreakerConfig;
     private final HystrixCommandMetricsConfig metricsConfig;
 
-    private HystrixCommandConfiguration(HystrixCommandKey commandKey, HystrixThreadPoolKey threadPoolKey, HystrixCommandGroupKey groupKey,
+    public HystrixCommandConfiguration(HystrixCommandKey commandKey, HystrixThreadPoolKey threadPoolKey, HystrixCommandGroupKey groupKey,
                                        HystrixCommandExecutionConfig executionConfig,
                                        HystrixCommandCircuitBreakerConfig circuitBreakerConfig,
                                        HystrixCommandMetricsConfig metricsConfig) {

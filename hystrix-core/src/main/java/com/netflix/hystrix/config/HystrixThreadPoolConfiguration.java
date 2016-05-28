@@ -29,7 +29,7 @@ public class HystrixThreadPoolConfiguration {
     private final int rollingCounterNumberOfBuckets;
     private final int rollingCounterBucketSizeInMilliseconds;
 
-    private HystrixThreadPoolConfiguration(HystrixThreadPoolKey threadPoolKey, int coreSize, int maxQueueSize, int queueRejectionThreshold,
+    public HystrixThreadPoolConfiguration(HystrixThreadPoolKey threadPoolKey, int coreSize, int maxQueueSize, int queueRejectionThreshold,
                                            int keepAliveTimeInMinutes, int rollingCounterNumberOfBuckets,
                                            int rollingCounterBucketSizeInMilliseconds) {
         this.threadPoolKey = threadPoolKey;

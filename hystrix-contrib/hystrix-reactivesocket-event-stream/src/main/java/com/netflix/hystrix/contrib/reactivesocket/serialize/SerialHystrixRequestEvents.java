@@ -1,63 +1,47 @@
-package com.netflix.hystrix.contrib.reactivesocket.requests;
+/**
+ * Copyright 2016 Netflix, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.netflix.hystrix.contrib.reactivesocket.serialize;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.netflix.hystrix.ExecutionResult;
 import com.netflix.hystrix.HystrixEventType;
-import com.netflix.hystrix.contrib.reactivesocket.BasePayloadSupplier;
 import com.netflix.hystrix.metric.HystrixRequestEvents;
-import io.reactivesocket.Frame;
-import io.reactivesocket.Payload;
 import org.agrona.LangUtil;
-import rx.Observable;
-import rx.schedulers.Schedulers;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 
-public class HystrixRequestEventsStream extends BasePayloadSupplier {
-    private static HystrixRequestEventsStream INSTANCE = new HystrixRequestEventsStream();
+public class SerialHystrixRequestEvents extends SerialHystrixMetric {
 
-    private HystrixRequestEventsStream() {
-        super();
-
-        com.netflix.hystrix.metric.HystrixRequestEventsStream.getInstance()
-            .observe()
-            .observeOn(Schedulers.computation())
-            .map(this::getPayloadData)
-            .map(b ->
-                new Payload() {
-                    @Override
-                    public ByteBuffer getData() {
-                        return ByteBuffer.wrap(b);
-                    }
-
-                    @Override
-                    public ByteBuffer getMetadata() {
-                        return Frame.NULL_BYTEBUFFER;
-                    }
-            })
-            .subscribe(subject);
-    }
-
-    public static HystrixRequestEventsStream getInstance() {
-        return INSTANCE;
-    }
-
-    @Override
-    public Observable<Payload> get() {
-        return subject;
-    }
-
-    public byte[] getPayloadData(HystrixRequestEvents requestEvents) {
+    public static byte[] toBytes(HystrixRequestEvents requestEvents) {
         byte[] retVal = null;
 
         try {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            JsonGenerator json = jsonFactory.createGenerator(bos);
-            writeRequestAsJson(json, requestEvents);
+            JsonGenerator json = cborFactory.createGenerator(bos);
+
+            json.writeStartArray();
+
+            for (Map.Entry<HystrixRequestEvents.ExecutionSignature, List<Integer>> entry: requestEvents.getExecutionsMappedToLatencies().entrySet()) {
+                convertExecutionToJson(json, entry.getKey(), entry.getValue());
+            }
+
+            json.writeEndArray();
             json.close();
 
             retVal = bos.toByteArray();
@@ -68,17 +52,7 @@ public class HystrixRequestEventsStream extends BasePayloadSupplier {
         return retVal;
     }
 
-    private void writeRequestAsJson(JsonGenerator json, HystrixRequestEvents request) throws IOException {
-        json.writeStartArray();
-
-        for (Map.Entry<HystrixRequestEvents.ExecutionSignature, List<Integer>> entry: request.getExecutionsMappedToLatencies().entrySet()) {
-            convertExecutionToJson(json, entry.getKey(), entry.getValue());
-        }
-
-        json.writeEndArray();
-    }
-
-    private void convertExecutionToJson(JsonGenerator json, HystrixRequestEvents.ExecutionSignature executionSignature, List<Integer> latencies) throws IOException {
+    private static void convertExecutionToJson(JsonGenerator json, HystrixRequestEvents.ExecutionSignature executionSignature, List<Integer> latencies) throws IOException {
         json.writeStartObject();
         json.writeStringField("name", executionSignature.getCommandName());
         json.writeArrayFieldStart("events");

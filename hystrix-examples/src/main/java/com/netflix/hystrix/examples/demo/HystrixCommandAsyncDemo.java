@@ -18,18 +18,24 @@ package com.netflix.hystrix.examples.demo;
 import java.math.BigDecimal;
 import java.net.HttpCookie;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import com.netflix.config.ConfigurationManager;
 import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixCommandMetrics;
 import com.netflix.hystrix.HystrixCommandMetrics.HealthCounts;
 import com.netflix.hystrix.HystrixRequestLog;
+import com.netflix.hystrix.strategy.concurrency.HystrixContextRunnable;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import rx.Observable;
+import rx.Subscriber;
 import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.functions.Func2;
+import rx.plugins.RxJavaPlugins;
+import rx.plugins.RxJavaSchedulersHook;
 
 /**
  * Executable client that demonstrates the lifecycle, metrics, request log and behavior of HystrixCommands.
@@ -39,6 +45,26 @@ public class HystrixCommandAsyncDemo {
 //    public static void main(String args[]) {
 //        new HystrixCommandAsyncDemo().startDemo(true);
 //    }
+
+    static class ContextAwareRxSchedulersHook extends RxJavaSchedulersHook {
+        @Override
+        public Action0 onSchedule(final Action0 initialAction) {
+            final Runnable initialRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    initialAction.call();
+                }
+            };
+            final Runnable wrappedRunnable =
+                    new HystrixContextRunnable(initialRunnable);
+            return new Action0() {
+                @Override
+                public void call() {
+                    wrappedRunnable.run();
+                }
+            };
+        }
+    }
 
     public HystrixCommandAsyncDemo() {
         /*
@@ -51,44 +77,48 @@ public class HystrixCommandAsyncDemo {
         ConfigurationManager.getConfigInstance().setProperty("hystrix.command.GetUserAccountCommand.execution.isolation.thread.timeoutInMilliseconds", 50);
         // set the rolling percentile more granular so we see data change every second rather than every 10 seconds as is the default 
         ConfigurationManager.getConfigInstance().setProperty("hystrix.command.default.metrics.rollingPercentile.numBuckets", 60);
+
+        RxJavaPlugins.getInstance().registerSchedulersHook(new ContextAwareRxSchedulersHook());
     }
 
-    public void startDemo(boolean shouldLog) {
+    public void startDemo(final boolean shouldLog) {
         startMetricsMonitor(shouldLog);
         while (true) {
-            Observable<CreditCardAuthorizationResult> o = runSimulatedRequestOnCallerThread(shouldLog);
-            o.subscribe();
+            final HystrixRequestContext context = HystrixRequestContext.initializeContext();
+            Observable<CreditCardAuthorizationResult> o = observeSimulatedUserRequestForOrderConfirmationAndCreditCardPayment();
+
+            final CountDownLatch latch = new CountDownLatch(1);
+            o.subscribe(new Subscriber<CreditCardAuthorizationResult>() {
+                @Override
+                public void onCompleted() {
+                    latch.countDown();
+                    context.shutdown();
+                }
+
+                @Override
+                public void onError(Throwable e) {
+                    e.printStackTrace();
+                    latch.countDown();
+                    context.shutdown();
+                }
+
+                @Override
+                public void onNext(CreditCardAuthorizationResult creditCardAuthorizationResult) {
+                    if (shouldLog) {
+                        System.out.println("Request => " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
+                    }
+                }
+            });
+
             try {
-                Thread.sleep(400);
+                latch.await(5000, TimeUnit.MILLISECONDS);
             } catch (InterruptedException ex) {
-                ex.printStackTrace();
+                System.out.println("INTERRUPTED!");
             }
         }
     }
 
     private final static Random r = new Random();
-
-    private Observable<CreditCardAuthorizationResult> runSimulatedRequestOnCallerThread(final boolean shouldLog) {
-        final HystrixRequestContext context = HystrixRequestContext.initializeContext();
-        //System.out.println("Map at start : " + map.get() + " : " + Thread.currentThread().getName());
-
-        return observeSimulatedUserRequestForOrderConfirmationAndCreditCardPayment()
-                .doOnUnsubscribe(new Action0() {
-                    @Override
-                    public void call() {
-                        if (shouldLog) {
-                            System.out.println("Request => " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
-                        }
-                        context.shutdown();
-                    }
-                })
-                .doOnError(new Action1<Throwable>() {
-                    @Override
-                    public void call(Throwable throwable) {
-                        throwable.printStackTrace();
-                    }
-                });
-    }
 
     private class Pair<A, B> {
         private final A a;
@@ -110,30 +140,36 @@ public class HystrixCommandAsyncDemo {
 
     public Observable<CreditCardAuthorizationResult> observeSimulatedUserRequestForOrderConfirmationAndCreditCardPayment() {
         /* fetch user object with http cookies */
-        Observable<UserAccount> user = new GetUserAccountCommand(new HttpCookie("mockKey", "mockValueFromHttpRequest")).observe();
+        try {
+            Observable<UserAccount> user = new GetUserAccountCommand(new HttpCookie("mockKey", "mockValueFromHttpRequest")).observe();
+            /* fetch the payment information (asynchronously) for the user so the credit card payment can proceed */
+            Observable<PaymentInformation> paymentInformation = user.flatMap(new Func1<UserAccount, Observable<PaymentInformation>>() {
+                @Override
+                public Observable<PaymentInformation> call(UserAccount userAccount) {
+                    return new GetPaymentInformationCommand(userAccount).observe();
+                }
+            });
 
-        /* fetch the payment information (asynchronously) for the user so the credit card payment can proceed */
-        Observable<PaymentInformation> paymentInformation = user.flatMap(new Func1<UserAccount, Observable<PaymentInformation>>() {
-            @Override
-            public Observable<PaymentInformation> call(UserAccount userAccount) {
-                return new GetPaymentInformationCommand(userAccount).observe();
-            }
-        });
-        /* fetch the order we're processing for the user */
-        int orderIdFromRequestArgument = 13579;
-        final Observable<Order> previouslySavedOrder = new GetOrderCommand(orderIdFromRequestArgument).observe();
+            /* fetch the order we're processing for the user */
+            int orderIdFromRequestArgument = 13579;
+            final Observable<Order> previouslySavedOrder = new GetOrderCommand(orderIdFromRequestArgument).observe();
 
-        return Observable.zip(paymentInformation, previouslySavedOrder, new Func2<PaymentInformation, Order, Pair<PaymentInformation, Order>>() {
-            @Override
-            public Pair<PaymentInformation, Order> call(PaymentInformation paymentInformation, Order order) {
-                return new Pair<PaymentInformation, Order>(paymentInformation, order);
-            }
-        }).flatMap(new Func1<Pair<PaymentInformation, Order>, Observable<CreditCardAuthorizationResult>>() {
-            @Override
-            public Observable<CreditCardAuthorizationResult> call(Pair<PaymentInformation, Order> pair) {
-                return new CreditCardCommand(pair.b(), pair.a(), new BigDecimal(123.45)).observe();
-            }
-        });
+            return Observable.zip(paymentInformation, previouslySavedOrder, new Func2<PaymentInformation, Order, Pair<PaymentInformation, Order>>() {
+                @Override
+                public Pair<PaymentInformation, Order> call(PaymentInformation paymentInformation, Order order) {
+                    return new Pair<PaymentInformation, Order>(paymentInformation, order);
+                }
+            }).flatMap(new Func1<Pair<PaymentInformation, Order>, Observable<CreditCardAuthorizationResult>>() {
+                @Override
+                public Observable<CreditCardAuthorizationResult> call(Pair<PaymentInformation, Order> pair) {
+                    return new CreditCardCommand(pair.b(), pair.a(), new BigDecimal(123.45)).observe();
+                }
+            });
+        } catch (IllegalArgumentException ex) {
+            return Observable.error(ex);
+        }
+
+
     }
 
     public void startMetricsMonitor(final boolean shouldLog) {
