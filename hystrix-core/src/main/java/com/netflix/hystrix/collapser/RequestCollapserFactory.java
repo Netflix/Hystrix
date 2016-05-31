@@ -20,7 +20,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.netflix.hystrix.HystrixCollapser;
 import com.netflix.hystrix.HystrixCollapserKey;
 import com.netflix.hystrix.HystrixCollapserProperties;
 import com.netflix.hystrix.strategy.HystrixPlugins;
@@ -28,7 +27,6 @@ import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestVariableHolder;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestVariableLifecycle;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesFactory;
-import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 import com.netflix.hystrix.util.HystrixTimer;
 
 /**
@@ -217,69 +215,5 @@ public class RequestCollapserFactory<BatchReturnType, ResponseType, RequestArgum
                 }
             });
         }
-
-    }
-
-    /**
-     * Fluent interface for arguments to the {@link HystrixCollapser} constructor.
-     * <p>
-     * The required arguments are set via the 'with' factory method and optional arguments via the 'and' chained methods.
-     * <p>
-     * Example:
-     * <pre> {@code
-     *  Setter.withCollapserKey(HystrixCollapserKey.Factory.asKey("CollapserName"))
-                .andScope(Scope.REQUEST);
-     * } </pre>
-     * 
-     * @NotThreadSafe
-     */
-    public static class Setter {
-        private final HystrixCollapserKey collapserKey;
-        private Scope scope = Scopes.REQUEST; // default if nothing is set
-        private HystrixCollapserProperties.Setter propertiesSetter;
-
-        private Setter(HystrixCollapserKey collapserKey) {
-            this.collapserKey = collapserKey;
-        }
-
-        /**
-         * Setter factory method containing required values.
-         * <p>
-         * All optional arguments can be set via the chained methods.
-         * 
-         * @param collapserKey
-         *            {@link HystrixCollapserKey} that identifies this collapser and provides the key used for retrieving properties, request caches, publishing metrics etc.
-         * @return Setter for fluent interface via method chaining
-         */
-        public static Setter withCollapserKey(HystrixCollapserKey collapserKey) {
-            return new Setter(collapserKey);
-        }
-
-        /**
-         * {@link Scope} defining what scope the collapsing should occur within
-         * 
-         * @param scope collapser scope
-         * 
-         * @return Setter for fluent interface via method chaining
-         */
-        public Setter andScope(Scope scope) {
-            this.scope = scope;
-            return this;
-        }
-
-        /**
-         * @param propertiesSetter
-         *            {@link HystrixCollapserProperties.Setter} that allows instance specific property overrides (which can then be overridden by dynamic properties, see
-         *            {@link HystrixPropertiesStrategy} for
-         *            information on order of precedence).
-         *            <p>
-         *            Will use defaults if left NULL.
-         * @return Setter for fluent interface via method chaining
-         */
-        public Setter andCollapserPropertiesDefaults(HystrixCollapserProperties.Setter propertiesSetter) {
-            this.propertiesSetter = propertiesSetter;
-            return this;
-        }
-
     }
 }
