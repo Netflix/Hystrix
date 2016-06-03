@@ -75,7 +75,7 @@ public class HystrixRequestEventsJsonStream {
         json.writeArrayFieldStart("events");
         ExecutionResult.EventCounts eventCounts = executionSignature.getEventCounts();
         for (HystrixEventType eventType: HystrixEventType.values()) {
-            if (!eventType.equals(HystrixEventType.COLLAPSED)) {
+            if (eventType != HystrixEventType.COLLAPSED) {
                 if (eventCounts.contains(eventType)) {
                     int eventCount = eventCounts.getCount(eventType);
                     if (eventCount > 1) {

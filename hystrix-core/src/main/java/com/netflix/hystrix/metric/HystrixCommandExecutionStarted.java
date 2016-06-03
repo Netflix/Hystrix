@@ -41,7 +41,7 @@ public class HystrixCommandExecutionStarted extends HystrixCommandEvent {
 
     @Override
     public boolean isExecutedInThread() {
-        return isolationStrategy.equals(HystrixCommandProperties.ExecutionIsolationStrategy.THREAD);
+        return isolationStrategy == HystrixCommandProperties.ExecutionIsolationStrategy.THREAD;
     }
 
     @Override
