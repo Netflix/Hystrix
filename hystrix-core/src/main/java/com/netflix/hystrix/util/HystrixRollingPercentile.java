@@ -453,7 +453,7 @@ public class HystrixRollingPercentile {
      * <p>
      * benjchristensen => This implementation was chosen based on performance testing I did and documented at: http://benjchristensen.com/2011/10/08/atomiccirculararray/
      */
-    /* package for testing */ class BucketCircularArray implements Iterable<Bucket> {
+    /* package for testing */ static class BucketCircularArray implements Iterable<Bucket> {
         private final AtomicReference<ListState> state;
         private final int dataLength; // we don't resize, we always stay the same, so remember this
         private final int numBuckets;

@@ -509,7 +509,7 @@ public class HystrixMetricsPoller {
         }
     }
 
-    private class MetricsPollerThreadFactory implements ThreadFactory {
+    private static class MetricsPollerThreadFactory implements ThreadFactory {
         private static final String MetricsThreadName = "HystrixMetricPoller";
 
         private final ThreadFactory defaultFactory = Executors.defaultThreadFactory();

@@ -107,7 +107,7 @@ public class HystrixTimer {
         return new TimerReference(listener, f);
     }
 
-    private class TimerReference extends SoftReference<TimerListener> {
+    private static class TimerReference extends SoftReference<TimerListener> {
 
         private final ScheduledFuture<?> f;
 
