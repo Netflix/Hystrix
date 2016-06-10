@@ -21,6 +21,8 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
 import com.fasterxml.jackson.dataformat.cbor.CBORParser;
 import io.reactivesocket.Frame;
 import io.reactivesocket.Payload;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -28,6 +30,7 @@ import java.nio.ByteBuffer;
 public class SerialHystrixMetric {
     protected final static CBORFactory cborFactory = new CBORFactory();
     protected final static ObjectMapper mapper = new ObjectMapper();
+    protected final static Logger logger = LoggerFactory.getLogger(SerialHystrixMetric.class);
 
     public static Payload toPayload(byte[] byteArray) {
         return new Payload() {
@@ -53,7 +56,7 @@ public class SerialHystrixMetric {
 
             return rootNode.toString();
         } catch (IOException ioe) {
-            System.out.println("IO Exception : " + ioe);
+            logger.error("IO Exception during deserialization of ByteBuffer of Hystrix Metric : " + ioe);
             return "";
         }
     }

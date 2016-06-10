@@ -28,6 +28,8 @@ import com.netflix.hystrix.config.HystrixCommandConfiguration;
 import com.netflix.hystrix.config.HystrixConfiguration;
 import com.netflix.hystrix.config.HystrixThreadPoolConfiguration;
 import org.agrona.LangUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -37,6 +39,8 @@ import java.util.Iterator;
 import java.util.Map;
 
 public class SerialHystrixConfiguration extends SerialHystrixMetric {
+
+    private static final Logger logger = LoggerFactory.getLogger(SerialHystrixConfiguration.class);
 
     public static byte[] toBytes(HystrixConfiguration config) {
         byte[] retVal = null;
@@ -180,7 +184,7 @@ public class SerialHystrixConfiguration extends SerialHystrixMetric {
                 collapserConfigMap.put(collapserKey, collapserConfig);
             }
         } catch (IOException ioe) {
-            System.out.println("IO Exception : " + ioe);
+            logger.error("IO Exception during deserialization of HystrixConfiguration : " + ioe);
         }
         return new HystrixConfiguration(commandConfigMap, threadPoolConfigMap, collapserConfigMap);
     }

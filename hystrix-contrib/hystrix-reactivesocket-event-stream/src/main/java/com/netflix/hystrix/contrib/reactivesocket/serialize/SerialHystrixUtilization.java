@@ -24,6 +24,8 @@ import com.netflix.hystrix.metric.sample.HystrixCommandUtilization;
 import com.netflix.hystrix.metric.sample.HystrixThreadPoolUtilization;
 import com.netflix.hystrix.metric.sample.HystrixUtilization;
 import org.agrona.LangUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -33,6 +35,8 @@ import java.util.Iterator;
 import java.util.Map;
 
 public class SerialHystrixUtilization extends SerialHystrixMetric {
+
+    private final static Logger logger = LoggerFactory.getLogger(SerialHystrixUtilization.class);
 
     public static byte[] toBytes(HystrixUtilization utilization) {
         byte[] retVal = null;
@@ -103,7 +107,7 @@ public class SerialHystrixUtilization extends SerialHystrixMetric {
                 threadPoolUtilizationMap.put(threadPoolKey, threadPoolUtilization);
             }
         } catch (IOException ioe) {
-            System.out.println("IO Exception : " + ioe);
+            logger.error("IO Exception during desrialization of HystrixUtilization : " + ioe);
         }
         return new HystrixUtilization(commandUtilizationMap, threadPoolUtilizationMap);
     }
