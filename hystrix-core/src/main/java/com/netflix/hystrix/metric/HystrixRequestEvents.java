@@ -61,9 +61,8 @@ public class HystrixRequestEvents {
         Map<ExecutionSignature, List<Integer>> commandDeduper = new HashMap<ExecutionSignature, List<Integer>>();
         for (HystrixInvokableInfo<?> execution: nonCachedExecutions) {
             int cachedCount = 0;
-            String cacheKey = null;
-            if (execution.getPublicCacheKey() != null) {
-                cacheKey = execution.getPublicCacheKey();
+            String cacheKey = execution.getPublicCacheKey();
+            if (cacheKey != null) {
                 CommandAndCacheKey key = new CommandAndCacheKey(execution.getCommandKey().name(), cacheKey);
                 cachedCount = cachingDetector.get(key);
             }

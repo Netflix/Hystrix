@@ -64,15 +64,15 @@ public class GenericCommand extends AbstractHystrixCommand<Object> {
      */
     @Override
     protected Object getFallback() {
-        if (getFallbackAction() != null) {
-            final CommandAction commandAction = getFallbackAction();
+        final CommandAction commandAction = getFallbackAction();
+        if (commandAction != null) {
             try {
                 return process(new Action() {
                     @Override
                     Object execute() {
                         MetaHolder metaHolder = commandAction.getMetaHolder();
                         Object[] args = createArgsForFallback(metaHolder, getExecutionException());
-                        return commandAction.executeWithArgs(commandAction.getMetaHolder().getFallbackExecutionType(), args);
+                        return commandAction.executeWithArgs(metaHolder.getFallbackExecutionType(), args);
                     }
                 });
             } catch (Throwable e) {
