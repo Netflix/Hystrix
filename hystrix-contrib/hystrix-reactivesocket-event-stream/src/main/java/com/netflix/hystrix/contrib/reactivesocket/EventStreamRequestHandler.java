@@ -1,7 +1,23 @@
+/**
+ * Copyright 2016 Netflix, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.netflix.hystrix.contrib.reactivesocket;
 
 import io.reactivesocket.Payload;
 import io.reactivesocket.RequestHandler;
+import org.agrona.BitUtil;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,26 +34,48 @@ public class EventStreamRequestHandler extends RequestHandler {
 
     @Override
     public Publisher<Payload> handleRequestResponse(Payload payload) {
-        return NO_REQUEST_RESPONSE_HANDLER.apply(payload);
+        Observable<Payload> singleResponse = Observable.defer(() -> {
+            try {
+                int typeId = payload.getData().getInt(0);
+                EventStreamEnum eventStreamEnum = EventStreamEnum.findByTypeId(typeId);
+                EventStream eventStream = EventStream.getInstance(eventStreamEnum);
+                return eventStream.get().take(1);
+            } catch (Throwable t) {
+                logger.error(t.getMessage(), t);
+                return Observable.error(t);
+            }
+        });
+
+        return RxReactiveStreams.toPublisher(singleResponse);
     }
 
     @Override
     public Publisher<Payload> handleRequestStream(Payload payload) {
-        return NO_REQUEST_STREAM_HANDLER.apply(payload);
+        Observable<Payload> multiResponse = Observable.defer(() -> {
+            try {
+                int typeId = payload.getData().getInt(0);
+                int numRequested = payload.getData().getInt(BitUtil.SIZE_OF_INT);
+                EventStreamEnum eventStreamEnum = EventStreamEnum.findByTypeId(typeId);
+                EventStream eventStream = EventStream.getInstance(eventStreamEnum);
+                return eventStream.get().take(numRequested);
+            } catch (Throwable t) {
+                logger.error(t.getMessage(), t);
+                return Observable.error(t);
+            }
+        });
+
+        return RxReactiveStreams.toPublisher(multiResponse);
     }
 
     @Override
     public Publisher<Payload> handleSubscription(Payload payload) {
-        Observable<Payload> defer = Observable
+        Observable<Payload> infiniteResponse = Observable
             .defer(() -> {
                 try {
-                    int typeId = payload
-                        .getData()
-                        .getInt(0);
-
+                    int typeId = payload.getData().getInt(0);
                     EventStreamEnum eventStreamEnum = EventStreamEnum.findByTypeId(typeId);
-                    return eventStreamEnum
-                        .get();
+                    EventStream eventStream = EventStream.getInstance(eventStreamEnum);
+                    return eventStream.get();
                 } catch (Throwable t) {
                     logger.error(t.getMessage(), t);
                     return Observable.error(t);
@@ -45,8 +83,7 @@ public class EventStreamRequestHandler extends RequestHandler {
             })
             .onBackpressureDrop();
 
-        return RxReactiveStreams
-            .toPublisher(defer);
+        return RxReactiveStreams.toPublisher(infiniteResponse);
     }
 
     @Override

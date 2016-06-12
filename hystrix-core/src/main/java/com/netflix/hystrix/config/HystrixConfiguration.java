@@ -26,7 +26,7 @@ public class HystrixConfiguration {
     private final Map<HystrixThreadPoolKey, HystrixThreadPoolConfiguration> threadPoolConfig;
     private final Map<HystrixCollapserKey, HystrixCollapserConfiguration> collapserConfig;
 
-    private HystrixConfiguration(Map<HystrixCommandKey, HystrixCommandConfiguration> commandConfig,
+    public HystrixConfiguration(Map<HystrixCommandKey, HystrixCommandConfiguration> commandConfig,
                                  Map<HystrixThreadPoolKey, HystrixThreadPoolConfiguration> threadPoolConfig,
                                  Map<HystrixCollapserKey, HystrixCollapserConfiguration> collapserConfig) {
         this.commandConfig = commandConfig;
