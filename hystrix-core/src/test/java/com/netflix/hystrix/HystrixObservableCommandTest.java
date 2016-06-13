@@ -5582,16 +5582,22 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
         @Override
         protected Observable<Boolean> construct() {
-            try {
-                Thread.sleep(2000);
-            }
-            catch (InterruptedException e) {
-                System.out.println("Interrupted!");
-                e.printStackTrace();
-                hasBeenInterrupted = true;
-            }
+            return Observable.defer(new Func0<Observable<Boolean>>() {
+                @Override
+                public Observable<Boolean> call() {
+                    try {
+                        Thread.sleep(2000);
+                    }
+                    catch (InterruptedException e) {
+                        System.out.println("Interrupted!");
+                        e.printStackTrace();
+                        hasBeenInterrupted = true;
+                    }
 
-            return Observable.just(hasBeenInterrupted);
+                    return Observable.just(hasBeenInterrupted);
+                }
+            }).subscribeOn(Schedulers.io());
+
         }
     }
 
