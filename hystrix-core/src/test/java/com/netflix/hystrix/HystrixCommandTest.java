@@ -3882,7 +3882,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
                 new Func0<TestHystrixCommand<Integer>>() {
                     @Override
                     public TestHystrixCommand<Integer> call() {
-                        return getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.SUCCESS, 150, AbstractTestHystrixCommand.FallbackResult.UNIMPLEMENTED, 50);
+                        return getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.SUCCESS, 500, AbstractTestHystrixCommand.FallbackResult.UNIMPLEMENTED, 200);
                     }
                 },
                 new Action1<TestHystrixCommand<Integer>>() {
@@ -3915,7 +3915,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
                 new Func0<TestHystrixCommand<Integer>>() {
                     @Override
                     public TestHystrixCommand<Integer> call() {
-                        return getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.SUCCESS, 150, AbstractTestHystrixCommand.FallbackResult.SUCCESS, 50);
+                        return getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.SUCCESS, 500, AbstractTestHystrixCommand.FallbackResult.SUCCESS, 200);
                     }
                 },
                 new Action1<TestHystrixCommand<Integer>>() {
@@ -3946,7 +3946,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
                 new Func0<TestHystrixCommand<Integer>>() {
                     @Override
                     public TestHystrixCommand<Integer> call() {
-                        return getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.SUCCESS, 150, AbstractTestHystrixCommand.FallbackResult.FAILURE, 50);
+                        return getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.SUCCESS, 500, AbstractTestHystrixCommand.FallbackResult.FAILURE, 200);
                     }
                 },
                 new Action1<TestHystrixCommand<Integer>>() {
@@ -3978,7 +3978,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
                 new Func0<TestHystrixCommand<Integer>>() {
                     @Override
                     public TestHystrixCommand<Integer> call() {
-                        return getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.FAILURE, 150, AbstractTestHystrixCommand.FallbackResult.UNIMPLEMENTED, 50);
+                        return getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.FAILURE, 500, AbstractTestHystrixCommand.FallbackResult.UNIMPLEMENTED, 200);
                     }
                 },
                 new Action1<TestHystrixCommand<Integer>>() {
@@ -4011,7 +4011,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
                 new Func0<TestHystrixCommand<Integer>>() {
                     @Override
                     public TestHystrixCommand<Integer> call() {
-                        return getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.FAILURE, 150, AbstractTestHystrixCommand.FallbackResult.SUCCESS, 50);
+                        return getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.FAILURE, 500, AbstractTestHystrixCommand.FallbackResult.SUCCESS, 200);
                     }
                 },
                 new Action1<TestHystrixCommand<Integer>>() {
@@ -4041,7 +4041,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
                 new Func0<TestHystrixCommand<Integer>>() {
                     @Override
                     public TestHystrixCommand<Integer> call() {
-                        return getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.FAILURE, 150, AbstractTestHystrixCommand.FallbackResult.FAILURE, 50);
+                        return getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.FAILURE, 500, AbstractTestHystrixCommand.FallbackResult.FAILURE, 200);
                     }
                 },
                 new Action1<TestHystrixCommand<Integer>>() {
