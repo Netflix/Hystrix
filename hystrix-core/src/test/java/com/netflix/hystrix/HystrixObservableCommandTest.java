@@ -2002,31 +2002,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         assertTrue(cmd.hasBeenInterrupted());
     }
 
-    @Test
-    public void testDoNotInterruptObserveOnTimeoutIfPropertySaysNotTo() throws InterruptedException {
-        // given
-        InterruptibleCommand cmd = new InterruptibleCommand(new TestCircuitBreaker(), false);
 
-        // when
-        cmd.observe().subscribe();
-
-        // then
-        Thread.sleep(500);
-        assertFalse(cmd.hasBeenInterrupted());
-    }
-
-    @Test
-    public void testDoNotInterruptToObservableOnTimeoutIfPropertySaysNotTo() throws InterruptedException {
-        // given
-        InterruptibleCommand cmd = new InterruptibleCommand(new TestCircuitBreaker(), false);
-
-        // when
-        cmd.toObservable().subscribe();
-
-        // then
-        Thread.sleep(500);
-        assertFalse(cmd.hasBeenInterrupted());
-    }
 
     @Override
     protected void assertHooksOnSuccess(Func0<TestHystrixObservableCommand<Integer>> ctor, Action1<TestHystrixObservableCommand<Integer>> assertion) {
@@ -5553,7 +5529,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
                     s.onCompleted();
                 }
 
-            }).subscribeOn(Schedulers.computation());
+            }).subscribeOn(Schedulers.io());
         }
 
         @Override
@@ -5582,16 +5558,22 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
         @Override
         protected Observable<Boolean> construct() {
-            try {
-                Thread.sleep(2000);
-            }
-            catch (InterruptedException e) {
-                System.out.println("Interrupted!");
-                e.printStackTrace();
-                hasBeenInterrupted = true;
-            }
+            return Observable.defer(new Func0<Observable<Boolean>>() {
+                @Override
+                public Observable<Boolean> call() {
+                    try {
+                        Thread.sleep(1000);
+                    }
+                    catch (InterruptedException e) {
+                        System.out.println("Interrupted!");
+                        e.printStackTrace();
+                        hasBeenInterrupted = true;
+                    }
 
-            return Observable.just(hasBeenInterrupted);
+                    return Observable.just(hasBeenInterrupted);
+                }
+            }).subscribeOn(Schedulers.io());
+
         }
     }
 
