@@ -24,6 +24,7 @@ import org.junit.Test;
 import rx.Observable;
 import rx.Subscriber;
 import rx.Subscription;
+import rx.functions.Func2;
 import rx.schedulers.Schedulers;
 
 import java.nio.ByteBuffer;
@@ -223,57 +224,42 @@ public class EventStreamTest extends HystrixStreamTest {
 
     @Test
     public void testSharedSourceStream() throws Exception {
-        CountDownLatch latch = new CountDownLatch(2);
-        AtomicReference<Payload> p1 = new AtomicReference<>(null);
-        AtomicReference<Payload> p2 = new AtomicReference<>(null);
+        CountDownLatch latch = new CountDownLatch(1);
+        AtomicBoolean allEqual = new AtomicBoolean(false);
 
-        Subscription s1 = stream
+        Observable<Payload> o1 = stream
                 .get()
                 .take(10)
-                .observeOn(Schedulers.computation())
-                .subscribe(new Subscriber<Payload>() {
-                    @Override
-                    public void onCompleted() {
-                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : Dashboard 1 OnCompleted");
-                        latch.countDown();
-                    }
+                .observeOn(Schedulers.computation());
 
-                    @Override
-                    public void onError(Throwable e) {
-                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : Dashboard 1 OnError : " + e);
-                        latch.countDown();
-                    }
-
-                    @Override
-                    public void onNext(Payload payload) {
-                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : Dashboard 1 OnNext : " + payload.getData().remaining());
-                        p1.set(payload);
-                    }
-                });
-
-        Subscription s2 = stream
+        Observable<Payload> o2 = stream
                 .get()
                 .take(10)
-                .observeOn(Schedulers.computation())
-                .subscribe(new Subscriber<Payload>() {
-                    @Override
-                    public void onCompleted() {
-                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : Dashboard 2 OnCompleted");
-                        latch.countDown();
-                    }
+                .observeOn(Schedulers.computation());
 
-                    @Override
-                    public void onError(Throwable e) {
-                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : Dashboard 2 OnError : " + e);
-                        latch.countDown();
-                    }
+        Observable<Boolean> zipped = Observable.zip(o1, o2, Payload::equals);
+        Observable<Boolean> reduced = zipped.reduce(true, (b1, b2) -> b1 && b2);
 
-                    @Override
-                    public void onNext(Payload payload) {
-                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : Dashboard 2 OnNext : " + payload.getData().remaining());
-                        p2.set(payload);
-                    }
-                });
+        reduced.subscribe(new Subscriber<Boolean>() {
+            @Override
+            public void onCompleted() {
+                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Reduced OnCompleted");
+                latch.countDown();
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Reduced OnError : " + e);
+                e.printStackTrace();
+                latch.countDown();
+            }
+
+            @Override
+            public void onNext(Boolean b) {
+                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Reduced OnNext : " + b);
+                allEqual.set(b);
+            }
+        });
 
         for (int i = 0; i < 10; i++) {
             HystrixCommand<Integer> cmd = new SyntheticBlockingCommand();
@@ -281,8 +267,7 @@ public class EventStreamTest extends HystrixStreamTest {
         }
 
         assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
-        assertNotNull(p1.get());
-        assertEquals(p1.get(), p2.get()); //this is intentionally checking object equality (not value).
+        assertTrue(allEqual.get());
         //we should be getting the same object from both streams.  this ensures that multiple subscribers don't induce extra work
     }
 
