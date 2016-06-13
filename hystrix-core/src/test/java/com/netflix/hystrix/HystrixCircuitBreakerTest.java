@@ -359,7 +359,7 @@ public class HystrixCircuitBreakerTest {
         String key = "cmd-G";
         try {
             int sleepWindow = 20;
-            HystrixCommand<Boolean> cmd1 = new FailureCommand(key, 60, sleepWindow);
+            HystrixCommand<Boolean> cmd1 = new FailureCommand(key, 1, sleepWindow);
             HystrixCircuitBreaker cb = cmd1.circuitBreaker;
 
             // this should start as allowing requests
@@ -376,6 +376,7 @@ public class HystrixCircuitBreakerTest {
 
             // everything has failed in the test window so we should return false now
             Thread.sleep(100);
+            System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
             System.out.println("CircuitBreaker state 1 : " + cmd1.getMetrics().getHealthCounts());
             assertFalse(cb.allowRequest());
             assertTrue(cb.isOpen());
