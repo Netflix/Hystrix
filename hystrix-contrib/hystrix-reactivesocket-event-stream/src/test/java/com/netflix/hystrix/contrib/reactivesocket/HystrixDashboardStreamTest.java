@@ -228,7 +228,6 @@ public class HystrixDashboardStreamTest extends HystrixStreamTest {
                 .observeOn(Schedulers.newThread())
                 .map(n -> {
                     try {
-                        System.out.println("Sleeping on thread : " + Thread.currentThread().getName());
                         Thread.sleep(100);
                         return n;
                     } catch (InterruptedException ex) {
@@ -257,7 +256,7 @@ public class HystrixDashboardStreamTest extends HystrixStreamTest {
 
                     @Override
                     public void onNext(Boolean b) {
-                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : OnNext : " + b);
+                        //System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : OnNext : " + b);
                     }
                 });
 

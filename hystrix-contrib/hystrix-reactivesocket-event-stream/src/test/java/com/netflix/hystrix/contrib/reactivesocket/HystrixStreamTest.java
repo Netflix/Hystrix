@@ -37,7 +37,6 @@ public class HystrixStreamTest {
         @Override
         protected Integer run() throws Exception {
             int n = r.nextInt(100);
-            System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " sleeping for : " + n);
             Thread.sleep(n);
             return n;
         }
