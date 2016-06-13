@@ -30,9 +30,7 @@ import org.junit.Test;
 
 import com.netflix.hystrix.HystrixCircuitBreaker.HystrixCircuitBreakerImpl;
 import com.netflix.hystrix.strategy.HystrixPlugins;
-import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifierDefault;
 import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
-import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 import rx.Observable;
 
 /**
@@ -211,9 +209,9 @@ public class HystrixCircuitBreakerTest {
             cmd3.execute();
             HystrixCommand<Boolean> cmd4 = new SuccessCommand(key, 1);
             cmd4.execute();
-            HystrixCommand<Boolean> cmd5 = new FailureCommand(key, 1);
+            HystrixCommand<Boolean> cmd5 = new SuccessCommand(key, 1);
             cmd5.execute();
-            HystrixCommand<Boolean> cmd6 = new SuccessCommand(key, 1);
+            HystrixCommand<Boolean> cmd6 = new FailureCommand(key, 1);
             cmd6.execute();
             HystrixCommand<Boolean> cmd7 = new SuccessCommand(key, 1);
             cmd7.execute();
