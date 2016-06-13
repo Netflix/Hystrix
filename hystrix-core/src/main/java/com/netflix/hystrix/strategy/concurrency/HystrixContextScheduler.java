@@ -195,7 +195,6 @@ public class HystrixContextScheduler extends Scheduler {
 
         @Override
         public void unsubscribe() {
-            System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Unsubscribe happening, value of thunk : " + shouldInterruptThread.call());
             if (shouldInterruptThread.call()) {
                 f.cancel(true);
             } else {
