@@ -21,9 +21,11 @@ import static org.junit.Assert.fail;
 
 import java.util.Random;
 
+import com.hystrix.junit.HystrixRequestContextRule;
 import com.netflix.hystrix.exception.HystrixBadRequestException;
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
 import com.netflix.hystrix.HystrixCircuitBreaker.HystrixCircuitBreakerImpl;
@@ -38,6 +40,9 @@ import rx.Observable;
  * built up during a test to cause others to fail
  */
 public class HystrixCircuitBreakerTest {
+
+    @Rule
+    public HystrixRequestContextRule ctx = new HystrixRequestContextRule();
 
     @Before
     public void init() {
@@ -215,8 +220,9 @@ public class HystrixCircuitBreakerTest {
             HystrixCommand<Boolean> cmd8 = new FailureCommand(key, 1);
             cmd8.execute();
 
-            // this should remain open as the failure threshold is below the percentage limit
+            // this should remain closed as the failure threshold is below the percentage limit
             Thread.sleep(100);
+            System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
             System.out.println("Current CircuitBreaker Status : " + cmd1.getMetrics().getHealthCounts());
             assertTrue(cb.allowRequest());
             assertFalse(cb.isOpen());
@@ -664,7 +670,7 @@ public class HystrixCircuitBreakerTest {
         public Command(String commandKey, boolean shouldFail, boolean shouldFailWithBadRequest, long latencyToAdd, int sleepWindow, int requestVolumeThreshold) {
             super(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("Command")).andCommandKey(HystrixCommandKey.Factory.asKey(commandKey)).
                     andCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().
-                            withExecutionTimeoutInMilliseconds(100).
+                            withExecutionTimeoutInMilliseconds(500).
                             withCircuitBreakerRequestVolumeThreshold(requestVolumeThreshold).
                             withCircuitBreakerSleepWindowInMilliseconds(sleepWindow)));
             this.shouldFail = shouldFail;
