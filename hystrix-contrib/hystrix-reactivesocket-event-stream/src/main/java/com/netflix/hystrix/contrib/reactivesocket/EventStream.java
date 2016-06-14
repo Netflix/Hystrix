@@ -22,6 +22,7 @@ import com.netflix.hystrix.contrib.reactivesocket.serialize.SerialHystrixMetric;
 import com.netflix.hystrix.contrib.reactivesocket.serialize.SerialHystrixRequestEvents;
 import com.netflix.hystrix.contrib.reactivesocket.serialize.SerialHystrixUtilization;
 import com.netflix.hystrix.metric.HystrixRequestEventsStream;
+import com.netflix.hystrix.metric.consumer.HystrixDashboardStream;
 import com.netflix.hystrix.metric.sample.HystrixUtilizationStream;
 import io.reactivesocket.Payload;
 import rx.Observable;

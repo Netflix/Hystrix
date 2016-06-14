@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.hystrix.contrib.reactivesocket;
+package com.netflix.hystrix.metric.consumer;
 
 import com.netflix.hystrix.HystrixCollapserMetrics;
 import com.netflix.hystrix.HystrixCommandMetrics;
 import com.netflix.hystrix.HystrixThreadPoolMetrics;
 import rx.Observable;
+import rx.functions.Action0;
+import rx.functions.Func1;
 
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
@@ -32,13 +34,28 @@ public class HystrixDashboardStream {
     private HystrixDashboardStream(int delayInMs) {
         this.delayInMs = delayInMs;
         this.singleSource = Observable.interval(delayInMs, TimeUnit.MILLISECONDS)
-                .map(timestamp -> new DashboardData(
-                        HystrixCommandMetrics.getInstances(),
-                        HystrixThreadPoolMetrics.getInstances(),
-                        HystrixCollapserMetrics.getInstances()
-                ))
-                .doOnSubscribe(() -> isSourceCurrentlySubscribed.set(true))
-                .doOnUnsubscribe(() -> isSourceCurrentlySubscribed.set(false))
+                .map(new Func1<Long, DashboardData>() {
+                    @Override
+                    public DashboardData call(Long timestamp) {
+                        return new DashboardData(
+                                HystrixCommandMetrics.getInstances(),
+                                HystrixThreadPoolMetrics.getInstances(),
+                                HystrixCollapserMetrics.getInstances()
+                        );
+                    }
+                })
+                .doOnSubscribe(new Action0() {
+                    @Override
+                    public void call() {
+                        isSourceCurrentlySubscribed.set(true);
+                    }
+                })
+                .doOnUnsubscribe(new Action0() {
+                    @Override
+                    public void call() {
+                        isSourceCurrentlySubscribed.set(false);
+                    }
+                })
                 .share()
                 .onBackpressureDrop();
     }
