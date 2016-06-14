@@ -29,10 +29,11 @@ public final class EnvUtils {
 
     public static WeavingMode getWeavingMode() {
         String wavingModeParam = System.getProperty("weavingMode", WeavingMode.RUNTIME.name()).toUpperCase();
-        WeavingMode weavingMode = WeavingMode.valueOf(wavingModeParam);
-        if (weavingMode == null)
-            throw new IllegalArgumentException("wrong 'weavingMode' property, supported: " + Arrays.toString(WeavingMode.values()) + ", actual = " + wavingModeParam);
-        return weavingMode;
+        try {
+            return WeavingMode.valueOf(wavingModeParam);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("wrong 'weavingMode' property, supported: " + Arrays.toString(WeavingMode.values()) + ", actual = " + wavingModeParam, e);
+        }
     }
 
     public static boolean isCompileWeaving() {
