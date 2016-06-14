@@ -4018,6 +4018,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
                     @Override
                     public void call(TestHystrixCommand<Integer> command) {
                         TestableExecutionHook hook = command.getBuilder().executionHook;
+                        System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
                         assertTrue(hook.commandEmissionsMatch(1, 0, 1));
                         assertTrue(hook.executionEventsMatch(0, 0, 0));
                         assertTrue(hook.fallbackEventsMatch(1, 0, 1));
