@@ -25,7 +25,7 @@ import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.HystrixThreadPoolKey;
 import com.netflix.hystrix.HystrixThreadPoolMetrics;
-import com.netflix.hystrix.contrib.reactivesocket.HystrixDashboardStream;
+import com.netflix.hystrix.metric.consumer.HystrixDashboardStream;
 import org.agrona.LangUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

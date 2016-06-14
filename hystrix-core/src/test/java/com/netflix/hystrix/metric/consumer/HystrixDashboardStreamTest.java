@@ -13,17 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.hystrix.contrib.reactivesocket;
+package com.netflix.hystrix.metric.consumer;
 
+import com.hystrix.junit.HystrixRequestContextRule;
 import com.netflix.hystrix.HystrixCommand;
+import com.netflix.hystrix.HystrixCommandGroupKey;
 import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixCommandMetrics;
+import com.netflix.hystrix.HystrixEventType;
+import com.netflix.hystrix.metric.CommandStreamTest;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import rx.Observable;
 import rx.Subscriber;
 import rx.Subscription;
-import rx.functions.Actions;
+import rx.functions.Action0;
+import rx.functions.Func1;
+import rx.functions.Func2;
 import rx.schedulers.Schedulers;
 
 import java.util.concurrent.CountDownLatch;
@@ -34,9 +41,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class HystrixDashboardStreamTest extends HystrixStreamTest {
+public class HystrixDashboardStreamTest extends CommandStreamTest {
+
+    @Rule
+    public HystrixRequestContextRule ctx = new HystrixRequestContextRule();
 
     HystrixDashboardStream stream;
+    private final static HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("Dashboard");
+    private final static HystrixCommandKey commandKey = HystrixCommandKey.Factory.asKey("DashboardCommand");
 
     @Before
     public void init() {
@@ -46,26 +58,37 @@ public class HystrixDashboardStreamTest extends HystrixStreamTest {
     @Test
     public void testStreamHasData() throws Exception {
         final AtomicBoolean commandShowsUp = new AtomicBoolean(false);
-        CountDownLatch latch = new CountDownLatch(1);
+        final CountDownLatch latch = new CountDownLatch(1);
         final int NUM = 10;
 
         for (int i = 0; i < 2; i++) {
-            HystrixCommand<Integer> cmd = new SyntheticBlockingCommand();
+            HystrixCommand<Integer> cmd = Command.from(groupKey, commandKey, HystrixEventType.SUCCESS, 50);
             cmd.observe();
         }
 
-        stream.observe().take(NUM).subscribe(dashboardData -> {
-                    System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : Received data with : " + dashboardData.commandMetrics.size() + " commands");
-                    for (HystrixCommandMetrics metrics: dashboardData.commandMetrics) {
-                        if (metrics.getCommandKey().name().equals("SyntheticBlockingCommand")) {
-                            commandShowsUp.set(true);
+        stream.observe().take(NUM).subscribe(
+                new Subscriber<HystrixDashboardStream.DashboardData>() {
+                    @Override
+                    public void onCompleted() {
+                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " OnCompleted");
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " OnError : " + e);
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void onNext(HystrixDashboardStream.DashboardData dashboardData) {
+                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : Received data with : " + dashboardData.commandMetrics.size() + " commands");
+                        for (HystrixCommandMetrics metrics : dashboardData.commandMetrics) {
+                            if (metrics.getCommandKey().equals(commandKey)) {
+                                commandShowsUp.set(true);
+                            }
                         }
                     }
-                },
-                Actions.empty(),
-                () -> {
-                    System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " OnCompleted");
-                    latch.countDown();
                 });
 
         assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
@@ -74,15 +97,20 @@ public class HystrixDashboardStreamTest extends HystrixStreamTest {
 
     @Test
     public void testTwoSubscribersOneUnsubscribes() throws Exception {
-        CountDownLatch latch1 = new CountDownLatch(1);
-        CountDownLatch latch2 = new CountDownLatch(1);
-        AtomicInteger payloads1 = new AtomicInteger(0);
-        AtomicInteger payloads2 = new AtomicInteger(0);
+        final CountDownLatch latch1 = new CountDownLatch(1);
+        final CountDownLatch latch2 = new CountDownLatch(1);
+        final AtomicInteger payloads1 = new AtomicInteger(0);
+        final AtomicInteger payloads2 = new AtomicInteger(0);
 
         Subscription s1 = stream
                 .observe()
                 .take(100)
-                .doOnUnsubscribe(latch1::countDown)
+                .doOnUnsubscribe(new Action0() {
+                    @Override
+                    public void call() {
+                        latch1.countDown();
+                    }
+                })
                 .subscribe(new Subscriber<HystrixDashboardStream.DashboardData>() {
                     @Override
                     public void onCompleted() {
@@ -106,7 +134,12 @@ public class HystrixDashboardStreamTest extends HystrixStreamTest {
         Subscription s2 = stream
                 .observe()
                 .take(100)
-                .doOnUnsubscribe(latch2::countDown)
+                .doOnUnsubscribe(new Action0() {
+                    @Override
+                    public void call() {
+                        latch2.countDown();
+                    }
+                })
                 .subscribe(new Subscriber<HystrixDashboardStream.DashboardData>() {
                     @Override
                     public void onCompleted() {
@@ -128,7 +161,7 @@ public class HystrixDashboardStreamTest extends HystrixStreamTest {
                 });
         //execute 1 command, then unsubscribe from first stream. then execute the rest
         for (int i = 0; i < 50; i++) {
-            HystrixCommand<Integer> cmd = new SyntheticBlockingCommand();
+            HystrixCommand<Integer> cmd = Command.from(groupKey, commandKey, HystrixEventType.SUCCESS, 50);
             cmd.execute();
             if (i == 1) {
                 s1.unsubscribe();
@@ -145,15 +178,20 @@ public class HystrixDashboardStreamTest extends HystrixStreamTest {
 
     @Test
     public void testTwoSubscribersBothUnsubscribe() throws Exception {
-        CountDownLatch latch1 = new CountDownLatch(1);
-        CountDownLatch latch2 = new CountDownLatch(1);
-        AtomicInteger payloads1 = new AtomicInteger(0);
-        AtomicInteger payloads2 = new AtomicInteger(0);
+        final CountDownLatch latch1 = new CountDownLatch(1);
+        final CountDownLatch latch2 = new CountDownLatch(1);
+        final AtomicInteger payloads1 = new AtomicInteger(0);
+        final AtomicInteger payloads2 = new AtomicInteger(0);
 
         Subscription s1 = stream
                 .observe()
                 .take(10)
-                .doOnUnsubscribe(latch1::countDown)
+                .doOnUnsubscribe(new Action0() {
+                    @Override
+                    public void call() {
+                        latch1.countDown();
+                    }
+                })
                 .subscribe(new Subscriber<HystrixDashboardStream.DashboardData>() {
                     @Override
                     public void onCompleted() {
@@ -177,7 +215,12 @@ public class HystrixDashboardStreamTest extends HystrixStreamTest {
         Subscription s2 = stream
                 .observe()
                 .take(10)
-                .doOnUnsubscribe(latch2::countDown)
+                .doOnUnsubscribe(new Action0() {
+                    @Override
+                    public void call() {
+                        latch2.countDown();
+                    }
+                })
                 .subscribe(new Subscriber<HystrixDashboardStream.DashboardData>() {
                     @Override
                     public void onCompleted() {
@@ -199,7 +242,7 @@ public class HystrixDashboardStreamTest extends HystrixStreamTest {
                 });
         //execute half the commands, then unsubscribe from both streams, then execute the rest
         for (int i = 0; i < 50; i++) {
-            HystrixCommand<Integer> cmd = new SyntheticBlockingCommand();
+            HystrixCommand<Integer> cmd = Command.from(groupKey, commandKey, HystrixEventType.SUCCESS, 50);
             cmd.execute();
             if (i == 25) {
                 s1.unsubscribe();
@@ -217,8 +260,8 @@ public class HystrixDashboardStreamTest extends HystrixStreamTest {
 
     @Test
     public void testTwoSubscribersOneSlowOneFast() throws Exception {
-        CountDownLatch latch = new CountDownLatch(1);
-        AtomicBoolean foundError = new AtomicBoolean(false);
+        final CountDownLatch latch = new CountDownLatch(1);
+        final AtomicBoolean foundError = new AtomicBoolean(false);
 
         Observable<HystrixDashboardStream.DashboardData> fast = stream
                 .observe()
@@ -226,16 +269,24 @@ public class HystrixDashboardStreamTest extends HystrixStreamTest {
         Observable<HystrixDashboardStream.DashboardData> slow = stream
                 .observe()
                 .observeOn(Schedulers.newThread())
-                .map(n -> {
-                    try {
-                        Thread.sleep(100);
-                        return n;
-                    } catch (InterruptedException ex) {
-                        return n;
+                .map(new Func1<HystrixDashboardStream.DashboardData, HystrixDashboardStream.DashboardData>() {
+                    @Override
+                    public HystrixDashboardStream.DashboardData call(HystrixDashboardStream.DashboardData n) {
+                        try {
+                            Thread.sleep(100);
+                            return n;
+                        } catch (InterruptedException ex) {
+                            return n;
+                        }
                     }
                 });
 
-        Observable<Boolean> checkZippedEqual = Observable.zip(fast, slow, (payload, payload2) -> payload == payload2);
+        Observable<Boolean> checkZippedEqual = Observable.zip(fast, slow, new Func2<HystrixDashboardStream.DashboardData, HystrixDashboardStream.DashboardData, Boolean>() {
+            @Override
+            public Boolean call(HystrixDashboardStream.DashboardData payload, HystrixDashboardStream.DashboardData payload2) {
+                return payload == payload2;
+            }
+        });
 
         Subscription s1 = checkZippedEqual
                 .take(10000)
@@ -261,7 +312,7 @@ public class HystrixDashboardStreamTest extends HystrixStreamTest {
                 });
 
         for (int i = 0; i < 50; i++) {
-            HystrixCommand<Integer> cmd = new SyntheticBlockingCommand();
+            HystrixCommand<Integer> cmd = Command.from(groupKey, commandKey, HystrixEventType.SUCCESS, 50);
             cmd.execute();
         }
 
