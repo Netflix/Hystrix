@@ -160,8 +160,8 @@ public class RollingThreadPoolMaxConcurrencyStreamTest extends CommandStreamTest
         stream.observe().take(10).subscribe(getSubscriber(latch));
 
         Command cmd1 = Command.from(groupKey, key, HystrixEventType.SUCCESS, 160);
-        Command cmd2 = Command.from(groupKey, key, HystrixEventType.SUCCESS, 10);
-        Command cmd3 = Command.from(groupKey, key, HystrixEventType.SUCCESS, 15);
+        Command cmd2 = Command.from(groupKey, key, HystrixEventType.SUCCESS, 50);
+        Command cmd3 = Command.from(groupKey, key, HystrixEventType.SUCCESS, 75);
 
         cmd1.observe();
         Thread.sleep(150); //bucket roll
