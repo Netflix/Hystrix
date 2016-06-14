@@ -4189,68 +4189,6 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         HystrixCircuitBreaker.Factory.reset();
     }
 
-    /**
-     * Synchronous Observable and thread isolation. Work done on [hystrix-OWNER_ONE] thread and then observed on [RxComputation]
-     */
-    @Test
-    public void testTimeoutRequestContextWithThreadIsolatedSynchronousObservable() {
-        RequestContextTestResults results = testRequestContextOnTimeout(ExecutionIsolationStrategy.THREAD, Schedulers.immediate());
-
-        assertTrue(results.isContextInitialized.get());
-        assertTrue(results.originThread.get().getName().startsWith("hystrix-OWNER_ONE")); // thread isolated on a HystrixThreadPool
-
-        assertTrue(results.isContextInitializedObserveOn.get());
-        assertTrue(results.observeOnThread.get().getName().startsWith("HystrixTimer")); // timeout schedules on HystrixTimer since the original thread was timed out
-
-        // thread isolated
-        assertTrue(results.command.isExecutedInThread());
-
-        HystrixCircuitBreaker.Factory.reset();
-    }
-
-    /**
-     * Async Observable and thread isolation. User provided thread [RxNetThread] executes Observable and then [RxComputation] observes the onNext calls.
-     *
-     * NOTE: RequestContext will NOT exist on that thread.
-     *
-     * An async Observable running on its own thread will not have access to the request context unless the user manages the context.
-     */
-    @Test
-    public void testTimeoutRequestContextWithThreadIsolatedAsynchronousObservable() {
-        RequestContextTestResults results = testRequestContextOnTimeout(ExecutionIsolationStrategy.THREAD, Schedulers.newThread());
-
-        assertFalse(results.isContextInitialized.get()); // it won't have request context as it's on a user provided thread/scheduler
-        assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
-
-        assertTrue(results.isContextInitializedObserveOn.get()); // the timeout captures the context so it exists
-        assertTrue(results.observeOnThread.get().getName().startsWith("HystrixTimer")); // timeout schedules on HystrixTimer since the original thread was timed out
-
-        // thread isolated
-        assertTrue(results.command.isExecutedInThread());
-
-        HystrixCircuitBreaker.Factory.reset();
-    }
-
-    /**
-     * Async Observable and semaphore isolation WITH functioning RequestContext
-     *
-     * Use HystrixContextScheduler to make the user provided scheduler capture context.
-     */
-    @Test
-    public void testTimeoutRequestContextWithThreadIsolatedAsynchronousObservableAndCapturedContextScheduler() {
-        RequestContextTestResults results = testRequestContextOnTimeout(ExecutionIsolationStrategy.THREAD, new HystrixContextScheduler(Schedulers.newThread()));
-
-        assertTrue(results.isContextInitialized.get()); // the user scheduler captures context
-        assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
-
-        assertTrue(results.isContextInitializedObserveOn.get()); // the user scheduler captures context
-        assertTrue(results.observeOnThread.get().getName().startsWith("HystrixTimer")); // timeout schedules on HystrixTimer since the original thread was timed out
-
-        // thread isolated
-        assertTrue(results.command.isExecutedInThread());
-
-        HystrixCircuitBreaker.Factory.reset();
-    }
 
     /* *************************************** testTimeoutWithFallbackRequestContext *********************************** */
 
