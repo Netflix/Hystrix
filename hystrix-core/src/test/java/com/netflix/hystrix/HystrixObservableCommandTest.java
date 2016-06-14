@@ -724,7 +724,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
      */
     @Test
     public void testExecutionTimeoutFallbackFailureUsingSemaphoreIsolation() {
-        TestHystrixObservableCommand<Integer> command = getCommand(ExecutionIsolationStrategy.SEMAPHORE, AbstractTestHystrixCommand.ExecutionResult.SUCCESS, 200, AbstractTestHystrixCommand.FallbackResult.FAILURE, 100);
+        TestHystrixObservableCommand<Integer> command = getCommand(ExecutionIsolationStrategy.SEMAPHORE, AbstractTestHystrixCommand.ExecutionResult.SUCCESS, 500, AbstractTestHystrixCommand.FallbackResult.FAILURE, 200);
         try {
             command.observe().toBlocking().single();
             fail("we shouldn't get here");
@@ -742,8 +742,8 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
                 fail("the exception should be HystrixRuntimeException");
             }
         }
-        // the time should be 50+ since we timeout at 50ms
-        assertTrue("Execution Time is: " + command.getExecutionTimeInMilliseconds(), command.getExecutionTimeInMilliseconds() >= 50);
+        // the time should be 200+ since we timeout at 200ms
+        assertTrue("Execution Time is: " + command.getExecutionTimeInMilliseconds(), command.getExecutionTimeInMilliseconds() >= 200);
         assertCommandExecutionEvents(command, HystrixEventType.TIMEOUT, HystrixEventType.FALLBACK_FAILURE);
         assertEquals(0, command.metrics.getCurrentConcurrentExecutionCount());
         assertSaneHystrixRequestLog(1);
