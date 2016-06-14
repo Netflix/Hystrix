@@ -3882,7 +3882,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
                 new Func0<TestHystrixCommand<Integer>>() {
                     @Override
                     public TestHystrixCommand<Integer> call() {
-                        return getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.SUCCESS, 150, AbstractTestHystrixCommand.FallbackResult.UNIMPLEMENTED, 50);
+                        return getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.SUCCESS, 500, AbstractTestHystrixCommand.FallbackResult.UNIMPLEMENTED, 200);
                     }
                 },
                 new Action1<TestHystrixCommand<Integer>>() {
@@ -3894,6 +3894,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
                         assertTrue(hook.fallbackEventsMatch(0, 0, 0));
                         assertEquals(TimeoutException.class, hook.getCommandException().getClass());
                         assertNull(hook.getFallbackException());
+                        System.out.println("RequestLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
                         assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onThreadComplete - onError - ", hook.executionSequence.toString());
                     }
                 });
@@ -3914,7 +3915,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
                 new Func0<TestHystrixCommand<Integer>>() {
                     @Override
                     public TestHystrixCommand<Integer> call() {
-                        return getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.SUCCESS, 150, AbstractTestHystrixCommand.FallbackResult.SUCCESS, 50);
+                        return getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.SUCCESS, 500, AbstractTestHystrixCommand.FallbackResult.SUCCESS, 200);
                     }
                 },
                 new Action1<TestHystrixCommand<Integer>>() {
@@ -3924,6 +3925,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
                         assertTrue(hook.commandEmissionsMatch(1, 0, 1));
                         assertTrue(hook.executionEventsMatch(0, 0, 0));
                         assertTrue(hook.fallbackEventsMatch(1, 0, 1));
+                        System.out.println("RequestLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
                         assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onThreadComplete - onFallbackStart - onFallbackEmit - !onFallbackSuccess - !onComplete - onEmit - onFallbackSuccess - onSuccess - ", hook.executionSequence.toString());
                     }
                 });
@@ -3944,7 +3946,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
                 new Func0<TestHystrixCommand<Integer>>() {
                     @Override
                     public TestHystrixCommand<Integer> call() {
-                        return getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.SUCCESS, 150, AbstractTestHystrixCommand.FallbackResult.FAILURE, 50);
+                        return getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.SUCCESS, 500, AbstractTestHystrixCommand.FallbackResult.FAILURE, 200);
                     }
                 },
                 new Action1<TestHystrixCommand<Integer>>() {
@@ -3976,7 +3978,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
                 new Func0<TestHystrixCommand<Integer>>() {
                     @Override
                     public TestHystrixCommand<Integer> call() {
-                        return getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.FAILURE, 150, AbstractTestHystrixCommand.FallbackResult.UNIMPLEMENTED, 50);
+                        return getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.FAILURE, 500, AbstractTestHystrixCommand.FallbackResult.UNIMPLEMENTED, 200);
                     }
                 },
                 new Action1<TestHystrixCommand<Integer>>() {
@@ -4009,13 +4011,14 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
                 new Func0<TestHystrixCommand<Integer>>() {
                     @Override
                     public TestHystrixCommand<Integer> call() {
-                        return getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.FAILURE, 150, AbstractTestHystrixCommand.FallbackResult.SUCCESS, 50);
+                        return getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.FAILURE, 500, AbstractTestHystrixCommand.FallbackResult.SUCCESS, 200);
                     }
                 },
                 new Action1<TestHystrixCommand<Integer>>() {
                     @Override
                     public void call(TestHystrixCommand<Integer> command) {
                         TestableExecutionHook hook = command.getBuilder().executionHook;
+                        System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
                         assertTrue(hook.commandEmissionsMatch(1, 0, 1));
                         assertTrue(hook.executionEventsMatch(0, 0, 0));
                         assertTrue(hook.fallbackEventsMatch(1, 0, 1));
@@ -4039,7 +4042,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
                 new Func0<TestHystrixCommand<Integer>>() {
                     @Override
                     public TestHystrixCommand<Integer> call() {
-                        return getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.FAILURE, 150, AbstractTestHystrixCommand.FallbackResult.FAILURE, 50);
+                        return getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.FAILURE, 500, AbstractTestHystrixCommand.FallbackResult.FAILURE, 200);
                     }
                 },
                 new Action1<TestHystrixCommand<Integer>>() {

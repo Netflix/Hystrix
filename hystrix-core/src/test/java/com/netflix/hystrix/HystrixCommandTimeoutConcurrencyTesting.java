@@ -99,7 +99,7 @@ public class HystrixCommandTimeoutConcurrencyTesting {
         @Override
         protected String run() throws Exception {
             //System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " sleeping");
-            Thread.sleep(100);
+            Thread.sleep(500);
             //System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " awake and returning");
             return "hello";
         }

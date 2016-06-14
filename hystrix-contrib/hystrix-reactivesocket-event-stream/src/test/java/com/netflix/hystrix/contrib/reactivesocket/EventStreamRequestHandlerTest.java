@@ -79,9 +79,8 @@ public class EventStreamRequestHandlerTest {
                 @Override
                 public void onNext(Payload payload) {
                     ByteBuffer data = payload.getData();
-                    String s = new String(data.array());
-
-                    System.out.println(s);
+                    //String s = new String(data.array());
+                    //System.out.println(s);
 
                     latch1.countDown();
                     latch2.countDown();
@@ -159,9 +158,8 @@ public class EventStreamRequestHandlerTest {
             @Override
             public void onNext(Payload payload) {
                 ByteBuffer data = payload.getData();
-                String s = new String(data.array());
-
-                System.out.println(System.currentTimeMillis() + " : " + i.incrementAndGet());
+                //String s = new String(data.array());
+                //System.out.println(System.currentTimeMillis() + " : " + i.incrementAndGet());
 
                 latch1.countDown();
             }

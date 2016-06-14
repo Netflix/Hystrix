@@ -21,16 +21,16 @@ import static org.junit.Assert.fail;
 
 import java.util.Random;
 
+import com.hystrix.junit.HystrixRequestContextRule;
 import com.netflix.hystrix.exception.HystrixBadRequestException;
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
 import com.netflix.hystrix.HystrixCircuitBreaker.HystrixCircuitBreakerImpl;
 import com.netflix.hystrix.strategy.HystrixPlugins;
-import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifierDefault;
 import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
-import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 import rx.Observable;
 
 /**
@@ -38,6 +38,9 @@ import rx.Observable;
  * built up during a test to cause others to fail
  */
 public class HystrixCircuitBreakerTest {
+
+    @Rule
+    public HystrixRequestContextRule ctx = new HystrixRequestContextRule();
 
     @Before
     public void init() {
@@ -206,17 +209,18 @@ public class HystrixCircuitBreakerTest {
             cmd3.execute();
             HystrixCommand<Boolean> cmd4 = new SuccessCommand(key, 1);
             cmd4.execute();
-            HystrixCommand<Boolean> cmd5 = new FailureCommand(key, 1);
+            HystrixCommand<Boolean> cmd5 = new SuccessCommand(key, 1);
             cmd5.execute();
-            HystrixCommand<Boolean> cmd6 = new SuccessCommand(key, 1);
+            HystrixCommand<Boolean> cmd6 = new FailureCommand(key, 1);
             cmd6.execute();
             HystrixCommand<Boolean> cmd7 = new SuccessCommand(key, 1);
             cmd7.execute();
             HystrixCommand<Boolean> cmd8 = new FailureCommand(key, 1);
             cmd8.execute();
 
-            // this should remain open as the failure threshold is below the percentage limit
+            // this should remain closed as the failure threshold is below the percentage limit
             Thread.sleep(100);
+            System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
             System.out.println("Current CircuitBreaker Status : " + cmd1.getMetrics().getHealthCounts());
             assertTrue(cb.allowRequest());
             assertFalse(cb.isOpen());
@@ -355,7 +359,7 @@ public class HystrixCircuitBreakerTest {
         String key = "cmd-G";
         try {
             int sleepWindow = 20;
-            HystrixCommand<Boolean> cmd1 = new FailureCommand(key, 60, sleepWindow);
+            HystrixCommand<Boolean> cmd1 = new FailureCommand(key, 1, sleepWindow);
             HystrixCircuitBreaker cb = cmd1.circuitBreaker;
 
             // this should start as allowing requests
@@ -372,6 +376,7 @@ public class HystrixCircuitBreakerTest {
 
             // everything has failed in the test window so we should return false now
             Thread.sleep(100);
+            System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
             System.out.println("CircuitBreaker state 1 : " + cmd1.getMetrics().getHealthCounts());
             assertFalse(cb.allowRequest());
             assertTrue(cb.isOpen());
@@ -664,7 +669,7 @@ public class HystrixCircuitBreakerTest {
         public Command(String commandKey, boolean shouldFail, boolean shouldFailWithBadRequest, long latencyToAdd, int sleepWindow, int requestVolumeThreshold) {
             super(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("Command")).andCommandKey(HystrixCommandKey.Factory.asKey(commandKey)).
                     andCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().
-                            withExecutionTimeoutInMilliseconds(100).
+                            withExecutionTimeoutInMilliseconds(500).
                             withCircuitBreakerRequestVolumeThreshold(requestVolumeThreshold).
                             withCircuitBreakerSleepWindowInMilliseconds(sleepWindow)));
             this.shouldFail = shouldFail;

@@ -111,7 +111,7 @@ public class RollingCollapserBatchSizeDistributionStreamTest extends CommandStre
         Collapser.from(key, 3).observe();
 
         try {
-            Thread.sleep(200);
+            Thread.sleep(250);
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
@@ -119,7 +119,7 @@ public class RollingCollapserBatchSizeDistributionStreamTest extends CommandStre
         Collapser.from(key, 4).observe();
 
         try {
-            Thread.sleep(200);
+            Thread.sleep(250);
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }
@@ -131,7 +131,7 @@ public class RollingCollapserBatchSizeDistributionStreamTest extends CommandStre
         Collapser.from(key, 9).observe();
 
         try {
-            Thread.sleep(200);
+            Thread.sleep(250);
         } catch (InterruptedException ex) {
             fail("Interrupted ex");
         }

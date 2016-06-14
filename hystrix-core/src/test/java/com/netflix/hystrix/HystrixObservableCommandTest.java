@@ -724,7 +724,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
      */
     @Test
     public void testExecutionTimeoutFallbackFailureUsingSemaphoreIsolation() {
-        TestHystrixObservableCommand<Integer> command = getCommand(ExecutionIsolationStrategy.SEMAPHORE, AbstractTestHystrixCommand.ExecutionResult.SUCCESS, 200, AbstractTestHystrixCommand.FallbackResult.FAILURE, 100);
+        TestHystrixObservableCommand<Integer> command = getCommand(ExecutionIsolationStrategy.SEMAPHORE, AbstractTestHystrixCommand.ExecutionResult.SUCCESS, 500, AbstractTestHystrixCommand.FallbackResult.FAILURE, 200);
         try {
             command.observe().toBlocking().single();
             fail("we shouldn't get here");
@@ -742,8 +742,8 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
                 fail("the exception should be HystrixRuntimeException");
             }
         }
-        // the time should be 50+ since we timeout at 50ms
-        assertTrue("Execution Time is: " + command.getExecutionTimeInMilliseconds(), command.getExecutionTimeInMilliseconds() >= 50);
+        // the time should be 200+ since we timeout at 200ms
+        assertTrue("Execution Time is: " + command.getExecutionTimeInMilliseconds(), command.getExecutionTimeInMilliseconds() >= 200);
         assertCommandExecutionEvents(command, HystrixEventType.TIMEOUT, HystrixEventType.FALLBACK_FAILURE);
         assertEquals(0, command.metrics.getCurrentConcurrentExecutionCount());
         assertSaneHystrixRequestLog(1);
@@ -2002,31 +2002,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         assertTrue(cmd.hasBeenInterrupted());
     }
 
-    @Test
-    public void testDoNotInterruptObserveOnTimeoutIfPropertySaysNotTo() throws InterruptedException {
-        // given
-        InterruptibleCommand cmd = new InterruptibleCommand(new TestCircuitBreaker(), false);
 
-        // when
-        cmd.observe().subscribe();
-
-        // then
-        Thread.sleep(500);
-        assertFalse(cmd.hasBeenInterrupted());
-    }
-
-    @Test
-    public void testDoNotInterruptToObservableOnTimeoutIfPropertySaysNotTo() throws InterruptedException {
-        // given
-        InterruptibleCommand cmd = new InterruptibleCommand(new TestCircuitBreaker(), false);
-
-        // when
-        cmd.toObservable().subscribe();
-
-        // then
-        Thread.sleep(500);
-        assertFalse(cmd.hasBeenInterrupted());
-    }
 
     @Override
     protected void assertHooksOnSuccess(Func0<TestHystrixObservableCommand<Integer>> ctor, Action1<TestHystrixObservableCommand<Integer>> assertion) {
@@ -4213,68 +4189,6 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         HystrixCircuitBreaker.Factory.reset();
     }
 
-    /**
-     * Synchronous Observable and thread isolation. Work done on [hystrix-OWNER_ONE] thread and then observed on [RxComputation]
-     */
-    @Test
-    public void testTimeoutRequestContextWithThreadIsolatedSynchronousObservable() {
-        RequestContextTestResults results = testRequestContextOnTimeout(ExecutionIsolationStrategy.THREAD, Schedulers.immediate());
-
-        assertTrue(results.isContextInitialized.get());
-        assertTrue(results.originThread.get().getName().startsWith("hystrix-OWNER_ONE")); // thread isolated on a HystrixThreadPool
-
-        assertTrue(results.isContextInitializedObserveOn.get());
-        assertTrue(results.observeOnThread.get().getName().startsWith("HystrixTimer")); // timeout schedules on HystrixTimer since the original thread was timed out
-
-        // thread isolated
-        assertTrue(results.command.isExecutedInThread());
-
-        HystrixCircuitBreaker.Factory.reset();
-    }
-
-    /**
-     * Async Observable and thread isolation. User provided thread [RxNetThread] executes Observable and then [RxComputation] observes the onNext calls.
-     *
-     * NOTE: RequestContext will NOT exist on that thread.
-     *
-     * An async Observable running on its own thread will not have access to the request context unless the user manages the context.
-     */
-    @Test
-    public void testTimeoutRequestContextWithThreadIsolatedAsynchronousObservable() {
-        RequestContextTestResults results = testRequestContextOnTimeout(ExecutionIsolationStrategy.THREAD, Schedulers.newThread());
-
-        assertFalse(results.isContextInitialized.get()); // it won't have request context as it's on a user provided thread/scheduler
-        assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
-
-        assertTrue(results.isContextInitializedObserveOn.get()); // the timeout captures the context so it exists
-        assertTrue(results.observeOnThread.get().getName().startsWith("HystrixTimer")); // timeout schedules on HystrixTimer since the original thread was timed out
-
-        // thread isolated
-        assertTrue(results.command.isExecutedInThread());
-
-        HystrixCircuitBreaker.Factory.reset();
-    }
-
-    /**
-     * Async Observable and semaphore isolation WITH functioning RequestContext
-     *
-     * Use HystrixContextScheduler to make the user provided scheduler capture context.
-     */
-    @Test
-    public void testTimeoutRequestContextWithThreadIsolatedAsynchronousObservableAndCapturedContextScheduler() {
-        RequestContextTestResults results = testRequestContextOnTimeout(ExecutionIsolationStrategy.THREAD, new HystrixContextScheduler(Schedulers.newThread()));
-
-        assertTrue(results.isContextInitialized.get()); // the user scheduler captures context
-        assertTrue(results.originThread.get().getName().startsWith("RxNewThread")); // the user provided thread/scheduler
-
-        assertTrue(results.isContextInitializedObserveOn.get()); // the user scheduler captures context
-        assertTrue(results.observeOnThread.get().getName().startsWith("HystrixTimer")); // timeout schedules on HystrixTimer since the original thread was timed out
-
-        // thread isolated
-        assertTrue(results.command.isExecutedInThread());
-
-        HystrixCircuitBreaker.Factory.reset();
-    }
 
     /* *************************************** testTimeoutWithFallbackRequestContext *********************************** */
 
@@ -5553,7 +5467,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
                     s.onCompleted();
                 }
 
-            }).subscribeOn(Schedulers.computation());
+            }).subscribeOn(Schedulers.io());
         }
 
         @Override
@@ -5582,16 +5496,22 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
         @Override
         protected Observable<Boolean> construct() {
-            try {
-                Thread.sleep(2000);
-            }
-            catch (InterruptedException e) {
-                System.out.println("Interrupted!");
-                e.printStackTrace();
-                hasBeenInterrupted = true;
-            }
+            return Observable.defer(new Func0<Observable<Boolean>>() {
+                @Override
+                public Observable<Boolean> call() {
+                    try {
+                        Thread.sleep(1000);
+                    }
+                    catch (InterruptedException e) {
+                        System.out.println("Interrupted!");
+                        e.printStackTrace();
+                        hasBeenInterrupted = true;
+                    }
 
-            return Observable.just(hasBeenInterrupted);
+                    return Observable.just(hasBeenInterrupted);
+                }
+            }).subscribeOn(Schedulers.io());
+
         }
     }
 
