@@ -77,11 +77,11 @@ public class RollingThreadPoolEventCounterStreamTest extends CommandStreamTest {
         HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("ThreadPool-A");
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("ThreadPool-A");
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("RollingCounter-A");
-        stream = RollingThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100);
+        stream = RollingThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 500);
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
-        stream.observe().take(10).subscribe(getSubscriber(latch));
+        stream.observe().take(5).subscribe(getSubscriber(latch));
 
         //no writes
 
@@ -99,11 +99,11 @@ public class RollingThreadPoolEventCounterStreamTest extends CommandStreamTest {
         HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("ThreadPool-B");
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("ThreadPool-B");
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("RollingCounter-B");
-        stream = RollingThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100);
+        stream = RollingThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 500);
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
-        stream.observe().take(10).subscribe(getSubscriber(latch));
+        stream.observe().take(5).subscribe(getSubscriber(latch));
 
         CommandStreamTest.Command cmd = CommandStreamTest.Command.from(groupKey, key, HystrixEventType.SUCCESS, 20);
 
@@ -124,11 +124,11 @@ public class RollingThreadPoolEventCounterStreamTest extends CommandStreamTest {
         HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("ThreadPool-C");
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("ThreadPool-C");
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("RollingCounter-C");
-        stream = RollingThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100);
+        stream = RollingThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 500);
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
-        stream.observe().take(10).subscribe(getSubscriber(latch));
+        stream.observe().take(5).subscribe(getSubscriber(latch));
 
         CommandStreamTest.Command cmd = CommandStreamTest.Command.from(groupKey, key, HystrixEventType.FAILURE, 20);
 
@@ -149,11 +149,11 @@ public class RollingThreadPoolEventCounterStreamTest extends CommandStreamTest {
         HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("ThreadPool-D");
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("ThreadPool-D");
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("RollingCounter-D");
-        stream = RollingThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100);
+        stream = RollingThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 500);
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
-        stream.observe().take(10).subscribe(getSubscriber(latch));
+        stream.observe().take(5).subscribe(getSubscriber(latch));
 
         CommandStreamTest.Command cmd = CommandStreamTest.Command.from(groupKey, key, HystrixEventType.TIMEOUT);
 
@@ -174,11 +174,11 @@ public class RollingThreadPoolEventCounterStreamTest extends CommandStreamTest {
         HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("ThreadPool-E");
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("ThreadPool-E");
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("RollingCounter-E");
-        stream = RollingThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100);
+        stream = RollingThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 500);
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
-        stream.observe().take(10).subscribe(getSubscriber(latch));
+        stream.observe().take(5).subscribe(getSubscriber(latch));
 
         CommandStreamTest.Command cmd = CommandStreamTest.Command.from(groupKey, key, HystrixEventType.BAD_REQUEST);
 
@@ -199,11 +199,11 @@ public class RollingThreadPoolEventCounterStreamTest extends CommandStreamTest {
         HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("ThreadPool-F");
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("ThreadPool-F");
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("RollingCounter-F");
-        stream = RollingThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100);
+        stream = RollingThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 500);
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
-        stream.observe().take(10).subscribe(getSubscriber(latch));
+        stream.observe().take(5).subscribe(getSubscriber(latch));
 
         CommandStreamTest.Command cmd1 = CommandStreamTest.Command.from(groupKey, key, HystrixEventType.SUCCESS, 20);
         CommandStreamTest.Command cmd2 = CommandStreamTest.Command.from(groupKey, key, HystrixEventType.RESPONSE_FROM_CACHE);
@@ -232,11 +232,11 @@ public class RollingThreadPoolEventCounterStreamTest extends CommandStreamTest {
         HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("ThreadPool-G");
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("ThreadPool-G");
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("RollingCounter-G");
-        stream = RollingThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100);
+        stream = RollingThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 500);
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
-        stream.observe().take(10).subscribe(getSubscriber(latch));
+        stream.observe().take(5).subscribe(getSubscriber(latch));
 
         //3 failures in a row will trip circuit.  let bucket roll once then submit 2 requests.
         //should see 3 FAILUREs and 2 SHORT_CIRCUITs and each should see a FALLBACK_SUCCESS
@@ -282,11 +282,11 @@ public class RollingThreadPoolEventCounterStreamTest extends CommandStreamTest {
         HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("ThreadPool-H");
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("ThreadPool-H");
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("RollingCounter-H");
-        stream = RollingThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100);
+        stream = RollingThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 500);
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
-        stream.observe().take(10).subscribe(getSubscriber(latch));
+        stream.observe().take(5).subscribe(getSubscriber(latch));
 
         //10 commands will saturate semaphore when called from different threads.
         //submit 2 more requests and they should be SEMAPHORE_REJECTED
@@ -295,7 +295,7 @@ public class RollingThreadPoolEventCounterStreamTest extends CommandStreamTest {
         List<Command> saturators = new ArrayList<Command>();
 
         for (int i = 0; i < 10; i++) {
-            saturators.add(CommandStreamTest.Command.from(groupKey, key, HystrixEventType.SUCCESS, 200, HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE));
+            saturators.add(CommandStreamTest.Command.from(groupKey, key, HystrixEventType.SUCCESS, 500, HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE));
         }
 
         CommandStreamTest.Command rejected1 = CommandStreamTest.Command.from(groupKey, key, HystrixEventType.SUCCESS, 0, HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE);
@@ -340,11 +340,11 @@ public class RollingThreadPoolEventCounterStreamTest extends CommandStreamTest {
         HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("ThreadPool-I");
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("ThreadPool-I");
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("RollingCounter-I");
-        stream = RollingThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100);
+        stream = RollingThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 500);
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
-        stream.observe().take(10).subscribe(getSubscriber(latch));
+        stream.observe().take(5).subscribe(getSubscriber(latch));
 
         //10 commands will saturate threadpools when called concurrently.
         //submit 2 more requests and they should be THREADPOOL_REJECTED
@@ -393,11 +393,11 @@ public class RollingThreadPoolEventCounterStreamTest extends CommandStreamTest {
         HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("ThreadPool-J");
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("ThreadPool-J");
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("RollingCounter-J");
-        stream = RollingThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100);
+        stream = RollingThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 500);
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
-        stream.observe().take(10).subscribe(getSubscriber(latch));
+        stream.observe().take(5).subscribe(getSubscriber(latch));
 
         CommandStreamTest.Command cmd = CommandStreamTest.Command.from(groupKey, key, HystrixEventType.FAILURE, 20, HystrixEventType.FALLBACK_FAILURE);
 
@@ -418,11 +418,11 @@ public class RollingThreadPoolEventCounterStreamTest extends CommandStreamTest {
         HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("ThreadPool-K");
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("ThreadPool-K");
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("RollingCounter-K");
-        stream = RollingThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100);
+        stream = RollingThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 500);
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
-        stream.observe().take(10).subscribe(getSubscriber(latch));
+        stream.observe().take(5).subscribe(getSubscriber(latch));
 
         CommandStreamTest.Command cmd = CommandStreamTest.Command.from(groupKey, key, HystrixEventType.FAILURE, 20, HystrixEventType.FALLBACK_MISSING);
 
@@ -443,11 +443,11 @@ public class RollingThreadPoolEventCounterStreamTest extends CommandStreamTest {
         HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("ThreadPool-L");
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("ThreadPool-L");
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("RollingCounter-L");
-        stream = RollingThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100);
+        stream = RollingThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 500);
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
-        stream.observe().take(10).subscribe(getSubscriber(latch));
+        stream.observe().take(5).subscribe(getSubscriber(latch));
 
         //fallback semaphore size is 5.  So let 5 commands saturate that semaphore, then
         //let 2 more commands go to fallback.  they should get rejected by the fallback-semaphore
@@ -490,13 +490,13 @@ public class RollingThreadPoolEventCounterStreamTest extends CommandStreamTest {
         HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("ThreadPool-M");
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("ThreadPool-M");
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("RollingCounter-M");
-        stream = RollingThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 100);
+        stream = RollingThreadPoolEventCounterStream.getInstance(threadPoolKey, 10, 250);
         stream.startCachingStreamValuesIfUnstarted();
 
-        //by doing a take(30), we ensure that all rolling counts go back to 0
+        //by doing a take(20), we ensure that all rolling counts go back to 0
 
         final CountDownLatch latch = new CountDownLatch(1);
-        stream.observe().take(30).subscribe(getSubscriber(latch));
+        stream.observe().take(20).subscribe(getSubscriber(latch));
 
         CommandStreamTest.Command cmd1 = CommandStreamTest.Command.from(groupKey, key, HystrixEventType.SUCCESS, 20);
         CommandStreamTest.Command cmd2 = CommandStreamTest.Command.from(groupKey, key, HystrixEventType.FAILURE, 10);

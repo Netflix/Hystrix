@@ -80,11 +80,11 @@ public class RollingCommandMaxConcurrencyStreamTest extends CommandStreamTest {
     @Test
     public void testEmptyStreamProducesZeros() {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Concurrency-A");
-        stream = RollingCommandMaxConcurrencyStream.getInstance(key, 10, 100);
+        stream = RollingCommandMaxConcurrencyStream.getInstance(key, 10, 500);
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
-        stream.observe().take(10).subscribe(getSubscriber(latch));
+        stream.observe().take(5).subscribe(getSubscriber(latch));
 
         //no writes
 
@@ -99,14 +99,14 @@ public class RollingCommandMaxConcurrencyStreamTest extends CommandStreamTest {
     @Test
     public void testStartsAndEndsInSameBucketProduceValue() throws InterruptedException {
         HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Concurrency-B");
-        stream = RollingCommandMaxConcurrencyStream.getInstance(key, 10, 100);
+        stream = RollingCommandMaxConcurrencyStream.getInstance(key, 10, 500);
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
-        stream.observe().take(10).subscribe(getSubscriber(latch));
+        stream.observe().take(5).subscribe(getSubscriber(latch));
 
-        Command cmd1 = Command.from(groupKey, key, HystrixEventType.SUCCESS, 10);
-        Command cmd2 = Command.from(groupKey, key, HystrixEventType.SUCCESS, 14);
+        Command cmd1 = Command.from(groupKey, key, HystrixEventType.SUCCESS, 1);
+        Command cmd2 = Command.from(groupKey, key, HystrixEventType.SUCCESS, 2);
 
         cmd1.observe();
         Thread.sleep(1);
@@ -128,14 +128,14 @@ public class RollingCommandMaxConcurrencyStreamTest extends CommandStreamTest {
         stream.startCachingStreamValuesIfUnstarted();
 
         final CountDownLatch latch = new CountDownLatch(1);
-        stream.observe().take(10).subscribe(getSubscriber(latch));
+        stream.observe().take(5).subscribe(getSubscriber(latch));
 
         Command cmd1 = Command.from(groupKey, key, HystrixEventType.SUCCESS, 160);
         Command cmd2 = Command.from(groupKey, key, HystrixEventType.SUCCESS, 10);
         Command cmd3 = Command.from(groupKey, key, HystrixEventType.SUCCESS, 15);
 
         cmd1.observe();
-        Thread.sleep(150); //bucket roll
+        Thread.sleep(100); //bucket roll
         cmd2.observe();
         Thread.sleep(1);
         cmd3.observe();
