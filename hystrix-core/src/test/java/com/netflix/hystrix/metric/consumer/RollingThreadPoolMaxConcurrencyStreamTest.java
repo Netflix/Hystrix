@@ -159,7 +159,7 @@ public class RollingThreadPoolMaxConcurrencyStreamTest extends CommandStreamTest
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
 
-        Command cmd1 = Command.from(groupKey, key, HystrixEventType.SUCCESS, 160);
+        Command cmd1 = Command.from(groupKey, key, HystrixEventType.SUCCESS, 560);
         Command cmd2 = Command.from(groupKey, key, HystrixEventType.SUCCESS, 50);
         Command cmd3 = Command.from(groupKey, key, HystrixEventType.SUCCESS, 75);
 
