@@ -105,8 +105,8 @@ public class RollingCommandMaxConcurrencyStreamTest extends CommandStreamTest {
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(5).subscribe(getSubscriber(latch));
 
-        Command cmd1 = Command.from(groupKey, key, HystrixEventType.SUCCESS, 1);
-        Command cmd2 = Command.from(groupKey, key, HystrixEventType.SUCCESS, 2);
+        Command cmd1 = Command.from(groupKey, key, HystrixEventType.SUCCESS, 100);
+        Command cmd2 = Command.from(groupKey, key, HystrixEventType.SUCCESS, 100);
 
         cmd1.observe();
         Thread.sleep(1);
