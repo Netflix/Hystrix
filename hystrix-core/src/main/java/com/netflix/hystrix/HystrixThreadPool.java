@@ -204,8 +204,13 @@ public interface HystrixThreadPool {
         // allow us to change things via fast-properties by setting it each time
         private void touchConfig() {
             final int dynamicCoreSize = properties.coreSize().get();
-            threadPool.setCorePoolSize(dynamicCoreSize);
-            threadPool.setMaximumPoolSize(dynamicCoreSize); // we always want maxSize the same as coreSize, we are not using a dynamically resizing pool
+
+            // In JDK 6, setCorePoolSize and setMaximumPoolSize will execute a lock operation. Avoid them if the pool size is not changed.
+            if (threadPool.getCorePoolSize() != dynamicCoreSize) {
+                threadPool.setCorePoolSize(dynamicCoreSize);
+                threadPool.setMaximumPoolSize(dynamicCoreSize); // we always want maxSize the same as coreSize, we are not using a dynamically resizing pool
+            }
+
             threadPool.setKeepAliveTime(properties.keepAliveTimeMinutes().get(), TimeUnit.MINUTES); // this doesn't really matter since we're not resizing
         }
 
