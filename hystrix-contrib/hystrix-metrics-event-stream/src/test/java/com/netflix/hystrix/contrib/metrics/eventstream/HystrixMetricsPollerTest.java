@@ -78,6 +78,7 @@ public class HystrixMetricsPollerTest {
             int v2 = metricsCount.get();
 
             // they should be the same since we were paused
+            System.out.println("First poll got : " + v1 + ", second got : " + v2);
             assertTrue(v2 == v1);
 
             poller.start();
