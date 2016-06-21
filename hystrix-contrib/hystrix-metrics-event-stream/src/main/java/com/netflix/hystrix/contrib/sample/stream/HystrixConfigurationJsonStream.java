@@ -25,6 +25,7 @@ import com.netflix.hystrix.config.HystrixCommandConfiguration;
 import com.netflix.hystrix.config.HystrixConfiguration;
 import com.netflix.hystrix.config.HystrixConfigurationStream;
 import com.netflix.hystrix.config.HystrixThreadPoolConfiguration;
+import com.netflix.hystrix.metric.sample.HystrixUtilizationStream;
 import rx.Observable;
 import rx.functions.Func1;
 
@@ -171,11 +172,27 @@ public class HystrixConfigurationJsonStream {
         return jsonString.getBuffer().toString();
     }
 
+    /**
+     * @deprecated Not for public use.  This prevents stream-sharing.  Please use {@link HystrixConfigurationStream#observe()}
+     * @param delay interval between data emissions
+     * @return sampled utilization as Java object, taken on a timer
+     */
+    @Deprecated //deprecated in 1.5.4
     public Observable<HystrixConfiguration> observe(int delay) {
         return streamGenerator.call(delay);
     }
 
+    /**
+     * @deprecated Not for public use.  This prevents stream-sharing.  Please use {@link #observeJson()}
+     * @param delay interval between data emissions
+     * @return sampled utilization as JSON string, taken on a timer
+     */
+    @Deprecated //deprecated in 1.5.4
     public Observable<String> observeJson(int delay) {
         return streamGenerator.call(delay).map(convertToJson);
+    }
+
+    public Observable<String> observeJson() {
+        return HystrixConfigurationStream.getInstance().observe().map(convertToJson);
     }
 }
