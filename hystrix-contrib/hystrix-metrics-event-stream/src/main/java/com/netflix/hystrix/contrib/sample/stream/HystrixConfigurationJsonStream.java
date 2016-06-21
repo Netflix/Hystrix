@@ -25,7 +25,6 @@ import com.netflix.hystrix.config.HystrixCommandConfiguration;
 import com.netflix.hystrix.config.HystrixConfiguration;
 import com.netflix.hystrix.config.HystrixConfigurationStream;
 import com.netflix.hystrix.config.HystrixThreadPoolConfiguration;
-import com.netflix.hystrix.metric.sample.HystrixUtilizationStream;
 import rx.Observable;
 import rx.functions.Func1;
 

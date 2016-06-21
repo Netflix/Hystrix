@@ -43,6 +43,18 @@ public class HystrixConfigurationStream {
     private final Observable<HystrixConfiguration> allConfigurationStream;
     private final AtomicBoolean isSourceCurrentlySubscribed = new AtomicBoolean(false);
 
+    private static final Func1<Long, HystrixConfiguration> getAllConfig =
+            new Func1<Long, HystrixConfiguration>() {
+                @Override
+                public HystrixConfiguration call(Long timestamp) {
+                    return HystrixConfiguration.from(
+                            getAllCommandConfig.call(timestamp),
+                            getAllThreadPoolConfig.call(timestamp),
+                            getAllCollapserConfig.call(timestamp)
+                    );
+                }
+            };
+
     /**
      * @deprecated Not for public use.  Please use {@link #getInstance()}.  This facilitates better stream-sharing
      * @param intervalInMilliseconds milliseconds between data emissions
@@ -159,17 +171,7 @@ public class HystrixConfigurationStream {
                 }
             };
 
-    private static final Func1<Long, HystrixConfiguration> getAllConfig =
-            new Func1<Long, HystrixConfiguration>() {
-                @Override
-                public HystrixConfiguration call(Long timestamp) {
-                    return HystrixConfiguration.from(
-                            getAllCommandConfig.call(timestamp),
-                            getAllThreadPoolConfig.call(timestamp),
-                            getAllCollapserConfig.call(timestamp)
-                    );
-                }
-            };
+
 
     private static final Func1<HystrixConfiguration, Map<HystrixCommandKey, HystrixCommandConfiguration>> getOnlyCommandConfig =
             new Func1<HystrixConfiguration, Map<HystrixCommandKey, HystrixCommandConfiguration>>() {

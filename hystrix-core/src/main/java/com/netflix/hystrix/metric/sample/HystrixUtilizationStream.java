@@ -36,6 +36,17 @@ public class HystrixUtilizationStream {
     private final Observable<HystrixUtilization> allUtilizationStream;
     private final AtomicBoolean isSourceCurrentlySubscribed = new AtomicBoolean(false);
 
+    private static final Func1<Long, HystrixUtilization> getAllUtilization =
+            new Func1<Long, HystrixUtilization>() {
+                @Override
+                public HystrixUtilization call(Long timestamp) {
+                    return HystrixUtilization.from(
+                            getAllCommandUtilization.call(timestamp),
+                            getAllThreadPoolUtilization.call(timestamp)
+                    );
+                }
+            };
+
     /**
      * @deprecated Not for public use.  Please use {@link #getInstance()}.  This facilitates better stream-sharing
      * @param intervalInMilliseconds milliseconds between data emissions
@@ -125,17 +136,6 @@ public class HystrixUtilizationStream {
                         threadPoolUtilizationPerKey.put(threadPoolKey, sampleThreadPoolUtilization(threadPoolMetrics));
                     }
                     return threadPoolUtilizationPerKey;
-                }
-            };
-
-    private static final Func1<Long, HystrixUtilization> getAllUtilization =
-            new Func1<Long, HystrixUtilization>() {
-                @Override
-                public HystrixUtilization call(Long timestamp) {
-                    return HystrixUtilization.from(
-                            getAllCommandUtilization.call(timestamp),
-                            getAllThreadPoolUtilization.call(timestamp)
-                    );
                 }
             };
 
