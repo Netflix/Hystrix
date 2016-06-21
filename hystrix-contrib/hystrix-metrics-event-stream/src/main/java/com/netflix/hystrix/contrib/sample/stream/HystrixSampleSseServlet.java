@@ -33,15 +33,27 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  */
 public abstract class HystrixSampleSseServlet<SampleData> extends HttpServlet {
+    protected final Observable<SampleData> sampleStream;
 
     private static final Logger logger = LoggerFactory.getLogger(HystrixSampleSseServlet.class);
+
+    //wake up occasionally and check that poller is still alive.  this value controls how often
+    private static final int DEFAULT_PAUSE_POLLER_THREAD_DELAY_IN_MS = 500;
+
+    private final int pausePollerThreadDelayInMs;
 
     /* Set to true upon shutdown, so it's OK to be shared among all SampleSseServlets */
     private static volatile boolean isDestroyed = false;
 
-    private static final String DELAY_REQ_PARAM_NAME = "delay";
+    protected HystrixSampleSseServlet(Observable<SampleData> sampleStream) {
+        this.sampleStream = sampleStream;
+        this.pausePollerThreadDelayInMs = DEFAULT_PAUSE_POLLER_THREAD_DELAY_IN_MS;
+    }
 
-    abstract int getDefaultDelayInMilliseconds();
+    protected HystrixSampleSseServlet(Observable<SampleData> sampleStream, int pausePollerThreadDelayInMs) {
+        this.sampleStream = sampleStream;
+        this.pausePollerThreadDelayInMs = pausePollerThreadDelayInMs;
+    }
 
     abstract int getMaxNumberConcurrentConnectionsAllowed();
 
@@ -51,7 +63,7 @@ public abstract class HystrixSampleSseServlet<SampleData> extends HttpServlet {
 
     protected abstract void decrementCurrentConcurrentConnections();
 
-    protected abstract Observable<SampleData> getStream(int delay);
+    //protected abstract Observable<SampleData> getStream();
 
     protected abstract String convertToString(SampleData sampleData) throws IOException;
 
@@ -65,19 +77,6 @@ public abstract class HystrixSampleSseServlet<SampleData> extends HttpServlet {
         } else {
             handleRequest(request, response);
         }
-    }
-
-    /* package-private */
-    int getDelayFromHttpRequest(HttpServletRequest req) {
-        try {
-            String delay = req.getParameter(DELAY_REQ_PARAM_NAME);
-            if (delay != null) {
-                return Math.max(Integer.parseInt(delay), 1);
-            }
-        } catch (Throwable ex) {
-            //silently fail
-        }
-        return getDefaultDelayInMilliseconds();
     }
 
     /**
@@ -125,8 +124,6 @@ public abstract class HystrixSampleSseServlet<SampleData> extends HttpServlet {
             if (numberConnections > maxNumberConnectionsAllowed) {
                 response.sendError(503, "MaxConcurrentConnections reached: " + maxNumberConnectionsAllowed);
             } else {
-                int delay = getDelayFromHttpRequest(request);
-
                 /* initialize response */
                 response.setHeader("Content-Type", "text/event-stream;charset=UTF-8");
                 response.setHeader("Cache-Control", "no-cache, no-store, max-age=0, must-revalidate");
@@ -134,11 +131,11 @@ public abstract class HystrixSampleSseServlet<SampleData> extends HttpServlet {
 
                 final PrintWriter writer = response.getWriter();
 
-                Observable<SampleData> sampledStream = getStream(delay);
+                //Observable<SampleData> sampledStream = getStream();
 
                 //since the sample stream is based on Observable.interval, events will get published on an RxComputation thread
                 //since writing to the servlet response is blocking, use the Rx IO thread for the write that occurs in the onNext
-                sampleSubscription = sampledStream
+                sampleSubscription = sampleStream
                         .observeOn(Schedulers.io())
                         .subscribe(new Subscriber<SampleData>() {
                             @Override
@@ -180,7 +177,7 @@ public abstract class HystrixSampleSseServlet<SampleData> extends HttpServlet {
 
                 while (moreDataWillBeSent.get() && !isDestroyed) {
                     try {
-                        Thread.sleep(delay);
+                        Thread.sleep(pausePollerThreadDelayInMs);
                     } catch (InterruptedException e) {
                         moreDataWillBeSent.set(false);
                     }

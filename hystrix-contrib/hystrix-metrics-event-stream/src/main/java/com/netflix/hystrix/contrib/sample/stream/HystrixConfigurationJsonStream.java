@@ -46,15 +46,17 @@ public class HystrixConfigurationJsonStream {
     private static final JsonFactory jsonFactory = new JsonFactory();
     private final Func1<Integer, Observable<HystrixConfiguration>> streamGenerator;
 
+    @Deprecated //since 1.5.4
     public HystrixConfigurationJsonStream() {
         this.streamGenerator = new Func1<Integer, Observable<HystrixConfiguration>>() {
             @Override
             public Observable<HystrixConfiguration> call(Integer delay) {
-                return new HystrixConfigurationStream(delay).observe();
+                return HystrixConfigurationStream.getInstance().observe();
             }
         };
     }
 
+    @Deprecated //since 1.5.4
     public HystrixConfigurationJsonStream(Func1<Integer, Observable<HystrixConfiguration>> streamGenerator) {
         this.streamGenerator = streamGenerator;
     }
@@ -172,7 +174,8 @@ public class HystrixConfigurationJsonStream {
     }
 
     /**
-     * @deprecated Not for public use.  This prevents stream-sharing.  Please use {@link HystrixConfigurationStream#observe()}
+     * @deprecated Not for public use.  Using the delay param prevents streams from being efficiently shared.
+     * Please use {@link HystrixConfigurationStream#observe()}
      * @param delay interval between data emissions
      * @return sampled utilization as Java object, taken on a timer
      */
@@ -182,16 +185,14 @@ public class HystrixConfigurationJsonStream {
     }
 
     /**
-     * @deprecated Not for public use.  This prevents stream-sharing.  Please use {@link #observeJson()}
+     * @deprecated Not for public use.  Using the delay param prevents streams from being efficiently shared.
+     * Please use {@link HystrixConfigurationStream#observe()}
+     * and you can map to JSON string via {@link HystrixConfigurationJsonStream#convertToString(HystrixConfiguration)}
      * @param delay interval between data emissions
      * @return sampled utilization as JSON string, taken on a timer
      */
     @Deprecated //deprecated in 1.5.4
     public Observable<String> observeJson(int delay) {
         return streamGenerator.call(delay).map(convertToJson);
-    }
-
-    public Observable<String> observeJson() {
-        return HystrixConfigurationStream.getInstance().observe().map(convertToJson);
     }
 }

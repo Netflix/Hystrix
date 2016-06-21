@@ -18,8 +18,8 @@ package com.netflix.hystrix.contrib.sample.stream;
 import com.netflix.config.DynamicIntProperty;
 import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.hystrix.metric.sample.HystrixUtilization;
+import com.netflix.hystrix.metric.sample.HystrixUtilizationStream;
 import rx.Observable;
-import rx.functions.Func1;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -49,27 +49,17 @@ public class HystrixUtilizationSseServlet extends HystrixSampleSseServlet<Hystri
 
     private static final long serialVersionUID = -7812908330777694972L;
 
-    private static final int DEFAULT_ONNEXT_DELAY_IN_MS = 100;
-
-    private final HystrixUtilizationJsonStream jsonStream;
-
     /* used to track number of connections and throttle */
     private static AtomicInteger concurrentConnections = new AtomicInteger(0);
     private static DynamicIntProperty maxConcurrentConnections =
             DynamicPropertyFactory.getInstance().getIntProperty("hystrix.config.stream.maxConcurrentConnections", 5);
 
     public HystrixUtilizationSseServlet() {
-        this.jsonStream = new HystrixUtilizationJsonStream();
-
+        super(HystrixUtilizationStream.getInstance().observe());
     }
 
-    /* package-private */ HystrixUtilizationSseServlet(Func1<Integer, Observable<HystrixUtilization>> createStream) {
-        this.jsonStream = new HystrixUtilizationJsonStream(createStream);
-    }
-
-    @Override
-    int getDefaultDelayInMilliseconds() {
-        return DEFAULT_ONNEXT_DELAY_IN_MS;
+    /* package-private */ HystrixUtilizationSseServlet(Observable<HystrixUtilization> sampleStream, int pausePollerThreadDelayInMs) {
+        super(sampleStream, pausePollerThreadDelayInMs);
     }
 
     @Override
@@ -90,11 +80,6 @@ public class HystrixUtilizationSseServlet extends HystrixSampleSseServlet<Hystri
     @Override
     protected void decrementCurrentConcurrentConnections() {
         concurrentConnections.decrementAndGet();
-    }
-
-    @Override
-    protected Observable<HystrixUtilization> getStream(int delay) {
-        return jsonStream.observe(delay);
     }
 
     @Override
