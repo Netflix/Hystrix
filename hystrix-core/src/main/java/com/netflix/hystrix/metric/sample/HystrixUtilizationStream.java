@@ -20,45 +20,78 @@ import com.netflix.hystrix.HystrixCommandMetrics;
 import com.netflix.hystrix.HystrixThreadPoolKey;
 import com.netflix.hystrix.HystrixThreadPoolMetrics;
 import rx.Observable;
-import rx.functions.Func0;
+import rx.functions.Action0;
 import rx.functions.Func1;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * This class samples current Hystrix utilization of resources and exposes that as a stream
  */
 public class HystrixUtilizationStream {
-
     private final int intervalInMilliseconds;
-    private final Observable<Long> timer;
+    private final Observable<HystrixUtilization> allUtilizationStream;
+    private final AtomicBoolean isSourceCurrentlySubscribed = new AtomicBoolean(false);
 
+    /**
+     * @deprecated Not for public use.  Please use {@link #getInstance()}.  This facilitates better stream-sharing
+     * @param intervalInMilliseconds milliseconds between data emissions
+     */
+    @Deprecated //deprecated in 1.5.4.
     public HystrixUtilizationStream(final int intervalInMilliseconds) {
         this.intervalInMilliseconds = intervalInMilliseconds;
-        this.timer = Observable.defer(new Func0<Observable<Long>>() {
-            @Override
-            public Observable<Long> call() {
-                return Observable.interval(intervalInMilliseconds, TimeUnit.MILLISECONDS);
-            }
-        });
+        this.allUtilizationStream = Observable.interval(intervalInMilliseconds, TimeUnit.MILLISECONDS)
+                .map(getAllUtilization)
+                .doOnSubscribe(new Action0() {
+                    @Override
+                    public void call() {
+                        isSourceCurrentlySubscribed.set(true);
+                    }
+                })
+                .doOnUnsubscribe(new Action0() {
+                    @Override
+                    public void call() {
+                        isSourceCurrentlySubscribed.set(false);
+                    }
+                })
+                .share()
+                .onBackpressureDrop();
     }
 
+    private static final HystrixUtilizationStream INSTANCE = new HystrixUtilizationStream(500);
+
+    public static HystrixUtilizationStream getInstance() {
+        return INSTANCE;
+    }
+
+    static HystrixUtilizationStream getNonSingletonInstanceOnlyUsedInUnitTests(int delayInMs) {
+        return new HystrixUtilizationStream(delayInMs);
+    }
+
+    /**
+     * Return a ref-counted stream that will only do work when at least one subscriber is present
+     */
     public Observable<HystrixUtilization> observe() {
-        return timer.map(getAllUtilization);
+        return allUtilizationStream;
     }
 
     public Observable<Map<HystrixCommandKey, HystrixCommandUtilization>> observeCommandUtilization() {
-        return timer.map(getAllCommandUtilization);
+        return allUtilizationStream.map(getOnlyCommandUtilization);
     }
 
     public Observable<Map<HystrixThreadPoolKey, HystrixThreadPoolUtilization>> observeThreadPoolUtilization() {
-        return timer.map(getAllThreadPoolUtilization);
+        return allUtilizationStream.map(getOnlyThreadPoolUtilization);
     }
 
     public int getIntervalInMilliseconds() {
         return this.intervalInMilliseconds;
+    }
+
+    public boolean isSourceCurrentlySubscribed() {
+        return isSourceCurrentlySubscribed.get();
     }
 
     private static HystrixCommandUtilization sampleCommandUtilization(HystrixCommandMetrics commandMetrics) {
@@ -103,6 +136,22 @@ public class HystrixUtilizationStream {
                             getAllCommandUtilization.call(timestamp),
                             getAllThreadPoolUtilization.call(timestamp)
                     );
+                }
+            };
+
+    private static final Func1<HystrixUtilization, Map<HystrixCommandKey, HystrixCommandUtilization>> getOnlyCommandUtilization =
+            new Func1<HystrixUtilization, Map<HystrixCommandKey, HystrixCommandUtilization>>() {
+                @Override
+                public Map<HystrixCommandKey, HystrixCommandUtilization> call(HystrixUtilization hystrixUtilization) {
+                    return hystrixUtilization.getCommandUtilizationMap();
+                }
+            };
+
+    private static final Func1<HystrixUtilization, Map<HystrixThreadPoolKey, HystrixThreadPoolUtilization>> getOnlyThreadPoolUtilization =
+            new Func1<HystrixUtilization, Map<HystrixThreadPoolKey, HystrixThreadPoolUtilization>>() {
+                @Override
+                public Map<HystrixThreadPoolKey, HystrixThreadPoolUtilization> call(HystrixUtilization hystrixUtilization) {
+                    return hystrixUtilization.getThreadPoolUtilizationMap();
                 }
             };
 }
