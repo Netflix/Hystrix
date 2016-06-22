@@ -81,6 +81,7 @@ public class EventStreamTest extends HystrixStreamTest {
 
                     @Override
                     public void onError(Throwable e) {
+                        e.printStackTrace();
                         System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Config OnError : " + e);
                         latch.countDown();
                     }

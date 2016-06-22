@@ -16,7 +16,6 @@
 package com.netflix.hystrix.contrib.sample.stream;
 
 import com.netflix.hystrix.config.HystrixConfiguration;
-import com.netflix.hystrix.config.HystrixConfigurationStream;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -57,15 +56,6 @@ public class HystrixConfigSseServletTest {
             return mockConfig;
         }
     });
-
-    private Func1<Integer, Observable<HystrixConfiguration>> generateStream(final Observable<HystrixConfiguration> o) {
-        return new Func1<Integer, Observable<HystrixConfiguration>>() {
-            @Override
-            public Observable<HystrixConfiguration> call(Integer integer) {
-                return o;
-            }
-        };
-    }
 
     private final Observable<HystrixConfiguration> streamOfOnNextThenOnError = Observable.create(new Observable.OnSubscribe<HystrixConfiguration>() {
         @Override
@@ -109,7 +99,7 @@ public class HystrixConfigSseServletTest {
 
     @Test
     public void shutdownServletShouldRejectRequests() throws ServletException, IOException {
-        servlet = new HystrixConfigSseServlet(generateStream(streamOfOnNexts));
+        servlet = new HystrixConfigSseServlet(streamOfOnNexts, 10);
         try {
             servlet.init();
         } catch (ServletException ex) {
@@ -126,7 +116,7 @@ public class HystrixConfigSseServletTest {
 
     @Test
     public void testConfigDataWithInfiniteOnNextStream() throws IOException, InterruptedException {
-        servlet = new HystrixConfigSseServlet(generateStream(streamOfOnNexts));
+        servlet = new HystrixConfigSseServlet(streamOfOnNexts, 10);
         try {
             servlet.init();
         } catch (ServletException ex) {
@@ -182,13 +172,13 @@ public class HystrixConfigSseServletTest {
         Thread.sleep(100);
 
         System.out.println("WRITES : " + writes.get());
-        assertEquals(9, writes.get());
+        assertTrue(writes.get() >= 9);
         assertEquals(0, servlet.getNumberCurrentConnections());
     }
 
     @Test
     public void testConfigDataWithStreamOnError() throws IOException, InterruptedException {
-        servlet = new HystrixConfigSseServlet(generateStream(streamOfOnNextThenOnError));
+        servlet = new HystrixConfigSseServlet(streamOfOnNextThenOnError, 10);
         try {
             servlet.init();
         } catch (ServletException ex) {
@@ -241,7 +231,7 @@ public class HystrixConfigSseServletTest {
 
     @Test
     public void testConfigDataWithStreamOnCompleted() throws IOException, InterruptedException {
-        servlet = new HystrixConfigSseServlet(generateStream(streamOfOnNextThenOnCompleted));
+        servlet = new HystrixConfigSseServlet(streamOfOnNextThenOnCompleted, 10);
         try {
             servlet.init();
         } catch (ServletException ex) {
@@ -294,7 +284,7 @@ public class HystrixConfigSseServletTest {
 
     @Test
     public void testConfigDataWithIoExceptionOnWrite() throws IOException, InterruptedException {
-        servlet = new HystrixConfigSseServlet(generateStream(streamOfOnNexts));
+        servlet = new HystrixConfigSseServlet(streamOfOnNexts, 10);
         try {
             servlet.init();
         } catch (ServletException ex) {
@@ -303,7 +293,6 @@ public class HystrixConfigSseServletTest {
 
         final AtomicInteger writes = new AtomicInteger(0);
 
-        when(mockReq.getParameter("delay")).thenReturn("100");
         when(mockResp.getWriter()).thenReturn(mockPrintWriter);
         Mockito.doAnswer(new Answer<Void>() {
             @Override

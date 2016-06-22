@@ -32,10 +32,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
 class EventStream implements Supplier<Observable<Payload>> {
-
-    private final static int CONFIGURATION_DATA_INTERVAL_IN_MS = 500;
-    private final static int UTILIZATION_DATA_INTERVAL_IN_MS = 500;
-
     private final Observable<Payload> source;
     private final AtomicBoolean isSourceCurrentlySubscribed = new AtomicBoolean(false);
 
@@ -57,7 +53,7 @@ class EventStream implements Supplier<Observable<Payload>> {
 
         switch (eventStreamEnum) {
             case CONFIG_STREAM:
-                source = new HystrixConfigurationStream(CONFIGURATION_DATA_INTERVAL_IN_MS)
+                source = HystrixConfigurationStream.getInstance()
                         .observe()
                         .map(SerialHystrixConfiguration::toBytes)
                         .map(SerialHystrixMetric::toPayload);
@@ -69,7 +65,7 @@ class EventStream implements Supplier<Observable<Payload>> {
                         .map(SerialHystrixMetric::toPayload);
                 break;
             case UTILIZATION_STREAM:
-                source = new HystrixUtilizationStream(UTILIZATION_DATA_INTERVAL_IN_MS)
+                source = HystrixUtilizationStream.getInstance()
                         .observe()
                         .map(SerialHystrixUtilization::toBytes)
                         .map(SerialHystrixMetric::toPayload);

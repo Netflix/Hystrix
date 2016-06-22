@@ -18,8 +18,8 @@ package com.netflix.hystrix.contrib.sample.stream;
 import com.netflix.config.DynamicIntProperty;
 import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.hystrix.config.HystrixConfiguration;
+import com.netflix.hystrix.config.HystrixConfigurationStream;
 import rx.Observable;
-import rx.functions.Func1;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -49,25 +49,16 @@ public class HystrixConfigSseServlet extends HystrixSampleSseServlet<HystrixConf
 
     private static final long serialVersionUID = -3599771169762858235L;
 
-    private static final int DEFAULT_ONNEXT_DELAY_IN_MS = 10000;
-
-    private final HystrixConfigurationJsonStream jsonStream;
-
     /* used to track number of connections and throttle */
     private static AtomicInteger concurrentConnections = new AtomicInteger(0);
     private static DynamicIntProperty maxConcurrentConnections = DynamicPropertyFactory.getInstance().getIntProperty("hystrix.config.stream.maxConcurrentConnections", 5);
 
     public HystrixConfigSseServlet() {
-        this.jsonStream = new HystrixConfigurationJsonStream();
+        super(HystrixConfigurationStream.getInstance().observe());
     }
 
-    /* package-private */ HystrixConfigSseServlet(Func1<Integer, Observable<HystrixConfiguration>> createStream) {
-        this.jsonStream = new HystrixConfigurationJsonStream(createStream);
-    }
-
-    @Override
-    int getDefaultDelayInMilliseconds() {
-        return DEFAULT_ONNEXT_DELAY_IN_MS;
+    /* package-private */ HystrixConfigSseServlet(Observable<HystrixConfiguration> sampleStream, int pausePollerThreadDelayInMs) {
+        super(sampleStream, pausePollerThreadDelayInMs);
     }
 
     @Override
@@ -88,11 +79,6 @@ public class HystrixConfigSseServlet extends HystrixSampleSseServlet<HystrixConf
     @Override
     protected void decrementCurrentConcurrentConnections() {
         concurrentConnections.decrementAndGet();
-    }
-
-    @Override
-    protected Observable<HystrixConfiguration> getStream(int delay) {
-        return jsonStream.observe(delay);
     }
 
     @Override

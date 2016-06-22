@@ -55,15 +55,17 @@ public class HystrixUtilizationJsonStream {
         }
     };
 
+    @Deprecated //since 1.5.4
     public HystrixUtilizationJsonStream() {
         this.streamGenerator = new Func1<Integer, Observable<HystrixUtilization>>() {
             @Override
             public Observable<HystrixUtilization> call(Integer delay) {
-                return new HystrixUtilizationStream(delay).observe();
+                return HystrixUtilizationStream.getInstance().observe();
             }
         };
     }
 
+    @Deprecated //since 1.5.4
     public HystrixUtilizationJsonStream(Func1<Integer, Observable<HystrixUtilization>> streamGenerator) {
         this.streamGenerator = streamGenerator;
     }
@@ -111,10 +113,24 @@ public class HystrixUtilizationJsonStream {
         return jsonString.getBuffer().toString();
     }
 
+    /**
+     * @deprecated Not for public use.  Using the delay param prevents streams from being efficiently shared.
+     * Please use {@link HystrixUtilizationStream#observe()}
+     * @param delay interval between data emissions
+     * @return sampled utilization as Java object, taken on a timer
+     */
+    @Deprecated //deprecated as of 1.5.4
     public Observable<HystrixUtilization> observe(int delay) {
         return streamGenerator.call(delay);
     }
 
+    /**
+     * @deprecated Not for public use.  Using the delay param prevents streams from being efficiently shared.
+     * Please use {@link HystrixUtilizationStream#observe()}
+     * and the {@link #convertToJson(HystrixUtilization)} method
+     * @param delay interval between data emissions
+     * @return sampled utilization as JSON string, taken on a timer
+     */
     public Observable<String> observeJson(int delay) {
         return streamGenerator.call(delay).map(convertToJsonFunc);
     }
