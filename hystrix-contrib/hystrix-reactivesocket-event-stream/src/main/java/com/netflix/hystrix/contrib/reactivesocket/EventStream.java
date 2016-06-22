@@ -16,18 +16,18 @@
 package com.netflix.hystrix.contrib.reactivesocket;
 
 import com.netflix.hystrix.config.HystrixConfigurationStream;
-import com.netflix.hystrix.contrib.reactivesocket.serialize.SerialHystrixConfiguration;
-import com.netflix.hystrix.contrib.reactivesocket.serialize.SerialHystrixDashboardData;
-import com.netflix.hystrix.contrib.reactivesocket.serialize.SerialHystrixMetric;
-import com.netflix.hystrix.contrib.reactivesocket.serialize.SerialHystrixRequestEvents;
-import com.netflix.hystrix.contrib.reactivesocket.serialize.SerialHystrixUtilization;
 import com.netflix.hystrix.metric.HystrixRequestEventsStream;
 import com.netflix.hystrix.metric.consumer.HystrixDashboardStream;
 import com.netflix.hystrix.metric.sample.HystrixUtilizationStream;
+import com.netflix.hystrix.metric.serial.SerialHystrixConfiguration;
+import com.netflix.hystrix.metric.serial.SerialHystrixDashboardData;
+import com.netflix.hystrix.metric.serial.SerialHystrixRequestEvents;
+import com.netflix.hystrix.metric.serial.SerialHystrixUtilization;
+import io.reactivesocket.Frame;
 import io.reactivesocket.Payload;
 import rx.Observable;
 
-import java.util.Arrays;
+import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
@@ -56,25 +56,25 @@ class EventStream implements Supplier<Observable<Payload>> {
                 source = HystrixConfigurationStream.getInstance()
                         .observe()
                         .map(SerialHystrixConfiguration::toBytes)
-                        .map(SerialHystrixMetric::toPayload);
+                        .map(EventStream::toPayload);
                 break;
             case REQUEST_EVENT_STREAM:
                 source = HystrixRequestEventsStream.getInstance()
                         .observe()
                         .map(SerialHystrixRequestEvents::toBytes)
-                        .map(SerialHystrixMetric::toPayload);
+                        .map(EventStream::toPayload);
                 break;
             case UTILIZATION_STREAM:
                 source = HystrixUtilizationStream.getInstance()
                         .observe()
                         .map(SerialHystrixUtilization::toBytes)
-                        .map(SerialHystrixMetric::toPayload);
+                        .map(EventStream::toPayload);
                 break;
             case GENERAL_DASHBOARD_STREAM:
                 source = HystrixDashboardStream.getInstance()
                         .observe()
                         .map(SerialHystrixDashboardData::toBytes)
-                        .map(SerialHystrixMetric::toPayload);
+                        .map(EventStream::toPayload);
                 break;
             default:
                 throw new IllegalArgumentException("Unknown EventStreamEnum : " + eventStreamEnum);
@@ -85,5 +85,19 @@ class EventStream implements Supplier<Observable<Payload>> {
 
     public boolean isSourceCurrentlySubscribed() {
         return isSourceCurrentlySubscribed.get();
+    }
+
+    public static Payload toPayload(byte[] byteArray) {
+        return new Payload() {
+            @Override
+            public ByteBuffer getData() {
+                return ByteBuffer.wrap(byteArray);
+            }
+
+            @Override
+            public ByteBuffer getMetadata() {
+                return Frame.NULL_BYTEBUFFER;
+            }
+        };
     }
 }

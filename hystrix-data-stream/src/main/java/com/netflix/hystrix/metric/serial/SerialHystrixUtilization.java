@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.hystrix.contrib.reactivesocket.serialize;
+package com.netflix.hystrix.metric.serial;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -23,7 +23,6 @@ import com.netflix.hystrix.HystrixThreadPoolKey;
 import com.netflix.hystrix.metric.sample.HystrixCommandUtilization;
 import com.netflix.hystrix.metric.sample.HystrixThreadPoolUtilization;
 import com.netflix.hystrix.metric.sample.HystrixUtilization;
-import org.agrona.LangUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,7 +67,7 @@ public class SerialHystrixUtilization extends SerialHystrixMetric {
 
             retVal = bos.toByteArray();
         } catch (Exception e) {
-            LangUtil.rethrowUnchecked(e);
+            throw new RuntimeException(e);
         }
 
         return retVal;
@@ -78,8 +77,8 @@ public class SerialHystrixUtilization extends SerialHystrixMetric {
         byte[] byteArray = new byte[bb.remaining()];
         bb.get(byteArray);
 
-        Map<HystrixCommandKey, HystrixCommandUtilization> commandUtilizationMap = new HashMap<>();
-        Map<HystrixThreadPoolKey, HystrixThreadPoolUtilization> threadPoolUtilizationMap = new HashMap<>();
+        Map<HystrixCommandKey, HystrixCommandUtilization> commandUtilizationMap = new HashMap<HystrixCommandKey, HystrixCommandUtilization>();
+        Map<HystrixThreadPoolKey, HystrixThreadPoolUtilization> threadPoolUtilizationMap = new HashMap<HystrixThreadPoolKey, HystrixThreadPoolUtilization>();
 
         try {
             CBORParser parser = cborFactory.createParser(byteArray);

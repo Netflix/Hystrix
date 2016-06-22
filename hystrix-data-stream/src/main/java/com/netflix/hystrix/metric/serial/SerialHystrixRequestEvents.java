@@ -13,13 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.hystrix.contrib.reactivesocket.serialize;
+package com.netflix.hystrix.metric.serial;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.netflix.hystrix.ExecutionResult;
 import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.metric.HystrixRequestEvents;
-import org.agrona.LangUtil;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -46,7 +45,7 @@ public class SerialHystrixRequestEvents extends SerialHystrixMetric {
 
             retVal = bos.toByteArray();
         } catch (Exception e) {
-            LangUtil.rethrowUnchecked(e);
+            throw new RuntimeException(e);
         }
 
         return retVal;

@@ -15,7 +15,8 @@ include 'hystrix-core', \
 'hystrix-contrib/hystrix-reactivesocket-event-stream', \
 'hystrix-contrib/hystrix-javanica', \
 'hystrix-contrib/hystrix-junit', \
-'hystrix-dashboard'
+'hystrix-dashboard', \
+'hystrix-data-stream' 
 
 project(':hystrix-examples-reactivesocket/client').name = 'hystrix-examples-reactivesocket-client'
 project(':hystrix-examples-reactivesocket/server').name = 'hystrix-examples-reactivesocket-server'

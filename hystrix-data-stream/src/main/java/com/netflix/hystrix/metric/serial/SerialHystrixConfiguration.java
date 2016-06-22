@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.hystrix.contrib.reactivesocket.serialize;
+package com.netflix.hystrix.metric.serial;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -27,7 +27,6 @@ import com.netflix.hystrix.config.HystrixCollapserConfiguration;
 import com.netflix.hystrix.config.HystrixCommandConfiguration;
 import com.netflix.hystrix.config.HystrixConfiguration;
 import com.netflix.hystrix.config.HystrixThreadPoolConfiguration;
-import org.agrona.LangUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,7 +80,7 @@ public class SerialHystrixConfiguration extends SerialHystrixMetric {
 
             retVal = bos.toByteArray();
         } catch (Exception e) {
-            LangUtil.rethrowUnchecked(e);
+            throw new RuntimeException(e);
         }
 
         return retVal;
@@ -91,9 +90,9 @@ public class SerialHystrixConfiguration extends SerialHystrixMetric {
         byte[] byteArray = new byte[bb.remaining()];
         bb.get(byteArray);
 
-        Map<HystrixCommandKey, HystrixCommandConfiguration> commandConfigMap = new HashMap<>();
-        Map<HystrixThreadPoolKey, HystrixThreadPoolConfiguration> threadPoolConfigMap = new HashMap<>();
-        Map<HystrixCollapserKey, HystrixCollapserConfiguration> collapserConfigMap = new HashMap<>();
+        Map<HystrixCommandKey, HystrixCommandConfiguration> commandConfigMap = new HashMap<HystrixCommandKey, HystrixCommandConfiguration>();
+        Map<HystrixThreadPoolKey, HystrixThreadPoolConfiguration> threadPoolConfigMap = new HashMap<HystrixThreadPoolKey, HystrixThreadPoolConfiguration>();
+        Map<HystrixCollapserKey, HystrixCollapserConfiguration> collapserConfigMap = new HashMap<HystrixCollapserKey, HystrixCollapserConfiguration>();
 
         try {
             CBORParser parser = cborFactory.createParser(byteArray);

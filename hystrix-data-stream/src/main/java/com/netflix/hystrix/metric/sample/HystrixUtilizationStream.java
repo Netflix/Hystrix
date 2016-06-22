@@ -15,6 +15,8 @@
  */
 package com.netflix.hystrix.metric.sample;
 
+import com.netflix.config.DynamicIntProperty;
+import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixCommandMetrics;
 import com.netflix.hystrix.HystrixThreadPoolKey;
@@ -35,6 +37,10 @@ public class HystrixUtilizationStream {
     private final int intervalInMilliseconds;
     private final Observable<HystrixUtilization> allUtilizationStream;
     private final AtomicBoolean isSourceCurrentlySubscribed = new AtomicBoolean(false);
+
+    private static final DynamicIntProperty dataEmissionIntervalInMs =
+            DynamicPropertyFactory.getInstance().getIntProperty("hystrix.stream.utilization.intervalInMilliseconds", 500);
+
 
     private static final Func1<Long, HystrixUtilization> getAllUtilization =
             new Func1<Long, HystrixUtilization>() {
@@ -72,7 +78,9 @@ public class HystrixUtilizationStream {
                 .onBackpressureDrop();
     }
 
-    private static final HystrixUtilizationStream INSTANCE = new HystrixUtilizationStream(500);
+    //The data emission interval is looked up on startup only
+    private static final HystrixUtilizationStream INSTANCE =
+            new HystrixUtilizationStream(dataEmissionIntervalInMs.get());
 
     public static HystrixUtilizationStream getInstance() {
         return INSTANCE;

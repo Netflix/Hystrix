@@ -68,7 +68,7 @@ public class EventStreamTest extends HystrixStreamTest {
     public void testConfigStreamHasData() throws Exception {
         final AtomicBoolean hasBytes = new AtomicBoolean(false);
         CountDownLatch latch = new CountDownLatch(1);
-        final int NUM = 10;
+        final int NUM = 2;
 
         EventStream.getInstance(EventStreamEnum.CONFIG_STREAM).get()
                 .take(NUM)

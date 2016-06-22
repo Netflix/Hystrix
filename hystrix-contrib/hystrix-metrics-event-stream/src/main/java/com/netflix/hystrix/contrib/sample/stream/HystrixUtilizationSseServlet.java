@@ -63,12 +63,12 @@ public class HystrixUtilizationSseServlet extends HystrixSampleSseServlet<Hystri
     }
 
     @Override
-    int getMaxNumberConcurrentConnectionsAllowed() {
+    protected int getMaxNumberConcurrentConnectionsAllowed() {
         return maxConcurrentConnections.get();
     }
 
     @Override
-    int getNumberCurrentConnections() {
+    protected int getNumberCurrentConnections() {
         return concurrentConnections.get();
     }
 

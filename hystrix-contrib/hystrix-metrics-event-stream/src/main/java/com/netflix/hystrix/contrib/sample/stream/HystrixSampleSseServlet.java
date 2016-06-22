@@ -55,9 +55,9 @@ public abstract class HystrixSampleSseServlet<SampleData> extends HttpServlet {
         this.pausePollerThreadDelayInMs = pausePollerThreadDelayInMs;
     }
 
-    abstract int getMaxNumberConcurrentConnectionsAllowed();
+    protected abstract int getMaxNumberConcurrentConnectionsAllowed();
 
-    abstract int getNumberCurrentConnections();
+    protected abstract int getNumberCurrentConnections();
 
     protected abstract int incrementAndGetCurrentConcurrentConnections();
 
@@ -130,8 +130,6 @@ public abstract class HystrixSampleSseServlet<SampleData> extends HttpServlet {
                 response.setHeader("Pragma", "no-cache");
 
                 final PrintWriter writer = response.getWriter();
-
-                //Observable<SampleData> sampledStream = getStream();
 
                 //since the sample stream is based on Observable.interval, events will get published on an RxComputation thread
                 //since writing to the servlet response is blocking, use the Rx IO thread for the write that occurs in the onNext
