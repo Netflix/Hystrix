@@ -37,8 +37,9 @@ import java.util.Map;
  * <li> {@link HystrixUtilizationSseServlet} for mapping a specific URL to this data as an SSE stream
  * <li> Consumer of your choice that wants control over where to embed this stream
  * </ul>
- *
+ * @deprecated Instead, prefer mapping your preferred serialization on top of {@link HystrixUtilizationStream#observe()}.
  */
+@Deprecated //since 1.5.4
 public class HystrixUtilizationJsonStream {
     private final Func1<Integer, Observable<HystrixUtilization>> streamGenerator;
 

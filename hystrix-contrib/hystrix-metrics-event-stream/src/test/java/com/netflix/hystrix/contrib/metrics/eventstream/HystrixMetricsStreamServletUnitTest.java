@@ -15,31 +15,70 @@
  */
 package com.netflix.hystrix.contrib.metrics.eventstream;
 
+import com.netflix.hystrix.metric.consumer.HystrixDashboardStream;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mockito;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import rx.Observable;
+import rx.functions.Func1;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.concurrent.TimeUnit;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class HystrixMetricsStreamServletUnitTest {
 
-    @Test
-    public void shutdownServletShouldRejectRequests() throws ServletException, IOException {
+    @Mock HttpServletRequest mockReq;
+    @Mock HttpServletResponse mockResp;
+    @Mock HystrixDashboardStream.DashboardData mockDashboard;
+    @Mock PrintWriter mockPrintWriter;
 
-        final HystrixMetricsStreamServlet servlet = new HystrixMetricsStreamServlet();
-        servlet.shutdown();
+    HystrixMetricsStreamServlet servlet;
 
-        final HttpServletResponse response = mock(HttpServletResponse.class);
-        servlet.doGet(mock(HttpServletRequest.class), response);
+    private final Observable<HystrixDashboardStream.DashboardData> streamOfOnNexts =
+            Observable.interval(100, TimeUnit.MILLISECONDS).map(new Func1<Long, HystrixDashboardStream.DashboardData>() {
+                @Override
+                public HystrixDashboardStream.DashboardData call(Long timestamp) {
+                    return mockDashboard;
+                }
+            });
 
-        verify(response).sendError(503, "Service has been shut down.");
 
+    @Before
+    public void init() {
+        MockitoAnnotations.initMocks(this);
+        when(mockReq.getMethod()).thenReturn("GET");
     }
 
+    @After
+    public void tearDown() {
+        servlet.destroy();
+        servlet.shutdown();
+    }
+
+    @Test
+    public void shutdownServletShouldRejectRequests() throws ServletException, IOException {
+        servlet = new HystrixMetricsStreamServlet(streamOfOnNexts, 10);
+        try {
+            servlet.init();
+        } catch (ServletException ex) {
+
+        }
+
+        servlet.shutdown();
+
+        servlet.service(mockReq, mockResp);
+
+        verify(mockResp).sendError(503, "Service has been shut down.");
+    }
 }

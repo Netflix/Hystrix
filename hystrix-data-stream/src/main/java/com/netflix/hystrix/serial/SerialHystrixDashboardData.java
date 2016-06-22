@@ -1,11 +1,11 @@
 /**
- * Copyright 2015 Netflix, Inc.
+ * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,61 +13,147 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.hystrix.contrib.rxnetty.metricsstream;
+package com.netflix.hystrix.serial;
 
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.netflix.hystrix.HystrixCircuitBreaker;
 import com.netflix.hystrix.HystrixCollapserKey;
 import com.netflix.hystrix.HystrixCollapserMetrics;
 import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixCommandMetrics;
-import com.netflix.hystrix.HystrixCommandMetrics.HealthCounts;
 import com.netflix.hystrix.HystrixCommandProperties;
+import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.HystrixThreadPoolKey;
 import com.netflix.hystrix.HystrixThreadPoolMetrics;
-import com.netflix.hystrix.util.HystrixRollingNumberEvent;
-import org.codehaus.jackson.JsonFactory;
-import org.codehaus.jackson.JsonGenerator;
+import com.netflix.hystrix.metric.consumer.HystrixDashboardStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import rx.Observable;
 import rx.functions.Func0;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.List;
 
-/**
- * This code is taken from hystrix-metrics-event-stream module's HystrixMetricsPoller class.
- *
- * @author Tomasz Bak
- */
-final class JsonMappers {
+public class SerialHystrixDashboardData extends SerialHystrixMetric {
 
-    private static final JsonFactory jsonFactory = new JsonFactory();
-    static final Logger logger = LoggerFactory.getLogger(JsonMappers.class);
+    private static final Logger logger = LoggerFactory.getLogger(SerialHystrixDashboardData.class);
 
-    private JsonMappers() {
+    public static byte[] toBytes(HystrixDashboardStream.DashboardData dashboardData) {
+        byte[] retVal = null;
+
+        try {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            JsonGenerator cbor = cborFactory.createGenerator(bos);
+            writeDashboardData(cbor, dashboardData);
+            retVal = bos.toByteArray();
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        return retVal;
     }
 
-    private static void safelyWriteNumberField(JsonGenerator json, String name, Func0<Long> metricGenerator) throws IOException {
+    public static String toJsonString(HystrixDashboardStream.DashboardData dashboardData) {
+        StringWriter jsonString = new StringWriter();
+
         try {
-            json.writeNumberField(name, metricGenerator.call());
-        } catch (NoSuchFieldError error) {
-            logger.error("While publishing Hystrix metrics stream, error looking up eventType for : {}.  Please check that all Hystrix versions are the same!",name);
-            json.writeNumberField(name, 0L);
+            JsonGenerator json = jsonFactory.createGenerator(jsonString);
+            writeDashboardData(json, dashboardData);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        return jsonString.getBuffer().toString();
+    }
+
+    public static List<String> toMultipleJsonStrings(HystrixDashboardStream.DashboardData dashboardData) {
+        List<String> jsonStrings = new ArrayList<String>();
+
+        for (HystrixCommandMetrics commandMetrics : dashboardData.getCommandMetrics()) {
+            jsonStrings.add(toJsonString(commandMetrics));
+        }
+
+        for (HystrixThreadPoolMetrics threadPoolMetrics : dashboardData.getThreadPoolMetrics()) {
+            jsonStrings.add(toJsonString(threadPoolMetrics));
+        }
+
+        for (HystrixCollapserMetrics collapserMetrics : dashboardData.getCollapserMetrics()) {
+            jsonStrings.add(toJsonString(collapserMetrics));
+        }
+
+        return jsonStrings;
+    }
+
+    private static void writeDashboardData(JsonGenerator json, HystrixDashboardStream.DashboardData dashboardData) {
+        try {
+            json.writeStartArray();
+
+            for (HystrixCommandMetrics commandMetrics : dashboardData.getCommandMetrics()) {
+                writeCommandMetrics(commandMetrics, json);
+            }
+
+            for (HystrixThreadPoolMetrics threadPoolMetrics : dashboardData.getThreadPoolMetrics()) {
+                writeThreadPoolMetrics(threadPoolMetrics, json);
+            }
+
+            for (HystrixCollapserMetrics collapserMetrics : dashboardData.getCollapserMetrics()) {
+                writeCollapserMetrics(collapserMetrics, json);
+            }
+
+            json.writeEndArray();
+
+            json.close();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
-    /**
-     * An implementation note.  If there's a version mismatch between hystrix-core and hystrix-rx-netty-metrics-stream,
-     * the code below may reference a HystrixRollingNumberEvent that does not exist in hystrix-core.  If this happens,
-     * a j.l.NoSuchFieldError occurs.  Since this data is not being generated by hystrix-core, it's safe to count it as 0
-     * and we should log an error to get users to update their dependency set.
-     */
-    static String toJson(final HystrixCommandMetrics commandMetrics) throws IOException {
+    public static String toJsonString(HystrixCommandMetrics commandMetrics) {
+        StringWriter jsonString = new StringWriter();
+
+        try {
+            JsonGenerator json = jsonFactory.createGenerator(jsonString);
+            writeCommandMetrics(commandMetrics, json);
+            json.close();
+            return jsonString.getBuffer().toString();
+        } catch (IOException ioe) {
+            throw new RuntimeException(ioe);
+        }
+    }
+
+    public static String toJsonString(HystrixThreadPoolMetrics threadPoolMetrics) {
+        StringWriter jsonString = new StringWriter();
+
+        try {
+            JsonGenerator json = jsonFactory.createGenerator(jsonString);
+            writeThreadPoolMetrics(threadPoolMetrics, json);
+            json.close();
+            return jsonString.getBuffer().toString();
+        } catch (IOException ioe) {
+            throw new RuntimeException(ioe);
+        }
+    }
+
+    public static String toJsonString(HystrixCollapserMetrics collapserMetrics) {
+        StringWriter jsonString = new StringWriter();
+
+        try {
+            JsonGenerator json = jsonFactory.createGenerator(jsonString);
+            writeCollapserMetrics(collapserMetrics, json);
+            json.close();
+            return jsonString.getBuffer().toString();
+        } catch (IOException ioe) {
+            throw new RuntimeException(ioe);
+        }
+    }
+
+    private static void writeCommandMetrics(final HystrixCommandMetrics commandMetrics, JsonGenerator json) throws IOException {
         HystrixCommandKey key = commandMetrics.getCommandKey();
         HystrixCircuitBreaker circuitBreaker = HystrixCircuitBreaker.Factory.getInstance(key);
-
-        StringWriter jsonString = new StringWriter();
-        JsonGenerator json = jsonFactory.createJsonGenerator(jsonString);
 
         json.writeStartObject();
         json.writeStringField("type", "HystrixCommand");
@@ -82,7 +168,7 @@ final class JsonMappers {
         } else {
             json.writeBooleanField("isCircuitBreakerOpen", circuitBreaker.isOpen());
         }
-        HealthCounts healthCounts = commandMetrics.getHealthCounts();
+        HystrixCommandMetrics.HealthCounts healthCounts = commandMetrics.getHealthCounts();
         json.writeNumberField("errorPercentage", healthCounts.getErrorPercentage());
         json.writeNumberField("errorCount", healthCounts.getErrorCount());
         json.writeNumberField("requestCount", healthCounts.getTotalRequests());
@@ -91,97 +177,97 @@ final class JsonMappers {
         safelyWriteNumberField(json, "rollingCountBadRequests", new Func0<Long>() {
             @Override
             public Long call() {
-                return commandMetrics.getRollingCount(HystrixRollingNumberEvent.BAD_REQUEST);
+                return commandMetrics.getRollingCount(HystrixEventType.BAD_REQUEST);
             }
         });
         safelyWriteNumberField(json, "rollingCountCollapsedRequests", new Func0<Long>() {
             @Override
             public Long call() {
-                return commandMetrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSED);
+                return commandMetrics.getRollingCount(HystrixEventType.COLLAPSED);
             }
         });
         safelyWriteNumberField(json, "rollingCountEmit", new Func0<Long>() {
             @Override
             public Long call() {
-                return commandMetrics.getRollingCount(HystrixRollingNumberEvent.EMIT);
+                return commandMetrics.getRollingCount(HystrixEventType.EMIT);
             }
         });
         safelyWriteNumberField(json, "rollingCountExceptionsThrown", new Func0<Long>() {
             @Override
             public Long call() {
-                return commandMetrics.getRollingCount(HystrixRollingNumberEvent.EXCEPTION_THROWN);
+                return commandMetrics.getRollingCount(HystrixEventType.EXCEPTION_THROWN);
             }
         });
         safelyWriteNumberField(json, "rollingCountFailure", new Func0<Long>() {
             @Override
             public Long call() {
-                return commandMetrics.getRollingCount(HystrixRollingNumberEvent.FAILURE);
+                return commandMetrics.getRollingCount(HystrixEventType.FAILURE);
             }
         });
         safelyWriteNumberField(json, "rollingCountFallbackEmit", new Func0<Long>() {
             @Override
             public Long call() {
-                return commandMetrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_EMIT);
+                return commandMetrics.getRollingCount(HystrixEventType.FALLBACK_EMIT);
             }
         });
         safelyWriteNumberField(json, "rollingCountFallbackFailure", new Func0<Long>() {
             @Override
             public Long call() {
-                return commandMetrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_FAILURE);
+                return commandMetrics.getRollingCount(HystrixEventType.FALLBACK_FAILURE);
             }
         });
         safelyWriteNumberField(json, "rollingCountFallbackMissing", new Func0<Long>() {
             @Override
             public Long call() {
-                return commandMetrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_MISSING);
+                return commandMetrics.getRollingCount(HystrixEventType.FALLBACK_MISSING);
             }
         });
         safelyWriteNumberField(json, "rollingCountFallbackRejection", new Func0<Long>() {
             @Override
             public Long call() {
-                return commandMetrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_REJECTION);
+                return commandMetrics.getRollingCount(HystrixEventType.FALLBACK_REJECTION);
             }
         });
         safelyWriteNumberField(json, "rollingCountFallbackSuccess", new Func0<Long>() {
             @Override
             public Long call() {
-                return commandMetrics.getRollingCount(HystrixRollingNumberEvent.FALLBACK_SUCCESS);
+                return commandMetrics.getRollingCount(HystrixEventType.FALLBACK_SUCCESS);
             }
         });
         safelyWriteNumberField(json, "rollingCountResponsesFromCache", new Func0<Long>() {
             @Override
             public Long call() {
-                return commandMetrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE);
+                return commandMetrics.getRollingCount(HystrixEventType.RESPONSE_FROM_CACHE);
             }
         });
         safelyWriteNumberField(json, "rollingCountSemaphoreRejected", new Func0<Long>() {
             @Override
             public Long call() {
-                return commandMetrics.getRollingCount(HystrixRollingNumberEvent.SEMAPHORE_REJECTED);
+                return commandMetrics.getRollingCount(HystrixEventType.SEMAPHORE_REJECTED);
             }
         });
         safelyWriteNumberField(json, "rollingCountShortCircuited", new Func0<Long>() {
             @Override
             public Long call() {
-                return commandMetrics.getRollingCount(HystrixRollingNumberEvent.SHORT_CIRCUITED);
+                return commandMetrics.getRollingCount(HystrixEventType.SHORT_CIRCUITED);
             }
         });
         safelyWriteNumberField(json, "rollingCountSuccess", new Func0<Long>() {
             @Override
             public Long call() {
-                return commandMetrics.getRollingCount(HystrixRollingNumberEvent.SUCCESS);
+                return commandMetrics.getRollingCount(HystrixEventType.SUCCESS);
             }
         });
         safelyWriteNumberField(json, "rollingCountThreadPoolRejected", new Func0<Long>() {
             @Override
             public Long call() {
-                return commandMetrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED);
+                return commandMetrics.getRollingCount(HystrixEventType.THREAD_POOL_REJECTED);
             }
         });
         safelyWriteNumberField(json, "rollingCountTimeout", new Func0<Long>() {
             @Override
             public Long call() {
-                return commandMetrics.getRollingCount(HystrixRollingNumberEvent.TIMEOUT);
+                return commandMetrics.getRollingCount(HystrixEventType.TIMEOUT);
             }
         });
 
@@ -249,18 +335,14 @@ final class JsonMappers {
         json.writeBooleanField("propertyValue_requestLogEnabled", commandProperties.requestLogEnabled().get());
 
         json.writeNumberField("reportingHosts", 1); // this will get summed across all instances in a cluster
+        json.writeStringField("threadPool", commandMetrics.getThreadPoolKey().name());
 
         json.writeEndObject();
-        json.close();
-
-        return jsonString.getBuffer().toString();
     }
 
-    static String toJson(final HystrixThreadPoolMetrics threadPoolMetrics) throws IOException {
+    private static void writeThreadPoolMetrics(final HystrixThreadPoolMetrics threadPoolMetrics, JsonGenerator json) throws IOException {
         HystrixThreadPoolKey key = threadPoolMetrics.getThreadPoolKey();
 
-        StringWriter jsonString = new StringWriter();
-        JsonGenerator json = jsonFactory.createJsonGenerator(jsonString);
         json.writeStartObject();
 
         json.writeStringField("type", "HystrixThreadPool");
@@ -275,29 +357,31 @@ final class JsonMappers {
         json.writeNumberField("currentPoolSize", threadPoolMetrics.getCurrentPoolSize().intValue());
         json.writeNumberField("currentQueueSize", threadPoolMetrics.getCurrentQueueSize().intValue());
         json.writeNumberField("currentTaskCount", threadPoolMetrics.getCurrentTaskCount().longValue());
-        json.writeNumberField("rollingCountThreadsExecuted", threadPoolMetrics.getRollingCountThreadsExecuted());
-        json.writeNumberField("rollingMaxActiveThreads", threadPoolMetrics.getRollingMaxActiveThreads());
-        safelyWriteNumberField(json, "rollingCountCommandsRejected", new Func0<Long>() {
+        safelyWriteNumberField(json, "rollingCountThreadsExecuted", new Func0<Long>() {
             @Override
             public Long call() {
-                return threadPoolMetrics.getRollingCount(HystrixRollingNumberEvent.THREAD_POOL_REJECTED);
+                return threadPoolMetrics.getRollingCount(HystrixEventType.ThreadPool.EXECUTED);
             }
         });
+        json.writeNumberField("rollingMaxActiveThreads", threadPoolMetrics.getRollingMaxActiveThreads());
+        safelyWriteNumberField(json, "rollingCountCommandRejections", new Func0<Long>() {
+            @Override
+            public Long call() {
+                return threadPoolMetrics.getRollingCount(HystrixEventType.ThreadPool.REJECTED);
+            }
+        });
+
         json.writeNumberField("propertyValue_queueSizeRejectionThreshold", threadPoolMetrics.getProperties().queueSizeRejectionThreshold().get());
         json.writeNumberField("propertyValue_metricsRollingStatisticalWindowInMilliseconds", threadPoolMetrics.getProperties().metricsRollingStatisticalWindowInMilliseconds().get());
 
         json.writeNumberField("reportingHosts", 1); // this will get summed across all instances in a cluster
 
         json.writeEndObject();
-        json.close();
-
-        return jsonString.getBuffer().toString();
     }
 
-    static String toJson(final HystrixCollapserMetrics collapserMetrics) throws IOException {
+    private static void writeCollapserMetrics(final HystrixCollapserMetrics collapserMetrics, JsonGenerator json) throws IOException  {
         HystrixCollapserKey key = collapserMetrics.getCollapserKey();
-        StringWriter jsonString = new StringWriter();
-        JsonGenerator json = jsonFactory.createJsonGenerator(jsonString);
+
         json.writeStartObject();
 
         json.writeStringField("type", "HystrixCollapser");
@@ -307,19 +391,19 @@ final class JsonMappers {
         safelyWriteNumberField(json, "rollingCountRequestsBatched", new Func0<Long>() {
             @Override
             public Long call() {
-                return collapserMetrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_REQUEST_BATCHED);
+                return collapserMetrics.getRollingCount(HystrixEventType.Collapser.ADDED_TO_BATCH);
             }
         });
         safelyWriteNumberField(json, "rollingCountBatches", new Func0<Long>() {
             @Override
             public Long call() {
-                return collapserMetrics.getRollingCount(HystrixRollingNumberEvent.COLLAPSER_BATCH);
+                return collapserMetrics.getRollingCount(HystrixEventType.Collapser.BATCH_EXECUTED);
             }
         });
         safelyWriteNumberField(json, "rollingCountResponsesFromCache", new Func0<Long>() {
             @Override
             public Long call() {
-                return collapserMetrics.getRollingCount(HystrixRollingNumberEvent.RESPONSE_FROM_CACHE);
+                return collapserMetrics.getRollingCount(HystrixEventType.Collapser.RESPONSE_FROM_CACHE);
             }
         });
 
@@ -357,8 +441,14 @@ final class JsonMappers {
         json.writeNumberField("reportingHosts", 1); // this will get summed across all instances in a cluster
 
         json.writeEndObject();
-        json.close();
+    }
 
-        return jsonString.getBuffer().toString();
+    protected static void safelyWriteNumberField(JsonGenerator json, String name, Func0<Long> metricGenerator) throws IOException {
+        try {
+            json.writeNumberField(name, metricGenerator.call());
+        } catch (NoSuchFieldError error) {
+            logger.error("While publishing Hystrix metrics stream, error looking up eventType for : " + name + ".  Please check that all Hystrix versions are the same!");
+            json.writeNumberField(name, 0L);
+        }
     }
 }

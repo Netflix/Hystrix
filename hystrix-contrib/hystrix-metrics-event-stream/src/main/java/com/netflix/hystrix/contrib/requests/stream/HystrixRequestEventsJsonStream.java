@@ -29,6 +29,13 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Stream that converts HystrixRequestEvents into JSON.  This isn't needed anymore, as it more straightforward
+ * to consider serialization completely separately from the domain object stream
+ *
+ * @deprecated Instead, prefer mapping your preferred serialization on top of {@link HystrixRequestEventsStream#observe()}.
+ */
+@Deprecated //since 1.5.4
 public class HystrixRequestEventsJsonStream {
     private static final JsonFactory jsonFactory = new JsonFactory();
 

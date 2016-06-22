@@ -18,6 +18,7 @@ package com.netflix.hystrix.contrib.rxnetty.metricsstream;
 import com.netflix.hystrix.HystrixCollapserMetrics;
 import com.netflix.hystrix.HystrixCommandMetrics;
 import com.netflix.hystrix.HystrixThreadPoolMetrics;
+import com.netflix.hystrix.serial.SerialHystrixDashboardData;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.reactivex.netty.protocol.http.server.HttpServerRequest;
@@ -33,8 +34,6 @@ import rx.subscriptions.MultipleAssignmentSubscription;
 
 import java.nio.charset.Charset;
 import java.util.concurrent.TimeUnit;
-
-import static com.netflix.hystrix.contrib.rxnetty.metricsstream.JsonMappers.*;
 
 /**
  * Streams Hystrix metrics in Server Sent Event (SSE) format. RxNetty application handlers shall
@@ -96,13 +95,13 @@ public class HystrixMetricsStreamHandler<I, O> implements RequestHandler<I, O> {
                         }
                         try {
                             for (HystrixCommandMetrics commandMetrics : HystrixCommandMetrics.getInstances()) {
-                                writeMetric(toJson(commandMetrics), response);
+                                writeMetric(SerialHystrixDashboardData.toJsonString(commandMetrics), response);
                             }
                             for (HystrixThreadPoolMetrics threadPoolMetrics : HystrixThreadPoolMetrics.getInstances()) {
-                                writeMetric(toJson(threadPoolMetrics), response);
+                                writeMetric(SerialHystrixDashboardData.toJsonString(threadPoolMetrics), response);
                             }
                             for (HystrixCollapserMetrics collapserMetrics : HystrixCollapserMetrics.getInstances()) {
-                                writeMetric(toJson(collapserMetrics), response);
+                                writeMetric(SerialHystrixDashboardData.toJsonString(collapserMetrics), response);
                             }
                         } catch (Exception e) {
                             subject.onError(e);

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.hystrix.contrib.requests.stream;
+package com.netflix.hystrix.serial;
 
 import com.netflix.hystrix.ExecutionResult;
 import com.netflix.hystrix.HystrixCollapserKey;
@@ -34,7 +34,7 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class HystrixRequestEventsJsonStreamTest {
+public class SerialHystrixRequestEventsTest {
 
     private static final HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("GROUP");
     private static final HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("ThreadPool");
@@ -45,7 +45,7 @@ public class HystrixRequestEventsJsonStreamTest {
     @Test
     public void testEmpty() throws IOException {
         HystrixRequestEvents request = new HystrixRequestEvents(new ArrayList<HystrixInvokableInfo<?>>());
-        String actual = HystrixRequestEventsJsonStream.convertRequestToJson(request);
+        String actual = SerialHystrixRequestEvents.toJsonString(request);
         assertEquals("[]", actual);
     }
 
@@ -54,7 +54,7 @@ public class HystrixRequestEventsJsonStreamTest {
         List<HystrixInvokableInfo<?>> executions = new ArrayList<HystrixInvokableInfo<?>>();
         executions.add(new SimpleExecution(fooKey, 100, HystrixEventType.SUCCESS));
         HystrixRequestEvents request = new HystrixRequestEvents(executions);
-        String actual = HystrixRequestEventsJsonStream.convertRequestToJson(request);
+        String actual = SerialHystrixRequestEvents.toJsonString(request);
         assertEquals("[{\"name\":\"Foo\",\"events\":[\"SUCCESS\"],\"latencies\":[100]}]", actual);
     }
 
@@ -63,7 +63,7 @@ public class HystrixRequestEventsJsonStreamTest {
         List<HystrixInvokableInfo<?>> executions = new ArrayList<HystrixInvokableInfo<?>>();
         executions.add(new SimpleExecution(fooKey, 101, HystrixEventType.FAILURE, HystrixEventType.FALLBACK_MISSING));
         HystrixRequestEvents request = new HystrixRequestEvents(executions);
-        String actual = HystrixRequestEventsJsonStream.convertRequestToJson(request);
+        String actual = SerialHystrixRequestEvents.toJsonString(request);
         assertEquals("[{\"name\":\"Foo\",\"events\":[\"FAILURE\",\"FALLBACK_MISSING\"],\"latencies\":[101]}]", actual);
     }
 
@@ -72,7 +72,7 @@ public class HystrixRequestEventsJsonStreamTest {
         List<HystrixInvokableInfo<?>> executions = new ArrayList<HystrixInvokableInfo<?>>();
         executions.add(new SimpleExecution(fooKey, 102, HystrixEventType.FAILURE, HystrixEventType.FALLBACK_SUCCESS));
         HystrixRequestEvents request = new HystrixRequestEvents(executions);
-        String actual = HystrixRequestEventsJsonStream.convertRequestToJson(request);
+        String actual = SerialHystrixRequestEvents.toJsonString(request);
         assertEquals("[{\"name\":\"Foo\",\"events\":[\"FAILURE\",\"FALLBACK_SUCCESS\"],\"latencies\":[102]}]", actual);
     }
 
@@ -81,7 +81,7 @@ public class HystrixRequestEventsJsonStreamTest {
         List<HystrixInvokableInfo<?>> executions = new ArrayList<HystrixInvokableInfo<?>>();
         executions.add(new SimpleExecution(fooKey, 103, HystrixEventType.FAILURE, HystrixEventType.FALLBACK_REJECTION));
         HystrixRequestEvents request = new HystrixRequestEvents(executions);
-        String actual = HystrixRequestEventsJsonStream.convertRequestToJson(request);
+        String actual = SerialHystrixRequestEvents.toJsonString(request);
         assertEquals("[{\"name\":\"Foo\",\"events\":[\"FAILURE\",\"FALLBACK_REJECTION\"],\"latencies\":[103]}]", actual);
     }
 
@@ -90,7 +90,7 @@ public class HystrixRequestEventsJsonStreamTest {
         List<HystrixInvokableInfo<?>> executions = new ArrayList<HystrixInvokableInfo<?>>();
         executions.add(new SimpleExecution(fooKey, 104, HystrixEventType.FAILURE, HystrixEventType.FALLBACK_FAILURE));
         HystrixRequestEvents request = new HystrixRequestEvents(executions);
-        String actual = HystrixRequestEventsJsonStream.convertRequestToJson(request);
+        String actual = SerialHystrixRequestEvents.toJsonString(request);
         assertEquals("[{\"name\":\"Foo\",\"events\":[\"FAILURE\",\"FALLBACK_FAILURE\"],\"latencies\":[104]}]", actual);
     }
 
@@ -99,7 +99,7 @@ public class HystrixRequestEventsJsonStreamTest {
         List<HystrixInvokableInfo<?>> executions = new ArrayList<HystrixInvokableInfo<?>>();
         executions.add(new SimpleExecution(fooKey, 105, HystrixEventType.TIMEOUT, HystrixEventType.FALLBACK_SUCCESS));
         HystrixRequestEvents request = new HystrixRequestEvents(executions);
-        String actual = HystrixRequestEventsJsonStream.convertRequestToJson(request);
+        String actual = SerialHystrixRequestEvents.toJsonString(request);
         assertEquals("[{\"name\":\"Foo\",\"events\":[\"TIMEOUT\",\"FALLBACK_SUCCESS\"],\"latencies\":[105]}]", actual);
     }
 
@@ -108,7 +108,7 @@ public class HystrixRequestEventsJsonStreamTest {
         List<HystrixInvokableInfo<?>> executions = new ArrayList<HystrixInvokableInfo<?>>();
         executions.add(new SimpleExecution(fooKey, 1, HystrixEventType.SEMAPHORE_REJECTED, HystrixEventType.FALLBACK_SUCCESS));
         HystrixRequestEvents request = new HystrixRequestEvents(executions);
-        String actual = HystrixRequestEventsJsonStream.convertRequestToJson(request);
+        String actual = SerialHystrixRequestEvents.toJsonString(request);
         assertEquals("[{\"name\":\"Foo\",\"events\":[\"SEMAPHORE_REJECTED\",\"FALLBACK_SUCCESS\"],\"latencies\":[1]}]", actual);
     }
 
@@ -117,7 +117,7 @@ public class HystrixRequestEventsJsonStreamTest {
         List<HystrixInvokableInfo<?>> executions = new ArrayList<HystrixInvokableInfo<?>>();
         executions.add(new SimpleExecution(fooKey, 1, HystrixEventType.THREAD_POOL_REJECTED, HystrixEventType.FALLBACK_SUCCESS));
         HystrixRequestEvents request = new HystrixRequestEvents(executions);
-        String actual = HystrixRequestEventsJsonStream.convertRequestToJson(request);
+        String actual = SerialHystrixRequestEvents.toJsonString(request);
         assertEquals("[{\"name\":\"Foo\",\"events\":[\"THREAD_POOL_REJECTED\",\"FALLBACK_SUCCESS\"],\"latencies\":[1]}]", actual);
     }
 
@@ -126,7 +126,7 @@ public class HystrixRequestEventsJsonStreamTest {
         List<HystrixInvokableInfo<?>> executions = new ArrayList<HystrixInvokableInfo<?>>();
         executions.add(new SimpleExecution(fooKey, 1, HystrixEventType.SHORT_CIRCUITED, HystrixEventType.FALLBACK_SUCCESS));
         HystrixRequestEvents request = new HystrixRequestEvents(executions);
-        String actual = HystrixRequestEventsJsonStream.convertRequestToJson(request);
+        String actual = SerialHystrixRequestEvents.toJsonString(request);
         assertEquals("[{\"name\":\"Foo\",\"events\":[\"SHORT_CIRCUITED\",\"FALLBACK_SUCCESS\"],\"latencies\":[1]}]", actual);
     }
 
@@ -135,7 +135,7 @@ public class HystrixRequestEventsJsonStreamTest {
         List<HystrixInvokableInfo<?>> executions = new ArrayList<HystrixInvokableInfo<?>>();
         executions.add(new SimpleExecution(fooKey, 50, HystrixEventType.BAD_REQUEST));
         HystrixRequestEvents request = new HystrixRequestEvents(executions);
-        String actual = HystrixRequestEventsJsonStream.convertRequestToJson(request);
+        String actual = SerialHystrixRequestEvents.toJsonString(request);
         assertEquals("[{\"name\":\"Foo\",\"events\":[\"BAD_REQUEST\"],\"latencies\":[50]}]", actual);
     }
 
@@ -147,7 +147,7 @@ public class HystrixRequestEventsJsonStreamTest {
         executions.add(foo1);
         executions.add(foo2);
         HystrixRequestEvents request = new HystrixRequestEvents(executions);
-        String actual = HystrixRequestEventsJsonStream.convertRequestToJson(request);
+        String actual = SerialHystrixRequestEvents.toJsonString(request);
         assertEquals("[{\"name\":\"Foo\",\"events\":[\"SUCCESS\"],\"latencies\":[23,34]}]", actual);
     }
 
@@ -159,7 +159,7 @@ public class HystrixRequestEventsJsonStreamTest {
         executions.add(foo1);
         executions.add(bar1);
         HystrixRequestEvents request = new HystrixRequestEvents(executions);
-        String actual = HystrixRequestEventsJsonStream.convertRequestToJson(request);
+        String actual = SerialHystrixRequestEvents.toJsonString(request);
         assertTrue(actual.equals("[{\"name\":\"Foo\",\"events\":[\"SUCCESS\"],\"latencies\":[23]},{\"name\":\"Bar\",\"events\":[\"SUCCESS\"],\"latencies\":[34]}]") ||
                 actual.equals("[{\"name\":\"Bar\",\"events\":[\"SUCCESS\"],\"latencies\":[34]},{\"name\":\"Foo\",\"events\":[\"SUCCESS\"],\"latencies\":[23]}]"));
     }
@@ -172,7 +172,7 @@ public class HystrixRequestEventsJsonStreamTest {
         executions.add(foo1);
         executions.add(foo2);
         HystrixRequestEvents request = new HystrixRequestEvents(executions);
-        String actual = HystrixRequestEventsJsonStream.convertRequestToJson(request);
+        String actual = SerialHystrixRequestEvents.toJsonString(request);
         assertEquals("[{\"name\":\"Foo\",\"events\":[\"FAILURE\",\"FALLBACK_SUCCESS\"],\"latencies\":[56,67]}]", actual);
     }
 
@@ -186,7 +186,7 @@ public class HystrixRequestEventsJsonStreamTest {
         executions.add(foo2);
         executions.add(foo3);
         HystrixRequestEvents request = new HystrixRequestEvents(executions);
-        String actual = HystrixRequestEventsJsonStream.convertRequestToJson(request);
+        String actual = SerialHystrixRequestEvents.toJsonString(request);
         assertTrue(actual.equals("[{\"name\":\"Foo\",\"events\":[\"SUCCESS\"],\"latencies\":[10,11]},{\"name\":\"Foo\",\"events\":[\"FAILURE\",\"FALLBACK_SUCCESS\"],\"latencies\":[67]}]") ||
                 actual.equals("[{\"name\":\"Foo\",\"events\":[\"FAILURE\",\"FALLBACK_SUCCESS\"],\"latencies\":[67]},{\"name\":\"Foo\",\"events\":[\"SUCCESS\"],\"latencies\":[10,11]}]"));
     }
@@ -199,7 +199,7 @@ public class HystrixRequestEventsJsonStreamTest {
         executions.add(foo1);
         executions.add(cachedFoo1);
         HystrixRequestEvents request = new HystrixRequestEvents(executions);
-        String actual = HystrixRequestEventsJsonStream.convertRequestToJson(request);
+        String actual = SerialHystrixRequestEvents.toJsonString(request);
         assertEquals("[{\"name\":\"Foo\",\"events\":[\"SUCCESS\"],\"latencies\":[23],\"cached\":1}]", actual);
     }
 
@@ -213,7 +213,7 @@ public class HystrixRequestEventsJsonStreamTest {
         executions.add(cachedFoo1);
         executions.add(anotherCachedFoo1);
         HystrixRequestEvents request = new HystrixRequestEvents(executions);
-        String actual = HystrixRequestEventsJsonStream.convertRequestToJson(request);
+        String actual = SerialHystrixRequestEvents.toJsonString(request);
         assertEquals("[{\"name\":\"Foo\",\"events\":[\"SUCCESS\"],\"latencies\":[23],\"cached\":2}]", actual);
     }
 
@@ -229,7 +229,7 @@ public class HystrixRequestEventsJsonStreamTest {
         executions.add(foo2);
         executions.add(cachedFoo2);
         HystrixRequestEvents request = new HystrixRequestEvents(executions);
-        String actual = HystrixRequestEventsJsonStream.convertRequestToJson(request);
+        String actual = SerialHystrixRequestEvents.toJsonString(request);
         assertTrue(actual.equals("[{\"name\":\"Foo\",\"events\":[\"SUCCESS\"],\"latencies\":[67],\"cached\":1},{\"name\":\"Foo\",\"events\":[\"SUCCESS\"],\"latencies\":[23],\"cached\":1}]") ||
                 actual.equals("[{\"name\":\"Foo\",\"events\":[\"SUCCESS\"],\"latencies\":[23],\"cached\":1},{\"name\":\"Foo\",\"events\":[\"SUCCESS\"],\"latencies\":[67],\"cached\":1}]"));
     }
@@ -239,7 +239,7 @@ public class HystrixRequestEventsJsonStreamTest {
         List<HystrixInvokableInfo<?>> executions = new ArrayList<HystrixInvokableInfo<?>>();
         executions.add(new SimpleExecution(fooKey, 100, HystrixEventType.EMIT, HystrixEventType.EMIT, HystrixEventType.EMIT, HystrixEventType.SUCCESS));
         HystrixRequestEvents request = new HystrixRequestEvents(executions);
-        String actual = HystrixRequestEventsJsonStream.convertRequestToJson(request);
+        String actual = SerialHystrixRequestEvents.toJsonString(request);
         assertEquals("[{\"name\":\"Foo\",\"events\":[{\"name\":\"EMIT\",\"count\":3},\"SUCCESS\"],\"latencies\":[100]}]", actual);
     }
 
@@ -248,7 +248,7 @@ public class HystrixRequestEventsJsonStreamTest {
         List<HystrixInvokableInfo<?>> executions = new ArrayList<HystrixInvokableInfo<?>>();
         executions.add(new SimpleExecution(fooKey, 100, HystrixEventType.EMIT, HystrixEventType.EMIT, HystrixEventType.EMIT, HystrixEventType.FAILURE, HystrixEventType.FALLBACK_EMIT, HystrixEventType.FALLBACK_EMIT, HystrixEventType.FALLBACK_SUCCESS));
         HystrixRequestEvents request = new HystrixRequestEvents(executions);
-        String actual = HystrixRequestEventsJsonStream.convertRequestToJson(request);
+        String actual = SerialHystrixRequestEvents.toJsonString(request);
         assertEquals("[{\"name\":\"Foo\",\"events\":[{\"name\":\"EMIT\",\"count\":3},\"FAILURE\",{\"name\":\"FALLBACK_EMIT\",\"count\":2},\"FALLBACK_SUCCESS\"],\"latencies\":[100]}]", actual);
     }
 
@@ -257,7 +257,7 @@ public class HystrixRequestEventsJsonStreamTest {
         List<HystrixInvokableInfo<?>> executions = new ArrayList<HystrixInvokableInfo<?>>();
         executions.add(new SimpleExecution(fooKey, 53, collapserKey, 1, HystrixEventType.SUCCESS));
         HystrixRequestEvents request = new HystrixRequestEvents(executions);
-        String actual = HystrixRequestEventsJsonStream.convertRequestToJson(request);
+        String actual = SerialHystrixRequestEvents.toJsonString(request);
         assertEquals("[{\"name\":\"Foo\",\"events\":[\"SUCCESS\"],\"latencies\":[53],\"collapsed\":{\"name\":\"FooCollapser\",\"count\":1}}]", actual);
     }
 
@@ -266,7 +266,7 @@ public class HystrixRequestEventsJsonStreamTest {
         List<HystrixInvokableInfo<?>> executions = new ArrayList<HystrixInvokableInfo<?>>();
         executions.add(new SimpleExecution(fooKey, 53, collapserKey, 6, HystrixEventType.SUCCESS));
         HystrixRequestEvents request = new HystrixRequestEvents(executions);
-        String actual = HystrixRequestEventsJsonStream.convertRequestToJson(request);
+        String actual = SerialHystrixRequestEvents.toJsonString(request);
         assertEquals("[{\"name\":\"Foo\",\"events\":[\"SUCCESS\"],\"latencies\":[53],\"collapsed\":{\"name\":\"FooCollapser\",\"count\":6}}]", actual);
     }
 

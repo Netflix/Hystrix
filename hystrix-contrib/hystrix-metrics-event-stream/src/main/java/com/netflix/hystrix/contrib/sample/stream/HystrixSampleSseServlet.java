@@ -32,40 +32,36 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  */
-public abstract class HystrixSampleSseServlet<SampleData> extends HttpServlet {
-    protected final Observable<SampleData> sampleStream;
+public abstract class HystrixSampleSseServlet extends HttpServlet {
+    protected final Observable<String> sampleStream;
 
     private static final Logger logger = LoggerFactory.getLogger(HystrixSampleSseServlet.class);
 
     //wake up occasionally and check that poller is still alive.  this value controls how often
-    private static final int DEFAULT_PAUSE_POLLER_THREAD_DELAY_IN_MS = 500;
+    protected static final int DEFAULT_PAUSE_POLLER_THREAD_DELAY_IN_MS = 500;
 
     private final int pausePollerThreadDelayInMs;
 
     /* Set to true upon shutdown, so it's OK to be shared among all SampleSseServlets */
     private static volatile boolean isDestroyed = false;
 
-    protected HystrixSampleSseServlet(Observable<SampleData> sampleStream) {
+    protected HystrixSampleSseServlet(Observable<String> sampleStream) {
         this.sampleStream = sampleStream;
         this.pausePollerThreadDelayInMs = DEFAULT_PAUSE_POLLER_THREAD_DELAY_IN_MS;
     }
 
-    protected HystrixSampleSseServlet(Observable<SampleData> sampleStream, int pausePollerThreadDelayInMs) {
+    protected HystrixSampleSseServlet(Observable<String> sampleStream, int pausePollerThreadDelayInMs) {
         this.sampleStream = sampleStream;
         this.pausePollerThreadDelayInMs = pausePollerThreadDelayInMs;
     }
 
-    abstract int getMaxNumberConcurrentConnectionsAllowed();
+    protected abstract int getMaxNumberConcurrentConnectionsAllowed();
 
-    abstract int getNumberCurrentConnections();
+    protected abstract int getNumberCurrentConnections();
 
     protected abstract int incrementAndGetCurrentConcurrentConnections();
 
     protected abstract void decrementCurrentConcurrentConnections();
-
-    //protected abstract Observable<SampleData> getStream();
-
-    protected abstract String convertToString(SampleData sampleData) throws IOException;
 
     /**
      * Handle incoming GETs
@@ -131,13 +127,11 @@ public abstract class HystrixSampleSseServlet<SampleData> extends HttpServlet {
 
                 final PrintWriter writer = response.getWriter();
 
-                //Observable<SampleData> sampledStream = getStream();
-
                 //since the sample stream is based on Observable.interval, events will get published on an RxComputation thread
                 //since writing to the servlet response is blocking, use the Rx IO thread for the write that occurs in the onNext
                 sampleSubscription = sampleStream
                         .observeOn(Schedulers.io())
-                        .subscribe(new Subscriber<SampleData>() {
+                        .subscribe(new Subscriber<String>() {
                             @Override
                             public void onCompleted() {
                                 logger.error("HystrixSampleSseServlet: ({}) received unexpected OnCompleted from sample stream", getClass().getSimpleName());
@@ -150,26 +144,17 @@ public abstract class HystrixSampleSseServlet<SampleData> extends HttpServlet {
                             }
 
                             @Override
-                            public void onNext(SampleData sampleData) {
-                                if (sampleData != null) {
-                                    String sampleDataAsStr = null;
+                            public void onNext(String sampleDataAsString) {
+                                if (sampleDataAsString != null) {
                                     try {
-                                        sampleDataAsStr = convertToString(sampleData);
-                                    } catch (IOException ioe) {
-                                        //exception while converting String to JSON
-                                        logger.error("Error converting configuration to JSON ", ioe);
-                                    }
-                                    if (sampleDataAsStr != null) {
-                                        try {
-                                            writer.print("data: " + sampleDataAsStr + "\n\n");
-                                            // explicitly check for client disconnect - PrintWriter does not throw exceptions
-                                            if (writer.checkError()) {
-                                                throw new IOException("io error");
-                                            }
-                                            writer.flush();
-                                        } catch (IOException ioe) {
-                                            moreDataWillBeSent.set(false);
+                                        writer.print("data: " + sampleDataAsString + "\n\n");
+                                        // explicitly check for client disconnect - PrintWriter does not throw exceptions
+                                        if (writer.checkError()) {
+                                            throw new IOException("io error");
                                         }
+                                        writer.flush();
+                                    } catch (IOException ioe) {
+                                        moreDataWillBeSent.set(false);
                                     }
                                 }
                             }

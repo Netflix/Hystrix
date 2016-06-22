@@ -1,8 +1,7 @@
 dependencies {
     compile project(':hystrix-core')
+	compile project(':hystrix-data-stream')
     compile 'io.reactivex:rxnetty:0.4.12'
-    compile 'org.codehaus.jackson:jackson-core-asl:1.9.2'
-    compile 'org.codehaus.jackson:jackson-mapper-asl:1.9.2'
     testCompile 'junit:junit-dep:4.10'
     testCompile 'org.powermock:powermock-easymock-release-full:1.5.5'
     testCompile 'org.easymock:easymock:3.2'

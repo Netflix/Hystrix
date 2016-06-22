@@ -88,7 +88,6 @@ public class HystrixConfigSseServletTest {
     @Before
     public void init() {
         MockitoAnnotations.initMocks(this);
-
     }
 
     @After
@@ -111,7 +110,6 @@ public class HystrixConfigSseServletTest {
         servlet.doGet(mockReq, mockResp);
 
         verify(mockResp).sendError(503, "Service has been shut down.");
-
     }
 
     @Test

@@ -13,16 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.hystrix.contrib.reactivesocket.serialize;
+package com.netflix.hystrix.serial;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.netflix.hystrix.ExecutionResult;
 import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.metric.HystrixRequestEvents;
-import org.agrona.LangUtil;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.util.List;
 import java.util.Map;
 
@@ -33,8 +33,34 @@ public class SerialHystrixRequestEvents extends SerialHystrixMetric {
 
         try {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            JsonGenerator json = cborFactory.createGenerator(bos);
+            JsonGenerator cbor = cborFactory.createGenerator(bos);
 
+            serializeRequestEvents(requestEvents, cbor);
+
+            retVal = bos.toByteArray();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        return retVal;
+    }
+
+    public static String toJsonString(HystrixRequestEvents requestEvents) {
+        StringWriter jsonString = new StringWriter();
+
+        try {
+            JsonGenerator json = jsonFactory.createGenerator(jsonString);
+
+            serializeRequestEvents(requestEvents, json);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        return jsonString.getBuffer().toString();
+    }
+
+    private static void serializeRequestEvents(HystrixRequestEvents requestEvents, JsonGenerator json) {
+        try {
             json.writeStartArray();
 
             for (Map.Entry<HystrixRequestEvents.ExecutionSignature, List<Integer>> entry: requestEvents.getExecutionsMappedToLatencies().entrySet()) {
@@ -43,13 +69,9 @@ public class SerialHystrixRequestEvents extends SerialHystrixMetric {
 
             json.writeEndArray();
             json.close();
-
-            retVal = bos.toByteArray();
         } catch (Exception e) {
-            LangUtil.rethrowUnchecked(e);
+            throw new RuntimeException(e);
         }
-
-        return retVal;
     }
 
     private static void convertExecutionToJson(JsonGenerator json, HystrixRequestEvents.ExecutionSignature executionSignature, List<Integer> latencies) throws IOException {

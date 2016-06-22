@@ -13,14 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.hystrix.contrib.reactivesocket.serialize;
+package com.netflix.hystrix.serial;
 
+import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
 import com.fasterxml.jackson.dataformat.cbor.CBORParser;
-import io.reactivesocket.Frame;
-import io.reactivesocket.Payload;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,23 +27,10 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public class SerialHystrixMetric {
+    protected final static JsonFactory jsonFactory = new JsonFactory();
     protected final static CBORFactory cborFactory = new CBORFactory();
     protected final static ObjectMapper mapper = new ObjectMapper();
     protected final static Logger logger = LoggerFactory.getLogger(SerialHystrixMetric.class);
-
-    public static Payload toPayload(byte[] byteArray) {
-        return new Payload() {
-            @Override
-            public ByteBuffer getData() {
-                return ByteBuffer.wrap(byteArray);
-            }
-
-            @Override
-            public ByteBuffer getMetadata() {
-                return Frame.NULL_BYTEBUFFER;
-            }
-        };
-    }
 
     public static String fromByteBufferToString(ByteBuffer bb) {
         byte[] byteArray = new byte[bb.remaining()];

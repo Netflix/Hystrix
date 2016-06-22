@@ -13,22 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.hystrix.contrib.reactivesocket.serialize;
+package com.netflix.hystrix.serial;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.dataformat.cbor.CBORParser;
 import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixThreadPoolKey;
+import com.netflix.hystrix.config.HystrixConfiguration;
 import com.netflix.hystrix.metric.sample.HystrixCommandUtilization;
 import com.netflix.hystrix.metric.sample.HystrixThreadPoolUtilization;
 import com.netflix.hystrix.metric.sample.HystrixUtilization;
-import org.agrona.LangUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -43,8 +44,34 @@ public class SerialHystrixUtilization extends SerialHystrixMetric {
 
         try {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            JsonGenerator json = cborFactory.createGenerator(bos);
+            JsonGenerator cbor = cborFactory.createGenerator(bos);
 
+            serializeUtilization(utilization, cbor);
+
+            retVal = bos.toByteArray();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        return retVal;
+    }
+
+    public static String toJsonString(HystrixUtilization utilization) {
+        StringWriter jsonString = new StringWriter();
+
+        try {
+            JsonGenerator json = jsonFactory.createGenerator(jsonString);
+
+            serializeUtilization(utilization, json);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        return jsonString.getBuffer().toString();
+    }
+
+    private static void serializeUtilization(HystrixUtilization utilization, JsonGenerator json) {
+        try {
             json.writeStartObject();
             json.writeStringField("type", "HystrixUtilization");
             json.writeObjectFieldStart("commands");
@@ -65,21 +92,17 @@ public class SerialHystrixUtilization extends SerialHystrixMetric {
             json.writeEndObject();
             json.writeEndObject();
             json.close();
-
-            retVal = bos.toByteArray();
         } catch (Exception e) {
-            LangUtil.rethrowUnchecked(e);
+            throw new RuntimeException(e);
         }
-
-        return retVal;
     }
 
     public static HystrixUtilization fromByteBuffer(ByteBuffer bb) {
         byte[] byteArray = new byte[bb.remaining()];
         bb.get(byteArray);
 
-        Map<HystrixCommandKey, HystrixCommandUtilization> commandUtilizationMap = new HashMap<>();
-        Map<HystrixThreadPoolKey, HystrixThreadPoolUtilization> threadPoolUtilizationMap = new HashMap<>();
+        Map<HystrixCommandKey, HystrixCommandUtilization> commandUtilizationMap = new HashMap<HystrixCommandKey, HystrixCommandUtilization>();
+        Map<HystrixThreadPoolKey, HystrixThreadPoolUtilization> threadPoolUtilizationMap = new HashMap<HystrixThreadPoolKey, HystrixThreadPoolUtilization>();
 
         try {
             CBORParser parser = cborFactory.createParser(byteArray);

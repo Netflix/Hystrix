@@ -19,9 +19,10 @@ import com.netflix.config.DynamicIntProperty;
 import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.hystrix.metric.sample.HystrixUtilization;
 import com.netflix.hystrix.metric.sample.HystrixUtilizationStream;
+import com.netflix.hystrix.serial.SerialHystrixUtilization;
 import rx.Observable;
+import rx.functions.Func1;
 
-import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -45,7 +46,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * </servlet-mapping>
  * } </pre>
  */
-public class HystrixUtilizationSseServlet extends HystrixSampleSseServlet<HystrixUtilization> {
+public class HystrixUtilizationSseServlet extends HystrixSampleSseServlet {
 
     private static final long serialVersionUID = -7812908330777694972L;
 
@@ -55,20 +56,25 @@ public class HystrixUtilizationSseServlet extends HystrixSampleSseServlet<Hystri
             DynamicPropertyFactory.getInstance().getIntProperty("hystrix.config.stream.maxConcurrentConnections", 5);
 
     public HystrixUtilizationSseServlet() {
-        super(HystrixUtilizationStream.getInstance().observe());
+        this(HystrixUtilizationStream.getInstance().observe(), DEFAULT_PAUSE_POLLER_THREAD_DELAY_IN_MS);
     }
 
     /* package-private */ HystrixUtilizationSseServlet(Observable<HystrixUtilization> sampleStream, int pausePollerThreadDelayInMs) {
-        super(sampleStream, pausePollerThreadDelayInMs);
+        super(sampleStream.map(new Func1<HystrixUtilization, String>() {
+            @Override
+            public String call(HystrixUtilization hystrixUtilization) {
+                return SerialHystrixUtilization.toJsonString(hystrixUtilization);
+            }
+        }), pausePollerThreadDelayInMs);
     }
 
     @Override
-    int getMaxNumberConcurrentConnectionsAllowed() {
+    protected int getMaxNumberConcurrentConnectionsAllowed() {
         return maxConcurrentConnections.get();
     }
 
     @Override
-    int getNumberCurrentConnections() {
+    protected int getNumberCurrentConnections() {
         return concurrentConnections.get();
     }
 
@@ -80,11 +86,6 @@ public class HystrixUtilizationSseServlet extends HystrixSampleSseServlet<Hystri
     @Override
     protected void decrementCurrentConcurrentConnections() {
         concurrentConnections.decrementAndGet();
-    }
-
-    @Override
-    protected String convertToString(HystrixUtilization utilization) throws IOException {
-        return HystrixUtilizationJsonStream.convertToJson(utilization);
     }
 }
 

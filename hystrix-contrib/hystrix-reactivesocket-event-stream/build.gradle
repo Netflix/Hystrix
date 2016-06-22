@@ -9,12 +9,7 @@ targetCompatibility = JavaVersion.VERSION_1_8
 
 dependencies {
     compile project(':hystrix-core')
-	
-    compile 'com.fasterxml.jackson.core:jackson-core:latest.release'
-    compile 'com.fasterxml.jackson.core:jackson-databind:latest.release'
-    compile 'com.fasterxml.jackson.core:jackson-annotations:latest.release'
-    compile 'com.fasterxml.jackson.module:jackson-module-afterburner:latest.release'
-    compile 'com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:latest.release'
+	compile project(':hystrix-data-stream')
     compile 'io.reactivesocket:reactivesocket:latest.release'
 	compile 'io.reactivesocket:reactivesocket-netty:latest.release'
     compile 'io.reactivex:rxjava-reactive-streams:latest.release'
