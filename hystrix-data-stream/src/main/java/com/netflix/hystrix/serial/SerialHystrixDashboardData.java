@@ -74,15 +74,15 @@ public class SerialHystrixDashboardData extends SerialHystrixMetric {
         List<String> jsonStrings = new ArrayList<String>();
 
         for (HystrixCommandMetrics commandMetrics : dashboardData.getCommandMetrics()) {
-            jsonStrings.add(getCommandMetrics(commandMetrics));
+            jsonStrings.add(toJsonString(commandMetrics));
         }
 
         for (HystrixThreadPoolMetrics threadPoolMetrics : dashboardData.getThreadPoolMetrics()) {
-            jsonStrings.add(getThreadPoolMetrics(threadPoolMetrics));
+            jsonStrings.add(toJsonString(threadPoolMetrics));
         }
 
         for (HystrixCollapserMetrics collapserMetrics : dashboardData.getCollapserMetrics()) {
-            jsonStrings.add(getCollapserMetrics(collapserMetrics));
+            jsonStrings.add(toJsonString(collapserMetrics));
         }
 
         return jsonStrings;
@@ -112,7 +112,7 @@ public class SerialHystrixDashboardData extends SerialHystrixMetric {
         }
     }
 
-    private static String getCommandMetrics(HystrixCommandMetrics commandMetrics) {
+    public static String toJsonString(HystrixCommandMetrics commandMetrics) {
         StringWriter jsonString = new StringWriter();
 
         try {
@@ -125,7 +125,7 @@ public class SerialHystrixDashboardData extends SerialHystrixMetric {
         }
     }
 
-    private static String getThreadPoolMetrics(HystrixThreadPoolMetrics threadPoolMetrics) {
+    public static String toJsonString(HystrixThreadPoolMetrics threadPoolMetrics) {
         StringWriter jsonString = new StringWriter();
 
         try {
@@ -138,7 +138,7 @@ public class SerialHystrixDashboardData extends SerialHystrixMetric {
         }
     }
 
-    private static String getCollapserMetrics(HystrixCollapserMetrics collapserMetrics) {
+    public static String toJsonString(HystrixCollapserMetrics collapserMetrics) {
         StringWriter jsonString = new StringWriter();
 
         try {
