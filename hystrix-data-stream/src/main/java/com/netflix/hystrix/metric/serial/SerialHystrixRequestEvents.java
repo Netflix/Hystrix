@@ -22,6 +22,7 @@ import com.netflix.hystrix.metric.HystrixRequestEvents;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.util.List;
 import java.util.Map;
 
@@ -32,8 +33,34 @@ public class SerialHystrixRequestEvents extends SerialHystrixMetric {
 
         try {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            JsonGenerator json = cborFactory.createGenerator(bos);
+            JsonGenerator cbor = cborFactory.createGenerator(bos);
 
+            serializeRequestEvents(requestEvents, cbor);
+
+            retVal = bos.toByteArray();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        return retVal;
+    }
+
+    public static String toJsonString(HystrixRequestEvents requestEvents) {
+        StringWriter jsonString = new StringWriter();
+
+        try {
+            JsonGenerator json = jsonFactory.createGenerator(jsonString);
+
+            serializeRequestEvents(requestEvents, json);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        return jsonString.getBuffer().toString();
+    }
+
+    private static void serializeRequestEvents(HystrixRequestEvents requestEvents, JsonGenerator json) {
+        try {
             json.writeStartArray();
 
             for (Map.Entry<HystrixRequestEvents.ExecutionSignature, List<Integer>> entry: requestEvents.getExecutionsMappedToLatencies().entrySet()) {
@@ -42,13 +69,9 @@ public class SerialHystrixRequestEvents extends SerialHystrixMetric {
 
             json.writeEndArray();
             json.close();
-
-            retVal = bos.toByteArray();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-
-        return retVal;
     }
 
     private static void convertExecutionToJson(JsonGenerator json, HystrixRequestEvents.ExecutionSignature executionSignature, List<Integer> latencies) throws IOException {

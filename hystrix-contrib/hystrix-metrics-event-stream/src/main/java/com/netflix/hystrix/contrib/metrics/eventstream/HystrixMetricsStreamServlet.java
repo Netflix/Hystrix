@@ -20,8 +20,6 @@ import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.hystrix.contrib.sample.stream.HystrixSampleSseServlet;
 import com.netflix.hystrix.metric.consumer.HystrixDashboardStream;
 import com.netflix.hystrix.metric.serial.SerialHystrixDashboardData;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.functions.Func1;
 
@@ -51,8 +49,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class HystrixMetricsStreamServlet extends HystrixSampleSseServlet {
 
     private static final long serialVersionUID = -7548505095303313237L;
-
-    private static final Logger logger = LoggerFactory.getLogger(HystrixMetricsStreamServlet.class);
 
     /* used to track number of connections and throttle */
     private static AtomicInteger concurrentConnections = new AtomicInteger(0);
