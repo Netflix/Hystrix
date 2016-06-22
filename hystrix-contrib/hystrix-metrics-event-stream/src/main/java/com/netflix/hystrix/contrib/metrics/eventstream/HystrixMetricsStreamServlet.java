@@ -19,7 +19,7 @@ import com.netflix.config.DynamicIntProperty;
 import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.hystrix.contrib.sample.stream.HystrixSampleSseServlet;
 import com.netflix.hystrix.metric.consumer.HystrixDashboardStream;
-import com.netflix.hystrix.metric.serial.SerialHystrixDashboardData;
+import com.netflix.hystrix.serial.SerialHystrixDashboardData;
 import rx.Observable;
 import rx.functions.Func1;
 

@@ -20,7 +20,7 @@ import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.hystrix.contrib.sample.stream.HystrixSampleSseServlet;
 import com.netflix.hystrix.metric.HystrixRequestEvents;
 import com.netflix.hystrix.metric.HystrixRequestEventsStream;
-import com.netflix.hystrix.metric.serial.SerialHystrixRequestEvents;
+import com.netflix.hystrix.serial.SerialHystrixRequestEvents;
 import rx.Observable;
 import rx.functions.Func1;
 import java.util.concurrent.atomic.AtomicInteger;
