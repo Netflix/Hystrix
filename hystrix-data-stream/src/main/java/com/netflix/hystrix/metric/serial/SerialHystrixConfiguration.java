@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -46,8 +47,34 @@ public class SerialHystrixConfiguration extends SerialHystrixMetric {
 
         try {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            JsonGenerator json = cborFactory.createGenerator(bos);
+            JsonGenerator cbor = cborFactory.createGenerator(bos);
 
+            serializeConfiguration(config, cbor);
+
+            retVal = bos.toByteArray();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        return retVal;
+    }
+
+    public static String toJsonString(HystrixConfiguration config) {
+        StringWriter jsonString = new StringWriter();
+
+        try {
+            JsonGenerator json = jsonFactory.createGenerator(jsonString);
+
+            serializeConfiguration(config, json);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        return jsonString.getBuffer().toString();
+    }
+
+    private static void serializeConfiguration(HystrixConfiguration config, JsonGenerator json) {
+        try {
             json.writeStartObject();
             json.writeStringField("type", "HystrixConfig");
             json.writeObjectFieldStart("commands");
@@ -76,14 +103,10 @@ public class SerialHystrixConfiguration extends SerialHystrixMetric {
             json.writeEndObject();
             json.writeEndObject();
             json.close();
-
-
-            retVal = bos.toByteArray();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
-        return retVal;
     }
 
     public static HystrixConfiguration fromByteBuffer(ByteBuffer bb) {

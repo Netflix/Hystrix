@@ -26,6 +26,7 @@ import rx.functions.Func1;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
+ * Servlet that writes SSE JSON every time a request is made
  */
 public class HystrixRequestEventsSseServlet extends HystrixSampleSseServlet {
 

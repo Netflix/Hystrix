@@ -25,6 +25,7 @@ import com.netflix.hystrix.config.HystrixCommandConfiguration;
 import com.netflix.hystrix.config.HystrixConfiguration;
 import com.netflix.hystrix.config.HystrixConfigurationStream;
 import com.netflix.hystrix.config.HystrixThreadPoolConfiguration;
+import com.netflix.hystrix.metric.HystrixRequestEventsStream;
 import rx.Observable;
 import rx.functions.Func1;
 
@@ -40,7 +41,9 @@ import java.util.Map;
  * <li> Consumer of your choice that wants control over where to embed this stream
  * </ul>
  *
+ * @deprecated Instead, prefer mapping your preferred serialization on top of {@link HystrixConfigurationStream#observe()}.
  */
+@Deprecated //since 1.5.4
 public class HystrixConfigurationJsonStream {
 
     private static final JsonFactory jsonFactory = new JsonFactory();
