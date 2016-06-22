@@ -19,7 +19,10 @@ import com.netflix.config.DynamicIntProperty;
 import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.hystrix.config.HystrixConfiguration;
 import com.netflix.hystrix.config.HystrixConfigurationStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rx.Observable;
+import rx.functions.Func1;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -45,20 +48,31 @@ import java.util.concurrent.atomic.AtomicInteger;
  * </servlet-mapping>
  * } </pre>
  */
-public class HystrixConfigSseServlet extends HystrixSampleSseServlet<HystrixConfiguration> {
+public class HystrixConfigSseServlet extends HystrixSampleSseServlet {
 
     private static final long serialVersionUID = -3599771169762858235L;
+    private static final Logger logger = LoggerFactory.getLogger(HystrixConfigSseServlet.class);
 
     /* used to track number of connections and throttle */
     private static AtomicInteger concurrentConnections = new AtomicInteger(0);
     private static DynamicIntProperty maxConcurrentConnections = DynamicPropertyFactory.getInstance().getIntProperty("hystrix.config.stream.maxConcurrentConnections", 5);
 
     public HystrixConfigSseServlet() {
-        super(HystrixConfigurationStream.getInstance().observe());
+        this(HystrixConfigurationStream.getInstance().observe(), DEFAULT_PAUSE_POLLER_THREAD_DELAY_IN_MS);
     }
 
     /* package-private */ HystrixConfigSseServlet(Observable<HystrixConfiguration> sampleStream, int pausePollerThreadDelayInMs) {
-        super(sampleStream, pausePollerThreadDelayInMs);
+        super(sampleStream.map(new Func1<HystrixConfiguration, String>() {
+            @Override
+            public String call(HystrixConfiguration hystrixConfiguration) {
+                try {
+                    return HystrixConfigurationJsonStream.convertToString(hystrixConfiguration);
+                } catch (IOException ioe) {
+                    logger.error("IOException creating JSON from HystrixUtilization", ioe);
+                    return "<IOException> : " + ioe.getMessage();
+                }
+            }
+        }), pausePollerThreadDelayInMs);
     }
 
     @Override
@@ -79,11 +93,6 @@ public class HystrixConfigSseServlet extends HystrixSampleSseServlet<HystrixConf
     @Override
     protected void decrementCurrentConcurrentConnections() {
         concurrentConnections.decrementAndGet();
-    }
-
-    @Override
-    protected String convertToString(HystrixConfiguration config) throws IOException {
-        return HystrixConfigurationJsonStream.convertToString(config);
     }
 }
 

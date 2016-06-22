@@ -23,8 +23,8 @@ import com.netflix.hystrix.metric.serial.SerialHystrixDashboardData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
+import rx.functions.Func1;
 
-import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -48,7 +48,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * </servlet-mapping>
  * } </pre>
  */
-public class HystrixMetricsStreamServlet extends HystrixSampleSseServlet<HystrixDashboardStream.DashboardData> {
+public class HystrixMetricsStreamServlet extends HystrixSampleSseServlet {
 
     private static final long serialVersionUID = -7548505095303313237L;
 
@@ -60,11 +60,16 @@ public class HystrixMetricsStreamServlet extends HystrixSampleSseServlet<Hystrix
             DynamicPropertyFactory.getInstance().getIntProperty("hystrix.config.stream.maxConcurrentConnections", 5);
 
     public HystrixMetricsStreamServlet() {
-        super(HystrixDashboardStream.getInstance().observe());
+        this(HystrixDashboardStream.getInstance().observe(), DEFAULT_PAUSE_POLLER_THREAD_DELAY_IN_MS);
     }
 
     /* package-private */ HystrixMetricsStreamServlet(Observable<HystrixDashboardStream.DashboardData> sampleStream, int pausePollerThreadDelayInMs) {
-        super(sampleStream, pausePollerThreadDelayInMs);
+        super(sampleStream.concatMap(new Func1<HystrixDashboardStream.DashboardData, Observable<String>>() {
+            @Override
+            public Observable<String> call(HystrixDashboardStream.DashboardData dashboardData) {
+                return Observable.from(SerialHystrixDashboardData.toMultipleJsonStrings(dashboardData));
+            }
+        }), pausePollerThreadDelayInMs);
     }
 
     @Override
@@ -85,10 +90,5 @@ public class HystrixMetricsStreamServlet extends HystrixSampleSseServlet<Hystrix
     @Override
     protected void decrementCurrentConcurrentConnections() {
         concurrentConnections.decrementAndGet();
-    }
-
-    @Override
-    protected String convertToString(HystrixDashboardStream.DashboardData dashboardData) throws IOException {
-        return SerialHystrixDashboardData.toJsonString(dashboardData);
     }
 }

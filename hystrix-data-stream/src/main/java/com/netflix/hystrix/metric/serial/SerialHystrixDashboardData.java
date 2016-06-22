@@ -28,11 +28,14 @@ import com.netflix.hystrix.HystrixThreadPoolMetrics;
 import com.netflix.hystrix.metric.consumer.HystrixDashboardStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import rx.Observable;
 import rx.functions.Func0;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.List;
 
 public class SerialHystrixDashboardData extends SerialHystrixMetric {
 
@@ -67,6 +70,24 @@ public class SerialHystrixDashboardData extends SerialHystrixMetric {
         return jsonString.getBuffer().toString();
     }
 
+    public static List<String> toMultipleJsonStrings(HystrixDashboardStream.DashboardData dashboardData) {
+        List<String> jsonStrings = new ArrayList<String>();
+
+        for (HystrixCommandMetrics commandMetrics : dashboardData.getCommandMetrics()) {
+            jsonStrings.add(getCommandMetrics(commandMetrics));
+        }
+
+        for (HystrixThreadPoolMetrics threadPoolMetrics : dashboardData.getThreadPoolMetrics()) {
+            jsonStrings.add(getThreadPoolMetrics(threadPoolMetrics));
+        }
+
+        for (HystrixCollapserMetrics collapserMetrics : dashboardData.getCollapserMetrics()) {
+            jsonStrings.add(getCollapserMetrics(collapserMetrics));
+        }
+
+        return jsonStrings;
+    }
+
     private static void writeDashboardData(JsonGenerator json, HystrixDashboardStream.DashboardData dashboardData) {
         try {
             json.writeStartArray();
@@ -88,6 +109,45 @@ public class SerialHystrixDashboardData extends SerialHystrixMetric {
             json.close();
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private static String getCommandMetrics(HystrixCommandMetrics commandMetrics) {
+        StringWriter jsonString = new StringWriter();
+
+        try {
+            JsonGenerator json = jsonFactory.createGenerator(jsonString);
+            writeCommandMetrics(commandMetrics, json);
+            json.close();
+            return jsonString.getBuffer().toString();
+        } catch (IOException ioe) {
+            throw new RuntimeException(ioe);
+        }
+    }
+
+    private static String getThreadPoolMetrics(HystrixThreadPoolMetrics threadPoolMetrics) {
+        StringWriter jsonString = new StringWriter();
+
+        try {
+            JsonGenerator json = jsonFactory.createGenerator(jsonString);
+            writeThreadPoolMetrics(threadPoolMetrics, json);
+            json.close();
+            return jsonString.getBuffer().toString();
+        } catch (IOException ioe) {
+            throw new RuntimeException(ioe);
+        }
+    }
+
+    private static String getCollapserMetrics(HystrixCollapserMetrics collapserMetrics) {
+        StringWriter jsonString = new StringWriter();
+
+        try {
+            JsonGenerator json = jsonFactory.createGenerator(jsonString);
+            writeCollapserMetrics(collapserMetrics, json);
+            json.close();
+            return jsonString.getBuffer().toString();
+        } catch (IOException ioe) {
+            throw new RuntimeException(ioe);
         }
     }
 
