@@ -15,11 +15,14 @@
  */
 package com.netflix.hystrix.contrib.javanica.utils;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
+import org.apache.commons.lang3.Validate;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
 
 import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 
 /**
@@ -99,6 +102,25 @@ public final class AopUtils {
             Throwables.propagate(e);
         }
         return method;
+    }
+
+    public static <T extends Annotation> Optional<T> getAnnotation(JoinPoint joinPoint, Class<T> annotation) {
+        return getAnnotation(joinPoint.getTarget().getClass(), annotation);
+    }
+
+    public static <T extends Annotation> Optional<T> getAnnotation(Class<?> type, Class<T> annotation) {
+        Validate.notNull(annotation, "annotation cannot be null");
+        Validate.notNull(type, "type cannot be null");
+        for (Annotation ann : type.getDeclaredAnnotations()) {
+            if (ann.annotationType().equals(annotation)) return Optional.of((T) ann);
+        }
+
+        Class<?> superType = type.getSuperclass();
+        if (superType != null && !superType.equals(Object.class)) {
+            return getAnnotation(superType, annotation);
+        }
+
+        return Optional.absent();
     }
 
 }

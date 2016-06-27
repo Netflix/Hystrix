@@ -15,13 +15,16 @@
  */
 package com.netflix.hystrix.contrib.javanica.command;
 
+import com.google.common.base.Function;
 import com.netflix.hystrix.HystrixCollapser;
+import com.netflix.hystrix.contrib.javanica.annotation.DefaultProperties;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.utils.FallbackMethod;
 import com.netflix.hystrix.contrib.javanica.utils.MethodProvider;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 
+import javax.annotation.Nullable;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Collections;
@@ -61,7 +64,12 @@ public class HystrixCommandBuilderFactory {
                 .collapsedRequests(collapsedRequests)
                 .cacheResultInvocationContext(createCacheResultInvocationContext(metaHolder))
                 .cacheRemoveInvocationContext(createCacheRemoveInvocationContext(metaHolder))
-                .ignoreExceptions(metaHolder.getHystrixCommand().ignoreExceptions())
+                .ignoreExceptions(metaHolder.getDefaultProperties().transform(new Function<DefaultProperties, Class<? extends Throwable>[]>() {
+                    @Override
+                    public Class<? extends Throwable>[] apply(DefaultProperties input) {
+                        return input.ignoreExceptions();
+                    }
+                }).or(metaHolder.getHystrixCommand().ignoreExceptions()))
                 .executionType(metaHolder.getExecutionType())
                 .build();
     }

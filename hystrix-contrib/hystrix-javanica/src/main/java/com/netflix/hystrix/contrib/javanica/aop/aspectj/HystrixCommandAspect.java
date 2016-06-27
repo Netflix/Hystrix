@@ -17,14 +17,15 @@ package com.netflix.hystrix.contrib.javanica.aop.aspectj;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
-import com.netflix.hystrix.HystrixExecutable;
 import com.netflix.hystrix.HystrixInvokable;
+import com.netflix.hystrix.contrib.javanica.annotation.DefaultProperties;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCollapser;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.command.CommandExecutor;
 import com.netflix.hystrix.contrib.javanica.command.ExecutionType;
 import com.netflix.hystrix.contrib.javanica.command.HystrixCommandFactory;
 import com.netflix.hystrix.contrib.javanica.command.MetaHolder;
+import com.netflix.hystrix.contrib.javanica.utils.AopUtils;
 import com.netflix.hystrix.contrib.javanica.utils.FallbackMethod;
 import com.netflix.hystrix.contrib.javanica.utils.MethodProvider;
 import com.netflix.hystrix.exception.HystrixBadRequestException;
@@ -206,6 +207,7 @@ public class HystrixCommandAspect {
             HystrixCommand hystrixCommand = method.getAnnotation(HystrixCommand.class);
             ExecutionType executionType = ExecutionType.getExecutionType(method.getReturnType());
             MetaHolder.Builder builder = metaHolderBuilder(proxy, method, obj, args, joinPoint);
+            builder.defaultProperties(AopUtils.getAnnotation(joinPoint, DefaultProperties.class));
             return builder.defaultCommandKey(method.getName())
                             .hystrixCommand(hystrixCommand)
                             .observableExecutionMode(hystrixCommand.observableExecutionMode())

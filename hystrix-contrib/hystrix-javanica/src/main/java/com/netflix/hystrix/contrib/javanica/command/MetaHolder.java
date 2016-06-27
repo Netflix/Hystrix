@@ -15,7 +15,9 @@
  */
 package com.netflix.hystrix.contrib.javanica.command;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
+import com.netflix.hystrix.contrib.javanica.annotation.DefaultProperties;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCollapser;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
@@ -23,6 +25,7 @@ import com.netflix.hystrix.contrib.javanica.annotation.ObservableExecutionMode;
 import com.netflix.hystrix.contrib.javanica.command.closure.Closure;
 import org.aspectj.lang.JoinPoint;
 
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -37,6 +40,7 @@ public class MetaHolder {
 
     private final HystrixCollapser hystrixCollapser;
     private final HystrixCommand hystrixCommand;
+    private final Optional<DefaultProperties> defaultProperties;
 
     private final Method method;
     private final Method cacheKeyMethod;
@@ -72,6 +76,7 @@ public class MetaHolder {
         this.defaultGroupKey = builder.defaultGroupKey;
         this.defaultCommandKey = builder.defaultCommandKey;
         this.defaultCollapserKey = builder.defaultCollapserKey;
+        this.defaultProperties = builder.defaultProperties;
         this.hystrixCollapser = builder.hystrixCollapser;
         this.executionType = builder.executionType;
         this.collapserExecutionType = builder.collapserExecutionType;
@@ -144,6 +149,10 @@ public class MetaHolder {
         return defaultCollapserKey;
     }
 
+    public Optional<DefaultProperties> getDefaultProperties() {
+        return defaultProperties;
+    }
+
     public Class<?>[] getParameterTypes() {
         return method.getParameterTypes();
     }
@@ -210,8 +219,11 @@ public class MetaHolder {
 
     public static final class Builder {
 
+        private static final Class<?>[] EMPTY_ARRAY_OF_TYPES= new Class[0];
+
         private HystrixCollapser hystrixCollapser;
         private HystrixCommand hystrixCommand;
+        private Optional<DefaultProperties> defaultProperties;
         private Method method;
         private Method cacheKeyMethod;
         private Method fallbackMethod;
@@ -320,6 +332,16 @@ public class MetaHolder {
 
         public Builder defaultCollapserKey(String defCollapserKey) {
             this.defaultCollapserKey = defCollapserKey;
+            return this;
+        }
+
+        public Builder defaultProperties(@Nullable DefaultProperties defaultProperties) {
+            this.defaultProperties = Optional.fromNullable(defaultProperties);
+            return this;
+        }
+
+        public Builder defaultProperties(Optional<DefaultProperties> defaultProperties) {
+            this.defaultProperties = defaultProperties;
             return this;
         }
 
