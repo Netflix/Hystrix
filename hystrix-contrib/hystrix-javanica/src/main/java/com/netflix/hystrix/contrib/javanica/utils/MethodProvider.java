@@ -87,10 +87,26 @@ public final class MethodProvider {
         return FallbackMethod.ABSENT;
     }
 
+    /**
+     * Gets method by name and parameters types using reflection,
+     * if the given type doesn't contain required method then continue applying this method for all super classes up to Object class.
+     *
+     * @param type           the type to search method
+     * @param name           the method name
+     * @param parameterTypes the parameters types
+     * @return Some if method exists otherwise None
+     */
     public Optional<Method> getMethod(Class<?> type, String name, Class<?>... parameterTypes) {
-        try {
-            return Optional.of(type.getDeclaredMethod(name, parameterTypes));
-        } catch (NoSuchMethodException e) {
+        Method[] methods = type.getDeclaredMethods();
+        for (Method method : methods) {
+            if (method.getName().equals(name) && Arrays.equals(method.getParameterTypes(), parameterTypes)) {
+                return Optional.of(method);
+            }
+        }
+        Class<?> superClass = type.getSuperclass();
+        if (superClass != null && !superClass.equals(Object.class)) {
+            return getMethod(superClass, name, parameterTypes);
+        } else {
             return Optional.absent();
         }
     }
