@@ -68,7 +68,11 @@ public interface HystrixThreadPoolKey {
             public String name() {
                 return name;
             }
-
+            
+            @Override
+            public String toString() {
+            	return name;
+            }
         }
 
         /* package-private */ static int getThreadPoolCount() {

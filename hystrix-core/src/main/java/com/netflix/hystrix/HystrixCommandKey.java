@@ -66,7 +66,11 @@ public interface HystrixCommandKey {
             public String name() {
                 return name;
             }
-
+            
+            @Override
+            public String toString() {
+            	return name;
+            }
         }
 
         /* package-private */ static int getCommandCount() {
