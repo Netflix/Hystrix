@@ -23,7 +23,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * todo: add doc..
+ * This annotation is used to specify default parameters for
+ * hystrix commands (methods annotated with {@code @HystrixCommand} annotation).
  *
  * @author dmgcodevil
  */
@@ -32,6 +33,38 @@ import java.lang.annotation.Target;
 @Inherited
 @Documented
 public @interface DefaultProperties {
+
+    /**
+     * Specifies default group key used for each hystrix command by default unless a command specifies it's own group key.
+     * For additional info about this property see {@link HystrixCommand#groupKey()}.
+     *
+     * @return default group key
+     */
+    String groupKey() default "";
+
+    /**
+     * Specifies default thread pool key used for each hystrix command by default unless a command specifies it's own thread pool key.
+     * For additional info about this property see {@link HystrixCommand#threadPoolKey()}
+     *
+     * @return default thread pool
+     */
+    String threadPoolKey() default "";
+
+    /**
+     * Specifies command properties that will be used for
+     * each hystrix command be default unless command properties explicitly specified in @HystrixCommand.
+     *
+     * @return command properties
+     */
+    HystrixProperty[] commandProperties() default {};
+
+    /**
+     * Specifies thread pool properties that will be used for
+     * each hystrix command be default unless thread pool properties explicitly specified in @HystrixCommand.
+     *
+     * @return thread pool properties
+     */
+    HystrixProperty[] threadPoolProperties() default {};
 
     /**
      * Defines exceptions which should be ignored and wrapped to throw in HystrixBadRequestException.

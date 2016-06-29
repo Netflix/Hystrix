@@ -15,6 +15,7 @@
  */
 package com.netflix.hystrix.contrib.javanica.aop.aspectj;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.netflix.hystrix.HystrixInvokable;
@@ -29,6 +30,7 @@ import com.netflix.hystrix.contrib.javanica.utils.AopUtils;
 import com.netflix.hystrix.contrib.javanica.utils.FallbackMethod;
 import com.netflix.hystrix.contrib.javanica.utils.MethodProvider;
 import com.netflix.hystrix.exception.HystrixBadRequestException;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -112,19 +114,10 @@ public class HystrixCommandAspect {
         MetaHolder.Builder metaHolderBuilder(Object proxy, Method method, Object obj, Object[] args, final ProceedingJoinPoint joinPoint) {
             MetaHolder.Builder builder = MetaHolder.builder()
                     .args(args).method(method).obj(obj).proxyObj(proxy)
-                    .defaultGroupKey(obj.getClass().getSimpleName())
                     .joinPoint(joinPoint);
-            if (isCompileWeaving()) {
-                builder.ajcMethod(getAjcMethodFromTarget(joinPoint));
-            }
 
-            FallbackMethod fallbackMethod = MethodProvider.getInstance().getFallbackMethod(obj.getClass(), method);
-            if (fallbackMethod.isPresent()) {
-                fallbackMethod.validateReturnType(method);
-                builder
-                        .fallbackMethod(fallbackMethod.getMethod())
-                        .fallbackExecutionType(ExecutionType.getExecutionType(fallbackMethod.getMethod().getReturnType()));
-            }
+            setFallbackMethod(builder, obj.getClass(), method);
+            builder = setDefaultProperties(builder, obj.getClass(), joinPoint);
             return builder;
         }
     }
@@ -174,10 +167,8 @@ public class HystrixCommandAspect {
             }
             // method of batch hystrix command must be passed to metaholder because basically collapser doesn't have any actions
             // that should be invoked upon intercepted method, it's required only for underlying batch command
-            MetaHolder.Builder builder = MetaHolder.builder()
-                    .args(args).method(batchCommandMethod).obj(obj).proxyObj(proxy)
-                    .defaultGroupKey(obj.getClass().getSimpleName())
-                    .joinPoint(joinPoint);
+
+            MetaHolder.Builder builder = metaHolderBuilder(proxy, batchCommandMethod, obj, args, joinPoint);
 
             if (isCompileWeaving()) {
                 builder.ajcMethod(getAjcMethodAroundAdvice(obj.getClass(), batchCommandMethod.getName(), List.class));
@@ -207,7 +198,9 @@ public class HystrixCommandAspect {
             HystrixCommand hystrixCommand = method.getAnnotation(HystrixCommand.class);
             ExecutionType executionType = ExecutionType.getExecutionType(method.getReturnType());
             MetaHolder.Builder builder = metaHolderBuilder(proxy, method, obj, args, joinPoint);
-            builder.defaultProperties(AopUtils.getAnnotation(joinPoint, DefaultProperties.class));
+            if (isCompileWeaving()) {
+                builder.ajcMethod(getAjcMethodFromTarget(joinPoint));
+            }
             return builder.defaultCommandKey(method.getName())
                             .hystrixCommand(hystrixCommand)
                             .observableExecutionMode(hystrixCommand.observableExecutionMode())
@@ -239,6 +232,33 @@ public class HystrixCommandAspect {
         } catch (ClassNotFoundException e) {
             throw Throwables.propagate(e);
         }
+    }
+
+    private static MetaHolder.Builder setDefaultProperties(MetaHolder.Builder builder, Class<?> declaringClass, final ProceedingJoinPoint joinPoint) {
+        Optional<DefaultProperties> defaultPropertiesOpt = AopUtils.getAnnotation(joinPoint, DefaultProperties.class);
+        builder.defaultGroupKey(declaringClass.getSimpleName());
+        if (defaultPropertiesOpt.isPresent()) {
+            DefaultProperties defaultProperties = defaultPropertiesOpt.get();
+            builder.defaultProperties(defaultProperties);
+            if (StringUtils.isNotBlank(defaultProperties.groupKey())) {
+                builder.defaultGroupKey(defaultProperties.groupKey());
+            }
+            if (StringUtils.isNotBlank(defaultProperties.threadPoolKey())) {
+                builder.defaultThreadPoolKey(defaultProperties.threadPoolKey());
+            }
+        }
+        return builder;
+    }
+
+    private static MetaHolder.Builder setFallbackMethod(MetaHolder.Builder builder, Class<?> declaringClass, Method commandMethod) {
+        FallbackMethod fallbackMethod = MethodProvider.getInstance().getFallbackMethod(declaringClass, commandMethod);
+        if (fallbackMethod.isPresent()) {
+            fallbackMethod.validateReturnType(commandMethod);
+            builder
+                    .fallbackMethod(fallbackMethod.getMethod())
+                    .fallbackExecutionType(ExecutionType.getExecutionType(fallbackMethod.getMethod().getReturnType()));
+        }
+        return builder;
     }
 
 }

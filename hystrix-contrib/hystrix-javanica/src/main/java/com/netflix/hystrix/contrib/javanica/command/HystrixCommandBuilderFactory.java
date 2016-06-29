@@ -21,10 +21,8 @@ import com.netflix.hystrix.contrib.javanica.annotation.DefaultProperties;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.utils.FallbackMethod;
 import com.netflix.hystrix.contrib.javanica.utils.MethodProvider;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 
-import javax.annotation.Nullable;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Collections;
@@ -81,10 +79,10 @@ public class HystrixCommandBuilderFactory {
 
     private GenericSetterBuilder createGenericSetterBuilder(MetaHolder metaHolder) {
         GenericSetterBuilder.Builder setterBuilder = GenericSetterBuilder.builder()
-                .groupKey(createGroupKey(metaHolder))
-                .threadPoolKey(createThreadPoolKey(metaHolder))
-                .commandKey(createCommandKey(metaHolder))
-                .collapserKey(createCollapserKey(metaHolder))
+                .groupKey(metaHolder.getCommandGroupKey())
+                .threadPoolKey(metaHolder.getThreadPoolKey())
+                .commandKey(metaHolder.getCommandKey())
+                .collapserKey(metaHolder.getCollapserKey())
                 .commandProperties(metaHolder.getCommandProperties())
                 .threadPoolProperties(metaHolder.getThreadPoolProperties())
                 .collapserProperties(metaHolder.getCollapserProperties());
@@ -93,31 +91,6 @@ public class HystrixCommandBuilderFactory {
         }
         return setterBuilder.build();
     }
-
-    private String createGroupKey(MetaHolder metaHolder) {
-        return createKey(metaHolder.getHystrixCommand().groupKey(), metaHolder.getDefaultGroupKey());
-    }
-
-    private String createThreadPoolKey(MetaHolder metaHolder) {
-        // this key is created without default value because intrinsically Hystrix knows how to derive this key properly if it's absent
-        return metaHolder.getHystrixCommand().threadPoolKey();
-    }
-
-    private String createCommandKey(MetaHolder metaHolder) {
-        return createKey(metaHolder.getHystrixCommand().commandKey(), metaHolder.getDefaultCommandKey());
-    }
-
-    private String createCollapserKey(MetaHolder metaHolder) {
-        if (metaHolder.isCollapserAnnotationPresent()) {
-            return createKey(metaHolder.getHystrixCollapser().collapserKey(), metaHolder.getDefaultCollapserKey());
-        }
-        return null;
-    }
-
-    private String createKey(String key, String defKey) {
-        return StringUtils.isNotBlank(key) ? key : defKey;
-    }
-
 
     private CommandActions createCommandActions(MetaHolder metaHolder) {
         CommandAction commandAction = createCommandAction(metaHolder);
