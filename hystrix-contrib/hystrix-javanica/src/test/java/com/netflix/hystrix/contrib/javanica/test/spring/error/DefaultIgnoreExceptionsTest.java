@@ -18,19 +18,19 @@ public class DefaultIgnoreExceptionsTest extends BasicDefaultIgnoreExceptionsTes
 
 
     @Autowired
-    private BasicDefaultIgnoreExceptionsTest.UserService userService;
+    private BasicDefaultIgnoreExceptionsTest.Service service;
 
     @Override
-    protected BasicDefaultIgnoreExceptionsTest.UserService createUserService() {
-        return userService;
+    protected BasicDefaultIgnoreExceptionsTest.Service createService() {
+        return service;
     }
 
     @Configurable
     public static class DefaultIgnoreExceptionsTestConfig {
 
         @Bean
-        public BasicDefaultIgnoreExceptionsTest.UserService userService() {
-            return new BasicDefaultIgnoreExceptionsTest.UserService();
+        public BasicDefaultIgnoreExceptionsTest.Service userService() {
+            return new BasicDefaultIgnoreExceptionsTest.Service();
         }
     }
 }

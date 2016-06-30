@@ -15,6 +15,7 @@
  */
 package com.netflix.hystrix.contrib.javanica.command;
 
+import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.base.Supplier;
@@ -26,7 +27,6 @@ import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
 import com.netflix.hystrix.contrib.javanica.annotation.ObservableExecutionMode;
 import com.netflix.hystrix.contrib.javanica.command.closure.Closure;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.Validate;
 import org.aspectj.lang.JoinPoint;
 
 import javax.annotation.Nullable;
@@ -40,7 +40,7 @@ import java.util.List;
  * Simple immutable holder to keep all necessary information about current method to build Hystrix command.
  */
 @Immutable
-public class MetaHolder {
+public final class MetaHolder {
 
     private final HystrixCollapser hystrixCollapser;
     private final HystrixCommand hystrixCommand;
@@ -67,6 +67,14 @@ public class MetaHolder {
     private final JoinPoint joinPoint;
     private final boolean observable;
     private final ObservableExecutionMode observableExecutionMode;
+
+    private static final Function identityFun = new Function<Object, Object>() {
+        @Nullable
+        @Override
+        public Object apply(@Nullable Object input) {
+            return input;
+        }
+    };
 
     private MetaHolder(Builder builder) {
         this.hystrixCommand = builder.hystrixCommand;
@@ -220,23 +228,43 @@ public class MetaHolder {
         return extendedFallback;
     }
 
+    @SuppressWarnings("unchecked")
+    public List<Class<? extends Throwable>> getCommandIgnoreExceptions() {
+        if (!isCommandAnnotationPresent()) return Collections.emptyList();
+        return getOrDefault(new Supplier<List<Class<? extends Throwable>>>() {
+            @Override
+            public List<Class<? extends Throwable>> get() {
+                return ImmutableList.<Class<? extends Throwable>>copyOf(hystrixCommand.ignoreExceptions());
+            }
+        }, new Supplier<List<Class<? extends Throwable>>>() {
+            @Override
+            public List<Class<? extends Throwable>> get() {
+                return hasDefaultProperties()
+                        ? ImmutableList.<Class<? extends Throwable>>copyOf(defaultProperties.ignoreExceptions())
+                        : Collections.<Class<? extends Throwable>>emptyList();
+            }
+        }, this.<Class<? extends Throwable>>nonEmptyList());
+    }
+
     public ExecutionType getFallbackExecutionType() {
         return fallbackExecutionType;
     }
 
     public List<HystrixProperty> getCommandProperties() {
         if (!isCommandAnnotationPresent()) return Collections.emptyList();
-        return getProperties(new Supplier<HystrixProperty[]>() {
+        return getOrDefault(new Supplier<List<HystrixProperty>>() {
             @Override
-            public HystrixProperty[] get() {
-                return hystrixCommand.commandProperties();
+            public List<HystrixProperty> get() {
+                return ImmutableList.copyOf(hystrixCommand.commandProperties());
             }
-        }, new Supplier<HystrixProperty[]>() {
+        }, new Supplier<List<HystrixProperty>>() {
             @Override
-            public HystrixProperty[] get() {
-                return hasDefaultProperties() ? defaultProperties.commandProperties() : new HystrixProperty[0];
+            public List<HystrixProperty> get() {
+                return hasDefaultProperties()
+                        ? ImmutableList.copyOf(defaultProperties.commandProperties())
+                        : Collections.<HystrixProperty>emptyList();
             }
-        });
+        }, this.<HystrixProperty>nonEmptyList());
     }
 
     public List<HystrixProperty> getCollapserProperties() {
@@ -245,17 +273,19 @@ public class MetaHolder {
 
     public List<HystrixProperty> getThreadPoolProperties() {
         if (!isCommandAnnotationPresent()) return Collections.emptyList();
-        return getProperties(new Supplier<HystrixProperty[]>() {
+        return getOrDefault(new Supplier<List<HystrixProperty>>() {
             @Override
-            public HystrixProperty[] get() {
-                return hystrixCommand.threadPoolProperties();
+            public List<HystrixProperty> get() {
+                return ImmutableList.copyOf(hystrixCommand.threadPoolProperties());
             }
-        }, new Supplier<HystrixProperty[]>() {
+        }, new Supplier<List<HystrixProperty>>() {
             @Override
-            public HystrixProperty[] get() {
-                return hasDefaultProperties() ? defaultProperties.threadPoolProperties() : new HystrixProperty[0];
+            public List<HystrixProperty> get() {
+                return hasDefaultProperties()
+                        ? ImmutableList.copyOf(defaultProperties.threadPoolProperties())
+                        : Collections.<HystrixProperty>emptyList();
             }
-        });
+        }, this.<HystrixProperty>nonEmptyList());
     }
 
     public boolean isObservable() {
@@ -270,12 +300,26 @@ public class MetaHolder {
         return StringUtils.isNotBlank(key) ? key : defaultKey;
     }
 
-    private List<HystrixProperty> getProperties(Supplier<HystrixProperty[]> props, Supplier<HystrixProperty[]> defaultProps) {
-        HystrixProperty[] p = props.get();
-        if (p.length > 0) {
-            return ImmutableList.copyOf(p);
+    private <T> Predicate<List<T>> nonEmptyList() {
+        return new Predicate<List<T>>() {
+            @Override
+            public boolean apply(@Nullable List<T> input) {
+                return input != null && !input.isEmpty();
+            }
+        };
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> T getOrDefault(Supplier<T> source, Supplier<T> defaultChoice, Predicate<T> isDefined) {
+        return getOrDefault(source, defaultChoice, isDefined, (Function<T, T>) identityFun);
+    }
+
+    private <T> T getOrDefault(Supplier<T> source, Supplier<T> defaultChoice, Predicate<T> isDefined, Function<T, T> map) {
+        T res = source.get();
+        if (!isDefined.apply(res)) {
+            res = defaultChoice.get();
         }
-        return ImmutableList.copyOf(defaultProps.get());
+        return map.apply(res);
     }
 
     public static final class Builder {
