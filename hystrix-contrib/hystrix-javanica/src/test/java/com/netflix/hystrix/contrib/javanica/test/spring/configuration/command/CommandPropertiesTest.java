@@ -15,30 +15,14 @@
  */
 package com.netflix.hystrix.contrib.javanica.test.spring.configuration.command;
 
-import com.netflix.hystrix.HystrixEventType;
-import com.netflix.hystrix.HystrixInvokableInfo;
-import com.netflix.hystrix.HystrixRequestLog;
-import com.netflix.hystrix.HystrixThreadPool;
-import com.netflix.hystrix.HystrixThreadPoolProperties;
-import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
-import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
 import com.netflix.hystrix.contrib.javanica.test.common.configuration.command.BasicCommandPropertiesTest;
 import com.netflix.hystrix.contrib.javanica.test.spring.conf.AopCglibConfig;
-import com.netflix.hystrix.contrib.javanica.test.common.domain.User;
-import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
-
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Configurable;
 import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-
-import java.lang.reflect.Field;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = {AopCglibConfig.class, CommandPropertiesTest.CommandPropertiesTestConfig.class})
