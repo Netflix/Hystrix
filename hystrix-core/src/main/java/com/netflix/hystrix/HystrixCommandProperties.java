@@ -50,6 +50,7 @@ public abstract class HystrixCommandProperties {
     private static final Boolean default_executionTimeoutEnabled = true;
     private static final ExecutionIsolationStrategy default_executionIsolationStrategy = ExecutionIsolationStrategy.THREAD;
     private static final Boolean default_executionIsolationThreadInterruptOnTimeout = true;
+    private static final Boolean default_executionIsolationThreadInterruptOnFutureCancel = false;
     private static final Boolean default_metricsRollingPercentileEnabled = true;
     private static final Boolean default_requestCacheEnabled = true;
     private static final Integer default_fallbackIsolationSemaphoreMaxConcurrentRequests = 10;
@@ -77,6 +78,7 @@ public abstract class HystrixCommandProperties {
     private final HystrixProperty<Integer> fallbackIsolationSemaphoreMaxConcurrentRequests; // Number of permits for fallback semaphore
     private final HystrixProperty<Boolean> fallbackEnabled; // Whether fallback should be attempted.
     private final HystrixProperty<Boolean> executionIsolationThreadInterruptOnTimeout; // Whether an underlying Future/Thread (when runInSeparateThread == true) should be interrupted after a timeout
+    private final HystrixProperty<Boolean> executionIsolationThreadInterruptOnFutureCancel; // Whether canceling an underlying Future/Thread (when runInSeparateThread == true) should interrupt the execution thread
     private final HystrixProperty<Integer> metricsRollingStatisticalWindowInMilliseconds; // milliseconds back that will be tracked
     private final HystrixProperty<Integer> metricsRollingStatisticalWindowBuckets; // number of buckets in the statisticalWindow
     private final HystrixProperty<Boolean> metricsRollingPercentileEnabled; // Whether monitoring should be enabled (SLA and Tracers).
@@ -121,6 +123,7 @@ public abstract class HystrixCommandProperties {
         this.executionTimeoutInMilliseconds = getProperty(propertyPrefix, key, "execution.isolation.thread.timeoutInMilliseconds", builder.getExecutionIsolationThreadTimeoutInMilliseconds(), default_executionTimeoutInMilliseconds);
         this.executionTimeoutEnabled = getProperty(propertyPrefix, key, "execution.timeout.enabled", builder.getExecutionTimeoutEnabled(), default_executionTimeoutEnabled);
         this.executionIsolationThreadInterruptOnTimeout = getProperty(propertyPrefix, key, "execution.isolation.thread.interruptOnTimeout", builder.getExecutionIsolationThreadInterruptOnTimeout(), default_executionIsolationThreadInterruptOnTimeout);
+        this.executionIsolationThreadInterruptOnFutureCancel = getProperty(propertyPrefix, key, "execution.isolation.thread.interruptOnFutureCancel", builder.getExecutionIsolationThreadInterruptOnFutureCancel(), default_executionIsolationThreadInterruptOnFutureCancel);
         this.executionIsolationSemaphoreMaxConcurrentRequests = getProperty(propertyPrefix, key, "execution.isolation.semaphore.maxConcurrentRequests", builder.getExecutionIsolationSemaphoreMaxConcurrentRequests(), default_executionIsolationSemaphoreMaxConcurrentRequests);
         this.fallbackIsolationSemaphoreMaxConcurrentRequests = getProperty(propertyPrefix, key, "fallback.isolation.semaphore.maxConcurrentRequests", builder.getFallbackIsolationSemaphoreMaxConcurrentRequests(), default_fallbackIsolationSemaphoreMaxConcurrentRequests);
         this.fallbackEnabled = getProperty(propertyPrefix, key, "fallback.enabled", builder.getFallbackEnabled(), default_fallbackEnabled);
@@ -238,6 +241,17 @@ public abstract class HystrixCommandProperties {
      */
     public HystrixProperty<Boolean> executionIsolationThreadInterruptOnTimeout() {
         return executionIsolationThreadInterruptOnTimeout;
+    }
+
+    /**
+     * Whether the execution thread should be interrupted if the execution observable is unsubscribed or the future is cancelled via {@link Future#cancel(true)}).
+     * <p>
+     * Applicable only when {@link #executionIsolationStrategy()} == THREAD.
+     * 
+     * @return {@code HystrixProperty<Boolean>}
+     */
+    public HystrixProperty<Boolean> executionIsolationThreadInterruptOnFutureCancel() {
+        return executionIsolationThreadInterruptOnFutureCancel;
     }
 
     /**
@@ -531,6 +545,7 @@ public abstract class HystrixCommandProperties {
         private Integer executionIsolationSemaphoreMaxConcurrentRequests = null;
         private ExecutionIsolationStrategy executionIsolationStrategy = null;
         private Boolean executionIsolationThreadInterruptOnTimeout = null;
+        private Boolean executionIsolationThreadInterruptOnFutureCancel = null;
         private Integer executionTimeoutInMilliseconds = null;
         private Boolean executionTimeoutEnabled = null;
         private Integer fallbackIsolationSemaphoreMaxConcurrentRequests = null;
@@ -585,7 +600,11 @@ public abstract class HystrixCommandProperties {
             return executionIsolationThreadInterruptOnTimeout;
         }
 
-        /**
+        public Boolean getExecutionIsolationThreadInterruptOnFutureCancel() {
+			return executionIsolationThreadInterruptOnFutureCancel;
+		}
+
+		/**
          * @deprecated As of 1.4.0, use {@link #getExecutionTimeoutInMilliseconds()}
          */
         @Deprecated
@@ -687,6 +706,11 @@ public abstract class HystrixCommandProperties {
 
         public Setter withExecutionIsolationThreadInterruptOnTimeout(boolean value) {
             this.executionIsolationThreadInterruptOnTimeout = value;
+            return this;
+        }
+
+        public Setter withExecutionIsolationThreadInterruptOnFutureCancel(boolean value) {
+            this.executionIsolationThreadInterruptOnFutureCancel = value;
             return this;
         }
 

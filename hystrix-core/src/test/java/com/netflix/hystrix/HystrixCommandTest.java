@@ -45,6 +45,7 @@ import rx.observers.TestSubscriber;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -2758,6 +2759,66 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
     }
 
     @Test
+    public void testCancelFutureWithInterruptionWhenPropertySaysNotTo() throws InterruptedException, ExecutionException {
+    	// given
+    	InterruptibleCommand cmd = new InterruptibleCommand(new TestCircuitBreaker(), true, false, 1000);
+
+        // when
+        Future<Boolean> f = cmd.queue();
+        Thread.sleep(500);
+        f.cancel(true);
+        Thread.sleep(500);
+
+        // then
+        try {
+        	f.get();
+        	fail("Should have thrown a CancellationException");
+        } catch (CancellationException e) {
+        	assertFalse(cmd.hasBeenInterrupted());
+        }
+    }
+
+    @Test
+    public void testCancelFutureWithInterruption() throws InterruptedException, ExecutionException {
+    	// given
+    	InterruptibleCommand cmd = new InterruptibleCommand(new TestCircuitBreaker(), true, true, 1000);
+
+        // when
+        Future<Boolean> f = cmd.queue();
+        Thread.sleep(500);
+        f.cancel(true);
+        Thread.sleep(500);
+
+        // then
+        try {
+        	f.get();
+        	fail("Should have thrown a CancellationException");
+        } catch (CancellationException e) {
+        	assertTrue(cmd.hasBeenInterrupted());
+        }
+    }
+
+    @Test
+    public void testCancelFutureWithoutInterruption() throws InterruptedException, ExecutionException, TimeoutException {
+    	// given
+    	InterruptibleCommand cmd = new InterruptibleCommand(new TestCircuitBreaker(), true, true, 1000);
+
+        // when
+        Future<Boolean> f = cmd.queue();
+        Thread.sleep(500);
+        f.cancel(false);
+        Thread.sleep(500);
+
+        // then
+        try {
+        	f.get();
+        	fail("Should have thrown a CancellationException");
+        } catch (CancellationException e) {
+        	assertFalse(cmd.hasBeenInterrupted());
+        }
+    }
+
+    @Test
     public void testChainedCommand() {
         class SubCommand extends TestHystrixCommand<Integer> {
 
@@ -5255,12 +5316,17 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
 
     private static class InterruptibleCommand extends TestHystrixCommand<Boolean> {
 
-        public InterruptibleCommand(TestCircuitBreaker circuitBreaker, boolean shouldInterrupt) {
+        public InterruptibleCommand(TestCircuitBreaker circuitBreaker, boolean shouldInterrupt, boolean shouldInterruptOnCancel, int timeoutInMillis) {
             super(testPropsBuilder()
                     .setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics)
                     .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter()
+                    		.withExecutionIsolationThreadInterruptOnFutureCancel(shouldInterruptOnCancel)
                             .withExecutionIsolationThreadInterruptOnTimeout(shouldInterrupt)
-                            .withExecutionTimeoutInMilliseconds(100)));
+                            .withExecutionTimeoutInMilliseconds(timeoutInMillis)));
+        }
+
+        public InterruptibleCommand(TestCircuitBreaker circuitBreaker, boolean shouldInterrupt) {
+        	this(circuitBreaker, shouldInterrupt, false, 100);
         }
 
         private volatile boolean hasBeenInterrupted;
