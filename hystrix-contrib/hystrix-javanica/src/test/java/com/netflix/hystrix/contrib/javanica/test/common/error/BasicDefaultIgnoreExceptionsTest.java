@@ -33,7 +33,7 @@ public abstract class BasicDefaultIgnoreExceptionsTest {
         service.commandOverridesDefaultIgnoreExceptions(SpecificException.class);
     }
 
-    @Test(expected = HystrixRuntimeException.class)
+    @Test(expected = BadRequestException.class)
     public void testCommandOverridesDefaultIgnoreExceptions_nonIgnoreExceptionShouldBePropagated() {
         // method throws BadRequestException that isn't ignored
         service.commandOverridesDefaultIgnoreExceptions(BadRequestException.class);
@@ -51,7 +51,7 @@ public abstract class BasicDefaultIgnoreExceptionsTest {
         service.commandWithFallbackOverridesDefaultIgnoreExceptions(SpecificException.class);
     }
 
-    @Test(expected = HystrixRuntimeException.class)
+    @Test(expected = SpecificException.class)
     public void testFallbackCommandOverridesDefaultIgnoreExceptions_nonIgnoreExceptionShouldBePropagated() {
         service.commandWithFallbackOverridesDefaultIgnoreExceptions(BadRequestException.class);
     }

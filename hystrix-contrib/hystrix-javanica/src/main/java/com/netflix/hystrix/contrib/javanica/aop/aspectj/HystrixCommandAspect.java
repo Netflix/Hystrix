@@ -26,10 +26,12 @@ import com.netflix.hystrix.contrib.javanica.command.CommandExecutor;
 import com.netflix.hystrix.contrib.javanica.command.ExecutionType;
 import com.netflix.hystrix.contrib.javanica.command.HystrixCommandFactory;
 import com.netflix.hystrix.contrib.javanica.command.MetaHolder;
+import com.netflix.hystrix.contrib.javanica.exception.CommandActionExecutionException;
 import com.netflix.hystrix.contrib.javanica.utils.AopUtils;
 import com.netflix.hystrix.contrib.javanica.utils.FallbackMethod;
 import com.netflix.hystrix.contrib.javanica.utils.MethodProvider;
 import com.netflix.hystrix.exception.HystrixBadRequestException;
+import com.netflix.hystrix.exception.HystrixRuntimeException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.aspectj.lang.JoinPoint;
@@ -93,8 +95,19 @@ public class HystrixCommandAspect {
             result = CommandExecutor.execute(invokable, executionType, metaHolder);
         } catch (HystrixBadRequestException e) {
             throw e.getCause();
+        } catch (HystrixRuntimeException e) {
+            throw getCauseOrDefault(e, e);
         }
         return result;
+    }
+
+    private Throwable getCauseOrDefault(RuntimeException e, RuntimeException defaultException) {
+        if (e.getCause() == null) return defaultException;
+        if (e.getCause() instanceof CommandActionExecutionException) {
+            CommandActionExecutionException commandActionExecutionException = (CommandActionExecutionException) e.getCause();
+            return Optional.fromNullable(commandActionExecutionException.getCause()).or(defaultException);
+        }
+        return e.getCause();
     }
 
     /**
