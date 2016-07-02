@@ -1,5 +1,7 @@
 # hystrix-javanica
 
+**Could you please spend 5 sec and answer [questionnaire](https://docs.google.com/forms/d/1NEeWxtL_PleX0H9GqTvKxxHqwUryJ9L048j8D3T45fs/viewform). Thank you !**
+
 Java language has a great advantages over other languages such as reflection and annotations.
 All modern frameworks such as Spring, Hibernate, myBatis and etc. seek to use this advantages to the maximum.
 The idea of introduction annotations in Hystrix is obvious solution for improvement. Currently using Hystrix involves writing a lot of code that is a barrier to rapid development. You likely be spending a lot of time on writing a Hystrix commands. Idea of the Javanica project is make easier using of Hystrix by the introduction of support annotations.
