@@ -35,7 +35,7 @@ import java.lang.annotation.Target;
 public @interface DefaultProperties {
 
     /**
-     * Specifies default group key used for each hystrix command by default unless a command specifies it's own group key.
+     * Specifies default group key used for each hystrix command by default unless a command specifies group key explicitly.
      * For additional info about this property see {@link HystrixCommand#groupKey()}.
      *
      * @return default group key
@@ -43,7 +43,7 @@ public @interface DefaultProperties {
     String groupKey() default "";
 
     /**
-     * Specifies default thread pool key used for each hystrix command by default unless a command specifies it's own thread pool key.
+     * Specifies default thread pool key used for each hystrix command by default unless a command specifies thread pool key explicitly.
      * For additional info about this property see {@link HystrixCommand#threadPoolKey()}
      *
      * @return default thread pool

@@ -155,9 +155,12 @@ public final class MetaHolder {
         return isCommandAnnotationPresent() ? get(hystrixCommand.groupKey(), defaultGroupKey) : "";
     }
 
-    @Deprecated // use getCommandGroupKey that returns default group key if command annotation doesn't specify it
     public String getDefaultGroupKey() {
         return defaultGroupKey;
+    }
+
+    public String getDefaultThreadPoolKey() {
+        return defaultThreadPoolKey;
     }
 
     public String getCollapserKey() {

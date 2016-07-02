@@ -122,6 +122,8 @@ public class HystrixCommandBuilderFactory {
                         .observable(ExecutionType.OBSERVABLE == fallbackMethod.getExecutionType())
                         .defaultCommandKey(fMethod.getName())
                         .defaultGroupKey(metaHolder.getDefaultGroupKey())
+                        .defaultThreadPoolKey(metaHolder.getDefaultThreadPoolKey())
+                        .defaultProperties(metaHolder.getDefaultProperties().orNull())
                         .hystrixCollapser(metaHolder.getHystrixCollapser())
                         .observableExecutionMode(hystrixCommand.observableExecutionMode())
                         .hystrixCommand(hystrixCommand).build();
