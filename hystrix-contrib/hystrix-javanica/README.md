@@ -1,6 +1,6 @@
 # hystrix-javanica
 
-**Could you please spend 5 sec and answer [questionnaire](https://docs.google.com/forms/d/1NEeWxtL_PleX0H9GqTvKxxHqwUryJ9L048j8D3T45fs/viewform). Thank you !**
+**Could you please spend 5 sec and answer the  [questionnaire](https://docs.google.com/forms/d/1NEeWxtL_PleX0H9GqTvKxxHqwUryJ9L048j8D3T45fs/viewform). Thank you !**
 
 Java language has a great advantages over other languages such as reflection and annotations.
 All modern frameworks such as Spring, Hibernate, myBatis and etc. seek to use this advantages to the maximum.
@@ -709,4 +709,4 @@ Please create an issue if you need a feature or you detected some bugs. Thanks
 
 **Note**: Javanica 1.4.+ is updated more frequently than 1.3.+ hence 1.4+ is more stable. 
 
-**It's recommended to use Javaniva 1.4.+** 
+**It's recommended to use Javanica 1.4.+** 
