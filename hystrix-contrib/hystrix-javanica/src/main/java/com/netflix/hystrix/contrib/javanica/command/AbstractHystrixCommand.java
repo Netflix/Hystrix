@@ -150,10 +150,13 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
             if (isIgnorable(cause)) {
                 throw new HystrixBadRequestException(cause.getMessage(), cause);
             }
-            if (cause instanceof Exception) {
+            if (cause instanceof RuntimeException) {
+                throw (RuntimeException) cause;
+            } else if (cause instanceof Exception) {
                 throw (Exception) cause;
             } else {
-                throw Throwables.propagate(cause);
+                // instance of Throwable
+                throw new CommandActionExecutionException(cause);
             }
         }
         return result;

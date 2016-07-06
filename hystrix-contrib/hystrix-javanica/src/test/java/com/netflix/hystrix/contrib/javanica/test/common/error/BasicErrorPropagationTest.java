@@ -110,7 +110,7 @@ public abstract class BasicErrorPropagationTest extends BasicHystrixTest {
         }
     }
 
-    @Test(expected = HystrixRuntimeException.class)
+    @Test(expected = OperationException.class)
     public void testBlockUser() throws NotFoundException, ActivationException, OperationException {
         try {
             userService.blockUser("1"); // this method always throws ActivationException
@@ -123,12 +123,22 @@ public abstract class BasicErrorPropagationTest extends BasicHystrixTest {
         }
     }
 
+    @Test(expected = NotFoundException.class)
+    public void testPropagateCauseException() throws NotFoundException {
+        userService.deleteUser("");
+    }
+
     public static class UserService {
 
         private FailoverService failoverService;
 
         public void setFailoverService(FailoverService failoverService) {
             this.failoverService = failoverService;
+        }
+
+        @HystrixCommand
+        public Object deleteUser(String id) throws NotFoundException {
+            throw new NotFoundException("");
         }
 
         @HystrixCommand(

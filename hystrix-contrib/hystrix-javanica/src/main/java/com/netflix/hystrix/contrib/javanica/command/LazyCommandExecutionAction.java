@@ -81,6 +81,8 @@ public class LazyCommandExecutionAction implements CommandAction {
                 .defaultCollapserKey(source.getDefaultCollapserKey())
                 .defaultCommandKey(source.getDefaultCommandKey())
                 .defaultGroupKey(source.getDefaultGroupKey())
+                .defaultThreadPoolKey(source.getDefaultThreadPoolKey())
+                .defaultProperties(source.getDefaultProperties().orNull())
                 .hystrixCollapser(source.getHystrixCollapser())
                 .hystrixCommand(source.getHystrixCommand()).build();
     }
@@ -100,6 +102,8 @@ public class LazyCommandExecutionAction implements CommandAction {
                 .defaultCollapserKey(source.getDefaultCollapserKey())
                 .defaultCommandKey(source.getDefaultCommandKey())
                 .defaultGroupKey(source.getDefaultGroupKey())
+                .defaultThreadPoolKey(source.getDefaultThreadPoolKey())
+                .defaultProperties(source.getDefaultProperties().orNull())
                 .hystrixCollapser(source.getHystrixCollapser())
                 .hystrixCommand(source.getHystrixCommand()).build();
     }

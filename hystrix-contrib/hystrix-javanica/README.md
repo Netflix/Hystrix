@@ -1,5 +1,7 @@
 # hystrix-javanica
 
+**Could you please spend 5 sec and answer the  [questionnaire](https://docs.google.com/forms/d/1NEeWxtL_PleX0H9GqTvKxxHqwUryJ9L048j8D3T45fs/viewform). Thank you !**
+
 Java language has a great advantages over other languages such as reflection and annotations.
 All modern frameworks such as Spring, Hibernate, myBatis and etc. seek to use this advantages to the maximum.
 The idea of introduction annotations in Hystrix is obvious solution for improvement. Currently using Hystrix involves writing a lot of code that is a barrier to rapid development. You likely be spending a lot of time on writing a Hystrix commands. Idea of the Javanica project is make easier using of Hystrix by the introduction of support annotations.
@@ -324,7 +326,32 @@ Based on [this](https://github.com/Netflix/Hystrix/wiki/How-To-Use#ErrorPropagat
     }
 ```
 
-If `userResource.getUserById(id);` throws an exception which type is _BadRequestException_ then this exception will be thrown without triggering fallback logic.
+If `userResource.getUserById(id);` throws an exception that type is _BadRequestException_ then this exception will be wrapped in ``HystrixBadRequestException`` and re-thrown without triggering fallback logic. You don't need to do it manually, javanica will do it for you under the hood. It is worth noting that a caller will get root cause exception, i.e. user ``BadRequestException``. A caller always gets root cause exception, never ``HystrixBadRequestException`` or ``HystrixRuntimeException`` except the case when executed code explicitly throws those exceptions. 
+
+*Note*: If command has a fallback then only first exception that trigers fallback logic will be propagated to caller. Example:
+
+```java
+class Service {
+    @HystrixCommand(fallbackMethod = "fallback")
+    Object command(Object o) throws CommandException {
+        throw new CommandException();
+    }
+    
+    @HystrixCommand
+    Object fallback(Object o) throws FallbackException {
+        throw new FallbackException();
+    }
+}
+
+// in client code
+{
+    try {
+        service.command(null);
+    } catch (Exception e) {
+      assert CommandException.class.equals(e.getClass())
+    }
+}
+```
 
 ## Request Cache
 
@@ -529,6 +556,24 @@ ThreadPoolProperties can be set using @HystrixCommand's 'threadPoolProperties' l
     }
 ```
 
+### DefaultProperties
+``@DefaultProperties`` is class (type) level annotation that allows to default commands properties such as ``groupKey``, ``threadPoolKey``, ``commandProperties``, ``threadPoolProperties`` and ``ignoreExceptions``. Properties specified using this annotation will be used by default for each hystrix command defined within annotated class unless a command specifies those properties explicitly using corresponding ``@HystrixCommand`` parameters. 
+Example:
+
+```java
+@DefaultProperties(groupKey = "DefaultGroupKey")
+class Service {
+    @HystrixCommand // hystrix command group key is 'DefaultGroupKey'
+    public Object commandInheritsDefaultProperties() {
+        return null;
+    }
+    @HystrixCommand(groupKey = "SpecificGroupKey") // command overrides default group key
+    public Object commandOverridesGroupKey() {
+        return null;
+    }
+}
+```
+
 ## Hystrix collapser
 
 Suppose you have some command which calls should be collapsed in one backend call. For this goal you can use ```@HystrixCollapser``` annotation.
@@ -664,4 +709,4 @@ Please create an issue if you need a feature or you detected some bugs. Thanks
 
 **Note**: Javanica 1.4.+ is updated more frequently than 1.3.+ hence 1.4+ is more stable. 
 
-**It's recommended to use Javaniva 1.4.+** 
+**It's recommended to use Javanica 1.4.+** 

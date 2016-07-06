@@ -19,7 +19,6 @@ import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.HystrixInvokableInfo;
 import com.netflix.hystrix.HystrixRequestLog;
-import com.netflix.hystrix.HystrixThreadPool;
 import com.netflix.hystrix.HystrixThreadPoolProperties;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
@@ -27,8 +26,6 @@ import com.netflix.hystrix.contrib.javanica.test.common.BasicHystrixTest;
 import com.netflix.hystrix.contrib.javanica.test.common.domain.User;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.lang.reflect.Field;
 
 import static com.netflix.hystrix.contrib.javanica.conf.HystrixPropertiesManager.CIRCUIT_BREAKER_ENABLED;
 import static com.netflix.hystrix.contrib.javanica.conf.HystrixPropertiesManager.CIRCUIT_BREAKER_ERROR_THRESHOLD_PERCENTAGE;
@@ -84,13 +81,7 @@ public abstract class BasicCommandPropertiesTest extends BasicHystrixTest {
         assertEquals(110, command.getProperties().executionTimeoutInMilliseconds().get().intValue());
         assertEquals(false, command.getProperties().executionIsolationThreadInterruptOnTimeout().get());
 
-        Field field = command.getClass().getSuperclass().getSuperclass().getSuperclass().getDeclaredField("threadPool");
-        field.setAccessible(true);
-        HystrixThreadPool threadPool = (HystrixThreadPool) field.get(command);
-
-        Field field2 = HystrixThreadPool.HystrixThreadPoolDefault.class.getDeclaredField("properties");
-        field2.setAccessible(true);
-        HystrixThreadPoolProperties properties = (HystrixThreadPoolProperties) field2.get(threadPool);
+        HystrixThreadPoolProperties properties = getThreadPoolProperties(command);
 
         assertEquals(30, (int) properties.coreSize().get());
         assertEquals(101, (int) properties.maxQueueSize().get());

@@ -155,7 +155,7 @@ public class HystrixCommandBuilder {
          * @param pIgnoreExceptions the exceptions to be ignored
          * @return this {@link HystrixCommandBuilder.Builder}
          */
-        public Builder ignoreExceptions(Class<? extends Throwable>[] pIgnoreExceptions) {
+        public Builder ignoreExceptions(List<Class<? extends Throwable>> pIgnoreExceptions) {
             this.ignoreExceptions = ImmutableList.copyOf(pIgnoreExceptions);
             return this;
         }

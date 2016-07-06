@@ -15,14 +15,21 @@
  */
 package com.netflix.hystrix.contrib.javanica.command;
 
+import com.google.common.base.Function;
+import com.google.common.base.Optional;
+import com.google.common.base.Predicate;
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
+import com.netflix.hystrix.contrib.javanica.annotation.DefaultProperties;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCollapser;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
 import com.netflix.hystrix.contrib.javanica.annotation.ObservableExecutionMode;
 import com.netflix.hystrix.contrib.javanica.command.closure.Closure;
+import org.apache.commons.lang3.StringUtils;
 import org.aspectj.lang.JoinPoint;
 
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -33,10 +40,11 @@ import java.util.List;
  * Simple immutable holder to keep all necessary information about current method to build Hystrix command.
  */
 @Immutable
-public class MetaHolder {
+public final class MetaHolder {
 
     private final HystrixCollapser hystrixCollapser;
     private final HystrixCommand hystrixCommand;
+    private final DefaultProperties defaultProperties;
 
     private final Method method;
     private final Method cacheKeyMethod;
@@ -49,6 +57,7 @@ public class MetaHolder {
     private final String defaultGroupKey;
     private final String defaultCommandKey;
     private final String defaultCollapserKey;
+    private final String defaultThreadPoolKey;
     private final ExecutionType executionType;
     private final boolean extendedFallback;
     private final ExecutionType collapserExecutionType;
@@ -58,6 +67,14 @@ public class MetaHolder {
     private final JoinPoint joinPoint;
     private final boolean observable;
     private final ObservableExecutionMode observableExecutionMode;
+
+    private static final Function identityFun = new Function<Object, Object>() {
+        @Nullable
+        @Override
+        public Object apply(@Nullable Object input) {
+            return input;
+        }
+    };
 
     private MetaHolder(Builder builder) {
         this.hystrixCommand = builder.hystrixCommand;
@@ -71,7 +88,9 @@ public class MetaHolder {
         this.closure = builder.closure;
         this.defaultGroupKey = builder.defaultGroupKey;
         this.defaultCommandKey = builder.defaultCommandKey;
+        this.defaultThreadPoolKey = builder.defaultThreadPoolKey;
         this.defaultCollapserKey = builder.defaultCollapserKey;
+        this.defaultProperties = builder.defaultProperties;
         this.hystrixCollapser = builder.hystrixCollapser;
         this.executionType = builder.executionType;
         this.collapserExecutionType = builder.collapserExecutionType;
@@ -132,8 +151,28 @@ public class MetaHolder {
         return args != null ? Arrays.copyOf(args, args.length) : new Object[]{};
     }
 
+    public String getCommandGroupKey() {
+        return isCommandAnnotationPresent() ? get(hystrixCommand.groupKey(), defaultGroupKey) : "";
+    }
+
     public String getDefaultGroupKey() {
         return defaultGroupKey;
+    }
+
+    public String getDefaultThreadPoolKey() {
+        return defaultThreadPoolKey;
+    }
+
+    public String getCollapserKey() {
+        return isCollapserAnnotationPresent() ? get(hystrixCollapser.collapserKey(), defaultCollapserKey) : "";
+    }
+
+    public String getCommandKey() {
+        return isCommandAnnotationPresent() ? get(hystrixCommand.commandKey(), defaultCommandKey) : "";
+    }
+
+    public String getThreadPoolKey() {
+        return isCommandAnnotationPresent() ? get(hystrixCommand.threadPoolKey(), defaultThreadPoolKey) : "";
     }
 
     public String getDefaultCommandKey() {
@@ -142,6 +181,14 @@ public class MetaHolder {
 
     public String getDefaultCollapserKey() {
         return defaultCollapserKey;
+    }
+
+    public boolean hasDefaultProperties() {
+        return defaultProperties != null;
+    }
+
+    public Optional<DefaultProperties> getDefaultProperties() {
+        return Optional.fromNullable(defaultProperties);
     }
 
     public Class<?>[] getParameterTypes() {
@@ -184,12 +231,43 @@ public class MetaHolder {
         return extendedFallback;
     }
 
+    @SuppressWarnings("unchecked")
+    public List<Class<? extends Throwable>> getCommandIgnoreExceptions() {
+        if (!isCommandAnnotationPresent()) return Collections.emptyList();
+        return getOrDefault(new Supplier<List<Class<? extends Throwable>>>() {
+            @Override
+            public List<Class<? extends Throwable>> get() {
+                return ImmutableList.<Class<? extends Throwable>>copyOf(hystrixCommand.ignoreExceptions());
+            }
+        }, new Supplier<List<Class<? extends Throwable>>>() {
+            @Override
+            public List<Class<? extends Throwable>> get() {
+                return hasDefaultProperties()
+                        ? ImmutableList.<Class<? extends Throwable>>copyOf(defaultProperties.ignoreExceptions())
+                        : Collections.<Class<? extends Throwable>>emptyList();
+            }
+        }, this.<Class<? extends Throwable>>nonEmptyList());
+    }
+
     public ExecutionType getFallbackExecutionType() {
         return fallbackExecutionType;
     }
 
     public List<HystrixProperty> getCommandProperties() {
-        return isCommandAnnotationPresent() ? ImmutableList.copyOf(hystrixCommand.commandProperties()) : Collections.<HystrixProperty>emptyList();
+        if (!isCommandAnnotationPresent()) return Collections.emptyList();
+        return getOrDefault(new Supplier<List<HystrixProperty>>() {
+            @Override
+            public List<HystrixProperty> get() {
+                return ImmutableList.copyOf(hystrixCommand.commandProperties());
+            }
+        }, new Supplier<List<HystrixProperty>>() {
+            @Override
+            public List<HystrixProperty> get() {
+                return hasDefaultProperties()
+                        ? ImmutableList.copyOf(defaultProperties.commandProperties())
+                        : Collections.<HystrixProperty>emptyList();
+            }
+        }, this.<HystrixProperty>nonEmptyList());
     }
 
     public List<HystrixProperty> getCollapserProperties() {
@@ -197,7 +275,20 @@ public class MetaHolder {
     }
 
     public List<HystrixProperty> getThreadPoolProperties() {
-        return isCommandAnnotationPresent() ? ImmutableList.copyOf(hystrixCommand.threadPoolProperties()) : Collections.<HystrixProperty>emptyList();
+        if (!isCommandAnnotationPresent()) return Collections.emptyList();
+        return getOrDefault(new Supplier<List<HystrixProperty>>() {
+            @Override
+            public List<HystrixProperty> get() {
+                return ImmutableList.copyOf(hystrixCommand.threadPoolProperties());
+            }
+        }, new Supplier<List<HystrixProperty>>() {
+            @Override
+            public List<HystrixProperty> get() {
+                return hasDefaultProperties()
+                        ? ImmutableList.copyOf(defaultProperties.threadPoolProperties())
+                        : Collections.<HystrixProperty>emptyList();
+            }
+        }, this.<HystrixProperty>nonEmptyList());
     }
 
     public boolean isObservable() {
@@ -208,10 +299,39 @@ public class MetaHolder {
         return observableExecutionMode;
     }
 
+    private String get(String key, String defaultKey) {
+        return StringUtils.isNotBlank(key) ? key : defaultKey;
+    }
+
+    private <T> Predicate<List<T>> nonEmptyList() {
+        return new Predicate<List<T>>() {
+            @Override
+            public boolean apply(@Nullable List<T> input) {
+                return input != null && !input.isEmpty();
+            }
+        };
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> T getOrDefault(Supplier<T> source, Supplier<T> defaultChoice, Predicate<T> isDefined) {
+        return getOrDefault(source, defaultChoice, isDefined, (Function<T, T>) identityFun);
+    }
+
+    private <T> T getOrDefault(Supplier<T> source, Supplier<T> defaultChoice, Predicate<T> isDefined, Function<T, T> map) {
+        T res = source.get();
+        if (!isDefined.apply(res)) {
+            res = defaultChoice.get();
+        }
+        return map.apply(res);
+    }
+
     public static final class Builder {
+
+        private static final Class<?>[] EMPTY_ARRAY_OF_TYPES= new Class[0];
 
         private HystrixCollapser hystrixCollapser;
         private HystrixCommand hystrixCommand;
+        private DefaultProperties defaultProperties;
         private Method method;
         private Method cacheKeyMethod;
         private Method fallbackMethod;
@@ -223,6 +343,7 @@ public class MetaHolder {
         private String defaultGroupKey;
         private String defaultCommandKey;
         private String defaultCollapserKey;
+        private String defaultThreadPoolKey;
         private ExecutionType executionType;
         private ExecutionType collapserExecutionType;
         private ExecutionType fallbackExecutionType;
@@ -318,8 +439,18 @@ public class MetaHolder {
             return this;
         }
 
+        public Builder defaultThreadPoolKey(String defaultThreadPoolKey) {
+            this.defaultThreadPoolKey = defaultThreadPoolKey;
+            return this;
+        }
+
         public Builder defaultCollapserKey(String defCollapserKey) {
             this.defaultCollapserKey = defCollapserKey;
+            return this;
+        }
+
+        public Builder defaultProperties(@Nullable DefaultProperties defaultProperties) {
+            this.defaultProperties = defaultProperties;
             return this;
         }
 
@@ -346,6 +477,8 @@ public class MetaHolder {
         public MetaHolder build() {
             return new MetaHolder(this);
         }
+
+
     }
 
 }
