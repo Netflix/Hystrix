@@ -29,7 +29,7 @@ import io.reactivex.netty.protocol.http.server.HttpServer;
 import io.reactivex.netty.protocol.http.server.HttpServerRequest;
 import io.reactivex.netty.protocol.http.server.HttpServerResponse;
 import io.reactivex.netty.protocol.http.server.RequestHandler;
-import io.reactivex.netty.protocol.text.sse.ServerSentEvent;
+import io.reactivex.netty.protocol.http.sse.ServerSentEvent;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -71,7 +71,7 @@ public class HystrixMetricsStreamHandlerTest {
 
         client = RxNetty.<ByteBuf, ServerSentEvent>newHttpClientBuilder("localhost", port)
                 .withNoConnectionPooling()
-                .pipelineConfigurator(PipelineConfigurators.<ByteBuf>sseClientConfigurator())
+                .pipelineConfigurator(PipelineConfigurators.<ByteBuf>clientSseConfigurator())
                 .build();
 
         mockStatic(HystrixCommandMetrics.class);
@@ -100,11 +100,11 @@ public class HystrixMetricsStreamHandlerTest {
                     }
                 });
 
-        Object first = Observable.amb(objectObservable, Observable.timer(1000, TimeUnit.MILLISECONDS)).toBlocking().first();
+        Object first = Observable.amb(objectObservable, Observable.timer(5000, TimeUnit.MILLISECONDS)).toBlocking().first();
 
         assertTrue("Expected SSE message", first instanceof ServerSentEvent);
         ServerSentEvent sse = (ServerSentEvent) first;
-        JsonNode jsonNode = mapper.readTree(sse.getEventData());
+        JsonNode jsonNode = mapper.readTree(sse.contentAsString());
         assertEquals("Expected hystrix key name", HystrixCommandMetricsSamples.SAMPLE_1.getCommandKey().name(), jsonNode.get("name").asText());
     }
 
