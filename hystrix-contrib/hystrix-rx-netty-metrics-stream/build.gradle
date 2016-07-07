@@ -1,6 +1,6 @@
 dependencies {
     compile project(':hystrix-core')
-	compile project(':hystrix-data-stream')
+	compile project(':hystrix-serialization')
     compile 'io.reactivex:rxnetty:0.4.12'
     testCompile 'junit:junit-dep:4.10'
     testCompile 'org.powermock:powermock-easymock-release-full:1.5.5'
