@@ -39,7 +39,7 @@ public interface HystrixThreadPoolKey {
         }
 
         // used to intern instances so we don't keep re-creating them millions of times for the same key
-        private static ConcurrentHashMap<String, HystrixThreadPoolKey> intern = new ConcurrentHashMap<String, HystrixThreadPoolKey>();
+        private static final ConcurrentHashMap<String, HystrixThreadPoolKey> intern = new ConcurrentHashMap<String, HystrixThreadPoolKey>();
 
         /**
          * Retrieve (or create) an interned HystrixThreadPoolKey instance for a given name.
@@ -48,17 +48,19 @@ public interface HystrixThreadPoolKey {
          * @return HystrixThreadPoolKey instance that is interned (cached) so a given name will always retrieve the same instance.
          */
         public static HystrixThreadPoolKey asKey(String name) {
-            HystrixThreadPoolKey k = intern.get(name);
-            if (k == null) {
-                k = new HystrixThreadPoolKeyDefault(name);
-                intern.putIfAbsent(name, k);
+            HystrixThreadPoolKey existingKey = intern.get(name);
+            HystrixThreadPoolKey newKey = null;
+            if (existingKey == null) {
+                newKey = new HystrixThreadPoolKeyDefault(name);
+                existingKey = intern.putIfAbsent(name, newKey);
             }
-            return k;
+            return existingKey != null ? existingKey : newKey;
+
         }
 
         private static class HystrixThreadPoolKeyDefault implements HystrixThreadPoolKey {
 
-            private String name;
+            private final String name;
 
             private HystrixThreadPoolKeyDefault(String name) {
                 this.name = name;
