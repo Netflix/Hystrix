@@ -85,7 +85,7 @@ public class HystrixMetricsStreamHandler<I, O> implements RequestHandler<I, O> {
 
         final Subject<Void, Void> subject = PublishSubject.create();
         final MultipleAssignmentSubscription subscription = new MultipleAssignmentSubscription();
-        Subscription actionSubscription = Observable.timer(0, interval, TimeUnit.MILLISECONDS, Schedulers.computation())
+        Subscription actionSubscription = Observable.interval(interval, TimeUnit.MILLISECONDS)
                 .subscribe(new Action1<Long>() {
                     @Override
                     public void call(Long tick) {
