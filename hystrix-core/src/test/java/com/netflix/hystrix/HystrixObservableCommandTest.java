@@ -2757,7 +2757,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
                             return b;
                         }
 
-                    }).finallyDo(new Action0() {
+                    }).doAfterTerminate(new Action0() {
 
                         @Override
                         public void call() {
@@ -2807,7 +2807,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
                             return b;
                         }
 
-                    }).finallyDo(new Action0() {
+                    }).doAfterTerminate(new Action0() {
 
                         @Override
                         public void call() {
@@ -2857,7 +2857,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
                             return b;
                         }
 
-                    }).finallyDo(new Action0() {
+                    }).doAfterTerminate(new Action0() {
 
                         @Override
                         public void call() {
