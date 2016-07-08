@@ -29,6 +29,7 @@ import com.netflix.hystrix.exception.HystrixBadRequestException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
+import rx.functions.Func1;
 
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.List;
@@ -66,7 +67,16 @@ public class GenericObservableCommand extends HystrixObservableCommand {
     protected Observable construct() {
         Observable result;
         try {
-            result = (Observable) commandActions.getCommandAction().execute(executionType);
+            result = ((Observable) commandActions.getCommandAction().execute(executionType))
+                    .onErrorResumeNext(new Func1<Throwable, Observable>() {
+                        @Override
+                        public Observable call(Throwable throwable) {
+                            if (isIgnorable(throwable)) {
+                                return Observable.error(new HystrixBadRequestException(throwable.getMessage(), throwable));
+                            }
+                            return Observable.error(throwable);
+                        }
+                    });
             flushCache();
         } catch (CommandActionExecutionException throwable) {
             Throwable cause = throwable.getCause();
