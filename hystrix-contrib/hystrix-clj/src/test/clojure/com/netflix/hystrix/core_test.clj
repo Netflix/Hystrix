@@ -18,7 +18,8 @@
   (:use com.netflix.hystrix.core)
   (:require [clojure.test :refer [deftest testing is are use-fixtures]])
   (:import [com.netflix.hystrix Hystrix HystrixExecutable]
-           [com.netflix.hystrix.strategy.concurrency HystrixRequestContext]))
+           [com.netflix.hystrix.strategy.concurrency HystrixRequestContext]
+           [com.netflix.hystrix.exception HystrixRuntimeException]))
 
 ; reset hystrix after each execution, for consistency and sanity
 (defn reset-fixture
@@ -145,9 +146,9 @@
           (execute (instantiate (normalize (assoc base-def :run-fn str))
                                 "hello" "-" "world"))))
 
-    (testing "throws IllegalStateException if called twice on same instance"
+    (testing "throws HystrixRuntimeException if called twice on same instance"
       (let [instance (instantiate (normalize (assoc base-def :run-fn str)) "hi")]
-        (is (thrown? IllegalStateException
+        (is (thrown? HystrixRuntimeException
                      (execute instance)
                      (execute instance)))))
 
@@ -165,12 +166,6 @@
                   :group-key :my-group
                   :command-key :my-command
                   :run-fn + }]
-
-    (testing "throws IllegalStateException if called twice on same instance"
-      (let [instance (instantiate (normalize base-def))]
-        (is (thrown? IllegalStateException
-                     (queue instance)
-                     (queue instance)))))
 
     (testing "queues a HystrixCommand"
       (is (= "hello-world")

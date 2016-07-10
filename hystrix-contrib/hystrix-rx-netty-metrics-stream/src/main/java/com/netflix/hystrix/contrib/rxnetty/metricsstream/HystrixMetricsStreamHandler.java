@@ -27,7 +27,6 @@ import io.reactivex.netty.protocol.http.server.RequestHandler;
 import rx.Observable;
 import rx.Subscription;
 import rx.functions.Action1;
-import rx.schedulers.Schedulers;
 import rx.subjects.PublishSubject;
 import rx.subjects.Subject;
 import rx.subscriptions.MultipleAssignmentSubscription;

@@ -113,19 +113,11 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
             // second should fail
             command.execute();
             fail("we should not allow this ... it breaks the state of request logs");
-        } catch (IllegalStateException e) {
+        } catch (HystrixRuntimeException e) {
             e.printStackTrace();
             // we want to get here
         }
 
-        try {
-            // queue should also fail
-            command.queue();
-            fail("we should not allow this ... it breaks the state of request logs");
-        } catch (IllegalStateException e) {
-            e.printStackTrace();
-            // we want to get here
-        }
         assertEquals(0, command.getBuilder().metrics.getCurrentConcurrentExecutionCount());
         assertSaneHystrixRequestLog(1);
         assertCommandExecutionEvents(command, HystrixEventType.SUCCESS);
@@ -2070,7 +2062,7 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
     /**
      * Test that if we try and execute a command with a cacheKey without initializing RequestVariable that it gives an error.
      */
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = HystrixRuntimeException.class)
     public void testCacheKeyExecutionRequiresRequestVariable() throws Exception {
         /* force the RequestVariable to not be initialized */
         HystrixRequestContext.setContextOnCurrentThread(null);
