@@ -183,16 +183,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
             // second should fail
             command.observe().toBlocking().single();
             fail("we should not allow this ... it breaks the state of request logs");
-        } catch (IllegalStateException e) {
-            e.printStackTrace();
-            // we want to get here
-        }
-
-        try {
-            // queue should also fail
-            command.observe().toBlocking().toFuture();
-            fail("we should not allow this ... it breaks the state of request logs");
-        } catch (IllegalStateException e) {
+        } catch (HystrixRuntimeException e) {
             e.printStackTrace();
             // we want to get here
         }
