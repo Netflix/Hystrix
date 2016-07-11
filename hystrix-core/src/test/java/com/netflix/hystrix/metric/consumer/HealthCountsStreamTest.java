@@ -231,7 +231,7 @@ public class HealthCountsStreamTest extends CommandStreamTest {
         failure3.observe();
 
         try {
-            Thread.sleep(100);
+            Thread.sleep(500);
         } catch (InterruptedException ie) {
             fail(ie.getMessage());
         }
