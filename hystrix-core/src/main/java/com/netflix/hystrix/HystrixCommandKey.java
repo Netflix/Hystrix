@@ -15,29 +15,28 @@
  */
 package com.netflix.hystrix;
 
-import java.util.concurrent.ConcurrentHashMap;
+import com.netflix.hystrix.util.InternMap;
 
 /**
  * A key to represent a {@link HystrixCommand} for monitoring, circuit-breakers, metrics publishing, caching and other such uses.
  * <p>
  * This interface is intended to work natively with Enums so that implementing code can be an enum that implements this interface.
  */
-public interface HystrixCommandKey {
-
-    /**
-     * The word 'name' is used instead of 'key' so that Enums can implement this interface and it work natively.
-     * 
-     * @return String
-     */
-    public String name();
-
-    public static class Factory {
-
+public interface HystrixCommandKey extends HystrixKey {
+    class Factory {
         private Factory() {
         }
 
         // used to intern instances so we don't keep re-creating them millions of times for the same key
-        private static ConcurrentHashMap<String, HystrixCommandKey> intern = new ConcurrentHashMap<String, HystrixCommandKey>();
+        private static final InternMap<String, HystrixCommandKeyDefault> intern
+                = new InternMap<String, HystrixCommandKeyDefault>(
+                new InternMap.ValueConstructor<String, HystrixCommandKeyDefault>() {
+                    @Override
+                    public HystrixCommandKeyDefault create(String key) {
+                        return new HystrixCommandKeyDefault(key);
+                    }
+                });
+
 
         /**
          * Retrieve (or create) an interned HystrixCommandKey instance for a given name.
@@ -46,30 +45,12 @@ public interface HystrixCommandKey {
          * @return HystrixCommandKey instance that is interned (cached) so a given name will always retrieve the same instance.
          */
         public static HystrixCommandKey asKey(String name) {
-            HystrixCommandKey k = intern.get(name);
-            if (k == null) {
-                k = new HystrixCommandKeyDefault(name);
-                intern.putIfAbsent(name, k);
-            }
-            return k;
+            return intern.interned(name);
         }
 
-        private static class HystrixCommandKeyDefault implements HystrixCommandKey {
-
-            private String name;
-
-            private HystrixCommandKeyDefault(String name) {
-                this.name = name;
-            }
-
-            @Override
-            public String name() {
-                return name;
-            }
-            
-            @Override
-            public String toString() {
-            	return name;
+        private static class HystrixCommandKeyDefault extends HystrixKey.HystrixKeyDefault implements HystrixCommandKey {
+            public HystrixCommandKeyDefault(String name) {
+                super(name);
             }
         }
 

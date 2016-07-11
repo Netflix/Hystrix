@@ -15,7 +15,7 @@
  */
 package com.netflix.hystrix;
 
-import java.util.concurrent.ConcurrentHashMap;
+import com.netflix.hystrix.util.InternMap;
 
 /**
  * A group name for a {@link HystrixCommand}. This is used for grouping together commands such as for reporting, alerting, dashboards or team/library ownership.
@@ -24,51 +24,36 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>
  * This interface is intended to work natively with Enums so that implementing code can have an enum with the owners that implements this interface.
  */
-public interface HystrixCommandGroupKey {
-
-    /**
-     * The word 'name' is used instead of 'key' so that Enums can implement this interface and it work natively.
-     * 
-     * @return String
-     */
-    public String name();
-
-    public static class Factory {
-
+public interface HystrixCommandGroupKey extends HystrixKey {
+    class Factory {
         private Factory() {
         }
 
         // used to intern instances so we don't keep re-creating them millions of times for the same key
-        private static ConcurrentHashMap<String, HystrixCommandGroupKey> intern = new ConcurrentHashMap<String, HystrixCommandGroupKey>();
+        private static final InternMap<String, HystrixCommandGroupDefault> intern
+                = new InternMap<String, HystrixCommandGroupDefault>(
+                new InternMap.ValueConstructor<String, HystrixCommandGroupDefault>() {
+                    @Override
+                    public HystrixCommandGroupDefault create(String key) {
+                        return new HystrixCommandGroupDefault(key);
+                    }
+                });
+
 
         /**
          * Retrieve (or create) an interned HystrixCommandGroup instance for a given name.
-         * 
+         *
          * @param name command group name
          * @return HystrixCommandGroup instance that is interned (cached) so a given name will always retrieve the same instance.
          */
         public static HystrixCommandGroupKey asKey(String name) {
-            HystrixCommandGroupKey k = intern.get(name);
-            if (k == null) {
-                k = new HystrixCommandGroupDefault(name);
-                intern.putIfAbsent(name, k);
-            }
-            return k;
+           return intern.interned(name);
         }
 
-        private static class HystrixCommandGroupDefault implements HystrixCommandGroupKey {
-
-            private String name;
-
-            private HystrixCommandGroupDefault(String name) {
-                this.name = name;
+        private static class HystrixCommandGroupDefault extends HystrixKey.HystrixKeyDefault implements HystrixCommandGroupKey {
+            public HystrixCommandGroupDefault(String name) {
+                super(name);
             }
-
-            @Override
-            public String name() {
-                return name;
-            }
-
         }
 
         /* package-private */ static int getGroupCount() {

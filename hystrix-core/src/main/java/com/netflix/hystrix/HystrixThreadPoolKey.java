@@ -15,31 +15,27 @@
  */
 package com.netflix.hystrix;
 
-import java.util.concurrent.ConcurrentHashMap;
+import com.netflix.hystrix.util.InternMap;
 
 /**
  * A key to represent a {@link HystrixThreadPool} for monitoring, metrics publishing, caching and other such uses.
  * <p>
  * This interface is intended to work natively with Enums so that implementing code can be an enum that implements this interface.
  */
-public interface HystrixThreadPoolKey {
-
-    /**
-     * The 'key' used as the name for a thread-pool.
-     * <p>
-     * The word 'name' is used instead of 'key' so that Enums can implement this interface and it work natively.
-     * 
-     * @return String
-     */
-    public String name();
-
-    public static class Factory {
-
+public interface HystrixThreadPoolKey extends HystrixKey {
+    class Factory {
         private Factory() {
         }
 
         // used to intern instances so we don't keep re-creating them millions of times for the same key
-        private static ConcurrentHashMap<String, HystrixThreadPoolKey> intern = new ConcurrentHashMap<String, HystrixThreadPoolKey>();
+        private static final InternMap<String, HystrixThreadPoolKey> intern
+                = new InternMap<String, HystrixThreadPoolKey>(
+                new InternMap.ValueConstructor<String, HystrixThreadPoolKey>() {
+                    @Override
+                    public HystrixThreadPoolKey create(String key) {
+                        return new HystrixThreadPoolKeyDefault(key);
+                    }
+                });
 
         /**
          * Retrieve (or create) an interned HystrixThreadPoolKey instance for a given name.
@@ -48,30 +44,12 @@ public interface HystrixThreadPoolKey {
          * @return HystrixThreadPoolKey instance that is interned (cached) so a given name will always retrieve the same instance.
          */
         public static HystrixThreadPoolKey asKey(String name) {
-            HystrixThreadPoolKey k = intern.get(name);
-            if (k == null) {
-                k = new HystrixThreadPoolKeyDefault(name);
-                intern.putIfAbsent(name, k);
-            }
-            return k;
+           return intern.interned(name);
         }
 
-        private static class HystrixThreadPoolKeyDefault implements HystrixThreadPoolKey {
-
-            private String name;
-
-            private HystrixThreadPoolKeyDefault(String name) {
-                this.name = name;
-            }
-
-            @Override
-            public String name() {
-                return name;
-            }
-            
-            @Override
-            public String toString() {
-            	return name;
+        private static class HystrixThreadPoolKeyDefault extends HystrixKeyDefault implements HystrixThreadPoolKey {
+            public HystrixThreadPoolKeyDefault(String name) {
+                super(name);
             }
         }
 

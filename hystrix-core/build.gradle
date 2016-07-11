@@ -5,7 +5,7 @@ dependencies {
     compile 'com.netflix.archaius:archaius-core:0.4.1'
     compile 'io.reactivex:rxjava:1.1.5'
     compile 'org.slf4j:slf4j-api:1.7.0'
-	compile 'org.hdrhistogram:HdrHistogram:2.1.7'
+    compile 'org.hdrhistogram:HdrHistogram:2.1.7'
     testCompile 'junit:junit-dep:4.10'
     testCompile project(':hystrix-junit')
 }
@@ -16,8 +16,8 @@ javadoc {
     // we do not want the com.netflix.hystrix.util package include
     exclude '**/util/**'
 
-        options {
-	doclet = "org.benjchristensen.doclet.DocletExclude"
+    options {
+        doclet = "org.benjchristensen.doclet.DocletExclude"
         docletpath = [rootProject.file('./gradle/doclet-exclude.jar')]
         stylesheetFile = rootProject.file('./gradle/javadocStyleSheet.css')
         windowTitle = "Hystrix Javadoc ${project.version}"
@@ -37,12 +37,12 @@ jar {
 }
 
 jmh {
-	fork = 10
-	iterations = 3
-	jmhVersion = '1.11.2'
-	profilers = ['gc']
-	threads = 8
-	warmup = '1s'
-	warmupBatchSize = 1
-	warmupIterations = 5
+    fork = 10
+    iterations = 3
+    jmhVersion = '1.11.2'
+    profilers = ['gc']
+    threads = 8
+    warmup = '1s'
+    warmupBatchSize = 1
+    warmupIterations = 5
 }
