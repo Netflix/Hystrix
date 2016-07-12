@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import com.netflix.hystrix.collapser.CollapserTimer;
 import com.netflix.hystrix.collapser.RealCollapserTimer;
 import com.netflix.hystrix.strategy.concurrency.HystrixContextRunnable;
+import com.netflix.hystrix.strategy.concurrency.HystrixContextScheduler;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesCollapserDefault;
 import org.junit.Before;
 import org.junit.Rule;
@@ -1341,6 +1342,179 @@ public class HystrixObservableCollapserTest {
 
         System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
         assertEquals(0, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+    }
+
+    class Pair<A, B> {
+        final A a;
+        final B b;
+
+        Pair(A a, B b) {
+            this.a = a;
+            this.b = b;
+        }
+    }
+
+    class MyCommand extends HystrixObservableCommand<Pair<String, Integer>> {
+
+        private final List<String> args;
+
+        public MyCommand(List<String> args) {
+            super(HystrixObservableCommand.Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("BATCH")));
+            this.args = args;
+        }
+
+        @Override
+        protected Observable<Pair<String, Integer>> construct() {
+            return Observable.from(args).map(new Func1<String, Pair<String, Integer>>() {
+                @Override
+                public Pair<String, Integer> call(String s) {
+                    return new Pair<String, Integer>(s, Integer.parseInt(s));
+                }
+            });
+        }
+    }
+
+    class MyCollapser extends HystrixObservableCollapser<String, Pair<String, Integer>, Integer, String> {
+
+        private final String arg;
+
+        public MyCollapser(String arg, boolean requestCachingOn) {
+            super(HystrixCollapserKey.Factory.asKey("UNITTEST"),
+                    HystrixObservableCollapser.Scope.REQUEST,
+                    new RealCollapserTimer(),
+                    HystrixCollapserProperties.Setter().withRequestCacheEnabled(requestCachingOn),
+                    HystrixCollapserMetrics.getInstance(HystrixCollapserKey.Factory.asKey("UNITTEST"),
+                            new HystrixPropertiesCollapserDefault(HystrixCollapserKey.Factory.asKey("UNITTEST"),
+                                    HystrixCollapserProperties.Setter())));
+            this.arg = arg;
+        }
+
+
+        @Override
+        public String getRequestArgument() {
+            return arg;
+        }
+
+        @Override
+        protected HystrixObservableCommand<Pair<String, Integer>> createCommand(Collection<CollapsedRequest<Integer, String>> collapsedRequests) {
+            List<String> args = new ArrayList<String>();
+            for (CollapsedRequest<Integer, String> req: collapsedRequests) {
+                args.add(req.getArgument());
+            }
+
+            return new MyCommand(args);
+        }
+
+        @Override
+        protected Func1<Pair<String, Integer>, String> getBatchReturnTypeKeySelector() {
+            return new Func1<Pair<String, Integer>, String>() {
+                @Override
+                public String call(Pair<String, Integer> pair) {
+                    return pair.a;
+                }
+            };
+        }
+
+        @Override
+        protected Func1<String, String> getRequestArgumentKeySelector() {
+            return new Func1<String, String>() {
+                @Override
+                public String call(String s) {
+                    return s;
+                }
+            };
+        }
+
+        @Override
+        protected void onMissingResponse(CollapsedRequest<Integer, String> r) {
+            r.setException(new RuntimeException("missing"));
+        }
+
+        @Override
+        protected Func1<Pair<String, Integer>, Integer> getBatchReturnTypeToResponseTypeMapper() {
+            return new Func1<Pair<String, Integer>, Integer>() {
+                @Override
+                public Integer call(Pair<String, Integer> pair) {
+                    return pair.b;
+                }
+            };
+        }
+    }
+
+    @Test
+    public void testDuplicateArgumentsWithRequestCachingOn() throws Exception {
+        final int NUM = 10;
+
+        List<Observable<Integer>> observables = new ArrayList<Observable<Integer>>();
+        for (int i = 0; i < NUM; i++) {
+            MyCollapser c = new MyCollapser("5", true);
+            observables.add(c.toObservable());
+        }
+
+        List<TestSubscriber<Integer>> subscribers = new ArrayList<TestSubscriber<Integer>>();
+        for (final Observable<Integer> o: observables) {
+            final TestSubscriber<Integer> sub = new TestSubscriber<Integer>();
+            subscribers.add(sub);
+
+            o.subscribe(sub);
+        }
+
+        Thread.sleep(100);
+
+        //all subscribers should receive the same value
+        for (TestSubscriber<Integer> sub: subscribers) {
+            sub.awaitTerminalEvent(1000, TimeUnit.MILLISECONDS);
+            System.out.println("Subscriber received : " + sub.getOnNextEvents());
+            sub.assertCompleted();
+            sub.assertNoErrors();
+            sub.assertValues(5);
+        }
+    }
+
+    @Test
+    public void testDuplicateArgumentsWithRequestCachingOff() throws Exception {
+        final int NUM = 10;
+
+        List<Observable<Integer>> observables = new ArrayList<Observable<Integer>>();
+        for (int i = 0; i < NUM; i++) {
+            MyCollapser c = new MyCollapser("5", false);
+            observables.add(c.toObservable());
+        }
+
+        List<TestSubscriber<Integer>> subscribers = new ArrayList<TestSubscriber<Integer>>();
+        for (final Observable<Integer> o: observables) {
+            final TestSubscriber<Integer> sub = new TestSubscriber<Integer>();
+            subscribers.add(sub);
+
+            o.subscribe(sub);
+        }
+
+        Thread.sleep(100);
+
+        AtomicInteger numErrors = new AtomicInteger(0);
+        AtomicInteger numValues = new AtomicInteger(0);
+
+        // only the first subscriber should receive the value.
+        // the others should get an error that the batch contains duplicates
+        for (TestSubscriber<Integer> sub: subscribers) {
+            sub.awaitTerminalEvent(1000, TimeUnit.MILLISECONDS);
+            if (sub.getOnCompletedEvents().isEmpty()) {
+                System.out.println(Thread.currentThread().getName() + " Error : " + sub.getOnErrorEvents());
+                sub.assertError(IllegalArgumentException.class);
+                sub.assertNoValues();
+                numErrors.getAndIncrement();
+
+            } else {
+                System.out.println(Thread.currentThread().getName() + " OnNext : " + sub.getOnNextEvents());
+                sub.assertValues(5);
+                sub.assertCompleted();
+                sub.assertNoErrors();
+                numValues.getAndIncrement();
+            }
+        }
+
+        assertEquals(1, numValues.get());
+        assertEquals(NUM - 1, numErrors.get());
     }
 
     protected void assertCommandExecutionEvents(HystrixInvokableInfo<?> command, HystrixEventType... expectedEventTypes) {
