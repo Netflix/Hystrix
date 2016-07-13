@@ -41,6 +41,7 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
  */
 public class RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType> {
     static final Logger logger = LoggerFactory.getLogger(RequestCollapser.class);
+    static final Object NULL_SENTINEL = new Object();
 
     private final HystrixCollapserBridge<BatchReturnType, ResponseType, RequestArgumentType> commandCollapser;
     // batch can be null once shutdown
@@ -89,10 +90,15 @@ public class RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType
                 return Observable.error(new IllegalStateException("Submitting requests after collapser is shutdown"));
             }
 
-            Observable<ResponseType> f = b.offer(arg);
+            final Observable<ResponseType> response;
+            if (arg != null) {
+                response = b.offer(arg);
+            } else {
+                response = b.offer( (RequestArgumentType) NULL_SENTINEL);
+            }
             // it will always get an Observable unless we hit the max batch size
-            if (f != null) {
-                return f;
+            if (response != null) {
+                return response;
             } else {
                 // this batch can't accept requests so create a new one and set it if another thread doesn't beat us
                 createNewBatchAndExecutePreviousIfNeeded(b);

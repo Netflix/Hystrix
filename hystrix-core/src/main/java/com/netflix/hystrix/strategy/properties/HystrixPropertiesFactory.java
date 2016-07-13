@@ -43,6 +43,7 @@ public class HystrixPropertiesFactory {
     public static void reset() {
         commandProperties.clear();
         threadPoolProperties.clear();
+        collapserProperties.clear();
     }
 
     // String is CommandKey.name() (we can't use CommandKey directly as we can't guarantee it implements hashcode/equals correctly)

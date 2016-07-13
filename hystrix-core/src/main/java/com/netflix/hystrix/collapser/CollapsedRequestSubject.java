@@ -49,19 +49,19 @@ import java.util.concurrent.atomic.AtomicBoolean;
     private final ReplaySubject<T> subject = ReplaySubject.create();
     private final Observable<T> subjectWithAccounting;
 
-    private volatile boolean subscribedTo = false;
     private volatile int outstandingSubscriptions = 0;
 
     public CollapsedRequestSubject(final R arg, final RequestBatch<?, T, R> containingBatch) {
+        if (arg == RequestCollapser.NULL_SENTINEL) {
+            this.argument = null;
+        } else {
+            this.argument = arg;
+        }
         this.subjectWithAccounting = subject
                 .doOnSubscribe(new Action0() {
                     @Override
                     public void call() {
                         outstandingSubscriptions++;
-                        if (!subscribedTo) {
-                            subscribedTo = true;
-                            //containingBatch.add(arg, this);
-                        }
                     }
                 })
                 .doOnUnsubscribe(new Action0() {
@@ -73,7 +73,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
                         }
                     }
                 });
-        this.argument = arg;
     }
 
     public CollapsedRequestSubject(final R arg) {

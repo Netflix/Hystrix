@@ -26,13 +26,19 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.netflix.hystrix.strategy.concurrency.HystrixContextScheduler;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesCollapserDefault;
+import com.netflix.hystrix.strategy.properties.HystrixPropertiesFactory;
+import com.netflix.hystrix.util.HystrixTimer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -50,6 +56,9 @@ import rx.Observable;
 import rx.Subscriber;
 import rx.Subscription;
 import rx.functions.Action0;
+import rx.observers.Subscribers;
+import rx.observers.TestSubscriber;
+import rx.schedulers.Schedulers;
 
 import static org.junit.Assert.*;
 
@@ -61,6 +70,7 @@ public class HystrixCollapserTest {
     public void init() {
         HystrixCollapserMetrics.reset();
         HystrixCommandMetrics.reset();
+        HystrixPropertiesFactory.reset();
     }
 
     @Test
@@ -168,6 +178,201 @@ public class HystrixCollapserTest {
         assertEquals(2, cmdIterator.next().getNumberCollapsed());
         assertEquals(2, cmdIterator.next().getNumberCollapsed());
         assertEquals(1, cmdIterator.next().getNumberCollapsed());
+    }
+
+    class Pair<A, B> {
+        final A a;
+        final B b;
+
+        Pair(A a, B b) {
+            this.a = a;
+            this.b = b;
+        }
+    }
+
+    class MyCommand extends HystrixCommand<List<Pair<String, Integer>>> {
+
+        private final List<String> args;
+
+        public MyCommand(List<String> args) {
+            super(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("BATCH")));
+            this.args = args;
+        }
+
+        @Override
+        protected List<Pair<String, Integer>> run() throws Exception {
+            System.out.println("Executing batch command on : " + Thread.currentThread().getName() + " with args : " + args);
+            List<Pair<String, Integer>> results = new ArrayList<Pair<String, Integer>>();
+            for (String arg: args) {
+                results.add(new Pair<String, Integer>(arg, Integer.parseInt(arg)));
+            }
+            return results;
+        }
+    }
+
+    class MyCollapser extends HystrixCollapser<List<Pair<String, Integer>>, Integer, String> {
+
+        private final String arg;
+
+        MyCollapser(String arg, boolean reqCacheEnabled) {
+            super(HystrixCollapserKey.Factory.asKey("UNITTEST"),
+                    Scope.REQUEST,
+                    new RealCollapserTimer(),
+                    HystrixCollapserProperties.Setter().withRequestCacheEnabled(reqCacheEnabled),
+                    HystrixCollapserMetrics.getInstance(HystrixCollapserKey.Factory.asKey("UNITTEST"),
+                            new HystrixPropertiesCollapserDefault(HystrixCollapserKey.Factory.asKey("UNITTEST"),
+                                    HystrixCollapserProperties.Setter())));
+            this.arg = arg;
+        }
+
+        @Override
+        public String getRequestArgument() {
+            return arg;
+        }
+
+        @Override
+        protected HystrixCommand<List<Pair<String, Integer>>> createCommand(Collection<CollapsedRequest<Integer, String>> collapsedRequests) {
+            List<String> args = new ArrayList<String>(collapsedRequests.size());
+            for (CollapsedRequest<Integer, String> req: collapsedRequests) {
+                args.add(req.getArgument());
+            }
+            return new MyCommand(args);
+        }
+
+        @Override
+        protected void mapResponseToRequests(List<Pair<String, Integer>> batchResponse, Collection<CollapsedRequest<Integer, String>> collapsedRequests) {
+            for (Pair<String, Integer> pair: batchResponse) {
+                for (CollapsedRequest<Integer, String> collapsedReq: collapsedRequests) {
+                    if (collapsedReq.getArgument().equals(pair.a)) {
+                        collapsedReq.setResponse(pair.b);
+                    }
+                }
+            }
+        }
+
+        @Override
+        protected String getCacheKey() {
+            return arg;
+        }
+    }
+
+
+    @Test
+    public void testDuplicateArgumentsWithRequestCachingOn() throws Exception {
+        final int NUM = 10;
+
+        List<Observable<Integer>> observables = new ArrayList<Observable<Integer>>();
+        for (int i = 0; i < NUM; i++) {
+            MyCollapser c = new MyCollapser("5", true);
+            observables.add(c.toObservable());
+        }
+
+        List<TestSubscriber<Integer>> subscribers = new ArrayList<TestSubscriber<Integer>>();
+        for (final Observable<Integer> o: observables) {
+            final TestSubscriber<Integer> sub = new TestSubscriber<Integer>();
+            subscribers.add(sub);
+
+            o.subscribe(sub);
+        }
+
+        Thread.sleep(100);
+
+        //all subscribers should receive the same value
+        for (TestSubscriber<Integer> sub: subscribers) {
+            sub.awaitTerminalEvent(1000, TimeUnit.MILLISECONDS);
+            System.out.println("Subscriber received : " + sub.getOnNextEvents());
+            sub.assertNoErrors();
+            sub.assertValues(5);
+        }
+    }
+
+    @Test
+    public void testDuplicateArgumentsWithRequestCachingOff() throws Exception {
+        final int NUM = 10;
+
+        List<Observable<Integer>> observables = new ArrayList<Observable<Integer>>();
+        for (int i = 0; i < NUM; i++) {
+            MyCollapser c = new MyCollapser("5", false);
+            observables.add(c.toObservable());
+        }
+
+        List<TestSubscriber<Integer>> subscribers = new ArrayList<TestSubscriber<Integer>>();
+        for (final Observable<Integer> o: observables) {
+            final TestSubscriber<Integer> sub = new TestSubscriber<Integer>();
+            subscribers.add(sub);
+
+            o.subscribe(sub);
+        }
+
+        Thread.sleep(100);
+
+        AtomicInteger numErrors = new AtomicInteger(0);
+        AtomicInteger numValues = new AtomicInteger(0);
+
+        // only the first subscriber should receive the value.
+        // the others should get an error that the batch contains duplicates
+        for (TestSubscriber<Integer> sub: subscribers) {
+            sub.awaitTerminalEvent(1000, TimeUnit.MILLISECONDS);
+            if (sub.getOnCompletedEvents().isEmpty()) {
+                System.out.println(Thread.currentThread().getName() + " Error : " + sub.getOnErrorEvents());
+                sub.assertError(IllegalArgumentException.class);
+                sub.assertNoValues();
+                numErrors.getAndIncrement();
+
+            } else {
+                System.out.println(Thread.currentThread().getName() + " OnNext : " + sub.getOnNextEvents());
+                sub.assertValues(5);
+                sub.assertCompleted();
+                sub.assertNoErrors();
+                numValues.getAndIncrement();
+            }
+        }
+
+        assertEquals(1, numValues.get());
+        assertEquals(NUM - 1, numErrors.get());
+    }
+
+    @Test
+    public void testUnsubscribeFromSomeDuplicateArgsDoesNotRemoveFromBatch() throws Exception {
+        final int NUM = 10;
+
+        List<Observable<Integer>> observables = new ArrayList<Observable<Integer>>();
+        for (int i = 0; i < NUM; i++) {
+            MyCollapser c = new MyCollapser("5", true);
+            observables.add(c.toObservable());
+        }
+
+        List<TestSubscriber<Integer>> subscribers = new ArrayList<TestSubscriber<Integer>>();
+        List<Subscription> subscriptions = new ArrayList<Subscription>();
+
+        for (final Observable<Integer> o: observables) {
+            final TestSubscriber<Integer> sub = new TestSubscriber<Integer>();
+            subscribers.add(sub);
+
+            Subscription s = o.subscribe(sub);
+            subscriptions.add(s);
+        }
+
+
+        //unsubscribe from all but 1
+        for (int i = 0; i < NUM - 1; i++) {
+            Subscription s = subscriptions.get(i);
+            s.unsubscribe();
+        }
+
+        Thread.sleep(100);
+
+        //all subscribers with an active subscription should receive the same value
+        for (TestSubscriber<Integer> sub: subscribers) {
+            if (!sub.isUnsubscribed()) {
+                sub.awaitTerminalEvent(1000, TimeUnit.MILLISECONDS);
+                System.out.println("Subscriber received : " + sub.getOnNextEvents());
+                sub.assertNoErrors();
+                sub.assertValues(5);
+            } else {
+                System.out.println("Subscriber is unsubscribed");
+            }
+        }
     }
 
     @Test
@@ -391,12 +596,14 @@ public class HystrixCollapserTest {
 
         // kick off work (simulating a single request with multiple threads)
         for (int t = 0; t < 5; t++) {
+            final int outerLoop = t;
             Thread th = new Thread(new HystrixContextRunnable(HystrixPlugins.getInstance().getConcurrencyStrategy(), new Runnable() {
 
                 @Override
                 public void run() {
                     for (int i = 0; i < 100; i++) {
-                        responses.add(new TestRequestCollapser(timer, 1).queue());
+                        int uniqueInt = (outerLoop * 100) + i;
+                        responses.add(new TestRequestCollapser(timer, uniqueInt).queue());
                     }
                 }
             }));
@@ -434,7 +641,7 @@ public class HystrixCollapserTest {
 
         // wait for all tasks to complete
         for (Future<String> f : responses) {
-            assertEquals("1", f.get(1000, TimeUnit.MILLISECONDS));
+            f.get(1000, TimeUnit.MILLISECONDS);
         }
         assertEquals("2", response2.get(1000, TimeUnit.MILLISECONDS));
         assertEquals("3", response3.get(1000, TimeUnit.MILLISECONDS));
@@ -447,7 +654,7 @@ public class HystrixCollapserTest {
         }
 
         Iterator<HystrixInvokableInfo<?>> cmdIterator = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().iterator();
-        assertEquals(501, cmdIterator.next().getNumberCollapsed());
+        assertEquals(500, cmdIterator.next().getNumberCollapsed());
         assertEquals(2, cmdIterator.next().getNumberCollapsed());
         assertEquals(1, cmdIterator.next().getNumberCollapsed());
 
@@ -661,8 +868,8 @@ public class HystrixCollapserTest {
         assertTrue(commandB.getExecutionEvents().contains(HystrixEventType.COLLAPSED));
 
         Iterator<HystrixInvokableInfo<?>> cmdIterator = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().iterator();
-        assertEquals(3, cmdIterator.next().getNumberCollapsed());  //1 for A, 2 for B.  Batch contains all arguments (including duplicates)
-        assertEquals(3, cmdIterator.next().getNumberCollapsed());  //1 for A, 2 for B.  Batch contains all arguments (including duplicates)
+        assertEquals(2, cmdIterator.next().getNumberCollapsed());  //1 for A, 1 for B.  Batch contains only unique arguments (no duplicates)
+        assertEquals(2, cmdIterator.next().getNumberCollapsed());  //1 for A, 1 for B.  Batch contains only unique arguments (no duplicates)
     }
 
     /**
