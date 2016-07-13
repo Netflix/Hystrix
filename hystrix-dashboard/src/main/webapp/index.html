@@ -46,6 +46,39 @@
 				}
 			});
 		});
+
+		$(document).ready(function(){
+
+				$('#eurekaURL').on('input',function(e){
+					url = window.location.pathname + "eureka?url=" + $('#eurekaURL').val()
+					$.get(url,function( data ) {
+
+				   		$(data.children).find("application").each(function(index,item){
+					   	  appName = $(item).find("name")[0].innerHTML
+					   	  
+					   	  ip = null;
+						  $($(item).find("instance")).each(function(i,d){
+						  	 ip = $(d).find("ipAddr")[0].innerHTML;	
+						  });
+
+					   	  $('#eurekaApp').append($("<option></option>")
+					                    .attr("value",ip)
+					                    .text(appName)); 
+
+					      $('#eurekaApp').on('change click',function(item){
+					          var $this = $(this),
+					          $value = $this.val();
+					          streamType = $('input[name=streamType]:checked').val()
+					          $('#stream').val("http://" + $value +  ":8080/" + streamType + "?cluster=default");
+					      });
+
+					   });
+					});		
+
+				});
+	 
+	 	});
+
 	</script>
 </head>
 <body>
@@ -57,6 +90,18 @@
 	<br>
 	
 	<h2>Hystrix Dashboard</h2>
+	
+	Eureka URL: <input id="eurekaURL" name="eurekaURL" class="eurekaURL" type="text" size="42" placeholder="http://hostname:8080/eureka/v2/apps"> <br>
+
+	Eureka Application: 
+	<select id="eurekaApp" name="eurekaApp" class="eurekaApp">
+		<option selected disabled>Choose here</option>
+	</select> 
+
+	Stream Type:
+	Hystrix <input type="radio" name="streamType" value="hystrix.stream"> 
+	Turbine <input type="radio" name="streamType" value="turbine.stream" checked> <br><br>
+
 	<input id="stream" type="textfield" size="120" placeholder="http://hostname:port/turbine/turbine.stream"></input>
 	<br><br>
 	<i>Cluster via Turbine (default cluster):</i> http://turbine-hostname:port/turbine.stream

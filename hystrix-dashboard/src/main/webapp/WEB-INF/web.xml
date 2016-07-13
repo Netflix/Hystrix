@@ -26,5 +26,16 @@
 		<servlet-name>ProxyStreamServlet</servlet-name>
 		<url-pattern>/proxy.stream</url-pattern>
 	</servlet-mapping>
+	
+	<servlet>
+		<description />
+		<display-name>EurekaInfoServlet</display-name>
+		<servlet-name>EurekaInfoServlet</servlet-name>
+		<servlet-class>com.netflix.hystrix.dashboard.stream.EurekaInfoServlet</servlet-class>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>EurekaInfoServlet</servlet-name>
+		<url-pattern>/eureka</url-pattern>
+	</servlet-mapping>
 
 </web-app>
