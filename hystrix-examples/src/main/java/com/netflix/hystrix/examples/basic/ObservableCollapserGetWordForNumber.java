@@ -262,6 +262,41 @@ public class ObservableCollapserGetWordForNumber extends HystrixObservableCollap
 			assertTrue(ObservableCollapserGetWordForNumber.getCmdCount() < noOfRequests);
 		}
 
+		@Test
+		public void shouldCollapseSameRequests()
+		{
+			//given
+			final HystrixContextScheduler contextAwareScheduler = new HystrixContextScheduler(Schedulers.computation());
+
+			//when
+			TestSubscriber<String> subscriber1 = getWordForNumber(contextAwareScheduler, 0);
+			TestSubscriber<String> subscriber2 = getWordForNumber(contextAwareScheduler, 0);
+
+			//then
+			subscriberReceived(subscriber1, 0);
+			subscriberReceived(subscriber2, 0);
+		}
+
+		private TestSubscriber<String> getWordForNumber(HystrixContextScheduler contextAwareScheduler, final int number) {
+			final TestSubscriber<String> subscriber = new TestSubscriber<String>();
+			Observable.defer(new Func0<Observable<String>>()
+			{
+				@Override
+				public Observable<String> call()
+				{
+					return new ObservableCollapserGetWordForNumber(number).toObservable();
+				}
+			}).subscribeOn(contextAwareScheduler).subscribe(subscriber);
+			return subscriber;
+		}
+
+		private void subscriberReceived(TestSubscriber<String> subscriber, int number) {
+			subscriber.awaitTerminalEvent(10, TimeUnit.SECONDS);
+			assertThat(subscriber.getOnErrorEvents().toString(), subscriber.getOnErrorEvents().size(), is(0));
+			assertThat(subscriber.getOnNextEvents().size(), is(1));
+			assertThat(subscriber.getOnNextEvents().get(0), equalTo(numberToWord(number)));
+		}
+
 		private String numberToWord(final int number)
 		{
 			return ObservableCommandNumbersToWords.dict.get(number);
