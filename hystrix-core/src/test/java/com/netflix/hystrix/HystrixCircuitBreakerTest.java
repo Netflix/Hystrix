@@ -358,7 +358,7 @@ public class HystrixCircuitBreakerTest {
     public void testCircuitClosedAfterSuccess() {
         String key = "cmd-G";
         try {
-            int sleepWindow = 20;
+            int sleepWindow = 100;
             HystrixCommand<Boolean> cmd1 = new FailureCommand(key, 1, sleepWindow);
             HystrixCircuitBreaker cb = cmd1.circuitBreaker;
 
@@ -397,6 +397,8 @@ public class HystrixCircuitBreakerTest {
             asyncResult.toBlocking().single();
 
             // all requests should be open again
+
+            Thread.sleep(100);
             System.out.println("CircuitBreaker state 2 : " + cmd1.getMetrics().getHealthCounts());
             assertTrue(cb.allowRequest());
             assertTrue(cb.allowRequest());
