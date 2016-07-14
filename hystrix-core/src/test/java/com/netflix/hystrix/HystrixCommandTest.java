@@ -40,7 +40,9 @@ import rx.Subscription;
 import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func0;
+import rx.functions.Func1;
 import rx.observers.TestSubscriber;
+import rx.schedulers.Schedulers;
 
 import java.io.IOException;
 import java.util.List;
@@ -2981,8 +2983,6 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
 
     @Test
     public void testEarlyUnsubscribeDuringExecutionViaToObservable() {
-        final AtomicBoolean hystrixThreadStartedExecuting = new AtomicBoolean(false);
-
         class AsyncCommand extends HystrixCommand<Boolean> {
 
             public AsyncCommand() {
@@ -2991,7 +2991,6 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
 
             @Override
             protected Boolean run() {
-                hystrixThreadStartedExecuting.set(true);
                 try {
                     Thread.sleep(100);
                     return true;
@@ -3038,7 +3037,6 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
             assertEquals("Number of execution semaphores in use", 0, cmd.getExecutionSemaphore().getNumberOfPermitsUsed());
             assertEquals("Number of fallback semaphores in use", 0, cmd.getFallbackSemaphore().getNumberOfPermitsUsed());
             assertFalse(cmd.isExecutionComplete());
-            assertEquals(hystrixThreadStartedExecuting.get(), cmd.isExecutedInThread());
             assertEquals(null, cmd.getFailedExecutionException());
             assertNull(cmd.getExecutionException());
             System.out.println("Execution time : " + cmd.getExecutionTimeInMilliseconds());
@@ -3694,6 +3692,99 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         } catch (InterruptedException ex) {
             ex.printStackTrace();
         }
+    }
+
+    /**
+     * Some RxJava operators like take(n), zip receive data in an onNext from upstream and immediately unsubscribe.
+     * When upstream is a HystrixCommand, Hystrix may get that unsubscribe before it gets to its onCompleted.
+     * This should still be marked as a HystrixEventType.SUCCESS.
+     */
+    @Test
+    public void testUnsubscribingDownstreamOperatorStillResultsInSuccessEventType() throws InterruptedException {
+        HystrixCommand<Integer> cmd = getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.SUCCESS, 100, AbstractTestHystrixCommand.FallbackResult.UNIMPLEMENTED);
+
+        Observable<Integer> o = cmd.toObservable()
+                .doOnNext(new Action1<Integer>() {
+                    @Override
+                    public void call(Integer i) {
+                        System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis() + " CMD OnNext : " + i);
+                    }
+                })
+                .doOnError(new Action1<Throwable>() {
+                    @Override
+                    public void call(Throwable throwable) {
+                        System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis() + " CMD OnError : " + throwable);
+                    }
+                })
+                .doOnCompleted(new Action0() {
+                    @Override
+                    public void call() {
+                        System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis() + " CMD OnCompleted");
+                    }
+                })
+                .doOnSubscribe(new Action0() {
+                    @Override
+                    public void call() {
+                        System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis() + " CMD OnSubscribe");
+                    }
+                })
+                .doOnUnsubscribe(new Action0() {
+                    @Override
+                    public void call() {
+                        System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis() + " CMD OnUnsubscribe");
+                    }
+                })
+                .take(1)
+                .observeOn(Schedulers.io())
+                .map(new Func1<Integer, Integer>() {
+                    @Override
+                    public Integer call(Integer i) {
+                        System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis() + " : Doing some more computation in the onNext!!");
+                        try {
+                            Thread.sleep(100);
+                        } catch (InterruptedException ex) {
+                            ex.printStackTrace();
+                        }
+                        return i;
+                    }
+                });
+
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        o.doOnSubscribe(new Action0() {
+            @Override
+            public void call() {
+                System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis() + " : OnSubscribe");
+            }
+        }).doOnUnsubscribe(new Action0() {
+            @Override
+            public void call() {
+                System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis() + " : OnUnsubscribe");
+            }
+        }).subscribe(new Subscriber<Integer>() {
+            @Override
+            public void onCompleted() {
+                System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis() + " : OnCompleted");
+                latch.countDown();
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis() + " : OnError : " + e);
+                latch.countDown();
+            }
+
+            @Override
+            public void onNext(Integer i) {
+                System.out.println(Thread.currentThread().getName() + " : " + System.currentTimeMillis() + " : OnNext : " + i);
+            }
+        });
+
+        latch.await(1000, TimeUnit.MILLISECONDS);
+
+        System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
+        assertTrue(cmd.isExecutedInThread());
+        assertCommandExecutionEvents(cmd, HystrixEventType.SUCCESS);
     }
 
     /**
