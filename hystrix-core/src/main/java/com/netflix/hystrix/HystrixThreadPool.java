@@ -1,12 +1,12 @@
 /**
  * Copyright 2012 Netflix, Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -46,7 +46,7 @@ public interface HystrixThreadPool {
 
     /**
      * Implementation of {@link ThreadPoolExecutor}.
-     * 
+     *
      * @return ThreadPoolExecutor
      */
     public ExecutorService getExecutor();
@@ -75,7 +75,7 @@ public interface HystrixThreadPool {
      * <p>
      * This allows dynamic control of the max queueSize versus whatever the actual max queueSize is so that dynamic changes can be done via property changes rather than needing an app
      * restart to adjust when commands should be rejected from queuing up.
-     * 
+     *
      * @return boolean whether there is space on the queue
      */
     public boolean isQueueSpaceAvailable();
@@ -94,7 +94,7 @@ public interface HystrixThreadPool {
          * Get the {@link HystrixThreadPool} instance for a given {@link HystrixThreadPoolKey}.
          * <p>
          * This is thread-safe and ensures only 1 {@link HystrixThreadPool} per {@link HystrixThreadPoolKey}.
-         * 
+         *
          * @return {@link HystrixThreadPool} instance
          */
         /* package */static HystrixThreadPool getInstance(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolProperties.Setter propertiesBuilder) {
@@ -143,7 +143,8 @@ public interface HystrixThreadPool {
             }
             for (HystrixThreadPool pool : threadPools.values()) {
                 try {
-                    pool.getExecutor().awaitTermination(timeout, unit);
+                    while (! pool.getExecutor().awaitTermination(timeout, unit)) {
+                    }
                 } catch (InterruptedException e) {
                     throw new RuntimeException("Interrupted while waiting for thread-pools to terminate. Pools may not be correctly shutdown or cleared.", e);
                 }
