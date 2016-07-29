@@ -90,7 +90,7 @@ To set threadPoolKey use ```@HystrixCommand#threadPoolKey()```
 
 ### Asynchronous Execution
 
-To process Hystrix command asynchronously you should return an instance of `AsyncResult` in your command method as in the exapmple below:
+To process Hystrix command asynchronously you should return an instance of `AsyncResult` in your command method as in the example below:
 ```java
     @HystrixCommand
     public Future<User> getUserByIdAsync(final String id) {
