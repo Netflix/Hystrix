@@ -67,6 +67,11 @@ public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> imp
         return "resumeWithFallback";
     }
 
+    @Override
+    protected boolean commandIsScalar() {
+        return false;
+    }
+
     /**
      * Construct a {@link HystrixObservableCommand} with defined {@link Setter} that allows injecting property and strategy overrides and other optional arguments.
      * <p>

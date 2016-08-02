@@ -21,27 +21,24 @@ public class HystrixCommandResponseFromCache<R> extends HystrixCachedObservable<
                 .doOnError(new Action1<Throwable>() {
                     @Override
                     public void call(Throwable throwable) {
-                        if (!completionLogicRun.get()) {
+                        if (completionLogicRun.compareAndSet(false, true)) {
                             commandCompleted(commandToCopyStateInto);
-                            completionLogicRun.set(true);
                         }
                     }
                 })
                 .doOnCompleted(new Action0() {
                     @Override
                     public void call() {
-                        if (!completionLogicRun.get()) {
+                        if (completionLogicRun.compareAndSet(false, true)) {
                             commandCompleted(commandToCopyStateInto);
-                            completionLogicRun.set(true);
                         }
                     }
                 })
                 .doOnUnsubscribe(new Action0() {
                     @Override
                     public void call() {
-                        if (!completionLogicRun.get()) {
+                        if (completionLogicRun.compareAndSet(false, true)) {
                             commandUnsubscribed(commandToCopyStateInto);
-                            completionLogicRun.set(true);
                         }
                     }
                 });

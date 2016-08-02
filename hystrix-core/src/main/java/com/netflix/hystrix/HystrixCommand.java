@@ -404,4 +404,8 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
         return "getFallback";
     }
 
+    @Override
+    protected boolean commandIsScalar() {
+        return true;
+    }
 }
