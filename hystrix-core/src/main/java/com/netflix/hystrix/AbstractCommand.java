@@ -370,9 +370,9 @@ import java.util.concurrent.atomic.AtomicReference;
             @Override
             public void call() {
                 if (_cmd.commandState.compareAndSet(CommandState.OBSERVABLE_CHAIN_CREATED, CommandState.TERMINAL)) {
-                    handleCommandEnd(_cmd, false); //user code never ran
+                    handleCommandEnd(false); //user code never ran
                 } else if (_cmd.commandState.compareAndSet(CommandState.USER_CODE_EXECUTED, CommandState.TERMINAL)) {
-                    handleCommandEnd(_cmd, true); //user code did run
+                    handleCommandEnd(true); //user code did run
                 }
             }
         };
@@ -382,15 +382,19 @@ import java.util.concurrent.atomic.AtomicReference;
             @Override
             public void call() {
                 if (_cmd.commandState.compareAndSet(CommandState.OBSERVABLE_CHAIN_CREATED, CommandState.UNSUBSCRIBED)) {
-                    _cmd.eventNotifier.markEvent(HystrixEventType.CANCELLED, _cmd.commandKey);
-                    _cmd.executionResultAtTimeOfCancellation = _cmd.executionResult
-                            .addEvent((int) (System.currentTimeMillis() - _cmd.commandStartTimestamp), HystrixEventType.CANCELLED);
-                    handleCommandEnd(_cmd, false); //user code never ran
+                    if (!_cmd.executionResult.containsTerminalEvent()) {
+                        _cmd.eventNotifier.markEvent(HystrixEventType.CANCELLED, _cmd.commandKey);
+                        _cmd.executionResultAtTimeOfCancellation = _cmd.executionResult
+                                .addEvent((int) (System.currentTimeMillis() - _cmd.commandStartTimestamp), HystrixEventType.CANCELLED);
+                    }
+                    handleCommandEnd(false); //user code never ran
                 } else if (_cmd.commandState.compareAndSet(CommandState.USER_CODE_EXECUTED, CommandState.UNSUBSCRIBED)) {
-                    _cmd.eventNotifier.markEvent(HystrixEventType.CANCELLED, _cmd.commandKey);
-                    _cmd.executionResultAtTimeOfCancellation = _cmd.executionResult
-                            .addEvent((int) (System.currentTimeMillis() - _cmd.commandStartTimestamp), HystrixEventType.CANCELLED);
-                    handleCommandEnd(_cmd, true); //user code did run
+                    if (!_cmd.executionResult.containsTerminalEvent()) {
+                        _cmd.eventNotifier.markEvent(HystrixEventType.CANCELLED, _cmd.commandKey);
+                        _cmd.executionResultAtTimeOfCancellation = _cmd.executionResult
+                                .addEvent((int) (System.currentTimeMillis() - _cmd.commandStartTimestamp), HystrixEventType.CANCELLED);
+                    }
+                    handleCommandEnd(true); //user code did run
                 }
             }
         };
@@ -468,7 +472,6 @@ import java.util.concurrent.atomic.AtomicReference;
                         Observable.defer(applyHystrixSemantics)
                                 .map(wrapWithAllOnNextHooks);
 
-
                 Observable<R> afterCache;
 
                 // put in cache
@@ -541,6 +544,8 @@ import java.util.concurrent.atomic.AtomicReference;
         }
     }
 
+    abstract protected boolean commandIsScalar();
+
     /**
      * This decorates "Hystrix" functionality around the run() Observable.
      *
@@ -556,17 +561,26 @@ import java.util.concurrent.atomic.AtomicReference;
                     executionResult = executionResult.addEvent(HystrixEventType.EMIT);
                     eventNotifier.markEvent(HystrixEventType.EMIT, commandKey);
                 }
+                if (commandIsScalar()) {
+                    long latency = System.currentTimeMillis() - executionResult.getStartTimestamp();
+                    eventNotifier.markCommandExecution(getCommandKey(), properties.executionIsolationStrategy().get(), (int) latency, executionResult.getOrderedList());
+                    eventNotifier.markEvent(HystrixEventType.SUCCESS, commandKey);
+                    executionResult = executionResult.addEvent((int) latency, HystrixEventType.SUCCESS);
+                    circuitBreaker.markSuccess();
+                }
             }
         };
 
-        final Action0 markCompleted = new Action0() {
+        final Action0 markOnCompleted = new Action0() {
             @Override
             public void call() {
-                long latency = System.currentTimeMillis() - executionResult.getStartTimestamp();
-                eventNotifier.markEvent(HystrixEventType.SUCCESS, commandKey);
-                executionResult = executionResult.addEvent((int) latency, HystrixEventType.SUCCESS);
-                circuitBreaker.markSuccess();
-                eventNotifier.markCommandExecution(getCommandKey(), properties.executionIsolationStrategy().get(), (int) latency, executionResult.getOrderedList());
+                if (!commandIsScalar()) {
+                    long latency = System.currentTimeMillis() - executionResult.getStartTimestamp();
+                    eventNotifier.markCommandExecution(getCommandKey(), properties.executionIsolationStrategy().get(), (int) latency, executionResult.getOrderedList());
+                    eventNotifier.markEvent(HystrixEventType.SUCCESS, commandKey);
+                    executionResult = executionResult.addEvent((int) latency, HystrixEventType.SUCCESS);
+                    circuitBreaker.markSuccess();
+                }
             }
         };
 
@@ -611,7 +625,7 @@ import java.util.concurrent.atomic.AtomicReference;
         }
 
         return execution.doOnNext(markEmits)
-                .doOnCompleted(markCompleted)
+                .doOnCompleted(markOnCompleted)
                 .onErrorResumeNext(handleFallback)
                 .doOnEach(setRequestContext);
     }
@@ -877,9 +891,9 @@ import java.util.concurrent.atomic.AtomicReference;
                     @Override
                     public void call() {
                         if (commandState.compareAndSet(CommandState.OBSERVABLE_CHAIN_CREATED, CommandState.TERMINAL)) {
-                            cleanUpAfterResponseFromCache(_cmd, false); //user code never ran
+                            cleanUpAfterResponseFromCache(false); //user code never ran
                         } else if (commandState.compareAndSet(CommandState.USER_CODE_EXECUTED, CommandState.TERMINAL)) {
-                            cleanUpAfterResponseFromCache(_cmd, true); //user code did run
+                            cleanUpAfterResponseFromCache(true); //user code did run
                         }
                     }
                 })
@@ -887,15 +901,15 @@ import java.util.concurrent.atomic.AtomicReference;
                     @Override
                     public void call() {
                         if (commandState.compareAndSet(CommandState.OBSERVABLE_CHAIN_CREATED, CommandState.UNSUBSCRIBED)) {
-                            cleanUpAfterResponseFromCache(_cmd, false); //user code never ran
+                            cleanUpAfterResponseFromCache(false); //user code never ran
                         } else if (commandState.compareAndSet(CommandState.USER_CODE_EXECUTED, CommandState.UNSUBSCRIBED)) {
-                            cleanUpAfterResponseFromCache(_cmd, true); //user code did run
+                            cleanUpAfterResponseFromCache(true); //user code did run
                         }
                     }
                 });
     }
 
-    private void cleanUpAfterResponseFromCache(final AbstractCommand<R> _cmd, boolean commandExecutionStarted) {
+    private void cleanUpAfterResponseFromCache(boolean commandExecutionStarted) {
         Reference<TimerListener> tl = timeoutTimer.get();
         if (tl != null) {
             tl.clear();
@@ -912,7 +926,7 @@ import java.util.concurrent.atomic.AtomicReference;
         eventNotifier.markEvent(HystrixEventType.RESPONSE_FROM_CACHE, commandKey);
     }
 
-    private void handleCommandEnd(final AbstractCommand _cmd, boolean commandExecutionStarted) {
+    private void handleCommandEnd(boolean commandExecutionStarted) {
         Reference<TimerListener> tl = timeoutTimer.get();
         if (tl != null) {
             tl.clear();

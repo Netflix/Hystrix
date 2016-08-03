@@ -43,10 +43,15 @@ public class ExecutionResult {
     private static final HystrixEventType[] ALL_EVENT_TYPES = HystrixEventType.values();
     private static final int NUM_EVENT_TYPES = ALL_EVENT_TYPES.length;
     private static final BitSet EXCEPTION_PRODUCING_EVENTS = new BitSet(NUM_EVENT_TYPES);
+    private static final BitSet TERMINAL_EVENTS = new BitSet(NUM_EVENT_TYPES);
 
     static {
         for (HystrixEventType eventType: HystrixEventType.EXCEPTION_PRODUCING_EVENT_TYPES) {
             EXCEPTION_PRODUCING_EVENTS.set(eventType.ordinal());
+        }
+
+        for (HystrixEventType eventType: HystrixEventType.TERMINAL_EVENT_TYPES) {
+            TERMINAL_EVENTS.set(eventType.ordinal());
         }
     }
 
@@ -351,6 +356,10 @@ public class ExecutionResult {
 
     public boolean executionOccurred() {
         return executionOccurred;
+    }
+
+    public boolean containsTerminalEvent() {
+        return eventCounts.containsAnyOf(TERMINAL_EVENTS);
     }
 
     @Override

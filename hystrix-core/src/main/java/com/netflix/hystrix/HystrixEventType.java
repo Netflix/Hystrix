@@ -82,11 +82,22 @@ public enum HystrixEventType {
      */
     public final static List<HystrixEventType> EXCEPTION_PRODUCING_EVENT_TYPES = new ArrayList<HystrixEventType>();
 
+    /**
+     * List of events that are terminal
+     */
+    public final static List<HystrixEventType> TERMINAL_EVENT_TYPES = new ArrayList<HystrixEventType>();
+
     static {
         EXCEPTION_PRODUCING_EVENT_TYPES.add(BAD_REQUEST);
         EXCEPTION_PRODUCING_EVENT_TYPES.add(FALLBACK_FAILURE);
         EXCEPTION_PRODUCING_EVENT_TYPES.add(FALLBACK_MISSING);
         EXCEPTION_PRODUCING_EVENT_TYPES.add(FALLBACK_REJECTION);
+
+        for (HystrixEventType eventType: HystrixEventType.values()) {
+            if (eventType.isTerminal()) {
+                TERMINAL_EVENT_TYPES.add(eventType);
+            }
+        }
     }
 
     public enum ThreadPool {
