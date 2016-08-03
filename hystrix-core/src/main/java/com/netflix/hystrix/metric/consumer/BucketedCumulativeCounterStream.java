@@ -18,7 +18,10 @@ package com.netflix.hystrix.metric.consumer;
 import com.netflix.hystrix.metric.HystrixEvent;
 import com.netflix.hystrix.metric.HystrixEventStream;
 import rx.Observable;
+import rx.functions.Action0;
 import rx.functions.Func2;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Refinement of {@link BucketedCounterStream} which accumulates counters infinitely in the bucket-reduction step
@@ -28,19 +31,35 @@ import rx.functions.Func2;
  * @param <Output> type of data emitted to stream subscribers (often is the same as A but does not have to be)
  */
 public abstract class BucketedCumulativeCounterStream<Event extends HystrixEvent, Bucket, Output> extends BucketedCounterStream<Event, Bucket, Output> {
-    private Func2<Output, Bucket, Output> reduceBucket;
+    private Observable<Output> sourceStream;
+    private final AtomicBoolean isSourceCurrentlySubscribed = new AtomicBoolean(false);
 
     protected BucketedCumulativeCounterStream(HystrixEventStream<Event> stream, int numBuckets, int bucketSizeInMs,
                                               Func2<Bucket, Event, Bucket> reduceCommandCompletion,
                                               Func2<Output, Bucket, Output> reduceBucket) {
         super(stream, numBuckets, bucketSizeInMs, reduceCommandCompletion);
-        this.reduceBucket = reduceBucket;
+
+        this.sourceStream = bucketedStream
+                .scan(getEmptyOutputValue(), reduceBucket)
+                .skip(numBuckets)
+                .doOnSubscribe(new Action0() {
+                    @Override
+                    public void call() {
+                        isSourceCurrentlySubscribed.set(true);
+                    }
+                })
+                .doOnUnsubscribe(new Action0() {
+                    @Override
+                    public void call() {
+                        isSourceCurrentlySubscribed.set(false);
+                    }
+                })
+                .share()                        //multiple subscribers should get same data
+                .onBackpressureDrop();          //if there are slow consumers, data should not buffer
     }
 
     @Override
     public Observable<Output> observe() {
-        return bucketedStream
-                .scan(getEmptyOutputValue(), reduceBucket)
-                .skip(numBuckets);
+        return sourceStream;
     }
 }

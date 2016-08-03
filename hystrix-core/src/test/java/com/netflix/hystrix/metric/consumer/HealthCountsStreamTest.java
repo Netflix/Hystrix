@@ -15,6 +15,7 @@
  */
 package com.netflix.hystrix.metric.consumer;
 
+import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandGroupKey;
 import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixCommandMetrics;
@@ -27,12 +28,19 @@ import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import rx.Observable;
 import rx.Subscriber;
+import rx.Subscription;
+import rx.functions.Action0;
+import rx.functions.Func2;
+import rx.schedulers.Schedulers;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
 
@@ -461,5 +469,154 @@ public class HealthCountsStreamTest extends CommandStreamTest {
         System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
         assertEquals(0L, stream.getLatest().getErrorCount());
         assertEquals(0L, stream.getLatest().getTotalRequests());
+    }
+
+    @Test
+    public void testSharedSourceStream() throws InterruptedException {
+        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Health-N");
+        stream = HealthCountsStream.getInstance(key, 10, 100);
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        final AtomicBoolean allEqual = new AtomicBoolean(false);
+
+        Observable<HystrixCommandMetrics.HealthCounts> o1 = stream
+                .observe()
+                .take(10)
+                .observeOn(Schedulers.computation());
+
+        Observable<HystrixCommandMetrics.HealthCounts> o2 = stream
+                .observe()
+                .take(10)
+                .observeOn(Schedulers.computation());
+
+        Observable<Boolean> zipped = Observable.zip(o1, o2, new Func2<HystrixCommandMetrics.HealthCounts, HystrixCommandMetrics.HealthCounts, Boolean>() {
+            @Override
+            public Boolean call(HystrixCommandMetrics.HealthCounts healthCounts, HystrixCommandMetrics.HealthCounts healthCounts2) {
+                return healthCounts == healthCounts2;  //we want object equality
+            }
+        });
+        Observable < Boolean > reduced = zipped.reduce(true, new Func2<Boolean, Boolean, Boolean>() {
+            @Override
+            public Boolean call(Boolean a, Boolean b) {
+                return a && b;
+            }
+        });
+
+        reduced.subscribe(new Subscriber<Boolean>() {
+            @Override
+            public void onCompleted() {
+                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Reduced OnCompleted");
+                latch.countDown();
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Reduced OnError : " + e);
+                e.printStackTrace();
+                latch.countDown();
+            }
+
+            @Override
+            public void onNext(Boolean b) {
+                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " Reduced OnNext : " + b);
+                allEqual.set(b);
+            }
+        });
+
+        for (int i = 0; i < 10; i++) {
+            HystrixCommand<Integer> cmd = CommandStreamTest.Command.from(groupKey, key, HystrixEventType.SUCCESS, 20);
+            cmd.execute();
+        }
+
+        assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
+        assertTrue(allEqual.get());
+        //we should be getting the same object from both streams.  this ensures that multiple subscribers don't induce extra work
+    }
+
+    @Test
+    public void testTwoSubscribersOneUnsubscribes() throws Exception {
+        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("CMD-Health-O");
+        stream = HealthCountsStream.getInstance(key, 10, 100);
+
+        final CountDownLatch latch1 = new CountDownLatch(1);
+        final CountDownLatch latch2 = new CountDownLatch(1);
+        final AtomicInteger healthCounts1 = new AtomicInteger(0);
+        final AtomicInteger healthCounts2 = new AtomicInteger(0);
+
+        Subscription s1 = stream
+                .observe()
+                .take(10)
+                .observeOn(Schedulers.computation())
+                .doOnUnsubscribe(new Action0() {
+                    @Override
+                    public void call() {
+                        latch1.countDown();
+                    }
+                })
+                .subscribe(new Subscriber<HystrixCommandMetrics.HealthCounts>() {
+                    @Override
+                    public void onCompleted() {
+                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : Health 1 OnCompleted");
+                        latch1.countDown();
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : Health 1 OnError : " + e);
+                        latch1.countDown();
+                    }
+
+                    @Override
+                    public void onNext(HystrixCommandMetrics.HealthCounts healthCounts) {
+                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : Health 1 OnNext : " + healthCounts);
+                        healthCounts1.incrementAndGet();
+                    }
+                });
+
+        Subscription s2 = stream
+                .observe()
+                .take(10)
+                .observeOn(Schedulers.computation())
+                .doOnUnsubscribe(new Action0() {
+                    @Override
+                    public void call() {
+                        latch2.countDown();
+                    }
+                })
+                .subscribe(new Subscriber<HystrixCommandMetrics.HealthCounts>() {
+                    @Override
+                    public void onCompleted() {
+                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : Health 2 OnCompleted");
+                        latch2.countDown();
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : Health 2 OnError : " + e);
+                        latch2.countDown();
+                    }
+
+                    @Override
+                    public void onNext(HystrixCommandMetrics.HealthCounts healthCounts) {
+                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : Health 2 OnNext : " + healthCounts + " : " + healthCounts2.get());
+                        healthCounts2.incrementAndGet();
+                    }
+                });
+        //execute 5 commands, then unsubscribe from first stream. then execute the rest
+        for (int i = 0; i < 10; i++) {
+            HystrixCommand<Integer> cmd = CommandStreamTest.Command.from(groupKey, key, HystrixEventType.SUCCESS, 20);
+            cmd.execute();
+            if (i == 5) {
+                s1.unsubscribe();
+            }
+        }
+        assertTrue(stream.isSourceCurrentlySubscribed());  //only 1/2 subscriptions has been cancelled
+
+        assertTrue(latch1.await(10000, TimeUnit.MILLISECONDS));
+        assertTrue(latch2.await(10000, TimeUnit.MILLISECONDS));
+        System.out.println("s1 got : " + healthCounts1.get() + ", s2 got : " + healthCounts2.get());
+        assertTrue("s1 got data", healthCounts1.get() > 0);
+        assertTrue("s2 got data", healthCounts2.get() > 0);
+        assertTrue("s1 got less data than s2", healthCounts2.get() > healthCounts1.get());
     }
 }
