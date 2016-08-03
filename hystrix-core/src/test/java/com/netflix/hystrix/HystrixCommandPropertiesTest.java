@@ -36,6 +36,7 @@ public class HystrixCommandPropertiesTest {
                 .withExecutionTimeoutEnabled(true)
                 .withExecutionIsolationStrategy(ExecutionIsolationStrategy.THREAD) // we want thread execution by default in tests
                 .withExecutionIsolationThreadInterruptOnTimeout(true)
+                .withExecutionIsolationThreadInterruptOnFutureCancel(true)
                 .withCircuitBreakerForceOpen(false) // we don't want short-circuiting by default
                 .withCircuitBreakerErrorThresholdPercentage(40) // % of 'marks' that must be failed to trip the circuit
                 .withMetricsRollingStatisticalWindowInMilliseconds(5000)// milliseconds back that will be tracked
@@ -109,6 +110,11 @@ public class HystrixCommandPropertiesTest {
             @Override
             public HystrixProperty<Boolean> executionIsolationThreadInterruptOnTimeout() {
                 return HystrixProperty.Factory.asProperty(builder.getExecutionIsolationThreadInterruptOnTimeout());
+            }
+
+            @Override
+            public HystrixProperty<Boolean> executionIsolationThreadInterruptOnFutureCancel() {
+                return HystrixProperty.Factory.asProperty(builder.getExecutionIsolationThreadInterruptOnFutureCancel());
             }
 
             @Override
