@@ -68,29 +68,22 @@ public abstract class RollingConcurrencyStream {
         }
     };
 
-
-
     protected RollingConcurrencyStream(final HystrixEventStream<HystrixCommandExecutionStarted> inputEventStream, final int numBuckets, final int bucketSizeInMs) {
         final List<Integer> emptyRollingMaxBuckets = new ArrayList<Integer>();
         for (int i = 0; i < numBuckets; i++) {
             emptyRollingMaxBuckets.add(0);
         }
 
-        rollingMaxStream = Observable.defer(new Func0<Observable<Integer>>() {
-            @Override
-            public Observable<Integer> call() {
-                Observable<Integer> eventConcurrencyStream = inputEventStream
-                        .observe()
-                        .map(getConcurrencyCountFromEvent);
-
-                return eventConcurrencyStream
-                        .window(bucketSizeInMs, TimeUnit.MILLISECONDS)
-                        .flatMap(reduceStreamToMax)
-                        .startWith(emptyRollingMaxBuckets)
-                        .window(numBuckets, 1)
-                        .flatMap(reduceStreamToMax);
-            }
-        }).share();
+        rollingMaxStream = inputEventStream
+                .observe()
+                .map(getConcurrencyCountFromEvent)
+                .window(bucketSizeInMs, TimeUnit.MILLISECONDS)
+                .flatMap(reduceStreamToMax)
+                .startWith(emptyRollingMaxBuckets)
+                .window(numBuckets, 1)
+                .flatMap(reduceStreamToMax)
+                .share()
+                .onBackpressureDrop();
     }
 
     public void startCachingStreamValuesIfUnstarted() {

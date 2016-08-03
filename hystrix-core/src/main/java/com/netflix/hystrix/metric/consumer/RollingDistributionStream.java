@@ -93,19 +93,16 @@ public class RollingDistributionStream<Event extends HystrixEvent> {
             }
         };
 
-        rollingDistributionStream = Observable.defer(new Func0<Observable<CachedValuesHistogram>>() {
-            @Override
-            public Observable<CachedValuesHistogram> call() {
-                return stream
-                        .observe()
-                        .window(bucketSizeInMs, TimeUnit.MILLISECONDS) //stream of unaggregated buckets
-                        .flatMap(reduceBucketToSingleDistribution)     //stream of aggregated Histograms
-                        .startWith(emptyDistributionsToStart)          //stream of aggregated Histograms that starts with n empty
-                        .window(numBuckets, 1)                         //windowed stream: each OnNext is a stream of n Histograms
-                        .flatMap(reduceWindowToSingleDistribution)     //reduced stream: each OnNext is a single Histogram
-                        .map(cacheHistogramValues);                    //convert to CachedValueHistogram (commonly-accessed values are cached)
-            }
-        }).share(); //multicast
+        rollingDistributionStream = stream
+                .observe()
+                .window(bucketSizeInMs, TimeUnit.MILLISECONDS) //stream of unaggregated buckets
+                .flatMap(reduceBucketToSingleDistribution)     //stream of aggregated Histograms
+                .startWith(emptyDistributionsToStart)          //stream of aggregated Histograms that starts with n empty
+                .window(numBuckets, 1)                         //windowed stream: each OnNext is a stream of n Histograms
+                .flatMap(reduceWindowToSingleDistribution)     //reduced stream: each OnNext is a single Histogram
+                .map(cacheHistogramValues)                     //convert to CachedValueHistogram (commonly-accessed values are cached)
+                .share()
+                .onBackpressureDrop();
     }
 
     public Observable<CachedValuesHistogram> observe() {
