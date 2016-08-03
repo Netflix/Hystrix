@@ -363,19 +363,6 @@ import java.util.concurrent.atomic.AtomicReference;
     public Observable<R> toObservable() {
         final AbstractCommand<R> _cmd = this;
 
-        final Action1<R> scalarEmitCleanup = new Action1<R>() {
-            @Override
-            public void call(R r) {
-                if (commandIsScalar()) {
-                    if (_cmd.commandState.compareAndSet(CommandState.OBSERVABLE_CHAIN_CREATED, CommandState.TERMINAL)) {
-                        handleCommandEnd(false); //user code never ran
-                    } else if (_cmd.commandState.compareAndSet(CommandState.USER_CODE_EXECUTED, CommandState.TERMINAL)) {
-                        handleCommandEnd(true); //user code did run
-                    }
-                }
-            }
-        };
-
         //doOnCompleted handler already did all of the SUCCESS work
         //doOnError handler already did all of the FAILURE/TIMEOUT/REJECTION/BAD_REQUEST work
         final Action0 terminateCommandCleanup = new Action0() {
@@ -395,14 +382,18 @@ import java.util.concurrent.atomic.AtomicReference;
             @Override
             public void call() {
                 if (_cmd.commandState.compareAndSet(CommandState.OBSERVABLE_CHAIN_CREATED, CommandState.UNSUBSCRIBED)) {
-                    _cmd.eventNotifier.markEvent(HystrixEventType.CANCELLED, _cmd.commandKey);
-                    _cmd.executionResultAtTimeOfCancellation = _cmd.executionResult
-                            .addEvent((int) (System.currentTimeMillis() - _cmd.commandStartTimestamp), HystrixEventType.CANCELLED);
+                    if (!_cmd.executionResult.containsTerminalEvent()) {
+                        _cmd.eventNotifier.markEvent(HystrixEventType.CANCELLED, _cmd.commandKey);
+                        _cmd.executionResultAtTimeOfCancellation = _cmd.executionResult
+                                .addEvent((int) (System.currentTimeMillis() - _cmd.commandStartTimestamp), HystrixEventType.CANCELLED);
+                    }
                     handleCommandEnd(false); //user code never ran
                 } else if (_cmd.commandState.compareAndSet(CommandState.USER_CODE_EXECUTED, CommandState.UNSUBSCRIBED)) {
-                    _cmd.eventNotifier.markEvent(HystrixEventType.CANCELLED, _cmd.commandKey);
-                    _cmd.executionResultAtTimeOfCancellation = _cmd.executionResult
-                            .addEvent((int) (System.currentTimeMillis() - _cmd.commandStartTimestamp), HystrixEventType.CANCELLED);
+                    if (!_cmd.executionResult.containsTerminalEvent()) {
+                        _cmd.eventNotifier.markEvent(HystrixEventType.CANCELLED, _cmd.commandKey);
+                        _cmd.executionResultAtTimeOfCancellation = _cmd.executionResult
+                                .addEvent((int) (System.currentTimeMillis() - _cmd.commandStartTimestamp), HystrixEventType.CANCELLED);
+                    }
                     handleCommandEnd(true); //user code did run
                 }
             }
@@ -502,7 +493,6 @@ import java.util.concurrent.atomic.AtomicReference;
                 }
 
                 return afterCache
-                        .doOnNext(scalarEmitCleanup)
                         .doOnTerminate(terminateCommandCleanup)     // perform cleanup once (either on normal terminal state (this line), or unsubscribe (next line))
                         .doOnUnsubscribe(unsubscribeCommandCleanup) // perform cleanup once
                         .doOnCompleted(fireOnCompletedHook);
