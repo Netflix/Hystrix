@@ -27,7 +27,6 @@ import rx.schedulers.Schedulers;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.*;
@@ -95,29 +94,28 @@ public class HystrixTest {
         command.observe().subscribe(new Subscriber<Boolean>() {
             @Override
             public void onCompleted() {
-                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " OnCompleted");
                 latch.countDown();
             }
 
             @Override
             public void onError(Throwable e) {
-                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " OnError : " + e);
-                e.printStackTrace();
                 fail(e.getMessage());
                 latch.countDown();
             }
 
             @Override
             public void onNext(Boolean value) {
-                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " OnNext : " + value);
+                System.out.println("OnNext : " + value);
                 assertTrue(value);
+                assertEquals("CommandName", Hystrix.getCurrentThreadExecutingCommand().name());
+                assertEquals(1, Hystrix.getCommandCount());
             }
         });
 
         try {
             assertNull(Hystrix.getCurrentThreadExecutingCommand());
             assertEquals(0, Hystrix.getCommandCount());
-            assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
+            latch.await();
         } catch (InterruptedException ex) {
             fail(ex.getMessage());
         }
