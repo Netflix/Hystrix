@@ -5,7 +5,7 @@ dependencies {
     compile 'com.netflix.archaius:archaius-core:0.4.1'
     compile 'io.reactivex:rxjava:1.1.8'
     compile 'org.slf4j:slf4j-api:1.7.0'
-    compile 'org.hdrhistogram:HdrHistogram:2.1.7'
+    compile 'org.hdrhistogram:HdrHistogram:2.1.9'
     testCompile 'junit:junit-dep:4.10'
     testCompile project(':hystrix-junit')
 }
