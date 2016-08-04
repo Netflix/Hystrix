@@ -7,10 +7,10 @@ buildscript {
         }
     }
     dependencies {
-        classpath 'com.netflix.nebula:nebula-clojure-plugin:1.12.2'
+        classpath 'com.netflix.nebula:nebula-clojure-plugin:4.0.1'
     }
 }
-apply plugin: 'nebula-clojure' // this is a wrapper around clojuresque to make it behave well with other plugins
+apply plugin: 'nebula.clojure' // this is a wrapper around clojuresque to make it behave well with other plugins
 
 repositories {
     mavenCentral()
@@ -19,7 +19,7 @@ repositories {
 
 dependencies {
     compile project(':hystrix-core')
-    compile 'org.clojure:clojure:1.5.1'
+    compile 'org.clojure:clojure:1.7.0'
 }
 
 /*
