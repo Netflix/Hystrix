@@ -16,7 +16,6 @@
 package com.netflix.hystrix.contrib.javanica.command;
 
 
-import com.google.common.base.Throwables;
 import com.netflix.hystrix.HystrixCollapser;
 import com.netflix.hystrix.contrib.javanica.cache.CacheInvocationContext;
 import com.netflix.hystrix.contrib.javanica.cache.HystrixCacheKeyGenerator;
@@ -140,8 +139,8 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
      * @param action the action
      * @return result of command action execution
      */
-    Object process(Action action) throws Exception {
-        Object result;
+    <ReturnType> ReturnType process(Action<ReturnType> action) throws Exception {
+        ReturnType result;
         try {
             result = action.execute();
             flushCache();
@@ -188,14 +187,14 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
     /**
      * Common action.
      */
-    abstract class Action {
+    abstract class Action<ReturnType> {
         /**
          * Each implementation of this method should wrap any exceptions in CommandActionExecutionException.
          *
          * @return execution result
          * @throws CommandActionExecutionException
          */
-        abstract Object execute() throws CommandActionExecutionException;
+        abstract ReturnType execute() throws CommandActionExecutionException;
     }
 
 
