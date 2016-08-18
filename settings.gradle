@@ -2,8 +2,6 @@ rootProject.name='hystrix'
 include 'hystrix-core', \
 'hystrix-examples', \
 'hystrix-examples-webapp', \
-'hystrix-examples-reactivesocket/client', \
-'hystrix-examples-reactivesocket/server', \
 'hystrix-contrib/hystrix-clj', \
 'hystrix-contrib/hystrix-request-servlet', \
 'hystrix-contrib/hystrix-servo-metrics-publisher', \
@@ -12,21 +10,17 @@ include 'hystrix-core', \
 'hystrix-contrib/hystrix-codahale-metrics-publisher', \
 'hystrix-contrib/hystrix-yammer-metrics-publisher', \
 'hystrix-contrib/hystrix-network-auditor-agent', \
-'hystrix-contrib/hystrix-reactivesocket-event-stream', \
 'hystrix-contrib/hystrix-javanica', \
 'hystrix-contrib/hystrix-junit', \
 'hystrix-dashboard', \
 'hystrix-serialization' 
 
-project(':hystrix-examples-reactivesocket/client').name = 'hystrix-examples-reactivesocket-client'
-project(':hystrix-examples-reactivesocket/server').name = 'hystrix-examples-reactivesocket-server'
 project(':hystrix-contrib/hystrix-clj').name = 'hystrix-clj'
 project(':hystrix-contrib/hystrix-request-servlet').name = 'hystrix-request-servlet'
 project(':hystrix-contrib/hystrix-servo-metrics-publisher').name = 'hystrix-servo-metrics-publisher'
 project(':hystrix-contrib/hystrix-metrics-event-stream').name = 'hystrix-metrics-event-stream'
 project(':hystrix-contrib/hystrix-rx-netty-metrics-stream').name = 'hystrix-rx-netty-metrics-stream'
 project(':hystrix-contrib/hystrix-codahale-metrics-publisher').name = 'hystrix-codahale-metrics-publisher'
-project(':hystrix-contrib/hystrix-reactivesocket-event-stream').name = 'hystrix-reactivesocket-event-stream'
 project(':hystrix-contrib/hystrix-yammer-metrics-publisher').name = 'hystrix-yammer-metrics-publisher'
 project(':hystrix-contrib/hystrix-network-auditor-agent').name = 'hystrix-network-auditor-agent'
 project(':hystrix-contrib/hystrix-javanica').name = 'hystrix-javanica'
