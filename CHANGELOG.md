@@ -1,5 +1,9 @@
 # Hystrix Releases #
 
+### Version 1.5.5 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.5.5%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.5.5/)) ###
+
+* [Pull 1323](https://github.com/Netflix/Hystrix/pull/1323) Remove ReactiveSocket modules and change Jenkins release process back to JDK7
+
 ### Version 1.5.4 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.5.4%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.5.4/)) ###
 
 * [Pull 1308](https://github.com/Netflix/Hystrix/pull/1308) Update jmh to 1.13
