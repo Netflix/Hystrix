@@ -134,7 +134,7 @@ import java.util.concurrent.atomic.AtomicReference;
     // on the repetitive string processing that will occur on the same classes over and over again
     private static ConcurrentHashMap<Class<?>, String> defaultNameCache = new ConcurrentHashMap<Class<?>, String>();
 
-    private static ConcurrentHashMap<HystrixCommandKey, Boolean> commandContainsFallback = new ConcurrentHashMap<HystrixCommandKey, Boolean>();
+    protected static ConcurrentHashMap<HystrixCommandKey, Boolean> commandContainsFallback = new ConcurrentHashMap<HystrixCommandKey, Boolean>();
 
     /* package */static String getDefaultNameFromClass(Class<?> cls) {
         String fromCache = defaultNameCache.get(cls);
@@ -833,7 +833,7 @@ import java.util.concurrent.atomic.AtomicReference;
                 // acquire a permit
                 if (fallbackSemaphore.tryAcquire()) {
                     try {
-                        if (isFallbackUserSupplied(this)) {
+                        if (isFallbackUserDefined()) {
                             executionHook.onFallbackStart(this);
                             fallbackExecutionChain = getFallbackObservable();
                         } else {
@@ -1254,32 +1254,13 @@ import java.util.concurrent.atomic.AtomicReference;
     /**
      * Each concrete implementation of AbstractCommand should return the name of the fallback method as a String
      * This will be used to determine if the fallback "exists" for firing the onFallbackStart/onFallbackError hooks
+     * @deprecated This functionality is replaced by {@link #isFallbackUserDefined}, which is less implementation-aware
      * @return method name of fallback
      */
+    @Deprecated
     protected abstract String getFallbackMethodName();
 
-    /**
-     * For the given command instance, does it define an actual fallback method?
-     * @param cmd command instance
-     * @return true iff there is a user-supplied fallback method on the given command instance
-     */
-    /*package-private*/ static boolean isFallbackUserSupplied(final AbstractCommand<?> cmd) {
-        HystrixCommandKey commandKey = cmd.commandKey;
-        Boolean containsFromMap = commandContainsFallback.get(commandKey);
-        if (containsFromMap != null) {
-            return containsFromMap;
-        } else {
-            Boolean toInsertIntoMap;
-            try {
-                cmd.getClass().getDeclaredMethod(cmd.getFallbackMethodName());
-                toInsertIntoMap = true;
-            } catch (NoSuchMethodException nsme) {
-                toInsertIntoMap = false;
-            }
-            commandContainsFallback.put(commandKey, toInsertIntoMap);
-            return toInsertIntoMap;
-        }
-    }
+    protected abstract boolean isFallbackUserDefined();
 
     /**
      * @return {@link HystrixCommandGroupKey} used to group together multiple {@link AbstractCommand} objects.
@@ -1497,7 +1478,7 @@ import java.util.concurrent.atomic.AtomicReference;
     private Exception wrapWithOnFallbackErrorHook(Throwable t) {
         Exception e = getExceptionFromThrowable(t);
         try {
-            if (isFallbackUserSupplied(this)) {
+            if (isFallbackUserDefined()) {
                 return executionHook.onFallbackError(this, e);
             } else {
                 return e;

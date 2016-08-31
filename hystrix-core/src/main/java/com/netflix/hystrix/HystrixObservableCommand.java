@@ -68,6 +68,24 @@ public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> imp
     }
 
     @Override
+    protected boolean isFallbackUserDefined() {
+        Boolean containsFromMap = commandContainsFallback.get(commandKey);
+        if (containsFromMap != null) {
+            return containsFromMap;
+        } else {
+            Boolean toInsertIntoMap;
+            try {
+                getClass().getDeclaredMethod("resumeWithFallback");
+                toInsertIntoMap = true;
+            } catch (NoSuchMethodException nsme) {
+                toInsertIntoMap = false;
+            }
+            commandContainsFallback.put(commandKey, toInsertIntoMap);
+            return toInsertIntoMap;
+        }
+    }
+
+    @Override
     protected boolean commandIsScalar() {
         return false;
     }

@@ -15,6 +15,7 @@
  */
 package com.netflix.hystrix;
 
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -43,6 +44,7 @@ import rx.functions.Func0;
  * @ThreadSafe
  */
 public abstract class HystrixCommand<R> extends AbstractCommand<R> implements HystrixExecutable<R>, HystrixInvokableInfo<R>, HystrixObservable<R> {
+
 
     /**
      * Construct a {@link HystrixCommand} with defined {@link HystrixCommandGroupKey}.
@@ -459,6 +461,24 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
     @Override
     protected String getFallbackMethodName() {
         return "getFallback";
+    }
+
+    @Override
+    protected boolean isFallbackUserDefined() {
+        Boolean containsFromMap = commandContainsFallback.get(commandKey);
+        if (containsFromMap != null) {
+            return containsFromMap;
+        } else {
+            Boolean toInsertIntoMap;
+            try {
+                getClass().getDeclaredMethod("getFallback");
+                toInsertIntoMap = true;
+            } catch (NoSuchMethodException nsme) {
+                toInsertIntoMap = false;
+            }
+            commandContainsFallback.put(commandKey, toInsertIntoMap);
+            return toInsertIntoMap;
+        }
     }
 
     @Override
