@@ -22,6 +22,8 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
+import java.lang.reflect.WildcardType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -37,6 +39,10 @@ public final class TypeHelper {
     }
 
 
+    public static boolean isGenericReturnType(Method method) {
+        return isParametrizedType(method.getGenericReturnType()) || isTypeVariable(method.getGenericReturnType());
+    }
+
     /**
      * Check whether return type of the given method is parametrized or not.
      *
@@ -44,9 +50,20 @@ public final class TypeHelper {
      * @return true - if return type is {@link ParameterizedType}, otherwise - false
      */
     public static boolean isReturnTypeParametrized(Method method) {
-        return method.getGenericReturnType() instanceof ParameterizedType;
+        return isParametrizedType(method.getGenericReturnType());
     }
 
+    public static boolean isParametrizedType(Type t) {
+        return t instanceof ParameterizedType;
+    }
+
+    public static boolean isTypeVariable(Type t) {
+        return t instanceof TypeVariable;
+    }
+
+    public static boolean isWildcardType(Type t) {
+        return t instanceof WildcardType;
+    }
 
     /**
      * Unwinds parametrized type into plain list that contains all parameters for the given type including nested parameterized types,
@@ -64,7 +81,7 @@ public final class TypeHelper {
      * @return list of {@link Type}
      */
     @ParametersAreNonnullByDefault
-    public static List<Type> getAllParameterizedTypes(Type type) {
+    public static List<Type> flattenTypeVariables(Type type) {
         Validate.notNull(type, "type cannot be null");
         List<Type> types = new ArrayList<Type>();
         TreeTraverser<Type> typeTraverser = new TreeTraverser<Type>() {
@@ -73,7 +90,9 @@ public final class TypeHelper {
                 if (root instanceof ParameterizedType) {
                     ParameterizedType pType = (ParameterizedType) root;
                     return Arrays.asList(pType.getActualTypeArguments());
-
+                } else if (root instanceof TypeVariable) {
+                    TypeVariable pType = (TypeVariable) root;
+                    return Arrays.asList(pType.getBounds());
                 }
                 return Collections.emptyList();
             }
