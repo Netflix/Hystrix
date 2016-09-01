@@ -18,6 +18,8 @@ import org.springframework.test.context.junit4.rules.SpringMethodRule;
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.List;
+import java.util.Set;
 
 import static com.netflix.hystrix.contrib.javanica.test.common.CommonUtils.getHystrixCommandByKey;
 import static org.junit.Assert.assertTrue;
@@ -45,6 +47,7 @@ public abstract class BasicGenericFallbackTest extends BasicHystrixTest {
                 new Object[]{MethodGenericDefinitionSuccessCase4.class},
                 new Object[]{MethodGenericDefinitionSuccessCase5.class},
                 new Object[]{MethodGenericDefinitionSuccessCase6.class},
+                new Object[]{MethodGenericDefinitionSuccessCase7.class},
         };
     }
 
@@ -57,6 +60,11 @@ public abstract class BasicGenericFallbackTest extends BasicHystrixTest {
                 new Object[]{MethodGenericDefinitionFailureCase4.class},
                 new Object[]{MethodGenericDefinitionFailureCase5.class},
                 new Object[]{MethodGenericDefinitionFailureCase6.class},
+                new Object[]{MethodGenericDefinitionFailureCase7.class},
+                new Object[]{MethodGenericDefinitionFailureCase8.class},
+                new Object[]{MethodGenericDefinitionFailureCase9.class},
+                new Object[]{MethodGenericDefinitionFailureCase10.class},
+
         };
     }
 
@@ -162,6 +170,13 @@ public abstract class BasicGenericFallbackTest extends BasicHystrixTest {
         private <T> GenericEntity<T> fallback() { return new GenericEntity<T>(); }
     }
 
+    public static class MethodGenericDefinitionSuccessCase7 {
+        @HystrixCommand(fallbackMethod = "fallback")
+        public GenericEntity<? super Serializable> command() { throw new IllegalStateException(); }
+        private GenericEntity<? super Serializable> fallback() { return null; }
+    }
+
+
     /* ====================================================================== */
     /* ===================== GENERIC METHOD DEFINITIONS ===================== */
     /* =========================== FAILURE CASES ============================ */
@@ -180,8 +195,8 @@ public abstract class BasicGenericFallbackTest extends BasicHystrixTest {
 
     public static class MethodGenericDefinitionFailureCase2 {
         @HystrixCommand(fallbackMethod = "fallback")
-        public <T extends Serializable, T1 extends T> T1 command() { throw new IllegalStateException(); }
-        private <T extends Serializable, T1 extends T> T fallback() { return null; }
+        public <T extends Serializable> T command() { throw new IllegalStateException(); }
+        private <T extends Comparable> T fallback() { return null; }
     }
 
     public static class MethodGenericDefinitionFailureCase3 {
@@ -206,6 +221,30 @@ public abstract class BasicGenericFallbackTest extends BasicHystrixTest {
         @HystrixCommand(fallbackMethod = "fallback")
         public <T> GenericEntity<T> command() { throw new IllegalStateException(); }
         private GenericEntity<String> fallback() { return new GenericEntity<String>(); }
+    }
+
+    public static class MethodGenericDefinitionFailureCase7 {
+        @HystrixCommand(fallbackMethod = "fallback")
+        public <T> Set<T> command() { throw new IllegalStateException(); }
+        private <T> List<T> fallback() { return null; }
+    }
+
+    public static class MethodGenericDefinitionFailureCase8 {
+        @HystrixCommand(fallbackMethod = "fallback")
+        public <T> GenericEntity<Set<T>> command() { throw new IllegalStateException(); }
+        private <T> GenericEntity<List<T>> fallback() { return null; }
+    }
+
+    public static class MethodGenericDefinitionFailureCase9 {
+        @HystrixCommand(fallbackMethod = "fallback")
+        public <T> GenericEntity<List<Set<T>>> command() { throw new IllegalStateException(); }
+        private <T> GenericEntity<List<List<T>>> fallback() { return null; }
+    }
+
+    public static class MethodGenericDefinitionFailureCase10 {
+        @HystrixCommand(fallbackMethod = "fallback")
+        public GenericEntity<? super Serializable> command() { throw new IllegalStateException(); }
+        private GenericEntity<? super Comparable> fallback() { return null; }
     }
 
     /* ====================================================================== */
