@@ -580,10 +580,18 @@ Suppose you have some command which calls should be collapsed in one backend cal
 
 Example:
 ```java
+
+    /** Asynchronous Execution */
     @HystrixCollapser(batchMethod = "getUserByIds")
-    public Future<User> getUserById(String id) {
+    public Future<User> getUserByIdAsync(String id) {
         return null;
     }
+    
+    /** Reactive Execution */
+    @HystrixCollapser(batchMethod = "getUserByIds")
+    public Observable<User> getUserByIdReact(String id) {
+        return null;
+    }    
         
     @HystrixCommand
     public List<User> getUserByIds(List<String> ids) {
@@ -593,13 +601,23 @@ Example:
         }
         return users;
     }
-        
 
-    Future<User> f1 = userService.getUserById("1");
-    Future<User> f2 = userService.getUserById("2");
-    Future<User> f3 = userService.getUserById("3");
-    Future<User> f4 = userService.getUserById("4");
-    Future<User> f5 = userService.getUserById("5");
+    // Async
+    Future<User> f1 = userService.getUserByIdAsync("1");
+    Future<User> f2 = userService.getUserByIdAsync("2");
+    Future<User> f3 = userService.getUserByIdAsync("3");
+    Future<User> f4 = userService.getUserByIdAsync("4");
+    Future<User> f5 = userService.getUserByIdAsync("5");
+    
+    // Reactive
+    Observable<User> u1 = getUserByIdReact("1");
+    Observable<User> u2 = getUserByIdReact("2");
+    Observable<User> u3 = getUserByIdReact("3");
+    Observable<User> u4 = getUserByIdReact("4");
+    Observable<User> u5 = getUserByIdReact("5");
+    
+    // Materialize reactive commands
+    Iterable<User> users = Observables.merge(u1, u2, u3, u4, u5).toBlocking().toIterable();
 ```
 A method annotated with ```@HystrixCollapser``` annotation can return any value with compatible type, it does not affect the result of collapser execution, collapser method can even return ```null``` or another stub.
 There are several rules applied for methods signatures.
