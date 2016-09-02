@@ -139,8 +139,8 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
      * @param action the action
      * @return result of command action execution
      */
-    <ReturnType> ReturnType process(Action<ReturnType> action) throws Exception {
-        ReturnType result;
+    Object process(Action action) throws Exception {
+        Object result;
         try {
             result = action.execute();
             flushCache();
@@ -187,14 +187,14 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
     /**
      * Common action.
      */
-    abstract class Action<ReturnType> {
+    abstract class Action {
         /**
          * Each implementation of this method should wrap any exceptions in CommandActionExecutionException.
          *
          * @return execution result
          * @throws CommandActionExecutionException
          */
-        abstract ReturnType execute() throws CommandActionExecutionException;
+        abstract Object execute() throws CommandActionExecutionException;
     }
 
 
