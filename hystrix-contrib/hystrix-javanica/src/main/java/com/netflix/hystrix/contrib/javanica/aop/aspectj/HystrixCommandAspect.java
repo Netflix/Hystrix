@@ -175,11 +175,6 @@ public class HystrixCommandAspect {
             Class<?> collapserReturnType = collapserMethod.getReturnType();
             boolean observable = collapserReturnType.equals(Observable.class);
 
-            if (!batchReturnType.equals(List.class))
-                throw new IllegalStateException("required batch method for collapser is absent: "
-                        + "(java.util.List) " + obj.getClass().getCanonicalName() + "." +
-                        hystrixCollapser.batchMethod() + "(java.util.List)");
-
             if (!collapserMethod.getParameterTypes()[0]
                     .equals(getFirstGenericParameter(batchCommandMethod.getGenericParameterTypes()[0]))) {
                 throw new IllegalStateException("required batch method for collapser is absent, wrong generic type: expected "
@@ -276,7 +271,7 @@ public class HystrixCommandAspect {
         for (int cDept = 0; cDept < nestedDepth; cDept++) {
             if (!(tType instanceof ParameterizedType))
                 throw new IllegalStateException(String.format("Sub type at nesting level %d of %s is expected to be generic", cDepth, type));
-            tType = ((ParameterizedType) tType).getActualTypeArguments()[0];
+            tType = ((ParameterizedType) tType).getActualTypeArguments()[cDept];
         }
 
         if (tType instanceof ParameterizedType)
