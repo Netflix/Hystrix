@@ -15,6 +15,7 @@
  */
 package com.netflix.hystrix.contrib.javanica.test.common.collapser;
 
+import com.google.common.collect.Sets;
 import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.HystrixInvokableInfo;
 import com.netflix.hystrix.HystrixRequestLog;
@@ -25,9 +26,13 @@ import com.netflix.hystrix.contrib.javanica.test.common.BasicHystrixTest;
 import com.netflix.hystrix.contrib.javanica.test.common.domain.User;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import rx.Observable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -66,6 +71,33 @@ public abstract class BasicCollapserTest extends BasicHystrixTest {
         assertEquals("name: 5", f5.get().getName());
         // assert that the batch command 'getUserByIds' was in fact
         // executed and that it executed only once
+        assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+        HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest()
+                .getAllExecutedCommands().iterator().next();
+        // assert the command is the one we're expecting
+        assertEquals("getUserByIds", command.getCommandKey().name());
+        // confirm that it was a COLLAPSED command execution
+        assertTrue(command.getExecutionEvents().contains(HystrixEventType.COLLAPSED));
+        // and that it was successful
+        assertTrue(command.getExecutionEvents().contains(HystrixEventType.SUCCESS));
+    }
+
+    @Test
+    public void testReactive() throws Exception {
+
+        final Observable<User> u1 = userService.getUserByIdReactive("1");
+        final Observable<User> u2 = userService.getUserByIdReactive("2");
+        final Observable<User> u3 = userService.getUserByIdReactive("3");
+        final Observable<User> u4 = userService.getUserByIdReactive("4");
+        final Observable<User> u5 = userService.getUserByIdReactive("5");
+
+        final Iterable<User> users = Observable.merge(u1, u2, u3, u4, u5).toBlocking().toIterable();
+
+        Set<String> expectedIds = Sets.newHashSet("1", "2", "3", "4", "5");
+        for (User cUser : users) {
+            assertEquals(expectedIds.remove(cUser.getId()), true);
+        }
+        assertEquals(expectedIds.isEmpty(), true);
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
         HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest()
                 .getAllExecutedCommands().iterator().next();
@@ -158,6 +190,7 @@ public abstract class BasicCollapserTest extends BasicHystrixTest {
 
     public static class UserService {
 
+        public static final Logger log = LoggerFactory.getLogger(UserService.class);
         public static final User DEFAULT_USER = new User("def", "def");
 
 
@@ -173,6 +206,11 @@ public abstract class BasicCollapserTest extends BasicHystrixTest {
             return null;
         }
 
+        @HystrixCollapser(batchMethod = "getUserByIds",
+                collapserProperties = {@HystrixProperty(name = "timerDelayInMilliseconds", value = "200")})
+        public Observable<User> getUserByIdReactive(String id) {
+            return null;
+        }
 
         @HystrixCollapser(batchMethod = "getUserByIdsThrowsException",
                 collapserProperties = {@HystrixProperty(name = "timerDelayInMilliseconds", value = "200")})
@@ -226,6 +264,7 @@ public abstract class BasicCollapserTest extends BasicHystrixTest {
             for (String id : ids) {
                 users.add(new User(id, "name: " + id));
             }
+            log.debug("executing on thread id: {}", Thread.currentThread().getId());
             return users;
         }
 
@@ -233,7 +272,6 @@ public abstract class BasicCollapserTest extends BasicHystrixTest {
                 commandProperties = {
                         @HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "10000")// for debug
                 })
-
         public List<User> getUserByIdsWithFallback(List<String> ids) {
             throw new RuntimeException("not found");
         }

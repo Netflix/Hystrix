@@ -51,7 +51,7 @@ public class HystrixCommandBuilderFactory {
         return create(metaHolder, Collections.<HystrixCollapser.CollapsedRequest<Object, Object>>emptyList());
     }
 
-    public HystrixCommandBuilder create(MetaHolder metaHolder, Collection<HystrixCollapser.CollapsedRequest<Object, Object>> collapsedRequests) {
+    public <ResponseType> HystrixCommandBuilder create(MetaHolder metaHolder, Collection<HystrixCollapser.CollapsedRequest<ResponseType, Object>> collapsedRequests) {
         validateMetaHolder(metaHolder);
 
         return HystrixCommandBuilder.builder()

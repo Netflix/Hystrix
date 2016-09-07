@@ -15,7 +15,6 @@
  */
 package com.netflix.hystrix.contrib.javanica.command;
 
-import com.netflix.hystrix.HystrixExecutable;
 import com.netflix.hystrix.HystrixInvokable;
 import com.netflix.hystrix.contrib.javanica.collapser.CommandCollapser;
 

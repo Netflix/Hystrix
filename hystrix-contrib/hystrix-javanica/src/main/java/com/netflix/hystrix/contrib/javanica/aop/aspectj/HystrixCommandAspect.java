@@ -16,7 +16,6 @@
 package com.netflix.hystrix.contrib.javanica.aop.aspectj;
 
 import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.netflix.hystrix.HystrixInvokable;
 import com.netflix.hystrix.contrib.javanica.annotation.DefaultProperties;
@@ -168,33 +167,33 @@ public class HystrixCommandAspect {
             }
 
             Method batchCommandMethod = getDeclaredMethod(obj.getClass(), hystrixCollapser.batchMethod(), List.class);
-            if (batchCommandMethod == null || !batchCommandMethod.getReturnType().equals(List.class)) {
-                throw new IllegalStateException("required batch method for collapser is absent: "
-                        + "(java.util.List) " + obj.getClass().getCanonicalName() + "." +
-                        hystrixCollapser.batchMethod() + "(java.util.List)");
-            }
+
+            if (batchCommandMethod == null)
+                throw new IllegalStateException("batch method is absent: " + hystrixCollapser.batchMethod());
+
+            Class<?> batchReturnType = batchCommandMethod.getReturnType();
+            Class<?> collapserReturnType = collapserMethod.getReturnType();
+            boolean observable = collapserReturnType.equals(Observable.class);
 
             if (!collapserMethod.getParameterTypes()[0]
-                    .equals(getGenericParameter(batchCommandMethod.getGenericParameterTypes()[0]))) {
-                throw new IllegalStateException("required batch method for collapser is absent, wrong generic type: expected"
+                    .equals(getFirstGenericParameter(batchCommandMethod.getGenericParameterTypes()[0]))) {
+                throw new IllegalStateException("required batch method for collapser is absent, wrong generic type: expected "
                         + obj.getClass().getCanonicalName() + "." +
                         hystrixCollapser.batchMethod() + "(java.util.List<" + collapserMethod.getParameterTypes()[0] + ">), but it's " +
-                        getGenericParameter(batchCommandMethod.getGenericParameterTypes()[0]));
+                        getFirstGenericParameter(batchCommandMethod.getGenericParameterTypes()[0]));
             }
 
-            Class<?> collapserMethodReturnType;
-            if (Future.class.isAssignableFrom(collapserMethod.getReturnType())) {
-                collapserMethodReturnType = getGenericParameter(collapserMethod.getGenericReturnType());
-            } else {
-                collapserMethodReturnType = collapserMethod.getReturnType();
-            }
+            final Class<?> collapserMethodReturnType = getFirstGenericParameter(
+                    collapserMethod.getGenericReturnType(),
+                    Future.class.isAssignableFrom(collapserReturnType) || Observable.class.isAssignableFrom(collapserReturnType) ? 1 : 0);
 
+            Class<?> batchCommandActualReturnType = getFirstGenericParameter(batchCommandMethod.getGenericReturnType());
             if (!collapserMethodReturnType
-                    .equals(getGenericParameter(batchCommandMethod.getGenericReturnType()))) {
+                    .equals(batchCommandActualReturnType)) {
                 throw new IllegalStateException("Return type of batch method must be java.util.List parametrized with corresponding type: expected " +
                         "(java.util.List<" + collapserMethodReturnType + ">)" + obj.getClass().getCanonicalName() + "." +
                         hystrixCollapser.batchMethod() + "(java.util.List<" + collapserMethod.getParameterTypes()[0] + ">), but it's " +
-                        getGenericParameter(batchCommandMethod.getGenericReturnType()));
+                        batchCommandActualReturnType);
             }
 
             HystrixCommand hystrixCommand = batchCommandMethod.getAnnotation(HystrixCommand.class);
@@ -212,11 +211,12 @@ public class HystrixCommandAspect {
 
             builder.hystrixCollapser(hystrixCollapser);
             builder.defaultCollapserKey(collapserMethod.getName());
-            builder.collapserExecutionType(ExecutionType.getExecutionType(collapserMethod.getReturnType()));
+            builder.collapserExecutionType(ExecutionType.getExecutionType(collapserReturnType));
 
             builder.defaultCommandKey(batchCommandMethod.getName());
             builder.hystrixCommand(hystrixCommand);
-            builder.executionType(ExecutionType.getExecutionType(batchCommandMethod.getReturnType()));
+            builder.executionType(ExecutionType.getExecutionType(batchReturnType));
+            builder.observable(observable);
             FallbackMethod fallbackMethod = MethodProvider.getInstance().getFallbackMethod(obj.getClass(), batchCommandMethod);
             if (fallbackMethod.isPresent()) {
                 fallbackMethod.validateReturnType(batchCommandMethod);
@@ -260,14 +260,26 @@ public class HystrixCommandAspect {
     }
 
 
-    private static Class<?> getGenericParameter(Type type) {
-        Type tType = ((ParameterizedType) type).getActualTypeArguments()[0];
-        String className = tType.toString().split(" ")[1];
-        try {
-            return Class.forName(className);
-        } catch (ClassNotFoundException e) {
-            throw Throwables.propagate(e);
+    private static Class<?> getFirstGenericParameter(Type type) {
+        return getFirstGenericParameter(type, 1);
+    }
+
+    private static Class<?> getFirstGenericParameter(final Type type, final int nestedDepth) {
+        int cDepth = 0;
+        Type tType = type;
+
+        for (int cDept = 0; cDept < nestedDepth; cDept++) {
+            if (!(tType instanceof ParameterizedType))
+                throw new IllegalStateException(String.format("Sub type at nesting level %d of %s is expected to be generic", cDepth, type));
+            tType = ((ParameterizedType) tType).getActualTypeArguments()[cDept];
         }
+
+        if (tType instanceof ParameterizedType)
+            return (Class<?>) ((ParameterizedType) tType).getRawType();
+        else if (tType instanceof Class)
+            return (Class<?>) tType;
+
+        throw new UnsupportedOperationException("Unsupported type " + tType);
     }
 
     private static MetaHolder.Builder setDefaultProperties(MetaHolder.Builder builder, Class<?> declaringClass, final ProceedingJoinPoint joinPoint) {

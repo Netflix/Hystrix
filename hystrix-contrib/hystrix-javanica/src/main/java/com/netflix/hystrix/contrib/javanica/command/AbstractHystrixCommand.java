@@ -16,7 +16,6 @@
 package com.netflix.hystrix.contrib.javanica.command;
 
 
-import com.google.common.base.Throwables;
 import com.netflix.hystrix.HystrixCollapser;
 import com.netflix.hystrix.contrib.javanica.cache.CacheInvocationContext;
 import com.netflix.hystrix.contrib.javanica.cache.HystrixCacheKeyGenerator;

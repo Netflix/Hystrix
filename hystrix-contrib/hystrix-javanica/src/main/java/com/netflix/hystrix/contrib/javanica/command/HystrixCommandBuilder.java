@@ -52,8 +52,8 @@ public class HystrixCommandBuilder {
         this.executionType = builder.executionType;
     }
 
-    public static Builder builder() {
-        return new Builder();
+    public static <ResponseType> Builder builder() {
+        return new Builder<ResponseType>();
     }
 
     public GenericSetterBuilder getSetterBuilder() {
@@ -85,12 +85,12 @@ public class HystrixCommandBuilder {
     }
 
 
-    public static class Builder {
+    public static class Builder<ResponseType> {
         private GenericSetterBuilder setterBuilder;
         private CommandActions commandActions;
         private CacheInvocationContext<CacheResult> cacheResultInvocationContext;
         private CacheInvocationContext<CacheRemove> cacheRemoveInvocationContext;
-        private Collection<HystrixCollapser.CollapsedRequest<Object, Object>> collapsedRequests = Collections.emptyList();
+        private Collection<HystrixCollapser.CollapsedRequest<ResponseType, Object>> collapsedRequests = Collections.emptyList();
         private List<Class<? extends Throwable>> ignoreExceptions = Collections.emptyList();
         private ExecutionType executionType = ExecutionType.SYNCHRONOUS;
 
@@ -144,7 +144,7 @@ public class HystrixCommandBuilder {
          * @param pCollapsedRequests the collapsed requests
          * @return this {@link HystrixCommandBuilder.Builder}
          */
-        public Builder collapsedRequests(Collection<HystrixCollapser.CollapsedRequest<Object, Object>> pCollapsedRequests) {
+        public Builder collapsedRequests(Collection<HystrixCollapser.CollapsedRequest<ResponseType, Object>> pCollapsedRequests) {
             this.collapsedRequests = pCollapsedRequests;
             return this;
         }
