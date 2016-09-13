@@ -1,19 +1,19 @@
 package com.netflix.hystrix.contrib.javanica.test.common.error;
 
-import com.netflix.hystrix.contrib.javanica.annotation.DefaultProperties;
-import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
-import com.netflix.hystrix.exception.HystrixRuntimeException;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import com.netflix.hystrix.contrib.javanica.annotation.DefaultProperties;
+import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
+import com.netflix.hystrix.contrib.javanica.annotation.HystrixException;
+import com.netflix.hystrix.exception.HystrixRuntimeException;
+
 /**
- * Test for {@link DefaultProperties#ignoreExceptions()} feature.
- *
- * <p>
- * Created by dmgcodevil.
+ * Created by Mike Cowan
  */
-public abstract class BasicDefaultIgnoreExceptionsTest {
+public abstract class BasicDefaultRaiseHystrixExceptionsTest {
+
     private Service service;
 
     @Before
@@ -51,12 +51,12 @@ public abstract class BasicDefaultIgnoreExceptionsTest {
         service.commandWithFallbackOverridesDefaultIgnoreExceptions(SpecificException.class);
     }
 
-    @Test(expected = BadRequestException.class)
+    @Test(expected = HystrixRuntimeException.class)
     public void testFallbackCommandOverridesDefaultIgnoreExceptions_nonIgnoreExceptionShouldBePropagated() {
         service.commandWithFallbackOverridesDefaultIgnoreExceptions(BadRequestException.class);
     }
 
-    @DefaultProperties(ignoreExceptions = BadRequestException.class)
+    @DefaultProperties(ignoreExceptions = BadRequestException.class, raiseHystrixExceptions = {HystrixException.RUNTIME_EXCEPTION})
     public static class Service {
         @HystrixCommand
         public Object commandInheritsDefaultIgnoreExceptions() throws BadRequestException {

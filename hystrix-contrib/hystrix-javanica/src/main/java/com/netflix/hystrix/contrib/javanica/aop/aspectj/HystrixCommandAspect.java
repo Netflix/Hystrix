@@ -21,6 +21,7 @@ import com.netflix.hystrix.HystrixInvokable;
 import com.netflix.hystrix.contrib.javanica.annotation.DefaultProperties;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCollapser;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
+import com.netflix.hystrix.contrib.javanica.annotation.HystrixException;
 import com.netflix.hystrix.contrib.javanica.command.CommandExecutor;
 import com.netflix.hystrix.contrib.javanica.command.ExecutionType;
 import com.netflix.hystrix.contrib.javanica.command.HystrixCommandFactory;
@@ -103,7 +104,7 @@ public class HystrixCommandAspect {
         } catch (HystrixBadRequestException e) {
             throw e.getCause();
         } catch (HystrixRuntimeException e) {
-            if (metaHolder.getRaiseHystrixRuntimeExceptions()) {
+            if (metaHolder.raiseHystrixExceptionsContains(HystrixException.RUNTIME_EXCEPTION)) {
                 throw e;
             }
             throw getCause(e);
@@ -256,7 +257,6 @@ public class HystrixCommandAspect {
             return builder.defaultCommandKey(method.getName())
                             .hystrixCommand(hystrixCommand)
                             .observableExecutionMode(hystrixCommand.observableExecutionMode())
-                            .raiseHystrixRuntimeExceptions(hystrixCommand.raiseHystrixRuntimeExceptions())
                             .executionType(executionType)
                             .observable(ExecutionType.OBSERVABLE == executionType)
                             .build();

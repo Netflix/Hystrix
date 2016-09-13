@@ -101,7 +101,7 @@ public @interface HystrixCommand {
 
     /**
      * Defines exceptions which should be ignored.
-     * Optionally these can be wrapped in a HystrixRuntimeException if raiseHystrixExceptions is set to true.
+     * Optionally these can be wrapped in HystrixRuntimeException if raiseHystrixExceptions contains RUNTIME_EXCEPTION.
      *
      * @return exceptions to ignore
      */
@@ -116,9 +116,10 @@ public @interface HystrixCommand {
     ObservableExecutionMode observableExecutionMode() default ObservableExecutionMode.EAGER;
 
     /**
-     * When set to true, any exceptions that are not ignored are wrapped in HystrixRuntimeException.
-     * @return true to raise HystrixRuntimeException instead of their cause.
+     * When includes RUNTIME_EXCEPTION, any exceptions that are not ignored are wrapped in HystrixRuntimeException.
+     *
+     * @return exceptions to wrap
      */
-    boolean raiseHystrixRuntimeExceptions() default false;
+    HystrixException[] raiseHystrixExceptions() default {};
 }
 
