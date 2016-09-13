@@ -100,7 +100,8 @@ public @interface HystrixCommand {
     HystrixProperty[] threadPoolProperties() default {};
 
     /**
-     * Defines exceptions which should be ignored and wrapped to throw in HystrixBadRequestException.
+     * Defines exceptions which should be ignored.
+     * Optionally these can be wrapped in a HystrixRuntimeException if raiseHystrixExceptions is set to true.
      *
      * @return exceptions to ignore
      */
@@ -113,5 +114,11 @@ public @interface HystrixCommand {
      * @return observable execution mode
      */
     ObservableExecutionMode observableExecutionMode() default ObservableExecutionMode.EAGER;
+
+    /**
+     * When set to true, any exceptions that are not ignored are wrapped in HystrixRuntimeException.
+     * @return true to raise HystrixRuntimeException instead of their cause.
+     */
+    boolean raiseHystrixRuntimeExceptions() default false;
 }
 

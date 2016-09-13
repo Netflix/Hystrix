@@ -67,6 +67,7 @@ public final class MetaHolder {
     private final JoinPoint joinPoint;
     private final boolean observable;
     private final ObservableExecutionMode observableExecutionMode;
+    private final boolean raiseHystrixRuntimeExceptions;
 
     private static final Function identityFun = new Function<Object, Object>() {
         @Nullable
@@ -101,6 +102,7 @@ public final class MetaHolder {
         this.extendedParentFallback = builder.extendedParentFallback;
         this.observable = builder.observable;
         this.observableExecutionMode = builder.observableExecutionMode;
+        this.raiseHystrixRuntimeExceptions = builder.raiseHystrixRuntimeExceptions;
     }
 
     public static Builder builder() {
@@ -299,6 +301,10 @@ public final class MetaHolder {
         return observableExecutionMode;
     }
 
+    public boolean getRaiseHystrixRuntimeExceptions() {
+        return raiseHystrixRuntimeExceptions;
+    }
+
     private String get(String key, String defaultKey) {
         return StringUtils.isNotBlank(key) ? key : defaultKey;
     }
@@ -353,6 +359,7 @@ public final class MetaHolder {
         private boolean observable;
         private JoinPoint joinPoint;
         private ObservableExecutionMode observableExecutionMode;
+        private boolean raiseHystrixRuntimeExceptions;
 
         public Builder hystrixCollapser(HystrixCollapser hystrixCollapser) {
             this.hystrixCollapser = hystrixCollapser;
@@ -471,6 +478,11 @@ public final class MetaHolder {
 
         public Builder observableExecutionMode(ObservableExecutionMode observableExecutionMode) {
             this.observableExecutionMode = observableExecutionMode;
+            return this;
+        }
+
+        public Builder raiseHystrixRuntimeExceptions(boolean raiseHystrixRuntimeExceptions) {
+            this.raiseHystrixRuntimeExceptions = raiseHystrixRuntimeExceptions;
             return this;
         }
 

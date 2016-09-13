@@ -33,7 +33,7 @@ public abstract class BasicDefaultIgnoreExceptionsTest {
         service.commandOverridesDefaultIgnoreExceptions(SpecificException.class);
     }
 
-    @Test(expected = BadRequestException.class)
+    @Test(expected = HystrixRuntimeException.class)
     public void testCommandOverridesDefaultIgnoreExceptions_nonIgnoreExceptionShouldBePropagated() {
         // method throws BadRequestException that isn't ignored
         service.commandOverridesDefaultIgnoreExceptions(BadRequestException.class);
@@ -64,7 +64,7 @@ public abstract class BasicDefaultIgnoreExceptionsTest {
             throw new BadRequestException("from 'commandInheritsIgnoreExceptionsFromDefault'");
         }
 
-        @HystrixCommand(ignoreExceptions = SpecificException.class)
+        @HystrixCommand(ignoreExceptions = SpecificException.class, raiseHystrixRuntimeExceptions = true)
         public Object commandOverridesDefaultIgnoreExceptions(Class<? extends Throwable> errorType) throws BadRequestException, SpecificException  {
             if(errorType.equals(BadRequestException.class)){
                 // isn't ignored because command doesn't specify this exception type in 'ignoreExceptions'

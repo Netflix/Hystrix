@@ -103,6 +103,9 @@ public class HystrixCommandAspect {
         } catch (HystrixBadRequestException e) {
             throw e.getCause();
         } catch (HystrixRuntimeException e) {
+            if (metaHolder.getRaiseHystrixRuntimeExceptions()) {
+                throw e;
+            }
             throw getCause(e);
         }
         return result;
@@ -253,6 +256,7 @@ public class HystrixCommandAspect {
             return builder.defaultCommandKey(method.getName())
                             .hystrixCommand(hystrixCommand)
                             .observableExecutionMode(hystrixCommand.observableExecutionMode())
+                            .raiseHystrixRuntimeExceptions(hystrixCommand.raiseHystrixRuntimeExceptions())
                             .executionType(executionType)
                             .observable(ExecutionType.OBSERVABLE == executionType)
                             .build();
