@@ -17,18 +17,9 @@ package com.netflix.hystrix.metric;
 
 import org.HdrHistogram.Histogram;
 
-import java.util.concurrent.ConcurrentLinkedQueue;
-
 public class CachedValuesHistogram {
 
-    static int POOL_SIZE = 1000;
-    static ConcurrentLinkedQueue<Histogram> HISTOGRAM_POOL = new ConcurrentLinkedQueue<Histogram>();
-
-    static {
-        for (int i = 0; i < POOL_SIZE; i++) {
-            HISTOGRAM_POOL.add(new Histogram(3));
-        }
-    }
+    private final static int NUMBER_SIGNIFICANT_DIGITS = 3;
 
     private final int mean;
     private final int p0;
@@ -100,8 +91,6 @@ public class CachedValuesHistogram {
         p100 = (int) underlying.getValueAtPercentile(100);
 
         totalCount = underlying.getTotalCount();
-
-        release(underlying);
     }
 
     /**
@@ -155,16 +144,7 @@ public class CachedValuesHistogram {
         return totalCount;
     }
 
-    private static void release(Histogram histogram) {
-        histogram.reset();
-        HISTOGRAM_POOL.offer(histogram);
-    }
-
     public static Histogram getNewHistogram() {
-        Histogram histogram = HISTOGRAM_POOL.poll();
-        if (histogram == null) {
-            histogram = new Histogram(3);
-        }
-        return histogram;
+        return new Histogram(NUMBER_SIGNIFICANT_DIGITS);
     }
 }
