@@ -19,24 +19,29 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.ThreadFactory;
 
 public class PlatformSpecific {
-    private final boolean isAppEngine;
+    private final boolean isAppEngineStandardEnvironment;
 
     private static PlatformSpecific INSTANCE = new PlatformSpecific();
 
     private PlatformSpecific() {
-        isAppEngine = determineAppEngineReflectively();
+        isAppEngineStandardEnvironment = determineAppEngineReflectively();
     }
 
-    public static boolean isAppEngine() {
-        return INSTANCE.isAppEngine;
+    public static boolean isAppEngineStandardEnvironment() {
+        return INSTANCE.isAppEngineStandardEnvironment;
     }
 
     /*
      * This detection mechanism is from Guava - specifically
      * http://docs.guava-libraries.googlecode.com/git/javadoc/src-html/com/google/common/util/concurrent/MoreExecutors.html#line.766
+     * Added GAE_LONG_APP_ID check to detect only AppEngine Standard Environment
      */
     private static boolean determineAppEngineReflectively() {
         if (System.getProperty("com.google.appengine.runtime.environment") == null) {
+            return false;
+        }
+        // GAE_LONG_APP_ID is only set in the GAE Flexible Environment, where we want standard threading
+        if (System.getenv("GAE_LONG_APP_ID") != null) {
             return false;
         }
         try {

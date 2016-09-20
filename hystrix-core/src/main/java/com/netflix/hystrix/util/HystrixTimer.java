@@ -153,7 +153,7 @@ public class HystrixTimer {
             int coreSize = propertiesStrategy.getTimerThreadPoolProperties().getCorePoolSize().get();
 
             ThreadFactory threadFactory = null;
-            if (!PlatformSpecific.isAppEngine()) {
+            if (!PlatformSpecific.isAppEngineStandardEnvironment()) {
                 threadFactory = new ThreadFactory() {
                     final AtomicInteger counter = new AtomicInteger();
 
