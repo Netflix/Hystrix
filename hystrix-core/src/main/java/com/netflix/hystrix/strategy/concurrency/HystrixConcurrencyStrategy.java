@@ -72,7 +72,7 @@ public abstract class HystrixConcurrencyStrategy {
      */
     public ThreadPoolExecutor getThreadPool(final HystrixThreadPoolKey threadPoolKey, HystrixProperty<Integer> corePoolSize, HystrixProperty<Integer> maximumPoolSize, HystrixProperty<Integer> keepAliveTime, TimeUnit unit, BlockingQueue<Runnable> workQueue) {
         ThreadFactory threadFactory = null;
-        if (!PlatformSpecific.isAppEngine()) {
+        if (!PlatformSpecific.isAppEngineStandardEnvironment()) {
             threadFactory = new ThreadFactory() {
                 protected final AtomicInteger threadNumber = new AtomicInteger(0);
 

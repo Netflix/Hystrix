@@ -80,7 +80,7 @@ public class HystrixMetricsPoller {
         this.listener = listener;
 
         ThreadFactory threadFactory = null;
-        if (!PlatformSpecific.isAppEngine()) {
+        if (!PlatformSpecific.isAppEngineStandardEnvironment()) {
             threadFactory = new MetricsPollerThreadFactory();
         } else {
             threadFactory = PlatformSpecific.getAppEngineThreadFactory();
