@@ -29,7 +29,7 @@ public class CommandConstructionPerfTest {
     static HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("Group");
 
     @Benchmark
-    @BenchmarkMode({Mode.SampleTime})
+    @BenchmarkMode({Mode.SingleShotTime})
     @OutputTimeUnit(TimeUnit.MICROSECONDS)
     public HystrixCommand constructHystrixCommandByGroupKeyOnly() {
         return new HystrixCommand<Integer>(groupKey) {
