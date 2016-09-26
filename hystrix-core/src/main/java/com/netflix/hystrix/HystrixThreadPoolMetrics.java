@@ -25,8 +25,10 @@ import org.slf4j.LoggerFactory;
 import rx.functions.Func0;
 import rx.functions.Func2;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -93,7 +95,18 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
      * @return {@code Collection<HystrixThreadPoolMetrics>}
      */
     public static Collection<HystrixThreadPoolMetrics> getInstances() {
-        return Collections.unmodifiableCollection(metrics.values());
+        List<HystrixThreadPoolMetrics> threadPoolMetrics = new ArrayList<HystrixThreadPoolMetrics>();
+        for (HystrixThreadPoolMetrics tpm: metrics.values()) {
+            if (hasExecutedCommandsOnThread(tpm)) {
+                threadPoolMetrics.add(tpm);
+            }
+        }
+
+        return Collections.unmodifiableCollection(threadPoolMetrics);
+    }
+
+    private static boolean hasExecutedCommandsOnThread(HystrixThreadPoolMetrics threadPoolMetrics) {
+        return threadPoolMetrics.getCurrentCompletedTaskCount().intValue() > 0;
     }
 
     public static final Func2<long[], HystrixCommandCompletion, long[]> appendEventToBucket
