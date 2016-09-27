@@ -2,10 +2,10 @@ apply plugin: 'osgi'
 apply plugin: 'me.champeau.gradle.jmh'
 
 dependencies {
-    compile 'com.netflix.archaius:archaius-core:0.4.1'
-    compile 'io.reactivex:rxjava:1.2.0'
+    compileApi 'com.netflix.archaius:archaius-core:0.4.1'
+    compileApi 'io.reactivex:rxjava:1.2.0'
     compile 'org.slf4j:slf4j-api:1.7.0'
-    compile 'org.hdrhistogram:HdrHistogram:2.1.9'
+    compileApi 'org.hdrhistogram:HdrHistogram:2.1.9'
     testCompile 'junit:junit-dep:4.10'
     testCompile project(':hystrix-junit')
 }

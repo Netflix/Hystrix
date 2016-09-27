@@ -1,5 +1,5 @@
 dependencies {
-    compile project(':hystrix-core')
+    compileApi project(':hystrix-core')
 	compile project(':hystrix-serialization')
     provided 'javax.servlet:servlet-api:2.5'
     testCompile 'junit:junit-dep:4.10'
