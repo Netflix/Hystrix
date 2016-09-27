@@ -94,16 +94,16 @@ task ajcJar(type: Jar) {
 assemble.dependsOn(jar, ajcJar)
 
 dependencies {
-    compile project(':hystrix-core')
+    compileApi project(':hystrix-core')
     ajtools "org.aspectj:aspectjtools:$aspectjVersion"
     testRuntime "org.aspectj:aspectjrt:$aspectjVersion"
-    compile "org.aspectj:aspectjweaver:$aspectjVersion"
+    compileApi "org.aspectj:aspectjweaver:$aspectjVersion"
     compile "org.aspectj:aspectjrt:$aspectjVersion"
 
-    compile 'com.google.guava:guava:15.0'
+    compileApi 'com.google.guava:guava:15.0'
     compile 'commons-collections:commons-collections:3.2.2'
     compile 'org.apache.commons:commons-lang3:3.1'
-    compile 'com.google.code.findbugs:jsr305:2.0.0'
+    compileApi 'com.google.code.findbugs:jsr305:2.0.0'
     compile 'org.ow2.asm:asm:5.0.4'
     testCompile group: 'junit', name: 'junit', version: '4.12'
     testCompile 'pl.pragmatists:JUnitParams:1.0.5'

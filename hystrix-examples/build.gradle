@@ -1,7 +1,7 @@
 apply plugin: 'osgi'
 
 dependencies {
-    compile project(':hystrix-core')
+    compileApi project(':hystrix-core')
     provided 'junit:junit-dep:4.10'
 }
 

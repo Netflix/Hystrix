@@ -1,4 +1,4 @@
 dependencies {
-    compile project(':hystrix-core')
-    compile 'com.yammer.metrics:metrics-core:2.2.0'
+    compileApi project(':hystrix-core')
+    compileApi 'com.yammer.metrics:metrics-core:2.2.0'
 }

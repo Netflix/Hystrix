@@ -2,10 +2,10 @@ apply plugin: 'war'
 apply plugin: 'jetty'
 
 dependencies {
-    compile project(':hystrix-core')
-    compile project(':hystrix-examples')
-    compile project(':hystrix-request-servlet')
-    compile project(':hystrix-metrics-event-stream')
+    compileApi project(':hystrix-core')
+    compileApi project(':hystrix-examples')
+    compileApi project(':hystrix-request-servlet')
+    compileApi project(':hystrix-metrics-event-stream')
 }
 
 jettyRun {

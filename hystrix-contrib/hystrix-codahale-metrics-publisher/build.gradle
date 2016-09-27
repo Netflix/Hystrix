@@ -1,6 +1,6 @@
 dependencies {
-    compile project(':hystrix-core')
-    compile 'io.dropwizard.metrics:metrics-core:3.1.2'
+    compileApi project(':hystrix-core')
+    compileApi 'io.dropwizard.metrics:metrics-core:3.1.2'
     testCompile 'junit:junit-dep:4.10'
     testCompile 'org.mockito:mockito-all:1.9.5'
 }
