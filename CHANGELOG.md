@@ -1,5 +1,20 @@
 # Hystrix Releases #
 
+### Version 1.5.6 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.5.6%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.5.6/)) ###
+
+* [Pull 1368](https://github.com/Netflix/Hystrix/pull/1368) Upgrade jmh to 1.14.1
+* [Pull 1365](https://github.com/Netflix/Hystrix/pull/1365) Upgrade to Gradle 3.1 / Nebula 3.4.0
+* [Pull 1364](https://github.com/Netflix/Hystrix/pull/1364) Fix backwards-incompatibility introduced in #1356
+* [Pull 1363](https://github.com/Netflix/Hystrix/pull/1363) Fix metrics regression where thread pool objects without any executions were being sent out in metrics streams
+* [Pull 1360](https://github.com/Netflix/Hystrix/pull/1360) Convert command-construction jmh test to single-shot
+* [Pull 1356](https://github.com/Netflix/Hystrix/pull/1356) Add better AppEngine detection mechanism that allows GAE-Flexible to work like any other JVM.  Thanks @cadef!
+* [Pull 1353](https://github.com/Netflix/Hystrix/pull/1353) Upgrade to RxJava 1.2.0
+* [Pull 1351](https://github.com/Netflix/Hystrix/pull/1351) Remove histogram object-pooling
+* [Pull 1336](https://github.com/Netflix/Hystrix/pull/1336) Overall Dashboard UX improvements.  Thanks @kennedyoliveira !
+* [Pull 1320](https://github.com/Netflix/Hystrix/pull/1320) Adding example of HystrixObservableCollapser.  Thanks @zsoltm !
+* [Pull 1341](https://github.com/Netflix/Hystrix/pull/1341) Javanica fix for handling commands with generic types.  Thanks @dmgcodevil ! 
+* [Pull 1340](https://github.com/Netflix/Hystrix/pull/1340) Refactor how commands determine if fallbacks are user-defined
+
 ### Version 1.5.5 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.5.5%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.5.5/)) ###
 
 * [Pull 1323](https://github.com/Netflix/Hystrix/pull/1323) Remove ReactiveSocket modules and change Jenkins release process back to JDK7
