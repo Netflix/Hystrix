@@ -15,9 +15,7 @@
  */
 package com.netflix.hystrix;
 
-import static com.netflix.hystrix.strategy.properties.HystrixPropertiesChainedProperty.forBoolean;
 import static com.netflix.hystrix.strategy.properties.HystrixPropertiesChainedProperty.forInteger;
-import static com.netflix.hystrix.strategy.properties.HystrixPropertiesChainedProperty.forString;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -32,11 +30,19 @@ import com.netflix.hystrix.util.HystrixRollingNumber;
  * Properties for instances of {@link HystrixThreadPool}.
  * <p>
  * Default implementation of methods uses Archaius (https://github.com/Netflix/archaius)
+ *
+ * Note a change in behavior in 1.5.7.  Prior to that version, the configuration for 'coreSize' was used to control
+ * both coreSize and maximumSize.  This is a fixed-size threadpool that can never give up an unused thread.  In 1.5.7+,
+ * the values can diverge, and if you set coreSize < maximumSize, threads can be given up (subject to the keep-alive
+ * time)
+ *
+ * It is OK to leave maximumSize unset using any version of Hystrix.  If you do, then maximum size will default to
+ * core size and you'll have a fixed-size threadpool.
  */
 public abstract class HystrixThreadPoolProperties {
 
     /* defaults */
-    private Integer default_coreSize = 10; // size of thread pool
+    private Integer default_coreSize = 10; // core size of thread pool
     private Integer default_keepAliveTimeMinutes = 1; // minutes to keep a thread alive (though in practice this doesn't get used as by default we set a fixed size)
     private Integer default_maxQueueSize = -1; // size of queue (this can't be dynamically changed so we use 'queueSizeRejectionThreshold' to artificially limit and reject)
                                                // -1 turns if off and makes us use SynchronousQueue
@@ -45,6 +51,7 @@ public abstract class HystrixThreadPoolProperties {
     private Integer default_threadPoolRollingNumberStatisticalWindowBuckets = 10; // number of buckets in rolling number (10 1-second buckets)
 
     private final HystrixProperty<Integer> corePoolSize;
+    private final HystrixProperty<Integer> maximumPoolSize;
     private final HystrixProperty<Integer> keepAliveTime;
     private final HystrixProperty<Integer> maxQueueSize;
     private final HystrixProperty<Integer> queueSizeRejectionThreshold;
@@ -61,6 +68,8 @@ public abstract class HystrixThreadPoolProperties {
 
     protected HystrixThreadPoolProperties(HystrixThreadPoolKey key, Setter builder, String propertyPrefix) {
         this.corePoolSize = getProperty(propertyPrefix, key, "coreSize", builder.getCoreSize(), default_coreSize);
+        //if maximum size is not explicitly set, then default it to the core size of that pool.
+        this.maximumPoolSize = getProperty(propertyPrefix, key, "maximumSize", builder.getMaximumSize(), builder.getCoreSize());
         this.keepAliveTime = getProperty(propertyPrefix, key, "keepAliveTimeMinutes", builder.getKeepAliveTimeMinutes(), default_keepAliveTimeMinutes);
         this.maxQueueSize = getProperty(propertyPrefix, key, "maxQueueSize", builder.getMaxQueueSize(), default_maxQueueSize);
         this.queueSizeRejectionThreshold = getProperty(propertyPrefix, key, "queueSizeRejectionThreshold", builder.getQueueSizeRejectionThreshold(), default_queueSizeRejectionThreshold);
@@ -82,6 +91,15 @@ public abstract class HystrixThreadPoolProperties {
      */
     public HystrixProperty<Integer> coreSize() {
         return corePoolSize;
+    }
+
+    /**
+     * Maximum thread-pool size that gets passed to {@link ThreadPoolExecutor#setMaximumPoolSize(int)}
+     *
+     * @return {@code HystrixProperty<Integer>}
+     */
+    public HystrixProperty<Integer> maximumSize() {
+        return maximumPoolSize;
     }
 
     /**
@@ -169,6 +187,7 @@ public abstract class HystrixThreadPoolProperties {
      */
     public static class Setter {
         private Integer coreSize = null;
+        private Integer maximumSize = null;
         private Integer keepAliveTimeMinutes = null;
         private Integer maxQueueSize = null;
         private Integer queueSizeRejectionThreshold = null;
@@ -180,6 +199,10 @@ public abstract class HystrixThreadPoolProperties {
 
         public Integer getCoreSize() {
             return coreSize;
+        }
+
+        public Integer getMaximumSize() {
+            return maximumSize;
         }
 
         public Integer getKeepAliveTimeMinutes() {
@@ -204,6 +227,11 @@ public abstract class HystrixThreadPoolProperties {
 
         public Setter withCoreSize(int value) {
             this.coreSize = value;
+            return this;
+        }
+
+        public Setter withMaximumSize(int value) {
+            this.maximumSize = value;
             return this;
         }
 
@@ -237,7 +265,8 @@ public abstract class HystrixThreadPoolProperties {
          */
         /* package */static Setter getUnitTestPropertiesBuilder() {
             return new Setter()
-                    .withCoreSize(10)// size of thread pool
+                    .withCoreSize(10)// core size of thread pool
+                    .withMaximumSize(15) //maximum size of thread pool
                     .withKeepAliveTimeMinutes(1)// minutes to keep a thread alive (though in practice this doesn't get used as by default we set a fixed size)
                     .withMaxQueueSize(100)// size of queue (but we never allow it to grow this big ... this can't be dynamically changed so we use 'queueSizeRejectionThreshold' to artificially limit and reject)
                     .withQueueSizeRejectionThreshold(10)// number of items in queue at which point we reject (this can be dyamically changed)
@@ -258,6 +287,11 @@ public abstract class HystrixThreadPoolProperties {
                 @Override
                 public HystrixProperty<Integer> coreSize() {
                     return HystrixProperty.Factory.asProperty(builder.coreSize);
+                }
+
+                @Override
+                public HystrixProperty<Integer> maximumSize() {
+                    return HystrixProperty.Factory.asProperty(builder.maximumSize);
                 }
 
                 @Override
