@@ -177,6 +177,7 @@ public class SerialHystrixConfiguration extends SerialHystrixMetric {
                 HystrixThreadPoolConfiguration threadPoolConfig = new HystrixThreadPoolConfiguration(
                        threadPoolKey,
                         threadPool.getValue().path("coreSize").asInt(),
+                        threadPool.getValue().path("maximumSize").asInt(),
                         threadPool.getValue().path("maxQueueSize").asInt(),
                         threadPool.getValue().path("queueRejectionThreshold").asInt(),
                         threadPool.getValue().path("keepAliveTimeInMinutes").asInt(),
