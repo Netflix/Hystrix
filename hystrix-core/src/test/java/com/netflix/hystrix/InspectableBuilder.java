@@ -37,7 +37,7 @@ public interface InspectableBuilder {
         HystrixCircuitBreaker circuitBreaker;
         HystrixThreadPool threadPool = null;
         HystrixCommandProperties.Setter commandPropertiesDefaults = HystrixCommandPropertiesTest.getUnitTestPropertiesSetter();
-        HystrixThreadPoolProperties.Setter threadPoolPropertiesDefaults = HystrixThreadPoolProperties.Setter.getUnitTestPropertiesBuilder();
+        HystrixThreadPoolProperties.Setter threadPoolPropertiesDefaults = HystrixThreadPoolPropertiesTest.getUnitTestPropertiesBuilder();
         HystrixCommandMetrics metrics;
         AbstractCommand.TryableSemaphore fallbackSemaphore = null;
         AbstractCommand.TryableSemaphore executionSemaphore = null;

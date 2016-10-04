@@ -46,9 +46,9 @@ public interface AbstractTestHystrixCommand<R> extends HystrixObservable<R>, Ins
         @Override
         public HystrixThreadPoolProperties getThreadPoolProperties(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolProperties.Setter builder) {
             if (builder == null) {
-                builder = HystrixThreadPoolProperties.Setter.getUnitTestPropertiesBuilder();
+                builder = HystrixThreadPoolPropertiesTest.getUnitTestPropertiesBuilder();
             }
-            return HystrixThreadPoolProperties.Setter.asMock(builder);
+            return HystrixThreadPoolPropertiesTest.asMock(builder);
         }
 
         @Override

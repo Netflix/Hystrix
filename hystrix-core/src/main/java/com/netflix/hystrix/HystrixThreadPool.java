@@ -20,6 +20,8 @@ import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
 import com.netflix.hystrix.strategy.concurrency.HystrixContextScheduler;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherFactory;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rx.Scheduler;
 import rx.functions.Func0;
 
@@ -158,6 +160,8 @@ public interface HystrixThreadPool {
      * @ThreadSafe
      */
     /* package */static class HystrixThreadPoolDefault implements HystrixThreadPool {
+        private static final Logger logger = LoggerFactory.getLogger(HystrixThreadPoolDefault.class);
+
         private final HystrixThreadPoolProperties properties;
         private final BlockingQueue<Runnable> queue;
         private final ThreadPoolExecutor threadPool;
@@ -171,7 +175,7 @@ public interface HystrixThreadPool {
             this.queue = concurrencyStrategy.getBlockingQueue(queueSize);
             this.metrics = HystrixThreadPoolMetrics.getInstance(
                     threadPoolKey,
-                    concurrencyStrategy.getThreadPool(threadPoolKey, properties.coreSize(), properties.coreSize(), properties.keepAliveTimeMinutes(), TimeUnit.MINUTES, queue),
+                    concurrencyStrategy.getThreadPool(threadPoolKey, properties.coreSize(), properties.maximumSize(), properties.keepAliveTimeMinutes(), TimeUnit.MINUTES, queue),
                     properties);
             this.threadPool = metrics.getThreadPool();
 
@@ -205,11 +209,19 @@ public interface HystrixThreadPool {
         // allow us to change things via fast-properties by setting it each time
         private void touchConfig() {
             final int dynamicCoreSize = properties.coreSize().get();
+            int dynamicMaximumSize = properties.maximumSize().get();
+
+            if (dynamicMaximumSize < dynamicCoreSize) {
+                logger.error("Hystrix ThreadPool configuration for : " + metrics.getThreadPoolKey().name() + " is using coreSize = " +
+                        dynamicCoreSize + " and maximumSize = " + dynamicMaximumSize + ".  Maximum size will be set to " +
+                        dynamicCoreSize + ", the coreSize value, since it must be equal to or greater than the coreSize value");
+                dynamicMaximumSize = dynamicCoreSize;
+            }
 
             // In JDK 6, setCorePoolSize and setMaximumPoolSize will execute a lock operation. Avoid them if the pool size is not changed.
-            if (threadPool.getCorePoolSize() != dynamicCoreSize) {
+            if (threadPool.getCorePoolSize() != dynamicCoreSize || threadPool.getMaximumPoolSize() != dynamicMaximumSize) {
                 threadPool.setCorePoolSize(dynamicCoreSize);
-                threadPool.setMaximumPoolSize(dynamicCoreSize); // we always want maxSize the same as coreSize, we are not using a dynamically resizing pool
+                threadPool.setMaximumPoolSize(dynamicMaximumSize);
             }
 
             threadPool.setKeepAliveTime(properties.keepAliveTimeMinutes().get(), TimeUnit.MINUTES); // this doesn't really matter since we're not resizing
