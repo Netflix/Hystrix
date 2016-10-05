@@ -5335,8 +5335,8 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         private TestThreadIsolationWithSemaphoreSetSmallCommand(TestCircuitBreaker circuitBreaker, int poolSize, Action0 action) {
             super(testPropsBuilder().setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics)
                     .setThreadPoolKey(HystrixThreadPoolKey.Factory.asKey(TestThreadIsolationWithSemaphoreSetSmallCommand.class.getSimpleName()))
-                    .setThreadPoolPropertiesDefaults(HystrixThreadPoolProperties.Setter.getUnitTestPropertiesBuilder()
-                            .withCoreSize(poolSize).withMaxQueueSize(0))
+                    .setThreadPoolPropertiesDefaults(HystrixThreadPoolPropertiesTest.getUnitTestPropertiesBuilder()
+                            .withCoreSize(poolSize).withMaximumSize(poolSize).withMaxQueueSize(0))
                     .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter()
                             .withExecutionIsolationStrategy(ExecutionIsolationStrategy.THREAD)
                             .withExecutionIsolationSemaphoreMaxConcurrentRequests(1)));

@@ -49,7 +49,7 @@ public class HystrixThreadPoolTest {
         int count = Factory.threadPools.size();
 
         HystrixThreadPool pool = Factory.getInstance(HystrixThreadPoolKey.Factory.asKey("threadPoolFactoryTest"),
-                HystrixThreadPoolProperties.Setter.getUnitTestPropertiesBuilder());
+                HystrixThreadPoolPropertiesTest.getUnitTestPropertiesBuilder());
 
         assertEquals(count + 1, Factory.threadPools.size());
         assertFalse(pool.getExecutor().isShutdown());
@@ -67,7 +67,7 @@ public class HystrixThreadPoolTest {
         int count = Factory.threadPools.size();
 
         HystrixThreadPool pool = Factory.getInstance(HystrixThreadPoolKey.Factory.asKey("threadPoolFactoryTest"),
-                HystrixThreadPoolProperties.Setter.getUnitTestPropertiesBuilder());
+                HystrixThreadPoolPropertiesTest.getUnitTestPropertiesBuilder());
 
         assertEquals(count + 1, Factory.threadPools.size());
         assertFalse(pool.getExecutor().isShutdown());
@@ -105,9 +105,9 @@ public class HystrixThreadPoolTest {
         });
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("threadPoolFactoryConcurrencyTest");
         HystrixThreadPool poolOne = new HystrixThreadPool.HystrixThreadPoolDefault(
-                threadPoolKey, HystrixThreadPoolProperties.Setter.getUnitTestPropertiesBuilder());
+                threadPoolKey, HystrixThreadPoolPropertiesTest.getUnitTestPropertiesBuilder());
         HystrixThreadPool poolTwo = new HystrixThreadPool.HystrixThreadPoolDefault(
-                threadPoolKey, HystrixThreadPoolProperties.Setter.getUnitTestPropertiesBuilder());
+                threadPoolKey, HystrixThreadPoolPropertiesTest.getUnitTestPropertiesBuilder());
 
         assertThat(poolOne.getExecutor(), is(poolTwo.getExecutor())); //Now that we get the threadPool from the metrics object, this will always be equal
         HystrixMetricsPublisherThreadPoolContainer hystrixMetricsPublisherThreadPool =
@@ -126,7 +126,7 @@ public class HystrixThreadPoolTest {
     public void testUnsubscribeHystrixThreadPool() throws InterruptedException {
         // methods are package-private so can't test it somewhere else
         HystrixThreadPool pool = Factory.getInstance(HystrixThreadPoolKey.Factory.asKey("threadPoolFactoryTest"),
-                HystrixThreadPoolProperties.Setter.getUnitTestPropertiesBuilder());
+                HystrixThreadPoolPropertiesTest.getUnitTestPropertiesBuilder());
         
         final AtomicBoolean interrupted = new AtomicBoolean();
         final CountDownLatch start = new CountDownLatch(1);

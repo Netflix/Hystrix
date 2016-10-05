@@ -23,17 +23,19 @@ public class HystrixThreadPoolConfiguration {
     private static final String VERSION = "1";
     private final HystrixThreadPoolKey threadPoolKey;
     private final int coreSize;
+    private final int maximumSize;
     private final int maxQueueSize;
     private final int queueRejectionThreshold;
     private final int keepAliveTimeInMinutes;
     private final int rollingCounterNumberOfBuckets;
     private final int rollingCounterBucketSizeInMilliseconds;
 
-    public HystrixThreadPoolConfiguration(HystrixThreadPoolKey threadPoolKey, int coreSize, int maxQueueSize, int queueRejectionThreshold,
+    public HystrixThreadPoolConfiguration(HystrixThreadPoolKey threadPoolKey, int coreSize, int maximumSize, int maxQueueSize, int queueRejectionThreshold,
                                            int keepAliveTimeInMinutes, int rollingCounterNumberOfBuckets,
                                            int rollingCounterBucketSizeInMilliseconds) {
         this.threadPoolKey = threadPoolKey;
         this.coreSize = coreSize;
+        this.maximumSize = maximumSize;
         this.maxQueueSize = maxQueueSize;
         this.queueRejectionThreshold = queueRejectionThreshold;
         this.keepAliveTimeInMinutes = keepAliveTimeInMinutes;
@@ -45,6 +47,7 @@ public class HystrixThreadPoolConfiguration {
         return new HystrixThreadPoolConfiguration(
                 threadPoolKey,
                 threadPoolProperties.coreSize().get(),
+                threadPoolProperties.maximumSize().get(),
                 threadPoolProperties.maxQueueSize().get(),
                 threadPoolProperties.queueSizeRejectionThreshold().get(),
                 threadPoolProperties.keepAliveTimeMinutes().get(),
@@ -58,6 +61,10 @@ public class HystrixThreadPoolConfiguration {
 
     public int getCoreSize() {
         return coreSize;
+    }
+
+    public int getMaximumSize() {
+        return maximumSize;
     }
 
     public int getMaxQueueSize() {

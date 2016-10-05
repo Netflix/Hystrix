@@ -177,6 +177,7 @@ public class SerialHystrixConfiguration extends SerialHystrixMetric {
                 HystrixThreadPoolConfiguration threadPoolConfig = new HystrixThreadPoolConfiguration(
                        threadPoolKey,
                         threadPool.getValue().path("coreSize").asInt(),
+                        threadPool.getValue().path("maximumSize").asInt(),
                         threadPool.getValue().path("maxQueueSize").asInt(),
                         threadPool.getValue().path("queueRejectionThreshold").asInt(),
                         threadPool.getValue().path("keepAliveTimeInMinutes").asInt(),
@@ -252,6 +253,7 @@ public class SerialHystrixConfiguration extends SerialHystrixMetric {
     private static void writeThreadPoolConfigJson(JsonGenerator json, HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolConfiguration threadPoolConfig) throws IOException {
         json.writeObjectFieldStart(threadPoolKey.name());
         json.writeNumberField("coreSize", threadPoolConfig.getCoreSize());
+        json.writeNumberField("maximumSize", threadPoolConfig.getMaximumSize());
         json.writeNumberField("maxQueueSize", threadPoolConfig.getMaxQueueSize());
         json.writeNumberField("queueRejectionThreshold", threadPoolConfig.getQueueRejectionThreshold());
         json.writeNumberField("keepAliveTimeInMinutes", threadPoolConfig.getKeepAliveTimeInMinutes());
