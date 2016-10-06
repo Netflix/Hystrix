@@ -2931,6 +2931,32 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
     }
 
     @Test
+    public void testCancelledTasksInQueueGetRemoved() throws Exception {
+        HystrixCommandKey key = HystrixCommandKey.Factory.asKey("Cancellation-A");
+        TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
+        SingleThreadedPoolWithQueue pool = new SingleThreadedPoolWithQueue(10, 1);
+        TestCommandRejection command1 = new TestCommandRejection(key, circuitBreaker, pool, 500, 600, TestCommandRejection.FALLBACK_NOT_IMPLEMENTED);
+        TestCommandRejection command2 = new TestCommandRejection(key, circuitBreaker, pool, 500, 600, TestCommandRejection.FALLBACK_NOT_IMPLEMENTED);
+
+        // this should go through the queue and into the thread pool
+        Future<Boolean> poolFiller = command1.queue();
+        // this command will stay in the queue until the thread pool is empty
+        Observable<Boolean> cmdInQueue = command2.observe();
+        Subscription s = cmdInQueue.subscribe();
+        assertEquals(1, pool.queue.size());
+        s.unsubscribe();
+        assertEquals(0, pool.queue.size());
+        //make sure we wait for the command to finish so the state is clean for next test
+        poolFiller.get();
+
+        assertCommandExecutionEvents(command1, HystrixEventType.SUCCESS);
+        assertCommandExecutionEvents(command2, HystrixEventType.CANCELLED);
+        assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
+        System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
+        assertSaneHystrixRequestLog(2);
+    }
+
+    @Test
     public void testOnRunStartHookThrowsSemaphoreIsolated() {
         final AtomicBoolean exceptionEncountered = new AtomicBoolean(false);
         final AtomicBoolean onThreadStartInvoked = new AtomicBoolean(false);
