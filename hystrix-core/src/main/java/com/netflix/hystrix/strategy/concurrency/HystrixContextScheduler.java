@@ -164,12 +164,13 @@ public class HystrixContextScheduler extends Scheduler {
 
             // This is internal RxJava API but it is too useful.
             ScheduledAction sa = new ScheduledAction(action);
-            
+
             subscription.add(sa);
             sa.addParent(subscription);
 
-            Future<?> f = threadPool.getExecutor().submit(sa);
-            sa.add(new FutureCompleterWithConfigurableInterrupt(f, shouldInterruptThread));
+            ThreadPoolExecutor executor = (ThreadPoolExecutor) threadPool.getExecutor();
+            FutureTask<?> f = (FutureTask<?>) executor.submit(sa);
+            sa.add(new FutureCompleterWithConfigurableInterrupt(f, shouldInterruptThread, executor));
 
             return sa;
         }
@@ -178,23 +179,25 @@ public class HystrixContextScheduler extends Scheduler {
         public Subscription schedule(Action0 action, long delayTime, TimeUnit unit) {
             throw new IllegalStateException("Hystrix does not support delayed scheduling");
         }
-
     }
 
     /**
      * Very similar to rx.internal.schedulers.ScheduledAction.FutureCompleter, but with configurable interrupt behavior
      */
     private static class FutureCompleterWithConfigurableInterrupt implements Subscription {
-        private final Future<?> f;
+        private final FutureTask<?> f;
         private final Func0<Boolean> shouldInterruptThread;
+        private final ThreadPoolExecutor executor;
 
-        private FutureCompleterWithConfigurableInterrupt(Future<?> f, Func0<Boolean> shouldInterruptThread) {
+        private FutureCompleterWithConfigurableInterrupt(FutureTask<?> f, Func0<Boolean> shouldInterruptThread, ThreadPoolExecutor executor) {
             this.f = f;
             this.shouldInterruptThread = shouldInterruptThread;
+            this.executor = executor;
         }
 
         @Override
         public void unsubscribe() {
+            executor.remove(f);
             if (shouldInterruptThread.call()) {
                 f.cancel(true);
             } else {
