@@ -48,7 +48,7 @@ public abstract class HystrixThreadPoolProperties {
 
     /* defaults */
     static int default_coreSize = 10; // core size of thread pool
-    static int default_keepAliveTimeMinutes = 1; // minutes to keep a thread alive (though in practice this doesn't get used as by default we set a fixed size)
+    static int default_keepAliveTimeMinutes = 1; // minutes to keep a thread alive
     static int default_maxQueueSize = -1; // size of queue (this can't be dynamically changed so we use 'queueSizeRejectionThreshold' to artificially limit and reject)
                                                // -1 turns if off and makes us use SynchronousQueue
     static int default_queueSizeRejectionThreshold = 5; // number of items in queue
