@@ -51,29 +51,53 @@ import java.util.concurrent.TimeUnit;
   */
 public class CommandExecutionPerfTest {
 
-    static HystrixCommandProperties.Setter threadIsolatedCommandDefaults = HystrixCommandProperties.Setter()
+    private static HystrixCommandProperties.Setter threadIsolatedCommandDefaults = HystrixCommandProperties.Setter()
             .withExecutionIsolationStrategy(HystrixCommandProperties.ExecutionIsolationStrategy.THREAD)
             .withRequestCacheEnabled(true)
             .withRequestLogEnabled(true)
             .withCircuitBreakerEnabled(true)
             .withCircuitBreakerForceOpen(false);
 
-    static HystrixCommandProperties.Setter semaphoreIsolatedCommandDefaults = HystrixCommandProperties.Setter()
+    private static HystrixCommandProperties.Setter threadIsolatedFailFastCommandDefaults = HystrixCommandProperties.Setter()
+            .withExecutionIsolationStrategy(HystrixCommandProperties.ExecutionIsolationStrategy.THREAD)
+            .withRequestCacheEnabled(true)
+            .withRequestLogEnabled(true)
+            .withCircuitBreakerEnabled(true)
+            .withCircuitBreakerForceOpen(true);
+
+    private static HystrixCommandProperties.Setter semaphoreIsolatedCommandDefaults = HystrixCommandProperties.Setter()
             .withExecutionIsolationStrategy(HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE)
             .withRequestCacheEnabled(true)
             .withRequestLogEnabled(true)
             .withCircuitBreakerEnabled(true)
             .withCircuitBreakerForceOpen(false);
 
-    static HystrixThreadPoolProperties.Setter threadPoolDefaults = HystrixThreadPoolProperties.Setter()
+    private static HystrixCommandProperties.Setter semaphoreIsolatedFailFastCommandDefaults = HystrixCommandProperties.Setter()
+            .withExecutionIsolationStrategy(HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE)
+            .withRequestCacheEnabled(true)
+            .withRequestLogEnabled(true)
+            .withCircuitBreakerEnabled(true)
+            .withCircuitBreakerForceOpen(true);
+
+    private static HystrixThreadPoolProperties.Setter threadPoolDefaults = HystrixThreadPoolProperties.Setter()
             .withCoreSize(100);
 
-    static HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("PERF");
+    private static HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("PERF");
 
-    private static HystrixCommandProperties.Setter getCommandSetter(HystrixCommandProperties.ExecutionIsolationStrategy isolationStrategy) {
+    private static HystrixCommandProperties.Setter getCommandSetter(HystrixCommandProperties.ExecutionIsolationStrategy isolationStrategy, boolean forceOpen) {
         switch (isolationStrategy) {
-            case THREAD: return threadIsolatedCommandDefaults;
-            default: return semaphoreIsolatedCommandDefaults;
+            case THREAD:
+                if (forceOpen) {
+                    return threadIsolatedFailFastCommandDefaults;
+                } else {
+                    return threadIsolatedCommandDefaults;
+                }
+            default:
+                if (forceOpen) {
+                    return semaphoreIsolatedFailFastCommandDefaults;
+                } else {
+                    return semaphoreIsolatedCommandDefaults;
+                }
         }
     }
 
@@ -88,6 +112,9 @@ public class CommandExecutionPerfTest {
     public static class CommandState {
         HystrixCommand<Integer> command;
         HystrixRequestContext requestContext;
+
+        @Param({"true", "false"})
+        public boolean forceOpen;
 
         @Param({"true", "false"})
         public boolean setUpRequestContext;
@@ -107,7 +134,7 @@ public class CommandExecutionPerfTest {
 
             command = new HystrixCommand<Integer>(
                     HystrixCommand.Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("PERF"))
-                            .andCommandPropertiesDefaults(getCommandSetter(isolationStrategy))
+                            .andCommandPropertiesDefaults(getCommandSetter(isolationStrategy, forceOpen))
                             .andThreadPoolPropertiesDefaults(threadPoolDefaults)
             ) {
                 @Override
@@ -137,6 +164,9 @@ public class CommandExecutionPerfTest {
         HystrixRequestContext requestContext;
 
         @Param({"true", "false"})
+        public boolean forceOpen;
+
+        @Param({"true", "false"})
         public boolean setUpRequestContext;
 
         //amount of "work" to give to CPU
@@ -151,7 +181,7 @@ public class CommandExecutionPerfTest {
 
             command = new HystrixObservableCommand<Integer>(
                     HystrixObservableCommand.Setter.withGroupKey(groupKey)
-                    .andCommandPropertiesDefaults(getCommandSetter(HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE))
+                    .andCommandPropertiesDefaults(getCommandSetter(HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE, forceOpen))
             ) {
                 @Override
                 protected Observable<Integer> construct() {
@@ -206,86 +236,86 @@ public class CommandExecutionPerfTest {
         }
     }
 
-    @Benchmark
-    @BenchmarkMode({Mode.Throughput})
-    @OutputTimeUnit(TimeUnit.MILLISECONDS)
-    public Integer baselineExecute(BlackholeState bhState) {
-        Blackhole.consumeCPU(bhState.blackholeConsumption);
-        return 1;
-    }
-
-    @Benchmark
-    @BenchmarkMode({Mode.Throughput})
-    @OutputTimeUnit(TimeUnit.MILLISECONDS)
-    public Integer baselineQueue(ExecutorState state, final BlackholeState bhState) throws InterruptedException, ExecutionException {
-        try {
-            return state.executorService.submit(new Callable<Integer>() {
-                @Override
-                public Integer call() throws Exception {
-                    Blackhole.consumeCPU(bhState.blackholeConsumption);
-                    return 1;
-                }
-            }).get();
-        } catch (Throwable t) {
-            return 2;
-        }
-    }
-
-    @Benchmark
-    @BenchmarkMode({Mode.Throughput})
-    @OutputTimeUnit(TimeUnit.MILLISECONDS)
-    public Integer baselineSyncObserve(final BlackholeState bhState) throws InterruptedException {
-        Observable<Integer> syncObservable = Observable.defer(new Func0<Observable<Integer>>() {
-            @Override
-            public Observable<Integer> call() {
-                Blackhole.consumeCPU(bhState.blackholeConsumption);
-                return Observable.just(1);
-            }
-        });
-
-        try {
-            return syncObservable.toBlocking().first();
-        } catch (Throwable t) {
-            return 2;
-        }
-    }
-
-    @Benchmark
-    @BenchmarkMode({Mode.Throughput})
-    @OutputTimeUnit(TimeUnit.MILLISECONDS)
-    public Integer baselineAsyncComputationObserve(final BlackholeState bhState) throws InterruptedException {
-        Observable<Integer> asyncObservable = Observable.defer(new Func0<Observable<Integer>>() {
-            @Override
-            public Observable<Integer> call() {
-                Blackhole.consumeCPU(bhState.blackholeConsumption);
-                return Observable.just(1);
-            }
-        }).subscribeOn(Schedulers.computation());
-
-        try {
-            return asyncObservable.toBlocking().first();
-        } catch (Throwable t) {
-            return 2;
-        }
-    }
-
-    @Benchmark
-    @BenchmarkMode({Mode.Throughput})
-    @OutputTimeUnit(TimeUnit.MILLISECONDS)
-    public Integer baselineAsyncCustomThreadPoolObserve(ThreadPoolState state, final BlackholeState bhState) {
-        Observable<Integer> asyncObservable = Observable.defer(new Func0<Observable<Integer>>() {
-            @Override
-            public Observable<Integer> call() {
-                Blackhole.consumeCPU(bhState.blackholeConsumption);
-                return Observable.just(1);
-            }
-        }).subscribeOn(state.hystrixThreadPool.getScheduler());
-        try {
-            return asyncObservable.toBlocking().first();
-        } catch (Throwable t) {
-            return 2;
-        }
-    }
+//    @Benchmark
+//    @BenchmarkMode({Mode.Throughput})
+//    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+//    public Integer baselineExecute(BlackholeState bhState) {
+//        Blackhole.consumeCPU(bhState.blackholeConsumption);
+//        return 1;
+//    }
+//
+//    @Benchmark
+//    @BenchmarkMode({Mode.Throughput})
+//    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+//    public Integer baselineQueue(ExecutorState state, final BlackholeState bhState) throws InterruptedException, ExecutionException {
+//        try {
+//            return state.executorService.submit(new Callable<Integer>() {
+//                @Override
+//                public Integer call() throws Exception {
+//                    Blackhole.consumeCPU(bhState.blackholeConsumption);
+//                    return 1;
+//                }
+//            }).get();
+//        } catch (Throwable t) {
+//            return 2;
+//        }
+//    }
+//
+//    @Benchmark
+//    @BenchmarkMode({Mode.Throughput})
+//    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+//    public Integer baselineSyncObserve(final BlackholeState bhState) throws InterruptedException {
+//        Observable<Integer> syncObservable = Observable.defer(new Func0<Observable<Integer>>() {
+//            @Override
+//            public Observable<Integer> call() {
+//                Blackhole.consumeCPU(bhState.blackholeConsumption);
+//                return Observable.just(1);
+//            }
+//        });
+//
+//        try {
+//            return syncObservable.toBlocking().first();
+//        } catch (Throwable t) {
+//            return 2;
+//        }
+//    }
+//
+//    @Benchmark
+//    @BenchmarkMode({Mode.Throughput})
+//    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+//    public Integer baselineAsyncComputationObserve(final BlackholeState bhState) throws InterruptedException {
+//        Observable<Integer> asyncObservable = Observable.defer(new Func0<Observable<Integer>>() {
+//            @Override
+//            public Observable<Integer> call() {
+//                Blackhole.consumeCPU(bhState.blackholeConsumption);
+//                return Observable.just(1);
+//            }
+//        }).subscribeOn(Schedulers.computation());
+//
+//        try {
+//            return asyncObservable.toBlocking().first();
+//        } catch (Throwable t) {
+//            return 2;
+//        }
+//    }
+//
+//    @Benchmark
+//    @BenchmarkMode({Mode.Throughput})
+//    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+//    public Integer baselineAsyncCustomThreadPoolObserve(ThreadPoolState state, final BlackholeState bhState) {
+//        Observable<Integer> asyncObservable = Observable.defer(new Func0<Observable<Integer>>() {
+//            @Override
+//            public Observable<Integer> call() {
+//                Blackhole.consumeCPU(bhState.blackholeConsumption);
+//                return Observable.just(1);
+//            }
+//        }).subscribeOn(state.hystrixThreadPool.getScheduler());
+//        try {
+//            return asyncObservable.toBlocking().first();
+//        } catch (Throwable t) {
+//            return 2;
+//        }
+//    }
 
     @Benchmark
     @BenchmarkMode({Mode.Throughput})
