@@ -51,29 +51,53 @@ import java.util.concurrent.TimeUnit;
   */
 public class CommandExecutionPerfTest {
 
-    static HystrixCommandProperties.Setter threadIsolatedCommandDefaults = HystrixCommandProperties.Setter()
+    private static HystrixCommandProperties.Setter threadIsolatedCommandDefaults = HystrixCommandProperties.Setter()
             .withExecutionIsolationStrategy(HystrixCommandProperties.ExecutionIsolationStrategy.THREAD)
             .withRequestCacheEnabled(true)
             .withRequestLogEnabled(true)
             .withCircuitBreakerEnabled(true)
             .withCircuitBreakerForceOpen(false);
 
-    static HystrixCommandProperties.Setter semaphoreIsolatedCommandDefaults = HystrixCommandProperties.Setter()
+    private static HystrixCommandProperties.Setter threadIsolatedFailFastCommandDefaults = HystrixCommandProperties.Setter()
+            .withExecutionIsolationStrategy(HystrixCommandProperties.ExecutionIsolationStrategy.THREAD)
+            .withRequestCacheEnabled(true)
+            .withRequestLogEnabled(true)
+            .withCircuitBreakerEnabled(true)
+            .withCircuitBreakerForceOpen(true);
+
+    private static HystrixCommandProperties.Setter semaphoreIsolatedCommandDefaults = HystrixCommandProperties.Setter()
             .withExecutionIsolationStrategy(HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE)
             .withRequestCacheEnabled(true)
             .withRequestLogEnabled(true)
             .withCircuitBreakerEnabled(true)
             .withCircuitBreakerForceOpen(false);
 
-    static HystrixThreadPoolProperties.Setter threadPoolDefaults = HystrixThreadPoolProperties.Setter()
+    private static HystrixCommandProperties.Setter semaphoreIsolatedFailFastCommandDefaults = HystrixCommandProperties.Setter()
+            .withExecutionIsolationStrategy(HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE)
+            .withRequestCacheEnabled(true)
+            .withRequestLogEnabled(true)
+            .withCircuitBreakerEnabled(true)
+            .withCircuitBreakerForceOpen(true);
+
+    private static HystrixThreadPoolProperties.Setter threadPoolDefaults = HystrixThreadPoolProperties.Setter()
             .withCoreSize(100);
 
-    static HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("PERF");
+    private static HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("PERF");
 
-    private static HystrixCommandProperties.Setter getCommandSetter(HystrixCommandProperties.ExecutionIsolationStrategy isolationStrategy) {
+    private static HystrixCommandProperties.Setter getCommandSetter(HystrixCommandProperties.ExecutionIsolationStrategy isolationStrategy, boolean forceOpen) {
         switch (isolationStrategy) {
-            case THREAD: return threadIsolatedCommandDefaults;
-            default: return semaphoreIsolatedCommandDefaults;
+            case THREAD:
+                if (forceOpen) {
+                    return threadIsolatedFailFastCommandDefaults;
+                } else {
+                    return threadIsolatedCommandDefaults;
+                }
+            default:
+                if (forceOpen) {
+                    return semaphoreIsolatedFailFastCommandDefaults;
+                } else {
+                    return semaphoreIsolatedCommandDefaults;
+                }
         }
     }
 
@@ -88,6 +112,9 @@ public class CommandExecutionPerfTest {
     public static class CommandState {
         HystrixCommand<Integer> command;
         HystrixRequestContext requestContext;
+
+        @Param({"true", "false"})
+        public boolean forceOpen;
 
         @Param({"true", "false"})
         public boolean setUpRequestContext;
@@ -107,7 +134,7 @@ public class CommandExecutionPerfTest {
 
             command = new HystrixCommand<Integer>(
                     HystrixCommand.Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("PERF"))
-                            .andCommandPropertiesDefaults(getCommandSetter(isolationStrategy))
+                            .andCommandPropertiesDefaults(getCommandSetter(isolationStrategy, forceOpen))
                             .andThreadPoolPropertiesDefaults(threadPoolDefaults)
             ) {
                 @Override
@@ -137,6 +164,9 @@ public class CommandExecutionPerfTest {
         HystrixRequestContext requestContext;
 
         @Param({"true", "false"})
+        public boolean forceOpen;
+
+        @Param({"true", "false"})
         public boolean setUpRequestContext;
 
         //amount of "work" to give to CPU
@@ -151,7 +181,7 @@ public class CommandExecutionPerfTest {
 
             command = new HystrixObservableCommand<Integer>(
                     HystrixObservableCommand.Setter.withGroupKey(groupKey)
-                    .andCommandPropertiesDefaults(getCommandSetter(HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE))
+                    .andCommandPropertiesDefaults(getCommandSetter(HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE, forceOpen))
             ) {
                 @Override
                 protected Observable<Integer> construct() {
