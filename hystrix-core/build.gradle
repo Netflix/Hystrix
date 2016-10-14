@@ -39,7 +39,7 @@ jar {
 jmh {
     fork = 10
     iterations = 3
-    jmhVersion = '1.14.1'
+    jmhVersion = '1.15'
     profilers = ['gc']
     threads = 8
     warmup = '1s'
