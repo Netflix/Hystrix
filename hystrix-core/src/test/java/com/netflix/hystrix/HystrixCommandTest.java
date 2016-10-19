@@ -41,6 +41,7 @@ import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func0;
 import rx.functions.Func1;
+import rx.functions.Func2;
 import rx.observers.TestSubscriber;
 import rx.schedulers.Schedulers;
 
@@ -3866,6 +3867,77 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
         assertTrue(cmd.isExecutedInThread());
         assertCommandExecutionEvents(cmd, HystrixEventType.SUCCESS);
+    }
+
+    @Test
+    public void testUnsubscribeBeforeSubscribe() throws Exception {
+        //this may happen in Observable chain, so Hystrix should make sure that command never executes/allocates in this situation
+        Observable<String> error = Observable.error(new RuntimeException("foo"));
+        HystrixCommand<Integer> cmd = getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.SUCCESS, 100);
+        Observable<Integer> cmdResult = cmd.toObservable()
+                .doOnNext(new Action1<Integer>() {
+                    @Override
+                    public void call(Integer integer) {
+                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : OnNext : " + integer);
+                    }
+                })
+                .doOnError(new Action1<Throwable>() {
+                    @Override
+                    public void call(Throwable ex) {
+                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : OnError : " + ex);
+                    }
+                })
+                .doOnCompleted(new Action0() {
+                    @Override
+                    public void call() {
+                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : OnCompleted");
+                    }
+                })
+                .doOnSubscribe(new Action0() {
+                    @Override
+                    public void call() {
+                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : OnSubscribe");
+                    }
+                })
+                .doOnUnsubscribe(new Action0() {
+                    @Override
+                    public void call() {
+                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : OnUnsubscribe");
+                    }
+                });
+
+        //the zip operator will subscribe to each observable.  there is a race between the error of the first
+        //zipped observable terminating the zip and the subscription to the command's observable
+        Observable<String> zipped = Observable.zip(error, cmdResult, new Func2<String, Integer, String>() {
+            @Override
+            public String call(String s, Integer integer) {
+                return s + integer;
+            }
+        });
+
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        zipped.subscribe(new Subscriber<String>() {
+            @Override
+            public void onCompleted() {
+                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " OnCompleted");
+                latch.countDown();
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " OnError : " + e);
+                latch.countDown();
+            }
+
+            @Override
+            public void onNext(String s) {
+                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " OnNext : " + s);
+            }
+        });
+
+        latch.await(1000, TimeUnit.MILLISECONDS);
+        System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
     }
 
     /**
