@@ -51,7 +51,7 @@ public abstract class BasicDefaultIgnoreExceptionsTest {
         service.commandWithFallbackOverridesDefaultIgnoreExceptions(SpecificException.class);
     }
 
-    @Test(expected = SpecificException.class)
+    @Test(expected = BadRequestException.class)
     public void testFallbackCommandOverridesDefaultIgnoreExceptions_nonIgnoreExceptionShouldBePropagated() {
         service.commandWithFallbackOverridesDefaultIgnoreExceptions(BadRequestException.class);
     }

@@ -26,6 +26,7 @@ import com.netflix.hystrix.contrib.javanica.command.ExecutionType;
 import com.netflix.hystrix.contrib.javanica.command.HystrixCommandFactory;
 import com.netflix.hystrix.contrib.javanica.command.MetaHolder;
 import com.netflix.hystrix.contrib.javanica.exception.CommandActionExecutionException;
+import com.netflix.hystrix.contrib.javanica.exception.FallbackInvocationException;
 import com.netflix.hystrix.contrib.javanica.utils.AopUtils;
 import com.netflix.hystrix.contrib.javanica.utils.FallbackMethod;
 import com.netflix.hystrix.contrib.javanica.utils.MethodProvider;
@@ -102,7 +103,7 @@ public class HystrixCommandAspect {
         } catch (HystrixBadRequestException e) {
             throw e.getCause();
         } catch (HystrixRuntimeException e) {
-            throw getCauseOrDefault(e, e);
+            throw getCause(e);
         }
         return result;
     }
@@ -116,20 +117,32 @@ public class HystrixCommandAspect {
                             return Observable.error(throwable.getCause());
                         } else if (throwable instanceof HystrixRuntimeException) {
                             HystrixRuntimeException hystrixRuntimeException = (HystrixRuntimeException) throwable;
-                            return Observable.error(getCauseOrDefault(hystrixRuntimeException, hystrixRuntimeException));
+                            return Observable.error(getCause(hystrixRuntimeException));
                         }
                         return Observable.error(throwable);
                     }
                 });
     }
 
-    private Throwable getCauseOrDefault(RuntimeException e, RuntimeException defaultException) {
-        if (e.getCause() == null) return defaultException;
-        if (e.getCause() instanceof CommandActionExecutionException) {
-            CommandActionExecutionException commandActionExecutionException = (CommandActionExecutionException) e.getCause();
-            return Optional.fromNullable(commandActionExecutionException.getCause()).or(defaultException);
+    private Throwable getCause(HystrixRuntimeException e) {
+        if (e.getFailureType() != HystrixRuntimeException.FailureType.COMMAND_EXCEPTION) {
+            return e;
         }
-        return e.getCause();
+
+        Throwable cause = e.getCause();
+
+        // latest exception in flow should be propagated to end user
+        if (e.getFallbackException() instanceof FallbackInvocationException) {
+            cause = e.getFallbackException().getCause();
+            if (cause instanceof HystrixRuntimeException) {
+                cause = getCause((HystrixRuntimeException) cause);
+            }
+        } else if (cause instanceof CommandActionExecutionException) { // this situation is possible only if a callee throws an exception which type extends Throwable directly
+            CommandActionExecutionException commandActionExecutionException = (CommandActionExecutionException) cause;
+            cause = commandActionExecutionException.getCause();
+        }
+
+        return Optional.fromNullable(cause).or(e);
     }
 
     /**

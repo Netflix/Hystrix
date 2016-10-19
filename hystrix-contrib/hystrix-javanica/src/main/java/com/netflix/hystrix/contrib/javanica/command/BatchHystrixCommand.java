@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import static com.netflix.hystrix.contrib.javanica.exception.ExceptionUtils.unwrapCause;
 import static com.netflix.hystrix.contrib.javanica.utils.CommonUtils.createArgsForFallback;
 
 /**
@@ -79,7 +80,7 @@ public class BatchHystrixCommand extends AbstractHystrixCommand<List<Object>> {
             } catch (Throwable e) {
                 LOGGER.error(FallbackErrorMessageBuilder.create()
                         .append(commandAction, e).build());
-                throw new FallbackInvocationException(e.getCause());
+                throw new FallbackInvocationException(unwrapCause(e));
             }
         } else {
             return super.getFallback();
