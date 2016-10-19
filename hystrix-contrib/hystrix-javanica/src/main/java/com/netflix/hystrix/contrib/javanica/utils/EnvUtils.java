@@ -23,16 +23,22 @@ import java.util.Arrays;
  * Created by dmgcodevil
  */
 public final class EnvUtils {
+	
+	private static final String WEAVING_MODE;
+	
+	static {
+		WEAVING_MODE = System.getProperty("weavingMode", WeavingMode.RUNTIME.name()).toUpperCase();
+	}
+	
     private EnvUtils(){
 
     }
 
     public static WeavingMode getWeavingMode() {
-        String wavingModeParam = System.getProperty("weavingMode", WeavingMode.RUNTIME.name()).toUpperCase();
         try {
-            return WeavingMode.valueOf(wavingModeParam);
+            return WeavingMode.valueOf(EnvUtils.WEAVING_MODE);
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("wrong 'weavingMode' property, supported: " + Arrays.toString(WeavingMode.values()) + ", actual = " + wavingModeParam, e);
+            throw new IllegalArgumentException("wrong 'weavingMode' property, supported: " + Arrays.toString(WeavingMode.values()) + ", actual = " + EnvUtils.WEAVING_MODE, e);
         }
     }
 
