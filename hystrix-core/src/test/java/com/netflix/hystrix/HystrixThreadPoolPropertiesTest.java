@@ -104,7 +104,7 @@ public class HystrixThreadPoolPropertiesTest {
         };
 
         assertEquals(HystrixThreadPoolProperties.default_coreSize, properties.coreSize().get().intValue());
-        assertEquals(HystrixThreadPoolProperties.default_coreSize, properties.maximumSize().get().intValue());
+        assertEquals(HystrixThreadPoolProperties.default_maximumSize, properties.maximumSize().get().intValue());
     }
 
     @Test
@@ -115,7 +115,7 @@ public class HystrixThreadPoolPropertiesTest {
         };
 
         assertEquals(14, properties.coreSize().get().intValue());
-        assertEquals(14, properties.maximumSize().get().intValue());
+        assertEquals(HystrixThreadPoolProperties.default_maximumSize, properties.maximumSize().get().intValue());
     }
 
     @Test
@@ -127,17 +127,6 @@ public class HystrixThreadPoolPropertiesTest {
 
         assertEquals(HystrixThreadPoolProperties.default_coreSize, properties.coreSize().get().intValue());
         assertEquals(3, properties.maximumSize().get().intValue());
-    }
-
-    @Test
-    public void testSetMaximumSizeOnlyEqualToDefaultCoreSize() {
-        HystrixThreadPoolProperties properties = new HystrixThreadPoolProperties(TestThreadPoolKey.TEST,
-                HystrixThreadPoolProperties.Setter().withMaximumSize(HystrixThreadPoolProperties.default_coreSize)) {
-
-        };
-
-        assertEquals(HystrixThreadPoolProperties.default_coreSize, properties.coreSize().get().intValue());
-        assertEquals(HystrixThreadPoolProperties.default_coreSize, properties.maximumSize().get().intValue());
     }
 
     @Test

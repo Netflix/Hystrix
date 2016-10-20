@@ -173,11 +173,18 @@ public interface HystrixThreadPool {
             HystrixConcurrencyStrategy concurrencyStrategy = HystrixPlugins.getInstance().getConcurrencyStrategy();
             this.queueSize = properties.maxQueueSize().get();
             this.queue = concurrencyStrategy.getBlockingQueue(queueSize);
-            this.metrics = HystrixThreadPoolMetrics.getInstance(
-                    threadPoolKey,
-                    concurrencyStrategy.getThreadPool(threadPoolKey, properties.coreSize(), properties.maximumSize(), properties.keepAliveTimeMinutes(), TimeUnit.MINUTES, queue),
-                    properties);
-            this.threadPool = metrics.getThreadPool();
+
+            if (properties.getAllowMaximumSizeToDivergeFromCoreSize()) {
+                this.metrics = HystrixThreadPoolMetrics.getInstance(threadPoolKey,
+                        concurrencyStrategy.getThreadPool(threadPoolKey, properties.coreSize(), properties.maximumSize(), properties.keepAliveTimeMinutes(), TimeUnit.MINUTES, queue),
+                        properties);
+                this.threadPool = this.metrics.getThreadPool();
+            } else {
+                this.metrics = HystrixThreadPoolMetrics.getInstance(threadPoolKey,
+                        concurrencyStrategy.getThreadPool(threadPoolKey, properties.coreSize(), properties.coreSize(), properties.keepAliveTimeMinutes(), TimeUnit.MINUTES, queue),
+                        properties);
+                this.threadPool = this.metrics.getThreadPool();
+            }
 
             /* strategy: HystrixMetricsPublisherThreadPool */
             HystrixMetricsPublisherFactory.createOrRetrievePublisherForThreadPool(threadPoolKey, this.metrics, this.properties);
@@ -210,16 +217,21 @@ public interface HystrixThreadPool {
         private void touchConfig() {
             final int dynamicCoreSize = properties.coreSize().get();
             int dynamicMaximumSize = properties.maximumSize().get();
+            final boolean allowSizesToDiverge = properties.getAllowMaximumSizeToDivergeFromCoreSize();
+            boolean maxTooLow = false;
 
-            if (dynamicMaximumSize < dynamicCoreSize) {
-                logger.error("Hystrix ThreadPool configuration for : " + metrics.getThreadPoolKey().name() + " is using coreSize = " +
-                        dynamicCoreSize + " and maximumSize = " + dynamicMaximumSize + ".  Maximum size will be set to " +
-                        dynamicCoreSize + ", the coreSize value, since it must be equal to or greater than the coreSize value");
+            if (allowSizesToDiverge && dynamicMaximumSize < dynamicCoreSize) {
                 dynamicMaximumSize = dynamicCoreSize;
+                maxTooLow = true;
             }
 
             // In JDK 6, setCorePoolSize and setMaximumPoolSize will execute a lock operation. Avoid them if the pool size is not changed.
-            if (threadPool.getCorePoolSize() != dynamicCoreSize || threadPool.getMaximumPoolSize() != dynamicMaximumSize) {
+            if (threadPool.getCorePoolSize() != dynamicCoreSize || (allowSizesToDiverge && threadPool.getMaximumPoolSize() != dynamicMaximumSize)) {
+                if (maxTooLow) {
+                    logger.error("Hystrix ThreadPool configuration for : " + metrics.getThreadPoolKey().name() + " is trying to set coreSize = " +
+                            dynamicCoreSize + " and maximumSize = " + dynamicMaximumSize + ".  Maximum size will be set to " +
+                            dynamicCoreSize + ", the coreSize value, since it must be equal to or greater than the coreSize value");
+                }
                 threadPool.setCorePoolSize(dynamicCoreSize);
                 threadPool.setMaximumPoolSize(dynamicMaximumSize);
             }
