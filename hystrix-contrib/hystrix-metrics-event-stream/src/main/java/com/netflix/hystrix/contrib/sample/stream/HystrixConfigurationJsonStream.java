@@ -120,6 +120,7 @@ public class HystrixConfigurationJsonStream {
         json.writeNumberField("maxQueueSize", threadPoolConfig.getMaxQueueSize());
         json.writeNumberField("queueRejectionThreshold", threadPoolConfig.getQueueRejectionThreshold());
         json.writeNumberField("keepAliveTimeInMinutes", threadPoolConfig.getKeepAliveTimeInMinutes());
+        json.writeBooleanField("allowMaximumSizeToDivergeFromCoreSize", threadPoolConfig.getAllowMaximumSizeToDivergeFromCoreSize());
         json.writeNumberField("counterBucketSizeInMilliseconds", threadPoolConfig.getRollingCounterBucketSizeInMilliseconds());
         json.writeNumberField("counterBucketCount", threadPoolConfig.getRollingCounterNumberOfBuckets());
         json.writeEndObject();

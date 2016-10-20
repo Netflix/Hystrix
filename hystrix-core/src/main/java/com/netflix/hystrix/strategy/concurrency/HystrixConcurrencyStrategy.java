@@ -21,6 +21,8 @@ import com.netflix.hystrix.HystrixThreadPoolKey;
 import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.properties.HystrixProperty;
 import com.netflix.hystrix.util.PlatformSpecific;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
@@ -45,6 +47,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * href="https://github.com/Netflix/Hystrix/wiki/Plugins">https://github.com/Netflix/Hystrix/wiki/Plugins</a>.
  */
 public abstract class HystrixConcurrencyStrategy {
+
+    private final static Logger logger = LoggerFactory.getLogger(HystrixConcurrencyStrategy.class);
 
     /**
      * Factory method to provide {@link ThreadPoolExecutor} instances as desired.
@@ -88,7 +92,17 @@ public abstract class HystrixConcurrencyStrategy {
             threadFactory = PlatformSpecific.getAppEngineThreadFactory();
         }
 
-        return new ThreadPoolExecutor(corePoolSize.get(), maximumPoolSize.get(), keepAliveTime.get(), unit, workQueue, threadFactory);
+        final int dynamicCoreSize = corePoolSize.get();
+        final int dynamicMaximumSize = maximumPoolSize.get();
+
+        if (dynamicCoreSize > dynamicMaximumSize) {
+            logger.error("Hystrix ThreadPool configuration at startup for : " + threadPoolKey.name() + " is trying to set coreSize = " +
+                    dynamicCoreSize + " and maximumSize = " + dynamicMaximumSize + ".  Maximum size will be set to " +
+                    dynamicCoreSize + ", the coreSize value, since it must be equal to or greater than the coreSize value");
+            return new ThreadPoolExecutor(dynamicCoreSize, dynamicCoreSize, keepAliveTime.get(), unit, workQueue, threadFactory);
+        } else {
+            return new ThreadPoolExecutor(dynamicCoreSize, dynamicMaximumSize, keepAliveTime.get(), unit, workQueue, threadFactory);
+        }
     }
 
     /**

@@ -122,6 +122,7 @@ public class HystrixThreadPoolTest {
         //Now the HystrixThreadPool ALWAYS has the same reference to the ThreadPoolExecutor so that it no longer matters which
         //wins to be inserted into the HystrixThreadPool.Factory.threadPools cache.
     }
+
     @Test(timeout = 2500)
     public void testUnsubscribeHystrixThreadPool() throws InterruptedException {
         // methods are package-private so can't test it somewhere else
