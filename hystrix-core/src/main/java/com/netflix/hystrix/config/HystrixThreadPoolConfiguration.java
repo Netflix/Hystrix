@@ -27,11 +27,12 @@ public class HystrixThreadPoolConfiguration {
     private final int maxQueueSize;
     private final int queueRejectionThreshold;
     private final int keepAliveTimeInMinutes;
+    private final boolean allowMaximumSizeToDivergeFromCoreSize;
     private final int rollingCounterNumberOfBuckets;
     private final int rollingCounterBucketSizeInMilliseconds;
 
     public HystrixThreadPoolConfiguration(HystrixThreadPoolKey threadPoolKey, int coreSize, int maximumSize, int maxQueueSize, int queueRejectionThreshold,
-                                           int keepAliveTimeInMinutes, int rollingCounterNumberOfBuckets,
+                                           int keepAliveTimeInMinutes, boolean allowMaximumSizeToDivergeFromCoreSize, int rollingCounterNumberOfBuckets,
                                            int rollingCounterBucketSizeInMilliseconds) {
         this.threadPoolKey = threadPoolKey;
         this.coreSize = coreSize;
@@ -39,6 +40,7 @@ public class HystrixThreadPoolConfiguration {
         this.maxQueueSize = maxQueueSize;
         this.queueRejectionThreshold = queueRejectionThreshold;
         this.keepAliveTimeInMinutes = keepAliveTimeInMinutes;
+        this.allowMaximumSizeToDivergeFromCoreSize = allowMaximumSizeToDivergeFromCoreSize;
         this.rollingCounterNumberOfBuckets = rollingCounterNumberOfBuckets;
         this.rollingCounterBucketSizeInMilliseconds = rollingCounterBucketSizeInMilliseconds;
     }
@@ -51,6 +53,7 @@ public class HystrixThreadPoolConfiguration {
                 threadPoolProperties.maxQueueSize().get(),
                 threadPoolProperties.queueSizeRejectionThreshold().get(),
                 threadPoolProperties.keepAliveTimeMinutes().get(),
+                threadPoolProperties.getAllowMaximumSizeToDivergeFromCoreSize(),
                 threadPoolProperties.metricsRollingStatisticalWindowBuckets().get(),
                 threadPoolProperties.metricsRollingStatisticalWindowInMilliseconds().get());
     }
@@ -64,7 +67,11 @@ public class HystrixThreadPoolConfiguration {
     }
 
     public int getMaximumSize() {
-        return maximumSize;
+        if (allowMaximumSizeToDivergeFromCoreSize) {
+            return maximumSize;
+        } else {
+            return coreSize;
+        }
     }
 
     public int getMaxQueueSize() {
@@ -77,6 +84,10 @@ public class HystrixThreadPoolConfiguration {
 
     public int getKeepAliveTimeInMinutes() {
         return keepAliveTimeInMinutes;
+    }
+
+    public boolean getAllowMaximumSizeToDivergeFromCoreSize() {
+        return allowMaximumSizeToDivergeFromCoreSize;
     }
 
     public int getRollingCounterNumberOfBuckets() {
