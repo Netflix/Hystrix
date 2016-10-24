@@ -100,7 +100,8 @@ public @interface HystrixCommand {
     HystrixProperty[] threadPoolProperties() default {};
 
     /**
-     * Defines exceptions which should be ignored and wrapped to throw in HystrixBadRequestException.
+     * Defines exceptions which should be ignored.
+     * Optionally these can be wrapped in HystrixRuntimeException if raiseHystrixExceptions contains RUNTIME_EXCEPTION.
      *
      * @return exceptions to ignore
      */
@@ -113,5 +114,12 @@ public @interface HystrixCommand {
      * @return observable execution mode
      */
     ObservableExecutionMode observableExecutionMode() default ObservableExecutionMode.EAGER;
+
+    /**
+     * When includes RUNTIME_EXCEPTION, any exceptions that are not ignored are wrapped in HystrixRuntimeException.
+     *
+     * @return exceptions to wrap
+     */
+    HystrixException[] raiseHystrixExceptions() default {};
 }
 

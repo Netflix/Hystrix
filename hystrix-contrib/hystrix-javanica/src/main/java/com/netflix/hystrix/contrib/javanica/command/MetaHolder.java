@@ -20,11 +20,7 @@ import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
-import com.netflix.hystrix.contrib.javanica.annotation.DefaultProperties;
-import com.netflix.hystrix.contrib.javanica.annotation.HystrixCollapser;
-import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
-import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
-import com.netflix.hystrix.contrib.javanica.annotation.ObservableExecutionMode;
+import com.netflix.hystrix.contrib.javanica.annotation.*;
 import com.netflix.hystrix.contrib.javanica.command.closure.Closure;
 import org.apache.commons.lang3.StringUtils;
 import org.aspectj.lang.JoinPoint;
@@ -297,6 +293,27 @@ public final class MetaHolder {
 
     public ObservableExecutionMode getObservableExecutionMode() {
         return observableExecutionMode;
+    }
+
+    public boolean raiseHystrixExceptionsContains(HystrixException hystrixException) {
+        return getRaiseHystrixExceptions().contains(hystrixException);
+    }
+
+    public List<HystrixException> getRaiseHystrixExceptions() {
+        return getOrDefault(new Supplier<List<HystrixException>>() {
+            @Override
+            public List<HystrixException> get() {
+                return ImmutableList.copyOf(hystrixCommand.raiseHystrixExceptions());
+            }
+        }, new Supplier<List<HystrixException>>() {
+            @Override
+            public List<HystrixException> get() {
+                return hasDefaultProperties()
+                        ? ImmutableList.copyOf(defaultProperties.raiseHystrixExceptions())
+                        : Collections.<HystrixException>emptyList();
+
+            }
+        }, this.<HystrixException>nonEmptyList());
     }
 
     private String get(String key, String defaultKey) {
