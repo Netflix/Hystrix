@@ -82,7 +82,7 @@ public abstract class HystrixThreadPoolProperties {
 
         this.corePoolSize = getProperty(propertyPrefix, key, "coreSize", builder.getCoreSize(), default_coreSize);
         //this object always contains a reference to the configuration value for the maximumSize of the threadpool
-        //it only gets applied if .threadpool
+        //it only gets applied if allowMaximumSizeToDivergeFromCoreSize is true
         this.maximumPoolSize = getProperty(propertyPrefix, key, "maximumSize", builder.getMaximumSize(), default_maximumSize);
 
         this.keepAliveTime = getProperty(propertyPrefix, key, "keepAliveTimeMinutes", builder.getKeepAliveTimeMinutes(), default_keepAliveTimeMinutes);
