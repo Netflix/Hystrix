@@ -29,6 +29,7 @@ import com.netflix.hystrix.strategy.concurrency.HystrixContextScheduler;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
 import com.netflix.hystrix.strategy.properties.HystrixProperty;
+import com.sun.javafx.collections.NonIterableChange;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -3938,6 +3939,43 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
 
         latch.await(1000, TimeUnit.MILLISECONDS);
         System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
+    }
+
+    @Test
+    public void testRxRetry() throws Exception {
+        // see https://github.com/Netflix/Hystrix/issues/1100
+        // Since each command instance is single-use, the expectation is that applying the .retry() operator
+        // results in only a single execution and propagation out of that error
+        HystrixCommand<Integer> cmd = getLatentCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.FAILURE, 300,
+                AbstractTestHystrixCommand.FallbackResult.UNIMPLEMENTED, 100);
+
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        System.out.println(System.currentTimeMillis() + " : Starting");
+        Observable<Integer> o = cmd.toObservable().retry(2);
+        System.out.println(System.currentTimeMillis() + " Created retried command : " + o);
+
+        o.subscribe(new Subscriber<Integer>() {
+            @Override
+            public void onCompleted() {
+                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : OnCompleted");
+                latch.countDown();
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : OnError : " + e);
+                latch.countDown();
+            }
+
+            @Override
+            public void onNext(Integer integer) {
+                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : OnNext : " + integer);
+            }
+        });
+
+        latch.await(1000, TimeUnit.MILLISECONDS);
+        System.out.println(System.currentTimeMillis() + " ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
     }
 
     /**
