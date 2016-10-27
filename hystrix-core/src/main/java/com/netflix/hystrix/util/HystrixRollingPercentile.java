@@ -308,6 +308,9 @@ public class HystrixRollingPercentile {
 
         // clear buckets so we start over again
         buckets.clear();
+
+        // and also make sure the percentile snapshot gets reset
+        currentPercentileSnapshot = new PercentileSnapshot(buckets.getArray());
     }
 
     /* package-private for testing */ static class PercentileBucketData {
