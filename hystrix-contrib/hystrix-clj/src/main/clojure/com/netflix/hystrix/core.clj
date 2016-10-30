@@ -430,7 +430,7 @@
 (defn- extract-hystrix-collapser-options
   [meta-map]
   (let [key-map {:hystrix/collapser-key :collapser-key
-                 :hystrix/shared-fn     :shard-fn
+                 :hystrix/shard-fn      :shard-fn
                  :hystrix/scope         :scope
                  :hystrix/cache-key-fn  :cache-key-fn
                  :hystrix/init-fn       :init-fn }]
