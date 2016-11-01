@@ -1,5 +1,21 @@
 # Hystrix Releases #
 
+### Version 1.5.7 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.5.7%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.5.7/)) ###
+
+* [Pull 1408](https://github.com/Netflix/Hystrix/pull/1408) Fix Clojure key name for collapsing.  Thanks @crimeminister !
+* [Pull 1407](https://github.com/Netflix/Hystrix/pull/1407) Reset percentile snapshot whenever all HystrixRollingPercentile buckets are empty
+* [Pull 1397](https://github.com/Netflix/Hystrix/pull/1397) Javanica: Add option to raise HystrixRuntimeException
+* [Pull 1399](https://github.com/Netflix/Hystrix/pull/1399) Add configuration to make users opt-in to allowing coreSize and maximumSize to diverge.  See config [here] (https://github.com/Netflix/Hystrix/wiki/Configuration#allowMaximumSizeToDivergeFromCoreSize)
+* [Pull 1396](https://github.com/Netflix/Hystrix/pull/1396) If command is unsubscribed before any work is done, return Observable.empty().  
+* [Pull 1393](https://github.com/Netflix/Hystrix/pull/1393) Javanica: Performance improvement by caching weavingMode boolean.  Thanks @ricardoletgo !
+* [Pull 1389](https://github.com/Netflix/Hystrix/pull/1389) Javanica: Send fallback exception to client instead of primary command.  Thanks @dmgcodevil !
+* [Pull 1385](https://github.com/Netflix/Hystrix/pull/1385) Bump jmh Gradle plugin to 0.3.1.  Thanks @monkey-mas!
+* [Pull 1382](https://github.com/Netflix/Hystrix/pull/1382) Bump jmh to 1.15.  Thanks @monkey-mas!
+* [Pull 1380](https://github.com/Netflix/Hystrix/pull/1380) Add jmh test for open-circuit case
+* [Pull 1376](https://github.com/Netflix/Hystrix/pull/1376) Clean up documentation around thread keep-alive.  Thanks @bitb !
+* [Pull 1375](https://github.com/Netflix/Hystrix/pull/1375) Remove cancelled tasks from threadpool queue
+* [Pull 1371](https://github.com/Netflix/Hystrix/pull/1371) Allow core and maximum size of threadpools to diverge.
+
 ### Version 1.5.6 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.5.6%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.5.6/)) ###
 
 * [Pull 1368](https://github.com/Netflix/Hystrix/pull/1368) Upgrade jmh to 1.14.1
