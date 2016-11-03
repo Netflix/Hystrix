@@ -326,9 +326,22 @@ Based on [this](https://github.com/Netflix/Hystrix/wiki/How-To-Use#ErrorPropagat
     }
 ```
 
-If `userResource.getUserById(id);` throws an exception that type is _BadRequestException_ then this exception will be wrapped in ``HystrixBadRequestException`` and re-thrown without triggering fallback logic. You don't need to do it manually, javanica will do it for you under the hood. It is worth noting that a caller will get root cause exception, i.e. user ``BadRequestException``. A caller always gets root cause exception, never ``HystrixBadRequestException`` or ``HystrixRuntimeException`` except the case when executed code explicitly throws those exceptions. 
+If `userResource.getUserById(id);` throws an exception that type is _BadRequestException_ then this exception will be wrapped in ``HystrixBadRequestException`` and re-thrown without triggering fallback logic. You don't need to do it manually, javanica will do it for you under the hood.
 
-*Note*: If command has a fallback then only first exception that trigers fallback logic will be propagated to caller. Example:
+It is worth noting that by default a caller will always get the root cause exception e.g. ``BadRequestException``, never ``HystrixBadRequestException`` or ``HystrixRuntimeException`` (except the case when executed code explicitly throws those exceptions).
+
+Optionally this exception un-wraping can be disabled for ``HystrixRuntimeException`` by using ``raiseHystrixExceptions`` i.e. all exceptions that are not ignored are raised as the _cause_ of a ``HystrixRuntimeException``:
+
+```java
+    @HystrixCommand(
+        ignoreExceptions = {BadRequestException.class},
+        raiseHystrixExceptions = {HystrixException.RUNTIME_EXCEPTION})
+    public User getUserById(String id) {
+        return userResource.getUserById(id);
+    }
+```
+
+*Note*: If command has a fallback then only first exception that triggers fallback logic will be propagated to caller. Example:
 
 ```java
 class Service {
@@ -557,7 +570,7 @@ ThreadPoolProperties can be set using @HystrixCommand's 'threadPoolProperties' l
 ```
 
 ### DefaultProperties
-``@DefaultProperties`` is class (type) level annotation that allows to default commands properties such as ``groupKey``, ``threadPoolKey``, ``commandProperties``, ``threadPoolProperties`` and ``ignoreExceptions``. Properties specified using this annotation will be used by default for each hystrix command defined within annotated class unless a command specifies those properties explicitly using corresponding ``@HystrixCommand`` parameters. 
+``@DefaultProperties`` is class (type) level annotation that allows to default commands properties such as ``groupKey``, ``threadPoolKey``, ``commandProperties``, ``threadPoolProperties``, ``ignoreExceptions`` and ``raiseHystrixExceptions``. Properties specified using this annotation will be used by default for each hystrix command defined within annotated class unless a command specifies those properties explicitly using corresponding ``@HystrixCommand`` parameters.
 Example:
 
 ```java
