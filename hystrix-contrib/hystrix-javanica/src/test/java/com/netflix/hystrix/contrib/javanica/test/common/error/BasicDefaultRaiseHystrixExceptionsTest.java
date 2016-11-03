@@ -4,10 +4,14 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import com.netflix.hystrix.Hystrix;
 import com.netflix.hystrix.contrib.javanica.annotation.DefaultProperties;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixException;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
+
+import rx.Observable;
+import rx.observers.TestSubscriber;
 
 /**
  * Created by Mike Cowan
@@ -56,10 +60,32 @@ public abstract class BasicDefaultRaiseHystrixExceptionsTest {
         service.commandWithFallbackOverridesDefaultIgnoreExceptions(BadRequestException.class);
     }
 
+    @Test(expected = HystrixRuntimeException.class)
+    public void testRaiseHystrixRuntimeException() {
+        service.commandShouldRaiseHystrixRuntimeException();
+    }
+
+    @Test
+    public void testObservableRaiseHystrixRuntimeException() {
+        TestSubscriber<Void> testSubscriber = new TestSubscriber<Void>();
+        service.observableCommandShouldRaiseHystrixRuntimeException().subscribe(testSubscriber);
+        testSubscriber.assertError(HystrixRuntimeException.class);
+    }
+
     @DefaultProperties(ignoreExceptions = BadRequestException.class, raiseHystrixExceptions = {HystrixException.RUNTIME_EXCEPTION})
     public static class Service {
         @HystrixCommand
-        public Object commandInheritsDefaultIgnoreExceptions() throws BadRequestException {
+        public Object commandShouldRaiseHystrixRuntimeException() throws SpecificException {
+            throw new SpecificException("from 'commandShouldRaiseHystrixRuntimeException'");
+        }
+
+        @HystrixCommand
+        public Observable<Void> observableCommandShouldRaiseHystrixRuntimeException() throws SpecificException {
+            return Observable.error(new SpecificException("from 'observableCommandShouldRaiseHystrixRuntimeException'"));
+        }
+
+        @HystrixCommand
+         public Object commandInheritsDefaultIgnoreExceptions() throws BadRequestException {
             // this exception will be ignored (wrapped in HystrixBadRequestException) because specified in default ignore exceptions
             throw new BadRequestException("from 'commandInheritsIgnoreExceptionsFromDefault'");
         }
