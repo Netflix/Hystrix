@@ -171,6 +171,31 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertEquals(0, command.getBuilder().metrics.getCurrentConcurrentExecutionCount());
         assertSaneHystrixRequestLog(1);
     }
+    
+    /**
+     * Test a command execution that throws an exception that should not be wrapped.
+     */
+    @Test
+    public void testNotWrappedExceptionWithNoFallback() {
+        TestHystrixCommand<Integer> command = getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.NOT_WRAPPED_FAILURE, AbstractTestHystrixCommand.FallbackResult.UNIMPLEMENTED);
+        try {
+            command.execute();
+            fail("we shouldn't get here");
+        } catch (HystrixRuntimeException e) {
+            e.printStackTrace();
+            fail("we shouldn't get a HystrixRuntimeException");
+        } catch (RuntimeException e) {
+            assertTrue(e instanceof NotWrappedByHystrixTestRuntimeException);
+        }
+        
+        assertTrue(command.getExecutionTimeInMilliseconds() > -1);
+        assertTrue(command.isFailedExecution());
+        assertCommandExecutionEvents(command, HystrixEventType.FAILURE);
+        assertNotNull(command.getExecutionException());
+        assertTrue(command.getExecutionException() instanceof NotWrappedByHystrixTestRuntimeException);
+        assertEquals(0, command.getBuilder().metrics.getCurrentConcurrentExecutionCount());
+        assertSaneHystrixRequestLog(1);
+    }
 
     /**
      * Test a command execution that fails but has a fallback.
@@ -184,6 +209,30 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertTrue(command.isFailedExecution());
         assertCommandExecutionEvents(command, HystrixEventType.FAILURE, HystrixEventType.FALLBACK_SUCCESS);
         assertNotNull(command.getExecutionException());
+        assertEquals(0, command.getBuilder().metrics.getCurrentConcurrentExecutionCount());
+        assertSaneHystrixRequestLog(1);
+    }
+
+    /**
+     * Test a command execution that throws exception that should not be wrapped but has a fallback.
+     */
+    @Test
+    public void testNotWrappedExceptionWithFallback() {
+        TestHystrixCommand<Integer> command = getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.NOT_WRAPPED_FAILURE, AbstractTestHystrixCommand.FallbackResult.SUCCESS);
+        try {
+            command.execute();
+            fail("we shouldn't get here");
+        } catch (HystrixRuntimeException e) {
+            e.printStackTrace();
+            fail("we shouldn't get a HystrixRuntimeException");
+        } catch (RuntimeException e) {
+            assertTrue(e instanceof NotWrappedByHystrixTestRuntimeException);
+        }
+        assertTrue(command.getExecutionTimeInMilliseconds() > -1);
+        assertTrue(command.isFailedExecution());
+        assertCommandExecutionEvents(command, HystrixEventType.FAILURE);
+        assertNotNull(command.getExecutionException());
+        assertTrue(command.getExecutionException() instanceof NotWrappedByHystrixTestRuntimeException);
         assertEquals(0, command.getBuilder().metrics.getCurrentConcurrentExecutionCount());
         assertSaneHystrixRequestLog(1);
     }
@@ -2255,6 +2304,56 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertCommandExecutionEvents(command, HystrixEventType.FAILURE, HystrixEventType.FALLBACK_MISSING);
         assertNotNull(command.getExecutionException());
         assertEquals(0, circuitBreaker.metrics.getCurrentConcurrentExecutionCount());
+        assertSaneHystrixRequestLog(1);
+    }
+
+    /**
+     * Test an Exception implementing NotWrappedByHystrix being thrown
+     *
+     * @throws InterruptedException
+     */
+    @Test
+    public void testNotWrappedExceptionViaObserve() throws InterruptedException {
+        TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
+        CommandWithNotWrappedByHystrixException command = new CommandWithNotWrappedByHystrixException(circuitBreaker);
+        final AtomicReference<Throwable> t = new AtomicReference<Throwable>();
+        final CountDownLatch latch = new CountDownLatch(1);
+        try {
+            command.observe().subscribe(new Observer<Boolean>() {
+
+                @Override
+                public void onCompleted() {
+                    latch.countDown();
+                }
+
+                @Override
+                public void onError(Throwable e) {
+                    t.set(e);
+                    latch.countDown();
+                }
+
+                @Override
+                public void onNext(Boolean args) {
+
+                }
+
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail("we should not get anything thrown, it should be emitted via the Observer#onError method");
+        }
+
+        latch.await(1, TimeUnit.SECONDS);
+        assertNotNull(t.get());
+        t.get().printStackTrace();
+
+        assertTrue(t.get() instanceof NotWrappedByHystrixTestException);
+        assertTrue(command.getExecutionTimeInMilliseconds() > -1);
+        assertTrue(command.isFailedExecution());
+        assertCommandExecutionEvents(command, HystrixEventType.FAILURE);
+        assertNotNull(command.getExecutionException());
+        assertTrue(command.getExecutionException() instanceof NotWrappedByHystrixTestException);
+        assertEquals(0, command.getBuilder().metrics.getCurrentConcurrentExecutionCount());
         assertSaneHystrixRequestLog(1);
     }
 
@@ -4750,6 +4849,8 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
                 return FlexibleTestHystrixCommand.EXECUTE_VALUE;
             } else if (executionResult == AbstractTestHystrixCommand.ExecutionResult.FAILURE) {
                 throw new RuntimeException("Execution Failure for TestHystrixCommand");
+            } else if (executionResult == AbstractTestHystrixCommand.ExecutionResult.NOT_WRAPPED_FAILURE) {
+                throw new NotWrappedByHystrixTestRuntimeException();
             } else if (executionResult == AbstractTestHystrixCommand.ExecutionResult.HYSTRIX_FAILURE) {
                 throw new HystrixRuntimeException(HystrixRuntimeException.FailureType.COMMAND_EXCEPTION, AbstractFlexibleTestHystrixCommand.class, "Execution Hystrix Failure for TestHystrixCommand", new RuntimeException("Execution Failure for TestHystrixCommand"), new RuntimeException("Fallback Failure for TestHystrixCommand"));
             } else if (executionResult == AbstractTestHystrixCommand.ExecutionResult.RECOVERABLE_ERROR) {
@@ -5530,6 +5631,20 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         @Override
         protected Boolean run() throws Exception {
             throw new IOException("simulated checked exception message");
+        }
+
+    }
+
+    private static class CommandWithNotWrappedByHystrixException extends TestHystrixCommand<Boolean> {
+
+        public CommandWithNotWrappedByHystrixException(TestCircuitBreaker circuitBreaker) {
+            super(testPropsBuilder()
+                    .setCircuitBreaker(circuitBreaker).setMetrics(circuitBreaker.metrics));
+        }
+
+        @Override
+        protected Boolean run() throws Exception {
+            throw new NotWrappedByHystrixTestException();
         }
 
     }
