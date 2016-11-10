@@ -221,8 +221,14 @@ public interface HystrixThreadPool {
             boolean maxTooLow = false;
 
             if (allowSizesToDiverge && dynamicMaximumSize < dynamicCoreSize) {
+                //if user sets maximum < core (or defaults get us there), we need to maintain invariant of core <= maximum
                 dynamicMaximumSize = dynamicCoreSize;
                 maxTooLow = true;
+            }
+
+            if (!allowSizesToDiverge) {
+                //if user has not opted in to allowing sizes to diverge, ensure maximum == core
+                dynamicMaximumSize = dynamicCoreSize;
             }
 
             // In JDK 6, setCorePoolSize and setMaximumPoolSize will execute a lock operation. Avoid them if the pool size is not changed.
