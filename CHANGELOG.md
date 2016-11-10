@@ -1,5 +1,10 @@
 # Hystrix Releases #
 
+### Version 1.5.8 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.5.8%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.5.8/)) ###
+
+* [Pull 1419](https://github.com/Netflix/Hystrix/pull/1419) When user has not opted in to letting core/maximum threadpools diverge, ensure dynamic updates to coreSize apply to both
+* [Pull 1415](https://github.com/Netflix/Hystrix/pull/1415) Fix spelling mistake in comments.  Thanks @starlight36 !
+
 ### Version 1.5.7 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.5.7%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.5.7/)) ###
 
 * [Pull 1408](https://github.com/Netflix/Hystrix/pull/1408) Fix Clojure key name for collapsing.  Thanks @crimeminister !
