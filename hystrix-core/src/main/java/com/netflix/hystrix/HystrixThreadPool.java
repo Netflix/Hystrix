@@ -216,30 +216,31 @@ public interface HystrixThreadPool {
         // allow us to change things via fast-properties by setting it each time
         private void touchConfig() {
             final int dynamicCoreSize = properties.coreSize().get();
-            int dynamicMaximumSize = properties.maximumSize().get();
+            final int dynamicMaximumSize = properties.maximumSize().get();
+            int updatedMaximumSize = dynamicMaximumSize;
             final boolean allowSizesToDiverge = properties.getAllowMaximumSizeToDivergeFromCoreSize();
             boolean maxTooLow = false;
 
             if (allowSizesToDiverge && dynamicMaximumSize < dynamicCoreSize) {
                 //if user sets maximum < core (or defaults get us there), we need to maintain invariant of core <= maximum
-                dynamicMaximumSize = dynamicCoreSize;
+                updatedMaximumSize = dynamicCoreSize;
                 maxTooLow = true;
             }
 
             if (!allowSizesToDiverge) {
                 //if user has not opted in to allowing sizes to diverge, ensure maximum == core
-                dynamicMaximumSize = dynamicCoreSize;
+                updatedMaximumSize = dynamicCoreSize;
             }
 
             // In JDK 6, setCorePoolSize and setMaximumPoolSize will execute a lock operation. Avoid them if the pool size is not changed.
-            if (threadPool.getCorePoolSize() != dynamicCoreSize || (allowSizesToDiverge && threadPool.getMaximumPoolSize() != dynamicMaximumSize)) {
+            if (threadPool.getCorePoolSize() != dynamicCoreSize || (allowSizesToDiverge && threadPool.getMaximumPoolSize() != updatedMaximumSize)) {
                 if (maxTooLow) {
                     logger.error("Hystrix ThreadPool configuration for : " + metrics.getThreadPoolKey().name() + " is trying to set coreSize = " +
                             dynamicCoreSize + " and maximumSize = " + dynamicMaximumSize + ".  Maximum size will be set to " +
                             dynamicCoreSize + ", the coreSize value, since it must be equal to or greater than the coreSize value");
                 }
                 threadPool.setCorePoolSize(dynamicCoreSize);
-                threadPool.setMaximumPoolSize(dynamicMaximumSize);
+                threadPool.setMaximumPoolSize(updatedMaximumSize);
             }
 
             threadPool.setKeepAliveTime(properties.keepAliveTimeMinutes().get(), TimeUnit.MINUTES);
