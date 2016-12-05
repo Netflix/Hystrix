@@ -174,7 +174,7 @@ public interface HystrixThreadPool {
             this.queueSize = properties.maxQueueSize().get();
             this.queue = concurrencyStrategy.getBlockingQueue(queueSize);
 
-            if (properties.getAllowMaximumSizeToDivergeFromCoreSize()) {
+            if (properties.getAllowMaximumSizeToDivergeFromCoreSize().get()) {
                 this.metrics = HystrixThreadPoolMetrics.getInstance(threadPoolKey,
                         concurrencyStrategy.getThreadPool(threadPoolKey, properties.coreSize(), properties.maximumSize(), properties.keepAliveTimeMinutes(), TimeUnit.MINUTES, queue),
                         properties);
@@ -218,7 +218,7 @@ public interface HystrixThreadPool {
             final int dynamicCoreSize = properties.coreSize().get();
             final int dynamicMaximumSize = properties.maximumSize().get();
             int updatedMaximumSize = dynamicMaximumSize;
-            final boolean allowSizesToDiverge = properties.getAllowMaximumSizeToDivergeFromCoreSize();
+            final boolean allowSizesToDiverge = properties.getAllowMaximumSizeToDivergeFromCoreSize().get();
             boolean maxTooLow = false;
 
             if (allowSizesToDiverge && dynamicMaximumSize < dynamicCoreSize) {
