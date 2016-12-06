@@ -104,15 +104,12 @@ public class HystrixCommandAspect {
         } catch (HystrixBadRequestException e) {
             throw e.getCause();
         } catch (HystrixRuntimeException e) {
-            if (metaHolder.raiseHystrixExceptionsContains(HystrixException.RUNTIME_EXCEPTION)) {
-                throw e;
-            }
-            throw getCause(e);
+            throw hystrixRuntimeExceptionToThrowable(metaHolder, e);
         }
         return result;
     }
 
-    private Observable executeObservable(HystrixInvokable invokable, ExecutionType executionType, MetaHolder metaHolder) {
+    private Observable executeObservable(HystrixInvokable invokable, ExecutionType executionType, final MetaHolder metaHolder) {
         return ((Observable) CommandExecutor.execute(invokable, executionType, metaHolder))
                 .onErrorResumeNext(new Func1<Throwable, Observable>() {
                     @Override
@@ -121,11 +118,18 @@ public class HystrixCommandAspect {
                             return Observable.error(throwable.getCause());
                         } else if (throwable instanceof HystrixRuntimeException) {
                             HystrixRuntimeException hystrixRuntimeException = (HystrixRuntimeException) throwable;
-                            return Observable.error(getCause(hystrixRuntimeException));
+                            return Observable.error(hystrixRuntimeExceptionToThrowable(metaHolder, hystrixRuntimeException));
                         }
                         return Observable.error(throwable);
                     }
                 });
+    }
+
+    private Throwable hystrixRuntimeExceptionToThrowable(MetaHolder metaHolder, HystrixRuntimeException e) {
+        if (metaHolder.raiseHystrixExceptionsContains(HystrixException.RUNTIME_EXCEPTION)) {
+            return e;
+        }
+        return getCause(e);
     }
 
     private Throwable getCause(HystrixRuntimeException e) {
