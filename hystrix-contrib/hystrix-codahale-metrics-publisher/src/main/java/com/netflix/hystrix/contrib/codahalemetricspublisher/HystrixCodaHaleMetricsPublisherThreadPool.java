@@ -146,6 +146,13 @@ public class HystrixCodaHaleMetricsPublisherThreadPool implements HystrixMetrics
             }
         });
 
+        metricRegistry.register(createMetricName("propertyValue_maximumSize"), new Gauge<Number>() {
+            @Override
+            public Number getValue() {
+                return properties.maximumSize().get();
+            }
+        });
+
         metricRegistry.register(createMetricName("propertyValue_keepAliveTimeInMinutes"), new Gauge<Number>() {
             @Override
             public Number getValue() {
