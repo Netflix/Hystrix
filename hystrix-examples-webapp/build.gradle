@@ -1,5 +1,5 @@
 apply plugin: 'war'
-apply plugin: 'jetty'
+apply from: 'https://raw.github.com/akhikhl/gretty/master/pluginScripts/gretty.plugin'
 
 dependencies {
     compileApi project(':hystrix-core')
@@ -8,6 +8,7 @@ dependencies {
     compileApi project(':hystrix-metrics-event-stream')
 }
 
-jettyRun {
+gretty {
 	httpPort = 8989
+	servletContainer = 'jetty9'
 }
