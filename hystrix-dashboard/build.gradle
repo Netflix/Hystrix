@@ -1,5 +1,5 @@
 apply plugin: 'war'
-apply plugin: 'jetty'
+apply from: 'https://raw.github.com/akhikhl/gretty/master/pluginScripts/gretty.plugin'
 
 dependencies {
     provided 'javax.servlet:servlet-api:2.5'
@@ -10,6 +10,7 @@ dependencies {
     testCompile 'junit:junit:4.12'
 }
 
-jettyRun {
-   httpPort = 7979
+gretty {
+	httpPort = 7979
+    servletContainer = 'jetty9'
 }
