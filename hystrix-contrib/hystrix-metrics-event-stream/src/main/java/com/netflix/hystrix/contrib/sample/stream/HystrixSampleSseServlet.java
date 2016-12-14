@@ -172,7 +172,6 @@ public abstract class HystrixSampleSseServlet extends HttpServlet {
                 }
             }
         } finally {
-            System.out.println("Exiting the server thread, current count = " + getNumberCurrentConnections());
             decrementCurrentConcurrentConnections();
             if (sampleSubscription != null && !sampleSubscription.isUnsubscribed()) {
                 sampleSubscription.unsubscribe();
