@@ -146,16 +146,12 @@ public abstract class HystrixSampleSseServlet extends HttpServlet {
                             @Override
                             public void onNext(String sampleDataAsString) {
                                 if (sampleDataAsString != null) {
-                                    try {
-                                        writer.print("data: " + sampleDataAsString + "\n\n");
-                                        // explicitly check for client disconnect - PrintWriter does not throw exceptions
-                                        if (writer.checkError()) {
-                                            throw new IOException("io error");
-                                        }
-                                        writer.flush();
-                                    } catch (IOException ioe) {
+                                    writer.print("data: " + sampleDataAsString + "\n\n");
+                                    // explicitly check for client disconnect - PrintWriter does not throw exceptions
+                                    if (writer.checkError()) {
                                         moreDataWillBeSent.set(false);
                                     }
+                                    writer.flush();
                                 }
                             }
                         });
@@ -167,12 +163,10 @@ public abstract class HystrixSampleSseServlet extends HttpServlet {
                         writer.print("ping: \n\n");
                         // explicitly check for client disconnect - PrintWriter does not throw exceptions
                         if (writer.checkError()) {
-                            throw new IOException("io error");
+                            moreDataWillBeSent.set(false);
                         }
                         writer.flush();
                     } catch (InterruptedException e) {
-                        moreDataWillBeSent.set(false);
-                    } catch (IOException ioe) {
                         moreDataWillBeSent.set(false);
                     }
                 }
