@@ -163,7 +163,16 @@ public abstract class HystrixSampleSseServlet extends HttpServlet {
                 while (moreDataWillBeSent.get() && !isDestroyed) {
                     try {
                         Thread.sleep(pausePollerThreadDelayInMs);
+                        //in case stream has not started emitting yet, catch any clients which connect/disconnect before emits start
+                        writer.print("ping: \n\n");
+                        // explicitly check for client disconnect - PrintWriter does not throw exceptions
+                        if (writer.checkError()) {
+                            throw new IOException("io error");
+                        }
+                        writer.flush();
                     } catch (InterruptedException e) {
+                        moreDataWillBeSent.set(false);
+                    } catch (IOException ioe) {
                         moreDataWillBeSent.set(false);
                     }
                 }
