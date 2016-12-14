@@ -9,8 +9,8 @@ The [hystrix-dashboard](https://github.com/Netflix/Hystrix/tree/master/hystrix-d
 ```
 $ git clone git@github.com:Netflix/Hystrix.git
 $ cd Hystrix/hystrix-examples-webapp
-$ ../gradlew jettyRun
-> Building > :hystrix-examples-webapp:jettyRun > Running at http://localhost:8989/hystrix-examples-webapp
+$ ../gradlew appRun
+> Building > :hystrix-examples-webapp:appRun > Running at http://localhost:8989/hystrix-examples-webapp
 ```
 
 Once running, open <a href="http://localhost:8989/hystrix-examples-webapp">http://localhost:8989/hystrix-examples-webapp</a>.
