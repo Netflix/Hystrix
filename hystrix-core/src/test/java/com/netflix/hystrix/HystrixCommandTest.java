@@ -4010,6 +4010,55 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
                 });
     }
 
+    @Test
+    public void testExecutionHookEarlyUnsubscribe() {
+        System.out.println("Running command.observe(), awaiting terminal state of Observable, then running assertions...");
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        TestHystrixCommand<Integer> command = getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.SUCCESS, 1000);
+        Observable<Integer> o = command.observe();
+
+        Subscription s = o.
+                doOnUnsubscribe(new Action0() {
+                    @Override
+                    public void call() {
+                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : OnUnsubscribe");
+                        latch.countDown();
+                    }
+                }).
+                subscribe(new Subscriber<Integer>() {
+                    @Override
+                    public void onCompleted() {
+                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : OnCompleted");
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : OnError : " + e);
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void onNext(Integer i) {
+                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : OnNext : " + i);
+                    }
+        });
+
+        try {
+            Thread.sleep(15);
+            s.unsubscribe();
+            latch.await(3, TimeUnit.SECONDS);
+            TestableExecutionHook hook = command.getBuilder().executionHook;
+            assertTrue(hook.commandEmissionsMatch(0, 0, 0));
+            assertTrue(hook.executionEventsMatch(0, 0, 0));
+            assertTrue(hook.fallbackEventsMatch(0, 0, 0));
+            assertEquals("onStart - onThreadStart - !onRunStart - onExecutionStart - onUnsubscribe - onThreadComplete - ", hook.executionSequence.toString());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     /**
      * Short-circuit? : NO
      * Thread/semaphore: THREAD
