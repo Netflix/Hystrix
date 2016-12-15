@@ -210,8 +210,14 @@ class TestableExecutionHook extends HystrixCommandExecutionHook {
         recordHookCall(executionSequence, "onCacheHit");
     }
 
+    @Override
+    public <T> void onUnsubscribe(HystrixInvokable<T> commandInstance) {
+        super.onUnsubscribe(commandInstance);
+        recordHookCall(executionSequence, "onUnsubscribe");
+    }
+
     /**
-     * DEPRECATED METHODS FOLLOW.  The string representation starts with `!D!` to distinguish
+     * DEPRECATED METHODS FOLLOW.  The string representation starts with `!` to distinguish
      */
 
     AtomicInteger startExecute = new AtomicInteger();

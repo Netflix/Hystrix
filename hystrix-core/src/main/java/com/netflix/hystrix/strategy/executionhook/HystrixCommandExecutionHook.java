@@ -217,6 +217,17 @@ public abstract class HystrixCommandExecutionHook {
     }
 
     /**
+     * Invoked with the command is unsubscribed before a terminal state
+     *
+     * @param commandInstance The executing HystrixInvokable instance.
+     *
+     * @since 1.5.9
+     */
+    public <T> void onUnsubscribe(HystrixInvokable<T> commandInstance) {
+        //do nothing by default
+    }
+
+    /**
      * DEPRECATED: Change usages of this to {@link #onExecutionStart}.
      *
      * Invoked before {@link HystrixCommand#run()} is about to be executed.
