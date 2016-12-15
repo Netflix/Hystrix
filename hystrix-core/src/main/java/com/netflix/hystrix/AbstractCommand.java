@@ -384,6 +384,11 @@ import java.util.concurrent.atomic.AtomicReference;
                 if (_cmd.commandState.compareAndSet(CommandState.OBSERVABLE_CHAIN_CREATED, CommandState.UNSUBSCRIBED)) {
                     if (!_cmd.executionResult.containsTerminalEvent()) {
                         _cmd.eventNotifier.markEvent(HystrixEventType.CANCELLED, _cmd.commandKey);
+                        try {
+                            executionHook.onUnsubscribe(_cmd);
+                        } catch (Throwable hookEx) {
+                            logger.warn("Error calling HystrixCommandExecutionHook.onUnsubscribe", hookEx);
+                        }
                         _cmd.executionResultAtTimeOfCancellation = _cmd.executionResult
                                 .addEvent((int) (System.currentTimeMillis() - _cmd.commandStartTimestamp), HystrixEventType.CANCELLED);
                     }
@@ -391,6 +396,11 @@ import java.util.concurrent.atomic.AtomicReference;
                 } else if (_cmd.commandState.compareAndSet(CommandState.USER_CODE_EXECUTED, CommandState.UNSUBSCRIBED)) {
                     if (!_cmd.executionResult.containsTerminalEvent()) {
                         _cmd.eventNotifier.markEvent(HystrixEventType.CANCELLED, _cmd.commandKey);
+                        try {
+                            executionHook.onUnsubscribe(_cmd);
+                        } catch (Throwable hookEx) {
+                            logger.warn("Error calling HystrixCommandExecutionHook.onUnsubscribe", hookEx);
+                        }
                         _cmd.executionResultAtTimeOfCancellation = _cmd.executionResult
                                 .addEvent((int) (System.currentTimeMillis() - _cmd.commandStartTimestamp), HystrixEventType.CANCELLED);
                     }
@@ -2167,6 +2177,11 @@ import java.util.concurrent.atomic.AtomicReference;
         @Override
         public <T> void onCacheHit(HystrixInvokable<T> commandInstance) {
             actual.onCacheHit(commandInstance);
+        }
+
+        @Override
+        public <T> void onUnsubscribe(HystrixInvokable<T> commandInstance) {
+            actual.onUnsubscribe(commandInstance);
         }
 
         @SuppressWarnings({ "unchecked", "rawtypes" })
