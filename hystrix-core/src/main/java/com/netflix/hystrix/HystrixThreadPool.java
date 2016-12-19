@@ -172,19 +172,12 @@ public interface HystrixThreadPool {
             this.properties = HystrixPropertiesFactory.getThreadPoolProperties(threadPoolKey, propertiesDefaults);
             HystrixConcurrencyStrategy concurrencyStrategy = HystrixPlugins.getInstance().getConcurrencyStrategy();
             this.queueSize = properties.maxQueueSize().get();
-            this.queue = concurrencyStrategy.getBlockingQueue(queueSize);
 
-            if (properties.getAllowMaximumSizeToDivergeFromCoreSize().get()) {
-                this.metrics = HystrixThreadPoolMetrics.getInstance(threadPoolKey,
-                        concurrencyStrategy.getThreadPool(threadPoolKey, properties.coreSize(), properties.maximumSize(), properties.keepAliveTimeMinutes(), TimeUnit.MINUTES, queue),
-                        properties);
-                this.threadPool = this.metrics.getThreadPool();
-            } else {
-                this.metrics = HystrixThreadPoolMetrics.getInstance(threadPoolKey,
-                        concurrencyStrategy.getThreadPool(threadPoolKey, properties.coreSize(), properties.coreSize(), properties.keepAliveTimeMinutes(), TimeUnit.MINUTES, queue),
-                        properties);
-                this.threadPool = this.metrics.getThreadPool();
-            }
+            this.metrics = HystrixThreadPoolMetrics.getInstance(threadPoolKey,
+                    concurrencyStrategy.getThreadPool(threadPoolKey, properties),
+                    properties);
+            this.threadPool = this.metrics.getThreadPool();
+            this.queue = this.threadPool.getQueue();
 
             /* strategy: HystrixMetricsPublisherThreadPool */
             HystrixMetricsPublisherFactory.createOrRetrievePublisherForThreadPool(threadPoolKey, this.metrics, this.properties);
