@@ -149,6 +149,13 @@ public class HystrixYammerMetricsPublisherThreadPool implements HystrixMetricsPu
             }
         });
 
+        metricsRegistry.newGauge(createMetricName("propertyValue_actualMaximumSize"), new Gauge<Number>() {
+            @Override
+            public Number value() {
+                return properties.actualMaximumSize();
+            }
+        });
+
         metricsRegistry.newGauge(createMetricName("propertyValue_keepAliveTimeInMinutes"), new Gauge<Number>() {
             @Override
             public Number value() {

@@ -98,84 +98,190 @@ public class HystrixThreadPoolPropertiesTest {
     }
 
     @Test
-    public void testSetNeitherCoreNorMaximumSize() {
-        HystrixThreadPoolProperties properties = new HystrixThreadPoolProperties(TestThreadPoolKey.TEST, HystrixThreadPoolProperties.Setter()) {
-
+    public void testSetNeitherCoreNorMaximumSizeWithDivergenceDisallowed() {
+        HystrixThreadPoolProperties properties = new HystrixThreadPoolProperties(TestThreadPoolKey.TEST,
+                HystrixThreadPoolProperties.Setter()
+                        .withAllowMaximumSizeToDivergeFromCoreSize(false)) {
         };
 
         assertEquals(HystrixThreadPoolProperties.default_coreSize, properties.coreSize().get().intValue());
         assertEquals(HystrixThreadPoolProperties.default_maximumSize, properties.maximumSize().get().intValue());
+        assertEquals(HystrixThreadPoolProperties.default_coreSize, (int) properties.actualMaximumSize());
     }
 
     @Test
-    public void testSetCoreSizeOnly() {
+    public void testSetNeitherCoreNorMaximumSizeWithDivergenceAllowed() {
         HystrixThreadPoolProperties properties = new HystrixThreadPoolProperties(TestThreadPoolKey.TEST,
-                HystrixThreadPoolProperties.Setter().withCoreSize(14)) {
+                HystrixThreadPoolProperties.Setter()
+                        .withAllowMaximumSizeToDivergeFromCoreSize(true)) {
+        };
 
+        assertEquals(HystrixThreadPoolProperties.default_coreSize, properties.coreSize().get().intValue());
+        assertEquals(HystrixThreadPoolProperties.default_maximumSize, properties.maximumSize().get().intValue());
+        assertEquals(HystrixThreadPoolProperties.default_maximumSize, (int) properties.actualMaximumSize());
+    }
+
+    @Test
+    public void testSetCoreSizeOnlyWithDivergenceDisallowed() {
+        HystrixThreadPoolProperties properties = new HystrixThreadPoolProperties(TestThreadPoolKey.TEST,
+                HystrixThreadPoolProperties.Setter()
+                        .withCoreSize(14)
+                        .withAllowMaximumSizeToDivergeFromCoreSize(false)) {
         };
 
         assertEquals(14, properties.coreSize().get().intValue());
         assertEquals(HystrixThreadPoolProperties.default_maximumSize, properties.maximumSize().get().intValue());
+        assertEquals(14, (int) properties.actualMaximumSize());
     }
 
     @Test
-    public void testSetMaximumSizeOnlyLowerThanDefaultCoreSize() {
+    public void testSetCoreSizeOnlyWithDivergenceAllowed() {
         HystrixThreadPoolProperties properties = new HystrixThreadPoolProperties(TestThreadPoolKey.TEST,
-                HystrixThreadPoolProperties.Setter().withMaximumSize(3)) {
+                HystrixThreadPoolProperties.Setter()
+                        .withCoreSize(14)
+                        .withAllowMaximumSizeToDivergeFromCoreSize(true)) {
+        };
 
+        assertEquals(14, properties.coreSize().get().intValue());
+        assertEquals(HystrixThreadPoolProperties.default_maximumSize, properties.maximumSize().get().intValue());
+        assertEquals(14, (int) properties.actualMaximumSize());
+    }
+
+    @Test
+    public void testSetMaximumSizeOnlyLowerThanDefaultCoreSizeWithDivergenceDisallowed() {
+        HystrixThreadPoolProperties properties = new HystrixThreadPoolProperties(TestThreadPoolKey.TEST,
+                HystrixThreadPoolProperties.Setter()
+                        .withMaximumSize(3)
+                        .withAllowMaximumSizeToDivergeFromCoreSize(false)) {
         };
 
         assertEquals(HystrixThreadPoolProperties.default_coreSize, properties.coreSize().get().intValue());
         assertEquals(3, properties.maximumSize().get().intValue());
+        assertEquals(HystrixThreadPoolProperties.default_coreSize, (int) properties.actualMaximumSize());
     }
 
     @Test
-    public void testSetMaximumSizeOnlyGreaterThanDefaultCoreSize() {
+    public void testSetMaximumSizeOnlyLowerThanDefaultCoreSizeWithDivergenceAllowed() {
         HystrixThreadPoolProperties properties = new HystrixThreadPoolProperties(TestThreadPoolKey.TEST,
-                HystrixThreadPoolProperties.Setter().withMaximumSize(21)) {
+                HystrixThreadPoolProperties.Setter()
+                        .withMaximumSize(3)
+                        .withAllowMaximumSizeToDivergeFromCoreSize(true)) {
+        };
 
+        assertEquals(HystrixThreadPoolProperties.default_coreSize, properties.coreSize().get().intValue());
+        assertEquals(3, properties.maximumSize().get().intValue());
+        assertEquals(HystrixThreadPoolProperties.default_coreSize, (int) properties.actualMaximumSize());
+    }
+
+    @Test
+    public void testSetMaximumSizeOnlyGreaterThanDefaultCoreSizeWithDivergenceDisallowed() {
+        HystrixThreadPoolProperties properties = new HystrixThreadPoolProperties(TestThreadPoolKey.TEST,
+                HystrixThreadPoolProperties.Setter()
+                        .withMaximumSize(21)
+                        .withAllowMaximumSizeToDivergeFromCoreSize(false)) {
         };
 
         assertEquals(HystrixThreadPoolProperties.default_coreSize, properties.coreSize().get().intValue());
         assertEquals(21, properties.maximumSize().get().intValue());
+        assertEquals(HystrixThreadPoolProperties.default_coreSize, (int) properties.actualMaximumSize());
     }
 
     @Test
-    public void testSetCoreSizeLessThanMaximumSize() {
+    public void testSetMaximumSizeOnlyGreaterThanDefaultCoreSizeWithDivergenceAllowed() {
+        HystrixThreadPoolProperties properties = new HystrixThreadPoolProperties(TestThreadPoolKey.TEST,
+                HystrixThreadPoolProperties.Setter()
+                        .withMaximumSize(21)
+                        .withAllowMaximumSizeToDivergeFromCoreSize(true)) {
+        };
+
+        assertEquals(HystrixThreadPoolProperties.default_coreSize, properties.coreSize().get().intValue());
+        assertEquals(21, properties.maximumSize().get().intValue());
+        assertEquals(21, (int) properties.actualMaximumSize());
+    }
+
+    @Test
+    public void testSetCoreSizeLessThanMaximumSizeWithDivergenceDisallowed() {
         HystrixThreadPoolProperties properties = new HystrixThreadPoolProperties(TestThreadPoolKey.TEST,
                 HystrixThreadPoolProperties.Setter()
                         .withCoreSize(2)
-                        .withMaximumSize(8)) {
-
+                        .withMaximumSize(8)
+                        .withAllowMaximumSizeToDivergeFromCoreSize(false)) {
         };
 
         assertEquals(2, properties.coreSize().get().intValue());
         assertEquals(8, properties.maximumSize().get().intValue());
+        assertEquals(2, (int) properties.actualMaximumSize());
     }
 
     @Test
-    public void testSetCoreSizeEqualToMaximumSize() {
+    public void testSetCoreSizeLessThanMaximumSizeWithDivergenceAllowed() {
+        HystrixThreadPoolProperties properties = new HystrixThreadPoolProperties(TestThreadPoolKey.TEST,
+                HystrixThreadPoolProperties.Setter()
+                        .withCoreSize(2)
+                        .withMaximumSize(8)
+                        .withAllowMaximumSizeToDivergeFromCoreSize(true)) {
+        };
+
+        assertEquals(2, properties.coreSize().get().intValue());
+        assertEquals(8, properties.maximumSize().get().intValue());
+        assertEquals(8, (int) properties.actualMaximumSize());
+    }
+
+    @Test
+    public void testSetCoreSizeEqualToMaximumSizeDivergenceDisallowed() {
         HystrixThreadPoolProperties properties = new HystrixThreadPoolProperties(TestThreadPoolKey.TEST,
                 HystrixThreadPoolProperties.Setter()
                         .withCoreSize(7)
-                        .withMaximumSize(7)) {
-
+                        .withMaximumSize(7)
+                        .withAllowMaximumSizeToDivergeFromCoreSize(false)) {
         };
 
         assertEquals(7, properties.coreSize().get().intValue());
         assertEquals(7, properties.maximumSize().get().intValue());
+        assertEquals(7, (int) properties.actualMaximumSize());
     }
 
     @Test
-    public void testSetCoreSizeGreaterThanMaximumSize() {
+    public void testSetCoreSizeEqualToMaximumSizeDivergenceAllowed() {
+        HystrixThreadPoolProperties properties = new HystrixThreadPoolProperties(TestThreadPoolKey.TEST,
+                HystrixThreadPoolProperties.Setter()
+                        .withCoreSize(7)
+                        .withMaximumSize(7)
+                        .withAllowMaximumSizeToDivergeFromCoreSize(true)) {
+        };
+
+        assertEquals(7, properties.coreSize().get().intValue());
+        assertEquals(7, properties.maximumSize().get().intValue());
+        assertEquals(7, (int) properties.actualMaximumSize());
+    }
+
+    @Test
+    public void testSetCoreSizeGreaterThanMaximumSizeWithDivergenceDisallowed() {
         HystrixThreadPoolProperties properties = new HystrixThreadPoolProperties(TestThreadPoolKey.TEST,
                 HystrixThreadPoolProperties.Setter()
                         .withCoreSize(12)
-                        .withMaximumSize(8)) {
-
+                        .withMaximumSize(8)
+                        .withAllowMaximumSizeToDivergeFromCoreSize(false)) {
         };
 
         assertEquals(12, properties.coreSize().get().intValue());
         assertEquals(8, properties.maximumSize().get().intValue());
+        assertEquals(12, (int) properties.actualMaximumSize());
+    }
+
+    @Test
+    public void testSetCoreSizeGreaterThanMaximumSizeWithDivergenceAllowed() {
+        HystrixThreadPoolProperties properties = new HystrixThreadPoolProperties(TestThreadPoolKey.TEST,
+                HystrixThreadPoolProperties.Setter()
+                        .withCoreSize(12)
+                        .withMaximumSize(8)
+                        .withAllowMaximumSizeToDivergeFromCoreSize(true)) {
+        };
+
+        assertEquals(12, properties.coreSize().get().intValue());
+        assertEquals(8, properties.maximumSize().get().intValue());
+        assertEquals(12, (int) properties.actualMaximumSize());
     }
 }
+
+
