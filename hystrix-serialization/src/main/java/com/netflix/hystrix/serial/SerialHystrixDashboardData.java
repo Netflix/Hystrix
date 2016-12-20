@@ -28,10 +28,8 @@ import com.netflix.hystrix.HystrixThreadPoolMetrics;
 import com.netflix.hystrix.metric.consumer.HystrixDashboardStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import rx.Observable;
 import rx.functions.Func0;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -41,20 +39,9 @@ public class SerialHystrixDashboardData extends SerialHystrixMetric {
 
     private static final Logger logger = LoggerFactory.getLogger(SerialHystrixDashboardData.class);
 
+    @Deprecated
     public static byte[] toBytes(HystrixDashboardStream.DashboardData dashboardData) {
-        byte[] retVal = null;
-
-        try {
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            JsonGenerator cbor = cborFactory.createGenerator(bos);
-            writeDashboardData(cbor, dashboardData);
-            retVal = bos.toByteArray();
-
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
-        return retVal;
+        throw new UnsupportedOperationException("Not implemented anymore.  Will be implemented in a new class shortly");
     }
 
     public static String toJsonString(HystrixDashboardStream.DashboardData dashboardData) {

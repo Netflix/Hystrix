@@ -16,34 +16,19 @@
 package com.netflix.hystrix.serial;
 
 import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
-import com.fasterxml.jackson.dataformat.cbor.CBORParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public class SerialHystrixMetric {
     protected final static JsonFactory jsonFactory = new JsonFactory();
-    protected final static CBORFactory cborFactory = new CBORFactory();
     protected final static ObjectMapper mapper = new ObjectMapper();
     protected final static Logger logger = LoggerFactory.getLogger(SerialHystrixMetric.class);
 
+    @Deprecated
     public static String fromByteBufferToString(ByteBuffer bb) {
-        byte[] byteArray = new byte[bb.remaining()];
-        bb.get(byteArray);
-
-        try {
-            CBORParser parser = cborFactory.createParser(byteArray);
-            JsonNode rootNode = mapper.readTree(parser);
-
-            return rootNode.toString();
-        } catch (IOException ioe) {
-            logger.error("IO Exception during deserialization of ByteBuffer of Hystrix Metric : " + ioe);
-            return "";
-        }
+        throw new UnsupportedOperationException("Not implemented anymore.  Will be implemented in a new class shortly");
     }
 }
