@@ -53,7 +53,7 @@ public class HystrixThreadPoolConfiguration {
                 threadPoolProperties.maxQueueSize().get(),
                 threadPoolProperties.queueSizeRejectionThreshold().get(),
                 threadPoolProperties.keepAliveTimeMinutes().get(),
-                threadPoolProperties.getAllowMaximumSizeToDivergeFromCoreSize(),
+                threadPoolProperties.getAllowMaximumSizeToDivergeFromCoreSize().get(),
                 threadPoolProperties.metricsRollingStatisticalWindowBuckets().get(),
                 threadPoolProperties.metricsRollingStatisticalWindowInMilliseconds().get());
     }
