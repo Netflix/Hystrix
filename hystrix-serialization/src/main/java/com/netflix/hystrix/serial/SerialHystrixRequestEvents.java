@@ -20,7 +20,6 @@ import com.netflix.hystrix.ExecutionResult;
 import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.metric.HystrixRequestEvents;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.List;
@@ -28,21 +27,9 @@ import java.util.Map;
 
 public class SerialHystrixRequestEvents extends SerialHystrixMetric {
 
+    @Deprecated
     public static byte[] toBytes(HystrixRequestEvents requestEvents) {
-        byte[] retVal = null;
-
-        try {
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            JsonGenerator cbor = cborFactory.createGenerator(bos);
-
-            serializeRequestEvents(requestEvents, cbor);
-
-            retVal = bos.toByteArray();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
-        return retVal;
+        throw new UnsupportedOperationException("Not implemented anymore.  Will be implemented in a new class shortly");
     }
 
     public static String toJsonString(HystrixRequestEvents requestEvents) {

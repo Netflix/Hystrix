@@ -16,12 +16,8 @@
 package com.netflix.hystrix.serial;
 
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.dataformat.cbor.CBORParser;
 import com.netflix.hystrix.HystrixCollapserKey;
-import com.netflix.hystrix.HystrixCommandGroupKey;
 import com.netflix.hystrix.HystrixCommandKey;
-import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.HystrixThreadPoolKey;
 import com.netflix.hystrix.config.HystrixCollapserConfiguration;
 import com.netflix.hystrix.config.HystrixCommandConfiguration;
@@ -30,33 +26,18 @@ import com.netflix.hystrix.config.HystrixThreadPoolConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
 public class SerialHystrixConfiguration extends SerialHystrixMetric {
 
     private static final Logger logger = LoggerFactory.getLogger(SerialHystrixConfiguration.class);
 
+    @Deprecated
     public static byte[] toBytes(HystrixConfiguration config) {
-        byte[] retVal = null;
-
-        try {
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            JsonGenerator cbor = cborFactory.createGenerator(bos);
-
-            serializeConfiguration(config, cbor);
-
-            retVal = bos.toByteArray();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
-        return retVal;
+        throw new UnsupportedOperationException("Not implemented anymore.  Will be implemented in a new class shortly");
     }
 
     public static String toJsonString(HystrixConfiguration config) {
@@ -109,108 +90,9 @@ public class SerialHystrixConfiguration extends SerialHystrixMetric {
 
     }
 
+    @Deprecated
     public static HystrixConfiguration fromByteBuffer(ByteBuffer bb) {
-        byte[] byteArray = new byte[bb.remaining()];
-        bb.get(byteArray);
-
-        Map<HystrixCommandKey, HystrixCommandConfiguration> commandConfigMap = new HashMap<HystrixCommandKey, HystrixCommandConfiguration>();
-        Map<HystrixThreadPoolKey, HystrixThreadPoolConfiguration> threadPoolConfigMap = new HashMap<HystrixThreadPoolKey, HystrixThreadPoolConfiguration>();
-        Map<HystrixCollapserKey, HystrixCollapserConfiguration> collapserConfigMap = new HashMap<HystrixCollapserKey, HystrixCollapserConfiguration>();
-
-        try {
-            CBORParser parser = cborFactory.createParser(byteArray);
-            JsonNode rootNode = mapper.readTree(parser);
-
-            Iterator<Map.Entry<String, JsonNode>> commands = rootNode.path("commands").fields();
-            Iterator<Map.Entry<String, JsonNode>> threadPools = rootNode.path("threadpools").fields();
-            Iterator<Map.Entry<String, JsonNode>> collapsers = rootNode.path("collapsers").fields();
-
-            while (commands.hasNext()) {
-                Map.Entry<String, JsonNode> command = commands.next();
-
-                JsonNode executionConfig = command.getValue().path("execution");
-
-                JsonNode circuitBreakerConfig = command.getValue().path("circuitBreaker");
-                JsonNode metricsConfig = command.getValue().path("metrics");
-                HystrixCommandKey commandKey = HystrixCommandKey.Factory.asKey(command.getKey());
-                HystrixCommandConfiguration commandConfig = new HystrixCommandConfiguration(
-                        commandKey,
-                        HystrixThreadPoolKey.Factory.asKey(command.getValue().path("threadPoolKey").asText()),
-                        HystrixCommandGroupKey.Factory.asKey(command.getValue().path("groupKey").asText()),
-                        new HystrixCommandConfiguration.HystrixCommandExecutionConfig(
-                                executionConfig.path("semaphoreSize").asInt(),
-                                HystrixCommandProperties.ExecutionIsolationStrategy.valueOf(
-                                        executionConfig.path("isolationStrategy").asText()),
-                                executionConfig.path("threadInterruptOnTimeout").asBoolean(),
-                                executionConfig.path("threadPoolKeyOverride").asText(),
-                                executionConfig.path("timeoutEnabled").asBoolean(),
-                                executionConfig.path("timeoutInMilliseconds").asInt(),
-                                executionConfig.path("fallbackEnabled").asBoolean(),
-                                executionConfig.path("fallbackSemaphoreSize").asInt(),
-                                executionConfig.path("requestCacheEnabled").asBoolean(),
-                                executionConfig.path("requestLogEnabled").asBoolean()
-                        ),
-                        new HystrixCommandConfiguration.HystrixCommandCircuitBreakerConfig(
-                                circuitBreakerConfig.path("enabled").asBoolean(),
-                                circuitBreakerConfig.path("errorPercentageThreshold").asInt(),
-                                circuitBreakerConfig.path("isForcedClosed").asBoolean(),
-                                circuitBreakerConfig.path("isForcedOpen").asBoolean(),
-                                circuitBreakerConfig.path("requestVolumeThreshold").asInt(),
-                                circuitBreakerConfig.path("sleepInMilliseconds").asInt()
-                        ),
-                        new HystrixCommandConfiguration.HystrixCommandMetricsConfig(
-                                metricsConfig.path("healthBucketSizeInMs").asInt(),
-                                metricsConfig.path("percentileEnabled").asBoolean(),
-                                metricsConfig.path("percentileBucketCount").asInt(),
-                                metricsConfig.path("percentileBucketSizeInMilliseconds").asInt(),
-                                metricsConfig.path("counterBucketCount").asInt(),
-                                metricsConfig.path("counterBucketSizeInMilliseconds").asInt()
-                        )
-                );
-
-                commandConfigMap.put(commandKey, commandConfig);
-            }
-
-            while (threadPools.hasNext()) {
-                Map.Entry<String, JsonNode> threadPool = threadPools.next();
-                HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey(threadPool.getKey());
-                HystrixThreadPoolConfiguration threadPoolConfig = new HystrixThreadPoolConfiguration(
-                       threadPoolKey,
-                        threadPool.getValue().path("coreSize").asInt(),
-                        threadPool.getValue().path("maximumSize").asInt(),
-                        threadPool.getValue().path("maxQueueSize").asInt(),
-                        threadPool.getValue().path("queueRejectionThreshold").asInt(),
-                        threadPool.getValue().path("keepAliveTimeInMinutes").asInt(),
-                        threadPool.getValue().path("allowMaximumSizeToDivergeFromCoreSize").asBoolean(),
-                        threadPool.getValue().path("counterBucketCount").asInt(),
-                        threadPool.getValue().path("counterBucketSizeInMilliseconds").asInt()
-                );
-                threadPoolConfigMap.put(threadPoolKey, threadPoolConfig);
-            }
-
-            while (collapsers.hasNext()) {
-                Map.Entry<String, JsonNode> collapser = collapsers.next();
-                HystrixCollapserKey collapserKey = HystrixCollapserKey.Factory.asKey(collapser.getKey());
-                JsonNode metricsConfig = collapser.getValue().path("metrics");
-                HystrixCollapserConfiguration collapserConfig = new HystrixCollapserConfiguration(
-                        collapserKey,
-                        collapser.getValue().path("maxRequestsInBatch").asInt(),
-                        collapser.getValue().path("timerDelayInMilliseconds").asInt(),
-                        collapser.getValue().path("requestCacheEnabled").asBoolean(),
-                        new HystrixCollapserConfiguration.CollapserMetricsConfig(
-                                metricsConfig.path("percentileBucketCount").asInt(),
-                                metricsConfig.path("percentileBucketSizeInMilliseconds").asInt(),
-                                metricsConfig.path("percentileEnabled").asBoolean(),
-                                metricsConfig.path("counterBucketCount").asInt(),
-                                metricsConfig.path("counterBucketSizeInMilliseconds").asInt()
-                        )
-                );
-                collapserConfigMap.put(collapserKey, collapserConfig);
-            }
-        } catch (IOException ioe) {
-            logger.error("IO Exception during deserialization of HystrixConfiguration : " + ioe);
-        }
-        return new HystrixConfiguration(commandConfigMap, threadPoolConfigMap, collapserConfigMap);
+        throw new UnsupportedOperationException("Not implemented anymore.  Will be implemented in a new class shortly");
     }
 
     private static void writeCommandConfigJson(JsonGenerator json, HystrixCommandKey key, HystrixCommandConfiguration commandConfig) throws IOException {

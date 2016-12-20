@@ -14,7 +14,6 @@ dependencies {
     compileApi 'com.fasterxml.jackson.core:jackson-databind:2.7.5'
     compileApi 'com.fasterxml.jackson.core:jackson-annotations:2.7.5'
     compile 'com.fasterxml.jackson.module:jackson-module-afterburner:2.7.5'
-    compileApi 'com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.7.5'
 	
     testCompile 'junit:junit-dep:4.10'
     testCompile 'org.mockito:mockito-all:1.9.5'

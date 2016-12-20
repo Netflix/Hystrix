@@ -16,44 +16,26 @@
 package com.netflix.hystrix.serial;
 
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.dataformat.cbor.CBORParser;
 import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixThreadPoolKey;
-import com.netflix.hystrix.config.HystrixConfiguration;
 import com.netflix.hystrix.metric.sample.HystrixCommandUtilization;
 import com.netflix.hystrix.metric.sample.HystrixThreadPoolUtilization;
 import com.netflix.hystrix.metric.sample.HystrixUtilization;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
 public class SerialHystrixUtilization extends SerialHystrixMetric {
 
     private final static Logger logger = LoggerFactory.getLogger(SerialHystrixUtilization.class);
 
+    @Deprecated
     public static byte[] toBytes(HystrixUtilization utilization) {
-        byte[] retVal = null;
-
-        try {
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            JsonGenerator cbor = cborFactory.createGenerator(bos);
-
-            serializeUtilization(utilization, cbor);
-
-            retVal = bos.toByteArray();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
-        return retVal;
+        throw new UnsupportedOperationException("Not implemented anymore.  Will be implemented in a new class shortly");
     }
 
     public static String toJsonString(HystrixUtilization utilization) {
@@ -97,42 +79,9 @@ public class SerialHystrixUtilization extends SerialHystrixMetric {
         }
     }
 
+    @Deprecated
     public static HystrixUtilization fromByteBuffer(ByteBuffer bb) {
-        byte[] byteArray = new byte[bb.remaining()];
-        bb.get(byteArray);
-
-        Map<HystrixCommandKey, HystrixCommandUtilization> commandUtilizationMap = new HashMap<HystrixCommandKey, HystrixCommandUtilization>();
-        Map<HystrixThreadPoolKey, HystrixThreadPoolUtilization> threadPoolUtilizationMap = new HashMap<HystrixThreadPoolKey, HystrixThreadPoolUtilization>();
-
-        try {
-            CBORParser parser = cborFactory.createParser(byteArray);
-            JsonNode rootNode = mapper.readTree(parser);
-
-            Iterator<Map.Entry<String, JsonNode>> commands = rootNode.path("commands").fields();
-            Iterator<Map.Entry<String, JsonNode>> threadPools = rootNode.path("threadpools").fields();
-
-            while (commands.hasNext()) {
-                Map.Entry<String, JsonNode> command = commands.next();
-                HystrixCommandKey commandKey = HystrixCommandKey.Factory.asKey(command.getKey());
-                HystrixCommandUtilization commandUtilization = new HystrixCommandUtilization(command.getValue().path("activeCount").asInt());
-                commandUtilizationMap.put(commandKey, commandUtilization);
-            }
-
-            while (threadPools.hasNext()) {
-                Map.Entry<String, JsonNode> threadPool = threadPools.next();
-                HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey(threadPool.getKey());
-                HystrixThreadPoolUtilization threadPoolUtilization = new HystrixThreadPoolUtilization(
-                        threadPool.getValue().path("activeCount").asInt(),
-                        threadPool.getValue().path("corePoolSize").asInt(),
-                        threadPool.getValue().path("poolSize").asInt(),
-                        threadPool.getValue().path("queueSize").asInt()
-                );
-                threadPoolUtilizationMap.put(threadPoolKey, threadPoolUtilization);
-            }
-        } catch (IOException ioe) {
-            logger.error("IO Exception during desrialization of HystrixUtilization : " + ioe);
-        }
-        return new HystrixUtilization(commandUtilizationMap, threadPoolUtilizationMap);
+        throw new UnsupportedOperationException("Not implemented anymore.  Will be implemented in a new class shortly");
     }
 
     private static void writeCommandUtilizationJson(JsonGenerator json, HystrixCommandKey key, HystrixCommandUtilization utilization) throws IOException {
