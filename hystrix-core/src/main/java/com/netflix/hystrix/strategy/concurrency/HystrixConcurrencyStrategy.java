@@ -18,6 +18,7 @@ package com.netflix.hystrix.strategy.concurrency;
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixThreadPool;
 import com.netflix.hystrix.HystrixThreadPoolKey;
+import com.netflix.hystrix.HystrixThreadPoolProperties;
 import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.properties.HystrixProperty;
 import com.netflix.hystrix.util.PlatformSpecific;
@@ -75,22 +76,7 @@ public abstract class HystrixConcurrencyStrategy {
      * @return instance of {@link ThreadPoolExecutor}
      */
     public ThreadPoolExecutor getThreadPool(final HystrixThreadPoolKey threadPoolKey, HystrixProperty<Integer> corePoolSize, HystrixProperty<Integer> maximumPoolSize, HystrixProperty<Integer> keepAliveTime, TimeUnit unit, BlockingQueue<Runnable> workQueue) {
-        ThreadFactory threadFactory = null;
-        if (!PlatformSpecific.isAppEngineStandardEnvironment()) {
-            threadFactory = new ThreadFactory() {
-                protected final AtomicInteger threadNumber = new AtomicInteger(0);
-
-                @Override
-                public Thread newThread(Runnable r) {
-                    Thread thread = new Thread(r, "hystrix-" + threadPoolKey.name() + "-" + threadNumber.incrementAndGet());
-                    thread.setDaemon(true);
-                    return thread;
-                }
-
-            };
-        } else {
-            threadFactory = PlatformSpecific.getAppEngineThreadFactory();
-        }
+        final ThreadFactory threadFactory = getThreadFactory(threadPoolKey);
 
         final int dynamicCoreSize = corePoolSize.get();
         final int dynamicMaximumSize = maximumPoolSize.get();
@@ -102,6 +88,49 @@ public abstract class HystrixConcurrencyStrategy {
             return new ThreadPoolExecutor(dynamicCoreSize, dynamicCoreSize, keepAliveTime.get(), unit, workQueue, threadFactory);
         } else {
             return new ThreadPoolExecutor(dynamicCoreSize, dynamicMaximumSize, keepAliveTime.get(), unit, workQueue, threadFactory);
+        }
+    }
+
+    public ThreadPoolExecutor getThreadPool(final HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolProperties threadPoolProperties) {
+        final ThreadFactory threadFactory = getThreadFactory(threadPoolKey);
+
+        final boolean allowMaximumSizeToDivergeFromCoreSize = threadPoolProperties.getAllowMaximumSizeToDivergeFromCoreSize().get();
+        final int dynamicCoreSize = threadPoolProperties.coreSize().get();
+        final int keepAliveTime = threadPoolProperties.keepAliveTimeMinutes().get();
+        final int maxQueueSize = threadPoolProperties.maxQueueSize().get();
+        final BlockingQueue<Runnable> workQueue = getBlockingQueue(maxQueueSize);
+
+        if (allowMaximumSizeToDivergeFromCoreSize) {
+            final int dynamicMaximumSize = threadPoolProperties.maximumSize().get();
+            if (dynamicCoreSize > dynamicMaximumSize) {
+                logger.error("Hystrix ThreadPool configuration at startup for : " + threadPoolKey.name() + " is trying to set coreSize = " +
+                        dynamicCoreSize + " and maximumSize = " + dynamicMaximumSize + ".  Maximum size will be set to " +
+                        dynamicCoreSize + ", the coreSize value, since it must be equal to or greater than the coreSize value");
+                return new ThreadPoolExecutor(dynamicCoreSize, dynamicCoreSize, keepAliveTime, TimeUnit.MINUTES, workQueue, threadFactory);
+            } else {
+                return new ThreadPoolExecutor(dynamicCoreSize, dynamicMaximumSize, keepAliveTime, TimeUnit.MINUTES, workQueue, threadFactory);
+            }
+        } else {
+            return new ThreadPoolExecutor(dynamicCoreSize, dynamicCoreSize, keepAliveTime, TimeUnit.MINUTES, workQueue, threadFactory);
+        }
+    }
+
+    private static ThreadFactory getThreadFactory(final HystrixThreadPoolKey threadPoolKey) {
+        ThreadFactory threadFactory = null;
+        if (!PlatformSpecific.isAppEngineStandardEnvironment()) {
+            return new ThreadFactory() {
+                protected final AtomicInteger threadNumber = new AtomicInteger(0);
+
+                @Override
+                public Thread newThread(Runnable r) {
+                    Thread thread = new Thread(r, "hystrix-" + threadPoolKey.name() + "-" + threadNumber.incrementAndGet());
+                    thread.setDaemon(true);
+                    return thread;
+                }
+
+            };
+        } else {
+            return PlatformSpecific.getAppEngineThreadFactory();
         }
     }
 

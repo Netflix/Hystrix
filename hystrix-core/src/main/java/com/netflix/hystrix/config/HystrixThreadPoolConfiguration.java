@@ -35,12 +35,20 @@ public class HystrixThreadPoolConfiguration {
                                            int keepAliveTimeInMinutes, boolean allowMaximumSizeToDivergeFromCoreSize, int rollingCounterNumberOfBuckets,
                                            int rollingCounterBucketSizeInMilliseconds) {
         this.threadPoolKey = threadPoolKey;
+        this.allowMaximumSizeToDivergeFromCoreSize = allowMaximumSizeToDivergeFromCoreSize;
         this.coreSize = coreSize;
-        this.maximumSize = maximumSize;
+        if (allowMaximumSizeToDivergeFromCoreSize) {
+            if (coreSize > maximumSize) {
+                this.maximumSize = coreSize;
+            } else {
+                this.maximumSize = maximumSize;
+            }
+        } else {
+            this.maximumSize = coreSize;
+        }
         this.maxQueueSize = maxQueueSize;
         this.queueRejectionThreshold = queueRejectionThreshold;
         this.keepAliveTimeInMinutes = keepAliveTimeInMinutes;
-        this.allowMaximumSizeToDivergeFromCoreSize = allowMaximumSizeToDivergeFromCoreSize;
         this.rollingCounterNumberOfBuckets = rollingCounterNumberOfBuckets;
         this.rollingCounterBucketSizeInMilliseconds = rollingCounterBucketSizeInMilliseconds;
     }
