@@ -138,7 +138,7 @@ public abstract class HystrixThreadPoolProperties {
     public Integer actualMaximumSize() {
         final int coreSize = coreSize().get();
         final int maximumSize = maximumSize().get();
-        if (allowMaximumSizeToDivergeFromCoreSize.get()) {
+        if (getAllowMaximumSizeToDivergeFromCoreSize().get()) {
             if (coreSize > maximumSize) {
                 return coreSize;
             } else {
