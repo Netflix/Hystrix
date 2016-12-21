@@ -1,5 +1,20 @@
 # Hystrix Releases #
 
+### Version 1.5.9 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.5.9%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.5.9/)) ###
+
+* [Pull 1423](https://github.com/Netflix/Hystrix/pull/1423) Write correct value to error log when maximumSize < coreSize.  Thanks @diver-in-sky!
+* [Pull 1412](https://github.com/Netflix/Hystrix/pull/1412) Javanica: raiseHystrixExceptions support for Observables.  Thanks @michaelcowan !
+* [Pull 1441](https://github.com/Netflix/Hystrix/pull/1441) Use Gretty Gradle plugin for hystrix-examples-webapp 
+* [Pull 1442](https://github.com/Netflix/Hystrix/pull/1442) Fix handling of client-connect/disconnect never getting released if it occurs before metrics start getting produced by hystrix-metrics-event-stream.  Thanks for review, @mattnelson!
+* [Pull 1444](https://github.com/Netflix/Hystrix/pull/1444) More efficient server thread release in hystrix-metrics-event-stream.  Thanks @mattnelson for the suggestion!
+* [Pull 1443](https://github.com/Netflix/Hystrix/pull/1443) Use Gretty Gradle plugin for hystrix-dashboard
+* [Pull 1445](https://github.com/Netflix/Hystrix/pull/1445) Add missing onUnsubscribe hook to execution hooks
+* [Pull 1414](https://github.com/Netflix/Hystrix/pull/1414) Introduce NotWrappedByHystrix exception type to indicate Hystrix should propagate it back without wrapping in a HystrixRuntimeException.  Thanks @tbvh!
+* [Pull 1448](https://github.com/Netflix/Hystrix/pull/1448) Remove dependency on jackson-cbor in hystrix-serialization.  This belongs in a different module.  Existing public methods now throw an exception.
+* [Pull 1435](https://github.com/Netflix/Hystrix/pull/1435) Allow the property `allowMaximumSixeToDivergeFromCoreSize` to be set dynamically.  Thanks @ptab!
+* [Pull 1447](https://github.com/Netflix/Hystrix/pull/1447) Allow the property `allowMaximumSixeToDivergeFromCoreSize` to be set dynamically. 
+* [Pull 1449](https://github.com/Netflix/Hystrix/pull/1435) Introduce a distinction between `maximumSize` (configured value) and `actualMaximumSize` (value used to set the thread pool maximum size).  Publish both values to make understanding configuration more straightforward.  Thanks @ptab!
+
 ### Version 1.5.8 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.5.8%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.5.8/)) ###
 
 * [Pull 1419](https://github.com/Netflix/Hystrix/pull/1419) When user has not opted in to letting core/maximum threadpools diverge, ensure dynamic updates to coreSize apply to both
