@@ -249,6 +249,20 @@ public class HystrixServoMetricsPublisherThreadPool extends HystrixServoMetricsP
             }
         });
 
+        monitors.add(new InformationalMetric<Number>(MonitorConfig.builder("propertyValue_maximumSize").build()) {
+            @Override
+            public Number getValue() {
+                return properties.maximumSize().get();
+            }
+        });
+
+        monitors.add(new InformationalMetric<Number>(MonitorConfig.builder("propertyValue_actualMaximumSize").build()) {
+            @Override
+            public Number getValue() {
+                return properties.actualMaximumSize();
+            }
+        });
+
         monitors.add(new InformationalMetric<Number>(MonitorConfig.builder("propertyValue_keepAliveTimeInMinutes").build()) {
             @Override
             public Number getValue() {
