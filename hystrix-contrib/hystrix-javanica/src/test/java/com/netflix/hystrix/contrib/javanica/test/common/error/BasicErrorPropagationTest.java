@@ -21,6 +21,7 @@ import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
 import com.netflix.hystrix.contrib.javanica.test.common.BasicHystrixTest;
 import com.netflix.hystrix.contrib.javanica.test.common.domain.User;
+import com.netflix.hystrix.exception.ExceptionNotWrappedByHystrix;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
 import org.junit.Before;
 import org.junit.Test;
@@ -31,9 +32,7 @@ import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 import static com.netflix.hystrix.contrib.javanica.test.common.CommonUtils.getHystrixCommandByKey;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -198,6 +197,25 @@ public abstract class BasicErrorPropagationTest extends BasicHystrixTest {
         }
     }
 
+    @Test
+    public void testCommandThrowsNotWrappedException() {
+        try {
+            userService.throwNotWrappedCheckedException();
+            fail();
+        } catch (NotWrappedCheckedException e) {
+            // pass
+        } catch (Throwable e) {
+            fail("'NotWrappedCheckedException' is expected exception.");
+        }finally {
+            assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+            com.netflix.hystrix.HystrixInvokableInfo getUserCommand = getHystrixCommandByKey("throwNotWrappedCheckedException");
+            // record failure in metrics
+            assertTrue(getUserCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
+            // and will not trigger fallback logic
+            verify(failoverService, never()).activate();
+        }
+    }
+
     public static class UserService {
 
         private FailoverService failoverService;
@@ -268,6 +286,15 @@ public abstract class BasicErrorPropagationTest extends BasicHystrixTest {
             if (val == null || val.length() == 0) {
                 throw new BadRequestException("parameter cannot be null ot empty");
             }
+        }
+
+        @HystrixCommand(fallbackMethod = "voidFallback")
+        void throwNotWrappedCheckedException() throws NotWrappedCheckedException {
+            throw new NotWrappedCheckedException();
+        }
+
+        private void voidFallback(){
+            failoverService.activate();
         }
 
         /*********************************************************************************/
@@ -373,6 +400,9 @@ public abstract class BasicErrorPropagationTest extends BasicHystrixTest {
         private RuntimeOperationException(String message) {
             super(message);
         }
+    }
+
+    private static class NotWrappedCheckedException extends Exception implements ExceptionNotWrappedByHystrix {
     }
 
     static class UserException extends RuntimeException {
