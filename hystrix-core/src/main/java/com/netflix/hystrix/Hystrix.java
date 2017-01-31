@@ -189,10 +189,11 @@ public class Hystrix {
         }
 
         public E peek() {
-            if (top.get() == null) {
+            Node<E> eNode = top.get();
+            if (eNode == null) {
                 return null;
             } else {
-                return top.get().item;
+                return eNode.item;
             }
         }
 
