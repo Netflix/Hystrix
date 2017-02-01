@@ -2,6 +2,7 @@
 
 # Hystrix: Latency and Fault Tolerance for Distributed Systems
 
+[![NetflixOSS Lifecycle](https://img.shields.io/osslifecycle/Netflix/PROJECTNAMEHERE.svg)]()
 [![][travis img]][travis]
 [![][maven img]][maven]
 [![][license img]][license]
