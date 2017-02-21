@@ -121,5 +121,14 @@ public @interface HystrixCommand {
      * @return exceptions to wrap
      */
     HystrixException[] raiseHystrixExceptions() default {};
+
+    /**
+     * Specifies default fallback method for the command. If both {@link #fallbackMethod} and {@link #defaultFallback}
+     * methods are specified then specific one is used.
+     * note: default fallback method cannot have parameters, return type should be compatible with command return type.
+     *
+     * @return the name of default fallback method
+     */
+    String defaultFallback() default "";
 }
 
