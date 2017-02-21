@@ -24,8 +24,10 @@ import com.netflix.hystrix.contrib.javanica.test.common.domain.User;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.Test;
+import rx.Completable;
 import rx.Observable;
 import rx.Observer;
+import rx.Single;
 import rx.Subscriber;
 import rx.functions.Action1;
 import rx.subjects.ReplaySubject;
@@ -90,6 +92,19 @@ public abstract class BasicObservableTest extends BasicHystrixTest {
         assertTrue(getUserCommand.getExecutionEvents().contains(HystrixEventType.SUCCESS));
     }
 
+    @Test
+    public void testCompletable(){
+        userService.getUserCompletable("1", "name: ");
+        com.netflix.hystrix.HystrixInvokableInfo getUserCommand = getHystrixCommandByKey("getUserCompletable");
+        assertTrue(getUserCommand.getExecutionEvents().contains(HystrixEventType.SUCCESS));
+    }
+
+    @Test
+    public void testSingle(){
+        userService.getUserSingle("1", "name: ");
+        com.netflix.hystrix.HystrixInvokableInfo getUserCommand = getHystrixCommandByKey("getUserSingle");
+        assertTrue(getUserCommand.getExecutionEvents().contains(HystrixEventType.SUCCESS));
+    }
 
     @Test
     public void testGetUserWithRegularFallback() {
@@ -161,6 +176,18 @@ public abstract class BasicObservableTest extends BasicHystrixTest {
         public Observable<User> getUser(final String id, final String name) {
             validate(id, name, "getUser has failed");
             return createObservable(id, name);
+        }
+
+        @HystrixCommand
+        public Completable getUserCompletable(final String id, final String name) {
+            validate(id, name, "getUser has failed");
+            return createObservable(id, name).toCompletable();
+        }
+
+        @HystrixCommand
+        public Single getUserSingle(final String id, final String name) {
+            validate(id, name, "getUser has failed");
+            return createObservable(id, name).toSingle();
         }
 
         @HystrixCommand(fallbackMethod = "regularFallback", observableExecutionMode = ObservableExecutionMode.LAZY)

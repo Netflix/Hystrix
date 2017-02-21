@@ -28,7 +28,9 @@ import com.netflix.hystrix.contrib.javanica.exception.FallbackInvocationExceptio
 import com.netflix.hystrix.exception.HystrixBadRequestException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import rx.Completable;
 import rx.Observable;
+import rx.Single;
 import rx.functions.Func1;
 
 import javax.annotation.concurrent.ThreadSafe;
@@ -67,7 +69,8 @@ public class GenericObservableCommand extends HystrixObservableCommand {
     protected Observable construct() {
         Observable result;
         try {
-            result = ((Observable) commandActions.getCommandAction().execute(executionType))
+            Observable observable = toObservable(commandActions.getCommandAction().execute(executionType));
+            result = observable
                     .onErrorResumeNext(new Func1<Throwable, Observable>() {
                         @Override
                         public Observable call(Throwable throwable) {
@@ -156,5 +159,17 @@ public class GenericObservableCommand extends HystrixObservableCommand {
             }
         }
         return false;
+    }
+
+    private Observable toObservable(Object obj) {
+        if (Observable.class.isAssignableFrom(obj.getClass())) {
+            return (Observable) obj;
+        } else if (Completable.class.isAssignableFrom(obj.getClass())) {
+            return ((Completable) obj).toObservable();
+        } else if (Single.class.isAssignableFrom(obj.getClass())) {
+            return ((Single) obj).toObservable();
+        } else {
+            throw new IllegalStateException("unsupported rx type: " + obj.getClass());
+        }
     }
 }

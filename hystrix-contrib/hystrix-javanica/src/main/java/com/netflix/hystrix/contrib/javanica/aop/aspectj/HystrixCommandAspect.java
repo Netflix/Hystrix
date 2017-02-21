@@ -41,7 +41,9 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
+import rx.Completable;
 import rx.Observable;
+import rx.Single;
 import rx.functions.Func1;
 
 import java.lang.reflect.Method;
@@ -109,8 +111,8 @@ public class HystrixCommandAspect {
         return result;
     }
 
-    private Observable executeObservable(HystrixInvokable invokable, ExecutionType executionType, final MetaHolder metaHolder) {
-        return ((Observable) CommandExecutor.execute(invokable, executionType, metaHolder))
+    private Object executeObservable(HystrixInvokable invokable, ExecutionType executionType, final MetaHolder metaHolder) {
+        return mapObservable(((Observable) CommandExecutor.execute(invokable, executionType, metaHolder))
                 .onErrorResumeNext(new Func1<Throwable, Observable>() {
                     @Override
                     public Observable call(Throwable throwable) {
@@ -122,7 +124,16 @@ public class HystrixCommandAspect {
                         }
                         return Observable.error(throwable);
                     }
-                });
+                }), metaHolder);
+    }
+
+    private Object mapObservable(Observable observable, final MetaHolder metaHolder) {
+        if (Completable.class.isAssignableFrom(metaHolder.getMethod().getReturnType())) {
+            return observable.toCompletable();
+        } else if (Single.class.isAssignableFrom(metaHolder.getMethod().getReturnType())) {
+            return observable.toSingle();
+        }
+        return observable;
     }
 
     private Throwable hystrixRuntimeExceptionToThrowable(MetaHolder metaHolder, HystrixRuntimeException e) {

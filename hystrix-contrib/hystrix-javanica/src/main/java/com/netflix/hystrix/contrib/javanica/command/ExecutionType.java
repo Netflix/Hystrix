@@ -15,8 +15,12 @@
  */
 package com.netflix.hystrix.contrib.javanica.command;
 
+import com.google.common.collect.ImmutableSet;
+import rx.Completable;
 import rx.Observable;
+import rx.Single;
 
+import java.util.Set;
 import java.util.concurrent.Future;
 
 /**
@@ -39,6 +43,9 @@ public enum ExecutionType {
      */
     OBSERVABLE;
 
+    // RX types
+    private static final Set<? extends Class> RX_TYPES = ImmutableSet.of(Observable.class, Single.class, Completable.class);
+
     /**
      * Gets execution type for specified class type.
      * @param type the type
@@ -47,11 +54,19 @@ public enum ExecutionType {
     public static ExecutionType getExecutionType(Class<?> type) {
         if (Future.class.isAssignableFrom(type)) {
             return ExecutionType.ASYNCHRONOUS;
-        } else if (Observable.class.isAssignableFrom(type)) {
+        } else if (isRxType(type)) {
             return ExecutionType.OBSERVABLE;
         } else {
             return ExecutionType.SYNCHRONOUS;
         }
     }
 
+    private static boolean isRxType(Class<?> cl) {
+        for (Class<?> rxType : RX_TYPES) {
+            if (rxType.isAssignableFrom(cl)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
