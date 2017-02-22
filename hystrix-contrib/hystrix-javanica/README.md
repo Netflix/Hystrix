@@ -388,6 +388,7 @@ Default fallback feature allows to engage DRY principle and get rid of redundanc
 
 Default fallback method should not have any parameters except extra one to get execution exception and shouldn't throw any exceptions.
 Below fallbacks listed in descending order of priority:
+
 1. command fallback defined using `fallbackMethod` property of `@HystrixCommand`
 2. command default fallback defined using `defaultFallback` property of `@HystrixCommand`
 3. class default fallback defined using `defaultFallback` property of `@DefaultProperties`
