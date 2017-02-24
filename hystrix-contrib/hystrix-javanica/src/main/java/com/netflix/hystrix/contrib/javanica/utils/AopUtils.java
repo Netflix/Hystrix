@@ -130,6 +130,9 @@ public final class AopUtils {
         info.append("Method signature:").append("\n");
         info.append(m.toGenericString()).append("\n");
 
+        info.append("Declaring class:\n");
+        info.append(m.getDeclaringClass().getCanonicalName()).append("\n");
+
         info.append("\nFlags:").append("\n");
         info.append("Bridge=").append(m.isBridge()).append("\n");
         info.append("Synthetic=").append(m.isSynthetic()).append("\n");
