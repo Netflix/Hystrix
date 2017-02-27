@@ -107,7 +107,7 @@ The return type of command method should be Future that indicates that a command
 
 ## Reactive Execution
 
-To performe "Reactive Execution" you should return an instance of `Observable` in your command method as in the example below:
+To perform "Reactive Execution" you should return an instance of `Observable` in your command method as in the example below:
 
 ```java
     @HystrixCommand
@@ -330,7 +330,7 @@ If `userResource.getUserById(id);` throws an exception that type is _BadRequestE
 
 It is worth noting that by default a caller will always get the root cause exception e.g. ``BadRequestException``, never ``HystrixBadRequestException`` or ``HystrixRuntimeException`` (except the case when executed code explicitly throws those exceptions).
 
-Optionally this exception un-wraping can be disabled for ``HystrixRuntimeException`` by using ``raiseHystrixExceptions`` i.e. all exceptions that are not ignored are raised as the _cause_ of a ``HystrixRuntimeException``:
+Optionally this exception un-wrapping can be disabled for ``HystrixRuntimeException`` by using ``raiseHystrixExceptions`` i.e. all exceptions that are not ignored are raised as the _cause_ of a ``HystrixRuntimeException``:
 
 ```java
     @HystrixCommand(
@@ -433,7 +433,7 @@ private User getUserByIdCacheKeyMethod(String id);
 ```
 **Cache key generator**
 
-Jacanica has only one cache key generator **HystrixCacheKeyGenerator** that generates a _HystrixGeneratedCacheKey_ based on _CacheInvocationContext_. Implementation is thread-safe.
+Javanica has only one cache key generator **HystrixCacheKeyGenerator** that generates a _HystrixGeneratedCacheKey_ based on _CacheInvocationContext_. Implementation is thread-safe.
 Parameters of an annotated method are selected by the following rules:
 - If no parameters are annotated with _@CacheKey_ then all parameters are included
 - If one or more _@CacheKey_ annotations exist only those parameters with the _@CacheKey_ annotation are included
@@ -709,7 +709,7 @@ To set collapser [properties](https://github.com/Netflix/Hystrix/wiki/Configurat
 Read more about Hystrix request collapsing [here] (https://github.com/Netflix/Hystrix/wiki/How-it-Works#wiki-RequestCollapsing)
 
 **Collapser error processing**
-Bath command can have a fallback method.
+Batch command can have a fallback method.
 Example:
 
 ```java
