@@ -53,6 +53,7 @@ import java.util.concurrent.Future;
 
 import static com.netflix.hystrix.contrib.javanica.utils.AopUtils.getDeclaredMethod;
 import static com.netflix.hystrix.contrib.javanica.utils.AopUtils.getMethodFromTarget;
+import static com.netflix.hystrix.contrib.javanica.utils.AopUtils.getMethodInfo;
 import static com.netflix.hystrix.contrib.javanica.utils.EnvUtils.isCompileWeaving;
 import static com.netflix.hystrix.contrib.javanica.utils.ajc.AjcUtils.getAjcMethodAroundAdvice;
 
@@ -272,7 +273,14 @@ public class HystrixCommandAspect {
         COLLAPSER;
 
         static HystrixPointcutType of(Method method) {
-            return method.isAnnotationPresent(HystrixCommand.class) ? COMMAND : COLLAPSER;
+            if (method.isAnnotationPresent(HystrixCommand.class)) {
+                return COMMAND;
+            } else if (method.isAnnotationPresent(HystrixCollapser.class)) {
+                return COLLAPSER;
+            } else {
+                String methodInfo = getMethodInfo(method);
+                throw new IllegalStateException("'https://github.com/Netflix/Hystrix/issues/1458' - no valid annotation found for: \n" + methodInfo);
+            }
         }
     }
 
