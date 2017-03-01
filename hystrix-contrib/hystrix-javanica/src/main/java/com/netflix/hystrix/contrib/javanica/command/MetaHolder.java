@@ -35,6 +35,7 @@ import java.util.List;
 /**
  * Simple immutable holder to keep all necessary information about current method to build Hystrix command.
  */
+// todo: replace fallback related flags with FallbackMethod class
 @Immutable
 public final class MetaHolder {
 
@@ -60,6 +61,7 @@ public final class MetaHolder {
     private final ExecutionType fallbackExecutionType;
     private final boolean fallback;
     private boolean extendedParentFallback;
+    private final boolean defaultFallback;
     private final JoinPoint joinPoint;
     private final boolean observable;
     private final ObservableExecutionMode observableExecutionMode;
@@ -93,6 +95,7 @@ public final class MetaHolder {
         this.fallbackExecutionType = builder.fallbackExecutionType;
         this.joinPoint = builder.joinPoint;
         this.extendedFallback = builder.extendedFallback;
+        this.defaultFallback = builder.defaultFallback;
         this.fallback = builder.fallback;
         this.extendedParentFallback = builder.extendedParentFallback;
         this.observable = builder.observable;
@@ -225,6 +228,10 @@ public final class MetaHolder {
 
     public boolean isExtendedFallback() {
         return extendedFallback;
+    }
+
+    public boolean isDefaultFallback() {
+        return defaultFallback;
     }
 
     @SuppressWarnings("unchecked")
@@ -367,6 +374,7 @@ public final class MetaHolder {
         private boolean extendedFallback;
         private boolean fallback;
         private boolean extendedParentFallback;
+        private boolean defaultFallback;
         private boolean observable;
         private JoinPoint joinPoint;
         private ObservableExecutionMode observableExecutionMode;
@@ -408,6 +416,11 @@ public final class MetaHolder {
 
         public Builder extendedParentFallback(boolean extendedParentFallback) {
             this.extendedParentFallback = extendedParentFallback;
+            return this;
+        }
+
+        public Builder defaultFallback(boolean defaultFallback) {
+            this.defaultFallback = defaultFallback;
             return this;
         }
 
