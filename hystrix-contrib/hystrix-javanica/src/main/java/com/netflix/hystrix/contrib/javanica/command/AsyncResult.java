@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
  */
 public abstract class AsyncResult<T> implements Future<T>, ClosureCommand<T> {
 
-    private static final String ERROR_MSG = "AsyncResult is just a stab and cannot be used as complete implementation of Future";
+    private static final String ERROR_MSG = "AsyncResult is just a stub and cannot be used as complete implementation of Future";
 
     @Override
     public boolean cancel(boolean mayInterruptIfRunning) throws UnsupportedOperationException {

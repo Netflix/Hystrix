@@ -105,6 +105,7 @@ public class HystrixCommandBuilderFactory {
         if (fallbackMethod.isPresent()) {
 
             Method fMethod = fallbackMethod.getMethod();
+            Object[] args = fallbackMethod.isDefault() ? new Object[0] : metaHolder.getArgs();
             if (fallbackMethod.isCommand()) {
                 fMethod.setAccessible(true);
                 HystrixCommand hystrixCommand = fMethod.getAnnotation(HystrixCommand.class);
@@ -112,8 +113,9 @@ public class HystrixCommandBuilderFactory {
                         .obj(metaHolder.getObj())
                         .method(fMethod)
                         .ajcMethod(getAjcMethod(metaHolder.getObj(), fMethod))
-                        .args(metaHolder.getArgs())
+                        .args(args)
                         .fallback(true)
+                        .defaultFallback(fallbackMethod.isDefault())
                         .defaultCollapserKey(metaHolder.getDefaultCollapserKey())
                         .fallbackMethod(fMethod)
                         .extendedFallback(fallbackMethod.isExtended())
@@ -131,12 +133,13 @@ public class HystrixCommandBuilderFactory {
             } else {
                 MetaHolder fmMetaHolder = MetaHolder.builder()
                         .obj(metaHolder.getObj())
+                        .defaultFallback(fallbackMethod.isDefault())
                         .method(fMethod)
                         .fallbackExecutionType(ExecutionType.SYNCHRONOUS)
                         .extendedFallback(fallbackMethod.isExtended())
                         .extendedParentFallback(metaHolder.isExtendedFallback())
                         .ajcMethod(null) // if fallback method isn't annotated with command annotation then we don't need to get ajc method for this
-                        .args(metaHolder.getArgs()).build();
+                        .args(args).build();
 
                 fallbackAction = new MethodExecutionAction(fmMetaHolder.getObj(), fMethod, fmMetaHolder.getArgs(), fmMetaHolder);
             }

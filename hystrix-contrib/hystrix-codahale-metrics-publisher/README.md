@@ -23,3 +23,7 @@ and for Ivy:
 ```xml
 <dependency org="com.netflix.hystrix" name="hystrix-codahale-metrics-publisher" rev="1.1.2" />
 ```
+
+Example usage (make it work/plug it in):
+
+      HystrixPlugins.getInstance().registerMetricsPublisher(new HystrixCodahaleMetricsPublisher(yourMetricRegistry));

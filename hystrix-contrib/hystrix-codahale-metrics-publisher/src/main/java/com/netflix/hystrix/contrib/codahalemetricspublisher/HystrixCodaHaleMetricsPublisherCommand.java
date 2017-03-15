@@ -272,6 +272,13 @@ public class HystrixCodaHaleMetricsPublisherCommand implements HystrixMetricsPub
                 return HystrixRollingNumberEvent.TIMEOUT;
             }
         });
+        // the rolling number of MaxConcurrentExecutionCount. Can be used to determine saturation
+        safelyCreateRollingCountForEvent("rollingMaxConcurentExecutionCount", new Func0<HystrixRollingNumberEvent>() {
+            @Override
+            public HystrixRollingNumberEvent call() {
+                return HystrixRollingNumberEvent.COMMAND_MAX_ACTIVE;
+            }
+        });
 
         // the number of executionSemaphorePermits in use right now
         metricRegistry.register(createMetricName("executionSemaphorePermitsInUse"), new Gauge<Integer>() {

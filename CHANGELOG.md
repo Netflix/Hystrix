@@ -1,5 +1,15 @@
 # Hystrix Releases #
 
+### Version 1.5.10 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.5.10%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.5.10/)) ###
+
+- [Pull 1489](https://github.com/Netflix/Hystrix/pull/1489) Added rollingMaxConcurrentExecutionCount to CodaHale metrics publisher.  Thanks @LuboVarga !
+- [Pull 1481](https://github.com/Netflix/Hystrix/pull/1481) Add sanity checking to HystrixCommandAspect to debug unreproducible cases.  Thanks @dmgcodevil !
+- [Pull 1482](https://github.com/Netflix/Hystrix/pull/1482) Make it possible to re-use fallback methods in Javanica.  (Addresses #1446).  Thanks @dmgcodevil !
+- [Pull 1488](https://github.com/Netflix/Hystrix/pull/1488) Fix spelling mistakes in Javanica docs.  Thanks @bltb!
+- [Pull 1475](https://github.com/Netflix/Hystrix/pull/1475) Added example usage of CodaHale metrics publisher.  Thanks @LuboVarga !
+- [Pull 1469](https://github.com/Netflix/Hystrix/pull/1469) Fix possible concurrency bug.  Thanks @petercla! 
+- [Pull 1453](https://github.com/Netflix/Hystrix/pull/1453) Add Javanica unit test for NotWrapped checked exception.  Thanks @tbvh!
+
 ### Version 1.5.9 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.5.9%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.5.9/)) ###
 
 * [Pull 1423](https://github.com/Netflix/Hystrix/pull/1423) Write correct value to error log when maximumSize < coreSize.  Thanks @diver-in-sky!
