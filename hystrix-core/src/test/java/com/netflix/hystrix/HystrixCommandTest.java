@@ -198,6 +198,33 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
     }
 
     /**
+     * Test a command execution that throws an exception that should not be wrapped.
+     */
+    @Test
+    public void testNotWrappedBadRequestWithNoFallback() {
+        TestHystrixCommand<Integer> command = getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.BAD_REQUEST_NOT_WRAPPED, AbstractTestHystrixCommand.FallbackResult.UNIMPLEMENTED);
+        try {
+            command.execute();
+            fail("we shouldn't get here");
+        } catch (HystrixRuntimeException e) {
+            e.printStackTrace();
+            fail("we shouldn't get a HystrixRuntimeException");
+        } catch (RuntimeException e) {
+            assertTrue(e instanceof NotWrappedByHystrixTestRuntimeException);
+        }
+
+        assertTrue(command.getExecutionTimeInMilliseconds() > -1);
+        assertTrue(command.getEventCounts().contains(HystrixEventType.BAD_REQUEST));
+        assertCommandExecutionEvents(command, HystrixEventType.BAD_REQUEST);
+        assertNotNull(command.getExecutionException());
+        assertTrue(command.getExecutionException() instanceof HystrixBadRequestException);
+        assertTrue(command.getExecutionException().getCause() instanceof NotWrappedByHystrixTestRuntimeException);
+        assertEquals(0, command.getBuilder().metrics.getCurrentConcurrentExecutionCount());
+        assertSaneHystrixRequestLog(1);
+    }
+
+
+    /**
      * Test a command execution that fails but has a fallback.
      */
     @Test
@@ -4908,6 +4935,8 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
                 throw new StackOverflowError("Unrecoverable Error for TestHystrixCommand");
             } else if (executionResult == AbstractTestHystrixCommand.ExecutionResult.BAD_REQUEST) {
                 throw new HystrixBadRequestException("Execution BadRequestException for TestHystrixCommand");
+            } else if (executionResult == AbstractTestHystrixCommand.ExecutionResult.BAD_REQUEST_NOT_WRAPPED) {
+                throw new HystrixBadRequestException("Execution BadRequestException for TestHystrixCommand", new NotWrappedByHystrixTestRuntimeException());
             } else {
                 throw new RuntimeException("You passed in a executionResult enum that can't be represented in HystrixCommand: " + executionResult);
             }
