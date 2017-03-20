@@ -1561,9 +1561,15 @@ import java.util.concurrent.atomic.AtomicReference;
             return (IllegalStateException) e;
         }
         if (e instanceof HystrixBadRequestException) {
+            if (e.getCause() instanceof RuntimeException) {
+                return (RuntimeException)e.getCause();
+            }
             return (HystrixBadRequestException) e;
         }
         if (e.getCause() instanceof HystrixBadRequestException) {
+            if (e.getCause().getCause() instanceof RuntimeException) {
+                return (RuntimeException)e.getCause().getCause();
+            }
             return (HystrixBadRequestException) e.getCause();
         }
         if (e instanceof HystrixRuntimeException) {
