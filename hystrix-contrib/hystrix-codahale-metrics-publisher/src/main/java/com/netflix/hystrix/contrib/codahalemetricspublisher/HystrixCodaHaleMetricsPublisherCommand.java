@@ -273,7 +273,7 @@ public class HystrixCodaHaleMetricsPublisherCommand implements HystrixMetricsPub
             }
         });
         // the rolling number of MaxConcurrentExecutionCount. Can be used to determine saturation
-        safelyCreateRollingCountForEvent("rollingMaxConcurentExecutionCount", new Func0<HystrixRollingNumberEvent>() {
+        safelyCreateRollingCountForEvent("rollingMaxConcurrentExecutionCount", new Func0<HystrixRollingNumberEvent>() {
             @Override
             public HystrixRollingNumberEvent call() {
                 return HystrixRollingNumberEvent.COMMAND_MAX_ACTIVE;
