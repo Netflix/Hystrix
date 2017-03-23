@@ -209,7 +209,7 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
          *            <p>
          *            NOTE: Every unique {@link HystrixCommandKey} will result in new instances of {@link HystrixCircuitBreaker}, {@link HystrixCommandMetrics} and {@link HystrixCommandProperties}.
          *            Thus,
-         *            the number of variants should be kept to a finite and reasonable number to avoid high-memory usage or memory leacks.
+         *            the number of variants should be kept to a finite and reasonable number to avoid high-memory usage or memory leaks.
          *            <p>
          *            Hundreds of keys is fine, tens of thousands is probably not.
          * @return Setter for fluent interface via method chaining
