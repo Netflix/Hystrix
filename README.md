@@ -182,7 +182,7 @@ More information can be found on the [Dashboard Wiki](https://github.com/Netflix
 
 ## Bugs and Feedback
 
-For bugs, questions and discussions please use the [Github Issues](https://github.com/Netflix/Hystrix/issues).
+For bugs, questions and discussions please use the [GitHub Issues](https://github.com/Netflix/Hystrix/issues).
 
  
 ## LICENSE
