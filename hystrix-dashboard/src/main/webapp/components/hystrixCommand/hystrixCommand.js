@@ -174,6 +174,7 @@
             assertNotNull(data,"propertyValue_circuitBreakerSleepWindowInMilliseconds");
             assertNotNull(data,"propertyValue_circuitBreakerErrorThresholdPercentage");
             assertNotNull(data,"propertyValue_circuitBreakerForceOpen");
+            assertNotNull(data,"propertyValue_circuitBreakerForceClosed");
             assertNotNull(data,"propertyValue_executionIsolationStrategy");
             assertNotNull(data,"propertyValue_executionIsolationThreadTimeoutInMilliseconds");
             assertNotNull(data,"propertyValue_executionIsolationThreadInterruptOnTimeout");
