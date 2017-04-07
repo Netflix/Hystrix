@@ -22,7 +22,6 @@ import com.google.common.base.Supplier;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.command.ExecutionType;
 import com.netflix.hystrix.contrib.javanica.exception.FallbackDefinitionException;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 
@@ -294,7 +293,7 @@ public class FallbackMethod {
 
     private static int position(Type type, List<Type> types) {
         if (type == null) return -1;
-        if (CollectionUtils.isEmpty(types)) return -1;
+        if (types == null || types.isEmpty()) return -1;
         return types.indexOf(type);
     }
 
