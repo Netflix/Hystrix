@@ -67,18 +67,21 @@ public class HealthCountsStream extends BucketedRollingCounterStream<HystrixComm
         if (initialStream != null) {
             return initialStream;
         } else {
+            final HealthCountsStream healthStream;
             synchronized (HealthCountsStream.class) {
                 HealthCountsStream existingStream = streams.get(commandKey.name());
                 if (existingStream == null) {
                     HealthCountsStream newStream = new HealthCountsStream(commandKey, numBuckets, bucketSizeInMs,
                             HystrixCommandMetrics.appendEventToBucket);
-                    newStream.startCachingStreamValuesIfUnstarted();
+
                     streams.putIfAbsent(commandKey.name(), newStream);
-                    return newStream;
+                    healthStream = newStream;
                 } else {
-                    return existingStream;
+                    healthStream = existingStream;
                 }
             }
+            healthStream.startCachingStreamValuesIfUnstarted();
+            return healthStream;
         }
     }
 
