@@ -44,8 +44,6 @@ public abstract class AbstractHystrixStreamController {
 
 	private final int pausePollerThreadDelayInMs;
 
-	private static final AtomicInteger concurrentConnections = new AtomicInteger(0);
-
 	protected AbstractHystrixStreamController(Observable<String> sampleStream) {
 		this(sampleStream, DEFAULT_PAUSE_POLLER_THREAD_DELAY_IN_MS);
 	}
@@ -57,9 +55,7 @@ public abstract class AbstractHystrixStreamController {
 
 	protected abstract int getMaxNumberConcurrentConnectionsAllowed();
 
-	protected final AtomicInteger getCurrentConnections() {
-		return concurrentConnections;
-	}
+	protected abstract AtomicInteger getCurrentConnections();
 
 	/**
 	 * Maintain an open connection with the client. On initial connection send latest data of each requested event type and subsequently send all changes for each requested event type.
