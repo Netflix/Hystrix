@@ -1,7 +1,5 @@
 # hystrix-javanica
 
-**Could you please spend 5 sec and answer the  [questionnaire](https://docs.google.com/forms/d/1NEeWxtL_PleX0H9GqTvKxxHqwUryJ9L048j8D3T45fs/viewform). Thank you !**
-
 Java language has a great advantages over other languages such as reflection and annotations.
 All modern frameworks such as Spring, Hibernate, myBatis and etc. seek to use this advantages to the maximum.
 The idea of introduction annotations in Hystrix is obvious solution for improvement. Currently using Hystrix involves writing a lot of code that is a barrier to rapid development. You likely be spending a lot of time on writing a Hystrix commands. Idea of the Javanica project is make easier using of Hystrix by the introduction of support annotations.
@@ -107,7 +105,7 @@ The return type of command method should be Future that indicates that a command
 
 ## Reactive Execution
 
-To performe "Reactive Execution" you should return an instance of `Observable` in your command method as in the example below:
+To perform "Reactive Execution" you should return an instance of `Observable` in your command method as in the example below:
 
 ```java
     @HystrixCommand
@@ -316,6 +314,86 @@ case 2: sync command, async fallback. This case isn't supported for the same rea
 
 Same restrictions are imposed on using observable feature in javanica.
 
+## Default fallback for class or concrete command
+This feature allows to define default fallback for the whole class or concrete command. If you have a batch of commands with exactly the same fallback logic you still have to define a fallback method for every command because fallback method should have exactly the same signature as command does, consider the following code:
+
+```java
+    public class Service {
+        @RequestMapping(value = "/test1")
+        @HystrixCommand(fallbackMethod = "fallback")
+        public APIResponse test1(String param1) {
+            // some codes here
+            return APIResponse.success("success");
+        }
+
+        @RequestMapping(value = "/test2")
+        @HystrixCommand(fallbackMethod = "fallback")
+        public APIResponse test2() {
+            // some codes here
+            return APIResponse.success("success");
+        }
+
+        @RequestMapping(value = "/test3")
+        @HystrixCommand(fallbackMethod = "fallback")
+        public APIResponse test3(ObjectRequest obj) {
+            // some codes here
+            return APIResponse.success("success");
+        }
+
+        private APIResponse fallback(String param1) {
+            return APIResponse.failed("Server is busy");
+        }
+
+        private APIResponse fallback() {
+            return APIResponse.failed("Server is busy");
+        }
+        
+        private APIResponse fallback(ObjectRequest obj) {
+            return APIResponse.failed("Server is busy");
+        }
+    }
+```
+
+Default fallback feature allows to engage DRY principle and get rid of redundancy:
+
+```java
+    @DefaultProperties(defaultFallback = "fallback")
+    public class Service {
+        @RequestMapping(value = "/test1")
+        @HystrixCommand
+        public APIResponse test1(String param1) {
+            // some codes here
+            return APIResponse.success("success");
+        }
+
+        @RequestMapping(value = "/test2")
+        @HystrixCommand
+        public APIResponse test2() {
+            // some codes here
+            return APIResponse.success("success");
+        }
+
+        @RequestMapping(value = "/test3")
+        @HystrixCommand
+        public APIResponse test3(ObjectRequest obj) {
+            // some codes here
+            return APIResponse.success("success");
+        }
+
+        private APIResponse fallback() {
+            return APIResponse.failed("Server is busy");
+        }
+    }
+```
+
+Default fallback method should not have any parameters except extra one to get execution exception and shouldn't throw any exceptions.
+Below fallbacks listed in descending order of priority:
+
+1. command fallback defined using `fallbackMethod` property of `@HystrixCommand`
+2. command default fallback defined using `defaultFallback` property of `@HystrixCommand`
+3. class default fallback defined using `defaultFallback` property of `@DefaultProperties`
+
+
 ## Error Propagation
 Based on [this](https://github.com/Netflix/Hystrix/wiki/How-To-Use#ErrorPropagation) description, `@HystrixCommand` has an ability to specify exceptions types which should be ignored.
 
@@ -330,7 +408,7 @@ If `userResource.getUserById(id);` throws an exception that type is _BadRequestE
 
 It is worth noting that by default a caller will always get the root cause exception e.g. ``BadRequestException``, never ``HystrixBadRequestException`` or ``HystrixRuntimeException`` (except the case when executed code explicitly throws those exceptions).
 
-Optionally this exception un-wraping can be disabled for ``HystrixRuntimeException`` by using ``raiseHystrixExceptions`` i.e. all exceptions that are not ignored are raised as the _cause_ of a ``HystrixRuntimeException``:
+Optionally this exception un-wrapping can be disabled for ``HystrixRuntimeException`` by using ``raiseHystrixExceptions`` i.e. all exceptions that are not ignored are raised as the _cause_ of a ``HystrixRuntimeException``:
 
 ```java
     @HystrixCommand(
@@ -433,7 +511,7 @@ private User getUserByIdCacheKeyMethod(String id);
 ```
 **Cache key generator**
 
-Jacanica has only one cache key generator **HystrixCacheKeyGenerator** that generates a _HystrixGeneratedCacheKey_ based on _CacheInvocationContext_. Implementation is thread-safe.
+Javanica has only one cache key generator **HystrixCacheKeyGenerator** that generates a _HystrixGeneratedCacheKey_ based on _CacheInvocationContext_. Implementation is thread-safe.
 Parameters of an annotated method are selected by the following rules:
 - If no parameters are annotated with _@CacheKey_ then all parameters are included
 - If one or more _@CacheKey_ annotations exist only those parameters with the _@CacheKey_ annotation are included
@@ -709,7 +787,7 @@ To set collapser [properties](https://github.com/Netflix/Hystrix/wiki/Configurat
 Read more about Hystrix request collapsing [here] (https://github.com/Netflix/Hystrix/wiki/How-it-Works#wiki-RequestCollapsing)
 
 **Collapser error processing**
-Bath command can have a fallback method.
+Batch command can have a fallback method.
 Example:
 
 ```java

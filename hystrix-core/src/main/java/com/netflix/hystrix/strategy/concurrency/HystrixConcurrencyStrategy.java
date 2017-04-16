@@ -116,10 +116,9 @@ public abstract class HystrixConcurrencyStrategy {
     }
 
     private static ThreadFactory getThreadFactory(final HystrixThreadPoolKey threadPoolKey) {
-        ThreadFactory threadFactory = null;
         if (!PlatformSpecific.isAppEngineStandardEnvironment()) {
             return new ThreadFactory() {
-                protected final AtomicInteger threadNumber = new AtomicInteger(0);
+                private final AtomicInteger threadNumber = new AtomicInteger(0);
 
                 @Override
                 public Thread newThread(Runnable r) {

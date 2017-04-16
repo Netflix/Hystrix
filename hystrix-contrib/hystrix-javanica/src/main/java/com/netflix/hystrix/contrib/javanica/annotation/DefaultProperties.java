@@ -80,4 +80,13 @@ public @interface DefaultProperties {
      * @return exceptions to wrap
      */
     HystrixException[] raiseHystrixExceptions() default {};
+
+    /**
+     * Specifies default fallback method for each command in the given class. Every command within the class should
+     * have a return type which is compatible with default fallback method return type.
+     * note: default fallback method cannot have parameters.
+     *
+     * @return the name of default fallback method
+     */
+    String defaultFallback() default "";
 }

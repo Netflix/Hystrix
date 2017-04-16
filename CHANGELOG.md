@@ -1,5 +1,29 @@
 # Hystrix Releases #
 
+### Version 1.5.11 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.5.11%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.5.11/)) ###
+
+- [Pull 1531](https://github.com/Netflix/Hystrix/pull/1531) Add assertion to dashboard receiving metrics data.  Thanks @lholmquist !
+- [Pull 1529](https://github.com/Netflix/Hystrix/pull/1529) Remove commons-collection as dependency of hystrix-javanica.  Thanks @Psynbiotik !
+- [Pull 1532](https://github.com/Netflix/Hystrix/pull/1532) Move metrics subscription out of synchronized block in HealthCountsStream to limit time spent holding a lock.
+- [Pull 1513](https://github.com/Netflix/Hystrix/pull/1513) Fixed COMMAND_MAX_ACTIVE metrics for Coda Hale metrics.  Thanks @chrisgray !
+- [Pull 1515](https://github.com/Netflix/Hystrix/pull/1515) Fixed comment typo in HystrixCommand.  Thanks @kmkr !
+- [Pull 1512](https://github.com/Netflix/Hystrix/pull/1512) Upgrade codahale metrics-core to 3.2.2.  Thanks @chrisgray !
+- [Pull 1507](https://github.com/Netflix/Hystrix/pull/1507) README typo fix. Thanks @PiperChester !
+- [Pull 1503](https://github.com/Netflix/Hystrix/pull/1503) Allow BadRequest exceptions to not be attached if user explicitly wants unwrapped exceptions.  Thanks @mNantern !
+- [Pull 1502](https://github.com/Netflix/Hystrix/pull/1502) Remove useless code in HystrixConcurrencyStrategy.  Thanks @zzzvvvxxxd !
+- [Pull 1495](https://github.com/Netflix/Hystrix/pull/1495) Add hystrix-metrics-event-stream-jaxrs.  Thanks @justinjose28 !
+- [Pull 1498](https://github.com/Netflix/Hystrix/pull/1498) Upgrade Servo to 0.10.1 in hystrix-servo-metrics-publisher
+
+### Version 1.5.10 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.5.10%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.5.10/)) ###
+
+- [Pull 1489](https://github.com/Netflix/Hystrix/pull/1489) Added rollingMaxConcurrentExecutionCount to CodaHale metrics publisher.  Thanks @LuboVarga !
+- [Pull 1481](https://github.com/Netflix/Hystrix/pull/1481) Add sanity checking to HystrixCommandAspect to debug unreproducible cases.  Thanks @dmgcodevil !
+- [Pull 1482](https://github.com/Netflix/Hystrix/pull/1482) Make it possible to re-use fallback methods in Javanica.  (Addresses #1446).  Thanks @dmgcodevil !
+- [Pull 1488](https://github.com/Netflix/Hystrix/pull/1488) Fix spelling mistakes in Javanica docs.  Thanks @bltb!
+- [Pull 1475](https://github.com/Netflix/Hystrix/pull/1475) Added example usage of CodaHale metrics publisher.  Thanks @LuboVarga !
+- [Pull 1469](https://github.com/Netflix/Hystrix/pull/1469) Fix possible concurrency bug.  Thanks @petercla! 
+- [Pull 1453](https://github.com/Netflix/Hystrix/pull/1453) Add Javanica unit test for NotWrapped checked exception.  Thanks @tbvh!
+
 ### Version 1.5.9 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.5.9%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.5.9/)) ###
 
 * [Pull 1423](https://github.com/Netflix/Hystrix/pull/1423) Write correct value to error log when maximumSize < coreSize.  Thanks @diver-in-sky!
