@@ -108,6 +108,10 @@ public class GenericObservableCommand extends HystrixObservableCommand {
                 Object res = commandActions.getFallbackAction().executeWithArgs(executionType, args);
                 if (res instanceof Observable) {
                     return (Observable) res;
+                } else if (res instanceof Single) {
+                    return ((Single) res).toObservable();
+                } else if (res instanceof Completable) {
+                    return ((Completable) res).toObservable();
                 } else {
                     return Observable.just(res);
                 }

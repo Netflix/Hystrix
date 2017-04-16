@@ -14,6 +14,7 @@ import org.junit.runner.RunWith;
 import org.slf4j.helpers.MessageFormatter;
 import org.springframework.test.context.junit4.rules.SpringClassRule;
 import org.springframework.test.context.junit4.rules.SpringMethodRule;
+import rx.Completable;
 
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
@@ -64,6 +65,7 @@ public abstract class BasicGenericFallbackTest extends BasicHystrixTest {
                 new Object[]{MethodGenericDefinitionFailureCase8.class},
                 new Object[]{MethodGenericDefinitionFailureCase9.class},
                 new Object[]{MethodGenericDefinitionFailureCase10.class},
+                new Object[]{MethodGenericDefinitionFailureCase11.class},
 
         };
     }
@@ -245,6 +247,12 @@ public abstract class BasicGenericFallbackTest extends BasicHystrixTest {
         @HystrixCommand(fallbackMethod = "fallback")
         public GenericEntity<? super Serializable> command() { throw new IllegalStateException(); }
         private GenericEntity<? super Comparable> fallback() { return null; }
+    }
+
+    public static class MethodGenericDefinitionFailureCase11 {
+        @HystrixCommand(fallbackMethod = "fallback")
+        public Completable command() { throw new IllegalStateException(); }
+        private void fallback() { return; }
     }
 
     /* ====================================================================== */
