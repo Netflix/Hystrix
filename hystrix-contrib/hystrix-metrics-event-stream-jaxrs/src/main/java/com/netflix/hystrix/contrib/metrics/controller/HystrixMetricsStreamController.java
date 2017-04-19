@@ -15,6 +15,8 @@
  */
 package com.netflix.hystrix.contrib.metrics.controller;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Application;
@@ -47,6 +49,7 @@ import com.netflix.hystrix.serial.SerialHystrixDashboardData;
 @Path("/hystrix.stream")
 public class HystrixMetricsStreamController extends AbstractHystrixStreamController {
 
+	private static final AtomicInteger concurrentConnections = new AtomicInteger(0);
 	private static DynamicIntProperty maxConcurrentConnections = DynamicPropertyFactory.getInstance().getIntProperty("hystrix.config.stream.maxConcurrentConnections", 5);
 
 	public HystrixMetricsStreamController() {
@@ -66,6 +69,10 @@ public class HystrixMetricsStreamController extends AbstractHystrixStreamControl
 	@Override
 	protected int getMaxNumberConcurrentConnectionsAllowed() {
 		return maxConcurrentConnections.get();
+	}
+	@Override
+	protected AtomicInteger getCurrentConnections()  {
+		return concurrentConnections;
 	}
 
 }

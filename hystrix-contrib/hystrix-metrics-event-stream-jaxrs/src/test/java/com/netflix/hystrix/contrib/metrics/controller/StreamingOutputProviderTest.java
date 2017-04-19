@@ -80,10 +80,14 @@ public class StreamingOutputProviderTest {
 	}).subscribeOn(Schedulers.computation());
 
 	private AbstractHystrixStreamController sse = new AbstractHystrixStreamController(streamOfOnNexts) {
-
+		private  final AtomicInteger concurrentConnections = new AtomicInteger(0);
 		@Override
 		protected int getMaxNumberConcurrentConnectionsAllowed() {
 			return 2;
+		}
+		@Override
+		protected AtomicInteger getCurrentConnections() {
+			return concurrentConnections;
 		}
 
 	};
