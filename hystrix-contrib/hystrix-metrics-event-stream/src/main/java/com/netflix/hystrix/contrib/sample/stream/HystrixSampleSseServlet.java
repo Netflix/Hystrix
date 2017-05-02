@@ -146,12 +146,16 @@ public abstract class HystrixSampleSseServlet extends HttpServlet {
                             @Override
                             public void onNext(String sampleDataAsString) {
                                 if (sampleDataAsString != null) {
-                                    writer.print("data: " + sampleDataAsString + "\n\n");
-                                    // explicitly check for client disconnect - PrintWriter does not throw exceptions
-                                    if (writer.checkError()) {
+                                    try {
+                                        writer.print("data: " + sampleDataAsString + "\n\n");
+                                        // explicitly check for client disconnect - PrintWriter does not throw exceptions
+                                        if (writer.checkError()) {
+                                            moreDataWillBeSent.set(false);
+                                        }
+                                        writer.flush();
+                                    } catch (Throwable t) {
                                         moreDataWillBeSent.set(false);
                                     }
-                                    writer.flush();
                                 }
                             }
                         });
@@ -166,7 +170,7 @@ public abstract class HystrixSampleSseServlet extends HttpServlet {
                             moreDataWillBeSent.set(false);
                         }
                         writer.flush();
-                    } catch (InterruptedException e) {
+                    } catch (Throwable t) {
                         moreDataWillBeSent.set(false);
                     }
                 }
