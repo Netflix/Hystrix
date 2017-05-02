@@ -153,7 +153,7 @@ public abstract class HystrixSampleSseServlet extends HttpServlet {
                                             moreDataWillBeSent.set(false);
                                         }
                                         writer.flush();
-                                    } catch (Throwable t) {
+                                    } catch (Exception ex) {
                                         moreDataWillBeSent.set(false);
                                     }
                                 }
@@ -170,7 +170,7 @@ public abstract class HystrixSampleSseServlet extends HttpServlet {
                             moreDataWillBeSent.set(false);
                         }
                         writer.flush();
-                    } catch (Throwable t) {
+                    } catch (Exception ex) {
                         moreDataWillBeSent.set(false);
                     }
                 }
