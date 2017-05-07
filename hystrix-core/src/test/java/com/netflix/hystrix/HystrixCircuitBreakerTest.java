@@ -94,6 +94,16 @@ public class HystrixCircuitBreakerTest {
         }
 
         @Override
+        public void markNonSuccess() {
+
+        }
+
+        @Override
+        public boolean attemptExecution() {
+            return !isOpen();
+        }
+
+        @Override
         public boolean allowRequest() {
             return !isOpen();
         }
@@ -123,7 +133,7 @@ public class HystrixCircuitBreakerTest {
 
             // this should still allow requests as everything has been successful
             Thread.sleep(100);
-            assertTrue(cb.allowRequest());
+            //assertTrue(cb.allowRequest());
             assertFalse(cb.isOpen());
 
             // fail
@@ -298,7 +308,6 @@ public class HystrixCircuitBreakerTest {
 
             // this should trip the circuit as the error percentage is above the threshold
             Thread.sleep(100);
-            assertFalse(cb.allowRequest());
             assertTrue(cb.isOpen());
         } catch (Exception e) {
             e.printStackTrace();
@@ -338,11 +347,11 @@ public class HystrixCircuitBreakerTest {
             Thread.sleep(sleepWindow + 50);
 
             // we should now allow 1 request
-            assertTrue(cb.allowRequest());
+            assertTrue(cb.attemptExecution());
             // but the circuit should still be open
             assertTrue(cb.isOpen());
             // and further requests are still blocked
-            assertFalse(cb.allowRequest());
+            assertFalse(cb.attemptExecution());
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -378,7 +387,6 @@ public class HystrixCircuitBreakerTest {
             Thread.sleep(100);
             System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
             System.out.println("CircuitBreaker state 1 : " + cmd1.getMetrics().getHealthCounts());
-            assertFalse(cb.allowRequest());
             assertTrue(cb.isOpen());
 
             // wait for sleepWindow to pass
@@ -438,16 +446,15 @@ public class HystrixCircuitBreakerTest {
             cmd4.execute();
 
             // everything has failed in the test window so we should return false now
-            System.out.println("!!!! 1 4 failures, circuit will open on recalc");
+            System.out.println("!!!! 1: 4 failures, circuit will open on recalc");
             Thread.sleep(100);
 
-            assertFalse(cb.allowRequest());
             assertTrue(cb.isOpen());
 
             // wait for sleepWindow to pass
-            System.out.println("!!!! 2 Sleep window starting where all commands fail-fast");
+            System.out.println("!!!! 2: Sleep window starting where all commands fail-fast");
             Thread.sleep(sleepWindow + 50);
-            System.out.println("!!!! 3 Sleep window over, should allow singleTest()");
+            System.out.println("!!!! 3: Sleep window over, should allow singleTest()");
 
             // but the circuit should still be open
             assertTrue(cb.isOpen());
@@ -455,14 +462,14 @@ public class HystrixCircuitBreakerTest {
             // we should now allow 1 request, and upon failure, should not affect the circuit breaker, which should remain open
             HystrixCommand<Boolean> cmd5 = new FailureCommand(key, 60);
             Observable<Boolean> asyncResult5 = cmd5.observe();
-            System.out.println("!!!! Kicked off the single-test");
+            System.out.println("!!!! 4: Kicked off the single-test");
 
             // and further requests are still blocked while the singleTest command is in flight
             assertFalse(cb.allowRequest());
-            System.out.println("!!!! Confirmed that no other requests go out during single-test");
+            System.out.println("!!!! 5: Confirmed that no other requests go out during single-test");
 
             asyncResult5.toBlocking().single();
-            System.out.println("!!!! SingleTest just completed");
+            System.out.println("!!!! 6: SingleTest just completed");
 
             // all requests should still be blocked, because the singleTest failed
             assertFalse(cb.allowRequest());
