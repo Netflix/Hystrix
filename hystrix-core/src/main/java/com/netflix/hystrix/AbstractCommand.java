@@ -520,7 +520,7 @@ import java.util.concurrent.atomic.AtomicReference;
         executionHook.onStart(_cmd);
 
         /* determine if we're allowed to execute */
-        if (circuitBreaker.allowRequest()) {
+        if (circuitBreaker.attemptExecution()) {
             final TryableSemaphore executionSemaphore = getExecutionSemaphore();
             final AtomicBoolean semaphoreHasBeenReleased = new AtomicBoolean(false);
             final Action0 singleSemaphoreRelease = new Action0() {
@@ -601,6 +601,7 @@ import java.util.concurrent.atomic.AtomicReference;
         final Func1<Throwable, Observable<R>> handleFallback = new Func1<Throwable, Observable<R>>() {
             @Override
             public Observable<R> call(Throwable t) {
+                circuitBreaker.markNonSuccess();
                 Exception e = getExceptionFromThrowable(t);
                 executionResult = executionResult.setExecutionException(e);
                 if (e instanceof RejectedExecutionException) {

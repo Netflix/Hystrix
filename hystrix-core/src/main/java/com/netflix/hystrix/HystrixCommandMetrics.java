@@ -343,6 +343,10 @@ public class HystrixCommandMetrics extends HystrixMetrics {
         }
     }
 
+    /* package-private */ HealthCountsStream getHealthCountsStream() {
+        return healthCountsStream;
+    }
+
     /**
      * Retrieve a snapshot of total requests, error count and error percentage.
      *
