@@ -1132,17 +1132,8 @@ import java.util.concurrent.atomic.AtomicReference;
             // if the child unsubscribes we unsubscribe our parent as well
             child.add(s);
 
-            /*
-             * Define the action to perform on timeout outside of the TimerListener to it can capture the HystrixRequestContext
-             * of the calling thread which doesn't exist on the Timer thread.
-             */
-            final HystrixContextRunnable timeoutRunnable = new HystrixContextRunnable(originalCommand.concurrencyStrategy, new Runnable() {
-
-                @Override
-                public void run() {
-                    child.onError(new HystrixTimeoutException());
-                }
-            });
+            //capture the HystrixRequestContext upfront so that we can use it in the timeout thread later
+            final HystrixRequestContext hystrixRequestContext = HystrixRequestContext.getContextForCurrentThread();
 
             TimerListener listener = new TimerListener() {
 
@@ -1156,6 +1147,15 @@ import java.util.concurrent.atomic.AtomicReference;
 
                         // shut down the original request
                         s.unsubscribe();
+
+                        final HystrixContextRunnable timeoutRunnable = new HystrixContextRunnable(originalCommand.concurrencyStrategy, hystrixRequestContext, new Runnable() {
+
+                            @Override
+                            public void run() {
+                                child.onError(new HystrixTimeoutException());
+                            }
+                        });
+
 
                         timeoutRunnable.run();
                         //if it did not start, then we need to mark a command start for concurrency metrics, and then issue the timeout
