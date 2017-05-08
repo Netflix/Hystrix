@@ -140,11 +140,11 @@ public class HystricsMetricsControllerTest extends JerseyTest {
 
 	private EventInput getStream() throws Exception {
 		long timeElapsed = System.currentTimeMillis();
-		while (System.currentTimeMillis() - timeElapsed < 3000) {
+		while (System.currentTimeMillis() - timeElapsed < 10000) {
 			try {
 				return getStreamFailFast();
 			} catch (Exception e) {
-
+				System.out.println(" Not able to connect to Stream end point. Retrying..."+e.getMessage());
 			}
 		}
 		fail("Not able to connect to Stream end point");
