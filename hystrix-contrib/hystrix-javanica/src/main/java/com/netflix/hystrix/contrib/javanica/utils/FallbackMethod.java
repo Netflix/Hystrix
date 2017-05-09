@@ -24,6 +24,7 @@ import com.netflix.hystrix.contrib.javanica.command.ExecutionType;
 import com.netflix.hystrix.contrib.javanica.exception.FallbackDefinitionException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
+import rx.Completable;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -97,6 +98,13 @@ public class FallbackMethod {
             if (ExecutionType.OBSERVABLE == ExecutionType.getExecutionType(commandReturnType)) {
                 if (ExecutionType.OBSERVABLE != getExecutionType()) {
                     Type commandParametrizedType = commandMethod.getGenericReturnType();
+
+                    // basically any object can be wrapped into Completable, Completable itself ins't parametrized
+                    if(Completable.class.isAssignableFrom(commandMethod.getReturnType())) {
+                        validateCompletableReturnType(commandMethod, method.getReturnType());
+                        return;
+                    }
+
                     if (isReturnTypeParametrized(commandMethod)) {
                         commandParametrizedType = getFirstParametrizedType(commandMethod);
                     }
@@ -140,6 +148,13 @@ public class FallbackMethod {
             return pType.getActualTypeArguments()[0];
         }
         return null;
+    }
+
+    // everything can be wrapped into completable except 'void'
+    private void validateCompletableReturnType(Method commandMethod, Class<?> callbackReturnType) {
+        if (Void.TYPE == callbackReturnType) {
+            throw new FallbackDefinitionException(createErrorMsg(commandMethod, method, "fallback cannot return 'void' if command return type is " + Completable.class.getSimpleName()));
+        }
     }
 
     private void validateReturnType(Method commandMethod, Method fallbackMethod) {

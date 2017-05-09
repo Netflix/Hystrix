@@ -125,8 +125,8 @@ To perform "Reactive Execution" you should return an instance of `Observable` in
             });
     }
 ```
-
-The return type of command method should be `Observable`.
+In addition to `Observable` Javanica supports the following RX types: `Single` and `Completable`.
+Hystrix core supports only one RX type which is `Observable`, `HystrixObservableCommand` requires to return `Observable` therefore javanica transforms `Single` or `Completable` to `Observable` using `toObservable()` method for appropriate type and before returning the result to caller it translates `Observable` to either `Single` or `Completable`  using `toSingle()` or `toCompletable()` correspondingly.
 
 HystrixObservable interface provides two methods: ```observe()``` - eagerly starts execution of the command the same as ``` HystrixCommand#queue()``` and ```HystrixCommand#execute()```; ```toObservable()``` - lazily starts execution of the command only once the Observable is subscribed to. To control this behaviour and swith between two modes ```@HystrixCommand``` provides specific parameter called ```observableExecutionMode```.
 ```@HystrixCommand(observableExecutionMode = EAGER)``` indicates that ```observe()``` method should be used to execute observable command
