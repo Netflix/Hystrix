@@ -103,7 +103,7 @@ public class HystrixCommandAspect {
                 result = executeObservable(invokable, executionType, metaHolder);
             }
         } catch (HystrixBadRequestException e) {
-            throw e.getCause();
+            throw e.getCause() != null ? e.getCause() : e;
         } catch (HystrixRuntimeException e) {
             throw hystrixRuntimeExceptionToThrowable(metaHolder, e);
         }

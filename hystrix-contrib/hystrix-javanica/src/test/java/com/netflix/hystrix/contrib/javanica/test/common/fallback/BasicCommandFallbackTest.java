@@ -26,6 +26,7 @@ import com.netflix.hystrix.contrib.javanica.exception.FallbackDefinitionExceptio
 import com.netflix.hystrix.contrib.javanica.test.common.BasicHystrixTest;
 import com.netflix.hystrix.contrib.javanica.test.common.domain.Domain;
 import com.netflix.hystrix.contrib.javanica.test.common.domain.User;
+import com.netflix.hystrix.exception.HystrixBadRequestException;
 import org.apache.commons.lang3.Validate;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,6 +37,7 @@ import java.util.concurrent.Future;
 
 import static com.netflix.hystrix.contrib.javanica.test.common.CommonUtils.getHystrixCommandByKey;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public abstract class BasicCommandFallbackTest extends BasicHystrixTest {
@@ -204,6 +206,16 @@ public abstract class BasicCommandFallbackTest extends BasicHystrixTest {
     public void testCommandWithFallbackWithAdditionalParameter() {
         User user = userService.commandWithFallbackWithAdditionalParameter("", "");
         assertEquals("def", user.getName());
+    }
+
+    @Test(expected = HystrixBadRequestException.class)
+    public void testCommandThrowsHystrixBadRequestExceptionWithNoCause() {
+        try {
+            userService.commandThrowsHystrixBadRequestExceptionWithNoCause(null, null);
+        } finally {
+            HystrixInvokableInfo<?> asyncCommandWithAsyncFallbackCommand = getHystrixCommandByKey("commandThrowsHystrixBadRequestExceptionWithNoCause");
+            assertFalse(asyncCommandWithAsyncFallbackCommand.getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
+        }
     }
 
     public static class UserService {
@@ -397,6 +409,11 @@ public abstract class BasicCommandFallbackTest extends BasicHystrixTest {
         public User commandWithFallbackReturnSuperType(final String id, final String name) {
             validate(id, name);
             return new User(id, name);
+        }
+
+        @HystrixCommand(fallbackMethod = "staticFallback")
+        public User commandThrowsHystrixBadRequestExceptionWithNoCause(final String id, final String name){
+            throw new HystrixBadRequestException("invalid arguments");
         }
 
         private User fallbackReturnSubTypeOfDomain(final String id, final String name) {
