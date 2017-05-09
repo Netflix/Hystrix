@@ -79,6 +79,7 @@ public final class HystrixPropertiesManager {
      */
     public static final String MAX_QUEUE_SIZE = "maxQueueSize";
     public static final String CORE_SIZE = "coreSize";
+    public static final String MAXIMUM_SIZE = "maximumSize";
     public static final String KEEP_ALIVE_TIME_MINUTES = "keepAliveTimeMinutes";
     public static final String QUEUE_SIZE_REJECTION_THRESHOLD = "queueSizeRejectionThreshold";
     public static final String METRICS_ROLLING_STATS_NUM_BUCKETS = "metrics.rollingStats.numBuckets";
@@ -285,6 +286,13 @@ public final class HystrixPropertiesManager {
                                 @Override
                                 public void set(HystrixThreadPoolProperties.Setter setter, String value) {
                                     setter.withCoreSize(toInt(CORE_SIZE, value));
+                                }
+                            }
+                    )
+                    .put(MAXIMUM_SIZE, new PropSetter<HystrixThreadPoolProperties.Setter, String>() {
+                                @Override
+                                public void set(HystrixThreadPoolProperties.Setter setter, String value) {
+                                    setter.withMaximumSize(toInt(MAXIMUM_SIZE, value));
                                 }
                             }
                     )

@@ -84,6 +84,7 @@ public abstract class BasicCommandPropertiesTest extends BasicHystrixTest {
         HystrixThreadPoolProperties properties = getThreadPoolProperties(command);
 
         assertEquals(30, (int) properties.coreSize().get());
+        assertEquals(25, (int) properties.maximumSize().get());
         assertEquals(101, (int) properties.maxQueueSize().get());
         assertEquals(2, (int) properties.keepAliveTimeMinutes().get());
         assertEquals(15, (int) properties.queueSizeRejectionThreshold().get());
@@ -159,6 +160,7 @@ public abstract class BasicCommandPropertiesTest extends BasicHystrixTest {
                 },
                 threadPoolProperties = {
                         @HystrixProperty(name = "coreSize", value = "30"),
+                        @HystrixProperty(name = "maximumSize", value = "25"),
                         @HystrixProperty(name = "maxQueueSize", value = "101"),
                         @HystrixProperty(name = "keepAliveTimeMinutes", value = "2"),
                         @HystrixProperty(name = "metrics.rollingStats.numBuckets", value = "12"),
