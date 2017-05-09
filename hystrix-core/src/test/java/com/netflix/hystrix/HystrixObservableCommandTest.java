@@ -30,13 +30,8 @@ import com.netflix.hystrix.strategy.properties.HystrixProperty;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
-import rx.Notification;
-import rx.Observable;
+import rx.*;
 import rx.Observable.OnSubscribe;
-import rx.Observer;
-import rx.Scheduler;
-import rx.Subscriber;
-import rx.Subscription;
 import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func0;
@@ -112,6 +107,57 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         //        if (key != null) {
         //            throw new IllegalStateException("should be null but got: " + key);
         //        }
+    }
+
+    class CompletableCommand extends HystrixObservableCommand<Integer> {
+
+        CompletableCommand() {
+            super(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("COMPLETABLE")));
+        }
+
+        @Override
+        protected Observable<Integer> construct() {
+            return Completable.complete().toObservable();
+        }
+    }
+
+    @Test
+    public void testCompletable() throws InterruptedException {
+
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        final HystrixObservableCommand<Integer> command = new CompletableCommand();
+
+        command.observe().subscribe(new Subscriber<Integer>() {
+            @Override
+            public void onCompleted() {
+                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " OnCompleted");
+                latch.countDown();
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " OnError : " + e);
+                latch.countDown();
+            }
+
+            @Override
+            public void onNext(Integer integer) {
+                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " OnNext : " + integer);
+            }
+        });
+
+        latch.await();
+        assertEquals(null, command.getFailedExecutionException());
+
+        System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
+        assertTrue(command.getExecutionTimeInMilliseconds() > -1);
+        assertTrue(command.isSuccessfulExecution());
+        assertFalse(command.isResponseFromFallback());
+        assertCommandExecutionEvents(command, HystrixEventType.SUCCESS);
+        assertEquals(0, command.metrics.getCurrentConcurrentExecutionCount());
+        assertSaneHystrixRequestLog(1);
+        assertNull(command.getExecutionException());
     }
 
     /**
