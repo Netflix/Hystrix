@@ -128,7 +128,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         final CountDownLatch latch = new CountDownLatch(1);
         final HystrixObservableCommand<Integer> command = new CompletableCommand();
 
-        (new CompletableCommand()).observe().subscribe(new Subscriber<Integer>() {
+        command.observe().subscribe(new Subscriber<Integer>() {
             @Override
             public void onCompleted() {
                 System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " OnCompleted");
