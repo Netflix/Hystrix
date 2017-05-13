@@ -198,6 +198,21 @@ public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> imp
         }
 
         /**
+         * @param threadPoolKey
+         *            {@link HystrixThreadPoolKey} used to define which thread-pool this command should run in (when configured to run on separate threads via
+         *            {@link HystrixCommandProperties#executionIsolationStrategy()}).
+         *            <p>
+         *            By default this is derived from the {@link HystrixCommandGroupKey} but if injected this allows multiple commands to have the same {@link HystrixCommandGroupKey} but different
+         *            thread-pools.
+         * @return Setter for fluent interface via method chaining
+         */
+        public Setter andThreadPoolKey(HystrixThreadPoolKey threadPoolKey) {
+            this.threadPoolKey = threadPoolKey;
+            return this;
+        }
+
+
+        /**
          * Optional
          * 
          * @param commandPropertiesDefaults
