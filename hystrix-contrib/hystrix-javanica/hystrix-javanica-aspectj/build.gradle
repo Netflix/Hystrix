@@ -1,0 +1,112 @@
+apply plugin: 'osgi'
+
+configurations {
+    ajtools
+    ajcTestCompile.extendsFrom testCompile
+    ajcTestRuntime.extendsFrom testRuntime
+    ajc
+    ajInpath
+}
+
+
+sourceSets {
+    ajcTest {
+        compileClasspath += main.output + test.output
+        runtimeClasspath += main.output + test.output
+    }
+
+    ajc {
+        def main = sourceSets.main
+        java.srcDirs = main.java.srcDirs
+        resources.srcDirs = main.resources.srcDirs
+        compileClasspath = main.compileClasspath
+        runtimeClasspath = main.runtimeClasspath
+    }
+}
+
+
+
+compileAjcTestJava {
+
+    sourceCompatibility = "1.6"
+    targetCompatibility = "1.6"
+
+    doLast {
+        ant.taskdef(resource: "org/aspectj/tools/ant/taskdefs/aspectjTaskdefs.properties", classpath: configurations.ajtools.asPath)
+        ant.iajc(source: "1.6", target: "1.6",
+                destDir: "${sourceSets.ajcTest.output.classesDir.absolutePath}", maxmem: "512m", fork: "true",
+                inpath:  configurations.ajInpath.asPath,
+                classpath: "${sourceSets.main.output.classesDir.absolutePath};${configurations.testCompile.asPath}")
+                {
+                    sourceroots {
+                        files("src/ajcTest/java/com/netflix/hystrix/contrib/javanica/test/aspectj", "src/main/java/com/netflix/hystrix/contrib/javanica/aop/aspectj").each {
+                            File file -> pathelement(location: file.absolutePath)
+                        }
+                    }
+                }
+    }
+
+}
+
+compileAjcJava {
+    sourceCompatibility = "1.6"
+    targetCompatibility = "1.6"
+
+    doLast {
+        ant.taskdef(resource: "org/aspectj/tools/ant/taskdefs/aspectjTaskdefs.properties", classpath: configurations.ajtools.asPath)
+        ant.iajc(source: "${sourceCompatibility}", target: "${targetCompatibility}",
+                destDir: "${sourceSets.ajc.output.classesDir.absolutePath}", maxmem: "512m", fork: "true", "showWeaveInfo": "true",
+                classpath: "${configurations.compile.asPath}")
+
+                {
+                    sourceroots {
+                        sourceSets.ajc.java.srcDirs.each {
+                            pathelement(location: it.absolutePath)
+
+                        }
+                    }
+                }
+    }
+}
+
+task ajcTest(type: Test) {
+    testClassesDir = sourceSets.ajcTest.output.classesDir
+    classpath = sourceSets.ajcTest.runtimeClasspath
+    if (System.getProperty('DEBUG', 'false') == 'true') {
+        jvmArgs '-Xdebug',
+                '-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=9009'
+    }
+}
+
+check.dependsOn test, ajcTest
+
+
+ext {
+    aspectjVersion = '1.8.6'
+    springframeworkVesion = '4.3.2.RELEASE'
+}
+
+
+task ajcJar(type: Jar) {
+    archiveName = "${project.name}" + "-ctw-${version}.jar"
+    destinationDir = file("${buildDir}/libs")
+    from sourceSets.ajc.output}
+
+assemble.dependsOn(jar, ajcJar)
+
+dependencies {
+    compileApi project(':hystrix-core')
+    compileApi project(':hystrix-javanica-core')
+    compileApi "org.aspectj:aspectjweaver:$aspectjVersion"
+    compile "org.aspectj:aspectjrt:$aspectjVersion"
+    ajtools "org.aspectj:aspectjtools:$aspectjVersion"
+    ajInpath project(path: ':hystrix-javanica-core', transitive: false,configuration:'testOutput')
+
+    testCompile project(path: ':hystrix-javanica-core',configuration:'testOutput')
+    testCompile "org.springframework:spring-core:$springframeworkVesion"
+    testCompile "org.springframework:spring-context:$springframeworkVesion"
+    testCompile "org.springframework:spring-aop:$springframeworkVesion"
+    testCompile "org.springframework:spring-test:$springframeworkVesion"
+    testCompile 'cglib:cglib:3.1'
+    testRuntime "org.aspectj:aspectjrt:$aspectjVersion"
+}

@@ -130,6 +130,7 @@ public class StreamingOutputProviderTest {
 
 		System.out.println("Total lines:" + writes.get());
 		assertTrue(writes.get() >= 9); // Observable is configured to emit events in every 100 ms. So expect at least 9 in a second.
+		Thread.sleep(1000); // It may take a while to decrement connection.
 		assertTrue(stream.getConcurrentConnections().get() == 0); // Provider is expected to decrement connection count when streaming process is terminated.
 	}
 

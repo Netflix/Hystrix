@@ -15,6 +15,26 @@ Example for Maven:
 </dependency>
 ```
 
+__From 1.6.0 onwards:__
+
+If you are using Aspectj
+```xml
+<dependency>
+    <groupId>com.netflix.hystrix</groupId>
+    <artifactId>hystrix-javanica-aspectj</artifactId>
+    <version>x.y.z</version>
+</dependency>
+```
+
+If you are using AOP Alliance(requires Java 7 or higher). More details can be found [here](hystrix-javanica-aop-alliance/README.md).
+```xml
+<dependency>
+    <groupId>com.netflix.hystrix</groupId>
+    <artifactId>hystrix-javanica-aop-alliance</artifactId>
+    <version>x.y.z</version>
+</dependency>
+```
+
 To implement AOP functionality in the project was used AspectJ library. If in your project already used AspectJ then you need to add hystrix aspect in aop.xml as below:
 ```xml
 <aspects>
@@ -58,6 +78,8 @@ Javanica supports two weaving modes: compile and runtime. Load time weaving hasn
 - RTW works, you can use regular hystrix-javanica-X.Y.Z
 - LTM hasn't been tested but it should work fine.
 
+## Aop Alliance Support
+Javanica has support for AOP alliance and has been tested with Spring, Guice and HK2. Details can be found [here](hystrix-javanica-aop-alliance/README.md).
 
 # How to use
 
