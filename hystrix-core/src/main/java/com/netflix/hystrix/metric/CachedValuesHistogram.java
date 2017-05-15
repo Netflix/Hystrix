@@ -108,7 +108,7 @@ public class CachedValuesHistogram {
      * @return value at percentile (from cache if possible)
      */
     public int getValueAtPercentile(double percentile) {
-        int permyriad = (int) percentile * 100;
+        int permyriad = (int) (percentile * 100);
         switch (permyriad) {
             case 0: return p0;
             case 500: return p5;
