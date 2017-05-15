@@ -1,0 +1,32 @@
+apply plugin: 'osgi'
+
+configurations {
+    testOutput.extendsFrom(testCompile)
+}
+
+
+task jarTest(type: Jar, dependsOn: testClasses) {
+    from sourceSets.test.output
+    classifier = 'test'
+}
+
+artifacts {
+    testOutput jarTest
+}
+
+
+dependencies {
+    compileApi project(':hystrix-core')
+    compileApi 'com.google.guava:guava:15.0'
+    compile 'org.apache.commons:commons-lang3:3.1'
+    compileApi 'com.google.code.findbugs:jsr305:2.0.0'
+    compile 'org.ow2.asm:asm:5.0.4'
+
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+    testCompile 'pl.pragmatists:JUnitParams:1.0.6'
+    testCompile project(':hystrix-junit')
+    testCompile 'org.mockito:mockito-all:1.9.5'
+    testCompile 'log4j:log4j:1.2.17'
+    testCompile 'org.slf4j:slf4j-log4j12:1.7.7'
+    testCompile 'com.tngtech.java:junit-dataprovider:1.10.2'
+}
