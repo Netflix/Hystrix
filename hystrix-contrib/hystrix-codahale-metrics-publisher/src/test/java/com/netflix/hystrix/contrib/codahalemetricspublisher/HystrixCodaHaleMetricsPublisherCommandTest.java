@@ -12,6 +12,9 @@ import org.junit.Test;
 
 import java.util.Map;
 
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
+
 public class HystrixCodaHaleMetricsPublisherCommandTest {
     private final MetricRegistry metricRegistry = new MetricRegistry();
 
@@ -20,27 +23,28 @@ public class HystrixCodaHaleMetricsPublisherCommandTest {
         HystrixPlugins.getInstance().registerMetricsPublisher(new HystrixCodaHaleMetricsPublisher(metricRegistry));
     }
 
-    @After
-    public void teardown() {
-        HystrixPlugins.reset();
+    @Test
+    public void testCommandSuccess() throws InterruptedException {
+        Command command = new Command();
+        command.execute();
+
+        Thread.sleep(1000);
+
+        assertThat((Long) metricRegistry.getGauges().get("test.test.countSuccess").getValue(), is(1L));
+
     }
 
-    @Test
-    public void commandMaxActiveGauge() {
-        final HystrixCommandKey hystrixCommandKey = HystrixCommandKey.Factory.asKey("test");
-        final HystrixCommandGroupKey hystrixCommandGroupKey = HystrixCommandGroupKey.Factory.asKey("test");
+    private static class Command extends HystrixCommand<Void> {
+        final static HystrixCommandKey hystrixCommandKey = HystrixCommandKey.Factory.asKey("test");
+        final static HystrixCommandGroupKey hystrixCommandGroupKey = HystrixCommandGroupKey.Factory.asKey("test");
 
-        new HystrixCommand<Void>(HystrixCommand.Setter
-                .withGroupKey(hystrixCommandGroupKey)
-                .andCommandKey(hystrixCommandKey)) {
-            @Override
-            protected Void run() throws Exception {
-                return null;
-            }
-        }.execute();
+        Command() {
+            super(Setter.withGroupKey(hystrixCommandGroupKey).andCommandKey(hystrixCommandKey));
+        }
 
-        for (Map.Entry<String, Gauge> entry : metricRegistry.getGauges().entrySet()) {
-            entry.getValue().getValue();
+        @Override
+        protected Void run() throws Exception {
+            return null;
         }
     }
 }
