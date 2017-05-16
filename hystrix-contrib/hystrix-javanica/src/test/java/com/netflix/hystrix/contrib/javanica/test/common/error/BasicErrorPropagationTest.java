@@ -16,6 +16,7 @@
 package com.netflix.hystrix.contrib.javanica.test.common.error;
 
 import com.netflix.hystrix.HystrixEventType;
+import com.netflix.hystrix.HystrixInvokableInfo;
 import com.netflix.hystrix.HystrixRequestLog;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
@@ -198,9 +199,9 @@ public abstract class BasicErrorPropagationTest extends BasicHystrixTest {
     }
 
     @Test
-    public void testCommandThrowsNotWrappedException() {
+    public void testCommandWithNotWrappedExceptionAndNoFallback() {
         try {
-            userService.throwNotWrappedCheckedException();
+            userService.throwNotWrappedCheckedExceptionWithoutFallback();
             fail();
         } catch (NotWrappedCheckedException e) {
             // pass
@@ -208,11 +209,26 @@ public abstract class BasicErrorPropagationTest extends BasicHystrixTest {
             fail("'NotWrappedCheckedException' is expected exception.");
         }finally {
             assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-            com.netflix.hystrix.HystrixInvokableInfo getUserCommand = getHystrixCommandByKey("throwNotWrappedCheckedException");
+            HystrixInvokableInfo getUserCommand = getHystrixCommandByKey("throwNotWrappedCheckedExceptionWithoutFallback");
             // record failure in metrics
             assertTrue(getUserCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
             // and will not trigger fallback logic
             verify(failoverService, never()).activate();
+        }
+    }
+
+    @Test
+    public void testCommandWithNotWrappedExceptionAndFallback() {
+        try {
+            userService.throwNotWrappedCheckedExceptionWithFallback();
+        } catch (NotWrappedCheckedException e) {
+            fail();
+        } finally {
+            assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
+            HystrixInvokableInfo getUserCommand = getHystrixCommandByKey("throwNotWrappedCheckedExceptionWithFallback");
+            assertTrue(getUserCommand.getExecutionEvents().contains(HystrixEventType.FAILURE));
+            assertTrue(getUserCommand.getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
+            verify(failoverService).activate();
         }
     }
 
@@ -288,8 +304,13 @@ public abstract class BasicErrorPropagationTest extends BasicHystrixTest {
             }
         }
 
+        @HystrixCommand
+        void throwNotWrappedCheckedExceptionWithoutFallback() throws NotWrappedCheckedException {
+            throw new NotWrappedCheckedException();
+        }
+
         @HystrixCommand(fallbackMethod = "voidFallback")
-        void throwNotWrappedCheckedException() throws NotWrappedCheckedException {
+        void throwNotWrappedCheckedExceptionWithFallback() throws NotWrappedCheckedException {
             throw new NotWrappedCheckedException();
         }
 

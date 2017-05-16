@@ -761,11 +761,7 @@ import java.util.concurrent.atomic.AtomicReference;
         // do this before executing fallback so it can be queried from within getFallback (see See https://github.com/Netflix/Hystrix/pull/144)
         executionResult = executionResult.addEvent((int) latency, eventType);
 
-        if (shouldNotBeWrapped(originalException)){
-            /* executionHook for all errors */
-            Exception e = wrapWithOnErrorHook(failureType, originalException);
-            return Observable.error(e);
-        } else if (isUnrecoverable(originalException)) {
+        if (isUnrecoverable(originalException)) {
             logger.error("Unrecoverable Error for HystrixCommand so will throw HystrixRuntimeException and not apply fallback. ", originalException);
 
             /* executionHook for all errors */
@@ -808,30 +804,33 @@ import java.util.concurrent.atomic.AtomicReference;
                 final Func1<Throwable, Observable<R>> handleFallbackError = new Func1<Throwable, Observable<R>>() {
                     @Override
                     public Observable<R> call(Throwable t) {
-                        Exception e = originalException;
+                        /* executionHook for all errors */
+                        Exception e = wrapWithOnErrorHook(failureType, originalException);
                         Exception fe = getExceptionFromThrowable(t);
 
+                        long latency = System.currentTimeMillis() - executionResult.getStartTimestamp();
+                        Exception toEmit;
+
                         if (fe instanceof UnsupportedOperationException) {
-                            long latency = System.currentTimeMillis() - executionResult.getStartTimestamp();
                             logger.debug("No fallback for HystrixCommand. ", fe); // debug only since we're throwing the exception and someone higher will do something with it
                             eventNotifier.markEvent(HystrixEventType.FALLBACK_MISSING, commandKey);
                             executionResult = executionResult.addEvent((int) latency, HystrixEventType.FALLBACK_MISSING);
 
-                            /* executionHook for all errors */
-                            e = wrapWithOnErrorHook(failureType, e);
-
-                            return Observable.error(new HystrixRuntimeException(failureType, _cmd.getClass(), getLogMessagePrefix() + " " + message + " and no fallback available.", e, fe));
+                            toEmit = new HystrixRuntimeException(failureType, _cmd.getClass(), getLogMessagePrefix() + " " + message + " and no fallback available.", e, fe);
                         } else {
-                            long latency = System.currentTimeMillis() - executionResult.getStartTimestamp();
                             logger.debug("HystrixCommand execution " + failureType.name() + " and fallback failed.", fe);
                             eventNotifier.markEvent(HystrixEventType.FALLBACK_FAILURE, commandKey);
                             executionResult = executionResult.addEvent((int) latency, HystrixEventType.FALLBACK_FAILURE);
 
-                            /* executionHook for all errors */
-                            e = wrapWithOnErrorHook(failureType, e);
-
-                            return Observable.error(new HystrixRuntimeException(failureType, _cmd.getClass(), getLogMessagePrefix() + " " + message + " and fallback failed.", e, fe));
+                            toEmit = new HystrixRuntimeException(failureType, _cmd.getClass(), getLogMessagePrefix() + " " + message + " and fallback failed.", e, fe);
                         }
+
+                        // NOTE: we're suppressing fallback exception here
+                        if (shouldNotBeWrapped(originalException)) {
+                            return Observable.error(e);
+                        }
+
+                        return Observable.error(toEmit);
                     }
                 };
 
