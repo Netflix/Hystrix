@@ -80,6 +80,7 @@ public final class HystrixPropertiesManager {
     public static final String MAX_QUEUE_SIZE = "maxQueueSize";
     public static final String CORE_SIZE = "coreSize";
     public static final String MAXIMUM_SIZE = "maximumSize";
+    public static final String ALLOW_MAXIMUM_SIZE_TO_DIVERGE_FROM_CORE_SIZE = "allowMaximumSizeToDivergeFromCoreSize";
     public static final String KEEP_ALIVE_TIME_MINUTES = "keepAliveTimeMinutes";
     public static final String QUEUE_SIZE_REJECTION_THRESHOLD = "queueSizeRejectionThreshold";
     public static final String METRICS_ROLLING_STATS_NUM_BUCKETS = "metrics.rollingStats.numBuckets";
@@ -296,6 +297,12 @@ public final class HystrixPropertiesManager {
                                 }
                             }
                     )
+                    .put(ALLOW_MAXIMUM_SIZE_TO_DIVERGE_FROM_CORE_SIZE, new PropSetter<HystrixThreadPoolProperties.Setter, String>() {
+                        @Override
+                        public void set(HystrixThreadPoolProperties.Setter setter, String value) throws IllegalArgumentException {
+                            setter.withAllowMaximumSizeToDivergeFromCoreSize(toBoolean(value));
+                        }
+                    })
                     .put(KEEP_ALIVE_TIME_MINUTES, new PropSetter<HystrixThreadPoolProperties.Setter, String>() {
                                 @Override
                                 public void set(HystrixThreadPoolProperties.Setter setter, String value) {
