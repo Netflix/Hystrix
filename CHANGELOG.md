@@ -1,5 +1,25 @@
 # Hystrix Releases #
 
+### Version 1.5.12 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.5.12%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.5.12/)) ###
+
+- [Pull 1586](https://github.com/Netflix/Hystrix/pull/1586) Start streams for CodaHale metric consumer, ot get it actually working
+- [Pull 1584](https://github.com/Netflix/Hystrix/pull/1584) Javanica: Wire up allowMaximumSizeToDivergeFromCoreSize thread-pool property
+- [Pull 1585](https://github.com/Netflix/Hystrix/pull/1585) Fix actualMaximumSize Codahale threadpool metric calculation
+- [Pull 1567](https://github.com/Netflix/Hystrix/pull/1567) Fix interaction between ExceptionNotWrappedInHystrix and HystrixBadRequestException.  Thanks @gagoman !
+- [Pull 1576](https://github.com/Netflix/Hystrix/pull/1576) Fix permyriad calculation for 99.9p latency
+- [Pull 1524](https://github.com/Netflix/Hystrix/pull/1524) Javanica: Support rx.Single or rx.Completable types.  Thanks @dmgcodevil !
+- [Pull 1574](https://github.com/Netflix/Hystrix/pull/1574) Add unit-test for using a Completable in a HystrixObservableCommand
+- [Pull 1572](https://github.com/Netflix/Hystrix/pull/1572) Javanica: Wire up maximumSize thread-pool property.  Thanks @dmgcodevil !
+- [Pull 1573](https://github.com/Netflix/Hystrix/pull/1573) Javanica: Don't get cause from HystrixBadRequestException if null.  Thanks @dmgcodevil !
+- [Pull 1570](https://github.com/Netflix/Hystrix/pull/1570) Only create HystrixContextRunnable in timeout case lazily, when timeout is fired
+- [Pull 1568](https://github.com/Netflix/Hystrix/pull/1568) Made circuit-opening happen in background thread, powered by metric streams
+- [Pull 1561](https://github.com/Netflix/Hystrix/pull/1561) Add error-handling for unexpected errors to servlet writes in metric sample servlet
+- [Pull 1556](https://github.com/Netflix/Hystrix/pull/1556) Typo fix in Javanica fallback log. Thanks @Thunderforge !
+- [Pull 1551](https://github.com/Netflix/Hystrix/pull/1551) Match colors in multiple circuit-breaker status case.  Thanks @eunmin !
+- [Pull 1547](https://github.com/Netflix/Hystrix/pull/1547) Support multiple circuit-breaker statuses in dashboard against aggregated data.  Thanks @eunmin !
+- [Pull 1539](https://github.com/Netflix/Hystrix/pull/1539) Fix unintentionally shared variable in hystrix-metrics-event-stream-jaxrs.  Thanks @justinjose28 !
+- [Pull 1535](https://github.com/Netflix/Hystrix/pull/1535) Move markCommandExecution after markEvent SUCCESS to allow eventNotifier to have full context of execution.  Thanks @bltb!
+
 ### Version 1.5.11 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.5.11%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.5.11/)) ###
 
 - [Pull 1531](https://github.com/Netflix/Hystrix/pull/1531) Add assertion to dashboard receiving metrics data.  Thanks @lholmquist !
