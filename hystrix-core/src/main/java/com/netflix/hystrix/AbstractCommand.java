@@ -57,7 +57,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-/* package */abstract class AbstractCommand<R> implements HystrixInvokableInfo<R>, HystrixObservable<R> {
+public abstract class AbstractCommand<R> implements HystrixInvokableInfo<R>, HystrixObservable<R> {
     private static final Logger logger = LoggerFactory.getLogger(AbstractCommand.class);
     protected final HystrixCircuitBreaker circuitBreaker;
     protected final HystrixThreadPool threadPool;
