@@ -196,6 +196,20 @@ public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> imp
             this.commandKey = commandKey;
             return this;
         }
+        
+        /**
+         * @param threadPoolKey
+         *            {@link HystrixThreadPoolKey} used to define which thread-pool this command should run in (when configured to run on separate threads via
+         *            {@link HystrixCommandProperties#executionIsolationStrategy()}).
+         *            <p>
+         *            By default this is derived from the {@link HystrixCommandGroupKey} but if injected this allows multiple commands to have the same {@link HystrixCommandGroupKey} but different
+         *            thread-pools.
+         * @return Setter for fluent interface via method chaining
+         */
+        public Setter andThreadPoolKey(HystrixThreadPoolKey threadPoolKey) {
+            this.threadPoolKey = threadPoolKey;
+            return this;
+        }
 
         /**
          * Optional
@@ -208,6 +222,20 @@ public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> imp
          */
         public Setter andCommandPropertiesDefaults(HystrixCommandProperties.Setter commandPropertiesDefaults) {
             this.commandPropertiesDefaults = setDefaults(commandPropertiesDefaults);
+            return this;
+        }
+        
+        /**
+         * Optional
+         * 
+         * @param threadPoolPropertiesDefaults
+         *            {@link HystrixThreadPoolProperties.Setter} with property overrides for the {@link HystrixThreadPool} used by this specific instance of {@link HystrixCommand}.
+         *            <p>
+         *            See the {@link HystrixPropertiesStrategy} JavaDocs for more information on properties and order of precedence.
+         * @return Setter for fluent interface via method chaining
+         */
+        public Setter andThreadPoolPropertiesDefaults(HystrixThreadPoolProperties.Setter threadPoolPropertiesDefaults) {
+            this.threadPoolPropertiesDefaults = threadPoolPropertiesDefaults;
             return this;
         }
 
