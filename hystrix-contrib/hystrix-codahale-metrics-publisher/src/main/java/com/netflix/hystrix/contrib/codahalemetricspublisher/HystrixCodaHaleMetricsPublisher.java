@@ -36,15 +36,21 @@ import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherThreadPool;
  * Coda Hale Metrics (https://github.com/codahale/metrics) implementation of {@link HystrixMetricsPublisher}.
  */
 public class HystrixCodaHaleMetricsPublisher extends HystrixMetricsPublisher {
+    private final String metricsRootNode;
     private final MetricRegistry metricRegistry;
 
     public HystrixCodaHaleMetricsPublisher(MetricRegistry metricRegistry) {
+        this(null, metricRegistry);
+    }
+
+    public HystrixCodaHaleMetricsPublisher(String metricsRootNode, MetricRegistry metricRegistry) {
+        this.metricsRootNode = metricsRootNode;
         this.metricRegistry = metricRegistry;
     }
 
     @Override
     public HystrixMetricsPublisherCommand getMetricsPublisherForCommand(HystrixCommandKey commandKey, HystrixCommandGroupKey commandGroupKey, HystrixCommandMetrics metrics, HystrixCircuitBreaker circuitBreaker, HystrixCommandProperties properties) {
-        return new HystrixCodaHaleMetricsPublisherCommand(commandKey, commandGroupKey, metrics, circuitBreaker, properties, metricRegistry);
+        return new HystrixCodaHaleMetricsPublisherCommand(metricsRootNode, commandKey, commandGroupKey, metrics, circuitBreaker, properties, metricRegistry);
     }
 
     @Override

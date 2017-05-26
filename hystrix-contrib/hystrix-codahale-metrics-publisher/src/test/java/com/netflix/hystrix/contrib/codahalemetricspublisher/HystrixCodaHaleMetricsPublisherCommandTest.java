@@ -1,16 +1,12 @@
 package com.netflix.hystrix.contrib.codahalemetricspublisher;
 
-import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandGroupKey;
 import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.strategy.HystrixPlugins;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.Map;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
@@ -20,7 +16,7 @@ public class HystrixCodaHaleMetricsPublisherCommandTest {
 
     @Before
     public void setup() {
-        HystrixPlugins.getInstance().registerMetricsPublisher(new HystrixCodaHaleMetricsPublisher(metricRegistry));
+        HystrixPlugins.getInstance().registerMetricsPublisher(new HystrixCodaHaleMetricsPublisher("hystrix", metricRegistry));
     }
 
     @Test
@@ -30,13 +26,13 @@ public class HystrixCodaHaleMetricsPublisherCommandTest {
 
         Thread.sleep(1000);
 
-        assertThat((Long) metricRegistry.getGauges().get("test.test.countSuccess").getValue(), is(1L));
+        assertThat((Long) metricRegistry.getGauges().get("hystrix.testGroup.testCommand.countSuccess").getValue(), is(1L));
 
     }
 
     private static class Command extends HystrixCommand<Void> {
-        final static HystrixCommandKey hystrixCommandKey = HystrixCommandKey.Factory.asKey("test");
-        final static HystrixCommandGroupKey hystrixCommandGroupKey = HystrixCommandGroupKey.Factory.asKey("test");
+        final static HystrixCommandKey hystrixCommandKey = HystrixCommandKey.Factory.asKey("testCommand");
+        final static HystrixCommandGroupKey hystrixCommandGroupKey = HystrixCommandGroupKey.Factory.asKey("testGroup");
 
         Command() {
             super(Setter.withGroupKey(hystrixCommandGroupKey).andCommandKey(hystrixCommandKey));
