@@ -4,6 +4,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandGroupKey;
 import com.netflix.hystrix.HystrixCommandKey;
+import com.netflix.hystrix.HystrixThreadPoolKey;
 import com.netflix.hystrix.strategy.HystrixPlugins;
 import org.junit.Before;
 import org.junit.Test;
@@ -27,15 +28,17 @@ public class HystrixCodaHaleMetricsPublisherCommandTest {
         Thread.sleep(1000);
 
         assertThat((Long) metricRegistry.getGauges().get("hystrix.testGroup.testCommand.countSuccess").getValue(), is(1L));
+        assertThat((Long) metricRegistry.getGauges().get("hystrix.HystrixThreadPool.threadGroup.totalTaskCount").getValue(), is(1L));
 
     }
 
     private static class Command extends HystrixCommand<Void> {
         final static HystrixCommandKey hystrixCommandKey = HystrixCommandKey.Factory.asKey("testCommand");
         final static HystrixCommandGroupKey hystrixCommandGroupKey = HystrixCommandGroupKey.Factory.asKey("testGroup");
+        final static HystrixThreadPoolKey hystrixThreadPool = HystrixThreadPoolKey.Factory.asKey("threadGroup");
 
         Command() {
-            super(Setter.withGroupKey(hystrixCommandGroupKey).andCommandKey(hystrixCommandKey));
+            super(Setter.withGroupKey(hystrixCommandGroupKey).andCommandKey(hystrixCommandKey).andThreadPoolKey(hystrixThreadPool));
         }
 
         @Override
