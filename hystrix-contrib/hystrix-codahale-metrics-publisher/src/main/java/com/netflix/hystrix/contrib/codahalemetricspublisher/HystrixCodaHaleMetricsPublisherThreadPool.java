@@ -39,11 +39,6 @@ public class HystrixCodaHaleMetricsPublisherThreadPool implements HystrixMetrics
 
     static final Logger logger = LoggerFactory.getLogger(HystrixCodaHaleMetricsPublisherThreadPool.class);
 
-    public HystrixCodaHaleMetricsPublisherThreadPool(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolMetrics metrics, HystrixThreadPoolProperties properties, MetricRegistry metricRegistry) {
-        this(null, threadPoolKey, metrics,properties, metricRegistry);
-    }
-
-
     public HystrixCodaHaleMetricsPublisherThreadPool(String metricsRootNode, HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolMetrics metrics, HystrixThreadPoolProperties properties, MetricRegistry metricRegistry) {
         this.metricsRootNode = metricsRootNode;
         this.key = threadPoolKey;
