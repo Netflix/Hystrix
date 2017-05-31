@@ -129,7 +129,7 @@ public class HystrixRequestCache {
             /* look for the stored value */
             ConcurrentHashMap<ValueCacheKey, HystrixCachedObservable<?>> cacheInstance = requestVariableForCache.get(concurrencyStrategy);
             if (cacheInstance == null) {
-                throw new IllegalStateException("Request caching is not available.  Maybe you need to initialize the HystrixRequestContext?");
+                throw new IllegalStateException("Request caching is not available. Maybe you need to initialize the HystrixRequestContext?");
             }
             HystrixCachedObservable<T> alreadySet = (HystrixCachedObservable<T>) cacheInstance.putIfAbsent(key, f);
             if (alreadySet != null) {
@@ -150,8 +150,13 @@ public class HystrixRequestCache {
     public void clear(String cacheKey) {
         ValueCacheKey key = getRequestCacheKey(cacheKey);
         if (key != null) {
+            ConcurrentHashMap<ValueCacheKey, HystrixCachedObservable<?>> cacheInstance = requestVariableForCache.get(concurrencyStrategy);
+            if (cacheInstance == null) {
+                throw new IllegalStateException("Request caching is not available. Maybe you need to initialize the HystrixRequestContext?");
+            }
+
             /* remove this cache key */
-            requestVariableForCache.get(concurrencyStrategy).remove(key);
+            cacheInstance.remove(key);
         }
     }
 
