@@ -303,7 +303,7 @@ import java.util.concurrent.atomic.AtomicReference;
      * @param sizeOfBatch number of commands in request batch
      */
     /* package */void markAsCollapsedCommand(HystrixCollapserKey collapserKey, int sizeOfBatch) {
-        eventNotifier.markEvent(HystrixEventType.COLLAPSED, this.metricsCommandKey);
+        eventNotifier.markEvent(HystrixEventType.COLLAPSED, this.commandKey);
         executionResult = executionResult.markCollapsed(collapserKey, sizeOfBatch);
     }
 
@@ -392,7 +392,7 @@ import java.util.concurrent.atomic.AtomicReference;
             public void call() {
                 if (_cmd.commandState.compareAndSet(CommandState.OBSERVABLE_CHAIN_CREATED, CommandState.UNSUBSCRIBED)) {
                     if (!_cmd.executionResult.containsTerminalEvent()) {
-                        _cmd.eventNotifier.markEvent(HystrixEventType.CANCELLED, _cmd.metricsCommandKey);
+                        _cmd.eventNotifier.markEvent(HystrixEventType.CANCELLED, _cmd.commandKey);
                         try {
                             executionHook.onUnsubscribe(_cmd);
                         } catch (Throwable hookEx) {
@@ -404,7 +404,7 @@ import java.util.concurrent.atomic.AtomicReference;
                     handleCommandEnd(false); //user code never ran
                 } else if (_cmd.commandState.compareAndSet(CommandState.USER_CODE_EXECUTED, CommandState.UNSUBSCRIBED)) {
                     if (!_cmd.executionResult.containsTerminalEvent()) {
-                        _cmd.eventNotifier.markEvent(HystrixEventType.CANCELLED, _cmd.metricsCommandKey);
+                        _cmd.eventNotifier.markEvent(HystrixEventType.CANCELLED, _cmd.commandKey);
                         try {
                             executionHook.onUnsubscribe(_cmd);
                         } catch (Throwable hookEx) {
@@ -1150,7 +1150,7 @@ import java.util.concurrent.atomic.AtomicReference;
                     // otherwise it means we lost a race and the run() execution completed or did not start
                     if (originalCommand.isCommandTimedOut.compareAndSet(TimedOutStatus.NOT_EXECUTED, TimedOutStatus.TIMED_OUT)) {
                         // report timeout failure
-                        originalCommand.eventNotifier.markEvent(HystrixEventType.TIMEOUT, originalCommand.metricsCommandKey);
+                        originalCommand.eventNotifier.markEvent(HystrixEventType.TIMEOUT, originalCommand.commandKey);
 
                         // shut down the original request
                         s.unsubscribe();
