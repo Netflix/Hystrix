@@ -79,6 +79,7 @@ import java.util.concurrent.atomic.AtomicReference;
     protected final HystrixCommandMetrics metrics;
 
     protected final HystrixCommandKey commandKey;
+    protected final HystrixCommandKey metricsCommandKey;
     protected final HystrixCommandGroupKey commandGroup;
 
     /**
@@ -163,14 +164,17 @@ import java.util.concurrent.atomic.AtomicReference;
         this.commandKey = initCommandKey(key, getClass());
         this.properties = initCommandProperties(this.commandKey, propertiesStrategy, commandPropertiesDefaults);
         this.threadPoolKey = initThreadPoolKey(threadPoolKey, this.commandGroup, this.properties.executionIsolationThreadPoolKeyOverride().get());
-        this.metrics = initMetrics(metrics, this.commandGroup, this.threadPoolKey, this.commandKey, this.properties);
+
+        this.metricsCommandKey = initMetricsCommandKey(this.commandKey, this.commandGroup);
+
+        this.metrics = initMetrics(metrics, this.commandGroup, this.threadPoolKey, this.metricsCommandKey, this.properties);
         this.circuitBreaker = initCircuitBreaker(this.properties.circuitBreakerEnabled().get(), circuitBreaker, this.commandGroup, this.commandKey, this.properties, this.metrics);
         this.threadPool = initThreadPool(threadPool, this.threadPoolKey, threadPoolPropertiesDefaults);
 
         //Strategies from plugins
         this.eventNotifier = HystrixPlugins.getInstance().getEventNotifier();
         this.concurrencyStrategy = HystrixPlugins.getInstance().getConcurrencyStrategy();
-        HystrixMetricsPublisherFactory.createOrRetrievePublisherForCommand(this.commandKey, this.commandGroup, this.metrics, this.circuitBreaker, this.properties);
+        HystrixMetricsPublisherFactory.createOrRetrievePublisherForCommand(commandKey, this.commandGroup, this.metrics, this.circuitBreaker, this.properties);
         this.executionHook = initExecutionHook(executionHook);
 
         this.requestCache = HystrixRequestCache.getInstance(this.commandKey, this.concurrencyStrategy);
@@ -181,6 +185,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
         /* execution semaphore override if applicable */
         this.executionSemaphoreOverride = executionSemaphore;
+    }
+
+    private static HystrixCommandKey initMetricsCommandKey(HystrixCommandKey commandKey, HystrixCommandGroupKey groupKey ){
+        return  HystrixCommandKey.Factory.asKey((groupKey == null) ? commandKey.name() : groupKey.name() + "." + commandKey.name());
     }
 
     private static HystrixCommandGroupKey initGroupKey(final HystrixCommandGroupKey fromConstructor) {
@@ -656,7 +664,7 @@ import java.util.concurrent.atomic.AtomicReference;
                         return Observable.error(new IllegalStateException("execution attempted while in state : " + commandState.get().name()));
                     }
 
-                    metrics.markCommandStart(commandKey, threadPoolKey, ExecutionIsolationStrategy.THREAD);
+                    metrics.markCommandStart(metricsCommandKey, threadPoolKey, ExecutionIsolationStrategy.THREAD);
 
                     if (isCommandTimedOut.get() == TimedOutStatus.TIMED_OUT) {
                         // the command timed out in the wrapping thread so we will return immediately
@@ -723,7 +731,7 @@ import java.util.concurrent.atomic.AtomicReference;
                         return Observable.error(new IllegalStateException("execution attempted while in state : " + commandState.get().name()));
                     }
 
-                    metrics.markCommandStart(commandKey, threadPoolKey, ExecutionIsolationStrategy.SEMAPHORE);
+                    metrics.markCommandStart(metricsCommandKey, threadPoolKey, ExecutionIsolationStrategy.SEMAPHORE);
                     // semaphore isolated
                     // store the command that is being run
                     endCurrentThreadExecutingCommand = Hystrix.startCurrentThreadExecutingCommand(getCommandKey());
@@ -939,7 +947,7 @@ import java.util.concurrent.atomic.AtomicReference;
                 .setNotExecutedInThread();
         ExecutionResult cacheOnlyForMetrics = ExecutionResult.from(HystrixEventType.RESPONSE_FROM_CACHE)
                 .markUserThreadCompletion(latency);
-        metrics.markCommandDone(cacheOnlyForMetrics, commandKey, threadPoolKey, commandExecutionStarted);
+        metrics.markCommandDone(cacheOnlyForMetrics, metricsCommandKey, threadPoolKey, commandExecutionStarted);
         eventNotifier.markEvent(HystrixEventType.RESPONSE_FROM_CACHE, commandKey);
     }
 
@@ -952,9 +960,9 @@ import java.util.concurrent.atomic.AtomicReference;
         long userThreadLatency = System.currentTimeMillis() - commandStartTimestamp;
         executionResult = executionResult.markUserThreadCompletion((int) userThreadLatency);
         if (executionResultAtTimeOfCancellation == null) {
-            metrics.markCommandDone(executionResult, commandKey, threadPoolKey, commandExecutionStarted);
+            metrics.markCommandDone(executionResult, metricsCommandKey, threadPoolKey, commandExecutionStarted);
         } else {
-            metrics.markCommandDone(executionResultAtTimeOfCancellation, commandKey, threadPoolKey, commandExecutionStarted);
+            metrics.markCommandDone(executionResultAtTimeOfCancellation, metricsCommandKey, threadPoolKey, commandExecutionStarted);
         }
 
         if (endCurrentThreadExecutingCommand != null) {
@@ -1142,7 +1150,7 @@ import java.util.concurrent.atomic.AtomicReference;
                     // otherwise it means we lost a race and the run() execution completed or did not start
                     if (originalCommand.isCommandTimedOut.compareAndSet(TimedOutStatus.NOT_EXECUTED, TimedOutStatus.TIMED_OUT)) {
                         // report timeout failure
-                        originalCommand.eventNotifier.markEvent(HystrixEventType.TIMEOUT, originalCommand.commandKey);
+                        originalCommand.eventNotifier.markEvent(HystrixEventType.TIMEOUT, originalCommand.metricsCommandKey);
 
                         // shut down the original request
                         s.unsubscribe();
