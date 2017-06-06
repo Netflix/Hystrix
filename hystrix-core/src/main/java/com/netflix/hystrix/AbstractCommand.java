@@ -303,7 +303,7 @@ import java.util.concurrent.atomic.AtomicReference;
      * @param sizeOfBatch number of commands in request batch
      */
     /* package */void markAsCollapsedCommand(HystrixCollapserKey collapserKey, int sizeOfBatch) {
-        eventNotifier.markEvent(HystrixEventType.COLLAPSED, this.commandKey);
+        eventNotifier.markEvent(HystrixEventType.COLLAPSED, this.metricsCommandKey);
         executionResult = executionResult.markCollapsed(collapserKey, sizeOfBatch);
     }
 
@@ -392,7 +392,7 @@ import java.util.concurrent.atomic.AtomicReference;
             public void call() {
                 if (_cmd.commandState.compareAndSet(CommandState.OBSERVABLE_CHAIN_CREATED, CommandState.UNSUBSCRIBED)) {
                     if (!_cmd.executionResult.containsTerminalEvent()) {
-                        _cmd.eventNotifier.markEvent(HystrixEventType.CANCELLED, _cmd.commandKey);
+                        _cmd.eventNotifier.markEvent(HystrixEventType.CANCELLED, _cmd.metricsCommandKey);
                         try {
                             executionHook.onUnsubscribe(_cmd);
                         } catch (Throwable hookEx) {
@@ -404,7 +404,7 @@ import java.util.concurrent.atomic.AtomicReference;
                     handleCommandEnd(false); //user code never ran
                 } else if (_cmd.commandState.compareAndSet(CommandState.USER_CODE_EXECUTED, CommandState.UNSUBSCRIBED)) {
                     if (!_cmd.executionResult.containsTerminalEvent()) {
-                        _cmd.eventNotifier.markEvent(HystrixEventType.CANCELLED, _cmd.commandKey);
+                        _cmd.eventNotifier.markEvent(HystrixEventType.CANCELLED, _cmd.metricsCommandKey);
                         try {
                             executionHook.onUnsubscribe(_cmd);
                         } catch (Throwable hookEx) {
