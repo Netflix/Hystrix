@@ -1,0 +1,12 @@
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+dependencies {
+    compile project(':hystrix-core')
+    compile 'org.codehaus.jackson:jackson-core-asl:1.9.2'
+    compile 'org.codehaus.jackson:jackson-mapper-asl:1.9.2'
+
+    // vertx.io JDK8 +
+    compile group: 'io.vertx', name: 'vertx-core', version: '3.2.+'
+    compile group: 'io.vertx', name: 'vertx-web', version: '3.2.+'
+}
