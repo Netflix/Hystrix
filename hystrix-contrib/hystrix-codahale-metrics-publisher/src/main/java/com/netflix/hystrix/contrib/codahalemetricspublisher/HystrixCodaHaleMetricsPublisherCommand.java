@@ -29,6 +29,7 @@ import rx.functions.Func0;
  * Implementation of {@link HystrixMetricsPublisherCommand} using Coda Hale Metrics (https://github.com/codahale/metrics)
  */
 public class HystrixCodaHaleMetricsPublisherCommand implements HystrixMetricsPublisherCommand {
+    private final String metricsRootNode;
     private final HystrixCommandKey key;
     private final HystrixCommandGroupKey commandGroupKey;
     private final HystrixCommandMetrics metrics;
@@ -40,7 +41,8 @@ public class HystrixCodaHaleMetricsPublisherCommand implements HystrixMetricsPub
 
     static final Logger logger = LoggerFactory.getLogger(HystrixCodaHaleMetricsPublisherCommand.class);
 
-    public HystrixCodaHaleMetricsPublisherCommand(HystrixCommandKey commandKey, HystrixCommandGroupKey commandGroupKey, HystrixCommandMetrics metrics, HystrixCircuitBreaker circuitBreaker, HystrixCommandProperties properties, MetricRegistry metricRegistry) {
+    public HystrixCodaHaleMetricsPublisherCommand(String metricsRootNode, HystrixCommandKey commandKey, HystrixCommandGroupKey commandGroupKey, HystrixCommandMetrics metrics, HystrixCircuitBreaker circuitBreaker, HystrixCommandProperties properties, MetricRegistry metricRegistry) {
+        this.metricsRootNode = metricsRootNode;
         this.key = commandKey;
         this.commandGroupKey = commandGroupKey;
         this.metrics = metrics;
@@ -494,7 +496,7 @@ public class HystrixCodaHaleMetricsPublisherCommand implements HystrixMetricsPub
     }
 
     protected String createMetricName(String name) {
-        return MetricRegistry.name(metricGroup, metricType, name);
+        return MetricRegistry.name(metricsRootNode, metricGroup, metricType, name);
     }
 
     protected void createCumulativeCountForEvent(final String name, final HystrixRollingNumberEvent event) {
