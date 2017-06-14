@@ -24,7 +24,7 @@
 
 				streams.push(s);
 				$('#streams').html('<table>' + _.reduce(streams, function(html, s) {
-                            return html + '<tr><td>' + s.name + '</td><td>' + s.stream + '</td> <td><a href="#" onclick="removeStream(this);">Remove</a></td> </tr>';
+                            return html + '<tr><td>' + _.escape(s.name) + '</td><td>' + _.escape(s.stream) + '</td> <td><a href="#" onclick="removeStream(this);">Remove</a></td> </tr>';
 				}, '') + '</table>');
 
 				$('#message').html("");
