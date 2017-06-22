@@ -218,7 +218,23 @@ public abstract class BasicCommandFallbackTest extends BasicHystrixTest {
         }
     }
 
+    @Test
+    public void testFallbackMissing(){
+        try {
+            userService.getUserWithoutFallback(null, null);
+        } catch (Exception e) {}
+
+        HystrixInvokableInfo<?> command = getHystrixCommandByKey("getUserWithoutFallback");
+        assertTrue("expected event: FALLBACK_MISSING", command.getExecutionEvents().contains(HystrixEventType.FALLBACK_MISSING));
+    }
+
     public static class UserService {
+
+        @HystrixCommand
+        public User getUserWithoutFallback(final String id, final String name) {
+            validate(id, name);
+            return new User(id, name);
+        }
 
         @HystrixCommand(fallbackMethod = "fallback")
         public Future<User> getUserAsync(final String id, final String name) {
