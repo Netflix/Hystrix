@@ -683,7 +683,7 @@ import java.util.concurrent.atomic.AtomicReference;
                         }
                     } else {
                         //command has already been unsubscribed, so return immediately
-                        return Observable.error(new RuntimeException("unsubscribed before executing run()"));
+                        return Observable.empty();
                     }
                 }
             }).doOnTerminate(new Action0() {
