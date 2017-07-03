@@ -168,14 +168,6 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
     protected abstract T run() throws Exception;
 
     /**
-     * {@inheritDoc}.
-     */
-    @Override
-    protected T getFallback() {
-        throw new RuntimeException("No fallback available.", getExecutionException());
-    }
-
-    /**
      * Clears cache for the specified hystrix command.
      */
     protected void flushCache() {
