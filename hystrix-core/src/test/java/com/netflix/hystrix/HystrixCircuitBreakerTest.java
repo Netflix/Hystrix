@@ -32,6 +32,7 @@ import com.netflix.hystrix.HystrixCircuitBreaker.HystrixCircuitBreakerImpl;
 import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
 import rx.Observable;
+import rx.Subscription;
 
 /**
  * These tests each use a different command key to ensure that running them in parallel doesn't allow the state
@@ -555,6 +556,56 @@ public class HystrixCircuitBreakerTest {
             cmd4.execute();
 
             // even though it has all failed we won't trip the circuit because the volume is low
+            Thread.sleep(100);
+            assertTrue(cb.allowRequest());
+            assertFalse(cb.isOpen());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail("Error occurred: " + e.getMessage());
+        }
+    }
+
+    @Test
+    public void testUnsubscriptionDoesNotLeaveCircuitStuckHalfOpen() {
+        String key = "cmd-J";
+        try {
+            int sleepWindow = 200;
+
+            // fail
+            HystrixCommand<Boolean> cmd1 = new FailureCommand(key, 1, sleepWindow);
+            HystrixCommand<Boolean> cmd2 = new FailureCommand(key, 1, sleepWindow);
+            HystrixCommand<Boolean> cmd3 = new FailureCommand(key, 1, sleepWindow);
+            HystrixCommand<Boolean> cmd4 = new FailureCommand(key, 1, sleepWindow);
+            cmd1.execute();
+            cmd2.execute();
+            cmd3.execute();
+            cmd4.execute();
+
+            HystrixCircuitBreaker cb = cmd1.circuitBreaker;
+
+            // everything has failed in the test window so we should return false now
+            Thread.sleep(100);
+            assertFalse(cb.allowRequest());
+            assertTrue(cb.isOpen());
+
+            //this should occur after the sleep window, so get executed
+            //however, it is unsubscribed, so never updates state on the circuit-breaker
+            HystrixCommand<Boolean> cmd5 = new SuccessCommand(key, 5000, sleepWindow);
+
+            //wait for sleep window to pass
+            Thread.sleep(sleepWindow + 50);
+
+            Observable<Boolean> o = cmd5.observe();
+            Subscription s = o.subscribe();
+            s.unsubscribe();
+
+            //wait for 10 sleep windows, then try a successful command.  this should return the circuit to CLOSED
+
+            Thread.sleep(10 * sleepWindow);
+            HystrixCommand<Boolean> cmd6 = new SuccessCommand(key, 1, sleepWindow);
+            cmd6.execute();
+
             Thread.sleep(100);
             assertTrue(cb.allowRequest());
             assertFalse(cb.isOpen());
