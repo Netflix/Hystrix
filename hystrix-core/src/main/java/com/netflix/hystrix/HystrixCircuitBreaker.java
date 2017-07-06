@@ -272,8 +272,11 @@ public interface HystrixCircuitBreaker {
                 return true;
             } else {
                 if (isAfterSleepWindow()) {
+                    //only the first request after sleep window should execute
+                    //if the executing command succeeds, the status will transition to CLOSED
+                    //if the executing command fails, the status will transition to OPEN
+                    //if the executing command gets unsubscribed, the status will transition to OPEN
                     if (status.compareAndSet(Status.OPEN, Status.HALF_OPEN)) {
-                        //only the first request after sleep window should execute
                         return true;
                     } else {
                         return false;
