@@ -638,15 +638,15 @@ public class HystrixCircuitBreakerTest {
         return new HystrixCircuitBreakerImpl(key, commandGroup, HystrixCommandPropertiesTest.asMock(properties), metrics);
     }
 
-    private static enum CommandOwnerForUnitTest implements HystrixCommandGroupKey {
+    private enum CommandOwnerForUnitTest implements HystrixCommandGroupKey {
         OWNER_ONE, OWNER_TWO
     }
 
-    private static enum ThreadPoolKeyForUnitTest implements HystrixThreadPoolKey {
+    private enum ThreadPoolKeyForUnitTest implements HystrixThreadPoolKey {
         THREAD_POOL_ONE, THREAD_POOL_TWO
     }
 
-    private static enum CommandKeyForUnitTest implements HystrixCommandKey {
+    private enum CommandKeyForUnitTest implements HystrixCommandKey {
         KEY_ONE, KEY_TWO
     }
 
@@ -665,7 +665,7 @@ public class HystrixCircuitBreakerTest {
 
     }
 
-    void performLoad(int totalNumCalls, int errPerc, int waitMillis) {
+    private void performLoad(int totalNumCalls, int errPerc, int waitMillis) {
 
         Random rnd = new Random();
 
@@ -691,7 +691,7 @@ public class HystrixCircuitBreakerTest {
 
     public class TestCommand extends HystrixCommand<String> {
 
-        boolean error;
+        final boolean error;
 
         public TestCommand(final boolean error) {
             super(HystrixCommandGroupKey.Factory.asKey("group"));
@@ -809,18 +809,17 @@ public class HystrixCircuitBreakerTest {
     public class MyHystrixCommandExecutionHook extends HystrixCommandExecutionHook {
 
         @Override
-        public <T> T onComplete(final HystrixInvokable<T> command, final T response) {
+        public <T> T onEmit(final HystrixInvokable<T> command, final T response) {
 
             logHC(command, response);
 
-            return super.onComplete(command, response);
+            return super.onEmit(command, response);
         }
-
-        private int counter = 0;
 
         private <T> void logHC(HystrixInvokable<T> command, T response) {
 
             if(command instanceof HystrixInvokableInfo) {
+                @SuppressWarnings("unchecked")
                 HystrixInvokableInfo<T> commandInfo = (HystrixInvokableInfo<T>)command;
             HystrixCommandMetrics metrics = commandInfo.getMetrics();
             System.out.println("cb/error-count/%/total: "
