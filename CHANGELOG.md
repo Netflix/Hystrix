@@ -1,5 +1,15 @@
 # Hystrix Releases #
 
+### Version 1.5.13 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.5.13%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.5.13/)) ###
+
+- [Pull 1621](https://github.com/Netflix/Hystrix/pull/1621) Fixed bug where an unsubscription of a command in half-open state leaves circuit permanently open
+- [Pull 1605](https://github.com/Netflix/Hystrix/pull/1605) Change return value on unsubscribe to Observable.empty().  Thanks @atoulme !
+- [Pull 1615](https://github.com/Netflix/Hystrix/pull/1615) Updated Gradle to version 4.0. Thanks @wlsc !
+- [Pull 1616](https://github.com/Netflix/Hystrix/pull/1616) Javanica: Wrong hystrix event type for fallback missing.  Thanks @dmgcodevil  !
+- [Pull 1606](https://github.com/Netflix/Hystrix/pull/1606) Escape user entered input to avoid HTML injection. This fixes #1456.  Thanks @atoulme  !
+- [Pull 1595](https://github.com/Netflix/Hystrix/pull/1595) Possibility to add custom root node for command and thread pool metrics.  Thanks @dstoklosa !
+- [Pull 1587](https://github.com/Netflix/Hystrix/pull/1587) Throw IllegalStateException if request cache is not available when clearing.  Thanks @jack-kerouac !
+
 ### Version 1.5.12 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.5.12%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.5.12/)) ###
 
 - [Pull 1586](https://github.com/Netflix/Hystrix/pull/1586) Start streams for CodaHale metric consumer, ot get it actually working
