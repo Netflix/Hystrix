@@ -223,9 +223,11 @@ public interface HystrixThreadPool {
             // In JDK 6, setCorePoolSize and setMaximumPoolSize will execute a lock operation. Avoid them if the pool size is not changed.
             if (threadPool.getCorePoolSize() != dynamicCoreSize || (allowSizesToDiverge && threadPool.getMaximumPoolSize() != dynamicMaximumSize)) {
                 if (maxTooLow) {
-                    logger.error("Hystrix ThreadPool configuration for : " + metrics.getThreadPoolKey().name() + " is trying to set coreSize = " +
-                            dynamicCoreSize + " and maximumSize = " + configuredMaximumSize + ".  Maximum size will be set to " +
-                            dynamicMaximumSize + ", the coreSize value, since it must be equal to or greater than the coreSize value");
+                    logger.error("Hystrix ThreadPool configuration for : {} is " +
+                                 "trying to set coreSize = {} and maximumSize = {}.  " +
+                                 "Maximum size will be set to {}, the coreSize value, " +
+                                 "since it must be equal to or greater than the coreSize value",
+                                 metrics.getThreadPoolKey().name(), dynamicCoreSize, configuredMaximumSize, dynamicMaximumSize);
                 }
                 threadPool.setCorePoolSize(dynamicCoreSize);
                 threadPool.setMaximumPoolSize(dynamicMaximumSize);

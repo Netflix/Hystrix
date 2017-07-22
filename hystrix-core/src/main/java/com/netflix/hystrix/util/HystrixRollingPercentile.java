@@ -145,7 +145,7 @@ public class HystrixRollingPercentile {
             try {
                 getCurrentBucket().data.addValue(v);
             } catch (Exception e) {
-                logger.error("Failed to add value: " + v, e);
+                logger.error("Failed to add value: {}", v, e);
             }
         }
     }

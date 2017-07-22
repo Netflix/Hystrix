@@ -819,7 +819,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
                             toEmit = new HystrixRuntimeException(failureType, _cmd.getClass(), getLogMessagePrefix() + " " + message + " and no fallback available.", e, fe);
                         } else {
-                            logger.debug("HystrixCommand execution " + failureType.name() + " and fallback failed.", fe);
+                            logger.debug("HystrixCommand execution {} and fallback failed.", failureType.name(), fe);
                             eventNotifier.markEvent(HystrixEventType.FALLBACK_FAILURE, commandKey);
                             executionResult = executionResult.addEvent((int) latency, HystrixEventType.FALLBACK_FAILURE);
 
