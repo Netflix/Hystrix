@@ -15,7 +15,7 @@
  */
 package com.netflix.hystrix;
 
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -29,7 +29,6 @@ import rx.functions.Action0;
 
 import com.netflix.hystrix.exception.HystrixBadRequestException;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
-import com.netflix.hystrix.exception.HystrixRuntimeException.FailureType;
 import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 import rx.functions.Func0;
@@ -293,6 +292,20 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
         throw new UnsupportedOperationException("No fallback available.");
     }
 
+    /**
+     * This method is executed when either the execution of {@link #run()} times out or
+     * {@link #queue()}{@code .cancel(true)} is invoked.
+     * <p>
+     * This method should cancel operations started in the {@link #run()} method that would not
+     * be cancelled by {@link Thread#interrupt()} like invoking {@link java.sql.Statement#cancel()},
+     * {@link java.net.Socket#close()} or the invocation of {@link java.io.Closeable#close()} (e.g.,
+     * most HTTP clients).
+     * <p>
+     * DEFAULT BEHAVIOR: It does nothing.
+     */
+    protected void onCancel() throws Exception {
+    }
+
     @Override
     final protected Observable<R> getExecutionObservable() {
         return Observable.defer(new Func0<Observable<R>>() {
@@ -323,6 +336,26 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
                 } catch (Throwable ex) {
                     return Observable.error(ex);
                 }
+            }
+        });
+    }
+
+    private final AtomicBoolean onCancelObservableExecuted = new AtomicBoolean(false);
+
+    @Override
+    protected Observable<Void> getOnCancelObservable() {
+        return Observable.defer(new Func0<Observable<Void>>() {
+            @Override
+            public Observable<Void> call() {
+                return Observable.fromCallable(new Callable<Void>() {
+                    @Override
+                    public Void call() throws Exception {
+                        if (onCancelObservableExecuted.compareAndSet(false, true)) {
+                            onCancel();
+                        }
+                        return null;
+                    }
+                });
             }
         });
     }
@@ -383,6 +416,13 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
             public boolean cancel(boolean mayInterruptIfRunning) {
                 if (delegate.isCancelled()) {
                     return false;
+                }
+
+                try {
+                    HystrixCommand.this.onCancel();
+                } catch (Exception ex) {
+                    throw new HystrixRuntimeException(HystrixRuntimeException.FailureType.COMMAND_EXCEPTION,
+                        HystrixCommand.this.getClass(), "Exception when executing the onCancel() method", ex, null);
                 }
 
                 if (HystrixCommand.this.getProperties().executionIsolationThreadInterruptOnFutureCancel().get()) {
