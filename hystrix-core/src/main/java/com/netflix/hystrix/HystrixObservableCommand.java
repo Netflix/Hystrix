@@ -247,6 +247,10 @@ public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> imp
         return Observable.error(new UnsupportedOperationException("No fallback available."));
     }
 
+    /**
+     * 获取执行器，其实就是获取construct/run，这里是construct
+     * @return
+     */
     @Override
     final protected Observable<R> getExecutionObservable() {
         return construct();

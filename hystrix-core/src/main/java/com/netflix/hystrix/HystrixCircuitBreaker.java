@@ -38,6 +38,8 @@ public interface HystrixCircuitBreaker {
      * 
      * @return boolean whether a request should be permitted
      */
+    //手否允许指令执行，hystrix在执行run或者construct之前会判断，如果不允许执行，则会直接
+    //进入fallback逻辑，反之才会进入执行run或者constructor指令
     boolean allowRequest();
 
     /**
@@ -45,16 +47,21 @@ public interface HystrixCircuitBreaker {
      * 
      * @return boolean state of circuit breaker
      */
+    //判断熔断器是否是开启状态，如果熔断器为开启状态，则hystrix会直接进入fallback逻辑
+    //而不会去执行run或者construct函数的逻辑
     boolean isOpen();
 
     /**
      * Invoked on successful executions from {@link HystrixCommand} as part of feedback mechanism when in a half-open state.
      */
+    //在尝试关闭熔断器接入部分流量后如果hystrix发现请求已经得到成功处理的话，hystrix
+    //将使用该函数来关闭熔断器，否则继续开启熔断器，进入下一轮判断
     void markSuccess();
 
     /**
      * Invoked on unsuccessful executions from {@link HystrixCommand} as part of feedback mechanism when in a half-open state.
      */
+    //和markSuccess函数是相反的关系
     void markNonSuccess();
 
     /**
@@ -67,6 +74,7 @@ public interface HystrixCircuitBreaker {
      * @ExcludeFromJavadoc
      * @ThreadSafe
      */
+    //用于获取相应的HystrixCircuitBreaker，这是一个HystrixCircuitBreaker的工厂类
     class Factory {
         // String is HystrixCommandKey.name() (we can't use HystrixCommandKey directly as we can't guarantee it implements hashcode/equals correctly)
         private static ConcurrentHashMap<String, HystrixCircuitBreaker> circuitBreakersByCommand = new ConcurrentHashMap<String, HystrixCircuitBreaker>();
@@ -88,6 +96,7 @@ public interface HystrixCircuitBreaker {
          */
         public static HystrixCircuitBreaker getInstance(HystrixCommandKey key, HystrixCommandGroupKey group, HystrixCommandProperties properties, HystrixCommandMetrics metrics) {
             // this should find it for all but the first time
+            //这应该是第一次找到它。
             HystrixCircuitBreaker previouslyCached = circuitBreakersByCommand.get(key.name());
             if (previouslyCached != null) {
                 return previouslyCached;
@@ -242,9 +251,11 @@ public interface HystrixCircuitBreaker {
             if (properties.circuitBreakerForceClosed().get()) {
                 return true;
             }
+            //-1代表熔断器已经关闭了，可以正常接收请求了
             if (circuitOpened.get() == -1) {
                 return true;
             } else {
+                //不等于-1代表熔断器处在半开状态或者在等待一个判断的时间窗口
                 if (status.get().equals(Status.HALF_OPEN)) {
                     return false;
                 } else {
@@ -253,6 +264,11 @@ public interface HystrixCircuitBreaker {
             }
         }
 
+        //判断是否可以再次判断是否关闭熔断器了，尝试接收一小部分流量来做测试，这个时间是可以设置的
+        //这样的好处是，当依赖的服务不可用的时候，熔断器开启，然后所有流量都会进入fallback，然后
+        //过一段时间之后可能依赖的服务已经修复好了，这个时候如果hystrix会自动的尝试关闭熔断器来接
+        // 收部分流量来测试是否可以成功处理请求，如果可以的话那就可以接收全量流量了，否则再次进入
+        //休眠，所有的流量再次都进入fallback，等待下一次test
         private boolean isAfterSleepWindow() {
             final long circuitOpenTime = circuitOpened.get();
             final long currentTime = System.currentTimeMillis();

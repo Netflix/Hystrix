@@ -42,9 +42,9 @@ import rx.plugins.RxJavaSchedulersHook;
  */
 public class HystrixCommandAsyncDemo {
 
-//    public static void main(String args[]) {
-//        new HystrixCommandAsyncDemo().startDemo(true);
-//    }
+    public static void main(String args[]) {
+       new HystrixCommandAsyncDemo().startDemo(true);
+    }
 
     static class ContextAwareRxSchedulersHook extends RxJavaSchedulersHook {
         @Override

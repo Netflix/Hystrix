@@ -50,6 +50,13 @@ import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategyDefault;
  * <p>
  * See the Hystrix GitHub Wiki for more information: <a href="https://github.com/Netflix/Hystrix/wiki/Plugins">https://github.com/Netflix/Hystrix/wiki/Plugins</a>.
  */
+
+/**
+ *
+ * 你可以说这是自定义插件类，可以在里面设置好各种hystrix支持的插件
+ * 比如HystrixConcurrencyStrategy等
+ * 使用的方法为：HystrixPlugins.getInstance.getXXX
+ */
 public class HystrixPlugins {
     
     //We should not load unless we are requested to. This avoids accidental initialization. @agentgt
