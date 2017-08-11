@@ -17,6 +17,14 @@ package com.netflix.hystrix;
 
 import java.util.List;
 
+/**
+ * Author: hujian
+ * 一些参数获取类，比如可以用该类获取到command的group，commandkey等
+ * 还可以用该类做一些判断，比如可以判断返回的结果是否是fallback处理之后
+ * 的结果等，一般在处理完成之后可以获取这些信息来查看我们的接口返回数据
+ * 与hystrix运行效果
+ * @param <R>
+ */
 public interface HystrixInvokableInfo<R> {
 
     HystrixCommandGroupKey getCommandGroup();

@@ -1613,6 +1613,15 @@ import java.util.concurrent.atomic.AtomicReference;
             this.numberOfPermits = numberOfPermits;
         }
 
+        /**
+         *   numberOfPermits 存储可分配的资源
+         *   tryAcquire（）负责资源的分配。有资源申请请求时，
+         *   对count执行incrementAndGet()操作，如果返回值大于
+         *   numberOfPermits的值，则进行decrementAndGet进行
+         *   回退刚才的加一操作，并返回false，表示申请资源失败；如果
+         *   返回值不大于numberOfPermits的值，则表示申请资源成功，返回true
+         * @return
+         */
         @Override
         public boolean tryAcquire() {
             int currentCount = count.incrementAndGet();
