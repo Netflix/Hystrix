@@ -302,14 +302,14 @@ public class CumulativeThreadPoolEventCounterStreamTest extends CommandStreamTes
         CommandStreamTest.Command rejected1 = CommandStreamTest.Command.from(groupKey, key, HystrixEventType.SUCCESS, 0, HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE);
         CommandStreamTest.Command rejected2 = CommandStreamTest.Command.from(groupKey, key, HystrixEventType.SUCCESS, 0, HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE);
 
-        for (final CommandStreamTest.Command saturator : saturators) {
+        saturators.forEach(saturator -> {
             new Thread(new HystrixContextRunnable(new Runnable() {
                 @Override
                 public void run() {
                     saturator.observe();
                 }
             })).start();
-        }
+        });
 
         try {
             Thread.sleep(10);
@@ -360,9 +360,9 @@ public class CumulativeThreadPoolEventCounterStreamTest extends CommandStreamTes
         CommandStreamTest.Command rejected1 = CommandStreamTest.Command.from(groupKey, key, HystrixEventType.SUCCESS, 0);
         CommandStreamTest.Command rejected2 = CommandStreamTest.Command.from(groupKey, key, HystrixEventType.SUCCESS, 0);
 
-        for (final CommandStreamTest.Command saturator : saturators) {
+        saturators.forEach(saturator -> {
             saturator.observe();
-        }
+        });
 
         try {
             Thread.sleep(100);
@@ -461,9 +461,9 @@ public class CumulativeThreadPoolEventCounterStreamTest extends CommandStreamTes
         CommandStreamTest.Command rejection1 = CommandStreamTest.Command.from(groupKey, key, HystrixEventType.FAILURE, 20, HystrixEventType.FALLBACK_SUCCESS, 0);
         CommandStreamTest.Command rejection2 = CommandStreamTest.Command.from(groupKey, key, HystrixEventType.FAILURE, 20, HystrixEventType.FALLBACK_SUCCESS, 0);
 
-        for (CommandStreamTest.Command saturator: fallbackSaturators) {
+        fallbackSaturators.forEach(saturator -> {
             saturator.observe();
-        }
+        });
 
         try {
             Thread.sleep(70);
@@ -486,7 +486,6 @@ public class CumulativeThreadPoolEventCounterStreamTest extends CommandStreamTes
         assertEquals(0, stream.getLatestCount(HystrixEventType.ThreadPool.REJECTED));
     }
 
-    //in a rolling window, take(30) would age out all counters.  in the cumulative count, we expect them to remain non-zero forever
     @Test
     public void testMultipleEventsOverTimeGetStoredAndDoNotAgeOut() {
         HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("Cumulative-ThreadPool-M");

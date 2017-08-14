@@ -121,14 +121,17 @@ public final class HystrixPropertiesManager {
 
     private static <S> S initializeProperties(S setter, List<HystrixProperty> properties, Map<String, PropSetter<S, String>> propMap, String type) {
         if (properties != null && properties.size() > 0) {
-            for (HystrixProperty property : properties) {
+            properties.stream().map(property -> {
                 validate(property);
+                return property;
+            }).map(property -> {
                 if (!propMap.containsKey(property.name())) {
                     throw new IllegalArgumentException("unknown " + type + " property: " + property.name());
                 }
-
+                return property;
+            }).forEach(property -> {
                 propMap.get(property.name()).set(setter, property.value());
-            }
+            });
         }
         return setter;
     }
