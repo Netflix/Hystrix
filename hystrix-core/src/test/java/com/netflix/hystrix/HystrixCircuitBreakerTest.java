@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.hystrix.junit.HystrixRequestContextRule;
 import com.netflix.hystrix.exception.HystrixBadRequestException;
+import com.netflix.hystrix.exception.HystrixRuntimeException;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -634,7 +635,56 @@ public class HystrixCircuitBreakerTest {
                 .withGroupKey(HystrixCommandGroupKey.Factory.asKey("Command"))
                 .andThreadPoolPropertiesDefaults(poolConfig);
 
-        maxParallelExecutions(nThreads, config);
+        maxParallelExecutions(nThreads, config, nThreads);
+    }
+
+    @Test
+    public void testAllowMaximumSizeToDivergeFromCoreSizeWorksWithMaxQueueSizeWithRejects() throws InterruptedException {
+        int nThreads = 5;
+        HystrixThreadPoolProperties.Setter poolConfig = HystrixThreadPoolProperties.Setter()
+                .withCoreSize(1)
+                .withMaximumSize(nThreads)
+                .withAllowMaximumSizeToDivergeFromCoreSize(true)
+                .withMaxQueueSize(50)
+                .withQueueSizeRejectionThreshold(50);
+
+        final HystrixCommand.Setter config = HystrixCommand.Setter
+                .withGroupKey(HystrixCommandGroupKey.Factory.asKey("Command"))
+                .andThreadPoolPropertiesDefaults(poolConfig);
+
+        maxParallelExecutions(nThreads, config, nThreads);
+    }
+
+    @Test
+    public void testAllowMaximumSizeToDivergeFromCoreSizeWorksWithMaxQueueSizeWithRejectsAndHackWithThreshold() throws InterruptedException {
+        int nThreads = 5;
+        HystrixThreadPoolProperties.Setter poolConfig = HystrixThreadPoolProperties.Setter()
+                .withCoreSize(1)
+                .withMaximumSize(nThreads)
+                .withAllowMaximumSizeToDivergeFromCoreSize(true)
+                .withMaxQueueSize(1)
+                .withQueueSizeRejectionThreshold(10000);
+
+        final HystrixCommand.Setter config = HystrixCommand.Setter
+                .withGroupKey(HystrixCommandGroupKey.Factory.asKey("Command"))
+                .andThreadPoolPropertiesDefaults(poolConfig);
+
+        maxParallelExecutions(nThreads, config, nThreads - 1);
+    }
+
+    @Test
+    public void testAllowMaximumSizeToDivergeFromCoreSizeWorksWithoutMaxQueueSizeWithRejects() throws InterruptedException {
+        int nThreads = 5;
+        HystrixThreadPoolProperties.Setter poolConfig = HystrixThreadPoolProperties.Setter()
+                .withCoreSize(5)
+                .withMaxQueueSize(3)
+                .withQueueSizeRejectionThreshold(1);
+
+        final HystrixCommand.Setter config = HystrixCommand.Setter
+                .withGroupKey(HystrixCommandGroupKey.Factory.asKey("Command"))
+                .andThreadPoolPropertiesDefaults(poolConfig);
+
+        maxParallelExecutions(nThreads, config, nThreads);
     }
 
     @Test
@@ -649,10 +699,10 @@ public class HystrixCircuitBreakerTest {
                 .withGroupKey(HystrixCommandGroupKey.Factory.asKey("Command"))
                 .andThreadPoolPropertiesDefaults(poolConfig);
 
-        maxParallelExecutions(nThreads, config);
+        maxParallelExecutions(nThreads, config, nThreads);
     }
 
-    private void maxParallelExecutions(int nThreads, final HystrixCommand.Setter config) throws InterruptedException {
+    private void maxParallelExecutions(int nThreads, final HystrixCommand.Setter config, int wantParallel) throws InterruptedException {
         final AtomicInteger maxParallels = new AtomicInteger();
         final AtomicInteger parallels = new AtomicInteger();
 
@@ -677,6 +727,8 @@ public class HystrixCircuitBreakerTest {
                             }
                         };
                         command.execute();
+                    } catch (HystrixRuntimeException e) {
+                        // caused because reject - just ignore
                     } catch (InterruptedException e) {
                         throw new RuntimeException(e);
                     }
@@ -693,7 +745,7 @@ public class HystrixCircuitBreakerTest {
             thread.join();
         }
 
-        assertEquals(nThreads, maxParallels.get());
+        assertEquals(wantParallel, maxParallels.get());
     }
 
     /**
