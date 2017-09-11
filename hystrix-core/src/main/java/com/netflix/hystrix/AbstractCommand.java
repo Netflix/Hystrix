@@ -1047,6 +1047,7 @@ import java.util.concurrent.atomic.AtomicReference;
     private Observable<R> handleFallbackDisabledByEmittingError(Exception underlying, FailureType failureType, String message) {
         /* fallback is disabled so throw HystrixRuntimeException */
         logger.debug("Fallback disabled for HystrixCommand so will throw HystrixRuntimeException. ", underlying); // debug only since we're throwing the exception and someone higher will do something with it
+        eventNotifier.markEvent(HystrixEventType.FALLBACK_DISABLED, commandKey);
 
         /* executionHook for all errors */
         Exception wrapped = wrapWithOnErrorHook(failureType, underlying);
