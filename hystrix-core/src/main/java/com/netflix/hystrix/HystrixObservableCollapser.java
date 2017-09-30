@@ -123,7 +123,7 @@ public abstract class HystrixObservableCollapser<K, BatchReturnType, ResponseTyp
 
     /* package for tests */HystrixObservableCollapser(HystrixCollapserKey collapserKey, Scope scope, CollapserTimer timer, HystrixCollapserProperties.Setter propertiesBuilder, HystrixCollapserMetrics metrics) {
         if (collapserKey == null || collapserKey.name().trim().equals("")) {
-            String defaultKeyName = getDefaultNameFromClass(getClass());
+            String defaultKeyName = AbstractCommand.getDefaultNameFromClass(getClass());
             collapserKey = HystrixCollapserKey.Factory.asKey(defaultKeyName);
         }
 
@@ -500,23 +500,6 @@ public abstract class HystrixObservableCollapser<K, BatchReturnType, ResponseTyp
      */
     /* package */static void reset() {
         RequestCollapserFactory.reset();
-    }
-
-    private static String getDefaultNameFromClass(@SuppressWarnings("rawtypes") Class<? extends HystrixObservableCollapser> cls) {
-        String fromCache = defaultNameCache.get(cls);
-        if (fromCache != null) {
-            return fromCache;
-        }
-        // generate the default
-        // default HystrixCommandKey to use if the method is not overridden
-        String name = cls.getSimpleName();
-        if (name.equals("")) {
-            // we don't have a SimpleName (anonymous inner class) so use the full class name
-            name = cls.getName();
-            name = name.substring(name.lastIndexOf('.') + 1, name.length());
-        }
-        defaultNameCache.put(cls, name);
-        return name;
     }
 
     /**
