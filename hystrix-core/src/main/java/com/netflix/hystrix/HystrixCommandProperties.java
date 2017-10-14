@@ -496,7 +496,7 @@ public abstract class HystrixCommandProperties {
             try {
                 value = ExecutionIsolationStrategy.valueOf(property.get());
             } catch (Exception e) {
-                logger.error("Unable to derive ExecutionIsolationStrategy from property value: " + property.get(), e);
+                logger.error("Unable to derive ExecutionIsolationStrategy from property value: {}", property.get(), e);
                 // use the default value
                 value = defaultValue;
             }

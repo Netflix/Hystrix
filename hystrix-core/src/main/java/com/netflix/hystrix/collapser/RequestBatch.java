@@ -256,7 +256,7 @@ public class RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> {
             try {
                 // if we win the 'start' and once we have the lock we can now shut it down otherwise another thread will finish executing this batch
                 if (argumentMap.size() > 0) {
-                    logger.warn("Requests still exist in queue but will not be executed due to RequestCollapser shutdown: " + argumentMap.size(), new IllegalStateException());
+                    logger.warn("Requests still exist in queue but will not be executed due to RequestCollapser shutdown: {}", argumentMap.size(), new IllegalStateException());
                     /*
                      * In the event that there is a concurrency bug or thread scheduling prevents the timer from ticking we need to handle this so the Future.get() calls do not block.
                      * 
@@ -273,7 +273,7 @@ public class RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> {
                         /**
                          * https://github.com/Netflix/Hystrix/issues/78 Include more info when collapsed requests remain in queue
                          */
-                        logger.warn("Request still in queue but not be executed due to RequestCollapser shutdown. Argument => " + request.getArgument() + "   Request Object => " + request, new IllegalStateException());
+                        logger.warn("Request still in queue but not be executed due to RequestCollapser shutdown. Argument => {}   Request Object => {}", request.getArgument(), request, new IllegalStateException());
                     }
 
                 }

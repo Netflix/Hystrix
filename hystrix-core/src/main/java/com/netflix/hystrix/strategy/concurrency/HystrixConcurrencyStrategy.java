@@ -82,9 +82,11 @@ public abstract class HystrixConcurrencyStrategy {
         final int dynamicMaximumSize = maximumPoolSize.get();
 
         if (dynamicCoreSize > dynamicMaximumSize) {
-            logger.error("Hystrix ThreadPool configuration at startup for : " + threadPoolKey.name() + " is trying to set coreSize = " +
-                    dynamicCoreSize + " and maximumSize = " + dynamicMaximumSize + ".  Maximum size will be set to " +
-                    dynamicCoreSize + ", the coreSize value, since it must be equal to or greater than the coreSize value");
+            logger.error("Hystrix ThreadPool configuration at startup for : {} " +
+                         "is trying to set coreSize = {} and maximumSize = {}.  " +
+                         "Maximum size will be set to {}, the coreSize value, " +
+                         "since it must be equal to or greater than the coreSize value",
+                         threadPoolKey.name(), dynamicCoreSize, dynamicMaximumSize, dynamicCoreSize);
             return new ThreadPoolExecutor(dynamicCoreSize, dynamicCoreSize, keepAliveTime.get(), unit, workQueue, threadFactory);
         } else {
             return new ThreadPoolExecutor(dynamicCoreSize, dynamicMaximumSize, keepAliveTime.get(), unit, workQueue, threadFactory);
@@ -103,9 +105,11 @@ public abstract class HystrixConcurrencyStrategy {
         if (allowMaximumSizeToDivergeFromCoreSize) {
             final int dynamicMaximumSize = threadPoolProperties.maximumSize().get();
             if (dynamicCoreSize > dynamicMaximumSize) {
-                logger.error("Hystrix ThreadPool configuration at startup for : " + threadPoolKey.name() + " is trying to set coreSize = " +
-                        dynamicCoreSize + " and maximumSize = " + dynamicMaximumSize + ".  Maximum size will be set to " +
-                        dynamicCoreSize + ", the coreSize value, since it must be equal to or greater than the coreSize value");
+                logger.error("Hystrix ThreadPool configuration at startup for : {} " +
+                             "is trying to set coreSize = {} and maximumSize = {}.  " +
+                             "Maximum size will be set to {}, the coreSize value, " +
+                             "since it must be equal to or greater than the coreSize value",
+                             threadPoolKey.name(), dynamicCoreSize, dynamicMaximumSize, dynamicCoreSize);
                 return new ThreadPoolExecutor(dynamicCoreSize, dynamicCoreSize, keepAliveTime, TimeUnit.MINUTES, workQueue, threadFactory);
             } else {
                 return new ThreadPoolExecutor(dynamicCoreSize, dynamicMaximumSize, keepAliveTime, TimeUnit.MINUTES, workQueue, threadFactory);

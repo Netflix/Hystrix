@@ -434,7 +434,7 @@ public class SerialHystrixDashboardData extends SerialHystrixMetric {
         try {
             json.writeNumberField(name, metricGenerator.call());
         } catch (NoSuchFieldError error) {
-            logger.error("While publishing Hystrix metrics stream, error looking up eventType for : " + name + ".  Please check that all Hystrix versions are the same!");
+            logger.error("While publishing Hystrix metrics stream, error looking up eventType for : {}.  Please check that all Hystrix versions are the same!", name);
             json.writeNumberField(name, 0L);
         }
     }

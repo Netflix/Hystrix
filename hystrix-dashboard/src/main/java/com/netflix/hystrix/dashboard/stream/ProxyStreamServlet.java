@@ -135,7 +135,7 @@ public class ProxyStreamServlet extends HttpServlet {
                 }
             }
         } catch (Exception e) {
-            logger.error("Error proxying request: " + url, e);
+            logger.error("Error proxying request: {}", url, e);
         } finally {
             if (httpget != null) {
                 try {
