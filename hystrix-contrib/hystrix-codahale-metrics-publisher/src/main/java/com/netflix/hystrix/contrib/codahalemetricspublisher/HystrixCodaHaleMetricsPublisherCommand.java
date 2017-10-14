@@ -119,6 +119,12 @@ public class HystrixCodaHaleMetricsPublisherCommand implements HystrixMetricsPub
                 return HystrixRollingNumberEvent.FALLBACK_FAILURE;
             }
         });
+        safelyCreateCumulativeCountForEvent("countFallbackDisabled", new Func0<HystrixRollingNumberEvent>() {
+            @Override
+            public HystrixRollingNumberEvent call() {
+                return HystrixRollingNumberEvent.FALLBACK_DISABLED;
+            }
+        });
         safelyCreateCumulativeCountForEvent("countFallbackMissing", new Func0<HystrixRollingNumberEvent>() {
             @Override
             public HystrixRollingNumberEvent call() {
@@ -215,6 +221,12 @@ public class HystrixCodaHaleMetricsPublisherCommand implements HystrixMetricsPub
             @Override
             public HystrixRollingNumberEvent call() {
                 return HystrixRollingNumberEvent.FALLBACK_FAILURE;
+            }
+        });
+        safelyCreateRollingCountForEvent("rollingCountFallbackDisabled", new Func0<HystrixRollingNumberEvent>() {
+            @Override
+            public HystrixRollingNumberEvent call() {
+                return HystrixRollingNumberEvent.FALLBACK_DISABLED;
             }
         });
         safelyCreateRollingCountForEvent("rollingCountFallbackMissing", new Func0<HystrixRollingNumberEvent>() {
