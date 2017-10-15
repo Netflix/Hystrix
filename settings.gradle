@@ -13,6 +13,7 @@ include 'hystrix-core', \
 'hystrix-contrib/hystrix-network-auditor-agent', \
 'hystrix-contrib/hystrix-javanica', \
 'hystrix-contrib/hystrix-junit', \
+'hystrix-contrib/hystrix-junit5', \
 'hystrix-dashboard', \
 'hystrix-serialization' 
 
@@ -27,3 +28,6 @@ project(':hystrix-contrib/hystrix-yammer-metrics-publisher').name = 'hystrix-yam
 project(':hystrix-contrib/hystrix-network-auditor-agent').name = 'hystrix-network-auditor-agent'
 project(':hystrix-contrib/hystrix-javanica').name = 'hystrix-javanica'
 project(':hystrix-contrib/hystrix-junit').name = 'hystrix-junit'
+project(':hystrix-contrib/hystrix-junit5').name = 'hystrix-junit5'
+
+
