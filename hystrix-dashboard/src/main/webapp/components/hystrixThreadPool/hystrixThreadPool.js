@@ -93,9 +93,6 @@
 		
 		function converAllAvg(data) {
 			convertAvg(data, "propertyValue_queueSizeRejectionThreshold", false);
-			
-			// the following will break when it becomes a compound string if the property is dynamically changed
-			convertAvg(data, "propertyValue_metricsRollingStatisticalWindowInMilliseconds", false);
 		}
 		
 		function convertAvg(data, key, decimal) {
