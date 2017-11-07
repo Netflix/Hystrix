@@ -22,13 +22,10 @@ import static org.junit.Assert.fail;
 import org.junit.Test;
 
 import rx.Observable;
-import rx.Subscriber;
 
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategyDefault;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
-import rx.Subscription;
-import rx.subjects.ReplaySubject;
 
 public class HystrixRequestCacheTest {
 

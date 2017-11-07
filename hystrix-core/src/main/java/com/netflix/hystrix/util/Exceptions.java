@@ -1,8 +1,5 @@
 package com.netflix.hystrix.util;
 
-import java.util.LinkedList;
-import java.util.List;
-
 public class Exceptions {
     private Exceptions() {
     }
