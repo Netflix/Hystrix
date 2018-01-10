@@ -174,11 +174,8 @@ It logs the results of [HystrixRequestLog](https://github.com/Netflix/Hystrix/tr
 
 ## Dashboard
 
-A dashboard for monitoring applications using Hystrix is available in the [hystrix-dashboard](https://github.com/Netflix/Hystrix/tree/master/hystrix-dashboard) module.
+The hystrix-dashboard component of this project has been deprecated and moved to [Netflix-Skunkworks/hystrix-dashboard](https://github.com/Netflix-Skunkworks/hystrix-dashboard). Please see the README there for more details including important security considerations.
 
-More information can be found on the [Dashboard Wiki](https://github.com/Netflix/Hystrix/wiki/Dashboard).
-
-<img src="https://raw.github.com/wiki/Netflix/Hystrix/images/hystrix-dashboard-single-row.png">
 
 ## Bugs and Feedback
 
