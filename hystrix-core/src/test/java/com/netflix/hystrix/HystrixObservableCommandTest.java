@@ -1177,7 +1177,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
                 });
 
         try {
-            assertTrue(startLatch.await(1000, TimeUnit.MILLISECONDS));
+            assertTrue(startLatch.await(20, TimeUnit.SECONDS));
         } catch (Throwable ex) {
             fail(ex.getMessage());
         }
@@ -1193,7 +1193,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         isolatedLatch.countDown();
 
         try {
-            assertTrue(allTerminal.await(1000, TimeUnit.MILLISECONDS));
+            assertTrue(allTerminal.await(5000, TimeUnit.MILLISECONDS));
         } catch (Exception e) {
             e.printStackTrace();
             fail("failed waiting on commands");

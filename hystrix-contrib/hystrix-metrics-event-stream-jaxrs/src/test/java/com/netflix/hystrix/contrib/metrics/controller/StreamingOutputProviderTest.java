@@ -130,7 +130,9 @@ public class StreamingOutputProviderTest {
 
 		System.out.println("Total lines:" + writes.get());
 		assertTrue(writes.get() >= 9); // Observable is configured to emit events in every 100 ms. So expect at least 9 in a second.
-		assertTrue(stream.getConcurrentConnections().get() == 0); // Provider is expected to decrement connection count when streaming process is terminated.
+
+		// Provider is expected to decrement connection count when streaming process is terminated.
+		assertTrue(hasNoMoreConcurrentConnections(stream.getConcurrentConnections(), 200, 10, TimeUnit.MILLISECONDS));
 	}
 
 	@Test
@@ -141,6 +143,20 @@ public class StreamingOutputProviderTest {
 	@Test
 	public void testOnComplete() throws Exception {
 		testStreamOnce(streamOfOnNextThenOnCompleted);
+	}
+
+	// as the concurrentConnections count is decremented asynchronously, we need to potentially give the check a little bit of time
+	private static boolean hasNoMoreConcurrentConnections(AtomicInteger concurrentConnectionsCount, long waitDuration, long pollInterval, TimeUnit timeUnit) throws InterruptedException {
+		long period = (pollInterval > waitDuration) ? waitDuration : pollInterval;
+
+		for (long i = 0; i < waitDuration; i += period) {
+			if (concurrentConnectionsCount.get() == 0) {
+				return true;
+			}
+			Thread.sleep(timeUnit.toMillis(period));
+		}
+
+		return false;
 	}
 
 	private void testStreamOnce(Observable<String> observable) throws Exception {
@@ -157,8 +173,8 @@ public class StreamingOutputProviderTest {
 
 		System.out.println("Total lines:" + writes.get());
 		assertTrue(writes.get() == 1);
-		assertTrue(stream.getConcurrentConnections().get() == 0);
 
+		assertTrue(hasNoMoreConcurrentConnections(stream.getConcurrentConnections(), 200, 10, TimeUnit.MILLISECONDS));
 	}
 
 	private static Thread startStreamingThread(final HystrixStream stream, final OutputStream outputSteam) {

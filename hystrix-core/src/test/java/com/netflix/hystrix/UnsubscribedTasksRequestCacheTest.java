@@ -128,6 +128,7 @@ public class UnsubscribedTasksRequestCacheTest {
             });
 
             futureCommand2a.get();
+            Thread.sleep(500);
             futureCommand2b.get();
 
             assertEquals(1, numCacheResponses.get());

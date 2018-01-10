@@ -13,8 +13,7 @@ include 'hystrix-core', \
 'hystrix-contrib/hystrix-network-auditor-agent', \
 'hystrix-contrib/hystrix-javanica', \
 'hystrix-contrib/hystrix-junit', \
-'hystrix-dashboard', \
-'hystrix-serialization' 
+'hystrix-serialization'
 
 project(':hystrix-contrib/hystrix-clj').name = 'hystrix-clj'
 project(':hystrix-contrib/hystrix-request-servlet').name = 'hystrix-request-servlet'
