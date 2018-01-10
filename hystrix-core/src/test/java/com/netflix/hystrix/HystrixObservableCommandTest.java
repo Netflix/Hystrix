@@ -1177,7 +1177,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
                 });
 
         try {
-            assertTrue(startLatch.await(1000, TimeUnit.MILLISECONDS));
+            assertTrue(startLatch.await(5000, TimeUnit.MILLISECONDS));
         } catch (Throwable ex) {
             fail(ex.getMessage());
         }
