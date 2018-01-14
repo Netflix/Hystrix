@@ -138,6 +138,8 @@ public class ExecutionResult {
             return events.get(eventType.ordinal());
         }
 
+        public boolean noEvents() { return numCollapsed == 0 && numFallbackEmissions == 0 && numEmissions == 0; }
+
         public boolean containsAnyOf(BitSet other) {
             return events.intersects(other);
         }
