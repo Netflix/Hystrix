@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 
+import com.netflix.config.ConfigurationManager;
 import org.junit.Test;
 
 import rx.Observable;
@@ -100,9 +101,16 @@ public class StreamingOutputProviderTest {
 		assertEquals("text/event-stream;charset=UTF-8", resp.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE));
 		assertEquals("no-cache, no-store, max-age=0, must-revalidate", resp.getHeaders().getFirst(HttpHeaders.CACHE_CONTROL));
 		assertEquals("no-cache", resp.getHeaders().getFirst("Pragma"));
+		assertEquals("*", resp.getHeaders().getFirst("Access-Control-Allow-Origin"));
+		assertEquals("POST, GET, OPTIONS, PUT, DELETE, HEAD", resp.getHeaders().getFirst("Access-Control-Allow-Methods"));
+
+		ConfigurationManager.getConfigInstance().setProperty("hystrix.config.stream.accessControlAllowOrigin", "localhost");
+		ConfigurationManager.getConfigInstance().setProperty("hystrix.config.stream.accessControlAllowMethods", "GET");
 
 		resp = sse.handleRequest();
 		assertEquals(200, resp.getStatus());
+		assertEquals("localhost", resp.getHeaders().getFirst("Access-Control-Allow-Origin"));
+		assertEquals("GET", resp.getHeaders().getFirst("Access-Control-Allow-Methods"));
 
 		resp = sse.handleRequest();
 		assertEquals(503, resp.getStatus());
