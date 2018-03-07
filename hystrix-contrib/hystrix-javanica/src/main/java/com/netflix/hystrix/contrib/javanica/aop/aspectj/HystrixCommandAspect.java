@@ -63,7 +63,7 @@ import static com.netflix.hystrix.contrib.javanica.utils.ajc.AjcUtils.getAjcMeth
  * AspectJ aspect to process methods which annotated with {@link HystrixCommand} annotation.
  */
 @Aspect
-public class HystrixCommandAspect {
+public class HystrixCommandAspect implements HystrixAspect {
 
     private static final Map<HystrixPointcutType, MetaHolderFactory> META_HOLDER_FACTORY_MAP;
 
@@ -75,7 +75,6 @@ public class HystrixCommandAspect {
     }
 
     @Pointcut("@annotation(com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand)")
-
     public void hystrixCommandAnnotationPointcut() {
     }
 
@@ -84,7 +83,8 @@ public class HystrixCommandAspect {
     }
 
     @Around("hystrixCommandAnnotationPointcut() || hystrixCollapserAnnotationPointcut()")
-    public Object methodsAnnotatedWithHystrixCommand(final ProceedingJoinPoint joinPoint) throws Throwable {
+    @Override
+    public Object aroundAnnotatedMethod(final ProceedingJoinPoint joinPoint) throws Throwable {
         Method method = getMethodFromTarget(joinPoint);
         Validate.notNull(method, "failed to get method from joinPoint: %s", joinPoint);
         if (method.isAnnotationPresent(HystrixCommand.class) && method.isAnnotationPresent(HystrixCollapser.class)) {

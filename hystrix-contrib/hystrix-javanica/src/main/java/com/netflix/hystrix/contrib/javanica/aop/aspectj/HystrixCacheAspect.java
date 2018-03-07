@@ -41,14 +41,15 @@ import static com.netflix.hystrix.contrib.javanica.utils.ajc.AjcUtils.getAjcMeth
  * @author dmgcodevil
  */
 @Aspect
-public class HystrixCacheAspect {
+public class HystrixCacheAspect implements HystrixAspect {
 
     @Pointcut("@annotation(com.netflix.hystrix.contrib.javanica.cache.annotation.CacheRemove) && !@annotation(com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand)")
     public void cacheRemoveAnnotationPointcut() {
     }
 
     @Around("cacheRemoveAnnotationPointcut()")
-    public Object methodsAnnotatedWithCacheRemove(final ProceedingJoinPoint joinPoint) throws Throwable {
+    @Override
+    public Object aroundAnnotatedMethod(final ProceedingJoinPoint joinPoint) throws Throwable {
         Method method = getMethodFromTarget(joinPoint);
         Object obj = joinPoint.getTarget();
         Object[] args = joinPoint.getArgs();
