@@ -4384,6 +4384,34 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
     }
 
     /**
+     * Test support of demand propagation.
+     */
+    @Test
+    public void testDemandPropagation() {
+        try {
+            TestCommandReturning<String> command = new TestCommandReturning<String>(
+                    Observable.just("a", "b", "c", "d", "e", "f", "g")
+            );
+
+            TestSubscriber subscriber = TestSubscriber.create(2);
+            command.toObservable().subscribe(subscriber);
+            assertEquals(Arrays.asList("a", "b"), subscriber.getOnNextEvents());
+
+            subscriber.requestMore(1);
+            assertEquals(Arrays.asList("a", "b", "c"), subscriber.getOnNextEvents());
+
+            subscriber.requestMore(3);
+            assertEquals(Arrays.asList("a", "b", "c", "d", "e", "f"), subscriber.getOnNextEvents());
+
+            subscriber.requestMore(2);
+            assertEquals(Arrays.asList("a", "b", "c", "d", "e", "f", "g"), subscriber.getOnNextEvents());
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail("We received an exception.");
+        }
+    }
+
+    /**
      * Test behavior when some onNext are received and then a failure.
      */
     @Test
@@ -4893,6 +4921,25 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         @Override
         protected Observable<Boolean> construct() {
             return Observable.just(true, false, true).subscribeOn(Schedulers.computation());
+        }
+
+    }
+
+    /**
+     * Successful execution - no fallback implementation.
+     */
+    private static class TestCommandReturning<T> extends TestHystrixObservableCommand<T> {
+
+        private final Observable<T> result;
+
+        public TestCommandReturning(Observable<T> result) {
+            super(testPropsBuilder());
+            this.result = result;
+        }
+
+        @Override
+        protected Observable<T> construct() {
+            return result;
         }
 
     }
