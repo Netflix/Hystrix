@@ -4384,7 +4384,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
     }
 
     /**
-     * Test support of demand propagation.
+     * Test support of demand propagation for a successful command.
      */
     @Test
     public void testDemandPropagation() {
@@ -4467,6 +4467,29 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
             assertSaneHystrixRequestLog(1);
             // semaphore isolated
             assertFalse(command.isExecutedInThread());
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail("We received an exception.");
+        }
+    }
+
+    /**
+     * Test support of demand propagation for a successful command.
+     */
+    @Test
+    public void testDemandPropagationPartialSuccessWithFallback() {
+        try {
+            HystrixObservableCommand<Boolean> command = new TestPartialSuccessWithFallback(Schedulers.immediate());
+
+            TestSubscriber subscriber = TestSubscriber.create(2);
+            command.toObservable().subscribe(subscriber);
+            assertEquals(Arrays.asList(false, true), subscriber.getOnNextEvents());
+
+            subscriber.requestMore(2);
+            assertEquals(Arrays.asList(false, true, false, true), subscriber.getOnNextEvents());
+
+            subscriber.requestMore(5);
+            assertEquals(Arrays.asList(false, true, false, true, false, true, false), subscriber.getOnNextEvents());
         } catch (Exception e) {
             e.printStackTrace();
             fail("We received an exception.");
@@ -4961,6 +4984,8 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
     private static class TestPartialSuccessWithFallback extends TestHystrixObservableCommand<Boolean> {
 
+        private Scheduler scheduler = Schedulers.computation();
+
         TestPartialSuccessWithFallback() {
             super(TestHystrixObservableCommand.testPropsBuilder());
         }
@@ -4973,11 +4998,16 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
             super(testPropsBuilder().setCommandPropertiesDefaults(properties));
         }
 
+        public TestPartialSuccessWithFallback(Scheduler scheduler) {
+            this();
+            this.scheduler = scheduler;
+        }
+
         @Override
         protected Observable<Boolean> construct() {
             return Observable.just(false, true, false)
                     .concatWith(Observable.<Boolean>error(new RuntimeException("forced error")))
-                    .subscribeOn(Schedulers.computation());
+                    .subscribeOn(scheduler);
         }
 
         @Override
