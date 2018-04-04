@@ -1156,7 +1156,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         final CountDownLatch allTerminal = new CountDownLatch(1);
 
         Observable.merge(results)
-                .subscribeOn(Schedulers.computation())
+                .subscribeOn(Schedulers.newThread())
                 .subscribe(new Subscriber<Boolean>() {
                     @Override
                     public void onCompleted() {
@@ -2700,7 +2700,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         final LatchedSemaphoreCommand command2 = new LatchedSemaphoreCommand(circuitBreaker, semaphore, startLatch, sharedLatch);
 
         Observable<Boolean> merged = Observable.merge(command1.toObservable(), command2.toObservable())
-                .subscribeOn(Schedulers.computation());
+                .subscribeOn(Schedulers.newThread());
 
         final CountDownLatch terminal = new CountDownLatch(1);
 
@@ -5434,7 +5434,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
                     .setCircuitBreaker(circuitBreaker)
                     .setMetrics(circuitBreaker.metrics)
                     .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter()
-                            .withExecutionTimeoutInMilliseconds(30000)
+                            .withExecutionTimeoutEnabled(false)
                             .withExecutionIsolationStrategy(ExecutionIsolationStrategy.SEMAPHORE)
                             .withCircuitBreakerEnabled(false))
                     .setExecutionSemaphore(semaphore));
@@ -5461,7 +5461,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
                         s.onCompleted();
                     }
                 }
-            }).subscribeOn(Schedulers.computation());
+            }).subscribeOn(Schedulers.newThread());
         }
 
         @Override
