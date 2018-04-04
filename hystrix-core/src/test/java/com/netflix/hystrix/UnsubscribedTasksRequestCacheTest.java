@@ -20,6 +20,8 @@ import com.netflix.hystrix.exception.HystrixRuntimeException;
 import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
@@ -72,6 +74,16 @@ public class UnsubscribedTasksRequestCacheTest {
         protected String getCacheKey() {
             return String.valueOf(value);
         }
+    }
+
+    @Before
+    public void init() {
+        HystrixPlugins.reset();
+    }
+
+    @After
+    public void reset() {
+        HystrixPlugins.reset();
     }
 
     @Test
