@@ -110,8 +110,8 @@ public class HystricsMetricsControllerTest extends JerseyTest {
 		executeHystrixCommand(); // Execute a Hystrix command so that metrics are initialized.
 		List<EventInput> streamList = new ArrayList<EventInput>();
 		try {
-			// Fire 5 requests, validate their responses and hold these connections.
-			for (int i = 0; i < 5; i++) {
+			// Fire 3 requests, validate their responses and hold these connections.
+			for (int i = 0; i < 3; i++) {
 				EventInput stream = getStream();
 				System.out.println("Received Response for Request#" + (i + 1));
 				streamList.add(stream);
@@ -119,7 +119,7 @@ public class HystricsMetricsControllerTest extends JerseyTest {
 				System.out.println("Validated Response#" + (i + 1));
 			}
 
-			// Sixth request should fail since max configured connection is 5.
+			// Fourth request should fail since max configured connection is 3.
 			try {
 				streamList.add(getStreamFailFast());
 				Assert.fail("Expected 'ServiceUnavailableException' but, request went through.");
