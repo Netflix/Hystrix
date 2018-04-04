@@ -5434,6 +5434,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
                     .setCircuitBreaker(circuitBreaker)
                     .setMetrics(circuitBreaker.metrics)
                     .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter()
+                            .withExecutionTimeoutInMilliseconds(30000)
                             .withExecutionIsolationStrategy(ExecutionIsolationStrategy.SEMAPHORE)
                             .withCircuitBreakerEnabled(false))
                     .setExecutionSemaphore(semaphore));
