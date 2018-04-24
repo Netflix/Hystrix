@@ -60,12 +60,6 @@ public class UnsubscribedTasksRequestCacheTest {
         @Override
         protected Boolean run() {
             numOfExecutions.getAndIncrement();
-            try {
-                Thread.sleep(500);
-            }
-            catch (InterruptedException e) {
-                e.printStackTrace();
-            }
             System.out.println(Thread.currentThread().getName() + " run()");
             return value == 0 || value % 2 == 0;
         }
@@ -93,63 +87,44 @@ public class UnsubscribedTasksRequestCacheTest {
         final HystrixRequestContext context = HystrixRequestContext.initializeContext();
         final AtomicInteger numCacheResponses = new AtomicInteger(0);
 
-
         try {
-            ExecutorService executorService = Executors.newFixedThreadPool(2);
+            ExecutorService executorService = Executors.newSingleThreadExecutor();
 
-            Future futureCommand2a = executorService.submit(new Runnable() {
-
-                public void run() {
-
-                    HystrixRequestContext.setContextOnCurrentThread(context);
-
-                    CommandUsingRequestCache command2a = new CommandUsingRequestCache(2);
-                    Future<Boolean> resultCommand2a = command2a.queue();
-
-                    try {
-                        assertTrue(resultCommand2a.get());
-                        System.out.println(Thread.currentThread() + " " + command2a.isResponseFromCache());
-                        if (command2a.isResponseFromCache()) {
-                            numCacheResponses.getAndIncrement();
-                        }
-                    } catch (Exception e) {
-                        fail("Exception: " + e.getMessage());
-                    }
-                }
-            });
-
-            Future futureCommand2b = executorService.submit(new Runnable() {
-
-                public void run() {
-
-                    HystrixRequestContext.setContextOnCurrentThread(context);
-
-                    CommandUsingRequestCache command2b = new CommandUsingRequestCache(2);
-                    Future<Boolean> resultCommand2b = command2b.queue();
-
-                    try {
-                        assertTrue(resultCommand2b.get());
-                        System.out.println(Thread.currentThread() + " " + command2b.isResponseFromCache());
-                        if (command2b.isResponseFromCache()) {
-                            numCacheResponses.getAndIncrement();
-                        }
-                    } catch (Exception e) {
-                        fail("Exception: " + e.getMessage());
-                    }
-                }
-            });
+            Future futureCommand2a = executorService.submit(createCommandRunnable(context, numCacheResponses));
+            Future futureCommand2b = executorService.submit(createCommandRunnable(context, numCacheResponses));
 
             futureCommand2a.get();
-            Thread.sleep(500);
             futureCommand2b.get();
 
             assertEquals(1, numCacheResponses.get());
             assertEquals(1, numOfExecutions.get());
-            assertEquals(false, encounteredCommandException.get());
-
+            assertFalse(encounteredCommandException.get());
         } finally {
             context.shutdown();
         }
+    }
+
+    private Runnable createCommandRunnable(final HystrixRequestContext context, final AtomicInteger numCacheResponses) {
+        return new Runnable() {
+
+            public void run() {
+
+                HystrixRequestContext.setContextOnCurrentThread(context);
+
+                CommandUsingRequestCache command2a = new CommandUsingRequestCache(2);
+                Future<Boolean> resultCommand2a = command2a.queue();
+
+                try {
+                    assertTrue(resultCommand2a.get());
+                    System.out.println(Thread.currentThread() + " " + command2a.isResponseFromCache());
+                    if (command2a.isResponseFromCache()) {
+                        numCacheResponses.getAndIncrement();
+                    }
+                } catch (Exception e) {
+                    fail("Exception: " + e.getMessage());
+                }
+            }
+        };
     }
 
 }
