@@ -2440,6 +2440,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
         System.out.println(">>>>> Begin: " + System.currentTimeMillis());
 
+        final AtomicBoolean startedExecution = new AtomicBoolean();
         HystrixObservableCommand<String> command = new HystrixObservableCommand<String>(properties) {
             @Override
             protected Observable<String> construct() {
@@ -2449,6 +2450,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
                     @Override
                     public void call(Subscriber<? super String> t1) {
                         try {
+                            startedExecution.set(true);
                             Thread.sleep(2000);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
@@ -2477,7 +2479,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         assertEquals("expected fallback value", "timed-out", value);
 
         // Thread isolated
-        assertTrue(command.isExecutedInThread());
+        assertTrue(!startedExecution.get() || command.isExecutedInThread());
         assertNotNull(command.getExecutionException());
 
         assertEquals(0, command.metrics.getCurrentConcurrentExecutionCount());
@@ -2493,6 +2495,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
                         .withExecutionIsolationStrategy(ExecutionIsolationStrategy.THREAD)
                         .withExecutionTimeoutInMilliseconds(50));
 
+        final AtomicBoolean startedExecution = new AtomicBoolean();
         HystrixObservableCommand<String> command = new HystrixObservableCommand<String>(properties) {
             @Override
             protected Observable<String> construct() {
@@ -2500,6 +2503,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
 
                     @Override
                     public void call(Subscriber<? super String> t1) {
+                        startedExecution.set(true);
                         try {
                             Thread.sleep(2000);
                         } catch (InterruptedException e) {
@@ -2527,7 +2531,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         assertEquals("expected fallback value", "timed-out", value);
 
         // Thread isolated
-        assertTrue(command.isExecutedInThread());
+        assertTrue(!startedExecution.get() || command.isExecutedInThread());
         assertNotNull(command.getExecutionException());
 
         assertEquals(0, command.metrics.getCurrentConcurrentExecutionCount());
