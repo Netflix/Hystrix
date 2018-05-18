@@ -21,7 +21,9 @@ import com.netflix.hystrix.AbstractCommand.TryableSemaphore;
 import com.netflix.hystrix.AbstractCommand.TryableSemaphoreActual;
 import com.netflix.hystrix.HystrixCircuitBreakerTest.TestCircuitBreaker;
 import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
+import com.netflix.hystrix.exception.ExceptionNotWrappedByHystrix;
 import com.netflix.hystrix.exception.HystrixBadRequestException;
+import com.netflix.hystrix.exception.HystrixBusinessException;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
 import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.concurrency.HystrixContextRunnable;
@@ -2168,6 +2170,109 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
 
         SuccessfulCacheableCommand command2 = new SuccessfulCacheableCommand<String>(circuitBreaker, true, "two");
         assertEquals("two", command2.queue().get());
+    }
+
+    /**
+     * Test that a BusinessException can be thrown and it counts as success and throws the correct exception
+     */
+    @Test
+    public void testBusinessExceptionViaExecuteInThread() {
+        TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
+        BusinessExceptionCommand command = null;
+        try {
+            command = new BusinessExceptionCommand(circuitBreaker, ExecutionIsolationStrategy.THREAD);
+            command.execute();
+            fail("we expect to receive a " + HystrixBusinessException.class.getSimpleName());
+        } catch (HystrixBusinessException e) {
+            // success
+            e.printStackTrace();
+        }
+
+        assertNull(command.getFailedExecutionException());
+        assertTrue(command.getExecutionException() instanceof HystrixBusinessException);
+        assertTrue(command.getExecutionTimeInMilliseconds() > -1);
+        assertTrue(command.isSuccessfulExecution());
+
+        assertCommandExecutionEvents(command, HystrixEventType.SUCCESS);
+        assertEquals(0, command.getBuilder().metrics.getCurrentConcurrentExecutionCount());
+    }
+
+    /**
+     * Test that a BusinessException can be thrown and it counts as success and throws the correct exception
+     */
+    @Test
+    public void testBusinessExceptionViaQueueInThread() throws Exception {
+        TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
+        BusinessExceptionCommand command = null;
+        try {
+            command = new BusinessExceptionCommand(circuitBreaker, ExecutionIsolationStrategy.THREAD);
+            command.queue().get();
+            fail("we expect to receive a " + HystrixBusinessException.class.getSimpleName());
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+            if (e.getCause() instanceof HystrixBusinessException) {
+                // success
+            } else {
+                fail("We expect a " + HystrixBusinessException.class.getSimpleName() + " but got a " + e.getClass().getSimpleName());
+            }
+        }
+
+        assertNull(command.getFailedExecutionException());
+        assertTrue(command.getExecutionException() instanceof HystrixBusinessException);
+        assertTrue(command.getExecutionTimeInMilliseconds() > -1);
+        assertTrue(command.isSuccessfulExecution());
+
+        assertCommandExecutionEvents(command, HystrixEventType.SUCCESS);
+        assertEquals(0, command.getBuilder().metrics.getCurrentConcurrentExecutionCount());
+    }
+
+    /**
+     * Test that a BusinessException can be thrown and it counts as success and throws the correct exception
+     */
+    @Test
+    public void testBusinessExceptionViaExecuteInSemaphore() {
+        TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
+        BusinessExceptionCommand command = new BusinessExceptionCommand(circuitBreaker, ExecutionIsolationStrategy.SEMAPHORE);
+        try {
+            command.execute();
+            fail("we expect to receive a " + HystrixBusinessException.class.getSimpleName());
+        } catch (HystrixBusinessException e) {
+            // success
+            e.printStackTrace();
+        }
+
+        assertNull(command.getFailedExecutionException());
+        assertTrue(command.getExecutionException() instanceof HystrixBusinessException);
+        assertTrue(command.getExecutionTimeInMilliseconds() > -1);
+        assertTrue(command.isSuccessfulExecution());
+
+        assertCommandExecutionEvents(command, HystrixEventType.SUCCESS);
+        assertEquals(0, command.getBuilder().metrics.getCurrentConcurrentExecutionCount());
+    }
+
+    /**
+     * Test that a BusinessException can be thrown and it counts as success and throws the correct exception
+     */
+    @Test
+    public void testBusinessExceptionNotWrappedViaExecuteInThread() {
+        TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
+        BusinessExceptionNotWrappedCommand command = null;
+        try {
+            command = new BusinessExceptionNotWrappedCommand(circuitBreaker, ExecutionIsolationStrategy.THREAD);
+            command.execute();
+            fail("we expect to receive a " + HystrixBusinessException.class.getSimpleName());
+        } catch (BusinessExceptionNotWrappedCommand.NotWrappedException e) {
+            // success
+            e.printStackTrace();
+        }
+
+        assertNull(command.getFailedExecutionException());
+        assertTrue(command.getExecutionException() instanceof BusinessExceptionNotWrappedCommand.NotWrappedException);
+        assertTrue(command.getExecutionTimeInMilliseconds() > -1);
+        assertTrue(command.isSuccessfulExecution());
+
+        assertCommandExecutionEvents(command, HystrixEventType.SUCCESS);
+        assertEquals(0, command.getBuilder().metrics.getCurrentConcurrentExecutionCount());
     }
 
     /**
@@ -5622,6 +5727,68 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         @Override
         public String getCacheKey() {
             return "A";
+        }
+    }
+
+    private static class BusinessExceptionCommand extends TestHystrixCommand<Boolean> {
+
+        public BusinessExceptionCommand(TestCircuitBreaker circuitBreaker, ExecutionIsolationStrategy isolationType) {
+            super(testPropsBuilder()
+                    .setCircuitBreaker(circuitBreaker)
+                    .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionIsolationStrategy(isolationType))
+                    .setMetrics(circuitBreaker.metrics));
+        }
+
+        @Override
+        protected Boolean run() throws Exception {
+            throw new HystrixBusinessException("This exception is a business exception and should not trip circuit");
+        }
+
+        @Override
+        protected Boolean getFallback() {
+            return false;
+        }
+
+        @Override
+        protected String getCacheKey() {
+            return "one";
+        }
+    }
+
+    private static class BusinessExceptionNotWrappedCommand extends TestHystrixCommand<Boolean> {
+
+        public BusinessExceptionNotWrappedCommand(TestCircuitBreaker circuitBreaker, ExecutionIsolationStrategy isolationType) {
+            super(testPropsBuilder()
+                    .setCircuitBreaker(circuitBreaker)
+                    .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionIsolationStrategy(isolationType))
+                    .setMetrics(circuitBreaker.metrics));
+        }
+
+        @Override
+        protected Boolean run() throws Exception {
+            throw new NotWrappedException("This exception is a business exception and should not trip circuit");
+        }
+
+        @Override
+        protected Boolean getFallback() {
+            return false;
+        }
+
+        @Override
+        protected String getCacheKey() {
+            return "one";
+        }
+
+        public static class NotWrappedException extends HystrixBusinessException
+                implements ExceptionNotWrappedByHystrix {
+
+            public NotWrappedException(String s) {
+                super(s);
+            }
+
+            public NotWrappedException(String s, Throwable throwable) {
+                super(s, throwable);
+            }
         }
     }
 
