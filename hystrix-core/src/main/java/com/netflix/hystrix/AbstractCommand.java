@@ -19,7 +19,6 @@ import com.netflix.hystrix.HystrixCircuitBreaker.NoOpCircuitBreaker;
 import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
 import com.netflix.hystrix.exception.ExceptionNotWrappedByHystrix;
 import com.netflix.hystrix.exception.HystrixBadRequestException;
-import com.netflix.hystrix.exception.HystrixBusinessException;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
 import com.netflix.hystrix.exception.HystrixRuntimeException.FailureType;
 import com.netflix.hystrix.exception.HystrixTimeoutException;
@@ -606,28 +605,30 @@ import java.util.concurrent.atomic.AtomicReference;
                 Exception e = getExceptionFromThrowable(t);
                 executionResult = executionResult.setExecutionException(e);
 
-                if (e instanceof HystrixBusinessException) {
-                    circuitBreaker.markSuccess();
-                    return handleBusinessExceptionByEmittingError(e);
-                } else {
+                if (e instanceof RejectedExecutionException) {
                     circuitBreaker.markNonSuccess();
-                    if (e instanceof RejectedExecutionException) {
-                        return handleThreadPoolRejectionViaFallback(e);
-                    } else if (t instanceof HystrixTimeoutException) {
-                        return handleTimeoutViaFallback();
-                    } else if (t instanceof HystrixBadRequestException) {
-                        return handleBadRequestByEmittingError(e);
-                    } else {
-                        /*
-                         * Treat HystrixBadRequestException from ExecutionHook like a plain HystrixBadRequestException.
-                         */
-                        if (e instanceof HystrixBadRequestException) {
-                            eventNotifier.markEvent(HystrixEventType.BAD_REQUEST, commandKey);
-                            return Observable.error(e);
-                        }
+                    return handleThreadPoolRejectionViaFallback(e);
+                } else if (t instanceof HystrixTimeoutException) {
+                    circuitBreaker.markNonSuccess();
+                    return handleTimeoutViaFallback();
+                } else if (t instanceof HystrixBadRequestException) {
+                    HystrixBadRequestException hbre = (HystrixBadRequestException) e;
 
-                        return handleFailureViaFallback(e);
+                    if (!hbre.isMetricsTransient()){
+                        circuitBreaker.markSuccess();
                     }
+
+                    return handleBadRequestByEmittingError(hbre);
+                } else {
+                    /*
+                     * Treat HystrixBadRequestException from ExecutionHook like a plain HystrixBadRequestException.
+                     */
+                    if (e instanceof HystrixBadRequestException) {
+                        eventNotifier.markEvent(HystrixEventType.BAD_REQUEST, commandKey);
+                        return Observable.error(e);
+                    }
+
+                    return handleFailureViaFallback(e);
                 }
             }
         };
@@ -1005,31 +1006,30 @@ import java.util.concurrent.atomic.AtomicReference;
         return getFallbackOrThrowException(this, HystrixEventType.TIMEOUT, FailureType.TIMEOUT, "timed-out", new TimeoutException());
     }
 
-    private Observable<R> handleBusinessExceptionByEmittingError(Exception exception) {
-        long executionLatency = System.currentTimeMillis() - executionResult.getStartTimestamp();
-        eventNotifier.markEvent(HystrixEventType.SUCCESS, commandKey);
-        executionResult = executionResult.addEvent((int) executionLatency, HystrixEventType.SUCCESS);
-
-        return Observable.error(exception);
-    }
-
-    private Observable<R> handleBadRequestByEmittingError(Exception underlying) {
+    private Observable<R> handleBadRequestByEmittingError(HystrixBadRequestException underlying) {
         Exception toEmit = underlying;
 
-        try {
-            long executionLatency = System.currentTimeMillis() - executionResult.getStartTimestamp();
+        long executionLatency = System.currentTimeMillis() - executionResult.getStartTimestamp();
+
+        if (!underlying.isMetricsTransient()) {
+            eventNotifier.markEvent(HystrixEventType.SUCCESS, commandKey);
+            executionResult = executionResult.addEvent((int) executionLatency, HystrixEventType.SUCCESS);
+        } else {
             eventNotifier.markEvent(HystrixEventType.BAD_REQUEST, commandKey);
             executionResult = executionResult.addEvent((int) executionLatency, HystrixEventType.BAD_REQUEST);
-            Exception decorated = executionHook.onError(this, FailureType.BAD_REQUEST_EXCEPTION, underlying);
+            try {
+                Exception decorated = executionHook.onError(this, FailureType.BAD_REQUEST_EXCEPTION, underlying);
 
-            if (decorated instanceof HystrixBadRequestException) {
-                toEmit = decorated;
-            } else {
-                logger.warn("ExecutionHook.onError returned an exception that was not an instance of HystrixBadRequestException so will be ignored.", decorated);
+                if (decorated instanceof HystrixBadRequestException) {
+                    toEmit = decorated;
+                } else {
+                    logger.warn("ExecutionHook.onError returned an exception that was not an instance of HystrixBadRequestException so will be ignored.", decorated);
+                }
+            } catch (Exception hookEx) {
+                logger.warn("Error calling HystrixCommandExecutionHook.onError", hookEx);
             }
-        } catch (Exception hookEx) {
-            logger.warn("Error calling HystrixCommandExecutionHook.onError", hookEx);
         }
+
         /*
          * HystrixBadRequestException is treated differently and allowed to propagate without any stats tracking or fallback logic
          */
@@ -1576,19 +1576,6 @@ import java.util.concurrent.atomic.AtomicReference;
     protected Throwable decomposeException(Exception e) {
         if (e instanceof IllegalStateException) {
             return (IllegalStateException) e;
-        }
-        if (e instanceof HystrixBusinessException){
-            if (shouldNotBeWrapped(e)){
-                return e.getCause();
-            }
-
-            return (HystrixBusinessException) e;
-        }
-        if (e.getCause() instanceof HystrixBusinessException){
-            if (shouldNotBeWrapped(e.getCause().getCause())){
-                return e.getCause().getCause();
-            }
-            return (HystrixBusinessException) e.getCause();
         }
         if (e instanceof HystrixBadRequestException) {
             if (shouldNotBeWrapped(e.getCause())) {

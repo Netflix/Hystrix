@@ -27,12 +27,27 @@ import com.netflix.hystrix.HystrixCommand;
 public class HystrixBadRequestException extends RuntimeException {
 
     private static final long serialVersionUID = -8341452103561805856L;
+    private final boolean metricsTransient;
+
+    public HystrixBadRequestException(String message, boolean metricsTransient) {
+        super(message);
+        this.metricsTransient = metricsTransient;
+    }
+
+    public HystrixBadRequestException(String message, Throwable cause, boolean metricsTransient) {
+        super(message, cause);
+        this.metricsTransient = metricsTransient;
+    }
 
     public HystrixBadRequestException(String message) {
-        super(message);
+        this(message, true);
     }
 
     public HystrixBadRequestException(String message, Throwable cause) {
-        super(message, cause);
+        this(message, cause, true);
+    }
+
+    public boolean isMetricsTransient() {
+        return metricsTransient;
     }
 }
