@@ -258,8 +258,12 @@ public final class MethodProvider {
 
     private byte[] getBytesFor(final Class<?> aClass) throws IOException {
         final byte[] bytes;
-        try (final InputStream systemResourceAsStream = getClass().getClassLoader().getResourceAsStream(aClass.getName().replace('.', '/') + ".class")) {
+        final InputStream systemResourceAsStream = getClass().getClassLoader()
+                .getResourceAsStream(aClass.getName().replace('.', '/') + ".class");
+        try {
             bytes = ByteStreams.toByteArray(systemResourceAsStream);
+        } finally {
+            systemResourceAsStream.close();
         }
         return bytes;
     }
