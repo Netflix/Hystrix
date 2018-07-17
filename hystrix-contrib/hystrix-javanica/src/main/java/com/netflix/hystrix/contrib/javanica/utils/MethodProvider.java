@@ -17,6 +17,7 @@ package com.netflix.hystrix.contrib.javanica.utils;
 
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
+import com.google.common.io.ByteStreams;
 import com.netflix.hystrix.contrib.javanica.annotation.DefaultProperties;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.netflix.hystrix.contrib.javanica.exception.FallbackDefinitionException;
@@ -27,14 +28,13 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static org.objectweb.asm.Opcodes.ACC_BRIDGE;
-import static org.objectweb.asm.Opcodes.ACC_SYNTHETIC;
-import static org.objectweb.asm.Opcodes.ASM5;
+import static org.objectweb.asm.Opcodes.*;
 
 /**
  * Created by dmgcodevil
@@ -75,7 +75,7 @@ public final class MethodProvider {
         return FallbackMethod.ABSENT;
     }
 
-    private void getDefaultFallback(){
+    private void getDefaultFallback() {
 
     }
 
@@ -148,7 +148,7 @@ public final class MethodProvider {
             return false;
         }
 
-        boolean isSpecific(){
+        boolean isSpecific() {
             return false;
         }
 
@@ -235,7 +235,7 @@ public final class MethodProvider {
                 return cache.get(bridgeMethod);
             }
 
-            ClassReader classReader = new ClassReader(aClass.getName());
+            ClassReader classReader = new ClassReader(getBytesFor(aClass));
             final MethodSignature methodSignature = new MethodSignature();
             classReader.accept(new ClassVisitor(ASM5) {
                 @Override
@@ -254,6 +254,14 @@ public final class MethodProvider {
         } else {
             return bridgeMethod;
         }
+    }
+
+    private byte[] getBytesFor(final Class<?> aClass) throws IOException {
+        final byte[] bytes;
+        try (final InputStream systemResourceAsStream = getClass().getClassLoader().getResourceAsStream(aClass.getName().replace('.', '/') + ".class")) {
+            bytes = ByteStreams.toByteArray(systemResourceAsStream);
+        }
+        return bytes;
     }
 
     private static int getParameterCount(String desc) {
