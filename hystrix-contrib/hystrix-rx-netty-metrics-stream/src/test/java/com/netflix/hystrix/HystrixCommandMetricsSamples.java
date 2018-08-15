@@ -57,7 +57,7 @@ public class HystrixCommandMetricsSamples {
 
     static {
         HystrixCommandKey key = new MyHystrixCommandKey();
-        SAMPLE_1 = new HystrixCommandMetrics(key, new MyHystrixCommandGroupKey(), new MyHystrixThreadPoolKey(),
-                new MyHystrixCommandProperties(key), HystrixEventNotifierDefault.getInstance());
+        SAMPLE_1 = new CompleteHystrixCommandMetrics(key, new MyHystrixCommandGroupKey(), new MyHystrixThreadPoolKey(),
+                new MyHystrixCommandProperties(key));
     }
 }
