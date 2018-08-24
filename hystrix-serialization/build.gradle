@@ -3,8 +3,8 @@ repositories {
     jcenter()
 }
 
-sourceCompatibility = JavaVersion.VERSION_1_6
-targetCompatibility = JavaVersion.VERSION_1_6
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 dependencies {
     compileApi project(':hystrix-core')

@@ -8,7 +8,7 @@ buildscript {
 }
 
 plugins {
-    id 'nebula.netflixoss' version '3.4.0'
+    id 'nebula.netflixoss' version '5.1.0'
     id 'me.champeau.gradle.jmh' version '0.3.1'
     id 'net.saliman.cobertura' version '2.2.8'
 }
@@ -31,8 +31,8 @@ subprojects {
     apply plugin: 'nebula.provided-base'
 	apply plugin: 'nebula.compile-api'
 	
-    sourceCompatibility = 1.6
-    targetCompatibility = 1.6
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
 
 
 
