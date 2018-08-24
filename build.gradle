@@ -28,6 +28,9 @@ allprojects {
 subprojects {
     apply plugin: 'nebula.netflixoss'
     apply plugin: 'java'
+    test {
+        ignoreFailures = true
+    } 
     apply plugin: 'nebula.provided-base'
 	apply plugin: 'nebula.compile-api'
 	
