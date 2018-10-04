@@ -128,7 +128,6 @@ public interface HystrixCircuitBreaker {
         }
     }
 
-
     /**
      * The default production implementation of {@link HystrixCircuitBreaker}.
      * 
@@ -139,12 +138,113 @@ public interface HystrixCircuitBreaker {
         private final HystrixCommandProperties properties;
         private final HystrixCommandMetrics metrics;
 
-        enum Status {
-            CLOSED, OPEN, HALF_OPEN;
-        }
+        /**
+         * The Open/Closed/Half-Closed state of the circuit breaker.
+         *
+         * Helps organize logic while also facilitating atomic swaps 
+         * of the state including associated parameters.
+         *
+         * Each State implementation provides all of the circuit breaker
+         * logic while the containing circuit breaker provides a stable
+         * reference target and the forced states which are orthogonal to
+         * to these derived states.
+         * 
+         * @ExcludeFromJavadoc
+         * @ThreadSafe
+         */
+        abstract class State implements HystrixCircuitBreaker {
 
-        private final AtomicReference<Status> status = new AtomicReference<Status>(Status.CLOSED);
-        private final AtomicLong circuitOpened = new AtomicLong(-1);
+            // Provide default no-op implementation.
+            @Override
+            public void markSuccess() {};
+
+            // Provide default no-op implementation.
+            @Override
+            public void markNonSuccess() {};
+
+            /**
+             * Transition to an open state.
+             */
+            void open() {};
+        };
+
+        // Closed is represented as a flyweight/singleton as it requires no instance data.
+        // This should allow for using a reference equality optimization if it is warranted.
+        private final State CLOSED = new State() {
+
+            @Override
+            public boolean allowRequest() { return true; }
+
+            @Override
+            public boolean isOpen() { return false; }
+
+            @Override
+            public boolean attemptExecution() { return true; }
+
+            @Override
+            public void open() { state.compareAndSet(this, new OpenState()); }
+        };
+
+        // Allows a single request and transition to half-open state after the sleep window has passed.
+        class OpenState extends State {
+            final long circuitOpened = System.currentTimeMillis();
+
+            @Override
+            public boolean allowRequest() { return isAfterSleepWindow(circuitOpened); }
+
+            @Override
+            public boolean isOpen() { return true; }
+
+            @Override
+            public boolean attemptExecution() {
+                if (isAfterSleepWindow(circuitOpened)) {
+                    //only the first request after sleep window should execute
+                    //if the executing command succeeds, the status will transition to CLOSED
+                    //if the executing command fails, the status will transition to OPEN
+                    //if the executing command gets unsubscribed, the status will transition to OPEN
+                    if (state.compareAndSet(this, new HalfOpenState())) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                } else {
+                    return false;
+                }
+            }
+        };
+
+        // The state during which a single request is expected to be in-flight
+        // and will return to call either #markSuccess or #markNonSuccess.
+        class HalfOpenState extends State {
+
+            @Override
+            public boolean allowRequest() { return false; }
+
+            @Override
+            public boolean isOpen() { return true; }
+
+            @Override
+            public void markSuccess() {
+                if (state.compareAndSet(this, CLOSED)) {
+                    //This thread wins the race to close the circuit - it resets the stream to start it over from 0
+                    metrics.resetStream();
+                    Subscription previousSubscription = activeSubscription.get();
+                    if (previousSubscription != null) {
+                        previousSubscription.unsubscribe();
+                    }
+                    Subscription newSubscription = subscribeToStream();
+                    activeSubscription.set(newSubscription);
+                }
+            }
+
+            @Override
+            public void markNonSuccess() { state.compareAndSet(this, new OpenState()); }
+
+            @Override
+            public boolean attemptExecution() { return false; }
+        };
+
+        private final AtomicReference<State> state = new AtomicReference<State>(CLOSED);
         private final AtomicReference<Subscription> activeSubscription = new AtomicReference<Subscription>(null);
 
         protected HystrixCircuitBreakerImpl(HystrixCommandKey key, HystrixCommandGroupKey commandGroup, final HystrixCommandProperties properties, HystrixCommandMetrics metrics) {
@@ -191,9 +291,7 @@ public interface HystrixCircuitBreaker {
                                     // if it was open, we need to wait for sleep window to elapse
                                 } else {
                                     // our failure rate is too high, we need to set the state to OPEN
-                                    if (status.compareAndSet(Status.CLOSED, Status.OPEN)) {
-                                        circuitOpened.set(System.currentTimeMillis());
-                                    }
+                                    state.get().open();
                                 }
                             }
                         }
@@ -201,27 +299,10 @@ public interface HystrixCircuitBreaker {
         }
 
         @Override
-        public void markSuccess() {
-            if (status.compareAndSet(Status.HALF_OPEN, Status.CLOSED)) {
-                //This thread wins the race to close the circuit - it resets the stream to start it over from 0
-                metrics.resetStream();
-                Subscription previousSubscription = activeSubscription.get();
-                if (previousSubscription != null) {
-                    previousSubscription.unsubscribe();
-                }
-                Subscription newSubscription = subscribeToStream();
-                activeSubscription.set(newSubscription);
-                circuitOpened.set(-1L);
-            }
-        }
+        public void markSuccess() { state.get().markSuccess(); }
 
         @Override
-        public void markNonSuccess() {
-            if (status.compareAndSet(Status.HALF_OPEN, Status.OPEN)) {
-                //This thread wins the race to re-open the circuit - it resets the start time for the sleep window
-                circuitOpened.set(System.currentTimeMillis());
-            }
-        }
+        public void markNonSuccess() { state.get().markNonSuccess(); }
 
         @Override
         public boolean isOpen() {
@@ -231,7 +312,7 @@ public interface HystrixCircuitBreaker {
             if (properties.circuitBreakerForceClosed().get()) {
                 return false;
             }
-            return circuitOpened.get() >= 0;
+            return state.get().isOpen();
         }
 
         @Override
@@ -242,19 +323,10 @@ public interface HystrixCircuitBreaker {
             if (properties.circuitBreakerForceClosed().get()) {
                 return true;
             }
-            if (circuitOpened.get() == -1) {
-                return true;
-            } else {
-                if (status.get().equals(Status.HALF_OPEN)) {
-                    return false;
-                } else {
-                    return isAfterSleepWindow();
-                }
-            }
+            return state.get().allowRequest();
         }
 
-        private boolean isAfterSleepWindow() {
-            final long circuitOpenTime = circuitOpened.get();
+        private boolean isAfterSleepWindow(long circuitOpenTime) {
             final long currentTime = System.currentTimeMillis();
             final long sleepWindowTime = properties.circuitBreakerSleepWindowInMilliseconds().get();
             return currentTime > circuitOpenTime + sleepWindowTime;
@@ -268,23 +340,7 @@ public interface HystrixCircuitBreaker {
             if (properties.circuitBreakerForceClosed().get()) {
                 return true;
             }
-            if (circuitOpened.get() == -1) {
-                return true;
-            } else {
-                if (isAfterSleepWindow()) {
-                    //only the first request after sleep window should execute
-                    //if the executing command succeeds, the status will transition to CLOSED
-                    //if the executing command fails, the status will transition to OPEN
-                    //if the executing command gets unsubscribed, the status will transition to OPEN
-                    if (status.compareAndSet(Status.OPEN, Status.HALF_OPEN)) {
-                        return true;
-                    } else {
-                        return false;
-                    }
-                } else {
-                    return false;
-                }
-            }
+            return state.get().attemptExecution();
         }
     }
 
