@@ -215,10 +215,13 @@ public interface HystrixCircuitBreaker {
 
         // The state during which a single request is expected to be in-flight
         // and will return to call either #markSuccess or #markNonSuccess.
+        // Allows a single request each sleepWindow, though the first request
+        // is always expected to call one of those methods and triggger a state change.
         class HalfOpenState extends State {
+            final long lastAllowed = System.currentTimeMillis();
 
             @Override
-            public boolean allowRequest() { return false; }
+            public boolean allowRequest() { return isAfterSleepWindow(lastAllowed); }
 
             @Override
             public boolean isOpen() { return true; }
@@ -241,7 +244,9 @@ public interface HystrixCircuitBreaker {
             public void markNonSuccess() { state.compareAndSet(this, new OpenState()); }
 
             @Override
-            public boolean attemptExecution() { return false; }
+            public boolean attemptExecution() {
+                return isAfterSleepWindow(lastAllowed) && state.compareAndSet(this, new HalfOpenState());
+            }
         };
 
         private final AtomicReference<State> state = new AtomicReference<State>(CLOSED);

@@ -616,6 +616,54 @@ public class HystrixCircuitBreakerTest {
         }
     }
 
+    @Test
+    public void testByzantineFailureDoesNotLeaveCircuitStuckHalfOpen() {
+        String key = "cmd-K";
+        try {
+            int sleepWindow = 200;
+
+            // fail
+            HystrixCommand<Boolean> cmd1 = new FailureCommand(key, 1, sleepWindow);
+            HystrixCommand<Boolean> cmd2 = new FailureCommand(key, 1, sleepWindow);
+            HystrixCommand<Boolean> cmd3 = new FailureCommand(key, 1, sleepWindow);
+            HystrixCommand<Boolean> cmd4 = new FailureCommand(key, 1, sleepWindow);
+            cmd1.execute();
+            cmd2.execute();
+            cmd3.execute();
+            cmd4.execute();
+
+            HystrixCircuitBreaker cb = cmd1.circuitBreaker;
+
+            // everything has failed in the test window so we should return false now
+            Thread.sleep(100);
+            assertFalse(cb.allowRequest());
+            assertTrue(cb.isOpen());
+
+            //this should occur after the sleep window, so get executed
+            //however, it is unsubscribed, so never updates state on the circuit-breaker
+            HystrixCommand<Boolean> cmd5 = new SuccessCommand(key, 5000, sleepWindow);
+
+            //wait for sleep window to pass
+            Thread.sleep(sleepWindow + 50);
+
+            //will allow the half open request but we throw it into limbo.
+            assertTrue(cb.attemptExecution());
+
+            //wait for 10 sleep windows, then try a successful command.  this should return the circuit to CLOSED
+            Thread.sleep(10 * sleepWindow);
+            HystrixCommand<Boolean> cmd6 = new SuccessCommand(key, 1, sleepWindow);
+            cmd6.execute();
+
+            Thread.sleep(100);
+            assertTrue(cb.allowRequest());
+            assertFalse(cb.isOpen());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail("Error occurred: " + e.getMessage());
+        }
+    }
+
     /**
      * Utility method for creating {@link HystrixCommandMetrics} for unit tests.
      */
