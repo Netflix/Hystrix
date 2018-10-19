@@ -19,18 +19,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.util.Random;
-
-import com.hystrix.junit.HystrixRequestContextRule;
 import com.netflix.hystrix.exception.HystrixBadRequestException;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
 import org.junit.Test;
 
-import com.netflix.hystrix.HystrixCircuitBreaker.HystrixCircuitBreakerImpl;
-import com.netflix.hystrix.strategy.HystrixPlugins;
-import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
 import rx.Observable;
 import rx.Subscription;
 
@@ -38,79 +29,7 @@ import rx.Subscription;
  * These tests each use a different command key to ensure that running them in parallel doesn't allow the state
  * built up during a test to cause others to fail
  */
-public class HystrixCircuitBreakerTest {
-
-    @Rule
-    public HystrixRequestContextRule ctx = new HystrixRequestContextRule();
-
-    @Before
-    public void init() {
-        for (HystrixCommandMetrics metricsInstance: HystrixCommandMetrics.getInstances()) {
-            metricsInstance.resetStream();
-        }
-
-        HystrixCommandMetrics.reset();
-        HystrixCircuitBreaker.Factory.reset();
-        Hystrix.reset();
-    }
-
-    /**
-     * A simple circuit breaker intended for unit testing of the {@link HystrixCommand} object, NOT production use.
-     * <p>
-     * This uses simple logic to 'trip' the circuit after 3 subsequent failures and doesn't recover.
-     */
-    public static class TestCircuitBreaker implements HystrixCircuitBreaker {
-
-        final HystrixCommandMetrics metrics;
-        private boolean forceShortCircuit = false;
-
-        public TestCircuitBreaker() {
-            this.metrics = getMetrics(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter());
-            forceShortCircuit = false;
-        }
-
-        public TestCircuitBreaker(HystrixCommandKey commandKey) {
-            this.metrics = getMetrics(commandKey, HystrixCommandPropertiesTest.getUnitTestPropertiesSetter());
-            forceShortCircuit = false;
-        }
-
-        public TestCircuitBreaker setForceShortCircuit(boolean value) {
-            this.forceShortCircuit = value;
-            return this;
-        }
-
-        @Override
-        public boolean isOpen() {
-            System.out.println("metrics : " + metrics.getCommandKey().name() + " : " + metrics.getHealthCounts());
-            if (forceShortCircuit) {
-                return true;
-            } else {
-                return metrics.getHealthCounts().getErrorCount() >= 3;
-            }
-        }
-
-        @Override
-        public void markSuccess() {
-            // we don't need to do anything since we're going to permanently trip the circuit
-        }
-
-        @Override
-        public void markNonSuccess() {
-
-        }
-
-        @Override
-        public boolean attemptExecution() {
-            return !isOpen();
-        }
-
-        @Override
-        public boolean allowRequest() {
-            return !isOpen();
-        }
-
-    }
-
+public class HystrixCircuitBreakerTest extends AbstractHystrixCircuitBreaker {
 
     /**
      * Test that if all 'marks' are successes during the test window that it does NOT trip the circuit.
@@ -616,109 +535,6 @@ public class HystrixCircuitBreakerTest {
         }
     }
 
-    /**
-     * Utility method for creating {@link HystrixCommandMetrics} for unit tests.
-     */
-    private static HystrixCommandMetrics getMetrics(HystrixCommandProperties.Setter properties) {
-        return HystrixCommandMetrics.getInstance(CommandKeyForUnitTest.KEY_ONE, CommandOwnerForUnitTest.OWNER_ONE, ThreadPoolKeyForUnitTest.THREAD_POOL_ONE, HystrixCommandPropertiesTest.asMock(properties));
-    }
-
-
-    /**
-     * Utility method for creating {@link HystrixCommandMetrics} for unit tests.
-     */
-    private static HystrixCommandMetrics getMetrics(HystrixCommandKey commandKey, HystrixCommandProperties.Setter properties) {
-        return HystrixCommandMetrics.getInstance(commandKey, CommandOwnerForUnitTest.OWNER_ONE, ThreadPoolKeyForUnitTest.THREAD_POOL_ONE, HystrixCommandPropertiesTest.asMock(properties));
-    }
-
-    /**
-     * Utility method for creating {@link HystrixCircuitBreaker} for unit tests.
-     */
-    private static HystrixCircuitBreaker getCircuitBreaker(HystrixCommandKey key, HystrixCommandGroupKey commandGroup, HystrixCommandMetrics metrics, HystrixCommandProperties.Setter properties) {
-        return new HystrixCircuitBreakerImpl(key, commandGroup, HystrixCommandPropertiesTest.asMock(properties), metrics);
-    }
-
-    private static enum CommandOwnerForUnitTest implements HystrixCommandGroupKey {
-        OWNER_ONE, OWNER_TWO
-    }
-
-    private static enum ThreadPoolKeyForUnitTest implements HystrixThreadPoolKey {
-        THREAD_POOL_ONE, THREAD_POOL_TWO
-    }
-
-    private static enum CommandKeyForUnitTest implements HystrixCommandKey {
-        KEY_ONE, KEY_TWO
-    }
-
-    // ignoring since this never ends ... useful for testing https://github.com/Netflix/Hystrix/issues/236
-    @Ignore
-    @Test
-    public void testSuccessClosesCircuitWhenBusy() throws InterruptedException {
-        HystrixPlugins.getInstance().registerCommandExecutionHook(new MyHystrixCommandExecutionHook());
-        try {
-            performLoad(200, 0, 40);
-            performLoad(250, 100, 40);
-            performLoad(600, 0, 40);
-        } finally {
-            Hystrix.reset();
-        }
-
-    }
-
-    void performLoad(int totalNumCalls, int errPerc, int waitMillis) {
-
-        Random rnd = new Random();
-
-        for (int i = 0; i < totalNumCalls; i++) {
-            //System.out.println(i);
-
-            try {
-                boolean err = rnd.nextFloat() * 100 < errPerc;
-
-                TestCommand cmd = new TestCommand(err);
-                cmd.execute();
-
-            } catch (Exception e) {
-                //System.err.println(e.getMessage());
-            }
-
-            try {
-                Thread.sleep(waitMillis);
-            } catch (InterruptedException e) {
-            }
-        }
-    }
-
-    public class TestCommand extends HystrixCommand<String> {
-
-        boolean error;
-
-        public TestCommand(final boolean error) {
-            super(HystrixCommandGroupKey.Factory.asKey("group"));
-
-            this.error = error;
-        }
-
-        @Override
-        protected String run() throws Exception {
-
-            if (error) {
-                throw new Exception("forced failure");
-            } else {
-                return "success";
-            }
-        }
-
-        @Override
-        protected String getFallback() {
-            if (isFailedExecution()) {
-                return getFailedExecutionException().getMessage();
-            } else {
-                return "other fail reason";
-            }
-        }
-
-    }
 
     private class Command extends HystrixCommand<Boolean> {
 
@@ -806,29 +622,4 @@ public class HystrixCircuitBreakerTest {
         }
     }
 
-    public class MyHystrixCommandExecutionHook extends HystrixCommandExecutionHook {
-
-        @Override
-        public <T> T onComplete(final HystrixInvokable<T> command, final T response) {
-
-            logHC(command, response);
-
-            return super.onComplete(command, response);
-        }
-
-        private int counter = 0;
-
-        private <T> void logHC(HystrixInvokable<T> command, T response) {
-
-            if(command instanceof HystrixInvokableInfo) {
-                HystrixInvokableInfo<T> commandInfo = (HystrixInvokableInfo<T>)command;
-            HystrixCommandMetrics metrics = commandInfo.getMetrics();
-            System.out.println("cb/error-count/%/total: "
-                    + commandInfo.isCircuitBreakerOpen() + " "
-                    + metrics.getHealthCounts().getErrorCount() + " "
-                    + metrics.getHealthCounts().getErrorPercentage() + " "
-                    + metrics.getHealthCounts().getTotalRequests() + "  => " + response + "  " + commandInfo.getExecutionEvents());
-            }
-        }
-    }
 }
