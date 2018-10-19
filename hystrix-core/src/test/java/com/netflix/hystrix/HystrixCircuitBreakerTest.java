@@ -134,7 +134,7 @@ public class HystrixCircuitBreakerTest {
 
             // this should still allow requests as everything has been successful
             Thread.sleep(100);
-            //assertTrue(cb.allowRequest());
+            assertTrue(cb.allowRequest());
             assertFalse(cb.isOpen());
 
             // fail
