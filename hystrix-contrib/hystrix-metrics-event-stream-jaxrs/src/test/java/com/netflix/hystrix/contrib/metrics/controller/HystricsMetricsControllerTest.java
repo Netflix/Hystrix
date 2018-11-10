@@ -39,6 +39,7 @@ import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.test.JerseyTest;
 import org.glassfish.jersey.test.TestProperties;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.netflix.hystrix.HystrixCommand;
@@ -101,6 +102,7 @@ public class HystricsMetricsControllerTest extends JerseyTest {
 	}
 
 	@Test
+	@Ignore
 	public void testConcurrency() throws Exception {
 		executeHystrixCommand(); // Execute a Hystrix command so that metrics are initialized.
 		List<EventInput> streamList = new ArrayList<EventInput>();
