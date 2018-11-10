@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import rx.Observable;
@@ -89,6 +90,7 @@ public class StreamingOutputProviderTest {
 	};
 
 	@Test
+	@Ignore("Test is flaky")
 	public void concurrencyTest() throws Exception {
 
 		Response resp = sse.handleRequest();

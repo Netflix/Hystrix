@@ -40,6 +40,7 @@ import com.netflix.hystrix.strategy.properties.HystrixPropertiesCollapserDefault
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesFactory;
 import com.netflix.hystrix.util.HystrixTimer;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -287,6 +288,7 @@ public class HystrixCollapserTest {
     }
 
     @Test
+    @Ignore("Flaky test")
     public void testDuplicateArgumentsWithRequestCachingOff() throws Exception {
         final int NUM = 10;
 
