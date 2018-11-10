@@ -338,6 +338,7 @@ public class RollingThreadPoolEventCounterStreamTest extends CommandStreamTest {
     }
 
     @Test
+    @Ignore("Flaky test")
     public void testThreadPoolRejected() {
         HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("ThreadPool-I");
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("ThreadPool-I");
