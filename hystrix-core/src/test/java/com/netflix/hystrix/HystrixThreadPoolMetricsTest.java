@@ -17,6 +17,7 @@ package com.netflix.hystrix;
 
 import com.netflix.hystrix.metric.consumer.RollingThreadPoolEventCounterStream;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Collection;
@@ -43,6 +44,7 @@ public class HystrixThreadPoolMetricsTest {
 
     }
     @Test
+    @Ignore("Flaky test")
     public void shouldReturnOneExecutedTask() throws Exception {
         //given
         RollingThreadPoolEventCounterStream.getInstance(tpKey, 10, 100).startCachingStreamValuesIfUnstarted();

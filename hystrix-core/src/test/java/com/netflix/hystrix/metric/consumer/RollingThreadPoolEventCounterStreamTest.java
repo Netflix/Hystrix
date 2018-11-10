@@ -27,6 +27,7 @@ import com.netflix.hystrix.strategy.concurrency.HystrixContextRunnable;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import rx.Subscriber;
 
@@ -228,6 +229,7 @@ public class RollingThreadPoolEventCounterStreamTest extends CommandStreamTest {
     }
 
     @Test
+    @Ignore("Flaky test")
     public void testShortCircuited() {
         HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("ThreadPool-G");
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("ThreadPool-G");
