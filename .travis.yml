@@ -9,8 +9,13 @@ sudo: false
 jdk:
   - oraclejdk8
 
-script:
-  - ./gradlew --info check
+install: "./installViaTravis.sh"
+
+script: "./buildViaTravis.sh"
+
+cache:
+  directories:
+  - "$HOME/.gradle"
 
 after_failure:
   - if [ -f /home/travis/build/Netflix/Hystrix/hystrix-core/build/reports/tests/test/index.html ]; then lynx -dump /home/travis/build/Netflix/Hystrix/hystrix-core/build/reports/tests/test/index.html; fi
