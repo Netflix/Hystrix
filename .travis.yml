@@ -19,3 +19,10 @@ cache:
 
 after_failure:
   - if [ -f /home/travis/build/Netflix/Hystrix/hystrix-core/build/reports/tests/test/index.html ]; then lynx -dump /home/travis/build/Netflix/Hystrix/hystrix-core/build/reports/tests/test/index.html; fi
+env:
+  global:
+  - secure: PKFOXNElIioKzR25ekT5PN9FITsQnORw8GjaYdVZecdO1nIZ89vt9UmI1UnD4Jm1qsLm2o+Bv77KCU6L0bQiFernyl9400OGEVHRiXl4UuNIkWOruVgRM5BBQixbvLzqP9ul9qxNDXhB8oP/wXGMVeBEKxutb1/0AXnLlLspF9U=
+  - secure: XvRKpxC/Qh4k2LIAdFgaIEP0UW9OCoIDXt4o8494drLD/VVOZX9Ig8trFqHtfZrwBiI3zpe0XKJEPNHHAap+MyQ4SpXv13VFDGPhQCdgfcnJ4mj1Nf34J1nFRj/nZsgC99gn28qExY9tB+9IJ4MmidUvGgzN4Q7y21XbvRmmk34=
+  - secure: FEeb9KksyAPPzEqRZCWpSr2rPh1kJV/ltNYpyIhM1W+jCf3IVESluGGbZD2ufzv6toGNUzXF82i/bWkNOP4FFnGcYltZ/2OiVQHdZliP4k2xW4Kvl1bMAXkAHstoNoOQqgupnt3SRc/WYe1zfc3FsHW0ADwRpBDFkFdhro1rSRo=
+  - secure: dkJ2w6CIxwo5qIh3sw59PvXvs+ht/hsuaP3IM47rMDo0FcqC86ZhjoWesizmktK7aU5K8A786xP4VZIbGWcrC++Igq3feLwhreCGVNAgLSoE5o7uRTmD3Rd9Z2TEZgKnxPyHoSv2G6H73Kgm64r+6JTpgamB84vgymhnDVbmIes=
+  - secure: PFeXGAjK07eBNbOTFq9AjNsQGlIN+H01TAcX1NraFdoEEIM+qvdf6hVK81d0dmceQvR7r0ZBGXOAI+x8/6otBqFB/8nb10Yhl2Qzw+ZlO/Au1kIrhLYrev1Z4xa9ZzgdIbGeLB2QHjbEnaXPekIE/qwTkEL4qssP7YGFG7uVhhE=
