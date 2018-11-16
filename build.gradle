@@ -34,9 +34,11 @@ subprojects {
     sourceCompatibility = 1.6
     targetCompatibility = 1.6
 
-
-
     group = "com.netflix.${githubProjectName}"
+
+    tasks.withType(Javadoc) {
+        options.addStringOption('Xdoclint:none', '-quiet')
+    }
 
     eclipse {
         classpath {
