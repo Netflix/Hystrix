@@ -23,6 +23,10 @@ allprojects {
     }
 
     apply plugin: 'net.saliman.cobertura'
+
+    tasks.withType(Javadoc) {
+        options.addBooleanOption('Xdoclint:none', true)
+    }
 }
 
 subprojects {
@@ -33,8 +37,6 @@ subprojects {
 	
     sourceCompatibility = 1.6
     targetCompatibility = 1.6
-
-
 
     group = "com.netflix.${githubProjectName}"
 
