@@ -23,6 +23,8 @@ javadoc {
         windowTitle = "Hystrix Javadoc ${project.version}"
     }
     options.addStringOption('top').value = '<a href="https://github.com/Netflix/Hystrix"><img width="92" height="79" border="0" align="left" src="http://netflix.github.com/Hystrix/images/hystrix-logo-small.png"></a><h2 class="title" style="padding-top:40px">Hystrix: Latency and Fault Tolerance for Distributed Systems</h2>'
+
+    enabled = false
 }
 
 jar {
