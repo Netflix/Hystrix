@@ -2,10 +2,24 @@
 
 # Hystrix: Latency and Fault Tolerance for Distributed Systems
 
-[![NetflixOSS Lifecycle](https://img.shields.io/osslifecycle/Netflix/PROJECTNAMEHERE.svg)]()
+[![NetflixOSS Lifecycle](https://img.shields.io/osslifecycle/Netflix/hystrix.svg)]()
 [![][travis img]][travis]
 [![][maven img]][maven]
 [![][license img]][license]
+
+# Hystrix Status
+Hystrix is no longer in active development, and is currently in maintenance mode.
+
+Hystrix (at version 1.5.18) is stable enough to meet the needs of Netflix for our existing applications. Meanwhile, our focus has shifted towards more adaptive implementations that react to an application’s real time performance rather than pre-configured settings (for example, through [adaptive concurrency limits](https://medium.com/@NetflixTechBlog/performance-under-load-3e6fa9a60581)). For the cases where something like Hystrix makes sense, we intend to continue using Hystrix for existing applications, and to leverage open and active projects like [resilience4j](https://github.com/resilience4j/resilience4j) for new internal projects. We are beginning to recommend others do the same.
+
+Netflix Hystrix is now officially in maintenance mode, with the following expectations to the greater community: 
+Netflix will no longer actively review issues, merge pull-requests, and release new versions of Hystrix. 
+We have made a final release of Hystrix (1.5.18) per [issue 1891](https://github.com/Netflix/Hystrix/issues/1891) so that the latest version in Maven Central is aligned with the last known stable version used internally at Netflix (1.5.11). 
+If members of the community are interested in taking ownership of Hystrix and moving it back into active mode, please reach out to hystrixoss@googlegroups.com.
+
+Hystrix has served Netflix and the community well over the years, and the transition to maintenance mode is in no way an indication that the concepts and ideas from Hystrix are no longer valuable. On the contrary, Hystrix has inspired many great ideas and projects. We thank everyone at Netflix, and in the greater community, for all the contributions made to Hystrix over the years.
+
+## Introduction
 
 Hystrix is a latency and fault tolerance library designed to isolate points of access to remote systems, services and 3rd party libraries, stop cascading failure and enable resilience in complex distributed systems where failure is inevitable.
 
