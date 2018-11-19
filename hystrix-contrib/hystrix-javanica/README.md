@@ -752,7 +752,7 @@ The reason of this is in reducing logic, basically request elements are mapped o
 In some cases your batch method can depend on behavior of third-party service or library that skips duplicates in a request. It can be a rest service that expects unique values and ignores duplicates. In this case the size of elements in request collection can be different from size of elements in response collection. It violates one of the behavior principle. To fix it you need manually map request to response, for example:
 
 ```java
-// hava 8
+// java 8
 @HystrixCommand
 List<User> batchMethod(List<String> ids){
 // ids = [1, 2, 2, 3]
@@ -768,7 +768,7 @@ return response;
 Same case if you want to remove duplicate elements from request collection before a service call.
 Example:
 ```java
-// hava 8
+// java 8
 @HystrixCommand
 List<User> batchMethod(List<String> ids){
 // ids = [1, 2, 2, 3]
