@@ -22,6 +22,8 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 
+import com.netflix.config.DynamicPropertyFactory;
+import com.netflix.config.DynamicStringProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,6 +43,11 @@ public abstract class AbstractHystrixStreamController {
 
 	// wake up occasionally and check that poller is still alive. this value controls how often
 	protected static final int DEFAULT_PAUSE_POLLER_THREAD_DELAY_IN_MS = 500;
+
+	protected static DynamicStringProperty accessControlAllowOrigin =
+			DynamicPropertyFactory.getInstance().getStringProperty("hystrix.config.stream.accessControlAllowOrigin", "*");
+	protected static DynamicStringProperty accessControlAllowMethods =
+			DynamicPropertyFactory.getInstance().getStringProperty("hystrix.config.stream.accessControlAllowMethods", "POST, GET, OPTIONS, PUT, DELETE, HEAD");
 
 	private final int pausePollerThreadDelayInMs;
 
@@ -75,6 +82,8 @@ public abstract class AbstractHystrixStreamController {
 			builder.header(HttpHeaders.CONTENT_TYPE, "text/event-stream;charset=UTF-8");
 			builder.header(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, max-age=0, must-revalidate");
 			builder.header("Pragma", "no-cache");
+			builder.header("Access-Control-Allow-Origin", accessControlAllowOrigin.getValue());
+			builder.header("Access-Control-Allow-Methods", accessControlAllowMethods.getValue());
 			getCurrentConnections().incrementAndGet();
 			builder.entity(new HystrixStream(sampleStream, pausePollerThreadDelayInMs, getCurrentConnections()));
 		}

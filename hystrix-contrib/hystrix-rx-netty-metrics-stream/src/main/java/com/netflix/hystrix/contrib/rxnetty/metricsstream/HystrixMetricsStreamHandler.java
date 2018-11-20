@@ -15,6 +15,8 @@
  */
 package com.netflix.hystrix.contrib.rxnetty.metricsstream;
 
+import com.netflix.config.DynamicPropertyFactory;
+import com.netflix.config.DynamicStringProperty;
 import com.netflix.hystrix.HystrixCollapserMetrics;
 import com.netflix.hystrix.HystrixCommandMetrics;
 import com.netflix.hystrix.HystrixThreadPoolMetrics;
@@ -60,6 +62,11 @@ public class HystrixMetricsStreamHandler<I, O> implements RequestHandler<I, O> {
     private final String hystrixPrefix;
     private final long interval;
     private final RequestHandler<I, O> appHandler;
+
+    private static DynamicStringProperty accessControlAllowOrigin =
+            DynamicPropertyFactory.getInstance().getStringProperty("hystrix.config.stream.accessControlAllowOrigin", "*");
+    private static DynamicStringProperty accessControlAllowMethods =
+            DynamicPropertyFactory.getInstance().getStringProperty("hystrix.config.stream.accessControlAllowMethods", "POST, GET, OPTIONS, PUT, DELETE, HEAD");
 
     public HystrixMetricsStreamHandler(RequestHandler<I, O> appHandler) {
         this(DEFAULT_HYSTRIX_PREFIX, DEFAULT_INTERVAL, appHandler);
@@ -115,6 +122,8 @@ public class HystrixMetricsStreamHandler<I, O> implements RequestHandler<I, O> {
         response.getHeaders().add("Content-Type", "text/event-stream;charset=UTF-8");
         response.getHeaders().add("Cache-Control", "no-cache, no-store, max-age=0, must-revalidate");
         response.getHeaders().add("Pragma", "no-cache");
+        response.getHeaders().add("Access-Control-Allow-Origin", accessControlAllowOrigin.getValue());
+        response.getHeaders().add("Access-Control-Allow-Methods", accessControlAllowMethods.getValue());
     }
 
     @SuppressWarnings("unchecked")
