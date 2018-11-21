@@ -17,12 +17,18 @@ package com.netflix.hystrix;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.hystrix.junit.HystrixRequestContextRule;
 import com.netflix.hystrix.exception.HystrixBadRequestException;
+import com.netflix.hystrix.exception.HystrixRuntimeException;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -614,6 +620,132 @@ public class HystrixCircuitBreakerTest {
             e.printStackTrace();
             fail("Error occurred: " + e.getMessage());
         }
+    }
+
+    @Test
+    public void testAllowMaximumSizeToDivergeFromCoreSizeWorksWithMaxQueueSize() throws InterruptedException {
+        int nThreads = 5;
+        HystrixThreadPoolProperties.Setter poolConfig = HystrixThreadPoolProperties.Setter()
+                .withCoreSize(1)
+                .withMaximumSize(nThreads)
+                .withAllowMaximumSizeToDivergeFromCoreSize(true)
+                .withMaxQueueSize(100);
+
+        final HystrixCommand.Setter config = HystrixCommand.Setter
+                .withGroupKey(HystrixCommandGroupKey.Factory.asKey("Command"))
+                .andThreadPoolPropertiesDefaults(poolConfig);
+
+        maxParallelExecutions(nThreads, config, nThreads);
+    }
+
+    @Test
+    public void testAllowMaximumSizeToDivergeFromCoreSizeWorksWithMaxQueueSizeWithRejects() throws InterruptedException {
+        int nThreads = 5;
+        HystrixThreadPoolProperties.Setter poolConfig = HystrixThreadPoolProperties.Setter()
+                .withCoreSize(1)
+                .withMaximumSize(nThreads)
+                .withAllowMaximumSizeToDivergeFromCoreSize(true)
+                .withMaxQueueSize(50)
+                .withQueueSizeRejectionThreshold(50);
+
+        final HystrixCommand.Setter config = HystrixCommand.Setter
+                .withGroupKey(HystrixCommandGroupKey.Factory.asKey("Command"))
+                .andThreadPoolPropertiesDefaults(poolConfig);
+
+        maxParallelExecutions(nThreads, config, nThreads);
+    }
+
+    @Test
+    public void testAllowMaximumSizeToDivergeFromCoreSizeWorksWithMaxQueueSizeWithRejectsAndHackWithThreshold() throws InterruptedException {
+        int nThreads = 5;
+        HystrixThreadPoolProperties.Setter poolConfig = HystrixThreadPoolProperties.Setter()
+                .withCoreSize(1)
+                .withMaximumSize(nThreads)
+                .withAllowMaximumSizeToDivergeFromCoreSize(true)
+                .withMaxQueueSize(1)
+                .withQueueSizeRejectionThreshold(10000);
+
+        final HystrixCommand.Setter config = HystrixCommand.Setter
+                .withGroupKey(HystrixCommandGroupKey.Factory.asKey("Command"))
+                .andThreadPoolPropertiesDefaults(poolConfig);
+
+        maxParallelExecutions(nThreads, config, nThreads - 1);
+    }
+
+    @Test
+    public void testAllowMaximumSizeToDivergeFromCoreSizeWorksWithoutMaxQueueSizeWithRejects() throws InterruptedException {
+        int nThreads = 5;
+        HystrixThreadPoolProperties.Setter poolConfig = HystrixThreadPoolProperties.Setter()
+                .withCoreSize(5)
+                .withMaxQueueSize(3)
+                .withQueueSizeRejectionThreshold(1);
+
+        final HystrixCommand.Setter config = HystrixCommand.Setter
+                .withGroupKey(HystrixCommandGroupKey.Factory.asKey("Command"))
+                .andThreadPoolPropertiesDefaults(poolConfig);
+
+        maxParallelExecutions(nThreads, config, nThreads);
+    }
+
+    @Test
+    public void testAllowMaximumSizeToDivergeFromCoreSizeWorksWithoutMaxQueueSize() throws InterruptedException {
+        int nThreads = 5;
+        HystrixThreadPoolProperties.Setter poolConfig = HystrixThreadPoolProperties.Setter()
+                .withCoreSize(1)
+                .withMaximumSize(nThreads)
+                .withAllowMaximumSizeToDivergeFromCoreSize(true);
+
+        final HystrixCommand.Setter config = HystrixCommand.Setter
+                .withGroupKey(HystrixCommandGroupKey.Factory.asKey("Command"))
+                .andThreadPoolPropertiesDefaults(poolConfig);
+
+        maxParallelExecutions(nThreads, config, nThreads);
+    }
+
+    private void maxParallelExecutions(int nThreads, final HystrixCommand.Setter config, int wantParallel) throws InterruptedException {
+        final AtomicInteger maxParallels = new AtomicInteger();
+        final AtomicInteger parallels = new AtomicInteger();
+
+        final CountDownLatch startLatch = new CountDownLatch(nThreads + 1);
+
+        List<Thread> threads = new ArrayList<Thread>();
+        for (int i = 0; i < nThreads; i++) {
+            Thread thread = new Thread(new Runnable() {
+                @Override public void run() {
+                    try {
+                        startLatch.countDown();
+                        startLatch.await();
+                        HystrixCommand<Void> command = new HystrixCommand<Void>(config) {
+                            @Override protected Void run() throws Exception {
+                                int currentParallels = parallels.incrementAndGet();
+                                synchronized (maxParallels) {
+                                    maxParallels.set(Math.max(currentParallels, maxParallels.get()));
+                                }
+                                Thread.sleep(100);
+                                parallels.decrementAndGet();
+                                return null;
+                            }
+                        };
+                        command.execute();
+                    } catch (HystrixRuntimeException e) {
+                        // caused because reject - just ignore
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            });
+            threads.add(thread);
+            thread.start();
+        }
+
+        startLatch.countDown();
+        startLatch.await();
+
+        for (Thread thread : threads) {
+            thread.join();
+        }
+
+        assertEquals(wantParallel, maxParallels.get());
     }
 
     /**
