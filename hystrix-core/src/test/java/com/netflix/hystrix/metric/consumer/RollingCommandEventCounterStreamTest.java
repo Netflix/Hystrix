@@ -17,7 +17,6 @@ package com.netflix.hystrix.metric.consumer;
 
 import com.netflix.hystrix.HystrixCommandGroupKey;
 import com.netflix.hystrix.HystrixCommandKey;
-import com.netflix.hystrix.HystrixCommandMetrics;
 import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.HystrixRequestLog;

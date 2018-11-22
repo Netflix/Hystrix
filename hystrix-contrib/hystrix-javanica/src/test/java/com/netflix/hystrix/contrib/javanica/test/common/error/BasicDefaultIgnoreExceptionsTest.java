@@ -2,7 +2,6 @@ package com.netflix.hystrix.contrib.javanica.test.common.error;
 
 import com.netflix.hystrix.contrib.javanica.annotation.DefaultProperties;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
-import com.netflix.hystrix.exception.HystrixRuntimeException;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;

@@ -32,7 +32,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.concurrent.TimeUnit;
 
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
