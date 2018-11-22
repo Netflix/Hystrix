@@ -200,6 +200,8 @@ public interface HystrixCircuitBreaker {
                     });
         }
 
+
+
         @Override
         public void markSuccess() {
             if (status.compareAndSet(Status.HALF_OPEN, Status.CLOSED)) {
@@ -242,7 +244,7 @@ public interface HystrixCircuitBreaker {
             if (properties.circuitBreakerForceClosed().get()) {
                 return true;
             }
-            if (circuitOpened.get() == -1) {
+            if (status.get() == Status.CLOSED) {
                 return true;
             } else {
                 if (status.get().equals(Status.HALF_OPEN)) {
@@ -268,7 +270,7 @@ public interface HystrixCircuitBreaker {
             if (properties.circuitBreakerForceClosed().get()) {
                 return true;
             }
-            if (circuitOpened.get() == -1) {
+            if (status.get() == Status.CLOSED) {
                 return true;
             } else {
                 if (isAfterSleepWindow()) {
