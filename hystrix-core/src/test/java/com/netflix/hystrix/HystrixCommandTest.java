@@ -442,6 +442,32 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
     }
 
     /**
+     * Test support of demand propagation to a successful command.
+     */
+    @Test
+    public void testDemandPropagation() {
+        try {
+            HystrixCommand<Boolean> command = new SuccessfulTestCommand();
+
+                    getCommand(ExecutionIsolationStrategy.THREAD, AbstractTestHystrixCommand.ExecutionResult.SUCCESS);
+
+            TestSubscriber<Boolean> subscriber = TestSubscriber.create(0);
+            command.toObservable().subscribe(subscriber);
+            Thread.sleep(10);
+            subscriber.assertNoErrors();
+            subscriber.assertNoValues();
+
+            subscriber.requestMore(1);
+            Thread.sleep(10);
+            subscriber.assertNoErrors();
+            subscriber.assertValue(true);
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail("We received an exception.");
+        }
+    }
+
+    /**
      * Test a successful command execution.
      */
     @Test

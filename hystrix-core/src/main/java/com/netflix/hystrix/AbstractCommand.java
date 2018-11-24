@@ -1177,7 +1177,7 @@ import java.util.concurrent.atomic.AtomicReference;
             /**
              * If this subscriber receives values it means the parent succeeded/completed
              */
-            Subscriber<R> parent = new Subscriber<R>() {
+            Subscriber<R> parent = new Subscriber<R>(child) {
 
                 @Override
                 public void onCompleted() {
