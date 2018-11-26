@@ -21,6 +21,7 @@ import com.netflix.hystrix.AbstractCommand.TryableSemaphore;
 import com.netflix.hystrix.AbstractCommand.TryableSemaphoreActual;
 import com.netflix.hystrix.HystrixCircuitBreakerTest.TestCircuitBreaker;
 import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
+import com.netflix.hystrix.exception.ExceptionNotWrappedByHystrix;
 import com.netflix.hystrix.exception.HystrixBadRequestException;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
 import com.netflix.hystrix.strategy.HystrixPlugins;
@@ -2168,6 +2169,87 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
 
         SuccessfulCacheableCommand command2 = new SuccessfulCacheableCommand<String>(circuitBreaker, true, "two");
         assertEquals("two", command2.queue().get());
+    }
+
+    /**
+     * Test that a BusinessException can be thrown and it counts as success and throws the correct exception
+     */
+    @Test
+    public void testBusinessExceptionViaExecuteInThread() {
+        TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
+        BadRequestCommand command = null;
+        try {
+            command = new BadRequestCommand(circuitBreaker, ExecutionIsolationStrategy.THREAD,
+                    false);
+            command.execute();
+            fail("we expect to receive a " + HystrixBadRequestException.class.getSimpleName());
+        } catch (HystrixBadRequestException e) {
+            // success
+            e.printStackTrace();
+        }
+
+        assertNull(command.getFailedExecutionException());
+        assertTrue(command.getExecutionException() instanceof HystrixBadRequestException);
+        assertTrue(command.getExecutionTimeInMilliseconds() > -1);
+        assertTrue(command.isSuccessfulExecution());
+
+        assertCommandExecutionEvents(command, HystrixEventType.SUCCESS);
+        assertEquals(0, command.getBuilder().metrics.getCurrentConcurrentExecutionCount());
+    }
+
+    /**
+     * Test that a BusinessException can be thrown and it counts as success and throws the correct exception
+     */
+    @Test
+    public void testBusinessExceptionViaQueueInThread() throws Exception {
+        TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
+        BadRequestCommand command = null;
+        try {
+            command = new BadRequestCommand(circuitBreaker, ExecutionIsolationStrategy.THREAD,
+                    false);
+            command.queue().get();
+            fail("we expect to receive a " + HystrixBadRequestException.class.getSimpleName());
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+            if (e.getCause() instanceof HystrixBadRequestException) {
+                // success
+            } else {
+                fail("We expect a " + HystrixBadRequestException.class.getSimpleName() + " but got a " + e.getClass().getSimpleName());
+            }
+        }
+
+        assertNull(command.getFailedExecutionException());
+        assertTrue(command.getExecutionException() instanceof HystrixBadRequestException);
+        assertTrue(command.getExecutionTimeInMilliseconds() > -1);
+        assertTrue(command.isSuccessfulExecution());
+
+        assertCommandExecutionEvents(command, HystrixEventType.SUCCESS);
+        assertEquals(0, command.getBuilder().metrics.getCurrentConcurrentExecutionCount());
+    }
+
+    /**
+     * Test that a BusinessException can be thrown and it counts as success and throws the correct exception
+     */
+    @Test
+    public void testBusinessExceptionViaExecuteInSemaphore() {
+        TestCircuitBreaker circuitBreaker = new TestCircuitBreaker();
+        BadRequestCommand command = new BadRequestCommand(circuitBreaker, ExecutionIsolationStrategy.SEMAPHORE,
+                false);
+        try {
+            command.execute();
+            fail("we expect to receive a " + HystrixBadRequestException.class.getSimpleName());
+        } catch (HystrixBadRequestException e) {
+            // success
+            e.printStackTrace();
+        }
+
+        assertNull(command.getFailedExecutionException());
+        assertTrue(command.getExecutionException() instanceof HystrixBadRequestException);
+        assertTrue(command.getExecutionTimeInMilliseconds() > -1);
+        assertTrue(command.isSuccessfulExecution());
+
+        assertCommandExecutionEvents(command, HystrixEventType.SUCCESS);
+        assertEquals(0, command.getBuilder().metrics.getCurrentConcurrentExecutionCount());
     }
 
     /**
@@ -5627,16 +5709,27 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
 
     private static class BadRequestCommand extends TestHystrixCommand<Boolean> {
 
+        private final boolean metricsTransient;
+
         public BadRequestCommand(TestCircuitBreaker circuitBreaker, ExecutionIsolationStrategy isolationType) {
+            this(circuitBreaker, isolationType, true);
+        }
+
+        public BadRequestCommand(TestCircuitBreaker circuitBreaker,
+                                 ExecutionIsolationStrategy isolationType,
+                                 boolean metricsTransient) {
             super(testPropsBuilder()
                     .setCircuitBreaker(circuitBreaker)
                     .setCommandPropertiesDefaults(HystrixCommandPropertiesTest.getUnitTestPropertiesSetter().withExecutionIsolationStrategy(isolationType))
                     .setMetrics(circuitBreaker.metrics));
+            this.metricsTransient = metricsTransient;
         }
 
         @Override
         protected Boolean run() {
-            throw new HystrixBadRequestException("Message to developer that they passed in bad data or something like that.");
+            throw new HystrixBadRequestException(
+                    "Message to developer that they passed in bad data or something like that.",
+                    metricsTransient);
         }
 
         @Override

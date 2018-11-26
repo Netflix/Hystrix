@@ -602,14 +602,20 @@ import java.util.concurrent.atomic.AtomicReference;
         final Func1<Throwable, Observable<R>> handleFallback = new Func1<Throwable, Observable<R>>() {
             @Override
             public Observable<R> call(Throwable t) {
-                circuitBreaker.markNonSuccess();
                 Exception e = getExceptionFromThrowable(t);
                 executionResult = executionResult.setExecutionException(e);
+
                 if (e instanceof RejectedExecutionException) {
+                    circuitBreaker.markNonSuccess();
                     return handleThreadPoolRejectionViaFallback(e);
                 } else if (t instanceof HystrixTimeoutException) {
+                    circuitBreaker.markNonSuccess();
                     return handleTimeoutViaFallback();
                 } else if (t instanceof HystrixBadRequestException) {
+                    if (!((HystrixBadRequestException) t).isMetricsTransient()){
+                        circuitBreaker.markSuccess();
+                    }
+
                     return handleBadRequestByEmittingError(e);
                 } else {
                     /*
@@ -1001,20 +1007,27 @@ import java.util.concurrent.atomic.AtomicReference;
     private Observable<R> handleBadRequestByEmittingError(Exception underlying) {
         Exception toEmit = underlying;
 
+        long executionLatency = System.currentTimeMillis() - executionResult.getStartTimestamp();
         try {
-            long executionLatency = System.currentTimeMillis() - executionResult.getStartTimestamp();
-            eventNotifier.markEvent(HystrixEventType.BAD_REQUEST, commandKey);
-            executionResult = executionResult.addEvent((int) executionLatency, HystrixEventType.BAD_REQUEST);
             Exception decorated = executionHook.onError(this, FailureType.BAD_REQUEST_EXCEPTION, underlying);
 
             if (decorated instanceof HystrixBadRequestException) {
                 toEmit = decorated;
+
+                if (!((HystrixBadRequestException) underlying).isMetricsTransient()) {
+                    eventNotifier.markEvent(HystrixEventType.SUCCESS, commandKey);
+                    executionResult = executionResult.addEvent((int) executionLatency, HystrixEventType.SUCCESS);
+                } else {
+                    eventNotifier.markEvent(HystrixEventType.BAD_REQUEST, commandKey);
+                    executionResult = executionResult.addEvent((int) executionLatency, HystrixEventType.BAD_REQUEST);
+                }
             } else {
                 logger.warn("ExecutionHook.onError returned an exception that was not an instance of HystrixBadRequestException so will be ignored.", decorated);
             }
         } catch (Exception hookEx) {
             logger.warn("Error calling HystrixCommandExecutionHook.onError", hookEx);
         }
+
         /*
          * HystrixBadRequestException is treated differently and allowed to propagate without any stats tracking or fallback logic
          */
