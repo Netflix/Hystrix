@@ -119,6 +119,7 @@ public class HystrixTimer {
         @Override
         public void clear() {
             super.clear();
+            INSTANCE.executor.get().getThreadPool().remove((Runnable) f);
             // stop this ScheduledFuture from any further executions
             f.cancel(false);
         }
