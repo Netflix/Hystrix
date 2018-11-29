@@ -28,6 +28,10 @@ public class HystrixBadRequestException extends RuntimeException {
 
     private static final long serialVersionUID = -8341452103561805856L;
 
+    public HystrixBadRequestException() {
+        super();
+    }
+
     public HystrixBadRequestException(String message) {
         super(message);
     }
