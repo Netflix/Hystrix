@@ -1,12 +1,12 @@
 /**
  * Copyright 2012 Netflix, Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,6 +16,7 @@
 package com.netflix.hystrix;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -35,14 +36,14 @@ public interface HystrixCircuitBreaker {
      * Every {@link HystrixCommand} requests asks this if it is allowed to proceed or not.  It is idempotent and does
      * not modify any internal state, and takes into account the half-open logic which allows some requests through
      * after the circuit has been opened
-     * 
+     *
      * @return boolean whether a request should be permitted
      */
     boolean allowRequest();
 
     /**
      * Whether the circuit is currently open (tripped).
-     * 
+     *
      * @return boolean state of circuit breaker
      */
     boolean isOpen();
@@ -75,7 +76,7 @@ public interface HystrixCircuitBreaker {
          * Get the {@link HystrixCircuitBreaker} instance for a given {@link HystrixCommandKey}.
          * <p>
          * This is thread-safe and ensures only 1 {@link HystrixCircuitBreaker} per {@link HystrixCommandKey}.
-         * 
+         *
          * @param key
          *            {@link HystrixCommandKey} of {@link HystrixCommand} instance requesting the {@link HystrixCircuitBreaker}
          * @param group
@@ -111,7 +112,7 @@ public interface HystrixCircuitBreaker {
 
         /**
          * Get the {@link HystrixCircuitBreaker} instance for a given {@link HystrixCommandKey} or null if none exists.
-         * 
+         *
          * @param key
          *            {@link HystrixCommandKey} of {@link HystrixCommand} instance requesting the {@link HystrixCircuitBreaker}
          * @return {@link HystrixCircuitBreaker} for {@link HystrixCommandKey}
@@ -131,7 +132,7 @@ public interface HystrixCircuitBreaker {
 
     /**
      * The default production implementation of {@link HystrixCircuitBreaker}.
-     * 
+     *
      * @ExcludeFromJavadoc
      * @ThreadSafe
      */
@@ -146,6 +147,7 @@ public interface HystrixCircuitBreaker {
         private final AtomicReference<Status> status = new AtomicReference<Status>(Status.CLOSED);
         private final AtomicLong circuitOpened = new AtomicLong(-1);
         private final AtomicReference<Subscription> activeSubscription = new AtomicReference<Subscription>(null);
+        private final AtomicBoolean circuitOnceOpened = new AtomicBoolean(false);
 
         protected HystrixCircuitBreakerImpl(HystrixCommandKey key, HystrixCommandGroupKey commandGroup, final HystrixCommandProperties properties, HystrixCommandMetrics metrics) {
             this.properties = properties;
@@ -192,7 +194,19 @@ public interface HystrixCircuitBreaker {
                                 } else {
                                     // our failure rate is too high, we need to set the state to OPEN
                                     if (status.compareAndSet(Status.CLOSED, Status.OPEN)) {
-                                        circuitOpened.set(System.currentTimeMillis());
+                                        // first open, directly set timestamp
+                                        if (circuitOnceOpened.compareAndSet(false, true)) {
+                                            circuitOpened.set(System.currentTimeMillis());
+                                        } else {
+                                            while (true) {
+                                                //  next set timestamp must wait markSuccess have done
+                                                // it mean circuitOpened equals -1
+                                                if (circuitOpened.get() == -1L) {
+                                                    circuitOpened.set(System.currentTimeMillis());
+                                                    break;
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -290,7 +304,7 @@ public interface HystrixCircuitBreaker {
 
     /**
      * An implementation of the circuit breaker that does nothing.
-     * 
+     *
      * @ExcludeFromJavadoc
      */
     /* package */static class NoOpCircuitBreaker implements HystrixCircuitBreaker {
