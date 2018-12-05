@@ -20,6 +20,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 import com.hystrix.junit.HystrixRequestContextRule;
 import com.netflix.hystrix.exception.HystrixBadRequestException;
@@ -33,6 +34,7 @@ import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
 import rx.Observable;
 import rx.Subscription;
+import rx.functions.Func2;
 
 /**
  * These tests each use a different command key to ensure that running them in parallel doesn't allow the state
@@ -109,6 +111,132 @@ public class HystrixCircuitBreakerTest {
             return !isOpen();
         }
 
+    }
+
+    @Test
+    public void testUnsubscriptionDoesNotLeaveCircuitStuckHalfOpenOnZip() {
+        String key = "cmd-J";
+        try {
+            int sleepWindow = 200;
+
+            // obtain circuit breaker for the command group
+            HystrixCircuitBreaker cb = new ObservableFailureCommand(key, sleepWindow).circuitBreaker;
+
+            // fail
+            for (int i = 0; i < 4; i++) {
+                new ObservableFailureCommand(key, sleepWindow).observe().toBlocking().subscribe();
+            }
+
+            // everything has failed in the test window so we should return false now
+            Thread.sleep(100);
+            assertFalse(cb.allowRequest());
+            assertTrue(cb.isOpen());
+
+            //now we wait until the sleep windows passes
+            Thread.sleep(sleepWindow + 50);
+            assertTrue(cb.allowRequest());
+            assertTrue(cb.isOpen());
+            HystrixObservableCommand<Boolean> successCommand = new ObservableSuccessCommand(key, 100, sleepWindow);
+
+            // this works
+//            successCommand.observe().toBlocking().subscribe();
+
+            // this does not work
+            Observable.zip(successCommand.observe(), Observable.just(1), new Func2<Boolean, Integer, Object>() {
+                @Override
+                public Object call(Boolean a, Integer b) {
+                    return b;
+                }
+            }).toBlocking().subscribe();
+            Thread.sleep(100);
+            Observable.zip(new ObservableSuccessCommand(key, 100, sleepWindow).observe(), Observable.just(1), new Func2<Boolean, Integer, Object>() {
+                @Override
+                public Object call(Boolean a, Integer b) {
+                    return b;
+                }
+            }).toBlocking().subscribe();
+            Thread.sleep(100);
+            Observable.zip(new ObservableSuccessCommand(key, 100, sleepWindow).observe(), Observable.just(1), new Func2<Boolean, Integer, Object>() {
+                @Override
+                public Object call(Boolean a, Integer b) {
+                    return b;
+                }
+            }).toBlocking().subscribe();
+
+            assertFalse(cb.isOpen());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail("Error occurred: " + e.getMessage());
+        }
+    }
+
+    static HystrixCommandProperties.Setter getUnitTestPropertiesSetter() {
+        return new HystrixCommandProperties.Setter()
+                .withExecutionTimeoutInMilliseconds(1000)// when an execution will be timed out
+                .withExecutionTimeoutEnabled(true)
+                .withExecutionIsolationStrategy(HystrixCommandProperties.ExecutionIsolationStrategy.THREAD) // we want thread execution by default in tests
+                .withExecutionIsolationThreadInterruptOnTimeout(true)
+                .withExecutionIsolationThreadInterruptOnFutureCancel(true)
+                .withCircuitBreakerForceOpen(false) // we don't want short-circuiting by default
+                .withCircuitBreakerErrorThresholdPercentage(40) // % of 'marks' that must be failed to trip the circuit
+                .withMetricsRollingStatisticalWindowInMilliseconds(5000)// milliseconds back that will be tracked
+                .withMetricsRollingStatisticalWindowBuckets(5) // buckets
+                .withCircuitBreakerRequestVolumeThreshold(0) // in testing we will not have a threshold unless we're specifically testing that feature
+                .withCircuitBreakerSleepWindowInMilliseconds(5000000) // milliseconds after tripping circuit before allowing retry (by default set VERY long as we want it to effectively never allow a singleTest for most unit tests)
+                .withCircuitBreakerEnabled(true)
+                .withRequestLogEnabled(true)
+                .withExecutionIsolationSemaphoreMaxConcurrentRequests(20)
+                .withFallbackIsolationSemaphoreMaxConcurrentRequests(10)
+                .withFallbackEnabled(true)
+                .withCircuitBreakerForceClosed(false)
+                .withMetricsRollingPercentileEnabled(true)
+                .withRequestCacheEnabled(true)
+                .withMetricsRollingPercentileWindowInMilliseconds(60000)
+                .withMetricsRollingPercentileWindowBuckets(12)
+                .withMetricsRollingPercentileBucketSize(1000)
+                .withMetricsHealthSnapshotIntervalInMilliseconds(100);
+    }
+
+    private abstract class ObservableCommand extends HystrixObservableCommand<Boolean> {
+        public ObservableCommand(String commandKey, int sleepWindow) {
+            super(HystrixObservableCommand.Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("Command"))
+                    .andCommandKey(HystrixCommandKey.Factory.asKey(commandKey)).
+                            andCommandPropertiesDefaults(getUnitTestPropertiesSetter().
+                                    withExecutionTimeoutInMilliseconds(500).
+                                    withCircuitBreakerRequestVolumeThreshold(1).
+                                    withCircuitBreakerSleepWindowInMilliseconds(sleepWindow)));
+        }
+
+        @Override
+        protected Observable<Boolean> resumeWithFallback() {
+            return Observable.just(false);
+        }
+    }
+
+    private class ObservableFailureCommand extends ObservableCommand  {
+        public ObservableFailureCommand(String commandKey, int sleepWindow) {
+            super(commandKey, sleepWindow);
+        }
+
+        @Override
+        protected Observable<Boolean> construct() {
+            return Observable.error(new RuntimeException("Ups"));
+        }
+    }
+
+    private class ObservableSuccessCommand extends ObservableCommand {
+        private Long latency;
+
+        public ObservableSuccessCommand(String commandKey, long latency, int sleepWindow) {
+            super(commandKey, sleepWindow);
+            this.latency = latency;
+        }
+
+        @Override
+        protected Observable<Boolean> construct() {
+            return Observable.just(true).delay(latency, TimeUnit.MILLISECONDS);
+        }
     }
 
 
