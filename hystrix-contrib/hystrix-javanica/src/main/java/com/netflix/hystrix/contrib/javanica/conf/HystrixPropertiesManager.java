@@ -65,6 +65,10 @@ public final class HystrixPropertiesManager {
     public static final String METRICS_ROLLING_PERCENTILE_ENABLED = "metrics.rollingPercentile.enabled";
     public static final String METRICS_ROLLING_PERCENTILE_TIME_IN_MILLISECONDS = "metrics.rollingPercentile.timeInMilliseconds";
     public static final String METRICS_ROLLING_PERCENTILE_NUM_BUCKETS = "metrics.rollingPercentile.numBuckets";
+    /**
+     * timeInMilliseconds / numBuckets
+     */
+    @Deprecated
     public static final String METRICS_ROLLING_PERCENTILE_BUCKET_SIZE = "metrics.rollingPercentile.bucketSize";
     public static final String METRICS_HEALTH_SNAPSHOT_INTERVAL_IN_MILLISECONDS = "metrics.healthSnapshot.intervalInMilliseconds";
 
@@ -248,12 +252,6 @@ public final class HystrixPropertiesManager {
                             setter.withMetricsRollingPercentileWindowBuckets(toInt(METRICS_ROLLING_PERCENTILE_NUM_BUCKETS, value));
                         }
                     })
-                    .put(METRICS_ROLLING_PERCENTILE_BUCKET_SIZE, new PropSetter<HystrixCommandProperties.Setter, String>() {
-                        @Override
-                        public void set(HystrixCommandProperties.Setter setter, String value) throws IllegalArgumentException {
-                            setter.withMetricsRollingPercentileBucketSize(toInt(METRICS_ROLLING_PERCENTILE_BUCKET_SIZE, value));
-                        }
-                    })
                     .put(METRICS_HEALTH_SNAPSHOT_INTERVAL_IN_MILLISECONDS, new PropSetter<HystrixCommandProperties.Setter, String>() {
                         @Override
                         public void set(HystrixCommandProperties.Setter setter, String value) throws IllegalArgumentException {
@@ -377,12 +375,6 @@ public final class HystrixPropertiesManager {
                         @Override
                         public void set(HystrixCollapserProperties.Setter setter, String value) throws IllegalArgumentException {
                             setter.withMetricsRollingPercentileWindowBuckets(toInt(METRICS_ROLLING_PERCENTILE_NUM_BUCKETS, value));
-                        }
-                    })
-                    .put(METRICS_ROLLING_PERCENTILE_BUCKET_SIZE, new PropSetter<HystrixCollapserProperties.Setter, String>() {
-                        @Override
-                        public void set(HystrixCollapserProperties.Setter setter, String value) throws IllegalArgumentException {
-                            setter.withMetricsRollingPercentileBucketSize(toInt(METRICS_ROLLING_PERCENTILE_BUCKET_SIZE, value));
                         }
                     })
                     .put(REQUEST_CACHE_ENABLED, new PropSetter<HystrixCollapserProperties.Setter, String>() {

@@ -75,6 +75,11 @@ public class HystrixThreadPoolPropertiesTest {
             }
 
             @Override
+            public HystrixProperty<Boolean> allowMaximumSizeToDivergeFromCoreSize() {
+                return HystrixProperty.Factory.asProperty(builder.getAllowMaximumSizeToDivergeFromCoreSize());
+            }
+
+            @Override
             public HystrixProperty<Integer> metricsRollingStatisticalWindowInMilliseconds() {
                 return HystrixProperty.Factory.asProperty(builder.getMetricsRollingStatisticalWindowInMilliseconds());
             }
