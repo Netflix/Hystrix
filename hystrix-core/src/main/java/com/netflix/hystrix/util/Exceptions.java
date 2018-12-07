@@ -14,6 +14,7 @@ public class Exceptions {
         return Exceptions.<RuntimeException>doThrow(t);
     }
 
+    @SuppressWarnings("unchecked")
     private static <T extends Throwable> T doThrow(Throwable ex) throws T {
         throw (T) ex;
     }
