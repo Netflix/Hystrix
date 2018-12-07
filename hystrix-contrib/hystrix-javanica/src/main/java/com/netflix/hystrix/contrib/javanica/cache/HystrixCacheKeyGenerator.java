@@ -71,11 +71,11 @@ public class HystrixCacheKeyGenerator {
     }
 
     private Object appendPropertyValue(StringBuilder cacheKeyBuilder, List<String> names, Object obj) throws HystrixCacheKeyGenerationException {
-        for (String name : names) {
+        names.forEach(name -> {
             if (obj != null) {
                 obj = getPropertyValue(name, obj);
             }
-        }
+        });
         if (obj != null) {
             cacheKeyBuilder.append(obj);
         }

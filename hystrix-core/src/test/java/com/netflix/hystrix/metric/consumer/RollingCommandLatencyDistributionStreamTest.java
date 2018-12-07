@@ -231,9 +231,9 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
             }
         });
 
-        for (Command cmd: commands) {
+        commands.forEach(cmd -> {
             cmd.observe();
-        }
+        });
 
         Command shortCircuit = Command.from(groupKey, key, HystrixEventType.SUCCESS);
 
@@ -289,9 +289,9 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
             }
         });
 
-        for (Command cmd: commands) {
+        commands.forEach(cmd -> {
             cmd.observe();
-        }
+        });
 
         Command threadPoolRejected = Command.from(groupKey, key, HystrixEventType.SUCCESS);
 
@@ -347,15 +347,14 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
             }
         });
 
-        for (final Command cmd: commands) {
-            //since these are blocking calls on the caller thread, we need a new caller thread for each command to actually get the desired concurrency
+        commands.forEach(cmd -> {
             new Thread(new HystrixContextRunnable(new Runnable() {
                 @Override
                 public void run() {
                     cmd.observe();
                 }
             })).start();
-        }
+        });
 
         Command semaphoreRejected = Command.from(groupKey, key, HystrixEventType.SUCCESS);
 
@@ -405,9 +404,9 @@ public class RollingCommandLatencyDistributionStreamTest extends CommandStreamTe
             }
         });
 
-        for (Command cmd: commands) {
+        commands.forEach(cmd -> {
             cmd.observe();
-        }
+        });
 
         try {
             assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));

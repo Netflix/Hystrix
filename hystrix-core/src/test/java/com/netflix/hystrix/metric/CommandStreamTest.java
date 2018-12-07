@@ -206,18 +206,20 @@ public abstract class CommandStreamTest {
         @Override
         protected HystrixCommand<List<Integer>> createCommand(Collection<CollapsedRequest<Integer, Integer>> collapsedRequests) {
             List<Integer> args = new ArrayList<Integer>();
-            for (CollapsedRequest<Integer, Integer> collapsedReq: collapsedRequests) {
+            collapsedRequests.forEach(collapsedReq -> {
                 args.add(collapsedReq.getArgument());
-            }
+            });
             return new BatchCommand(args);
         }
 
         @Override
         protected void mapResponseToRequests(List<Integer> batchResponse, Collection<CollapsedRequest<Integer, Integer>> collapsedRequests) {
-            for (CollapsedRequest<Integer, Integer> collapsedReq: collapsedRequests) {
+            collapsedRequests.stream().map(collapsedReq -> {
                 collapsedReq.emitResponse(collapsedReq.getArgument());
+                return collapsedReq;
+            }).forEach(collapsedReq -> {
                 collapsedReq.setComplete();
-            }
+            });
         }
 
         @Override
