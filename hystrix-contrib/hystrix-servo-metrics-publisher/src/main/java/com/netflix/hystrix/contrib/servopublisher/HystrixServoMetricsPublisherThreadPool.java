@@ -180,6 +180,13 @@ public class HystrixServoMetricsPublisherThreadPool extends HystrixServoMetricsP
             }
         });
 
+        monitors.add(new GaugeMetric(MonitorConfig.builder("currentPoolSize").build()) {
+            @Override
+            public Number getValue() {
+                return metrics.getCurrentPoolSize();
+            }
+        });
+
         monitors.add(new GaugeMetric(MonitorConfig.builder("completedTaskCount").build()) {
             @Override
             public Number getValue() {
