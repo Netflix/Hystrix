@@ -1,12 +1,12 @@
 /**
  * Copyright 2012 Netflix, Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -39,12 +39,12 @@ public interface HystrixThreadPoolKey extends HystrixKey {
 
         /**
          * Retrieve (or create) an interned HystrixThreadPoolKey instance for a given name.
-         * 
+         *
          * @param name thread pool name
          * @return HystrixThreadPoolKey instance that is interned (cached) so a given name will always retrieve the same instance.
          */
         public static HystrixThreadPoolKey asKey(String name) {
-           return intern.interned(name);
+            return intern.interned(name);
         }
 
         private static class HystrixThreadPoolKeyDefault extends HystrixKeyDefault implements HystrixThreadPoolKey {
