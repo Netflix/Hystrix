@@ -105,7 +105,8 @@ public class HystrixConfigurationJsonStream {
         HystrixCommandConfiguration.HystrixCommandCircuitBreakerConfig circuitBreakerConfig = commandConfig.getCircuitBreakerConfig();
         json.writeBooleanField("enabled", circuitBreakerConfig.isEnabled());
         json.writeBooleanField("isForcedOpen", circuitBreakerConfig.isForceOpen());
-        json.writeBooleanField("isForcedClosed", circuitBreakerConfig.isForceOpen());
+        json.writeBooleanField("isForcedClosed", circuitBreakerConfig.
+                isForceClosed());
         json.writeNumberField("requestVolumeThreshold", circuitBreakerConfig.getRequestVolumeThreshold());
         json.writeNumberField("errorPercentageThreshold", circuitBreakerConfig.getErrorThresholdPercentage());
         json.writeNumberField("sleepInMilliseconds", circuitBreakerConfig.getSleepWindowInMilliseconds());
