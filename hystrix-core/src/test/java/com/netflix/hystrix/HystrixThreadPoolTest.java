@@ -105,9 +105,9 @@ public class HystrixThreadPoolTest {
         });
         HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("threadPoolFactoryConcurrencyTest");
         HystrixThreadPool poolOne = new HystrixThreadPool.HystrixThreadPoolDefault(
-                threadPoolKey, HystrixThreadPoolPropertiesTest.getUnitTestPropertiesBuilder(), false);
+                threadPoolKey, HystrixThreadPoolPropertiesTest.getUnitTestPropertiesBuilder());
         HystrixThreadPool poolTwo = new HystrixThreadPool.HystrixThreadPoolDefault(
-                threadPoolKey, HystrixThreadPoolPropertiesTest.getUnitTestPropertiesBuilder(), false);
+                threadPoolKey, HystrixThreadPoolPropertiesTest.getUnitTestPropertiesBuilder());
 
         assertThat(poolOne.getExecutor(), is(poolTwo.getExecutor())); //Now that we get the threadPool from the metrics object, this will always be equal
         HystrixMetricsPublisherThreadPoolContainer hystrixMetricsPublisherThreadPool =
