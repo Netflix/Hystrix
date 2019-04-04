@@ -57,17 +57,19 @@ public class HystrixThreadPoolMetrics extends HystrixMetrics {
      *            Pass-thru of ThreadPoolExecutor to {@link HystrixThreadPoolMetrics} instance on first time when constructed
      * @param properties
      *            Pass-thru to {@link HystrixThreadPoolMetrics} instance on first time when constructed
+     * @param updated
      * @return {@link HystrixThreadPoolMetrics}
      */
-    public static HystrixThreadPoolMetrics getInstance(HystrixThreadPoolKey key, ThreadPoolExecutor threadPool, HystrixThreadPoolProperties properties) {
+    public static HystrixThreadPoolMetrics getInstance(HystrixThreadPoolKey key, ThreadPoolExecutor threadPool,
+                                                       HystrixThreadPoolProperties properties, boolean updated) {
         // attempt to retrieve from cache first
         HystrixThreadPoolMetrics threadPoolMetrics = metrics.get(key.name());
-        if (threadPoolMetrics != null) {
+        if (threadPoolMetrics != null && !updated) {
             return threadPoolMetrics;
         } else {
             synchronized (HystrixThreadPoolMetrics.class) {
                 HystrixThreadPoolMetrics existingMetrics = metrics.get(key.name());
-                if (existingMetrics != null) {
+                if (existingMetrics != null && !updated) {
                     return existingMetrics;
                 } else {
                     HystrixThreadPoolMetrics newThreadPoolMetrics = new HystrixThreadPoolMetrics(key, threadPool, properties);
