@@ -36,7 +36,6 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.infra.Blackhole;
 import rx.Observable;
-import rx.Subscription;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -52,7 +51,7 @@ public class CollapserPerfTest {
         public void setUp() {
             hystrixThreadPool = new HystrixThreadPool.HystrixThreadPoolDefault(
                     HystrixThreadPoolKey.Factory.asKey("PERF")
-                    , HystrixThreadPoolProperties.Setter().withCoreSize(100));
+                    , HystrixThreadPoolProperties.Setter().withCoreSize(100), false);
         }
 
         @TearDown
