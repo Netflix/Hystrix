@@ -227,7 +227,7 @@ public class CommandExecutionPerfTest {
         public void setUp() {
             hystrixThreadPool = new HystrixThreadPool.HystrixThreadPoolDefault(
                     HystrixThreadPoolKey.Factory.asKey("PERF")
-                    , HystrixThreadPoolProperties.Setter().withCoreSize(100), false);
+                    , HystrixThreadPoolProperties.Setter().withCoreSize(100));
         }
 
         @TearDown

@@ -95,16 +95,14 @@ public class HystrixPropertiesFactory {
      *            Pass-thru to {@link HystrixPropertiesStrategy#getThreadPoolProperties} implementation.
      * @param builder
      *            Pass-thru to {@link HystrixPropertiesStrategy#getThreadPoolProperties} implementation.
-     * @param updated
      * @return {@link HystrixThreadPoolProperties} instance
      */
-    public static HystrixThreadPoolProperties getThreadPoolProperties(HystrixThreadPoolKey key, HystrixThreadPoolProperties.Setter builder,
-                                                                      boolean updated) {
+    public static HystrixThreadPoolProperties getThreadPoolProperties(HystrixThreadPoolKey key, HystrixThreadPoolProperties.Setter builder) {
         HystrixPropertiesStrategy hystrixPropertiesStrategy = HystrixPlugins.getInstance().getPropertiesStrategy();
         String cacheKey = hystrixPropertiesStrategy.getThreadPoolPropertiesCacheKey(key, builder);
         if (cacheKey != null) {
             HystrixThreadPoolProperties properties = threadPoolProperties.get(cacheKey);
-            if (properties != null && !updated) {
+            if (properties != null) {
                 return properties;
             } else {
                 if (builder == null) {
@@ -113,9 +111,12 @@ public class HystrixPropertiesFactory {
                 // create new instance
                 properties = hystrixPropertiesStrategy.getThreadPoolProperties(key, builder);
                 // cache and return
-                threadPoolProperties.put(cacheKey, properties);
-                return properties;
-
+                HystrixThreadPoolProperties existing = threadPoolProperties.putIfAbsent(cacheKey, properties);
+                if (existing == null) {
+                    return properties;
+                } else {
+                    return existing;
+                }
             }
         } else {
             // no cacheKey so we generate it with caching
