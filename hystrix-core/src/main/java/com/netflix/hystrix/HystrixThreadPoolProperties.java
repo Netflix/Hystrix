@@ -26,6 +26,8 @@ import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 import com.netflix.hystrix.strategy.properties.HystrixProperty;
 import com.netflix.hystrix.util.HystrixRollingNumber;
+import org.apache.commons.lang.builder.EqualsBuilder;
+import org.apache.commons.lang.builder.HashCodeBuilder;
 
 /**
  * Properties for instances of {@link HystrixThreadPool}.
@@ -321,8 +323,38 @@ public abstract class HystrixThreadPoolProperties {
             return this;
         }
 
+        @Override
+        public boolean equals(Object o) {
+            if(this == o)
+                return true;
 
+            if(o == null || getClass() != o.getClass())
+                return false;
 
+            Setter setter = (Setter)o;
 
+            return new EqualsBuilder().append(coreSize, setter.coreSize)
+                    .append(maximumSize, setter.maximumSize)
+                    .append(keepAliveTimeMinutes, setter.keepAliveTimeMinutes)
+                    .append(maxQueueSize, setter.maxQueueSize)
+                    .append(queueSizeRejectionThreshold, setter.queueSizeRejectionThreshold)
+                    .append(allowMaximumSizeToDivergeFromCoreSize, setter.allowMaximumSizeToDivergeFromCoreSize)
+                    .append(rollingStatisticalWindowInMilliseconds, setter.rollingStatisticalWindowInMilliseconds)
+                    .append(rollingStatisticalWindowBuckets, setter.rollingStatisticalWindowBuckets)
+                    .isEquals();
+        }
+
+        @Override
+        public int hashCode() {
+            return new HashCodeBuilder(17, 37).append(coreSize)
+                    .append(maximumSize)
+                    .append(keepAliveTimeMinutes)
+                    .append(maxQueueSize)
+                    .append(queueSizeRejectionThreshold)
+                    .append(allowMaximumSizeToDivergeFromCoreSize)
+                    .append(rollingStatisticalWindowInMilliseconds)
+                    .append(rollingStatisticalWindowBuckets)
+                    .toHashCode();
+        }
     }
 }
