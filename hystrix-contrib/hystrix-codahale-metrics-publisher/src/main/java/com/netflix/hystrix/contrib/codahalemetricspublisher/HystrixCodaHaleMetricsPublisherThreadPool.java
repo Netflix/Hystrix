@@ -193,7 +193,7 @@ public class HystrixCodaHaleMetricsPublisherThreadPool implements HystrixMetrics
     }
 
     protected String createMetricName(String name) {
-        String metricName =  MetricRegistry.name(metricsRootNode, metricGroup, metricType, name);
+        String metricName =  MetricRegistry.name(metricGroup, metricType, name);
         metricsList.add(metricName);
         return metricName;
     }
