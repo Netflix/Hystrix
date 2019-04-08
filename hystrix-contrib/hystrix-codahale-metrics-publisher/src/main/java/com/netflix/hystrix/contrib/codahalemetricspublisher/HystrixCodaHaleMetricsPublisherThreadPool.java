@@ -25,6 +25,9 @@ import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Implementation of {@link HystrixMetricsPublisherThreadPool} using Coda Hale Metrics (https://github.com/codahale/metrics)
  */
@@ -36,6 +39,7 @@ public class HystrixCodaHaleMetricsPublisherThreadPool implements HystrixMetrics
     private final MetricRegistry metricRegistry;
     private final String metricGroup;
     private final String metricType;
+    private List<String> metricsList = new ArrayList<>();
 
     static final Logger logger = LoggerFactory.getLogger(HystrixCodaHaleMetricsPublisherThreadPool.class);
 
@@ -162,6 +166,7 @@ public class HystrixCodaHaleMetricsPublisherThreadPool implements HystrixMetrics
             }
         });
 
+
         metricRegistry.register(createMetricName("propertyValue_keepAliveTimeInMinutes"), new Gauge<Number>() {
             @Override
             public Number getValue() {
@@ -184,7 +189,14 @@ public class HystrixCodaHaleMetricsPublisherThreadPool implements HystrixMetrics
         });
     }
 
+    @Override
+    public void tearDown() {
+        metricsList.forEach(metricRegistry::remove);
+    }
+
     protected String createMetricName(String name) {
-        return MetricRegistry.name(metricsRootNode, metricGroup, metricType, name);
+        String metricName =  MetricRegistry.name(metricsRootNode, metricGroup, metricType, name);
+        metricsList.add(metricName);
+        return metricName;
     }
 }
