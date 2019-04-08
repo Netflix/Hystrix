@@ -92,6 +92,13 @@ public interface HystrixThreadPool {
          */
         /* package */final static ConcurrentHashMap<String, HystrixThreadPool> threadPools = new ConcurrentHashMap<String, HystrixThreadPool>();
 
+        /*
+         * Use the String from HystrixThreadPoolKey.name() instead of the HystrixThreadPoolKey instance as it's just an interface and we can't ensure the object
+         * we receive implements hashcode/equals correctly and do not want the default hashcode/equals which would create a new threadpool for every object we get even if the name is the same
+         */
+        final static ConcurrentHashMap<String, HystrixThreadPoolProperties.Setter> threadPoolProperties =
+                new ConcurrentHashMap<String, HystrixThreadPoolProperties.Setter>();
+
         /**
          * Get the {@link HystrixThreadPool} instance for a given {@link HystrixThreadPoolKey}.
          * <p>
@@ -103,16 +110,24 @@ public interface HystrixThreadPool {
             // get the key to use instead of using the object itself so that if people forget to implement equals/hashcode things will still work
             String key = threadPoolKey.name();
 
+            HystrixThreadPoolProperties.Setter oldPropertiesBuilder = threadPoolProperties.get(key);
+            boolean updated = oldPropertiesBuilder != null && !oldPropertiesBuilder.equals(propertiesBuilder);
             // this should find it for all but the first time
             HystrixThreadPool previouslyCached = threadPools.get(key);
-            if (previouslyCached != null) {
+            if (previouslyCached != null && !updated) {
                 return previouslyCached;
             }
 
             // if we get here this is the first time so we need to initialize
             synchronized (HystrixThreadPool.class) {
-                if (!threadPools.containsKey(key)) {
-                    threadPools.put(key, new HystrixThreadPoolDefault(threadPoolKey, propertiesBuilder));
+                if (!threadPools.containsKey(key) || updated) {
+                    threadPools.put(key, new HystrixThreadPoolDefault(threadPoolKey, propertiesBuilder, updated));
+                    if(propertiesBuilder != null){
+                        threadPoolProperties.put(key, propertiesBuilder);
+                    }
+                    if(previouslyCached != null){
+                        previouslyCached.getExecutor().shutdown();
+                    }
                 }
             }
             return threadPools.get(key);
@@ -168,19 +183,20 @@ public interface HystrixThreadPool {
         private final HystrixThreadPoolMetrics metrics;
         private final int queueSize;
 
-        public HystrixThreadPoolDefault(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolProperties.Setter propertiesDefaults) {
-            this.properties = HystrixPropertiesFactory.getThreadPoolProperties(threadPoolKey, propertiesDefaults);
+        public HystrixThreadPoolDefault(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolProperties.Setter propertiesDefaults,
+                                        boolean updated) {
+            this.properties = HystrixPropertiesFactory.getThreadPoolProperties(threadPoolKey, propertiesDefaults, updated);
             HystrixConcurrencyStrategy concurrencyStrategy = HystrixPlugins.getInstance().getConcurrencyStrategy();
             this.queueSize = properties.maxQueueSize().get();
 
             this.metrics = HystrixThreadPoolMetrics.getInstance(threadPoolKey,
                     concurrencyStrategy.getThreadPool(threadPoolKey, properties),
-                    properties);
+                    properties, updated);
             this.threadPool = this.metrics.getThreadPool();
             this.queue = this.threadPool.getQueue();
 
             /* strategy: HystrixMetricsPublisherThreadPool */
-            HystrixMetricsPublisherFactory.createOrRetrievePublisherForThreadPool(threadPoolKey, this.metrics, this.properties);
+            HystrixMetricsPublisherFactory.createOrRetrievePublisherForThreadPool(threadPoolKey, this.metrics, this.properties, updated);
         }
 
         @Override

@@ -1,6 +1,7 @@
 apply plugin: 'osgi'
 apply plugin: 'me.champeau.gradle.jmh'
 
+
 dependencies {
     compileApi 'com.netflix.archaius:archaius-core:0.4.1'
     compileApi 'io.reactivex:rxjava:1.2.0'

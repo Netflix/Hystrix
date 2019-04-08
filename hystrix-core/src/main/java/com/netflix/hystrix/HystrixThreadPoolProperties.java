@@ -26,6 +26,8 @@ import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 import com.netflix.hystrix.strategy.properties.HystrixProperty;
 import com.netflix.hystrix.util.HystrixRollingNumber;
+import org.apache.commons.lang.builder.EqualsBuilder;
+import org.apache.commons.lang.builder.HashCodeBuilder;
 
 /**
  * Properties for instances of {@link HystrixThreadPool}.
@@ -321,8 +323,31 @@ public abstract class HystrixThreadPoolProperties {
             return this;
         }
 
+        @Override
+        public boolean equals(Object o) {
+            if(this == o)
+                return true;
+            if(!(o instanceof Setter))
+                return false;
 
+            Setter setter = (Setter)o;
 
+            if(!coreSize.equals(setter.coreSize))
+                return false;
+            if(!maximumSize.equals(setter.maximumSize))
+                return false;
+            if(!keepAliveTimeMinutes.equals(setter.keepAliveTimeMinutes))
+                return false;
+            return maxQueueSize.equals(setter.maxQueueSize);
+        }
 
+        @Override
+        public int hashCode() {
+            int result = coreSize.hashCode();
+            result = 31 * result + maximumSize.hashCode();
+            result = 31 * result + keepAliveTimeMinutes.hashCode();
+            result = 31 * result + maxQueueSize.hashCode();
+            return result;
+        }
     }
 }
