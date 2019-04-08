@@ -110,11 +110,13 @@ public class HystrixPropertiesFactory {
                 if (builder == null) {
                     builder = HystrixThreadPoolProperties.Setter();
                 }
-                // create new instance
-                properties = hystrixPropertiesStrategy.getThreadPoolProperties(key, builder);
-                // cache and return
-                threadPoolProperties.put(cacheKey, properties);
-                return properties;
+                synchronized (HystrixPropertiesFactory.class){
+                    // create new instance
+                    properties = hystrixPropertiesStrategy.getThreadPoolProperties(key, builder);
+                    // cache and return
+                    threadPoolProperties.put(cacheKey, properties);
+                    return properties;
+                }
 
             }
         } else {

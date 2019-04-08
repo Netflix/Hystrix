@@ -33,4 +33,8 @@ public interface HystrixMetricsPublisherThreadPool {
 
     public void initialize();
 
+    default void tearDown(){
+        // Do Nothing
+    }
+
 }
