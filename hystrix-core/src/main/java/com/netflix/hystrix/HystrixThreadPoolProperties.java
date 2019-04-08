@@ -327,34 +327,27 @@ public abstract class HystrixThreadPoolProperties {
         public boolean equals(Object o) {
             if(this == o)
                 return true;
-
-            if(o == null || getClass() != o.getClass())
+            if(!(o instanceof Setter))
                 return false;
 
             Setter setter = (Setter)o;
 
-            return new EqualsBuilder().append(coreSize, setter.coreSize)
-                    .append(maximumSize, setter.maximumSize)
-                    .append(keepAliveTimeMinutes, setter.keepAliveTimeMinutes)
-                    .append(maxQueueSize, setter.maxQueueSize)
-                    .append(queueSizeRejectionThreshold, setter.queueSizeRejectionThreshold)
-                    .append(allowMaximumSizeToDivergeFromCoreSize, setter.allowMaximumSizeToDivergeFromCoreSize)
-                    .append(rollingStatisticalWindowInMilliseconds, setter.rollingStatisticalWindowInMilliseconds)
-                    .append(rollingStatisticalWindowBuckets, setter.rollingStatisticalWindowBuckets)
-                    .isEquals();
+            if(!coreSize.equals(setter.coreSize))
+                return false;
+            if(!maximumSize.equals(setter.maximumSize))
+                return false;
+            if(!keepAliveTimeMinutes.equals(setter.keepAliveTimeMinutes))
+                return false;
+            return maxQueueSize.equals(setter.maxQueueSize);
         }
 
         @Override
         public int hashCode() {
-            return new HashCodeBuilder(17, 37).append(coreSize)
-                    .append(maximumSize)
-                    .append(keepAliveTimeMinutes)
-                    .append(maxQueueSize)
-                    .append(queueSizeRejectionThreshold)
-                    .append(allowMaximumSizeToDivergeFromCoreSize)
-                    .append(rollingStatisticalWindowInMilliseconds)
-                    .append(rollingStatisticalWindowBuckets)
-                    .toHashCode();
+            int result = coreSize.hashCode();
+            result = 31 * result + maximumSize.hashCode();
+            result = 31 * result + keepAliveTimeMinutes.hashCode();
+            result = 31 * result + maxQueueSize.hashCode();
+            return result;
         }
     }
 }
