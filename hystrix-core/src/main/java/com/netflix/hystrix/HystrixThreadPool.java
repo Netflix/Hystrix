@@ -92,6 +92,13 @@ public interface HystrixThreadPool {
          */
         /* package */final static ConcurrentHashMap<String, HystrixThreadPool> threadPools = new ConcurrentHashMap<String, HystrixThreadPool>();
 
+        /*
+         * Use the String from HystrixThreadPoolKey.name() instead of the HystrixThreadPoolKey instance as it's just an interface and we can't ensure the object
+         * we receive implements hashcode/equals correctly and do not want the default hashcode/equals which would create a new threadpool for every object we get even if the name is the same
+         */
+        final static ConcurrentHashMap<String, HystrixThreadPoolProperties.Setter> threadPoolProperties =
+                new ConcurrentHashMap<String, HystrixThreadPoolProperties.Setter>();
+
         /**
          * Get the {@link HystrixThreadPool} instance for a given {@link HystrixThreadPoolKey}.
          * <p>
@@ -102,17 +109,25 @@ public interface HystrixThreadPool {
         /* package */static HystrixThreadPool getInstance(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolProperties.Setter propertiesBuilder) {
             // get the key to use instead of using the object itself so that if people forget to implement equals/hashcode things will still work
             String key = threadPoolKey.name();
-
+            HystrixThreadPoolProperties.Setter oldPropertiesBuilder = threadPoolProperties.get(key);
+            boolean updated = oldPropertiesBuilder != null && !oldPropertiesBuilder.equals(propertiesBuilder);
             // this should find it for all but the first time
             HystrixThreadPool previouslyCached = threadPools.get(key);
             if (previouslyCached != null) {
+                if(updated && previouslyCached instanceof HystrixThreadPoolDefault){
+                    threadPoolProperties.put(key, propertiesBuilder);
+                    ((HystrixThreadPoolDefault)previouslyCached).touchConfig(threadPoolKey, propertiesBuilder);
+                }
                 return previouslyCached;
             }
 
             // if we get here this is the first time so we need to initialize
             synchronized (HystrixThreadPool.class) {
                 if (!threadPools.containsKey(key)) {
-                    threadPools.put(key, new HystrixThreadPoolDefault(threadPoolKey, propertiesBuilder));
+                    threadPools.put(key, new HystrixThreadPoolDefault(threadPoolKey, propertiesBuilder, updated));
+                    if(propertiesBuilder != null){
+                        threadPoolProperties.put(key, propertiesBuilder);
+                    }
                 }
             }
             return threadPools.get(key);
@@ -162,14 +177,15 @@ public interface HystrixThreadPool {
     /* package */static class HystrixThreadPoolDefault implements HystrixThreadPool {
         private static final Logger logger = LoggerFactory.getLogger(HystrixThreadPoolDefault.class);
 
-        private final HystrixThreadPoolProperties properties;
+        private HystrixThreadPoolProperties properties;
         private final BlockingQueue<Runnable> queue;
         private final ThreadPoolExecutor threadPool;
         private final HystrixThreadPoolMetrics metrics;
         private final int queueSize;
 
-        public HystrixThreadPoolDefault(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolProperties.Setter propertiesDefaults) {
-            this.properties = HystrixPropertiesFactory.getThreadPoolProperties(threadPoolKey, propertiesDefaults);
+        public HystrixThreadPoolDefault(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolProperties.Setter propertiesDefaults,
+                                        boolean updated) {
+            this.properties = HystrixPropertiesFactory.getThreadPoolProperties(threadPoolKey, propertiesDefaults, updated);
             HystrixConcurrencyStrategy concurrencyStrategy = HystrixPlugins.getInstance().getConcurrencyStrategy();
             this.queueSize = properties.maxQueueSize().get();
 
@@ -204,6 +220,12 @@ public interface HystrixThreadPool {
         public Scheduler getScheduler(Func0<Boolean> shouldInterruptThread) {
             touchConfig();
             return new HystrixContextScheduler(HystrixPlugins.getInstance().getConcurrencyStrategy(), this, shouldInterruptThread);
+        }
+
+        private void touchConfig(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolProperties.Setter newProperties) {
+            this.properties =  HystrixPropertiesFactory.getThreadPoolProperties(threadPoolKey, newProperties,
+                                                                                true);
+            touchConfig();
         }
 
         // allow us to change things via fast-properties by setting it each time

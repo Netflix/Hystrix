@@ -95,28 +95,29 @@ public class HystrixPropertiesFactory {
      *            Pass-thru to {@link HystrixPropertiesStrategy#getThreadPoolProperties} implementation.
      * @param builder
      *            Pass-thru to {@link HystrixPropertiesStrategy#getThreadPoolProperties} implementation.
+     * @param updated
      * @return {@link HystrixThreadPoolProperties} instance
      */
-    public static HystrixThreadPoolProperties getThreadPoolProperties(HystrixThreadPoolKey key, HystrixThreadPoolProperties.Setter builder) {
+    public static HystrixThreadPoolProperties getThreadPoolProperties(HystrixThreadPoolKey key, HystrixThreadPoolProperties.Setter builder,
+                                                                      boolean updated) {
         HystrixPropertiesStrategy hystrixPropertiesStrategy = HystrixPlugins.getInstance().getPropertiesStrategy();
         String cacheKey = hystrixPropertiesStrategy.getThreadPoolPropertiesCacheKey(key, builder);
         if (cacheKey != null) {
             HystrixThreadPoolProperties properties = threadPoolProperties.get(cacheKey);
-            if (properties != null) {
+            if (properties != null && !updated) {
                 return properties;
             } else {
                 if (builder == null) {
                     builder = HystrixThreadPoolProperties.Setter();
                 }
-                // create new instance
-                properties = hystrixPropertiesStrategy.getThreadPoolProperties(key, builder);
-                // cache and return
-                HystrixThreadPoolProperties existing = threadPoolProperties.putIfAbsent(cacheKey, properties);
-                if (existing == null) {
+                synchronized (HystrixPropertiesFactory.class){
+                    // create new instance
+                    properties = hystrixPropertiesStrategy.getThreadPoolProperties(key, builder);
+                    // cache and return
+                    threadPoolProperties.put(cacheKey, properties);
                     return properties;
-                } else {
-                    return existing;
                 }
+
             }
         } else {
             // no cacheKey so we generate it with caching
