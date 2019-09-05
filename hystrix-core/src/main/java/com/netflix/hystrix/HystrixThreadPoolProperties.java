@@ -321,8 +321,31 @@ public abstract class HystrixThreadPoolProperties {
             return this;
         }
 
+        @Override
+        public boolean equals(Object o) {
+            if(this == o)
+                return true;
+            if(!(o instanceof Setter))
+                return false;
 
+            Setter setter = (Setter)o;
 
+            if(!coreSize.equals(setter.coreSize))
+                return false;
+            if(!maximumSize.equals(setter.maximumSize))
+                return false;
+            if(!keepAliveTimeMinutes.equals(setter.keepAliveTimeMinutes))
+                return false;
+            return maxQueueSize.equals(setter.maxQueueSize);
+        }
 
+        @Override
+        public int hashCode() {
+            int result = coreSize.hashCode();
+            result = 31 * result + maximumSize.hashCode();
+            result = 31 * result + keepAliveTimeMinutes.hashCode();
+            result = 31 * result + maxQueueSize.hashCode();
+            return result;
+        }
     }
 }
