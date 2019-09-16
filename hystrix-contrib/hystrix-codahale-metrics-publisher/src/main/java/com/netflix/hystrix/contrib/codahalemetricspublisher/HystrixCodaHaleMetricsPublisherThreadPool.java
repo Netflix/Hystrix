@@ -22,6 +22,8 @@ import com.netflix.hystrix.HystrixThreadPoolMetrics;
 import com.netflix.hystrix.HystrixThreadPoolProperties;
 import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherThreadPool;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
+import java.util.ArrayList;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +37,7 @@ public class HystrixCodaHaleMetricsPublisherThreadPool implements HystrixMetrics
     private final MetricRegistry metricRegistry;
     private final String metricGroup;
     private final String metricType;
+    private List<String> metricsList = new ArrayList<>();
 
     static final Logger logger = LoggerFactory.getLogger(HystrixCodaHaleMetricsPublisherThreadPool.class);
 
@@ -156,7 +159,7 @@ public class HystrixCodaHaleMetricsPublisherThreadPool implements HystrixMetrics
         metricRegistry.register(createMetricName("propertyValue_actualMaximumSize"), new Gauge<Number>() {
             @Override
             public Number getValue() {
-                return properties.maximumSize().get();
+                return properties.actualMaximumSize();
             }
         });
 
@@ -182,7 +185,14 @@ public class HystrixCodaHaleMetricsPublisherThreadPool implements HystrixMetrics
         });
     }
 
+    @Override
+    public void tearDown() {
+        metricsList.forEach(metricRegistry::remove);
+    }
+
     protected String createMetricName(String name) {
-        return MetricRegistry.name(metricGroup, metricType, name);
+        String metricName =  MetricRegistry.name(metricGroup, metricType, name);
+        metricsList.add(metricName);
+        return metricName;
     }
 }

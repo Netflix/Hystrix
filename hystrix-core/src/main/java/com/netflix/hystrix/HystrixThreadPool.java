@@ -196,7 +196,7 @@ public interface HystrixThreadPool {
             this.queue = this.threadPool.getQueue();
 
             /* strategy: HystrixMetricsPublisherThreadPool */
-            HystrixMetricsPublisherFactory.createOrRetrievePublisherForThreadPool(threadPoolKey, this.metrics, this.properties);
+            HystrixMetricsPublisherFactory.createOrRetrievePublisherForThreadPool(threadPoolKey, this.metrics, this.properties, updated);
         }
 
         @Override
@@ -241,9 +241,10 @@ public interface HystrixThreadPool {
                 dynamicMaximumSize = dynamicCoreSize;
                 maxTooLow = true;
             }
-
             // In JDK 6, setCorePoolSize and setMaximumPoolSize will execute a lock operation. Avoid them if the pool size is not changed.
             if (threadPool.getCorePoolSize() != dynamicCoreSize || (allowSizesToDiverge && threadPool.getMaximumPoolSize() != dynamicMaximumSize)) {
+                logger.info("Old core pool : {},  new core pool : {}, old max : {}, new max {}" ,
+                        threadPool.getCorePoolSize(), dynamicCoreSize, threadPool.getMaximumPoolSize(), dynamicMaximumSize);
                 if (maxTooLow) {
                     logger.error("Hystrix ThreadPool configuration for : " + metrics.getThreadPoolKey().name() + " is trying to set coreSize = " +
                             dynamicCoreSize + " and maximumSize = " + configuredMaximumSize + ".  Maximum size will be set to " +

@@ -333,6 +333,12 @@ public class HystrixCodaHaleMetricsPublisherCommand implements HystrixMetricsPub
                 return metrics.getExecutionTimePercentile(90);
             }
         });
+        metricRegistry.register(createMetricName("latencyExecute_percentile_95"), new Gauge<Integer>() {
+            @Override
+            public Integer getValue() {
+                return metrics.getExecutionTimePercentile(95);
+            }
+        });
         metricRegistry.register(createMetricName("latencyExecute_percentile_99"), new Gauge<Integer>() {
             @Override
             public Integer getValue() {
@@ -380,6 +386,12 @@ public class HystrixCodaHaleMetricsPublisherCommand implements HystrixMetricsPub
             @Override
             public Integer getValue() {
                 return metrics.getTotalTimePercentile(90);
+            }
+        });
+        metricRegistry.register(createMetricName("latencyTotal_percentile_95"), new Gauge<Integer>() {
+            @Override
+            public Integer getValue() {
+                return metrics.getTotalTimePercentile(95);
             }
         });
         metricRegistry.register(createMetricName("latencyTotal_percentile_99"), new Gauge<Integer>() {
