@@ -57,7 +57,7 @@ public class HystrixMetricsPublisherFactoryTest {
                 public void run() {
                     factory.getPublisherForCommand(TestCommandKey.TEST_A, null, null, null, null);
                     factory.getPublisherForCommand(TestCommandKey.TEST_B, null, null, null, null);
-                    factory.getPublisherForThreadPool(TestThreadPoolKey.TEST_A, null, null);
+                    factory.getPublisherForThreadPool(TestThreadPoolKey.TEST_A, null, null, false);
                 }
 
             }));

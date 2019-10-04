@@ -31,7 +31,7 @@ public interface HystrixMetricsPublisherThreadPool {
 
     // TODO should the arguments be given via initialize rather than constructor so people can't accidentally do it wrong?
 
-    public void initialize();
+    void initialize();
 
     default void tearDown(){
         // Do Nothing

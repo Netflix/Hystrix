@@ -159,7 +159,7 @@ public class HystrixCodaHaleMetricsPublisherThreadPool implements HystrixMetrics
         metricRegistry.register(createMetricName("propertyValue_actualMaximumSize"), new Gauge<Number>() {
             @Override
             public Number getValue() {
-                return properties.actualMaximumSize();
+                return properties.maximumSize().get();
             }
         });
 
