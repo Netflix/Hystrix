@@ -182,14 +182,7 @@ public class HystrixYammerMetricsPublisherThreadPool implements HystrixMetricsPu
         });
     }
 
-    @Override
-    public void tearDown() {
-        metricsList.forEach(metricsRegistry::removeMetric);
-    }
-
     protected MetricName createMetricName(String name) {
-        MetricName metricName =  new MetricName(metricGroup, metricType, name);
-        metricsList.add(metricName);
-        return metricName;
+        return new MetricName(metricGroup, metricType, name);
     }
 }

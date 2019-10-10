@@ -145,14 +145,14 @@ public class HystrixCodaHaleMetricsPublisherThreadPool implements HystrixMetrics
         metricRegistry.register(createMetricName("propertyValue_corePoolSize"), new Gauge<Number>() {
             @Override
             public Number getValue() {
-                return properties.coreSize().get();
+                return metrics.getCurrentCorePoolSize();
             }
         });
 
         metricRegistry.register(createMetricName("propertyValue_maximumSize"), new Gauge<Number>() {
             @Override
             public Number getValue() {
-                return properties.maximumSize().get();
+                return metrics.getCurrentMaximumPoolSize();
             }
         });
 
@@ -183,11 +183,6 @@ public class HystrixCodaHaleMetricsPublisherThreadPool implements HystrixMetrics
                 return properties.maxQueueSize().get();
             }
         });
-    }
-
-    @Override
-    public void tearDown() {
-        metricsList.forEach(metricRegistry::remove);
     }
 
     protected String createMetricName(String name) {

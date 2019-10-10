@@ -1,6 +1,21 @@
+apply plugin: 'maven'
+
 dependencies {
     compileApi project(':hystrix-core')
     compileApi 'io.dropwizard.metrics:metrics-core:3.2.2'
     testCompile 'junit:junit-dep:4.10'
     testCompile 'org.mockito:mockito-all:1.9.5'
+}
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            repository(url: "https://clojars.org/repo"){
+                authentication(userName: "nitishgoyal13", password: "Shine12@")
+            }
+            pom.version = '1.5.11-22'
+            pom.groupId = 'org.hystrix'
+            pom.artifactId = 'hystrix-codahale-metrics-publisher'
+        }
+    }
 }

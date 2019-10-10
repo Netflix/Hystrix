@@ -112,7 +112,7 @@ public class HystrixThreadPoolTest {
         assertThat(poolOne.getExecutor(), is(poolTwo.getExecutor())); //Now that we get the threadPool from the metrics object, this will always be equal
         HystrixMetricsPublisherThreadPoolContainer hystrixMetricsPublisherThreadPool =
                 (HystrixMetricsPublisherThreadPoolContainer)HystrixMetricsPublisherFactory
-                        .createOrRetrievePublisherForThreadPool(threadPoolKey, null, null, false);
+                        .createOrRetrievePublisherForThreadPool(threadPoolKey, null, null);
         ThreadPoolExecutor threadPoolExecutor = hystrixMetricsPublisherThreadPool.getHystrixThreadPoolMetrics().getThreadPool();
 
         //assert that both HystrixThreadPools share the same ThreadPoolExecutor as the one in HystrixMetricsPublisherThreadPool

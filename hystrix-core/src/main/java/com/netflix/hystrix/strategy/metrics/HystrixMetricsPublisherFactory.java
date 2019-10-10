@@ -60,11 +60,8 @@ public class HystrixMetricsPublisherFactory {
      *            Pass-thru to {@link HystrixMetricsPublisher#getMetricsPublisherForThreadPool} implementation
      * @return {@link HystrixMetricsPublisherThreadPool} instance
      */
-    public static HystrixMetricsPublisherThreadPool createOrRetrievePublisherForThreadPool(HystrixThreadPoolKey threadPoolKey,
-                                                                                           HystrixThreadPoolMetrics metrics,
-                                                                                           HystrixThreadPoolProperties properties,
-                                                                                           boolean updated) {
-        return SINGLETON.getPublisherForThreadPool(threadPoolKey, metrics, properties, updated);
+    public static HystrixMetricsPublisherThreadPool createOrRetrievePublisherForThreadPool(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolMetrics metrics, HystrixThreadPoolProperties properties) {
+        return SINGLETON.getPublisherForThreadPool(threadPoolKey, metrics, properties);
     }
 
     /**
@@ -126,24 +123,25 @@ public class HystrixMetricsPublisherFactory {
     // String is ThreadPoolKey.name() (we can't use ThreadPoolKey directly as we can't guarantee it implements hashcode/equals correctly)
     private final ConcurrentHashMap<String, HystrixMetricsPublisherThreadPool> threadPoolPublishers = new ConcurrentHashMap<String, HystrixMetricsPublisherThreadPool>();
 
-    /* package */ HystrixMetricsPublisherThreadPool getPublisherForThreadPool(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolMetrics metrics,
-                                                                              HystrixThreadPoolProperties properties, boolean updated) {
+    /* package */ HystrixMetricsPublisherThreadPool getPublisherForThreadPool(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolMetrics metrics, HystrixThreadPoolProperties properties) {
         // attempt to retrieve from cache first
         HystrixMetricsPublisherThreadPool publisher = threadPoolPublishers.get(threadPoolKey.name());
-        if (publisher != null && !updated) {
+        if (publisher != null) {
             return publisher;
         }
-        synchronized (HystrixMetricsPublisherFactory.class){
         // it doesn't exist so we need to create it
-            HystrixMetricsPublisherThreadPool newPublisher = HystrixPlugins.getInstance().getMetricsPublisher()
-                    .getMetricsPublisherForThreadPool(threadPoolKey, metrics, properties);
+        publisher = HystrixPlugins.getInstance().getMetricsPublisher().getMetricsPublisherForThreadPool(threadPoolKey, metrics, properties);
         // attempt to store it (race other threads)
-            threadPoolPublishers.put(threadPoolKey.name(), newPublisher);
-            if(publisher != null){
-                publisher.tearDown();
-            }
-            newPublisher.initialize();
-            return newPublisher;
+        HystrixMetricsPublisherThreadPool existing = threadPoolPublishers.putIfAbsent(threadPoolKey.name(), publisher);
+        if (existing == null) {
+            // we won the thread-race to store the instance we created so initialize it
+            publisher.initialize();
+            // done registering, return instance that got cached
+            return publisher;
+        } else {
+            // we lost so return 'existing' and let the one we created be garbage collected
+            // without calling initialize() on it
+            return existing;
         }
     }
 

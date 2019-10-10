@@ -95,6 +95,7 @@ public class HystrixPropertiesFactory {
      *            Pass-thru to {@link HystrixPropertiesStrategy#getThreadPoolProperties} implementation.
      * @param builder
      *            Pass-thru to {@link HystrixPropertiesStrategy#getThreadPoolProperties} implementation.
+     * @param updated
      * @return {@link HystrixThreadPoolProperties} instance
      */
     public static HystrixThreadPoolProperties getThreadPoolProperties(HystrixThreadPoolKey key, HystrixThreadPoolProperties.Setter builder,

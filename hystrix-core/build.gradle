@@ -38,9 +38,9 @@ uploadArchives {
     repositories {
         mavenDeployer {
             repository(url: "https://clojars.org/repo"){
-                authentication(userName: "", password: "")
+                authentication(userName: "nitishgoyal13", password: "Shine12@")
             }
-            pom.version = '1.5.11.1'
+            pom.version = '1.5.11-22'
             pom.groupId = 'org.hystrix'
             pom.artifactId = 'hystrix-core'
         }

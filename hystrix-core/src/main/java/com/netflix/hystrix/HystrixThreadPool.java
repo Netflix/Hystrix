@@ -116,8 +116,7 @@ public interface HystrixThreadPool {
             if (previouslyCached != null) {
                 if(updated && previouslyCached instanceof HystrixThreadPoolDefault){
                     threadPoolProperties.put(key, propertiesBuilder);
-                    threadPools.put(key, new HystrixThreadPoolDefault(threadPoolKey, propertiesBuilder, true));
-                    ((HystrixThreadPoolDefault)previouslyCached).touchConfig();
+                    ((HystrixThreadPoolDefault)previouslyCached).touchConfig(threadPoolKey, propertiesBuilder);
                 }
                 return previouslyCached;
             }
@@ -192,12 +191,12 @@ public interface HystrixThreadPool {
 
             this.metrics = HystrixThreadPoolMetrics.getInstance(threadPoolKey,
                     concurrencyStrategy.getThreadPool(threadPoolKey, properties),
-                    properties, updated);
+                    properties);
             this.threadPool = this.metrics.getThreadPool();
             this.queue = this.threadPool.getQueue();
 
             /* strategy: HystrixMetricsPublisherThreadPool */
-            HystrixMetricsPublisherFactory.createOrRetrievePublisherForThreadPool(threadPoolKey, this.metrics, this.properties, updated);
+            HystrixMetricsPublisherFactory.createOrRetrievePublisherForThreadPool(threadPoolKey, this.metrics, this.properties);
         }
 
         @Override
@@ -221,6 +220,12 @@ public interface HystrixThreadPool {
         public Scheduler getScheduler(Func0<Boolean> shouldInterruptThread) {
             touchConfig();
             return new HystrixContextScheduler(HystrixPlugins.getInstance().getConcurrencyStrategy(), this, shouldInterruptThread);
+        }
+
+        private void touchConfig(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolProperties.Setter newProperties) {
+            this.properties =  HystrixPropertiesFactory.getThreadPoolProperties(threadPoolKey, newProperties,
+                                                                                true);
+            touchConfig();
         }
 
         // allow us to change things via fast-properties by setting it each time
