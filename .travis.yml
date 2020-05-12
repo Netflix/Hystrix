@@ -4,7 +4,6 @@ addons:
       - lynx
 
 language: java
-sudo: false
 
 jdk:
   - oraclejdk8
