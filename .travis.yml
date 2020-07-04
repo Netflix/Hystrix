@@ -1,8 +1,3 @@
-addons:
-  apt:
-    packages:
-      - lynx
-
 language: java
 sudo: false
 
@@ -11,6 +6,3 @@ jdk:
 
 script:
   - ./gradlew --info check
-
-after_failure:
-  - if [ -f /home/travis/build/Netflix/Hystrix/hystrix-core/build/reports/tests/test/index.html ]; then lynx -dump /home/travis/build/Netflix/Hystrix/hystrix-core/build/reports/tests/test/index.html; fi
