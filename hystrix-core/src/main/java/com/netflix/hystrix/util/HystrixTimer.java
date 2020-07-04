@@ -170,6 +170,7 @@ public class HystrixTimer {
             }
 
             executor = new ScheduledThreadPoolExecutor(coreSize, threadFactory);
+            this.executor.setRemoveOnCancelPolicy(true);
             initialized = true;
         }
 
