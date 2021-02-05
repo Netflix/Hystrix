@@ -8,7 +8,13 @@ buildscript {
 }
 
 plugins {
-    id 'nebula.netflixoss' version '3.4.0'
+//    id 'nebula.netflixoss' version '3.4.0'
+    id 'nebula.maven-publish' version '4.9.1'
+    id 'nebula.release' version '4.1.0'
+    id 'nebula.dependency-lock' version '4.3.0'
+    id 'nebula.info' version '3.2.1'
+    id 'idea'
+    id 'eclipse'
     id 'me.champeau.gradle.jmh' version '0.3.1'
     id 'net.saliman.cobertura' version '2.2.8'
 }
@@ -16,6 +22,8 @@ plugins {
 ext {
     githubProjectName = rootProject.name
 }
+
+group = "com.netflix"
 
 allprojects {
     repositories {
@@ -26,8 +34,14 @@ allprojects {
 }
 
 subprojects {
-    apply plugin: 'nebula.netflixoss'
     apply plugin: 'java'
+    apply plugin: 'idea'
+    apply plugin: 'eclipse'
+    apply plugin: 'nebula.maven-publish'
+    apply plugin: 'nebula.release'
+    apply plugin: 'nebula.source-jar'
+    apply plugin: 'nebula.dependency-lock'
+    apply plugin: 'nebula.info'
     apply plugin: 'nebula.provided-base'
 	apply plugin: 'nebula.compile-api'
 	
@@ -51,6 +65,20 @@ subprojects {
         module {
             // include 'provided' dependencies on the classpath
             scopes.COMPILE.plus += [configurations.provided]
+        }
+    }
+
+    publishing {
+        repositories {
+            maven {
+                def releasesRepoUrl = "https://nexusng.tuenti.io/repository/maven-release-private/"
+                def snapshotsRepoUrl = "https://nexusng.tuenti.io/repository/maven-snapshot-private/"
+                url = version.toString().contains("SNAPSHOT") ? snapshotsRepoUrl : releasesRepoUrl
+                credentials {
+                    username = System.getenv "NEXUS_USER"
+                    password = System.getenv "NEXUS_PASS"
+                }
+            }
         }
     }
 }
