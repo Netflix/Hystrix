@@ -64,6 +64,11 @@ public interface HystrixCircuitBreaker {
     boolean attemptExecution();
 
     /**
+     * Determine whether the time is exceeded
+     */
+    boolean isAfterTryWindow();
+
+    /**
      * @ExcludeFromJavadoc
      * @ThreadSafe
      */
@@ -145,6 +150,7 @@ public interface HystrixCircuitBreaker {
 
         private final AtomicReference<Status> status = new AtomicReference<Status>(Status.CLOSED);
         private final AtomicLong circuitOpened = new AtomicLong(-1);
+        private final AtomicLong circuitTried = new AtomicLong(-1);
         private final AtomicReference<Subscription> activeSubscription = new AtomicReference<Subscription>(null);
 
         protected HystrixCircuitBreakerImpl(HystrixCommandKey key, HystrixCommandGroupKey commandGroup, final HystrixCommandProperties properties, HystrixCommandMetrics metrics) {
@@ -261,6 +267,14 @@ public interface HystrixCircuitBreaker {
         }
 
         @Override
+        public boolean isAfterTryWindow() {
+            final long circuitTryTime = circuitTried.get();
+            final long currentTime = System.currentTimeMillis();
+            final long tryWindowTime = properties.circuitBreakerSleepWindowInMilliseconds().get();
+            return currentTime > circuitTryTime + tryWindowTime;
+        }
+
+        @Override
         public boolean attemptExecution() {
             if (properties.circuitBreakerForceOpen().get()) {
                 return false;
@@ -268,7 +282,8 @@ public interface HystrixCircuitBreaker {
             if (properties.circuitBreakerForceClosed().get()) {
                 return true;
             }
-            if (circuitOpened.get() == -1) {
+            //Keep the conditions uniform
+            if (status.get().equals(Status.CLOSED)) {
                 return true;
             } else {
                 if (isAfterSleepWindow()) {
@@ -277,6 +292,8 @@ public interface HystrixCircuitBreaker {
                     //if the executing command fails, the status will transition to OPEN
                     //if the executing command gets unsubscribed, the status will transition to OPEN
                     if (status.compareAndSet(Status.OPEN, Status.HALF_OPEN)) {
+                        //set try time
+                        circuitTried.set(System.currentTimeMillis());
                         return true;
                     } else {
                         return false;
@@ -318,6 +335,11 @@ public interface HystrixCircuitBreaker {
         @Override
         public boolean attemptExecution() {
             return true;
+        }
+
+        @Override
+        public boolean isAfterTryWindow() {
+            return false;
         }
     }
 
