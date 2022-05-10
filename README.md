@@ -149,7 +149,7 @@ $ cd Hystrix/
 $ ./gradlew build
 ```
 
-Futher details on building can be found on the [Getting Started](https://github.com/Netflix/Hystrix/wiki/Getting-Started) page of the wiki.
+Further details on building can be found on the [Getting Started](https://github.com/Netflix/Hystrix/wiki/Getting-Started) page of the wiki.
 
 ## Run Demo
 
