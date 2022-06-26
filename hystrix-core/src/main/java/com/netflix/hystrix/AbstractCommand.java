@@ -1288,7 +1288,7 @@ import java.util.concurrent.atomic.AtomicReference;
     /**
      * @return {@link HystrixCommandGroupKey} used to group together multiple {@link AbstractCommand} objects.
      *         <p>
-     *         The {@link HystrixCommandGroupKey} is used to represent a common relationship between commands. For example, a library or team name, the system all related commands interace with,
+     *         The {@link HystrixCommandGroupKey} is used to represent a common relationship between commands. For example, a library or team name, the system all related commands interface with,
      *         common business purpose etc.
      */
     public HystrixCommandGroupKey getCommandGroup() {

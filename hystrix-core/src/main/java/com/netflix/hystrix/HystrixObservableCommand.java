@@ -42,7 +42,7 @@ public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> imp
      * @param group
      *            {@link HystrixCommandGroupKey} used to group together multiple {@link HystrixObservableCommand} objects.
      *            <p>
-     *            The {@link HystrixCommandGroupKey} is used to represent a common relationship between commands. For example, a library or team name, the system all related commands interace with,
+     *            The {@link HystrixCommandGroupKey} is used to represent a common relationship between commands. For example, a library or team name, the system all related commands interface with,
      *            common business purpose etc.
      */
     protected HystrixObservableCommand(HystrixCommandGroupKey group) {
@@ -152,7 +152,7 @@ public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> imp
          * @param groupKey
          *            {@link HystrixCommandGroupKey} used to group together multiple {@link HystrixObservableCommand} objects.
          *            <p>
-         *            The {@link HystrixCommandGroupKey} is used to represent a common relationship between commands. For example, a library or team name, the system all related commands interace
+         *            The {@link HystrixCommandGroupKey} is used to represent a common relationship between commands. For example, a library or team name, the system all related commands interface
          *            with,
          *            common business purpose etc.
          */
@@ -171,7 +171,7 @@ public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> imp
          * @param groupKey
          *            {@link HystrixCommandGroupKey} used to group together multiple {@link HystrixObservableCommand} objects.
          *            <p>
-         *            The {@link HystrixCommandGroupKey} is used to represent a common relationship between commands. For example, a library or team name, the system all related commands interace
+         *            The {@link HystrixCommandGroupKey} is used to represent a common relationship between commands. For example, a library or team name, the system all related commands interface
          *            with,
          *            common business purpose etc.
          */
