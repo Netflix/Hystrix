@@ -788,7 +788,7 @@ Here is a very basic example using Java 8 to make an HTTP call via Netty and rec
 
 ### Version 1.3.11 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.3.11%22)) ###
 
-* We'll ignore this release ever happened. Exact same binary as 1.3.10. (It helps to push code to Github before releasing.)
+* We'll ignore this release ever happened. Exact same binary as 1.3.10. (It helps to push code to GitHub before releasing.)
 
 ### Version 1.3.10 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.3.10%22)) ###
 
