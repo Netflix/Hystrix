@@ -18,7 +18,7 @@
 
   Functions for defining and executing Hystrix dependency commands and collapsers.
 
-  The definition of commands and collapers is separated from their instantiation and execution.
+  The definition of commands and collapsers is separated from their instantiation and execution.
   They are represented as plain Clojure maps (see below) which are later instantiated into
   functional HystrixCommand or HystrixCollapser instances. defcommand and defcollapser macros
   are provided to assist in defining these maps.
