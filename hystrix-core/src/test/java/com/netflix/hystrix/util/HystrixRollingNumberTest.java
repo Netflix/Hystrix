@@ -163,7 +163,7 @@ public class HystrixRollingNumberTest {
             // sleep to get to a new bucket
             time.increment(counter.bucketSizeInMillseconds * 3);
 
-            // incremenet again in latest bucket
+            // increment again in latest bucket
             counter.increment(HystrixRollingNumberEvent.TIMEOUT);
 
             // we should have 4 buckets
@@ -200,7 +200,7 @@ public class HystrixRollingNumberTest {
             // sleep to get to a new bucket
             time.increment(counter.bucketSizeInMillseconds * 3);
 
-            // incremenet again in latest bucket
+            // increment again in latest bucket
             counter.increment(HystrixRollingNumberEvent.SHORT_CIRCUITED);
 
             // we should have 4 buckets
