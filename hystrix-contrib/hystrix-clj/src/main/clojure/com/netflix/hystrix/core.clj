@@ -494,7 +494,7 @@
     ; The search collapser is now defined. It has a collapser key of \"my-namespace/search\".
     ; This is used for configuration and metrics.
 
-    ; Syncrhonously execute the search collapser
+    ; Synchronously execute the search collapser
     (search \"The Hudsucker Proxy\")
     ;=> [... vector of results ...]
 
