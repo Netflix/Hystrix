@@ -542,9 +542,9 @@
   it provides.
 
   See:
-    com.neflix.hystrix.core/normalize
-    com.neflix.hystrix.core/execute
-    com.neflix.hystrix.core/queue
+    com.netflix.hystrix.core/normalize
+    com.netflix.hystrix.core/execute
+    com.netflix.hystrix.core/queue
   "
   {:arglists '[[defcommand-var & args]
                [defcollapser-var & args]
