@@ -613,7 +613,7 @@ _NOTE: This code is believed to be production worthy but is still a "Release Can
 * [Pull 449](https://github.com/Netflix/Hystrix/pull/449) Move thread completion bookkeeping to end of chain
 * [Pull 447](https://github.com/Netflix/Hystrix/pull/447) Synchronous queue fix
 * [Pull 376](https://github.com/Netflix/Hystrix/pull/376) Javanica README cleanup
-* [Pull 378](https://github.com/Netflix/Hystrix/pull/378) Exection hook call sequences (based on work submitted in [Pull 327](https://github.com/Netflix/Hystrix/pull/327))
+* [Pull 378](https://github.com/Netflix/Hystrix/pull/378) Execution hook call sequences (based on work submitted in [Pull 327](https://github.com/Netflix/Hystrix/pull/327))
 * [Pull 374](https://github.com/Netflix/Hystrix/pull/374) RequestBatch logging
 * [Pull 371](https://github.com/Netflix/Hystrix/pull/371) Defer creation of IllegalStateException in collapser flow (based on work submitted in [Pull 264](https://github.com/Netflix/Hystrix/pull/264))
 * [Pull 369](https://github.com/Netflix/Hystrix/pull/369) Added basic auth to Hystrix Dashboard (based on work submitted in [Pull 336](https://github.com/Netflix/Hystrix/pull/336))
