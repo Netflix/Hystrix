@@ -1865,7 +1865,7 @@ import java.util.concurrent.atomic.AtomicReference;
     }
 
     /**
-     * Whether the response received was a fallback as result of being rejected via sempahore
+     * Whether the response received was a fallback as result of being rejected via semaphore
      *
      * @return boolean
      */
