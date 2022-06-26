@@ -883,7 +883,7 @@ This release is a major refactoring of the Hystrix codebase. To assert correctne
 
 ### Version 1.2.16 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.2.16%22)) ###
 
-* [Pull 132](https://github.com/Netflix/Hystrix/pull/132) Add `with-context` macro for conveniently wrapping collapsers in thier own context
+* [Pull 132](https://github.com/Netflix/Hystrix/pull/132) Add `with-context` macro for conveniently wrapping collapsers in their own context
 * [Pull 136](https://github.com/Netflix/Hystrix/pull/136) Fixed the mock stream
 * [Pull 137](https://github.com/Netflix/Hystrix/pull/137) Limit scope of CurrentThreadExecutingCommand
 
