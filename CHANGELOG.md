@@ -458,7 +458,7 @@ This version should be the exact same as 1.4.20, but suffered problems during th
 * [Pull 754](https://github.com/Netflix/Hystrix/pull/754) Only fire onFallbackStart/onFallbackError hooks when a user-supplied fallback is invoked
 * [Pull 753](https://github.com/Netflix/Hystrix/pull/753) Add timeout to dashboard for semaphore commands
 * [Pull 750](https://github.com/Netflix/Hystrix/pull/750) First pass at jmh performance benchmarking
-* [Pull 748](https://github.com/Netflix/Hystrix/pull/748) Fix return value of HystrixCircuiBreakerImpl.isOpen when it loses a race to open a circuit
+* [Pull 748](https://github.com/Netflix/Hystrix/pull/748) Fix return value of HystrixCircuitBreakerImpl.isOpen when it loses a race to open a circuit
 * [Pull 746](https://github.com/Netflix/Hystrix/pull/746) Improve Javadoc for HystrixCommandProperties.Setter
 
 
