@@ -299,7 +299,7 @@
   :run-fn and :fallback-fn.
 
   It's occasionally useful, especially for fallbacks, to base the result on the state of
-  the comand. The fallback might vary based on whether it was triggered by an application
+  the command. The fallback might vary based on whether it was triggered by an application
   error versus a timeout.
 
   Note: As always with dynamic vars be careful about scoping. This binding only holds for
