@@ -596,7 +596,7 @@ _NOTE: This code is believed to be production worthy but is still a "Release Can
 * [Pull 527](https://github.com/Netflix/Hystrix/pull/527) Creating a synthetic exception in the semaphore execution and short-circuited case
 * [Pull 526](https://github.com/Netflix/Hystrix/pull/526) Move onRunSuccess/onRunError and thread-pool book-keeping to Hystrix thread
 * [Pull 524](https://github.com/Netflix/Hystrix/pull/524) Change calls from getExecutedCommands() to getAllExecutedCommands()
-* [Pull 516](https://github.com/Netflix/Hystrix/pull/516) Updated HystrixServoMetricsPublisher initalization of singleton
+* [Pull 516](https://github.com/Netflix/Hystrix/pull/516) Updated HystrixServoMetricsPublisher initialization of singleton
 * [Pull 489](https://github.com/Netflix/Hystrix/pull/489) Javanica: Request Caching
 * [Pull 512](https://github.com/Netflix/Hystrix/pull/512) Add execution hook Javadoc
 * [Pull 511](https://github.com/Netflix/Hystrix/pull/511) Fix missing onComplete hook call when command short-circuits and missing onRunSuccess hook call in thread-timeout case
