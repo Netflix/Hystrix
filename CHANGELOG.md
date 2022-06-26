@@ -86,7 +86,7 @@
 * [Pull 1385](https://github.com/Netflix/Hystrix/pull/1385) Bump jmh Gradle plugin to 0.3.1.  Thanks @monkey-mas!
 * [Pull 1382](https://github.com/Netflix/Hystrix/pull/1382) Bump jmh to 1.15.  Thanks @monkey-mas!
 * [Pull 1380](https://github.com/Netflix/Hystrix/pull/1380) Add jmh test for open-circuit case
-* [Pull 1376](https://github.com/Netflix/Hystrix/pull/1376) Clean up documentation around thread keep-alive.  Thanks @bitb !
+* [Pull 1376](https://github.com/Netflix/Hystrix/pull/1376) Clean up documentation around thread keep-alive.  Thanks @bltb !
 * [Pull 1375](https://github.com/Netflix/Hystrix/pull/1375) Remove cancelled tasks from threadpool queue
 * [Pull 1371](https://github.com/Netflix/Hystrix/pull/1371) Allow core and maximum size of threadpools to diverge.
 
