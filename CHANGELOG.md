@@ -469,7 +469,7 @@ This version should be the exact same as 1.4.20, but suffered problems during th
 * [Pull 741](https://github.com/Netflix/Hystrix/pull/741) Bugfix to java.lang.Error handling
 * [Pull 735](https://github.com/Netflix/Hystrix/pull/735) (Javanica) BatchHystrixCommand
 * [Pull 739](https://github.com/Netflix/Hystrix/pull/739) Mark some java.lang.Errors as unrecoverable and never trigger fallback
-* [Pull 738](https://github.com/Netflix/Hystrix/pull/738) Filter out thread pools with no thread activity from hystrics-metrics-event-stream
+* [Pull 738](https://github.com/Netflix/Hystrix/pull/738) Filter out thread pools with no thread activity from hystrix-metrics-event-stream
 * [Pull 732](https://github.com/Netflix/Hystrix/pull/732) Comment out flaky unit test
 
 ### Version 1.4.3 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.3%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.3/)) ###
@@ -982,7 +982,7 @@ See the module README for more information: https://github.com/Netflix/Hystrix/t
 * [Issue 63](https://github.com/Netflix/Hystrix/issues/63) Add "throws Exception" to HystrixCommand run() method
 * [Pull 62](https://github.com/Netflix/Hystrix/pull/62) applying js fixes to threadPool ui
 * [Pull 61](https://github.com/Netflix/Hystrix/pull/61) Request log with timeouts
-* [Issue 55](https://github.com/Netflix/Hystrix/issues/55) HysrixRequestLog: Missing Events and Time on Timeouts
+* [Issue 55](https://github.com/Netflix/Hystrix/issues/55) HystrixRequestLog: Missing Events and Time on Timeouts
 * [Issue 20](https://github.com/Netflix/Hystrix/issues/20) TotalExecutionTime not tracked on queue()
 * [Pull 57](https://github.com/Netflix/Hystrix/pull/57) Dashboard js fix
 * [Issue 39](https://github.com/Netflix/Hystrix/issues/39) HystrixPlugins Bootstrapping Problem - Race Conditions

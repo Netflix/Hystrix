@@ -166,7 +166,7 @@
       This is your escape hatch into raw Hystrix. Please see additional notes about :init-fn
       above. They apply to collapsers as well.
 
-  The com.netflix.hystric.core/defcollapser macro is a helper for defining this map and storing it
+  The com.netflix.hystrix.core/defcollapser macro is a helper for defining this map and storing it
   in a callable var.
   "
   (:require [clojure.set :as set])
