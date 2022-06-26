@@ -977,7 +977,7 @@ See the module README for more information: https://github.com/Netflix/Hystrix/t
 ### Version 1.1.7 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.1.7%22)) ###
 
 * [Pull 67](https://github.com/Netflix/Hystrix/pull/67) Unit tests for request log and checked exceptions
-* [Pull 66](https://github.com/Netflix/Hystrix/pull/66) Making provided scope transtive
+* [Pull 66](https://github.com/Netflix/Hystrix/pull/66) Making provided scope transitive
 * [Pull 65](https://github.com/Netflix/Hystrix/pull/65) Fixed gitignore definition of build output directories
 * [Issue 63](https://github.com/Netflix/Hystrix/issues/63) Add "throws Exception" to HystrixCommand run() method
 * [Pull 62](https://github.com/Netflix/Hystrix/pull/62) applying js fixes to threadPool ui
