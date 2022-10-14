@@ -267,6 +267,10 @@ public abstract class BasicCacheTest extends BasicHystrixTest {
                 public boolean apply(User input) {
                     return input.getProfile().getEmail().equalsIgnoreCase(email);
                 }
+                @Override
+                public boolean test(User input) {
+                    return apply(input);
+                }
             }).orNull();
         }
 
