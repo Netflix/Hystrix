@@ -106,6 +106,10 @@ public class CacheInvocationParameter {
             public boolean apply(Annotation input) {
                 return input.annotationType().equals(CacheKey.class);
             }
+            @Override
+            public boolean test(Annotation input) {
+                return apply(input);
+            }
         }).orNull();
     }
 

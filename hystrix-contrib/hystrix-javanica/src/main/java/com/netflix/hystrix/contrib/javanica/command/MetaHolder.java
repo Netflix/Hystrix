@@ -333,6 +333,10 @@ public final class MetaHolder {
             public boolean apply(@Nullable List<T> input) {
                 return input != null && !input.isEmpty();
             }
+            @Override
+            public boolean test(List<T> input) {
+                return apply(input);
+            }
         };
     }
 

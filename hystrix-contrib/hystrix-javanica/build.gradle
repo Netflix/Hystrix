@@ -100,7 +100,7 @@ dependencies {
     compileApi "org.aspectj:aspectjweaver:$aspectjVersion"
     compile "org.aspectj:aspectjrt:$aspectjVersion"
 
-    compileApi 'com.google.guava:guava:15.0'
+    compileApi 'com.google.guava:guava:31.1-jre'
     compile 'org.apache.commons:commons-lang3:3.1'
     compileApi 'com.google.code.findbugs:jsr305:2.0.0'
     compile 'org.ow2.asm:asm:5.0.4'

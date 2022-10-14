@@ -155,6 +155,10 @@ public class CacheInvocationContextFactoryTest {
             public boolean apply(Annotation input) {
                 return input.annotationType().equals(annotation);
             }
+            @Override
+            public boolean test(Annotation input) {
+                return apply(input);
+            }
         }).isPresent();
     }
 }
