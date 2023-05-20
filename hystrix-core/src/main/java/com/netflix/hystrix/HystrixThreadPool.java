@@ -227,8 +227,13 @@ public interface HystrixThreadPool {
                             dynamicCoreSize + " and maximumSize = " + configuredMaximumSize + ".  Maximum size will be set to " +
                             dynamicMaximumSize + ", the coreSize value, since it must be equal to or greater than the coreSize value");
                 }
-                threadPool.setCorePoolSize(dynamicCoreSize);
-                threadPool.setMaximumPoolSize(dynamicMaximumSize);
+                if (dynamicMaximumSize > dynamicCoreSize) {
+                    threadPool.setMaximumPoolSize(dynamicMaximumSize);
+                    threadPool.setCorePoolSize(dynamicCoreSize);
+                } else {
+                    threadPool.setMaximumPoolSize(dynamicMaximumSize);
+                    threadPool.setCorePoolSize(dynamicMaximumSize);
+                }
             }
 
             threadPool.setKeepAliveTime(properties.keepAliveTimeMinutes().get(), TimeUnit.MINUTES);
