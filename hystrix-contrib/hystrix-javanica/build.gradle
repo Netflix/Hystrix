@@ -1,9 +1,7 @@
-apply plugin: 'osgi'
-
 configurations {
     ajtools
-    ajcTestCompile.extendsFrom testCompile
-    ajcTestRuntime.extendsFrom testRuntime
+    ajcTestImplementation.extendsFrom testCompileClasspath
+    ajcTestRuntimeOnly.extendsFrom testRuntimeClasspath
     ajc
 }
 
@@ -27,14 +25,11 @@ sourceSets {
 
 compileAjcTestJava {
 
-    sourceCompatibility = "1.6"
-    targetCompatibility = "1.6"
-
     doLast {
         ant.taskdef(resource: "org/aspectj/tools/ant/taskdefs/aspectjTaskdefs.properties", classpath: configurations.ajtools.asPath)
-        ant.iajc(source: "1.6", target: "1.6",
-                destDir: "${sourceSets.ajcTest.output.classesDir.absolutePath}", maxmem: "512m", fork: "true",
-                classpath: "${sourceSets.main.output.classesDir.absolutePath};${configurations.testCompile.asPath}")
+        ant.iajc(source: "1.8", target: "1.8",
+                destDir: "${sourceSets.ajcTest.output.classesDirs.files.first().absolutePath}", maxmem: "512m", fork: "true",
+                classpath: "${sourceSets.main.output.classesDirs.files.first()absolutePath};${configurations.testCompileClasspath.asPath}")
                 {
                     sourceroots {
                         files("src/ajcTest/java/com/netflix/hystrix/contrib/javanica/test/aspectj", "src/test/java/com/netflix/hystrix/contrib/javanica/test/common", "src/main/java/com/netflix/hystrix/contrib/javanica/aop/aspectj").each {
@@ -47,14 +42,12 @@ compileAjcTestJava {
 }
 
 compileAjcJava {
-    sourceCompatibility = "1.6"
-    targetCompatibility = "1.6"
 
     doLast {
         ant.taskdef(resource: "org/aspectj/tools/ant/taskdefs/aspectjTaskdefs.properties", classpath: configurations.ajtools.asPath)
         ant.iajc(source: "${sourceCompatibility}", target: "${targetCompatibility}",
-                destDir: "${sourceSets.ajc.output.classesDir.absolutePath}", maxmem: "512m", fork: "true", "showWeaveInfo": "true",
-                classpath: "${configurations.compile.asPath}")
+                destDir: "${sourceSets.ajc.output.classesDirs.files.first().absolutePath}", maxmem: "512m", fork: "true", "showWeaveInfo": "true",
+                classpath: "${configurations.compileClasspath.asPath}")
 
                 {
                     sourceroots {
@@ -68,7 +61,7 @@ compileAjcJava {
 }
 
 task ajcTest(type: Test) {
-    testClassesDir = sourceSets.ajcTest.output.classesDir
+    testClassesDirs = sourceSets.ajcTest.output.classesDirs
     classpath = sourceSets.ajcTest.runtimeClasspath
     if (System.getProperty('DEBUG', 'false') == 'true') {
         jvmArgs '-Xdebug',
@@ -86,34 +79,34 @@ ext {
 
 
 task ajcJar(type: Jar) {
-    archiveName = "${project.name}" + "-ctw-${version}.jar"
-    destinationDir = file("${buildDir}/libs")
+    archiveFileName = "${project.name}" + "-ctw-${version}.jar"
+    destinationDirectory = file("${buildDir}/libs")
     from sourceSets.ajc.output
 }
 
 assemble.dependsOn(jar, ajcJar)
 
 dependencies {
-    compileApi project(':hystrix-core')
+    api project(':hystrix-core')
     ajtools "org.aspectj:aspectjtools:$aspectjVersion"
-    testRuntime "org.aspectj:aspectjrt:$aspectjVersion"
-    compileApi "org.aspectj:aspectjweaver:$aspectjVersion"
-    compile "org.aspectj:aspectjrt:$aspectjVersion"
+    testRuntimeOnly "org.aspectj:aspectjrt:$aspectjVersion"
+    api "org.aspectj:aspectjweaver:$aspectjVersion"
+    implementation "org.aspectj:aspectjrt:$aspectjVersion"
 
-    compileApi 'com.google.guava:guava:15.0'
-    compile 'org.apache.commons:commons-lang3:3.1'
-    compileApi 'com.google.code.findbugs:jsr305:2.0.0'
-    compile 'org.ow2.asm:asm:5.0.4'
-    testCompile group: 'junit', name: 'junit', version: '4.12'
-    testCompile 'pl.pragmatists:JUnitParams:1.0.5'
-    testCompile project(':hystrix-junit')
-    testCompile "org.springframework:spring-core:$springframeworkVesion"
-    testCompile "org.springframework:spring-context:$springframeworkVesion"
-    testCompile "org.springframework:spring-aop:$springframeworkVesion"
-    testCompile "org.springframework:spring-test:$springframeworkVesion"
-    testCompile 'cglib:cglib:3.1'
-    testCompile 'org.mockito:mockito-all:1.9.5'
-    testCompile 'log4j:log4j:1.2.17'
-    testCompile 'org.slf4j:slf4j-log4j12:1.7.7'
-    testCompile 'com.tngtech.java:junit-dataprovider:1.10.2'
+    api 'com.google.guava:guava:15.0'
+    implementation 'org.apache.commons:commons-lang3:3.1'
+    api 'com.google.code.findbugs:jsr305:2.0.0'
+    implementation 'org.ow2.asm:asm:5.0.4'
+    testImplementation group: 'junit', name: 'junit', version: '4.12'
+    testImplementation 'pl.pragmatists:JUnitParams:1.0.5'
+    testImplementation project(':hystrix-junit')
+    testImplementation "org.springframework:spring-core:$springframeworkVesion"
+    testImplementation "org.springframework:spring-context:$springframeworkVesion"
+    testImplementation "org.springframework:spring-aop:$springframeworkVesion"
+    testImplementation "org.springframework:spring-test:$springframeworkVesion"
+    testImplementation 'cglib:cglib:3.1'
+    testImplementation 'org.mockito:mockito-all:1.9.5'
+    testImplementation 'log4j:log4j:1.2.17'
+    testImplementation 'org.slf4j:slf4j-log4j12:1.7.7'
+    testImplementation 'com.tngtech.java:junit-dataprovider:1.10.2'
 }

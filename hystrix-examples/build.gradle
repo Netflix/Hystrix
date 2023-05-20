@@ -1,21 +1,9 @@
-apply plugin: 'osgi'
-
 dependencies {
-    compileApi project(':hystrix-core')
-    provided 'junit:junit-dep:4.10'
+    api project(':hystrix-core')
+    compileOnly 'junit:junit-dep:4.10'
 }
 
 task(runDemo, dependsOn: 'classes', type: JavaExec) {
 	main = 'com.netflix.hystrix.examples.demo.HystrixCommandDemo'
 	classpath = sourceSets.main.runtimeClasspath
-}
-
-jar {
-    manifest {
-        name = 'hystrix-examples'
-        instruction 'Bundle-Vendor', 'Netflix'
-        instruction 'Bundle-DocURL', 'https://github.com/Netflix/Hystrix'
-        instruction 'Import-Package', '!org.junit,!junit.framework,!org.mockito.*,*'
-        instruction 'Eclipse-ExtensibleAPI', 'true'
-    }
 }

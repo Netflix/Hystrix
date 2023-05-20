@@ -3,14 +3,14 @@ buildscript {
         jcenter()
         maven{
           name 'clojars'
-          url 'http://clojars.org/repo'
+          url 'https://clojars.org/repo'
         }
     }
     dependencies {
-        classpath 'com.netflix.nebula:nebula-clojure-plugin:4.0.1'
+        classpath 'com.netflix.nebula:nebula-clojure-plugin:13.0.1'
     }
 }
-apply plugin: 'nebula.clojure' // this is a wrapper around clojuresque to make it behave well with other plugins
+apply plugin: 'com.netflix.nebula.clojure' // this is a wrapper around clojuresque to make it behave well with other plugins
 
 repositories {
     mavenCentral()
@@ -18,8 +18,8 @@ repositories {
 }
 
 dependencies {
-    compileApi project(':hystrix-core')
-    compile 'org.clojure:clojure:1.7.0'
+    api project(':hystrix-core')
+    implementation 'org.clojure:clojure:1.7.0'
 }
 
 /*
