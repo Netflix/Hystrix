@@ -1,0 +1,45 @@
+name: "CI"
+on:
+  push:
+    branches:
+      - '*'
+    tags-ignore:
+      - '*'
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # test against JDK 8
+        java: [ 8  ]
+    name: CI with Java ${{ matrix.java }}
+    steps:
+      - uses: actions/checkout@v1
+      - name: Setup jdk
+        uses: actions/setup-java@v1
+        with:
+          java-version: ${{ matrix.java }}
+      - uses: actions/cache@v1
+        id: gradle-cache
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/gradle/dependency-locks/*.lockfile') }}
+          restore-keys: |
+            - ${{ runner.os }}-gradle-
+      - uses: actions/cache@v1
+        id: gradle-wrapper-cache
+        with:
+          path: ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradlewrapper-${{ hashFiles('gradle/wrapper/*') }}
+          restore-keys: |
+            - ${{ runner.os }}-gradlewrapper-
+      - name: Build with Gradle
+        run: ./gradlew --info --stacktrace build
+        env:
+          CI_NAME: github_actions
+          CI_BUILD_NUMBER: ${{ github.sha }}
+          CI_BUILD_URL: 'https://github.com/${{ github.repository }}'
+          CI_BRANCH: ${{ github.ref }}
+          COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
