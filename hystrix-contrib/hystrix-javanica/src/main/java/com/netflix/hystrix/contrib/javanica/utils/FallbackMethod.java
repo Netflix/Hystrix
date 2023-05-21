@@ -170,7 +170,7 @@ public class FallbackMethod {
                     if (parentKindOpt.isPresent()) {
                         Type parentKind = parentKindOpt.get();
                         if (isParametrizedType(parentKind)) {
-                            extraHint = "--> " + ((ParameterizedType) parentKind).getRawType().toString() + "<Ooops!>\n";
+                            extraHint = "--> " + ((ParameterizedType) parentKind).getRawType().toString() + "<Oops!>\n";
                         }
                     }
                     msg.add(String.format(error.reason + "\n" + extraHint + "Command type literal pos: %s; Fallback type literal pos: %s",
