@@ -99,7 +99,7 @@ public class FallbackMethod {
                 if (ExecutionType.OBSERVABLE != getExecutionType()) {
                     Type commandParametrizedType = commandMethod.getGenericReturnType();
 
-                    // basically any object can be wrapped into Completable, Completable itself ins't parametrized
+                    // basically any object can be wrapped into Completable, Completable itself isn't parametrized
                     if(Completable.class.isAssignableFrom(commandMethod.getReturnType())) {
                         validateCompletableReturnType(commandMethod, method.getReturnType());
                         return;
