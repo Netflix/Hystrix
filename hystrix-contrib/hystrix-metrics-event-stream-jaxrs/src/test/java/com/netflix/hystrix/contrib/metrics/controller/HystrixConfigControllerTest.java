@@ -19,7 +19,7 @@ package com.netflix.hystrix.contrib.metrics.controller;
  * @author justinjose28
  * 
  */
-public class HystrixConfigControllerTest extends HystricsMetricsControllerTest {
+public class HystrixConfigControllerTest extends HystrixMetricsControllerTest {
 
 	@Override
 	protected String getPath() {

@@ -52,7 +52,7 @@ public class HystrixRollingNumber {
     private final Time time;
     final int timeInMilliseconds;
     final int numberOfBuckets;
-    final int bucketSizeInMillseconds;
+    final int bucketSizeInMilliseconds;
 
     final BucketCircularArray buckets;
     private final CumulativeSum cumulativeSum = new CumulativeSum();
@@ -82,7 +82,7 @@ public class HystrixRollingNumber {
         if (timeInMilliseconds % numberOfBuckets != 0) {
             throw new IllegalArgumentException("The timeInMilliseconds must divide equally into numberOfBuckets. For example 1000/10 is ok, 1000/11 is not.");
         }
-        this.bucketSizeInMillseconds = timeInMilliseconds / numberOfBuckets;
+        this.bucketSizeInMilliseconds = timeInMilliseconds / numberOfBuckets;
 
         buckets = new BucketCircularArray(numberOfBuckets);
     }
@@ -262,7 +262,7 @@ public class HystrixRollingNumber {
          * NOTE: This is thread-safe because it's accessing 'buckets' which is a LinkedBlockingDeque
          */
         Bucket currentBucket = buckets.peekLast();
-        if (currentBucket != null && currentTime < currentBucket.windowStart + this.bucketSizeInMillseconds) {
+        if (currentBucket != null && currentTime < currentBucket.windowStart + this.bucketSizeInMilliseconds) {
             // if we're within the bucket 'window of time' return the current one
             // NOTE: We do not worry if we are BEFORE the window in a weird case of where thread scheduling causes that to occur,
             // we'll just use the latest as long as we're not AFTER the window
@@ -306,19 +306,19 @@ public class HystrixRollingNumber {
                     for (int i = 0; i < numberOfBuckets; i++) {
                         // we have at least 1 bucket so retrieve it
                         Bucket lastBucket = buckets.peekLast();
-                        if (currentTime < lastBucket.windowStart + this.bucketSizeInMillseconds) {
+                        if (currentTime < lastBucket.windowStart + this.bucketSizeInMilliseconds) {
                             // if we're within the bucket 'window of time' return the current one
                             // NOTE: We do not worry if we are BEFORE the window in a weird case of where thread scheduling causes that to occur,
                             // we'll just use the latest as long as we're not AFTER the window
                             return lastBucket;
-                        } else if (currentTime - (lastBucket.windowStart + this.bucketSizeInMillseconds) > timeInMilliseconds) {
+                        } else if (currentTime - (lastBucket.windowStart + this.bucketSizeInMilliseconds) > timeInMilliseconds) {
                             // the time passed is greater than the entire rolling counter so we want to clear it all and start from scratch
                             reset();
                             // recursively call getCurrentBucket which will create a new bucket and return it
                             return getCurrentBucket();
                         } else { // we're past the window so we need to create a new bucket
                             // create a new bucket and add it as the new 'last'
-                            buckets.addLast(new Bucket(lastBucket.windowStart + this.bucketSizeInMillseconds));
+                            buckets.addLast(new Bucket(lastBucket.windowStart + this.bucketSizeInMilliseconds));
                             // add the lastBucket values to the cumulativeSum
                             cumulativeSum.addBucket(lastBucket);
                         }

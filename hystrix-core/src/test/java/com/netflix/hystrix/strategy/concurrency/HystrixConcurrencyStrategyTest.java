@@ -109,7 +109,7 @@ public class HystrixConcurrencyStrategyTest {
     }
 
     @Test
-    public void testNoRequestContextOnSimpleConcurencyStrategyWithoutException() throws Exception {
+    public void testNoRequestContextOnSimpleConcurrencyStrategyWithoutException() throws Exception {
         shutdownContextIfExists();
         ConfigurationManager.getConfigInstance().setProperty("hystrix.command.default.requestLog.enabled", "false");
 

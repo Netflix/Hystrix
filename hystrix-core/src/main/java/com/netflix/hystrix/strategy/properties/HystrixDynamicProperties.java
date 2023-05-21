@@ -22,7 +22,7 @@ import java.util.ServiceLoader;
  * SPI allows for varying configuration sources.
  * 
  * The HystrixPlugin singleton will load only one implementation of this SPI
- * throught the {@link ServiceLoader} mechanism.
+ * through the {@link ServiceLoader} mechanism.
  * 
  * @author agentgt
  *

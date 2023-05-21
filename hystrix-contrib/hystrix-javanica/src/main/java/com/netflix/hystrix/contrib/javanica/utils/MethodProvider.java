@@ -229,7 +229,7 @@ public final class MethodProvider {
      * @throws NoSuchMethodException
      * @throws ClassNotFoundException
      */
-    public Method unbride(final Method bridgeMethod, Class<?> aClass) throws IOException, NoSuchMethodException, ClassNotFoundException {
+    public Method unbridge(final Method bridgeMethod, Class<?> aClass) throws IOException, NoSuchMethodException, ClassNotFoundException {
         if (bridgeMethod.isBridge() && bridgeMethod.isSynthetic()) {
             if (cache.containsKey(bridgeMethod)) {
                 return cache.get(bridgeMethod);

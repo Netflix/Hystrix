@@ -34,7 +34,7 @@ public class HystrixRollingNumberTest {
             // confirm the initial settings
             assertEquals(200, counter.timeInMilliseconds);
             assertEquals(10, counter.numberOfBuckets);
-            assertEquals(20, counter.bucketSizeInMillseconds);
+            assertEquals(20, counter.bucketSizeInMilliseconds);
 
             // we start out with 0 buckets in the queue
             assertEquals(0, counter.buckets.size());
@@ -42,7 +42,7 @@ public class HystrixRollingNumberTest {
             // add a success in each interval which should result in all 10 buckets being created with 1 success in each
             for (int i = 0; i < counter.numberOfBuckets; i++) {
                 counter.increment(HystrixRollingNumberEvent.SUCCESS);
-                time.increment(counter.bucketSizeInMillseconds);
+                time.increment(counter.bucketSizeInMilliseconds);
             }
 
             // confirm we have all 10 buckets
@@ -101,7 +101,7 @@ public class HystrixRollingNumberTest {
             assertEquals(1, counter.buckets.size());
 
             // wait past 3 bucket time periods (the 1st bucket then 2 empty ones)
-            time.increment(counter.bucketSizeInMillseconds * 3);
+            time.increment(counter.bucketSizeInMilliseconds * 3);
 
             // add another
             counter.increment(HystrixRollingNumberEvent.SUCCESS);
@@ -161,9 +161,9 @@ public class HystrixRollingNumberTest {
             assertEquals(1, counter.getRollingSum(HystrixRollingNumberEvent.TIMEOUT));
 
             // sleep to get to a new bucket
-            time.increment(counter.bucketSizeInMillseconds * 3);
+            time.increment(counter.bucketSizeInMilliseconds * 3);
 
-            // incremenet again in latest bucket
+            // increment again in latest bucket
             counter.increment(HystrixRollingNumberEvent.TIMEOUT);
 
             // we should have 4 buckets
@@ -198,9 +198,9 @@ public class HystrixRollingNumberTest {
             assertEquals(1, counter.getRollingSum(HystrixRollingNumberEvent.SHORT_CIRCUITED));
 
             // sleep to get to a new bucket
-            time.increment(counter.bucketSizeInMillseconds * 3);
+            time.increment(counter.bucketSizeInMilliseconds * 3);
 
-            // incremenet again in latest bucket
+            // increment again in latest bucket
             counter.increment(HystrixRollingNumberEvent.SHORT_CIRCUITED);
 
             // we should have 4 buckets
@@ -254,7 +254,7 @@ public class HystrixRollingNumberTest {
             assertEquals(1, counter.getRollingSum(type));
 
             // sleep to get to a new bucket
-            time.increment(counter.bucketSizeInMillseconds * 3);
+            time.increment(counter.bucketSizeInMilliseconds * 3);
 
             // increment again in latest bucket
             counter.increment(type);
@@ -292,7 +292,7 @@ public class HystrixRollingNumberTest {
             counter.increment(HystrixRollingNumberEvent.SHORT_CIRCUITED);
 
             // sleep to get to a new bucket
-            time.increment(counter.bucketSizeInMillseconds * 3);
+            time.increment(counter.bucketSizeInMilliseconds * 3);
 
             // increment
             counter.increment(HystrixRollingNumberEvent.SUCCESS);
@@ -350,7 +350,7 @@ public class HystrixRollingNumberTest {
             counter.increment(HystrixRollingNumberEvent.FAILURE);
 
             // sleep to get to a new bucket
-            time.increment(counter.bucketSizeInMillseconds * 3);
+            time.increment(counter.bucketSizeInMilliseconds * 3);
 
             // we should have 1 bucket since nothing has triggered the update of buckets in the elapsed time
             assertEquals(1, counter.buckets.size());
@@ -399,7 +399,7 @@ public class HystrixRollingNumberTest {
             assertEquals(10, counter.getRollingMaxValue(HystrixRollingNumberEvent.THREAD_MAX_ACTIVE));
 
             // sleep to get to a new bucket
-            time.increment(counter.bucketSizeInMillseconds * 3);
+            time.increment(counter.bucketSizeInMilliseconds * 3);
 
             // increment again in latest bucket
             counter.updateRollingMax(HystrixRollingNumberEvent.THREAD_MAX_ACTIVE, 20);
@@ -442,7 +442,7 @@ public class HystrixRollingNumberTest {
             assertEquals(30, counter.getRollingMaxValue(HystrixRollingNumberEvent.THREAD_MAX_ACTIVE));
 
             // sleep to get to a new bucket
-            time.increment(counter.bucketSizeInMillseconds * 3);
+            time.increment(counter.bucketSizeInMilliseconds * 3);
 
             counter.updateRollingMax(HystrixRollingNumberEvent.THREAD_MAX_ACTIVE, 30);
             counter.updateRollingMax(HystrixRollingNumberEvent.THREAD_MAX_ACTIVE, 30);
@@ -479,17 +479,17 @@ public class HystrixRollingNumberTest {
             counter.updateRollingMax(type, 10);
 
             // sleep to get to a new bucket
-            time.increment(counter.bucketSizeInMillseconds);
+            time.increment(counter.bucketSizeInMilliseconds);
 
             counter.updateRollingMax(type, 30);
 
             // sleep to get to a new bucket
-            time.increment(counter.bucketSizeInMillseconds);
+            time.increment(counter.bucketSizeInMilliseconds);
 
             counter.updateRollingMax(type, 40);
 
             // sleep to get to a new bucket
-            time.increment(counter.bucketSizeInMillseconds);
+            time.increment(counter.bucketSizeInMilliseconds);
 
             counter.updateRollingMax(type, 15);
 
@@ -535,7 +535,7 @@ public class HystrixRollingNumberTest {
             // first bucket
             counter.getCurrentBucket();
             try {
-                time.increment(counter.bucketSizeInMillseconds);
+                time.increment(counter.bucketSizeInMilliseconds);
             } catch (Exception e) {
                 // ignore
             }
@@ -562,7 +562,7 @@ public class HystrixRollingNumberTest {
             // first bucket
             counter.increment(type);
             try {
-                time.increment(counter.bucketSizeInMillseconds);
+                time.increment(counter.bucketSizeInMilliseconds);
             } catch (Exception e) {
                 // ignore
             }
@@ -590,7 +590,7 @@ public class HystrixRollingNumberTest {
             // first bucket
             counter.increment(type);
             try {
-                time.increment(counter.bucketSizeInMillseconds);
+                time.increment(counter.bucketSizeInMilliseconds);
             } catch (Exception e) {
                 // ignore
             }
@@ -625,7 +625,7 @@ public class HystrixRollingNumberTest {
         // iterate over 20 buckets on a queue sized for 2
         for (int i = 0; i < 20; i++) {
             try {
-                time.increment(counter.bucketSizeInMillseconds);
+                time.increment(counter.bucketSizeInMilliseconds);
             } catch (Exception e) {
                 // ignore
             }
@@ -660,7 +660,7 @@ public class HystrixRollingNumberTest {
         // iterate over 20 buckets on a queue sized for 2
         for (int i = 0; i < 20; i++) {
             try {
-                time.increment(counter.bucketSizeInMillseconds);
+                time.increment(counter.bucketSizeInMilliseconds);
             } catch (Exception e) {
                 // ignore
             }

@@ -18,7 +18,7 @@
 
   Functions for defining and executing Hystrix dependency commands and collapsers.
 
-  The definition of commands and collapers is separated from their instantiation and execution.
+  The definition of commands and collapsers is separated from their instantiation and execution.
   They are represented as plain Clojure maps (see below) which are later instantiated into
   functional HystrixCommand or HystrixCollapser instances. defcommand and defcollapser macros
   are provided to assist in defining these maps.
@@ -166,7 +166,7 @@
       This is your escape hatch into raw Hystrix. Please see additional notes about :init-fn
       above. They apply to collapsers as well.
 
-  The com.netflix.hystric.core/defcollapser macro is a helper for defining this map and storing it
+  The com.netflix.hystrix.core/defcollapser macro is a helper for defining this map and storing it
   in a callable var.
   "
   (:require [clojure.set :as set])
@@ -299,7 +299,7 @@
   :run-fn and :fallback-fn.
 
   It's occasionally useful, especially for fallbacks, to base the result on the state of
-  the comand. The fallback might vary based on whether it was triggered by an application
+  the command. The fallback might vary based on whether it was triggered by an application
   error versus a timeout.
 
   Note: As always with dynamic vars be careful about scoping. This binding only holds for
@@ -494,7 +494,7 @@
     ; The search collapser is now defined. It has a collapser key of \"my-namespace/search\".
     ; This is used for configuration and metrics.
 
-    ; Syncrhonously execute the search collapser
+    ; Synchronously execute the search collapser
     (search \"The Hudsucker Proxy\")
     ;=> [... vector of results ...]
 
@@ -542,9 +542,9 @@
   it provides.
 
   See:
-    com.neflix.hystrix.core/normalize
-    com.neflix.hystrix.core/execute
-    com.neflix.hystrix.core/queue
+    com.netflix.hystrix.core/normalize
+    com.netflix.hystrix.core/execute
+    com.netflix.hystrix.core/queue
   "
   {:arglists '[[defcommand-var & args]
                [defcollapser-var & args]

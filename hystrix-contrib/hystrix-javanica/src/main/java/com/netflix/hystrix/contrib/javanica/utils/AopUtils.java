@@ -79,7 +79,7 @@ public final class AopUtils {
     }
 
     /**
-     * Gets declared method from specified type by mame and parameters types.
+     * Gets declared method from specified type by name and parameters types.
      *
      * @param type           the type
      * @param methodName     the name of the method
@@ -91,7 +91,7 @@ public final class AopUtils {
         try {
             method = type.getDeclaredMethod(methodName, parameterTypes);
             if(method.isBridge()){
-                method = MethodProvider.getInstance().unbride(method, type);
+                method = MethodProvider.getInstance().unbridge(method, type);
             }
         } catch (NoSuchMethodException e) {
             Class<?> superclass = type.getSuperclass();

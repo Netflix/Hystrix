@@ -6,7 +6,7 @@ repositories {
 dependencies {
     api project(':hystrix-core')
 
-	//if we bump into the the 2.8.0 series, we are forced to use Java7
+	//if we bump into the 2.8.0 series, we are forced to use Java7
     api 'com.fasterxml.jackson.core:jackson-core:2.7.5'
     api 'com.fasterxml.jackson.core:jackson-databind:2.7.5'
     api 'com.fasterxml.jackson.core:jackson-annotations:2.7.5'
