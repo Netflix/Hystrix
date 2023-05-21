@@ -32,7 +32,7 @@ import com.netflix.hystrix.HystrixRequestLog;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 
 /**
- * Log an INFO message with the output from <code>HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString()</code> at the end of each requet.
+ * Log an INFO message with the output from <code>HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString()</code> at the end of each request.
  * <p>
  * A pre-requisite is that {@link HystrixRequestContext} is initialized, such as by using {@link HystrixRequestContextServletFilter}.
  * <p>
