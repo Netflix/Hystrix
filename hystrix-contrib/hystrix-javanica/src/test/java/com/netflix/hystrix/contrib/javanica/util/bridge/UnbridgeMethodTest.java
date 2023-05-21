@@ -36,7 +36,7 @@ public class UnbridgeMethodTest {
         Method bridgeMethod = getBridgeMethod(GenericInterfaceImpl.class, "foo");
         assertNotNull(bridgeMethod);
         // when
-        Method genMethod = MethodProvider.getInstance().unbride(bridgeMethod, GenericInterfaceImpl.class);
+        Method genMethod = MethodProvider.getInstance().unbridge(bridgeMethod, GenericInterfaceImpl.class);
         // then
         assertNotNull(bridgeMethod);
         assertReturnType(Child.class, genMethod);

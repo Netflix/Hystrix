@@ -91,7 +91,7 @@ public final class AopUtils {
         try {
             method = type.getDeclaredMethod(methodName, parameterTypes);
             if(method.isBridge()){
-                method = MethodProvider.getInstance().unbride(method, type);
+                method = MethodProvider.getInstance().unbridge(method, type);
             }
         } catch (NoSuchMethodException e) {
             Class<?> superclass = type.getSuperclass();
