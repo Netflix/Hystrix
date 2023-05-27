@@ -21,5 +21,4 @@ package com.netflix.hystrix.contrib.javanica.aop.aspectj;
 public enum WeavingMode {
 
     COMPILE, RUNTIME
-
 }

@@ -28,11 +28,20 @@ public class HystrixRuntimeException extends RuntimeException {
     private static final long serialVersionUID = 5219160375476046229L;
 
     private final Class<? extends HystrixInvokable> commandClass;
+
     private final Throwable fallbackException;
+
     private final FailureType failureCause;
 
     public static enum FailureType {
-        BAD_REQUEST_EXCEPTION, COMMAND_EXCEPTION, TIMEOUT, SHORTCIRCUIT, REJECTED_THREAD_EXECUTION, REJECTED_SEMAPHORE_EXECUTION, REJECTED_SEMAPHORE_FALLBACK
+
+        BAD_REQUEST_EXCEPTION,
+        COMMAND_EXCEPTION,
+        TIMEOUT,
+        SHORTCIRCUIT,
+        REJECTED_THREAD_EXECUTION,
+        REJECTED_SEMAPHORE_EXECUTION,
+        REJECTED_SEMAPHORE_FALLBACK
     }
 
     public HystrixRuntimeException(FailureType failureCause, Class<? extends HystrixInvokable> commandClass, String message, Exception cause, Throwable fallbackException) {
@@ -51,7 +60,7 @@ public class HystrixRuntimeException extends RuntimeException {
 
     /**
      * The type of failure that caused this exception to be thrown.
-     * 
+     *
      * @return {@link FailureType}
      */
     public FailureType getFailureType() {
@@ -60,7 +69,7 @@ public class HystrixRuntimeException extends RuntimeException {
 
     /**
      * The implementing class of the {@link HystrixCommand}.
-     * 
+     *
      * @return {@code Class<? extends HystrixCommand> }
      */
     public Class<? extends HystrixInvokable> getImplementingClass() {
@@ -69,11 +78,10 @@ public class HystrixRuntimeException extends RuntimeException {
 
     /**
      * The {@link Throwable} that was thrown when trying to retrieve a fallback.
-     * 
+     *
      * @return {@link Throwable}
      */
     public Throwable getFallbackException() {
         return fallbackException;
     }
-
 }

@@ -18,7 +18,6 @@ package com.netflix.hystrix.metric.consumer;
 import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.metric.HystrixCommandStartStream;
-
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -32,7 +31,6 @@ import java.util.concurrent.ConcurrentMap;
  *
  * This value gets cached in this class.  It may be queried using {@link #getLatestRollingMax()}
  * This value is stable - there's no peeking into a bucket until it is emitted
- *
  */
 public class RollingCommandMaxConcurrencyStream extends RollingConcurrencyStream {
 
@@ -42,7 +40,6 @@ public class RollingCommandMaxConcurrencyStream extends RollingConcurrencyStream
         final int counterMetricWindow = properties.metricsRollingStatisticalWindowInMilliseconds().get();
         final int numCounterBuckets = properties.metricsRollingStatisticalWindowBuckets().get();
         final int counterBucketSizeInMs = counterMetricWindow / numCounterBuckets;
-
         return getInstance(commandKey, numCounterBuckets, counterBucketSizeInMs);
     }
 

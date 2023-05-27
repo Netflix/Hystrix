@@ -25,10 +25,8 @@ import org.junit.Test;
 import org.mockito.MockitoAnnotations;
 import rx.Observable;
 import rx.observers.TestSubscriber;
-
 import java.util.HashMap;
 import java.util.Map;
-
 import static com.netflix.hystrix.contrib.javanica.test.common.CommonUtils.getHystrixCommandByKey;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -67,10 +65,8 @@ public abstract class BasicObservableErrorPropagationTest extends BasicHystrixTe
     public void testGetUserByBadId() throws NotFoundException {
         try {
             TestSubscriber<User> testSubscriber = new TestSubscriber<User>();
-
             String badId = "";
             userService.getUserById(badId).subscribe(testSubscriber);
-
             testSubscriber.assertError(BadRequestException.class);
         } finally {
             assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
@@ -86,9 +82,8 @@ public abstract class BasicObservableErrorPropagationTest extends BasicHystrixTe
     public void testGetNonExistentUser() throws NotFoundException {
         try {
             TestSubscriber<User> testSubscriber = new TestSubscriber<User>();
-
-            userService.getUserById("4").subscribe(testSubscriber); // user with id 4 doesn't exist
-
+            // user with id 4 doesn't exist
+            userService.getUserById("4").subscribe(testSubscriber);
             testSubscriber.assertError(NotFoundException.class);
         } finally {
             assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
@@ -100,10 +95,12 @@ public abstract class BasicObservableErrorPropagationTest extends BasicHystrixTe
         }
     }
 
-    @Test // don't expect any exceptions because fallback must be triggered
+    // don't expect any exceptions because fallback must be triggered
+    @Test
     public void testActivateUser() throws NotFoundException, ActivationException {
         try {
-            userService.activateUser("1").toBlocking().single(); // this method always throws ActivationException
+            // this method always throws ActivationException
+            userService.activateUser("1").toBlocking().single();
         } finally {
             assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
             com.netflix.hystrix.HystrixInvokableInfo activateUserCommand = getHystrixCommandByKey("activateUser");
@@ -119,9 +116,8 @@ public abstract class BasicObservableErrorPropagationTest extends BasicHystrixTe
     public void testBlockUser() throws NotFoundException, ActivationException, OperationException {
         try {
             TestSubscriber<Void> testSubscriber = new TestSubscriber<Void>();
-
-            userService.blockUser("1").subscribe(testSubscriber); // this method always throws ActivationException
-
+            // this method always throws ActivationException
+            userService.blockUser("1").subscribe(testSubscriber);
             testSubscriber.assertError(Throwable.class);
             assertTrue(testSubscriber.getOnErrorEvents().size() == 1);
             assertTrue(testSubscriber.getOnErrorEvents().get(0).getCause() instanceof OperationException);
@@ -137,9 +133,7 @@ public abstract class BasicObservableErrorPropagationTest extends BasicHystrixTe
     @Test
     public void testPropagateCauseException() throws NotFoundException {
         TestSubscriber<Void> testSubscriber = new TestSubscriber<Void>();
-
         userService.deleteUser("").subscribe(testSubscriber);
-
         testSubscriber.assertError(NotFoundException.class);
     }
 
@@ -156,13 +150,7 @@ public abstract class BasicObservableErrorPropagationTest extends BasicHystrixTe
             return Observable.error(new NotFoundException(""));
         }
 
-        @HystrixCommand(
-                commandKey = COMMAND_KEY,
-                ignoreExceptions = {
-                        BadRequestException.class,
-                        NotFoundException.class
-                },
-                fallbackMethod = "fallback")
+        @HystrixCommand(commandKey = COMMAND_KEY, ignoreExceptions = { BadRequestException.class, NotFoundException.class }, fallbackMethod = "fallback")
         public Observable<User> getUserById(String id) throws NotFoundException {
             validate(id);
             if (!USERS.containsKey(id)) {
@@ -171,10 +159,7 @@ public abstract class BasicObservableErrorPropagationTest extends BasicHystrixTe
             return Observable.just(USERS.get(id));
         }
 
-
-        @HystrixCommand(
-                ignoreExceptions = {BadRequestException.class, NotFoundException.class},
-                fallbackMethod = "activateFallback")
+        @HystrixCommand(ignoreExceptions = { BadRequestException.class, NotFoundException.class }, fallbackMethod = "activateFallback")
         public Observable<Void> activateUser(String id) throws NotFoundException, ActivationException {
             validate(id);
             if (!USERS.containsKey(id)) {
@@ -184,9 +169,7 @@ public abstract class BasicObservableErrorPropagationTest extends BasicHystrixTe
             return Observable.error(new ActivationException("user cannot be activate"));
         }
 
-        @HystrixCommand(
-                ignoreExceptions = {BadRequestException.class, NotFoundException.class},
-                fallbackMethod = "blockUserFallback")
+        @HystrixCommand(ignoreExceptions = { BadRequestException.class, NotFoundException.class }, fallbackMethod = "blockUserFallback")
         public Observable<Void> blockUser(String id) throws NotFoundException, OperationException {
             validate(id);
             if (!USERS.containsKey(id)) {
@@ -204,7 +187,7 @@ public abstract class BasicObservableErrorPropagationTest extends BasicHystrixTe
             return failoverService.activate();
         }
 
-        @HystrixCommand(ignoreExceptions = {RuntimeException.class})
+        @HystrixCommand(ignoreExceptions = { RuntimeException.class })
         private Observable<Void> blockUserFallback(String id) {
             return Observable.error(new RuntimeOperationException("blockUserFallback has failed"));
         }
@@ -217,6 +200,7 @@ public abstract class BasicObservableErrorPropagationTest extends BasicHystrixTe
     }
 
     private class FailoverService {
+
         public Observable<User> getDefUser() {
             return Observable.just(new User("def", "def"));
         }
@@ -228,33 +212,37 @@ public abstract class BasicObservableErrorPropagationTest extends BasicHystrixTe
 
     // exceptions
     private static class NotFoundException extends Exception {
+
         private NotFoundException(String message) {
             super(message);
         }
     }
 
     private static class BadRequestException extends RuntimeException {
+
         private BadRequestException(String message) {
             super(message);
         }
     }
 
     private static class ActivationException extends Exception {
+
         private ActivationException(String message) {
             super(message);
         }
     }
 
     private static class OperationException extends Throwable {
+
         private OperationException(String message) {
             super(message);
         }
     }
 
     private static class RuntimeOperationException extends RuntimeException {
+
         private RuntimeOperationException(String message) {
             super(message);
         }
     }
-
 }

@@ -20,7 +20,7 @@ import com.netflix.hystrix.HystrixThreadPoolProperties;
 
 /**
  * Default implementation of {@link HystrixThreadPoolProperties} using Archaius (https://github.com/Netflix/archaius)
- * 
+ *
  * @ExcludeFromJavadoc
  */
 public class HystrixPropertiesThreadPoolDefault extends HystrixThreadPoolProperties {
@@ -28,5 +28,4 @@ public class HystrixPropertiesThreadPoolDefault extends HystrixThreadPoolPropert
     protected HystrixPropertiesThreadPoolDefault(HystrixThreadPoolKey key, Setter builder) {
         super(key, builder);
     }
-
 }

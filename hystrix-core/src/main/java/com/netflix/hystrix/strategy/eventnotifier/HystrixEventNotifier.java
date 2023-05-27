@@ -1,12 +1,12 @@
 /**
  * Copyright 2012 Netflix, Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,7 +16,6 @@
 package com.netflix.hystrix.strategy.eventnotifier;
 
 import java.util.List;
-
 import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
 import com.netflix.hystrix.HystrixEventType;
@@ -41,7 +40,7 @@ public abstract class HystrixEventNotifier {
      * Called for every event fired.
      * <p>
      * <b>Default Implementation: </b> Does nothing
-     * 
+     *
      * @param eventType event type
      * @param key event key
      */
@@ -55,7 +54,7 @@ public abstract class HystrixEventNotifier {
      * Will not get called if a command is rejected, short-circuited etc.
      * <p>
      * <b>Default Implementation: </b> Does nothing
-     * 
+     *
      * @param key
      *            {@link HystrixCommandKey} of command instance.
      * @param isolationStrategy
@@ -68,5 +67,4 @@ public abstract class HystrixEventNotifier {
     public void markCommandExecution(HystrixCommandKey key, ExecutionIsolationStrategy isolationStrategy, int duration, List<HystrixEventType> eventsDuringExecution) {
         // do nothing
     }
-
 }

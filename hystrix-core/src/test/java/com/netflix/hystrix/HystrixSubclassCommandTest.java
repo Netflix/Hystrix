@@ -13,21 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.hystrix;
 
 import com.hystrix.junit.HystrixRequestContextRule;
 import org.junit.Rule;
 import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.List;
-
 import static org.junit.Assert.assertEquals;
 
 public class HystrixSubclassCommandTest {
 
     private final static HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("GROUP");
+
     @Rule
     public HystrixRequestContextRule ctx = new HystrixRequestContextRule();
 
@@ -35,10 +33,8 @@ public class HystrixSubclassCommandTest {
     public void testFallback() {
         HystrixCommand<Integer> superCmd = new SuperCommand("cache", false);
         assertEquals(2, superCmd.execute().intValue());
-
         HystrixCommand<Integer> subNoOverridesCmd = new SubCommandNoOverride("cache", false);
         assertEquals(2, subNoOverridesCmd.execute().intValue());
-
         HystrixCommand<Integer> subOverriddenFallbackCmd = new SubCommandOverrideFallback("cache", false);
         assertEquals(3, subOverriddenFallbackCmd.execute().intValue());
     }
@@ -114,7 +110,9 @@ public class HystrixSubclassCommandTest {
     }
 
     public static class SuperCommand extends HystrixCommand<Integer> {
+
         private final String uniqueArg;
+
         private final boolean shouldSucceed;
 
         SuperCommand(String uniqueArg, boolean shouldSucceed) {
@@ -144,12 +142,14 @@ public class HystrixSubclassCommandTest {
     }
 
     public static class SubCommandNoOverride extends SuperCommand {
+
         SubCommandNoOverride(String uniqueArg, boolean shouldSucceed) {
             super(uniqueArg, shouldSucceed);
         }
     }
 
     public static class SubCommandOverrideFallback extends SuperCommand {
+
         SubCommandOverrideFallback(String uniqueArg, boolean shouldSucceed) {
             super(uniqueArg, shouldSucceed);
         }

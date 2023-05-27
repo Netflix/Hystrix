@@ -19,7 +19,6 @@ import com.netflix.hystrix.ExecutionResult;
 import com.netflix.hystrix.HystrixCollapserKey;
 import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixInvokableInfo;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -27,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 public class HystrixRequestEvents {
+
     private final Collection<HystrixInvokableInfo<?>> executions;
 
     public HystrixRequestEvents(Collection<HystrixInvokableInfo<?>> executions) {
@@ -40,7 +40,7 @@ public class HystrixRequestEvents {
     public Map<ExecutionSignature, List<Integer>> getExecutionsMappedToLatencies() {
         Map<CommandAndCacheKey, Integer> cachingDetector = new HashMap<CommandAndCacheKey, Integer>();
         List<HystrixInvokableInfo<?>> nonCachedExecutions = new ArrayList<HystrixInvokableInfo<?>>(executions.size());
-        for (HystrixInvokableInfo<?> execution: executions) {
+        for (HystrixInvokableInfo<?> execution : executions) {
             if (execution.getPublicCacheKey() != null) {
                 //eligible for caching - might be the initial, or might be from cache
                 CommandAndCacheKey key = new CommandAndCacheKey(execution.getCommandKey().name(), execution.getPublicCacheKey());
@@ -57,9 +57,8 @@ public class HystrixRequestEvents {
                 nonCachedExecutions.add(execution);
             }
         }
-
         Map<ExecutionSignature, List<Integer>> commandDeduper = new HashMap<ExecutionSignature, List<Integer>>();
-        for (HystrixInvokableInfo<?> execution: nonCachedExecutions) {
+        for (HystrixInvokableInfo<?> execution : nonCachedExecutions) {
             int cachedCount = 0;
             String cacheKey = execution.getPublicCacheKey();
             if (cacheKey != null) {
@@ -83,12 +82,13 @@ public class HystrixRequestEvents {
                 commandDeduper.put(signature, newLatencyList);
             }
         }
-
         return commandDeduper;
     }
 
     private static class CommandAndCacheKey {
+
         private final String commandName;
+
         private final String cacheKey;
 
         public CommandAndCacheKey(String commandName, String cacheKey) {
@@ -98,14 +98,14 @@ public class HystrixRequestEvents {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
             CommandAndCacheKey that = (CommandAndCacheKey) o;
-
-            if (!commandName.equals(that.commandName)) return false;
+            if (!commandName.equals(that.commandName))
+                return false;
             return cacheKey.equals(that.cacheKey);
-
         }
 
         @Override
@@ -117,19 +117,22 @@ public class HystrixRequestEvents {
 
         @Override
         public String toString() {
-            return "CommandAndCacheKey{" +
-                    "commandName='" + commandName + '\'' +
-                    ", cacheKey='" + cacheKey + '\'' +
-                    '}';
+            return "CommandAndCacheKey{" + "commandName='" + commandName + '\'' + ", cacheKey='" + cacheKey + '\'' + '}';
         }
     }
 
     public static class ExecutionSignature {
+
         private final String commandName;
+
         private final ExecutionResult.EventCounts eventCounts;
+
         private final String cacheKey;
+
         private final int cachedCount;
+
         private final HystrixCollapserKey collapserKey;
+
         private final int collapserBatchSize;
 
         private ExecutionSignature(HystrixCommandKey commandKey, ExecutionResult.EventCounts eventCounts, String cacheKey, int cachedCount, HystrixCollapserKey collapserKey, int collapserBatchSize) {
@@ -151,15 +154,16 @@ public class HystrixRequestEvents {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
             ExecutionSignature that = (ExecutionSignature) o;
-
-            if (!commandName.equals(that.commandName)) return false;
-            if (!eventCounts.equals(that.eventCounts)) return false;
+            if (!commandName.equals(that.commandName))
+                return false;
+            if (!eventCounts.equals(that.eventCounts))
+                return false;
             return !(cacheKey != null ? !cacheKey.equals(that.cacheKey) : that.cacheKey != null);
-
         }
 
         @Override
@@ -181,7 +185,6 @@ public class HystrixRequestEvents {
         public int getCachedCount() {
             return cachedCount;
         }
-
 
         public HystrixCollapserKey getCollapserKey() {
             return collapserKey;

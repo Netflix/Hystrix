@@ -22,7 +22,6 @@ import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.metric.HystrixRequestEvents;
 import com.netflix.hystrix.metric.HystrixRequestEventsStream;
 import rx.Observable;
-
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Collection;
@@ -35,19 +34,19 @@ import java.util.Map;
  *
  * @deprecated Instead, prefer mapping your preferred serialization on top of {@link HystrixRequestEventsStream#observe()}.
  */
-@Deprecated //since 1.5.4
+//since 1.5.4
+@Deprecated
 public class HystrixRequestEventsJsonStream {
+
     private static final JsonFactory jsonFactory = new JsonFactory();
 
     public Observable<HystrixRequestEvents> getStream() {
-        return HystrixRequestEventsStream.getInstance()
-                .observe();
+        return HystrixRequestEventsStream.getInstance().observe();
     }
 
     public static String convertRequestsToJson(Collection<HystrixRequestEvents> requests) throws IOException {
         StringWriter jsonString = new StringWriter();
         JsonGenerator json = jsonFactory.createGenerator(jsonString);
-
         json.writeStartArray();
         for (HystrixRequestEvents request : requests) {
             writeRequestAsJson(json, request);
@@ -65,14 +64,11 @@ public class HystrixRequestEventsJsonStream {
         return jsonString.getBuffer().toString();
     }
 
-
     private static void writeRequestAsJson(JsonGenerator json, HystrixRequestEvents request) throws IOException {
         json.writeStartArray();
-
-        for (Map.Entry<HystrixRequestEvents.ExecutionSignature, List<Integer>> entry: request.getExecutionsMappedToLatencies().entrySet()) {
+        for (Map.Entry<HystrixRequestEvents.ExecutionSignature, List<Integer>> entry : request.getExecutionsMappedToLatencies().entrySet()) {
             convertExecutionToJson(json, entry.getKey(), entry.getValue());
         }
-
         json.writeEndArray();
     }
 
@@ -81,7 +77,7 @@ public class HystrixRequestEventsJsonStream {
         json.writeStringField("name", executionSignature.getCommandName());
         json.writeArrayFieldStart("events");
         ExecutionResult.EventCounts eventCounts = executionSignature.getEventCounts();
-        for (HystrixEventType eventType: HystrixEventType.values()) {
+        for (HystrixEventType eventType : HystrixEventType.values()) {
             if (eventType != HystrixEventType.COLLAPSED) {
                 if (eventCounts.contains(eventType)) {
                     int eventCount = eventCounts.getCount(eventType);
@@ -98,7 +94,7 @@ public class HystrixRequestEventsJsonStream {
         }
         json.writeEndArray();
         json.writeArrayFieldStart("latencies");
-        for (int latency: latencies) {
+        for (int latency : latencies) {
             json.writeNumber(latency);
         }
         json.writeEndArray();

@@ -17,10 +17,8 @@ package com.netflix.hystrix;
 
 import com.hystrix.junit.HystrixRequestContextRule;
 import static org.junit.Assert.assertEquals;
-
 import org.junit.Rule;
 import org.junit.Test;
-
 import rx.Observable;
 
 public class HystrixRequestLogTest {
@@ -90,7 +88,6 @@ public class HystrixRequestLogTest {
     @Test
     public void testTimeout() {
         Observable<String> result = null;
-
         // 1 timeout
         try {
             for (int i = 0; i < 1; i++) {
@@ -122,16 +119,12 @@ public class HystrixRequestLogTest {
     public void testMultipleCommands() {
         // 1 success
         new TestCommand("GetData", "A", false, false).execute();
-
         // 1 success
         new TestCommand("PutData", "B", false, false).execute();
-
         // 1 success
         new TestCommand("GetValues", "C", false, false).execute();
-
         // 1 success from cache
         new TestCommand("GetValues", "C", false, false).execute();
-
         // 1 failure
         try {
             new TestCommand("A", true, true).execute();
@@ -157,17 +150,21 @@ public class HystrixRequestLogTest {
         for (int i = 0; i < 10; i++) {
             new TestCommand("A", false, true).execute();
         }
-
         assertEquals(HystrixRequestLog.MAX_STORAGE, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
     }
 
     private static class TestCommand extends HystrixCommand<String> {
 
         private final String value;
+
         private final boolean fail;
+
         private final boolean failOnFallback;
+
         private final boolean timeout;
+
         private final boolean useFallback;
+
         private final boolean useCache;
 
         public TestCommand(String commandName, String value, boolean fail, boolean failOnFallback) {
@@ -237,6 +234,5 @@ public class HystrixRequestLogTest {
                 return null;
             }
         }
-
     }
 }

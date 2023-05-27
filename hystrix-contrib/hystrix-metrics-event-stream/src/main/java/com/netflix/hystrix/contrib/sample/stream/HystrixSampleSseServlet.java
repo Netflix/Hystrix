@@ -1,12 +1,12 @@
 /**
  * Copyright 2016 Netflix, Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,7 +21,6 @@ import rx.Observable;
 import rx.Subscriber;
 import rx.Subscription;
 import rx.schedulers.Schedulers;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -33,6 +32,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  */
 public abstract class HystrixSampleSseServlet extends HttpServlet {
+
     protected final Observable<String> sampleStream;
 
     private static final Logger logger = LoggerFactory.getLogger(HystrixSampleSseServlet.class);
@@ -115,11 +115,11 @@ public abstract class HystrixSampleSseServlet extends HttpServlet {
     private void handleRequest(HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException {
         final AtomicBoolean moreDataWillBeSent = new AtomicBoolean(true);
         Subscription sampleSubscription = null;
-
         /* ensure we aren't allowing more connections than we want */
         int numberConnections = incrementAndGetCurrentConcurrentConnections();
         try {
-            int maxNumberConnectionsAllowed = getMaxNumberConcurrentConnectionsAllowed(); //may change at runtime, so look this up for each request
+            //may change at runtime, so look this up for each request
+            int maxNumberConnectionsAllowed = getMaxNumberConcurrentConnectionsAllowed();
             if (numberConnections > maxNumberConnectionsAllowed) {
                 response.sendError(503, "MaxConcurrentConnections reached: " + maxNumberConnectionsAllowed);
             } else {
@@ -127,50 +127,45 @@ public abstract class HystrixSampleSseServlet extends HttpServlet {
                 response.setHeader("Content-Type", "text/event-stream;charset=UTF-8");
                 response.setHeader("Cache-Control", "no-cache, no-store, max-age=0, must-revalidate");
                 response.setHeader("Pragma", "no-cache");
-
                 final PrintWriter writer = response.getWriter();
-
                 //since the sample stream is based on Observable.interval, events will get published on an RxComputation thread
                 //since writing to the servlet response is blocking, use the Rx IO thread for the write that occurs in the onNext
-                sampleSubscription = sampleStream
-                        .observeOn(Schedulers.io())
-                        .subscribe(new Subscriber<String>() {
-                            @Override
-                            public void onCompleted() {
-                                logger.error("HystrixSampleSseServlet: ({}) received unexpected OnCompleted from sample stream", getClass().getSimpleName());
-                                moreDataWillBeSent.set(false);
-                            }
+                sampleSubscription = sampleStream.observeOn(Schedulers.io()).subscribe(new Subscriber<String>() {
 
-                            @Override
-                            public void onError(Throwable e) {
-                                moreDataWillBeSent.set(false);
-                            }
+                    @Override
+                    public void onCompleted() {
+                        logger.error("HystrixSampleSseServlet: ({}) received unexpected OnCompleted from sample stream", getClass().getSimpleName());
+                        moreDataWillBeSent.set(false);
+                    }
 
-                            @Override
-                            public void onNext(String sampleDataAsString) {
-                                if (sampleDataAsString != null) {
-                                    try {
-                                        // avoid concurrent writes with ping
-                                        synchronized (responseWriteLock) {
-                                            writer.print("data: " + sampleDataAsString + "\n\n");
-                                            // explicitly check for client disconnect - PrintWriter does not throw exceptions
-                                            if (writer.checkError()) {
-                                                moreDataWillBeSent.set(false);
-                                            }
-                                            writer.flush();
-                                        }
-                                    } catch (Exception ex) {
+                    @Override
+                    public void onError(Throwable e) {
+                        moreDataWillBeSent.set(false);
+                    }
+
+                    @Override
+                    public void onNext(String sampleDataAsString) {
+                        if (sampleDataAsString != null) {
+                            try {
+                                // avoid concurrent writes with ping
+                                synchronized (responseWriteLock) {
+                                    writer.print("data: " + sampleDataAsString + "\n\n");
+                                    // explicitly check for client disconnect - PrintWriter does not throw exceptions
+                                    if (writer.checkError()) {
                                         moreDataWillBeSent.set(false);
                                     }
+                                    writer.flush();
                                 }
+                            } catch (Exception ex) {
+                                moreDataWillBeSent.set(false);
                             }
-                        });
-
+                        }
+                    }
+                });
                 while (moreDataWillBeSent.get() && !isDestroyed) {
                     try {
                         Thread.sleep(pausePollerThreadDelayInMs);
                         //in case stream has not started emitting yet, catch any clients which connect/disconnect before emits start
-
                         // avoid concurrent writes with sample
                         synchronized (responseWriteLock) {
                             writer.print("ping: \n\n");
@@ -193,4 +188,3 @@ public abstract class HystrixSampleSseServlet extends HttpServlet {
         }
     }
 }
-

@@ -25,6 +25,7 @@ import com.netflix.hystrix.contrib.javanica.exception.CommandActionExecutionExce
 public class CommandExecutionAction implements CommandAction {
 
     private HystrixInvokable hystrixCommand;
+
     private MetaHolder metaHolder;
 
     /**
@@ -63,5 +64,4 @@ public class CommandExecutionAction implements CommandAction {
         }
         return "";
     }
-
 }

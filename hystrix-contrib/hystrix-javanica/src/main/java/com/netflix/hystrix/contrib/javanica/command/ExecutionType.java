@@ -19,7 +19,6 @@ import com.google.common.collect.ImmutableSet;
 import rx.Completable;
 import rx.Observable;
 import rx.Single;
-
 import java.util.Set;
 import java.util.concurrent.Future;
 
@@ -32,12 +31,10 @@ public enum ExecutionType {
      * Used for asynchronous execution of command.
      */
     ASYNCHRONOUS,
-
     /**
      * Used for synchronous execution of command.
      */
     SYNCHRONOUS,
-
     /**
      * Reactive execution (asynchronous callback).
      */

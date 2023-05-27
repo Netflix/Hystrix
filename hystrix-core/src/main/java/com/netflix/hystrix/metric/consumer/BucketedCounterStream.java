@@ -23,7 +23,6 @@ import rx.functions.Func0;
 import rx.functions.Func1;
 import rx.functions.Func2;
 import rx.subjects.BehaviorSubject;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -37,37 +36,38 @@ import java.util.concurrent.atomic.AtomicReference;
  * @param <Output> type of data emitted to stream subscribers (often is the same as A but does not have to be)
  */
 public abstract class BucketedCounterStream<Event extends HystrixEvent, Bucket, Output> {
+
     protected final int numBuckets;
+
     protected final Observable<Bucket> bucketedStream;
+
     protected final AtomicReference<Subscription> subscription = new AtomicReference<Subscription>(null);
 
     private final Func1<Observable<Event>, Observable<Bucket>> reduceBucketToSummary;
 
     private final BehaviorSubject<Output> counterSubject = BehaviorSubject.create(getEmptyOutputValue());
 
-    protected BucketedCounterStream(final HystrixEventStream<Event> inputEventStream, final int numBuckets, final int bucketSizeInMs,
-                                    final Func2<Bucket, Event, Bucket> appendRawEventToBucket) {
+    protected BucketedCounterStream(final HystrixEventStream<Event> inputEventStream, final int numBuckets, final int bucketSizeInMs, final Func2<Bucket, Event, Bucket> appendRawEventToBucket) {
         this.numBuckets = numBuckets;
         this.reduceBucketToSummary = new Func1<Observable<Event>, Observable<Bucket>>() {
+
             @Override
             public Observable<Bucket> call(Observable<Event> eventBucket) {
                 return eventBucket.reduce(getEmptyBucketSummary(), appendRawEventToBucket);
             }
         };
-
         final List<Bucket> emptyEventCountsToStart = new ArrayList<Bucket>();
         for (int i = 0; i < numBuckets; i++) {
             emptyEventCountsToStart.add(getEmptyBucketSummary());
         }
-
         this.bucketedStream = Observable.defer(new Func0<Observable<Bucket>>() {
+
             @Override
             public Observable<Bucket> call() {
-                return inputEventStream
-                        .observe()
-                        .window(bucketSizeInMs, TimeUnit.MILLISECONDS) //bucket it by the counter window so we can emit to the next operator in time chunks, not on every OnNext
-                        .flatMap(reduceBucketToSummary)                //for a given bucket, turn it into a long array containing counts of event types
-                        .startWith(emptyEventCountsToStart);           //start it with empty arrays to make consumer logic as generic as possible (windows are always full)
+                return inputEventStream.observe().window(bucketSizeInMs, //bucket it by the counter window so we can emit to the next operator in time chunks, not on every OnNext
+                TimeUnit.MILLISECONDS).flatMap(//for a given bucket, turn it into a long array containing counts of event types
+                reduceBucketToSummary).startWith(//start it with empty arrays to make consumer logic as generic as possible (windows are always full)
+                emptyEventCountsToStart);
             }
         });
     }

@@ -30,9 +30,9 @@ import org.junit.rules.ExternalResource;
  *     public HystrixRequestContextRule context = new HystrixRequestContextRule();
  * </pre>
  * </blockquote>
- *
  */
 public final class HystrixRequestContextRule extends ExternalResource {
+
     private HystrixRequestContext context;
 
     @Override

@@ -40,12 +40,10 @@ public class GetPaymentInformationCommand extends HystrixCommand<PaymentInformat
         } catch (InterruptedException e) {
             // do nothing
         }
-
         /* fail rarely ... but allow failure */
         if (Math.random() > 0.9999) {
             throw new RuntimeException("random failure loading payment information over network");
         }
-
         /* latency spike 2% of the time */
         if (Math.random() > 0.98) {
             // random latency spike
@@ -55,9 +53,7 @@ public class GetPaymentInformationCommand extends HystrixCommand<PaymentInformat
                 // do nothing
             }
         }
-
         /* success ... create (a very insecure) PaymentInformation with data "from" the remote service response */
         return new PaymentInformation(user, "4444888833337777", 12, 15);
     }
-
 }

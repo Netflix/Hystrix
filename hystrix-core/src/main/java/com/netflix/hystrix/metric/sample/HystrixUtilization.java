@@ -17,11 +17,12 @@ package com.netflix.hystrix.metric.sample;
 
 import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixThreadPoolKey;
-
 import java.util.Map;
 
 public class HystrixUtilization {
+
     private final Map<HystrixCommandKey, HystrixCommandUtilization> commandUtilizationMap;
+
     private final Map<HystrixThreadPoolKey, HystrixThreadPoolUtilization> threadPoolUtilizationMap;
 
     public HystrixUtilization(Map<HystrixCommandKey, HystrixCommandUtilization> commandUtilizationMap, Map<HystrixThreadPoolKey, HystrixThreadPoolUtilization> threadPoolUtilizationMap) {
@@ -29,8 +30,7 @@ public class HystrixUtilization {
         this.threadPoolUtilizationMap = threadPoolUtilizationMap;
     }
 
-    public static HystrixUtilization from(Map<HystrixCommandKey, HystrixCommandUtilization> commandUtilizationMap,
-            Map<HystrixThreadPoolKey, HystrixThreadPoolUtilization> threadPoolUtilizationMap) {
+    public static HystrixUtilization from(Map<HystrixCommandKey, HystrixCommandUtilization> commandUtilizationMap, Map<HystrixThreadPoolKey, HystrixThreadPoolUtilization> threadPoolUtilizationMap) {
         return new HystrixUtilization(commandUtilizationMap, threadPoolUtilizationMap);
     }
 

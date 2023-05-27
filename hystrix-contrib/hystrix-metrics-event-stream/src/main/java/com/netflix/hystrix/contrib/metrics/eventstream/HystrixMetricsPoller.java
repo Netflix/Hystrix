@@ -1,12 +1,12 @@
 /**
  * Copyright 2012 Netflix, Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,7 +31,6 @@ import com.netflix.hystrix.util.PlatformSpecific;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.functions.Func0;
-
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.concurrent.Executors;
@@ -54,14 +53,20 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * @deprecated Prefer {@link com.netflix.hystrix.metric.consumer.HystrixDashboardStream}
  */
-@Deprecated //since 1.5.4
+//since 1.5.4
+@Deprecated
 public class HystrixMetricsPoller {
 
     static final Logger logger = LoggerFactory.getLogger(HystrixMetricsPoller.class);
+
     private final ScheduledExecutorService executor;
+
     private final int delay;
+
     private final AtomicBoolean running = new AtomicBoolean(false);
+
     private volatile ScheduledFuture<?> scheduledTask = null;
+
     private final MetricsAsJsonPollerListener listener;
 
     /**
@@ -72,20 +77,18 @@ public class HystrixMetricsPoller {
      * Use <code>shutdown</code> to cleanup resources and stop polling.
      * <p>
      * Use <code>pause</code> to temporarily stop polling that can be restarted again with <code>start</code>.
-     * 
+     *
      * @param listener for callbacks
      * @param delay
      */
     public HystrixMetricsPoller(MetricsAsJsonPollerListener listener, int delay) {
         this.listener = listener;
-
         ThreadFactory threadFactory = null;
         if (!PlatformSpecific.isAppEngineStandardEnvironment()) {
             threadFactory = new MetricsPollerThreadFactory();
         } else {
             threadFactory = PlatformSpecific.getAppEngineThreadFactory();
         }
-
         executor = new ScheduledThreadPoolExecutor(1, threadFactory);
         this.delay = delay;
     }
@@ -139,6 +142,7 @@ public class HystrixMetricsPoller {
      */
     @SuppressWarnings("unused")
     private final Object finalizerGuardian = new Object() {
+
         protected void finalize() throws Throwable {
             if (!executor.isShutdown()) {
                 logger.warn("{} was not shutdown. Caught in Finalize Guardian and shutting down.", HystrixMetricsPoller.class.getSimpleName());
@@ -148,16 +152,18 @@ public class HystrixMetricsPoller {
                     logger.error("Failed to shutdown {}", HystrixMetricsPoller.class.getSimpleName(), e);
                 }
             }
-        };
+        }
     };
 
     public static interface MetricsAsJsonPollerListener {
+
         public void handleJsonMetric(String json);
     }
 
     private class MetricsPoller implements Runnable {
 
         private final MetricsAsJsonPollerListener listener;
+
         private final JsonFactory jsonFactory = new JsonFactory();
 
         public MetricsPoller(MetricsAsJsonPollerListener listener) {
@@ -171,19 +177,16 @@ public class HystrixMetricsPoller {
                     String jsonString = getCommandJson(commandMetrics);
                     listener.handleJsonMetric(jsonString);
                 }
-
                 for (HystrixThreadPoolMetrics threadPoolMetrics : HystrixThreadPoolMetrics.getInstances()) {
                     if (hasExecutedCommandsOnThread(threadPoolMetrics)) {
                         String jsonString = getThreadPoolJson(threadPoolMetrics);
                         listener.handleJsonMetric(jsonString);
                     }
                 }
-
                 for (HystrixCollapserMetrics collapserMetrics : HystrixCollapserMetrics.getInstances()) {
                     String jsonString = getCollapserJson(collapserMetrics);
                     listener.handleJsonMetric(jsonString);
                 }
-
             } catch (Exception e) {
                 logger.warn("Failed to output metrics as JSON", e);
                 // shutdown
@@ -204,16 +207,13 @@ public class HystrixMetricsPoller {
         private String getCommandJson(final HystrixCommandMetrics commandMetrics) throws IOException {
             HystrixCommandKey key = commandMetrics.getCommandKey();
             HystrixCircuitBreaker circuitBreaker = HystrixCircuitBreaker.Factory.getInstance(key);
-
             StringWriter jsonString = new StringWriter();
             JsonGenerator json = jsonFactory.createGenerator(jsonString);
-
             json.writeStartObject();
             json.writeStringField("type", "HystrixCommand");
             json.writeStringField("name", key.name());
             json.writeStringField("group", commandMetrics.getCommandGroup().name());
             json.writeNumberField("currentTime", System.currentTimeMillis());
-
             // circuit breaker
             if (circuitBreaker == null) {
                 // circuit breaker is disabled and thus never open
@@ -225,108 +225,121 @@ public class HystrixMetricsPoller {
             json.writeNumberField("errorPercentage", healthCounts.getErrorPercentage());
             json.writeNumberField("errorCount", healthCounts.getErrorCount());
             json.writeNumberField("requestCount", healthCounts.getTotalRequests());
-
             // rolling counters
             safelyWriteNumberField(json, "rollingCountBadRequests", new Func0<Long>() {
+
                 @Override
                 public Long call() {
                     return commandMetrics.getRollingCount(HystrixEventType.BAD_REQUEST);
                 }
             });
             safelyWriteNumberField(json, "rollingCountCollapsedRequests", new Func0<Long>() {
+
                 @Override
                 public Long call() {
                     return commandMetrics.getRollingCount(HystrixEventType.COLLAPSED);
                 }
             });
             safelyWriteNumberField(json, "rollingCountEmit", new Func0<Long>() {
+
                 @Override
                 public Long call() {
                     return commandMetrics.getRollingCount(HystrixEventType.EMIT);
                 }
             });
             safelyWriteNumberField(json, "rollingCountExceptionsThrown", new Func0<Long>() {
+
                 @Override
                 public Long call() {
                     return commandMetrics.getRollingCount(HystrixEventType.EXCEPTION_THROWN);
                 }
             });
             safelyWriteNumberField(json, "rollingCountFailure", new Func0<Long>() {
+
                 @Override
                 public Long call() {
                     return commandMetrics.getRollingCount(HystrixEventType.FAILURE);
                 }
             });
             safelyWriteNumberField(json, "rollingCountFallbackEmit", new Func0<Long>() {
+
                 @Override
                 public Long call() {
                     return commandMetrics.getRollingCount(HystrixEventType.FALLBACK_EMIT);
                 }
             });
             safelyWriteNumberField(json, "rollingCountFallbackFailure", new Func0<Long>() {
+
                 @Override
                 public Long call() {
                     return commandMetrics.getRollingCount(HystrixEventType.FALLBACK_FAILURE);
                 }
             });
             safelyWriteNumberField(json, "rollingCountFallbackMissing", new Func0<Long>() {
+
                 @Override
                 public Long call() {
                     return commandMetrics.getRollingCount(HystrixEventType.FALLBACK_MISSING);
                 }
             });
             safelyWriteNumberField(json, "rollingCountFallbackRejection", new Func0<Long>() {
+
                 @Override
                 public Long call() {
                     return commandMetrics.getRollingCount(HystrixEventType.FALLBACK_REJECTION);
                 }
             });
             safelyWriteNumberField(json, "rollingCountFallbackSuccess", new Func0<Long>() {
+
                 @Override
                 public Long call() {
                     return commandMetrics.getRollingCount(HystrixEventType.FALLBACK_SUCCESS);
                 }
             });
             safelyWriteNumberField(json, "rollingCountResponsesFromCache", new Func0<Long>() {
+
                 @Override
                 public Long call() {
                     return commandMetrics.getRollingCount(HystrixEventType.RESPONSE_FROM_CACHE);
                 }
             });
             safelyWriteNumberField(json, "rollingCountSemaphoreRejected", new Func0<Long>() {
+
                 @Override
                 public Long call() {
                     return commandMetrics.getRollingCount(HystrixEventType.SEMAPHORE_REJECTED);
                 }
             });
             safelyWriteNumberField(json, "rollingCountShortCircuited", new Func0<Long>() {
+
                 @Override
                 public Long call() {
                     return commandMetrics.getRollingCount(HystrixEventType.SHORT_CIRCUITED);
                 }
             });
             safelyWriteNumberField(json, "rollingCountSuccess", new Func0<Long>() {
+
                 @Override
                 public Long call() {
                     return commandMetrics.getRollingCount(HystrixEventType.SUCCESS);
                 }
             });
             safelyWriteNumberField(json, "rollingCountThreadPoolRejected", new Func0<Long>() {
+
                 @Override
                 public Long call() {
                     return commandMetrics.getRollingCount(HystrixEventType.THREAD_POOL_REJECTED);
                 }
             });
             safelyWriteNumberField(json, "rollingCountTimeout", new Func0<Long>() {
+
                 @Override
                 public Long call() {
                     return commandMetrics.getRollingCount(HystrixEventType.TIMEOUT);
                 }
             });
-
             json.writeNumberField("currentConcurrentExecutionCount", commandMetrics.getCurrentConcurrentExecutionCount());
             json.writeNumberField("rollingMaxConcurrentExecutionCount", commandMetrics.getRollingMaxConcurrentExecutions());
-
             // latency percentiles
             json.writeNumberField("latencyExecute_mean", commandMetrics.getExecutionTimeMean());
             json.writeObjectFieldStart("latencyExecute");
@@ -353,17 +366,14 @@ public class HystrixMetricsPoller {
             json.writeNumberField("99.5", commandMetrics.getTotalTimePercentile(99.5));
             json.writeNumberField("100", commandMetrics.getTotalTimePercentile(100));
             json.writeEndObject();
-
             // property values for reporting what is actually seen by the command rather than what was set somewhere
             HystrixCommandProperties commandProperties = commandMetrics.getProperties();
-
             json.writeNumberField("propertyValue_circuitBreakerRequestVolumeThreshold", commandProperties.circuitBreakerRequestVolumeThreshold().get());
             json.writeNumberField("propertyValue_circuitBreakerSleepWindowInMilliseconds", commandProperties.circuitBreakerSleepWindowInMilliseconds().get());
             json.writeNumberField("propertyValue_circuitBreakerErrorThresholdPercentage", commandProperties.circuitBreakerErrorThresholdPercentage().get());
             json.writeBooleanField("propertyValue_circuitBreakerForceOpen", commandProperties.circuitBreakerForceOpen().get());
             json.writeBooleanField("propertyValue_circuitBreakerForceClosed", commandProperties.circuitBreakerForceClosed().get());
             json.writeBooleanField("propertyValue_circuitBreakerEnabled", commandProperties.circuitBreakerEnabled().get());
-
             json.writeStringField("propertyValue_executionIsolationStrategy", commandProperties.executionIsolationStrategy().get().name());
             json.writeNumberField("propertyValue_executionIsolationThreadTimeoutInMilliseconds", commandProperties.executionTimeoutInMilliseconds().get());
             json.writeNumberField("propertyValue_executionTimeoutInMilliseconds", commandProperties.executionTimeoutInMilliseconds().get());
@@ -371,28 +381,23 @@ public class HystrixMetricsPoller {
             json.writeStringField("propertyValue_executionIsolationThreadPoolKeyOverride", commandProperties.executionIsolationThreadPoolKeyOverride().get());
             json.writeNumberField("propertyValue_executionIsolationSemaphoreMaxConcurrentRequests", commandProperties.executionIsolationSemaphoreMaxConcurrentRequests().get());
             json.writeNumberField("propertyValue_fallbackIsolationSemaphoreMaxConcurrentRequests", commandProperties.fallbackIsolationSemaphoreMaxConcurrentRequests().get());
-
-                    /*
+            /*
                      * The following are commented out as these rarely change and are verbose for streaming for something people don't change.
                      * We could perhaps allow a property or request argument to include these.
                      */
-
             //                    json.put("propertyValue_metricsRollingPercentileEnabled", commandProperties.metricsRollingPercentileEnabled().get());
             //                    json.put("propertyValue_metricsRollingPercentileBucketSize", commandProperties.metricsRollingPercentileBucketSize().get());
             //                    json.put("propertyValue_metricsRollingPercentileWindow", commandProperties.metricsRollingPercentileWindowInMilliseconds().get());
             //                    json.put("propertyValue_metricsRollingPercentileWindowBuckets", commandProperties.metricsRollingPercentileWindowBuckets().get());
             //                    json.put("propertyValue_metricsRollingStatisticalWindowBuckets", commandProperties.metricsRollingStatisticalWindowBuckets().get());
             json.writeNumberField("propertyValue_metricsRollingStatisticalWindowInMilliseconds", commandProperties.metricsRollingStatisticalWindowInMilliseconds().get());
-
             json.writeBooleanField("propertyValue_requestCacheEnabled", commandProperties.requestCacheEnabled().get());
             json.writeBooleanField("propertyValue_requestLogEnabled", commandProperties.requestLogEnabled().get());
-
-            json.writeNumberField("reportingHosts", 1); // this will get summed across all instances in a cluster
+            // this will get summed across all instances in a cluster
+            json.writeNumberField("reportingHosts", 1);
             json.writeStringField("threadPool", commandMetrics.getThreadPoolKey().name());
-
             json.writeEndObject();
             json.close();
-
             return jsonString.getBuffer().toString();
         }
 
@@ -405,11 +410,9 @@ public class HystrixMetricsPoller {
             StringWriter jsonString = new StringWriter();
             JsonGenerator json = jsonFactory.createJsonGenerator(jsonString);
             json.writeStartObject();
-
             json.writeStringField("type", "HystrixThreadPool");
             json.writeStringField("name", key.name());
             json.writeNumberField("currentTime", System.currentTimeMillis());
-
             json.writeNumberField("currentActiveCount", threadPoolMetrics.getCurrentActiveCount().intValue());
             json.writeNumberField("currentCompletedTaskCount", threadPoolMetrics.getCurrentCompletedTaskCount().longValue());
             json.writeNumberField("currentCorePoolSize", threadPoolMetrics.getCurrentCorePoolSize().intValue());
@@ -419,6 +422,7 @@ public class HystrixMetricsPoller {
             json.writeNumberField("currentQueueSize", threadPoolMetrics.getCurrentQueueSize().intValue());
             json.writeNumberField("currentTaskCount", threadPoolMetrics.getCurrentTaskCount().longValue());
             safelyWriteNumberField(json, "rollingCountThreadsExecuted", new Func0<Long>() {
+
                 @Override
                 public Long call() {
                     return threadPoolMetrics.getRollingCount(HystrixEventType.ThreadPool.EXECUTED);
@@ -426,20 +430,18 @@ public class HystrixMetricsPoller {
             });
             json.writeNumberField("rollingMaxActiveThreads", threadPoolMetrics.getRollingMaxActiveThreads());
             safelyWriteNumberField(json, "rollingCountCommandRejections", new Func0<Long>() {
+
                 @Override
                 public Long call() {
                     return threadPoolMetrics.getRollingCount(HystrixEventType.ThreadPool.REJECTED);
                 }
             });
-
             json.writeNumberField("propertyValue_queueSizeRejectionThreshold", threadPoolMetrics.getProperties().queueSizeRejectionThreshold().get());
             json.writeNumberField("propertyValue_metricsRollingStatisticalWindowInMilliseconds", threadPoolMetrics.getProperties().metricsRollingStatisticalWindowInMilliseconds().get());
-
-            json.writeNumberField("reportingHosts", 1); // this will get summed across all instances in a cluster
-
+            // this will get summed across all instances in a cluster
+            json.writeNumberField("reportingHosts", 1);
             json.writeEndObject();
             json.close();
-
             return jsonString.getBuffer().toString();
         }
 
@@ -448,30 +450,30 @@ public class HystrixMetricsPoller {
             StringWriter jsonString = new StringWriter();
             JsonGenerator json = jsonFactory.createJsonGenerator(jsonString);
             json.writeStartObject();
-
             json.writeStringField("type", "HystrixCollapser");
             json.writeStringField("name", key.name());
             json.writeNumberField("currentTime", System.currentTimeMillis());
-
             safelyWriteNumberField(json, "rollingCountRequestsBatched", new Func0<Long>() {
+
                 @Override
                 public Long call() {
                     return collapserMetrics.getRollingCount(HystrixEventType.Collapser.ADDED_TO_BATCH);
                 }
             });
             safelyWriteNumberField(json, "rollingCountBatches", new Func0<Long>() {
+
                 @Override
                 public Long call() {
                     return collapserMetrics.getRollingCount(HystrixEventType.Collapser.BATCH_EXECUTED);
                 }
             });
             safelyWriteNumberField(json, "rollingCountResponsesFromCache", new Func0<Long>() {
+
                 @Override
                 public Long call() {
                     return collapserMetrics.getRollingCount(HystrixEventType.Collapser.RESPONSE_FROM_CACHE);
                 }
             });
-
             // batch size percentiles
             json.writeNumberField("batchSize_mean", collapserMetrics.getBatchSizeMean());
             json.writeObjectFieldStart("batchSize");
@@ -484,7 +486,6 @@ public class HystrixMetricsPoller {
             json.writeNumberField("99.5", collapserMetrics.getBatchSizePercentile(99.5));
             json.writeNumberField("100", collapserMetrics.getBatchSizePercentile(100));
             json.writeEndObject();
-
             // shard size percentiles (commented-out for now)
             //json.writeNumberField("shardSize_mean", collapserMetrics.getShardSizeMean());
             //json.writeObjectFieldStart("shardSize");
@@ -497,22 +498,20 @@ public class HystrixMetricsPoller {
             //json.writeNumberField("99.5", collapserMetrics.getShardSizePercentile(99.5));
             //json.writeNumberField("100", collapserMetrics.getShardSizePercentile(100));
             //json.writeEndObject();
-
             //json.writeNumberField("propertyValue_metricsRollingStatisticalWindowInMilliseconds", collapserMetrics.getProperties().metricsRollingStatisticalWindowInMilliseconds().get());
             json.writeBooleanField("propertyValue_requestCacheEnabled", collapserMetrics.getProperties().requestCacheEnabled().get());
             json.writeNumberField("propertyValue_maxRequestsInBatch", collapserMetrics.getProperties().maxRequestsInBatch().get());
             json.writeNumberField("propertyValue_timerDelayInMilliseconds", collapserMetrics.getProperties().timerDelayInMilliseconds().get());
-
-            json.writeNumberField("reportingHosts", 1); // this will get summed across all instances in a cluster
-
+            // this will get summed across all instances in a cluster
+            json.writeNumberField("reportingHosts", 1);
             json.writeEndObject();
             json.close();
-
             return jsonString.getBuffer().toString();
         }
     }
 
     private static class MetricsPollerThreadFactory implements ThreadFactory {
+
         private static final String MetricsThreadName = "HystrixMetricPoller";
 
         private final ThreadFactory defaultFactory = Executors.defaultThreadFactory();

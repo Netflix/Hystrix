@@ -1,12 +1,12 @@
 /**
  * Copyright 2012 Netflix, Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,7 +16,6 @@
 package com.netflix.hystrix.strategy.metrics;
 
 import java.util.concurrent.ConcurrentHashMap;
-
 import com.netflix.hystrix.HystrixCircuitBreaker;
 import com.netflix.hystrix.HystrixCollapser;
 import com.netflix.hystrix.HystrixCollapserKey;
@@ -37,7 +36,7 @@ import com.netflix.hystrix.strategy.HystrixPlugins;
  * Factory for retrieving metrics publisher implementations.
  * <p>
  * This uses given {@link HystrixMetricsPublisher} implementations to construct publisher instances and caches each instance according to the cache key provided.
- * 
+ *
  * @ExcludeFromJavadoc
  */
 public class HystrixMetricsPublisherFactory {
@@ -66,7 +65,7 @@ public class HystrixMetricsPublisherFactory {
 
     /**
      * Get an instance of {@link HystrixMetricsPublisherCommand} with the given factory {@link HystrixMetricsPublisher} implementation for each {@link HystrixCommand} instance.
-     * 
+     *
      * @param commandKey
      *            Pass-thru to {@link HystrixMetricsPublisher#getMetricsPublisherForCommand} implementation
      * @param commandOwner
@@ -86,7 +85,6 @@ public class HystrixMetricsPublisherFactory {
     /**
      * Resets the SINGLETON object.
      * Clears all state from publishers. If new requests come in instances will be recreated.
-     *
      */
     public static void reset() {
         SINGLETON = new HystrixMetricsPublisherFactory();
@@ -95,12 +93,15 @@ public class HystrixMetricsPublisherFactory {
         SINGLETON.collapserPublishers.clear();
     }
 
-    /* package */ HystrixMetricsPublisherFactory()  {}
+    /* package */
+    HystrixMetricsPublisherFactory() {
+    }
 
     // String is CommandKey.name() (we can't use CommandKey directly as we can't guarantee it implements hashcode/equals correctly)
     private final ConcurrentHashMap<String, HystrixMetricsPublisherCommand> commandPublishers = new ConcurrentHashMap<String, HystrixMetricsPublisherCommand>();
 
-    /* package */ HystrixMetricsPublisherCommand getPublisherForCommand(HystrixCommandKey commandKey, HystrixCommandGroupKey commandOwner, HystrixCommandMetrics metrics, HystrixCircuitBreaker circuitBreaker, HystrixCommandProperties properties) {
+    /* package */
+    HystrixMetricsPublisherCommand getPublisherForCommand(HystrixCommandKey commandKey, HystrixCommandGroupKey commandOwner, HystrixCommandMetrics metrics, HystrixCircuitBreaker circuitBreaker, HystrixCommandProperties properties) {
         // attempt to retrieve from cache first
         HystrixMetricsPublisherCommand publisher = commandPublishers.get(commandKey.name());
         if (publisher != null) {
@@ -123,7 +124,8 @@ public class HystrixMetricsPublisherFactory {
     // String is ThreadPoolKey.name() (we can't use ThreadPoolKey directly as we can't guarantee it implements hashcode/equals correctly)
     private final ConcurrentHashMap<String, HystrixMetricsPublisherThreadPool> threadPoolPublishers = new ConcurrentHashMap<String, HystrixMetricsPublisherThreadPool>();
 
-    /* package */ HystrixMetricsPublisherThreadPool getPublisherForThreadPool(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolMetrics metrics, HystrixThreadPoolProperties properties) {
+    /* package */
+    HystrixMetricsPublisherThreadPool getPublisherForThreadPool(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolMetrics metrics, HystrixThreadPoolProperties properties) {
         // attempt to retrieve from cache first
         HystrixMetricsPublisherThreadPool publisher = threadPoolPublishers.get(threadPoolKey.name());
         if (publisher != null) {
@@ -163,7 +165,8 @@ public class HystrixMetricsPublisherFactory {
     // String is CollapserKey.name() (we can't use CollapserKey directly as we can't guarantee it implements hashcode/equals correctly)
     private final ConcurrentHashMap<String, HystrixMetricsPublisherCollapser> collapserPublishers = new ConcurrentHashMap<String, HystrixMetricsPublisherCollapser>();
 
-    /* package */ HystrixMetricsPublisherCollapser getPublisherForCollapser(HystrixCollapserKey collapserKey, HystrixCollapserMetrics metrics, HystrixCollapserProperties properties) {
+    /* package */
+    HystrixMetricsPublisherCollapser getPublisherForCollapser(HystrixCollapserKey collapserKey, HystrixCollapserMetrics metrics, HystrixCollapserProperties properties) {
         // attempt to retrieve from cache first
         HystrixMetricsPublisherCollapser publisher = collapserPublishers.get(collapserKey.name());
         if (publisher != null) {
@@ -184,5 +187,4 @@ public class HystrixMetricsPublisherFactory {
             return existing;
         }
     }
-
 }

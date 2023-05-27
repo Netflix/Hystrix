@@ -21,19 +21,23 @@ import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.HystrixThreadPoolKey;
 
 public class HystrixCommandConfiguration {
+
     //The idea is for this object to be serialized off-box.  For future-proofing, I'm adding a version so that changing config over time can be handled gracefully
     private static final String VERSION = "1";
+
     private final HystrixCommandKey commandKey;
+
     private final HystrixThreadPoolKey threadPoolKey;
+
     private final HystrixCommandGroupKey groupKey;
+
     private final HystrixCommandExecutionConfig executionConfig;
+
     private final HystrixCommandCircuitBreakerConfig circuitBreakerConfig;
+
     private final HystrixCommandMetricsConfig metricsConfig;
 
-    public HystrixCommandConfiguration(HystrixCommandKey commandKey, HystrixThreadPoolKey threadPoolKey, HystrixCommandGroupKey groupKey,
-                                       HystrixCommandExecutionConfig executionConfig,
-                                       HystrixCommandCircuitBreakerConfig circuitBreakerConfig,
-                                       HystrixCommandMetricsConfig metricsConfig) {
+    public HystrixCommandConfiguration(HystrixCommandKey commandKey, HystrixThreadPoolKey threadPoolKey, HystrixCommandGroupKey groupKey, HystrixCommandExecutionConfig executionConfig, HystrixCommandCircuitBreakerConfig circuitBreakerConfig, HystrixCommandMetricsConfig metricsConfig) {
         this.commandKey = commandKey;
         this.threadPoolKey = threadPoolKey;
         this.groupKey = groupKey;
@@ -42,41 +46,11 @@ public class HystrixCommandConfiguration {
         this.metricsConfig = metricsConfig;
     }
 
-    public static HystrixCommandConfiguration sample(HystrixCommandKey commandKey, HystrixThreadPoolKey threadPoolKey,
-                                                     HystrixCommandGroupKey groupKey, HystrixCommandProperties commandProperties) {
-        HystrixCommandExecutionConfig executionConfig = new HystrixCommandExecutionConfig(
-                commandProperties.executionIsolationSemaphoreMaxConcurrentRequests().get(),
-                commandProperties.executionIsolationStrategy().get(),
-                commandProperties.executionIsolationThreadInterruptOnTimeout().get(),
-                commandProperties.executionIsolationThreadPoolKeyOverride().get(),
-                commandProperties.executionTimeoutEnabled().get(),
-                commandProperties.executionTimeoutInMilliseconds().get(),
-                commandProperties.fallbackEnabled().get(),
-                commandProperties.fallbackIsolationSemaphoreMaxConcurrentRequests().get(),
-                commandProperties.requestCacheEnabled().get(),
-                commandProperties.requestLogEnabled().get()
-        );
-
-        HystrixCommandCircuitBreakerConfig circuitBreakerConfig = new HystrixCommandCircuitBreakerConfig(
-                commandProperties.circuitBreakerEnabled().get(),
-                commandProperties.circuitBreakerErrorThresholdPercentage().get(),
-                commandProperties.circuitBreakerForceClosed().get(),
-                commandProperties.circuitBreakerForceOpen().get(),
-                commandProperties.circuitBreakerRequestVolumeThreshold().get(),
-                commandProperties.circuitBreakerSleepWindowInMilliseconds().get()
-        );
-
-        HystrixCommandMetricsConfig metricsConfig = new HystrixCommandMetricsConfig(
-                commandProperties.metricsHealthSnapshotIntervalInMilliseconds().get(),
-                commandProperties.metricsRollingPercentileEnabled().get(),
-                commandProperties.metricsRollingPercentileWindowBuckets().get(),
-                commandProperties.metricsRollingPercentileWindowInMilliseconds().get(),
-                commandProperties.metricsRollingStatisticalWindowBuckets().get(),
-                commandProperties.metricsRollingStatisticalWindowInMilliseconds().get()
-        );
-
-        return new HystrixCommandConfiguration(
-                commandKey, threadPoolKey, groupKey, executionConfig, circuitBreakerConfig, metricsConfig);
+    public static HystrixCommandConfiguration sample(HystrixCommandKey commandKey, HystrixThreadPoolKey threadPoolKey, HystrixCommandGroupKey groupKey, HystrixCommandProperties commandProperties) {
+        HystrixCommandExecutionConfig executionConfig = new HystrixCommandExecutionConfig(commandProperties.executionIsolationSemaphoreMaxConcurrentRequests().get(), commandProperties.executionIsolationStrategy().get(), commandProperties.executionIsolationThreadInterruptOnTimeout().get(), commandProperties.executionIsolationThreadPoolKeyOverride().get(), commandProperties.executionTimeoutEnabled().get(), commandProperties.executionTimeoutInMilliseconds().get(), commandProperties.fallbackEnabled().get(), commandProperties.fallbackIsolationSemaphoreMaxConcurrentRequests().get(), commandProperties.requestCacheEnabled().get(), commandProperties.requestLogEnabled().get());
+        HystrixCommandCircuitBreakerConfig circuitBreakerConfig = new HystrixCommandCircuitBreakerConfig(commandProperties.circuitBreakerEnabled().get(), commandProperties.circuitBreakerErrorThresholdPercentage().get(), commandProperties.circuitBreakerForceClosed().get(), commandProperties.circuitBreakerForceOpen().get(), commandProperties.circuitBreakerRequestVolumeThreshold().get(), commandProperties.circuitBreakerSleepWindowInMilliseconds().get());
+        HystrixCommandMetricsConfig metricsConfig = new HystrixCommandMetricsConfig(commandProperties.metricsHealthSnapshotIntervalInMilliseconds().get(), commandProperties.metricsRollingPercentileEnabled().get(), commandProperties.metricsRollingPercentileWindowBuckets().get(), commandProperties.metricsRollingPercentileWindowInMilliseconds().get(), commandProperties.metricsRollingStatisticalWindowBuckets().get(), commandProperties.metricsRollingStatisticalWindowInMilliseconds().get());
+        return new HystrixCommandConfiguration(commandKey, threadPoolKey, groupKey, executionConfig, circuitBreakerConfig, metricsConfig);
     }
 
     public HystrixThreadPoolKey getThreadPoolKey() {
@@ -100,15 +74,20 @@ public class HystrixCommandConfiguration {
     }
 
     public static class HystrixCommandCircuitBreakerConfig {
+
         private final boolean enabled;
+
         private final int errorThresholdPercentage;
+
         private final boolean forceClosed;
+
         private final boolean forceOpen;
+
         private final int requestVolumeThreshold;
+
         private final int sleepWindowInMilliseconds;
 
-        public HystrixCommandCircuitBreakerConfig(boolean enabled, int errorThresholdPercentage, boolean forceClosed,
-                                                  boolean forceOpen, int requestVolumeThreshold, int sleepWindowInMilliseconds) {
+        public HystrixCommandCircuitBreakerConfig(boolean enabled, int errorThresholdPercentage, boolean forceClosed, boolean forceOpen, int requestVolumeThreshold, int sleepWindowInMilliseconds) {
             this.enabled = enabled;
             this.errorThresholdPercentage = errorThresholdPercentage;
             this.forceClosed = forceClosed;
@@ -143,21 +122,28 @@ public class HystrixCommandConfiguration {
     }
 
     public static class HystrixCommandExecutionConfig {
+
         private final int semaphoreMaxConcurrentRequests;
+
         private final HystrixCommandProperties.ExecutionIsolationStrategy isolationStrategy;
+
         private final boolean threadInterruptOnTimeout;
+
         private final String threadPoolKeyOverride;
+
         private final boolean timeoutEnabled;
+
         private final int timeoutInMilliseconds;
+
         private final boolean fallbackEnabled;
+
         private final int fallbackMaxConcurrentRequest;
+
         private final boolean requestCacheEnabled;
+
         private final boolean requestLogEnabled;
 
-        public HystrixCommandExecutionConfig(int semaphoreMaxConcurrentRequests, HystrixCommandProperties.ExecutionIsolationStrategy isolationStrategy,
-                                             boolean threadInterruptOnTimeout, String threadPoolKeyOverride, boolean timeoutEnabled,
-                                             int timeoutInMilliseconds, boolean fallbackEnabled, int fallbackMaxConcurrentRequests,
-                                             boolean requestCacheEnabled, boolean requestLogEnabled) {
+        public HystrixCommandExecutionConfig(int semaphoreMaxConcurrentRequests, HystrixCommandProperties.ExecutionIsolationStrategy isolationStrategy, boolean threadInterruptOnTimeout, String threadPoolKeyOverride, boolean timeoutEnabled, int timeoutInMilliseconds, boolean fallbackEnabled, int fallbackMaxConcurrentRequests, boolean requestCacheEnabled, boolean requestLogEnabled) {
             this.semaphoreMaxConcurrentRequests = semaphoreMaxConcurrentRequests;
             this.isolationStrategy = isolationStrategy;
             this.threadInterruptOnTimeout = threadInterruptOnTimeout;
@@ -168,7 +154,6 @@ public class HystrixCommandConfiguration {
             this.fallbackMaxConcurrentRequest = fallbackMaxConcurrentRequests;
             this.requestCacheEnabled = requestCacheEnabled;
             this.requestLogEnabled = requestLogEnabled;
-
         }
 
         public int getSemaphoreMaxConcurrentRequests() {
@@ -213,16 +198,20 @@ public class HystrixCommandConfiguration {
     }
 
     public static class HystrixCommandMetricsConfig {
+
         private final int healthIntervalInMilliseconds;
+
         private final boolean rollingPercentileEnabled;
+
         private final int rollingPercentileNumberOfBuckets;
+
         private final int rollingPercentileBucketSizeInMilliseconds;
+
         private final int rollingCounterNumberOfBuckets;
+
         private final int rollingCounterBucketSizeInMilliseconds;
 
-        public HystrixCommandMetricsConfig(int healthIntervalInMilliseconds, boolean rollingPercentileEnabled, int rollingPercentileNumberOfBuckets,
-                                           int rollingPercentileBucketSizeInMilliseconds, int rollingCounterNumberOfBuckets,
-                                           int rollingCounterBucketSizeInMilliseconds) {
+        public HystrixCommandMetricsConfig(int healthIntervalInMilliseconds, boolean rollingPercentileEnabled, int rollingPercentileNumberOfBuckets, int rollingPercentileBucketSizeInMilliseconds, int rollingCounterNumberOfBuckets, int rollingCounterBucketSizeInMilliseconds) {
             this.healthIntervalInMilliseconds = healthIntervalInMilliseconds;
             this.rollingPercentileEnabled = rollingPercentileEnabled;
             this.rollingPercentileNumberOfBuckets = rollingPercentileNumberOfBuckets;

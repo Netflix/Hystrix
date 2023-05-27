@@ -15,7 +15,8 @@
  */
 /**
  * Strategy definition for publishing metrics and default implementation.
- * 
+ *
  * @since 1.0.0
  */
 package com.netflix.hystrix.strategy.metrics;
+

@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Configurable;
 import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-
 import com.netflix.hystrix.contrib.javanica.test.common.error.BasicDefaultRaiseHystrixExceptionsTest;
 import com.netflix.hystrix.contrib.javanica.test.spring.conf.AopCglibConfig;
 
@@ -14,7 +13,7 @@ import com.netflix.hystrix.contrib.javanica.test.spring.conf.AopCglibConfig;
  * Created by Mike Cowan
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = {AopCglibConfig.class, DefaultRaiseHystrixExceptionsTest.DefaultRaiseHystrixExceptionsTestConfig.class})
+@ContextConfiguration(classes = { AopCglibConfig.class, DefaultRaiseHystrixExceptionsTest.DefaultRaiseHystrixExceptionsTestConfig.class })
 public class DefaultRaiseHystrixExceptionsTest extends BasicDefaultRaiseHystrixExceptionsTest {
 
     @Autowired

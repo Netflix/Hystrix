@@ -23,51 +23,45 @@ import com.netflix.hystrix.HystrixThreadPoolMetrics;
 import rx.Observable;
 import rx.functions.Action0;
 import rx.functions.Func1;
-
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class HystrixDashboardStream {
+
     final int delayInMs;
+
     final Observable<DashboardData> singleSource;
+
     final AtomicBoolean isSourceCurrentlySubscribed = new AtomicBoolean(false);
 
-    private static final DynamicIntProperty dataEmissionIntervalInMs =
-            DynamicPropertyFactory.getInstance().getIntProperty("hystrix.stream.dashboard.intervalInMilliseconds", 500);
+    private static final DynamicIntProperty dataEmissionIntervalInMs = DynamicPropertyFactory.getInstance().getIntProperty("hystrix.stream.dashboard.intervalInMilliseconds", 500);
 
     private HystrixDashboardStream(int delayInMs) {
         this.delayInMs = delayInMs;
-        this.singleSource = Observable.interval(delayInMs, TimeUnit.MILLISECONDS)
-                .map(new Func1<Long, DashboardData>() {
-                    @Override
-                    public DashboardData call(Long timestamp) {
-                        return new DashboardData(
-                                HystrixCommandMetrics.getInstances(),
-                                HystrixThreadPoolMetrics.getInstances(),
-                                HystrixCollapserMetrics.getInstances()
-                        );
-                    }
-                })
-                .doOnSubscribe(new Action0() {
-                    @Override
-                    public void call() {
-                        isSourceCurrentlySubscribed.set(true);
-                    }
-                })
-                .doOnUnsubscribe(new Action0() {
-                    @Override
-                    public void call() {
-                        isSourceCurrentlySubscribed.set(false);
-                    }
-                })
-                .share()
-                .onBackpressureDrop();
+        this.singleSource = Observable.interval(delayInMs, TimeUnit.MILLISECONDS).map(new Func1<Long, DashboardData>() {
+
+            @Override
+            public DashboardData call(Long timestamp) {
+                return new DashboardData(HystrixCommandMetrics.getInstances(), HystrixThreadPoolMetrics.getInstances(), HystrixCollapserMetrics.getInstances());
+            }
+        }).doOnSubscribe(new Action0() {
+
+            @Override
+            public void call() {
+                isSourceCurrentlySubscribed.set(true);
+            }
+        }).doOnUnsubscribe(new Action0() {
+
+            @Override
+            public void call() {
+                isSourceCurrentlySubscribed.set(false);
+            }
+        }).share().onBackpressureDrop();
     }
 
     //The data emission interval is looked up on startup only
-    private static final HystrixDashboardStream INSTANCE =
-            new HystrixDashboardStream(dataEmissionIntervalInMs.get());
+    private static final HystrixDashboardStream INSTANCE = new HystrixDashboardStream(dataEmissionIntervalInMs.get());
 
     public static HystrixDashboardStream getInstance() {
         return INSTANCE;
@@ -89,8 +83,11 @@ public class HystrixDashboardStream {
     }
 
     public static class DashboardData {
+
         final Collection<HystrixCommandMetrics> commandMetrics;
+
         final Collection<HystrixThreadPoolMetrics> threadPoolMetrics;
+
         final Collection<HystrixCollapserMetrics> collapserMetrics;
 
         public DashboardData(Collection<HystrixCommandMetrics> commandMetrics, Collection<HystrixThreadPoolMetrics> threadPoolMetrics, Collection<HystrixCollapserMetrics> collapserMetrics) {
@@ -112,5 +109,3 @@ public class HystrixDashboardStream {
         }
     }
 }
-
-

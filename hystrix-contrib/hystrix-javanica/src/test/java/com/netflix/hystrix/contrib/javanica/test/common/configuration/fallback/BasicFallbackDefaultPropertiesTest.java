@@ -7,11 +7,9 @@ import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
 import com.netflix.hystrix.contrib.javanica.test.common.BasicHystrixTest;
 import org.junit.Before;
 import org.junit.Test;
-
 import static com.netflix.hystrix.contrib.javanica.conf.HystrixPropertiesManager.EXECUTION_ISOLATION_THREAD_TIMEOUT_IN_MILLISECONDS;
 import static com.netflix.hystrix.contrib.javanica.test.common.CommonUtils.getHystrixCommandByKey;
 import static org.junit.Assert.assertEquals;
-
 
 public abstract class BasicFallbackDefaultPropertiesTest extends BasicHystrixTest {
 
@@ -49,9 +47,7 @@ public abstract class BasicFallbackDefaultPropertiesTest extends BasicHystrixTes
     public void testFallbackInheritsThreadPollProperties() {
         service.commandWithFallbackInheritsDefaultProperties();
         com.netflix.hystrix.HystrixInvokableInfo fallbackCommand = getHystrixCommandByKey("fallbackInheritsDefaultProperties");
-
         HystrixThreadPoolProperties properties = getThreadPoolProperties(fallbackCommand);
-
         assertEquals(123, properties.maxQueueSize().get().intValue());
     }
 
@@ -80,14 +76,12 @@ public abstract class BasicFallbackDefaultPropertiesTest extends BasicHystrixTes
     public void testFallbackOverridesThreadPollProperties() {
         service.commandWithFallbackOverridesDefaultProperties();
         com.netflix.hystrix.HystrixInvokableInfo fallbackCommand = getHystrixCommandByKey("fallbackOverridesDefaultProperties");
-
         HystrixThreadPoolProperties properties = getThreadPoolProperties(fallbackCommand);
-
         assertEquals(321, properties.maxQueueSize().get().intValue());
     }
 
     @Test
-    public void testCommandOverridesDefaultPropertiesWithFallbackInheritsDefaultProperties(){
+    public void testCommandOverridesDefaultPropertiesWithFallbackInheritsDefaultProperties() {
         service.commandOverridesDefaultPropertiesWithFallbackInheritsDefaultProperties();
         com.netflix.hystrix.HystrixInvokableInfo fallbackCommand = getHystrixCommandByKey("fallbackInheritsDefaultProperties");
         HystrixThreadPoolProperties properties = getThreadPoolProperties(fallbackCommand);
@@ -97,14 +91,7 @@ public abstract class BasicFallbackDefaultPropertiesTest extends BasicHystrixTes
         assertEquals(123, properties.maxQueueSize().get().intValue());
     }
 
-    @DefaultProperties(groupKey = "DefaultGroupKey",
-            threadPoolKey = "DefaultThreadPoolKey",
-            commandProperties = {
-                    @HystrixProperty(name = EXECUTION_ISOLATION_THREAD_TIMEOUT_IN_MILLISECONDS, value = "456")
-            },
-            threadPoolProperties = {
-                    @HystrixProperty(name = "maxQueueSize", value = "123")
-            })
+    @DefaultProperties(groupKey = "DefaultGroupKey", threadPoolKey = "DefaultThreadPoolKey", commandProperties = { @HystrixProperty(name = EXECUTION_ISOLATION_THREAD_TIMEOUT_IN_MILLISECONDS, value = "456") }, threadPoolProperties = { @HystrixProperty(name = "maxQueueSize", value = "123") })
     public static class Service {
 
         @HystrixCommand(fallbackMethod = "fallbackInheritsDefaultProperties")
@@ -117,14 +104,7 @@ public abstract class BasicFallbackDefaultPropertiesTest extends BasicHystrixTes
             throw new RuntimeException();
         }
 
-        @HystrixCommand(groupKey = "CommandGroupKey",
-                threadPoolKey = "CommandThreadPoolKey",
-                commandProperties = {
-                        @HystrixProperty(name = EXECUTION_ISOLATION_THREAD_TIMEOUT_IN_MILLISECONDS, value = "654")
-                },
-                threadPoolProperties = {
-                        @HystrixProperty(name = "maxQueueSize", value = "321")
-                }, fallbackMethod = "fallbackInheritsDefaultProperties")
+        @HystrixCommand(groupKey = "CommandGroupKey", threadPoolKey = "CommandThreadPoolKey", commandProperties = { @HystrixProperty(name = EXECUTION_ISOLATION_THREAD_TIMEOUT_IN_MILLISECONDS, value = "654") }, threadPoolProperties = { @HystrixProperty(name = "maxQueueSize", value = "321") }, fallbackMethod = "fallbackInheritsDefaultProperties")
         public Object commandOverridesDefaultPropertiesWithFallbackInheritsDefaultProperties() {
             throw new RuntimeException();
         }
@@ -134,14 +114,7 @@ public abstract class BasicFallbackDefaultPropertiesTest extends BasicHystrixTes
             return null;
         }
 
-        @HystrixCommand(groupKey = "FallbackGroupKey",
-                threadPoolKey = "FallbackThreadPoolKey",
-                commandProperties = {
-                        @HystrixProperty(name = EXECUTION_ISOLATION_THREAD_TIMEOUT_IN_MILLISECONDS, value = "654")
-                },
-                threadPoolProperties = {
-                        @HystrixProperty(name = "maxQueueSize", value = "321")
-                })
+        @HystrixCommand(groupKey = "FallbackGroupKey", threadPoolKey = "FallbackThreadPoolKey", commandProperties = { @HystrixProperty(name = EXECUTION_ISOLATION_THREAD_TIMEOUT_IN_MILLISECONDS, value = "654") }, threadPoolProperties = { @HystrixProperty(name = "maxQueueSize", value = "321") })
         private Object fallbackOverridesDefaultProperties() {
             return null;
         }

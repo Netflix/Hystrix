@@ -18,12 +18,9 @@ package com.netflix.hystrix;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
-
 import org.junit.Test;
-
 import rx.Observable;
 import rx.Subscriber;
-
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategyDefault;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
@@ -41,13 +38,10 @@ public class HystrixRequestCacheTest {
             cache1.putIfAbsent("valueA", new TestObservable("a1"));
             cache1.putIfAbsent("valueA", new TestObservable("a2"));
             cache1.putIfAbsent("valueB", new TestObservable("b1"));
-
             HystrixRequestCache cache2 = HystrixRequestCache.getInstance(HystrixCommandKey.Factory.asKey("command2"), strategy);
             cache2.putIfAbsent("valueA", new TestObservable("a3"));
-
             assertEquals("a1", cache1.get("valueA").toObservable().toBlocking().last());
             assertEquals("b1", cache1.get("valueB").toObservable().toBlocking().last());
-
             assertEquals("a3", cache2.get("valueA").toObservable().toBlocking().last());
             assertNull(cache2.get("valueB"));
         } catch (Exception e) {
@@ -56,7 +50,6 @@ public class HystrixRequestCacheTest {
         } finally {
             context.shutdown();
         }
-
         context = HystrixRequestContext.initializeContext();
         try {
             // with a new context  the instance should have nothing in it
@@ -70,10 +63,7 @@ public class HystrixRequestCacheTest {
 
     @Test(expected = IllegalStateException.class)
     public void testCacheWithoutContext() {
-        HystrixRequestCache.getInstance(
-            HystrixCommandKey.Factory.asKey("command1"),
-            HystrixConcurrencyStrategyDefault.getInstance()
-        ).get("any");
+        HystrixRequestCache.getInstance(HystrixCommandKey.Factory.asKey("command1"), HystrixConcurrencyStrategyDefault.getInstance()).get("any");
     }
 
     @Test
@@ -110,6 +100,7 @@ public class HystrixRequestCacheTest {
     }
 
     private static class TestObservable extends HystrixCachedObservable<String> {
+
         public TestObservable(String arg) {
             super(Observable.just(arg));
         }

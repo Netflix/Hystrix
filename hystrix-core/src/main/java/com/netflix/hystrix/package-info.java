@@ -15,7 +15,8 @@
  */
 /**
  * Core functionality of Hystrix including the HystrixCommand and HystrixCollapser to be extended from.
- * 
+ *
  * @since 1.0.0
  */
 package com.netflix.hystrix;
+

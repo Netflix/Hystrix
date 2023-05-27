@@ -21,8 +21,11 @@ package com.netflix.hystrix.examples.demo;
 public class PaymentInformation {
 
     private final UserAccount user;
+
     private final String creditCardNumber;
+
     private final int expirationMonth;
+
     private final int expirationYear;
 
     public PaymentInformation(UserAccount user, String creditCardNumber, int expirationMonth, int expirationYear) {
@@ -43,5 +46,4 @@ public class PaymentInformation {
     public int getExpirationYear() {
         return expirationYear;
     }
-
 }

@@ -15,12 +15,10 @@
  */
 package com.netflix.hystrix.contrib.javanica.cache;
 
-
 import com.netflix.hystrix.contrib.javanica.cache.annotation.CacheKey;
 import com.netflix.hystrix.contrib.javanica.cache.annotation.CacheResult;
 import com.netflix.hystrix.contrib.javanica.command.MetaHolder;
 import org.junit.Test;
-
 import static org.junit.Assert.assertEquals;
 
 public class HystrixCacheKeyGeneratorTest {
@@ -35,10 +33,7 @@ public class HystrixCacheKeyGeneratorTest {
         Profile profile = new Profile("user name");
         user.setProfile(profile);
         String expectedKey = id + user.getProfile().getName();
-        MetaHolder metaHolder = MetaHolder.builder()
-                .method(TestCacheClass.class.getMethod("cacheResultMethod", String.class, User.class))
-                .args(new Object[]{id, user})
-                .obj(testCacheClass).build();
+        MetaHolder metaHolder = MetaHolder.builder().method(TestCacheClass.class.getMethod("cacheResultMethod", String.class, User.class)).args(new Object[] { id, user }).obj(testCacheClass).build();
         CacheInvocationContext<CacheResult> context = CacheInvocationContextFactory.createCacheResultInvocationContext(metaHolder);
         HystrixCacheKeyGenerator keyGenerator = HystrixCacheKeyGenerator.getInstance();
         // when
@@ -56,10 +51,7 @@ public class HystrixCacheKeyGeneratorTest {
         user.setId(id);
         user.setProfile(null);
         String expectedKey = id;
-        MetaHolder metaHolder = MetaHolder.builder()
-                .method(TestCacheClass.class.getMethod("cacheResultMethod", String.class, User.class))
-                .args(new Object[]{id, user})
-                .obj(testCacheClass).build();
+        MetaHolder metaHolder = MetaHolder.builder().method(TestCacheClass.class.getMethod("cacheResultMethod", String.class, User.class)).args(new Object[] { id, user }).obj(testCacheClass).build();
         CacheInvocationContext<CacheResult> context = CacheInvocationContextFactory.createCacheResultInvocationContext(metaHolder);
         HystrixCacheKeyGenerator keyGenerator = HystrixCacheKeyGenerator.getInstance();
         // when
@@ -72,10 +64,7 @@ public class HystrixCacheKeyGeneratorTest {
     public void testGenerateCacheKey_givenCacheKeyMethodWithNoArguments_shouldReturnEmptyCacheKey() throws NoSuchMethodException {
         // given
         TestCacheClass testCacheClass = new TestCacheClass();
-        MetaHolder metaHolder = MetaHolder.builder()
-                .method(TestCacheClass.class.getMethod("cacheResultMethod"))
-                .args(new Object[]{})
-                .obj(testCacheClass).build();
+        MetaHolder metaHolder = MetaHolder.builder().method(TestCacheClass.class.getMethod("cacheResultMethod")).args(new Object[] {}).obj(testCacheClass).build();
         CacheInvocationContext<CacheResult> context = CacheInvocationContextFactory.createCacheResultInvocationContext(metaHolder);
         HystrixCacheKeyGenerator keyGenerator = HystrixCacheKeyGenerator.getInstance();
         // when
@@ -95,11 +84,12 @@ public class HystrixCacheKeyGeneratorTest {
         public Object cacheResultMethod() {
             return "test";
         }
-
     }
 
     public static class User {
+
         private String id;
+
         private Profile profile;
 
         public String getId() {
@@ -120,6 +110,7 @@ public class HystrixCacheKeyGeneratorTest {
     }
 
     public static class Profile {
+
         private String name;
 
         public Profile() {

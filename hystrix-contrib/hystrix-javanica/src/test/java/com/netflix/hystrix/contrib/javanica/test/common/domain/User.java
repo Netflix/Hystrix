@@ -18,12 +18,13 @@ package com.netflix.hystrix.contrib.javanica.test.common.domain;
 /**
  * Simple domain object for tests.
  */
-public class User extends Domain{
+public class User extends Domain {
 
     private String id;
-    private String name;
-    private Profile profile;
 
+    private String name;
+
+    private Profile profile;
 
     public User() {
     }
@@ -68,22 +69,19 @@ public class User extends Domain{
 
     @Override
     public boolean equals(Object o) {
-        if(this == o) {
+        if (this == o) {
             return true;
         }
-        if(!(o instanceof User)) {
+        if (!(o instanceof User)) {
             return false;
         }
-
         User user = (User) o;
-
-        if(id != null ? !id.equals(user.id) : user.id != null) {
+        if (id != null ? !id.equals(user.id) : user.id != null) {
             return false;
         }
-        if(name != null ? !name.equals(user.name) : user.name != null) {
+        if (name != null ? !name.equals(user.name) : user.name != null) {
             return false;
         }
-
         return true;
     }
 

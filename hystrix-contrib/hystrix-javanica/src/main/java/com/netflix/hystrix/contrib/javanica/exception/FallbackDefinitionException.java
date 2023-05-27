@@ -15,7 +15,6 @@
  */
 package com.netflix.hystrix.contrib.javanica.exception;
 
-
 public class FallbackDefinitionException extends RuntimeException {
 
     public FallbackDefinitionException() {

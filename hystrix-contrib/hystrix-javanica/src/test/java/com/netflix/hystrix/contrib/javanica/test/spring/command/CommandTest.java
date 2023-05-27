@@ -15,7 +15,6 @@
  */
 package com.netflix.hystrix.contrib.javanica.test.spring.command;
 
-
 import com.netflix.hystrix.contrib.javanica.test.common.command.BasicCommandTest;
 import com.netflix.hystrix.contrib.javanica.test.common.domain.User;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,9 +29,14 @@ import org.springframework.context.annotation.Bean;
  */
 public abstract class CommandTest extends BasicCommandTest {
 
-    @Autowired private BasicCommandTest.UserService userService;
-    @Autowired private BasicCommandTest.AdvancedUserService advancedUserService;
-    @Autowired private BasicCommandTest.GenericService<String, Long, User> genericUserService;
+    @Autowired
+    private BasicCommandTest.UserService userService;
+
+    @Autowired
+    private BasicCommandTest.AdvancedUserService advancedUserService;
+
+    @Autowired
+    private BasicCommandTest.GenericService<String, Long, User> genericUserService;
 
     @Override
     protected BasicCommandTest.UserService createUserService() {
@@ -66,7 +70,5 @@ public abstract class CommandTest extends BasicCommandTest {
         public GenericService<String, Long, User> genericUserService() {
             return new GenericUserService();
         }
-
     }
-
 }

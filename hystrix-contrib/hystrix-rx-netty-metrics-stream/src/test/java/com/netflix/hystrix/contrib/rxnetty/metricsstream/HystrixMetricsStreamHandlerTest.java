@@ -38,12 +38,10 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 import rx.Observable;
 import rx.functions.Func1;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-
 import static com.netflix.hystrix.contrib.rxnetty.metricsstream.HystrixMetricsStreamHandler.*;
 import static org.easymock.EasyMock.*;
 import static org.junit.Assert.*;
@@ -58,22 +56,18 @@ public class HystrixMetricsStreamHandlerTest {
 
     private static final ObjectMapper mapper = new ObjectMapper();
 
-    private static Collection<HystrixCommandMetrics> SAMPLE_HYSTRIX_COMMAND_METRICS =
-            Collections.singleton(HystrixCommandMetricsSamples.SAMPLE_1);
+    private static Collection<HystrixCommandMetrics> SAMPLE_HYSTRIX_COMMAND_METRICS = Collections.singleton(HystrixCommandMetricsSamples.SAMPLE_1);
 
     private int port;
+
     private HttpServer<ByteBuf, ByteBuf> server;
+
     private HttpClient<ByteBuf, ServerSentEvent> client;
 
     @Before
     public void setUp() throws Exception {
         server = createServer();
-
-        client = RxNetty.<ByteBuf, ServerSentEvent>newHttpClientBuilder("localhost", port)
-                .withNoConnectionPooling()
-                .pipelineConfigurator(PipelineConfigurators.<ByteBuf>clientSseConfigurator())
-                .build();
-
+        client = RxNetty.<ByteBuf, ServerSentEvent>newHttpClientBuilder("localhost", port).withNoConnectionPooling().pipelineConfigurator(PipelineConfigurators.<ByteBuf>clientSseConfigurator()).build();
         mockStatic(HystrixCommandMetrics.class);
         expect(HystrixCommandMetrics.getInstances()).andReturn(SAMPLE_HYSTRIX_COMMAND_METRICS).anyTimes();
     }
@@ -91,17 +85,14 @@ public class HystrixMetricsStreamHandlerTest {
     @Test
     public void testMetricsAreDeliveredAsSseStream() throws Exception {
         replayAll();
+        Observable<ServerSentEvent> objectObservable = client.submit(HttpClientRequest.createGet(DEFAULT_HYSTRIX_PREFIX)).flatMap(new Func1<HttpClientResponse<ServerSentEvent>, Observable<? extends ServerSentEvent>>() {
 
-        Observable<ServerSentEvent> objectObservable = client.submit(HttpClientRequest.createGet(DEFAULT_HYSTRIX_PREFIX))
-                .flatMap(new Func1<HttpClientResponse<ServerSentEvent>, Observable<? extends ServerSentEvent>>() {
-                    @Override
-                    public Observable<? extends ServerSentEvent> call(HttpClientResponse<ServerSentEvent> httpClientResponse) {
-                        return httpClientResponse.getContent().take(1);
-                    }
-                });
-
+            @Override
+            public Observable<? extends ServerSentEvent> call(HttpClientResponse<ServerSentEvent> httpClientResponse) {
+                return httpClientResponse.getContent().take(1);
+            }
+        });
         Object first = Observable.amb(objectObservable, Observable.timer(5000, TimeUnit.MILLISECONDS)).toBlocking().first();
-
         assertTrue("Expected SSE message", first instanceof ServerSentEvent);
         ServerSentEvent sse = (ServerSentEvent) first;
         JsonNode jsonNode = mapper.readTree(sse.contentAsString());
@@ -115,16 +106,14 @@ public class HystrixMetricsStreamHandlerTest {
         for (int i = 0; i < 3 && server == null; i++) {
             port = 10000 + random.nextInt(50000);
             try {
-                return RxNetty.newHttpServerBuilder(port, new HystrixMetricsStreamHandler<ByteBuf, ByteBuf>(
-                        DEFAULT_HYSTRIX_PREFIX,
-                        DEFAULT_INTERVAL,
-                        new RequestHandler<ByteBuf, ByteBuf>() {  // Application handler
-                            @Override
-                            public Observable<Void> handle(HttpServerRequest<ByteBuf> request, HttpServerResponse<ByteBuf> response) {
-                                return Observable.empty();
-                            }
-                        }
-                )).build().start();
+                return RxNetty.newHttpServerBuilder(port, new HystrixMetricsStreamHandler<ByteBuf, ByteBuf>(DEFAULT_HYSTRIX_PREFIX, DEFAULT_INTERVAL, new // Application handler
+                RequestHandler<ByteBuf, ByteBuf>() {
+
+                    @Override
+                    public Observable<Void> handle(HttpServerRequest<ByteBuf> request, HttpServerResponse<ByteBuf> response) {
+                        return Observable.empty();
+                    }
+                })).build().start();
             } catch (Exception e) {
                 error = e;
             }

@@ -28,7 +28,7 @@ import java.lang.annotation.Target;
  * @author dmgcodevil
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.METHOD})
+@Target({ ElementType.METHOD })
 @Documented
 public @interface CacheRemove {
 

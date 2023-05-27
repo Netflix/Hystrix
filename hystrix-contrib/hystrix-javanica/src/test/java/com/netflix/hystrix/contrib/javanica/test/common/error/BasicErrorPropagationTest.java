@@ -27,11 +27,9 @@ import com.netflix.hystrix.exception.HystrixRuntimeException;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.MockitoAnnotations;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
-
 import static com.netflix.hystrix.contrib.javanica.test.common.CommonUtils.getHystrixCommandByKey;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.atLeastOnce;
@@ -86,7 +84,8 @@ public abstract class BasicErrorPropagationTest extends BasicHystrixTest {
     @Test(expected = NotFoundException.class)
     public void testGetNonExistentUser() throws NotFoundException {
         try {
-            userService.getUserById("4"); // user with id 4 doesn't exist
+            // user with id 4 doesn't exist
+            userService.getUserById("4");
         } finally {
             assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
             com.netflix.hystrix.HystrixInvokableInfo getUserCommand = getHystrixCommandByKey(COMMAND_KEY);
@@ -97,10 +96,12 @@ public abstract class BasicErrorPropagationTest extends BasicHystrixTest {
         }
     }
 
-    @Test // don't expect any exceptions because fallback must be triggered
+    // don't expect any exceptions because fallback must be triggered
+    @Test
     public void testActivateUser() throws NotFoundException, ActivationException {
         try {
-            userService.activateUser("1"); // this method always throws ActivationException
+            // this method always throws ActivationException
+            userService.activateUser("1");
         } finally {
             assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
             com.netflix.hystrix.HystrixInvokableInfo activateUserCommand = getHystrixCommandByKey("activateUser");
@@ -115,7 +116,8 @@ public abstract class BasicErrorPropagationTest extends BasicHystrixTest {
     @Test(expected = RuntimeOperationException.class)
     public void testBlockUser() throws NotFoundException, ActivationException, OperationException {
         try {
-            userService.blockUser("1"); // this method always throws ActivationException
+            // this method always throws ActivationException
+            userService.blockUser("1");
         } finally {
             assertEquals(2, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
             com.netflix.hystrix.HystrixInvokableInfo activateUserCommand = getHystrixCommandByKey("blockUser");
@@ -175,13 +177,10 @@ public abstract class BasicErrorPropagationTest extends BasicHystrixTest {
         } catch (HystrixFlowException e) {
             assertEquals(UserException.class, e.commandException.getClass());
             assertEquals(UserException.class, e.fallbackException.getClass());
-
             UserException commandException = (UserException) e.commandException;
             UserException fallbackException = (UserException) e.fallbackException;
             assertEquals(0, commandException.level);
             assertEquals(1, fallbackException.level);
-
-
         } catch (Throwable e) {
             assertTrue("'HystrixFlowException' is expected exception.", false);
         }
@@ -207,7 +206,7 @@ public abstract class BasicErrorPropagationTest extends BasicHystrixTest {
             // pass
         } catch (Throwable e) {
             fail("'NotWrappedCheckedException' is expected exception.");
-        }finally {
+        } finally {
             assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
             HystrixInvokableInfo getUserCommand = getHystrixCommandByKey("throwNotWrappedCheckedExceptionWithoutFallback");
             // record failure in metrics
@@ -245,13 +244,7 @@ public abstract class BasicErrorPropagationTest extends BasicHystrixTest {
             throw new NotFoundException("");
         }
 
-        @HystrixCommand(
-                commandKey = COMMAND_KEY,
-                ignoreExceptions = {
-                        BadRequestException.class,
-                        NotFoundException.class
-                },
-                fallbackMethod = "fallback")
+        @HystrixCommand(commandKey = COMMAND_KEY, ignoreExceptions = { BadRequestException.class, NotFoundException.class }, fallbackMethod = "fallback")
         public User getUserById(String id) throws NotFoundException {
             validate(id);
             if (!USERS.containsKey(id)) {
@@ -260,10 +253,7 @@ public abstract class BasicErrorPropagationTest extends BasicHystrixTest {
             return USERS.get(id);
         }
 
-
-        @HystrixCommand(
-                ignoreExceptions = {BadRequestException.class, NotFoundException.class},
-                fallbackMethod = "activateFallback")
+        @HystrixCommand(ignoreExceptions = { BadRequestException.class, NotFoundException.class }, fallbackMethod = "activateFallback")
         public void activateUser(String id) throws NotFoundException, ActivationException {
             validate(id);
             if (!USERS.containsKey(id)) {
@@ -273,9 +263,7 @@ public abstract class BasicErrorPropagationTest extends BasicHystrixTest {
             throw new ActivationException("user cannot be activate");
         }
 
-        @HystrixCommand(
-                ignoreExceptions = {BadRequestException.class, NotFoundException.class},
-                fallbackMethod = "blockUserFallback")
+        @HystrixCommand(ignoreExceptions = { BadRequestException.class, NotFoundException.class }, fallbackMethod = "blockUserFallback")
         public void blockUser(String id) throws NotFoundException, OperationException {
             validate(id);
             if (!USERS.containsKey(id)) {
@@ -293,7 +281,7 @@ public abstract class BasicErrorPropagationTest extends BasicHystrixTest {
             failoverService.activate();
         }
 
-        @HystrixCommand(ignoreExceptions = {RuntimeException.class})
+        @HystrixCommand(ignoreExceptions = { RuntimeException.class })
         private void blockUserFallback(String id) {
             throw new RuntimeOperationException("blockUserFallback has failed");
         }
@@ -314,24 +302,26 @@ public abstract class BasicErrorPropagationTest extends BasicHystrixTest {
             throw new NotWrappedCheckedException();
         }
 
-        private void voidFallback(){
+        private void voidFallback() {
             failoverService.activate();
         }
 
-        /*********************************************************************************/
-
+        /**
+         * *****************************************************************************
+         */
         @HystrixCommand
         String userFailureWithoutFallback() throws UserException {
             throw new UserException();
         }
 
-        @HystrixCommand(commandProperties = {@HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "1")})
+        @HystrixCommand(commandProperties = { @HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "1") })
         String timedOutWithoutFallback() {
             return "";
         }
 
-        /*********************************************************************************/
-
+        /**
+         * *****************************************************************************
+         */
         @HystrixCommand(fallbackMethod = "userFailureWithFallback_f_0")
         String userFailureWithFallback() {
             throw new UserException();
@@ -341,8 +331,9 @@ public abstract class BasicErrorPropagationTest extends BasicHystrixTest {
             throw new UserException(1);
         }
 
-        /*********************************************************************************/
-
+        /**
+         * *****************************************************************************
+         */
         @HystrixCommand(fallbackMethod = "userFailureWithFallbackCommand_f_0")
         String userFailureWithFallbackCommand() {
             throw new UserException(0);
@@ -358,32 +349,34 @@ public abstract class BasicErrorPropagationTest extends BasicHystrixTest {
             throw new UserException(2);
         }
 
-        /*********************************************************************************/
-
+        /**
+         * *****************************************************************************
+         */
         @HystrixCommand(fallbackMethod = "commandAndFallbackErrorsComposition_f_0")
         String commandAndFallbackErrorsComposition() {
             throw new UserException();
         }
 
-
         String commandAndFallbackErrorsComposition_f_0(Throwable commandError) {
             throw new HystrixFlowException(commandError, new UserException(1));
         }
 
-        /*********************************************************************************/
-
+        /**
+         * *****************************************************************************
+         */
         @HystrixCommand(fallbackMethod = "commandWithFallbackThatFailsByTimeOut_f_0")
         String commandWithFallbackThatFailsByTimeOut() {
             throw new UserException(0);
         }
 
-        @HystrixCommand(commandProperties = {@HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "1")})
+        @HystrixCommand(commandProperties = { @HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "1") })
         String commandWithFallbackThatFailsByTimeOut_f_0() {
             return "";
         }
     }
 
     private class FailoverService {
+
         public User getDefUser() {
             return new User("def", "def");
         }
@@ -394,30 +387,35 @@ public abstract class BasicErrorPropagationTest extends BasicHystrixTest {
 
     // exceptions
     private static class NotFoundException extends Exception {
+
         private NotFoundException(String message) {
             super(message);
         }
     }
 
     private static class BadRequestException extends RuntimeException {
+
         private BadRequestException(String message) {
             super(message);
         }
     }
 
     private static class ActivationException extends Exception {
+
         private ActivationException(String message) {
             super(message);
         }
     }
 
     private static class OperationException extends Throwable {
+
         private OperationException(String message) {
             super(message);
         }
     }
 
     private static class RuntimeOperationException extends RuntimeException {
+
         private RuntimeOperationException(String message) {
             super(message);
         }
@@ -427,6 +425,7 @@ public abstract class BasicErrorPropagationTest extends BasicHystrixTest {
     }
 
     static class UserException extends RuntimeException {
+
         final int level;
 
         public UserException() {
@@ -439,7 +438,9 @@ public abstract class BasicErrorPropagationTest extends BasicHystrixTest {
     }
 
     static class HystrixFlowException extends RuntimeException {
+
         final Throwable commandException;
+
         final Throwable fallbackException;
 
         public HystrixFlowException(Throwable commandException, Throwable fallbackException) {
@@ -447,5 +448,4 @@ public abstract class BasicErrorPropagationTest extends BasicHystrixTest {
             this.fallbackException = fallbackException;
         }
     }
-
 }

@@ -15,7 +15,6 @@
  */
 package com.netflix.hystrix.contrib.javanica.aop.aspectj;
 
-
 import com.netflix.hystrix.contrib.javanica.cache.CacheInvocationContext;
 import com.netflix.hystrix.contrib.javanica.cache.CacheInvocationContextFactory;
 import com.netflix.hystrix.contrib.javanica.cache.HystrixRequestCacheManager;
@@ -27,9 +26,7 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
-
 import java.lang.reflect.Method;
-
 import static com.netflix.hystrix.contrib.javanica.utils.AopUtils.getMethodFromTarget;
 import static com.netflix.hystrix.contrib.javanica.utils.EnvUtils.isCompileWeaving;
 import static com.netflix.hystrix.contrib.javanica.utils.ajc.AjcUtils.getAjcMethodAroundAdvice;
@@ -53,16 +50,9 @@ public class HystrixCacheAspect {
         Object obj = joinPoint.getTarget();
         Object[] args = joinPoint.getArgs();
         Validate.notNull(method, "failed to get method from joinPoint: %s", joinPoint);
-        MetaHolder metaHolder = MetaHolder.builder()
-                .args(args).method(method).obj(obj)
-                .executionType(ExecutionType.SYNCHRONOUS)
-                .ajcMethod(isCompileWeaving() ? getAjcMethodAroundAdvice(obj.getClass(), method) : null)
-                .build();
-        CacheInvocationContext<CacheRemove> context = CacheInvocationContextFactory
-                .createCacheRemoveInvocationContext(metaHolder);
+        MetaHolder metaHolder = MetaHolder.builder().args(args).method(method).obj(obj).executionType(ExecutionType.SYNCHRONOUS).ajcMethod(isCompileWeaving() ? getAjcMethodAroundAdvice(obj.getClass(), method) : null).build();
+        CacheInvocationContext<CacheRemove> context = CacheInvocationContextFactory.createCacheRemoveInvocationContext(metaHolder);
         HystrixRequestCacheManager.getInstance().clearCache(context);
         return joinPoint.proceed();
     }
-
-
 }

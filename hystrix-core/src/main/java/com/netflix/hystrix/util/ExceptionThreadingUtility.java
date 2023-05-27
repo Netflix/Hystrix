@@ -18,12 +18,14 @@ package com.netflix.hystrix.util;
 @Deprecated
 public class ExceptionThreadingUtility {
 
-    @Deprecated //this functionality is no longer supported
+    //this functionality is no longer supported
+    @Deprecated
     public static void attachCallingThreadStack(Throwable e) {
         //no-op now
     }
 
-    @Deprecated //this functionality is no longer supported
+    //this functionality is no longer supported
+    @Deprecated
     public static void assignCallingThread(Thread callingThread) {
         //no-op now
     }

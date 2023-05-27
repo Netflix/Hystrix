@@ -15,7 +15,6 @@
  */
 package com.netflix.hystrix.contrib.javanica.command;
 
-
 import com.netflix.hystrix.HystrixInvokable;
 import com.netflix.hystrix.contrib.javanica.exception.CommandActionExecutionException;
 import org.apache.commons.lang3.StringUtils;
@@ -26,7 +25,6 @@ import org.apache.commons.lang3.StringUtils;
 public class LazyCommandExecutionAction implements CommandAction {
 
     private MetaHolder originalMetaHolder;
-
 
     public LazyCommandExecutionAction(MetaHolder metaHolder) {
         this.originalMetaHolder = metaHolder;
@@ -60,52 +58,15 @@ public class LazyCommandExecutionAction implements CommandAction {
      */
     @Override
     public String getActionName() {
-        return StringUtils.isNotEmpty(originalMetaHolder.getHystrixCommand().commandKey()) ?
-                originalMetaHolder.getHystrixCommand().commandKey()
-                : originalMetaHolder.getDefaultCommandKey();
+        return StringUtils.isNotEmpty(originalMetaHolder.getHystrixCommand().commandKey()) ? originalMetaHolder.getHystrixCommand().commandKey() : originalMetaHolder.getDefaultCommandKey();
     }
 
     // todo dmgcodevil: move it to MetaHolder class ?
     private MetaHolder createCopy(MetaHolder source, ExecutionType executionType) {
-        return MetaHolder.builder()
-                .obj(source.getObj())
-                .method(source.getMethod())
-                .ajcMethod(source.getAjcMethod())
-                .fallbackExecutionType(source.getFallbackExecutionType())
-                .extendedFallback(source.isExtendedFallback())
-                .extendedParentFallback(source.isExtendedParentFallback())
-                .executionType(executionType)
-                .args(source.getArgs())
-                .observable(source.isObservable())
-                .observableExecutionMode(source.getObservableExecutionMode())
-                .defaultCollapserKey(source.getDefaultCollapserKey())
-                .defaultCommandKey(source.getDefaultCommandKey())
-                .defaultGroupKey(source.getDefaultGroupKey())
-                .defaultThreadPoolKey(source.getDefaultThreadPoolKey())
-                .defaultProperties(source.getDefaultProperties().orNull())
-                .hystrixCollapser(source.getHystrixCollapser())
-                .hystrixCommand(source.getHystrixCommand()).build();
+        return MetaHolder.builder().obj(source.getObj()).method(source.getMethod()).ajcMethod(source.getAjcMethod()).fallbackExecutionType(source.getFallbackExecutionType()).extendedFallback(source.isExtendedFallback()).extendedParentFallback(source.isExtendedParentFallback()).executionType(executionType).args(source.getArgs()).observable(source.isObservable()).observableExecutionMode(source.getObservableExecutionMode()).defaultCollapserKey(source.getDefaultCollapserKey()).defaultCommandKey(source.getDefaultCommandKey()).defaultGroupKey(source.getDefaultGroupKey()).defaultThreadPoolKey(source.getDefaultThreadPoolKey()).defaultProperties(source.getDefaultProperties().orNull()).hystrixCollapser(source.getHystrixCollapser()).hystrixCommand(source.getHystrixCommand()).build();
     }
 
     private MetaHolder createCopy(MetaHolder source, ExecutionType executionType, Object[] args) {
-        return MetaHolder.builder()
-                .obj(source.getObj())
-                .method(source.getMethod())
-                .executionType(executionType)
-                .ajcMethod(source.getAjcMethod())
-                .fallbackExecutionType(source.getFallbackExecutionType())
-                .extendedParentFallback(source.isExtendedParentFallback())
-                .extendedFallback(source.isExtendedFallback())
-                .args(args)
-                .observable(source.isObservable())
-                .observableExecutionMode(source.getObservableExecutionMode())
-                .defaultCollapserKey(source.getDefaultCollapserKey())
-                .defaultCommandKey(source.getDefaultCommandKey())
-                .defaultGroupKey(source.getDefaultGroupKey())
-                .defaultThreadPoolKey(source.getDefaultThreadPoolKey())
-                .defaultProperties(source.getDefaultProperties().orNull())
-                .hystrixCollapser(source.getHystrixCollapser())
-                .hystrixCommand(source.getHystrixCommand()).build();
+        return MetaHolder.builder().obj(source.getObj()).method(source.getMethod()).executionType(executionType).ajcMethod(source.getAjcMethod()).fallbackExecutionType(source.getFallbackExecutionType()).extendedParentFallback(source.isExtendedParentFallback()).extendedFallback(source.isExtendedFallback()).args(args).observable(source.isObservable()).observableExecutionMode(source.getObservableExecutionMode()).defaultCollapserKey(source.getDefaultCollapserKey()).defaultCommandKey(source.getDefaultCommandKey()).defaultGroupKey(source.getDefaultGroupKey()).defaultThreadPoolKey(source.getDefaultThreadPoolKey()).defaultProperties(source.getDefaultProperties().orNull()).hystrixCollapser(source.getHystrixCollapser()).hystrixCommand(source.getHystrixCommand()).build();
     }
-
 }

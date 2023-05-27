@@ -15,17 +15,14 @@
  */
 package com.netflix.hystrix.contrib.javanica.command;
 
-
 import com.netflix.hystrix.HystrixCollapser;
 import com.netflix.hystrix.contrib.javanica.exception.FallbackInvocationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
 import static com.netflix.hystrix.contrib.javanica.exception.ExceptionUtils.unwrapCause;
 import static com.netflix.hystrix.contrib.javanica.utils.CommonUtils.createArgsForFallback;
 
@@ -53,6 +50,7 @@ public class BatchHystrixCommand extends AbstractHystrixCommand<List<Object>> {
 
     private Object process(final Object[] args) throws Exception {
         return process(new Action() {
+
             @Override
             Object execute() {
                 return getCommandAction().executeWithArgs(getExecutionType(), args);
@@ -60,15 +58,14 @@ public class BatchHystrixCommand extends AbstractHystrixCommand<List<Object>> {
         });
     }
 
-
     @Override
     @SuppressWarnings("unchecked")
     protected List<Object> getFallback() {
         if (getFallbackAction() != null) {
             final CommandAction commandAction = getFallbackAction();
-
             try {
                 return (List<Object>) process(new Action() {
+
                     @Override
                     Object execute() {
                         MetaHolder metaHolder = commandAction.getMetaHolder();
@@ -78,18 +75,16 @@ public class BatchHystrixCommand extends AbstractHystrixCommand<List<Object>> {
                     }
                 });
             } catch (Throwable e) {
-                LOGGER.error(FallbackErrorMessageBuilder.create()
-                        .append(commandAction, e).build());
+                LOGGER.error(FallbackErrorMessageBuilder.create().append(commandAction, e).build());
                 throw new FallbackInvocationException(unwrapCause(e));
             }
         } else {
             return super.getFallback();
         }
-
     }
 
     private Object[] toArgs(Collection<HystrixCollapser.CollapsedRequest<Object, Object>> requests) {
-        return new Object[]{collect(requests)};
+        return new Object[] { collect(requests) };
     }
 
     private List<Object> collect(Collection<HystrixCollapser.CollapsedRequest<Object, Object>> requests) {
@@ -100,5 +95,4 @@ public class BatchHystrixCommand extends AbstractHystrixCommand<List<Object>> {
         }
         return commandArgs;
     }
-
 }

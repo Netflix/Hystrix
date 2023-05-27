@@ -47,5 +47,4 @@ public class AsyncClosureFactory extends AbstractClosureFactory {
     Class<? extends ClosureCommand> getClosureCommandType() {
         return AsyncResult.class;
     }
-
 }

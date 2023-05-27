@@ -17,7 +17,6 @@ package com.netflix.hystrix.contrib.javanica.utils;
 
 import com.google.common.collect.TreeTraverser;
 import org.apache.commons.lang3.Validate;
-
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -35,9 +34,9 @@ import java.util.List;
  * Created by dmgcodevil.
  */
 public final class TypeHelper {
+
     private TypeHelper() {
     }
-
 
     public static boolean isGenericReturnType(Method method) {
         return isParametrizedType(method.getGenericReturnType()) || isTypeVariable(method.getGenericReturnType());
@@ -85,6 +84,7 @@ public final class TypeHelper {
         Validate.notNull(type, "type cannot be null");
         List<Type> types = new ArrayList<Type>();
         TreeTraverser<Type> typeTraverser = new TreeTraverser<Type>() {
+
             @Override
             public Iterable<Type> children(Type root) {
                 if (root instanceof ParameterizedType) {

@@ -30,7 +30,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
  * https://github.com/Netflix/Hystrix/wiki/How-To-Use#Fallback
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = {AopCglibConfig.class, CommandFallbackTest.CommandTestConfig.class})
+@ContextConfiguration(classes = { AopCglibConfig.class, CommandFallbackTest.CommandTestConfig.class })
 public class CommandFallbackTest extends BasicCommandFallbackTest {
 
     @Autowired
@@ -43,10 +43,10 @@ public class CommandFallbackTest extends BasicCommandFallbackTest {
 
     @Configurable
     public static class CommandTestConfig {
+
         @Bean
         public UserService userService() {
             return new UserService();
         }
     }
-
 }

@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.netflix.hystrix.contrib.javanica.command.ExecutionType;
 import com.netflix.hystrix.contrib.javanica.command.MethodExecutionAction;
-
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.Collections;
@@ -36,12 +35,17 @@ import java.util.List;
 public class CacheInvocationContext<A extends Annotation> {
 
     private final Method method;
+
     private final Object target;
+
     private final MethodExecutionAction cacheKeyMethod;
+
     private final ExecutionType executionType = ExecutionType.SYNCHRONOUS;
+
     private final A cacheAnnotation;
 
     private List<CacheInvocationParameter> parameters = Collections.emptyList();
+
     private List<CacheInvocationParameter> keyParameters = Collections.emptyList();
 
     /**
@@ -71,6 +75,7 @@ public class CacheInvocationContext<A extends Annotation> {
             parameters = parametersBuilder.build();
             // get key parameters
             Iterable<CacheInvocationParameter> filtered = Iterables.filter(parameters, new Predicate<CacheInvocationParameter>() {
+
                 @Override
                 public boolean apply(CacheInvocationParameter input) {
                     return input.hasCacheKeyAnnotation();

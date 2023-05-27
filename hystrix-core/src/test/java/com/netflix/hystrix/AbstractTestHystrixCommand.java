@@ -20,14 +20,38 @@ import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 public interface AbstractTestHystrixCommand<R> extends HystrixObservable<R>, InspectableBuilder {
 
     enum ExecutionResult {
-        SUCCESS, FAILURE, ASYNC_FAILURE, HYSTRIX_FAILURE, NOT_WRAPPED_FAILURE, ASYNC_HYSTRIX_FAILURE, RECOVERABLE_ERROR, ASYNC_RECOVERABLE_ERROR, UNRECOVERABLE_ERROR, ASYNC_UNRECOVERABLE_ERROR, BAD_REQUEST, ASYNC_BAD_REQUEST, BAD_REQUEST_NOT_WRAPPED, MULTIPLE_EMITS_THEN_SUCCESS, MULTIPLE_EMITS_THEN_FAILURE, NO_EMITS_THEN_SUCCESS
+
+        SUCCESS,
+        FAILURE,
+        ASYNC_FAILURE,
+        HYSTRIX_FAILURE,
+        NOT_WRAPPED_FAILURE,
+        ASYNC_HYSTRIX_FAILURE,
+        RECOVERABLE_ERROR,
+        ASYNC_RECOVERABLE_ERROR,
+        UNRECOVERABLE_ERROR,
+        ASYNC_UNRECOVERABLE_ERROR,
+        BAD_REQUEST,
+        ASYNC_BAD_REQUEST,
+        BAD_REQUEST_NOT_WRAPPED,
+        MULTIPLE_EMITS_THEN_SUCCESS,
+        MULTIPLE_EMITS_THEN_FAILURE,
+        NO_EMITS_THEN_SUCCESS
     }
 
     enum FallbackResult {
-        UNIMPLEMENTED, SUCCESS, FAILURE, ASYNC_FAILURE, MULTIPLE_EMITS_THEN_SUCCESS, MULTIPLE_EMITS_THEN_FAILURE, NO_EMITS_THEN_SUCCESS
+
+        UNIMPLEMENTED,
+        SUCCESS,
+        FAILURE,
+        ASYNC_FAILURE,
+        MULTIPLE_EMITS_THEN_SUCCESS,
+        MULTIPLE_EMITS_THEN_FAILURE,
+        NO_EMITS_THEN_SUCCESS
     }
 
     enum CacheEnabled {
+
         YES, NO
     }
 
@@ -70,6 +94,5 @@ public interface AbstractTestHystrixCommand<R> extends HystrixObservable<R>, Ins
         public String getCollapserPropertiesCacheKey(HystrixCollapserKey collapserKey, com.netflix.hystrix.HystrixCollapserProperties.Setter builder) {
             return null;
         }
-
     }
 }

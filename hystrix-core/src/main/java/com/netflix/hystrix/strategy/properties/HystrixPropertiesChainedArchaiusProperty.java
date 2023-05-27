@@ -18,22 +18,21 @@ package com.netflix.hystrix.strategy.properties;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.netflix.config.PropertyWrapper;
 
 /**
  * Chained property allowing a chain of defaults using Archaius (https://github.com/Netflix/archaius) properties which is used by the default properties implementations.
  * <p>
  * Instead of just a single dynamic property with a default this allows a sequence of properties that fallback to the farthest down the chain with a value.
- * 
+ *
  * TODO This should be replaced by a version in the Archaius library once available.
- * 
+ *
  * @ExcludeFromJavadoc
  */
 public abstract class HystrixPropertiesChainedArchaiusProperty {
+
     private static final Logger logger = LoggerFactory.getLogger(HystrixPropertiesChainedArchaiusProperty.class);
 
     /**
@@ -42,7 +41,9 @@ public abstract class HystrixPropertiesChainedArchaiusProperty {
     public static abstract class ChainLink<T> {
 
         private final AtomicReference<ChainLink<T>> pReference;
+
         private final ChainLink<T> next;
+
         private final List<Runnable> callbacks;
 
         /**
@@ -84,7 +85,6 @@ public abstract class HystrixPropertiesChainedArchaiusProperty {
                 pReference.set(this);
                 return;
             }
-
             if (this.isValueAcceptable()) {
                 logger.debug("Flipping property: {} to use its current value: {}", getName(), getValue());
                 pReference.set(this);
@@ -92,7 +92,6 @@ public abstract class HystrixPropertiesChainedArchaiusProperty {
                 logger.debug("Flipping property: {} to use NEXT property: {}", getName(), next);
                 pReference.set(next);
             }
-
             for (Runnable r : callbacks) {
                 r.run();
             }
@@ -149,10 +148,11 @@ public abstract class HystrixPropertiesChainedArchaiusProperty {
         }
 
         public StringProperty(DynamicStringProperty sProperty, StringProperty next) {
-            super(next); // setup next pointer
-
+            // setup next pointer
+            super(next);
             sProp = sProperty;
             sProp.addCallback(new Runnable() {
+
                 @Override
                 public void run() {
                     logger.debug("Property changed: '{} = {}'", getName(), getValue());
@@ -203,10 +203,11 @@ public abstract class HystrixPropertiesChainedArchaiusProperty {
         }
 
         public IntegerProperty(DynamicIntegerProperty sProperty, IntegerProperty next) {
-            super(next); // setup next pointer
-
+            // setup next pointer
+            super(next);
             sProp = sProperty;
             sProp.addCallback(new Runnable() {
+
                 @Override
                 public void run() {
                     logger.debug("Property changed: '{} = {}'", getName(), getValue());
@@ -257,10 +258,11 @@ public abstract class HystrixPropertiesChainedArchaiusProperty {
         }
 
         public BooleanProperty(DynamicBooleanProperty sProperty, BooleanProperty next) {
-            super(next); // setup next pointer
-
+            // setup next pointer
+            super(next);
             sProp = sProperty;
             sProp.addCallback(new Runnable() {
+
                 @Override
                 public void run() {
                     logger.debug("Property changed: '{} = {}'", getName(), getValue());
@@ -290,6 +292,7 @@ public abstract class HystrixPropertiesChainedArchaiusProperty {
      * @ExcludeFromJavadoc
      */
     public static class DynamicBooleanProperty extends PropertyWrapper<Boolean> {
+
         public DynamicBooleanProperty(String propName, Boolean defaultValue) {
             super(propName, defaultValue);
         }
@@ -311,6 +314,7 @@ public abstract class HystrixPropertiesChainedArchaiusProperty {
      * @ExcludeFromJavadoc
      */
     public static class DynamicIntegerProperty extends PropertyWrapper<Integer> {
+
         public DynamicIntegerProperty(String propName, Integer defaultValue) {
             super(propName, defaultValue);
         }
@@ -332,6 +336,7 @@ public abstract class HystrixPropertiesChainedArchaiusProperty {
      * @ExcludeFromJavadoc
      */
     public static class DynamicLongProperty extends PropertyWrapper<Long> {
+
         public DynamicLongProperty(String propName, Long defaultValue) {
             super(propName, defaultValue);
         }
@@ -353,6 +358,7 @@ public abstract class HystrixPropertiesChainedArchaiusProperty {
      * @ExcludeFromJavadoc
      */
     public static class DynamicStringProperty extends PropertyWrapper<String> {
+
         public DynamicStringProperty(String propName, String defaultValue) {
             super(propName, defaultValue);
         }
@@ -369,5 +375,4 @@ public abstract class HystrixPropertiesChainedArchaiusProperty {
             return get();
         }
     }
-
 }

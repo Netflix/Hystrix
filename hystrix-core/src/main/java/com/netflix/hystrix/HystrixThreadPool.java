@@ -24,7 +24,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Scheduler;
 import rx.functions.Func0;
-
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -85,12 +84,15 @@ public interface HystrixThreadPool {
     /**
      * @ExcludeFromJavadoc
      */
-    /* package */static class Factory {
+    /* package */
+    static class Factory {
+
         /*
          * Use the String from HystrixThreadPoolKey.name() instead of the HystrixThreadPoolKey instance as it's just an interface and we can't ensure the object
          * we receive implements hashcode/equals correctly and do not want the default hashcode/equals which would create a new threadpool for every object we get even if the name is the same
          */
-        /* package */final static ConcurrentHashMap<String, HystrixThreadPool> threadPools = new ConcurrentHashMap<String, HystrixThreadPool>();
+        /* package */
+        final static ConcurrentHashMap<String, HystrixThreadPool> threadPools = new ConcurrentHashMap<String, HystrixThreadPool>();
 
         /**
          * Get the {@link HystrixThreadPool} instance for a given {@link HystrixThreadPoolKey}.
@@ -99,16 +101,15 @@ public interface HystrixThreadPool {
          *
          * @return {@link HystrixThreadPool} instance
          */
-        /* package */static HystrixThreadPool getInstance(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolProperties.Setter propertiesBuilder) {
+        /* package */
+        static HystrixThreadPool getInstance(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolProperties.Setter propertiesBuilder) {
             // get the key to use instead of using the object itself so that if people forget to implement equals/hashcode things will still work
             String key = threadPoolKey.name();
-
             // this should find it for all but the first time
             HystrixThreadPool previouslyCached = threadPools.get(key);
             if (previouslyCached != null) {
                 return previouslyCached;
             }
-
             // if we get here this is the first time so we need to initialize
             synchronized (HystrixThreadPool.class) {
                 if (!threadPools.containsKey(key)) {
@@ -125,7 +126,8 @@ public interface HystrixThreadPool {
          * and causing thread-pools to initialize while also trying to shutdown.
          * </p>
          */
-        /* package */static synchronized void shutdown() {
+        /* package */
+        static synchronized void shutdown() {
             for (HystrixThreadPool pool : threadPools.values()) {
                 pool.getExecutor().shutdown();
             }
@@ -139,13 +141,14 @@ public interface HystrixThreadPool {
          * and causing thread-pools to initialize while also trying to shutdown.
          * </p>
          */
-        /* package */static synchronized void shutdown(long timeout, TimeUnit unit) {
+        /* package */
+        static synchronized void shutdown(long timeout, TimeUnit unit) {
             for (HystrixThreadPool pool : threadPools.values()) {
                 pool.getExecutor().shutdown();
             }
             for (HystrixThreadPool pool : threadPools.values()) {
                 try {
-                    while (! pool.getExecutor().awaitTermination(timeout, unit)) {
+                    while (!pool.getExecutor().awaitTermination(timeout, unit)) {
                     }
                 } catch (InterruptedException e) {
                     throw new RuntimeException("Interrupted while waiting for thread-pools to terminate. Pools may not be correctly shutdown or cleared.", e);
@@ -159,26 +162,28 @@ public interface HystrixThreadPool {
      * @ExcludeFromJavadoc
      * @ThreadSafe
      */
-    /* package */static class HystrixThreadPoolDefault implements HystrixThreadPool {
+    /* package */
+    static class HystrixThreadPoolDefault implements HystrixThreadPool {
+
         private static final Logger logger = LoggerFactory.getLogger(HystrixThreadPoolDefault.class);
 
         private final HystrixThreadPoolProperties properties;
+
         private final BlockingQueue<Runnable> queue;
+
         private final ThreadPoolExecutor threadPool;
+
         private final HystrixThreadPoolMetrics metrics;
+
         private final int queueSize;
 
         public HystrixThreadPoolDefault(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolProperties.Setter propertiesDefaults) {
             this.properties = HystrixPropertiesFactory.getThreadPoolProperties(threadPoolKey, propertiesDefaults);
             HystrixConcurrencyStrategy concurrencyStrategy = HystrixPlugins.getInstance().getConcurrencyStrategy();
             this.queueSize = properties.maxQueueSize().get();
-
-            this.metrics = HystrixThreadPoolMetrics.getInstance(threadPoolKey,
-                    concurrencyStrategy.getThreadPool(threadPoolKey, properties),
-                    properties);
+            this.metrics = HystrixThreadPoolMetrics.getInstance(threadPoolKey, concurrencyStrategy.getThreadPool(threadPoolKey, properties), properties);
             this.threadPool = this.metrics.getThreadPool();
             this.queue = this.threadPool.getQueue();
-
             /* strategy: HystrixMetricsPublisherThreadPool */
             HystrixMetricsPublisherFactory.createOrRetrievePublisherForThreadPool(threadPoolKey, this.metrics, this.properties);
         }
@@ -193,6 +198,7 @@ public interface HystrixThreadPool {
         public Scheduler getScheduler() {
             //by default, interrupt underlying threads on timeout
             return getScheduler(new Func0<Boolean>() {
+
                 @Override
                 public Boolean call() {
                     return true;
@@ -213,24 +219,19 @@ public interface HystrixThreadPool {
             int dynamicMaximumSize = properties.actualMaximumSize();
             final boolean allowSizesToDiverge = properties.getAllowMaximumSizeToDivergeFromCoreSize().get();
             boolean maxTooLow = false;
-
             if (allowSizesToDiverge && configuredMaximumSize < dynamicCoreSize) {
                 //if user sets maximum < core (or defaults get us there), we need to maintain invariant of core <= maximum
                 dynamicMaximumSize = dynamicCoreSize;
                 maxTooLow = true;
             }
-
             // In JDK 6, setCorePoolSize and setMaximumPoolSize will execute a lock operation. Avoid them if the pool size is not changed.
             if (threadPool.getCorePoolSize() != dynamicCoreSize || (allowSizesToDiverge && threadPool.getMaximumPoolSize() != dynamicMaximumSize)) {
                 if (maxTooLow) {
-                    logger.error("Hystrix ThreadPool configuration for : " + metrics.getThreadPoolKey().name() + " is trying to set coreSize = " +
-                            dynamicCoreSize + " and maximumSize = " + configuredMaximumSize + ".  Maximum size will be set to " +
-                            dynamicMaximumSize + ", the coreSize value, since it must be equal to or greater than the coreSize value");
+                    logger.error("Hystrix ThreadPool configuration for : " + metrics.getThreadPoolKey().name() + " is trying to set coreSize = " + dynamicCoreSize + " and maximumSize = " + configuredMaximumSize + ".  Maximum size will be set to " + dynamicMaximumSize + ", the coreSize value, since it must be equal to or greater than the coreSize value");
                 }
                 threadPool.setCorePoolSize(dynamicCoreSize);
                 threadPool.setMaximumPoolSize(dynamicMaximumSize);
             }
-
             threadPool.setKeepAliveTime(properties.keepAliveTimeMinutes().get(), TimeUnit.MINUTES);
         }
 
@@ -269,7 +270,5 @@ public interface HystrixThreadPool {
                 return threadPool.getQueue().size() < properties.queueSizeRejectionThreshold().get();
             }
         }
-
     }
-
 }

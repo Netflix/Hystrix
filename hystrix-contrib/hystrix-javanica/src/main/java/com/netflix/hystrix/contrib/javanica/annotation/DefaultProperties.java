@@ -28,7 +28,7 @@ import java.lang.annotation.Target;
  *
  * @author dmgcodevil
  */
-@Target({ElementType.TYPE})
+@Target({ ElementType.TYPE })
 @Retention(RetentionPolicy.RUNTIME)
 @Inherited
 @Documented

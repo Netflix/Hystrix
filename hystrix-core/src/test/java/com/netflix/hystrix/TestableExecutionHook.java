@@ -19,7 +19,6 @@ import com.netflix.hystrix.exception.HystrixRuntimeException;
 import com.netflix.hystrix.exception.HystrixRuntimeException.FailureType;
 import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
 import rx.Notification;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,8 +30,11 @@ class TestableExecutionHook extends HystrixCommandExecutionHook {
     }
 
     StringBuilder executionSequence = new StringBuilder();
+
     List<Notification<?>> commandEmissions = new ArrayList<Notification<?>>();
+
     List<Notification<?>> executionEmissions = new ArrayList<Notification<?>>();
+
     List<Notification<?>> fallbackEmissions = new ArrayList<Notification<?>>();
 
     public boolean commandEmissionsMatch(int numOnNext, int numOnError, int numOnCompleted) {
@@ -52,8 +54,6 @@ class TestableExecutionHook extends HystrixCommandExecutionHook {
         int actualOnNext = 0;
         int actualOnError = 0;
         int actualOnCompleted = 0;
-
-
         if (l.size() != numOnNext + numOnError + numOnCompleted) {
             System.out.println("Actual : " + l + ", Expected : " + numOnNext + " OnNexts, " + numOnError + " OnErrors, " + numOnCompleted + " OnCompleted");
             return false;
@@ -102,7 +102,7 @@ class TestableExecutionHook extends HystrixCommandExecutionHook {
     }
 
     private Throwable getException(List<Notification<?>> l) {
-        for (Notification<?> n: l) {
+        for (Notification<?> n : l) {
             if (n.isOnError()) {
                 n.getThrowable().printStackTrace();
                 return n.getThrowable();
@@ -219,19 +219,30 @@ class TestableExecutionHook extends HystrixCommandExecutionHook {
     /**
      * DEPRECATED METHODS FOLLOW.  The string representation starts with `!` to distinguish
      */
-
     AtomicInteger startExecute = new AtomicInteger();
+
     Object endExecuteSuccessResponse = null;
+
     Exception endExecuteFailureException = null;
+
     HystrixRuntimeException.FailureType endExecuteFailureType = null;
+
     AtomicInteger startRun = new AtomicInteger();
+
     Object runSuccessResponse = null;
+
     Exception runFailureException = null;
+
     AtomicInteger startFallback = new AtomicInteger();
+
     Object fallbackSuccessResponse = null;
+
     Exception fallbackFailureException = null;
+
     AtomicInteger threadStart = new AtomicInteger();
+
     AtomicInteger threadComplete = new AtomicInteger();
+
     AtomicInteger cacheHit = new AtomicInteger();
 
     @Override

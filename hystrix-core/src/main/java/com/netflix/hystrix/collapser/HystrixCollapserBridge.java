@@ -16,15 +16,13 @@
 package com.netflix.hystrix.collapser;
 
 import java.util.Collection;
-
 import rx.Observable;
-
 import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
 import com.netflix.hystrix.HystrixCollapserKey;
 
 /**
  * Bridge between HystrixCollapser and RequestCollapser to expose 'protected' and 'private' functionality across packages.
- * 
+ *
  * @param <BatchReturnType>
  * @param <ResponseType>
  * @param <RequestArgumentType>
@@ -38,5 +36,4 @@ public interface HystrixCollapserBridge<BatchReturnType, ResponseType, RequestAr
     Observable<Void> mapResponseToRequests(Observable<BatchReturnType> batchResponse, Collection<CollapsedRequest<ResponseType, RequestArgumentType>> requests);
 
     HystrixCollapserKey getCollapserKey();
-
 }

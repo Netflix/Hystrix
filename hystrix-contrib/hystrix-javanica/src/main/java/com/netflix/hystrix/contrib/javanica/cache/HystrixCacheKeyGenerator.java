@@ -15,12 +15,10 @@
  */
 package com.netflix.hystrix.contrib.javanica.cache;
 
-
 import com.netflix.hystrix.contrib.javanica.cache.annotation.CacheKey;
 import com.netflix.hystrix.contrib.javanica.command.MethodExecutionAction;
 import com.netflix.hystrix.contrib.javanica.exception.HystrixCacheKeyGenerationException;
 import org.apache.commons.lang3.StringUtils;
-
 import java.beans.IntrospectionException;
 import java.beans.PropertyDescriptor;
 import java.lang.annotation.Annotation;
@@ -84,8 +82,7 @@ public class HystrixCacheKeyGenerator {
 
     private Object getPropertyValue(String name, Object obj) throws HystrixCacheKeyGenerationException {
         try {
-            return new PropertyDescriptor(name, obj.getClass())
-                    .getReadMethod().invoke(obj);
+            return new PropertyDescriptor(name, obj.getClass()).getReadMethod().invoke(obj);
         } catch (IllegalAccessException e) {
             throw new HystrixCacheKeyGenerationException(e);
         } catch (IntrospectionException e) {
@@ -94,5 +91,4 @@ public class HystrixCacheKeyGenerator {
             throw new HystrixCacheKeyGenerationException(e);
         }
     }
-
 }

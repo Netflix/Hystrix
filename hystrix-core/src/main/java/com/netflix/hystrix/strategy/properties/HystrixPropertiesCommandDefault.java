@@ -20,7 +20,7 @@ import com.netflix.hystrix.HystrixCommandProperties;
 
 /**
  * Default implementation of {@link HystrixCommandProperties} using Archaius (https://github.com/Netflix/archaius)
- * 
+ *
  * @ExcludeFromJavadoc
  */
 public class HystrixPropertiesCommandDefault extends HystrixCommandProperties {
@@ -28,5 +28,4 @@ public class HystrixPropertiesCommandDefault extends HystrixCommandProperties {
     public HystrixPropertiesCommandDefault(HystrixCommandKey key, Setter builder) {
         super(key, builder);
     }
-
 }

@@ -15,7 +15,6 @@
  */
 package com.netflix.hystrix.contrib.javanica.command;
 
-
 import com.netflix.hystrix.HystrixObservableCommand;
 import com.netflix.hystrix.contrib.javanica.cache.CacheInvocationContext;
 import com.netflix.hystrix.contrib.javanica.cache.HystrixCacheKeyGenerator;
@@ -32,10 +31,8 @@ import rx.Completable;
 import rx.Observable;
 import rx.Single;
 import rx.functions.Func1;
-
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.List;
-
 import static com.netflix.hystrix.contrib.javanica.utils.CommonUtils.createArgsForFallback;
 
 /**
@@ -45,10 +42,15 @@ import static com.netflix.hystrix.contrib.javanica.utils.CommonUtils.createArgsF
 public class GenericObservableCommand extends HystrixObservableCommand {
 
     private final CommandActions commandActions;
+
     private final CacheInvocationContext<CacheResult> cacheResultInvocationContext;
+
     private final CacheInvocationContext<CacheRemove> cacheRemoveInvocationContext;
+
     private final List<Class<? extends Throwable>> ignoreExceptions;
+
     private final ExecutionType executionType;
+
     private final HystrixCacheKeyGenerator defaultCacheKeyGenerator = HystrixCacheKeyGenerator.getInstance();
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GenericObservableCommand.class);
@@ -63,23 +65,23 @@ public class GenericObservableCommand extends HystrixObservableCommand {
     }
 
     /**
-     *{@inheritDoc}.
+     * {@inheritDoc}.
      */
     @Override
     protected Observable construct() {
         Observable result;
         try {
             Observable observable = toObservable(commandActions.getCommandAction().execute(executionType));
-            result = observable
-                    .onErrorResumeNext(new Func1<Throwable, Observable>() {
-                        @Override
-                        public Observable call(Throwable throwable) {
-                            if (isIgnorable(throwable)) {
-                                return Observable.error(new HystrixBadRequestException(throwable.getMessage(), throwable));
-                            }
-                            return Observable.error(throwable);
-                        }
-                    });
+            result = observable.onErrorResumeNext(new Func1<Throwable, Observable>() {
+
+                @Override
+                public Observable call(Throwable throwable) {
+                    if (isIgnorable(throwable)) {
+                        return Observable.error(new HystrixBadRequestException(throwable.getMessage(), throwable));
+                    }
+                    return Observable.error(throwable);
+                }
+            });
             flushCache();
         } catch (CommandActionExecutionException throwable) {
             Throwable cause = throwable.getCause();
@@ -92,7 +94,7 @@ public class GenericObservableCommand extends HystrixObservableCommand {
     }
 
     /**
-     *{@inheritDoc}.
+     * {@inheritDoc}.
      */
     @Override
     protected Observable resumeWithFallback() {
@@ -102,7 +104,6 @@ public class GenericObservableCommand extends HystrixObservableCommand {
             if (cause instanceof CommandActionExecutionException) {
                 cause = cause.getCause();
             }
-
             Object[] args = createArgsForFallback(metaHolder, cause);
             try {
                 Object res = commandActions.getFallbackAction().executeWithArgs(executionType, args);
@@ -116,8 +117,7 @@ public class GenericObservableCommand extends HystrixObservableCommand {
                     return Observable.just(res);
                 }
             } catch (Exception e) {
-                LOGGER.error(AbstractHystrixCommand.FallbackErrorMessageBuilder.create()
-                        .append(commandActions.getFallbackAction(), e).build());
+                LOGGER.error(AbstractHystrixCommand.FallbackErrorMessageBuilder.create().append(commandActions.getFallbackAction(), e).build());
                 throw new FallbackInvocationException(e.getCause());
             }
         }
@@ -131,8 +131,7 @@ public class GenericObservableCommand extends HystrixObservableCommand {
     protected String getCacheKey() {
         String key = null;
         if (cacheResultInvocationContext != null) {
-            HystrixGeneratedCacheKey hystrixGeneratedCacheKey =
-                    defaultCacheKeyGenerator.generateCacheKey(cacheResultInvocationContext);
+            HystrixGeneratedCacheKey hystrixGeneratedCacheKey = defaultCacheKeyGenerator.generateCacheKey(cacheResultInvocationContext);
             key = hystrixGeneratedCacheKey.getCacheKey();
         }
         return key;

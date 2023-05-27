@@ -18,10 +18,8 @@ package com.netflix.hystrix.contrib.javanica.command.closure;
 import com.google.common.base.Throwables;
 import com.netflix.hystrix.contrib.javanica.command.ClosureCommand;
 import com.netflix.hystrix.contrib.javanica.command.MetaHolder;
-
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-
 import static com.netflix.hystrix.contrib.javanica.utils.EnvUtils.isCompileWeaving;
 import static com.netflix.hystrix.contrib.javanica.utils.ajc.AjcUtils.invokeAjcMethod;
 import static org.slf4j.helpers.MessageFormatter.format;
@@ -32,6 +30,7 @@ import static org.slf4j.helpers.MessageFormatter.format;
 public abstract class AbstractClosureFactory implements ClosureFactory {
 
     static final String ERROR_TYPE_MESSAGE = "return type of '{}' method should be {}.";
+
     static final String INVOKE_METHOD = "invoke";
 
     @Override
@@ -42,7 +41,8 @@ public abstract class AbstractClosureFactory implements ClosureFactory {
             if (isCompileWeaving()) {
                 closureObj = invokeAjcMethod(metaHolder.getAjcMethod(), o, metaHolder, args);
             } else {
-                closureObj = method.invoke(o, args); // creates instance of an anonymous class
+                // creates instance of an anonymous class
+                closureObj = method.invoke(o, args);
             }
             return createClosure(method.getName(), closureObj);
         } catch (InvocationTargetException e) {
@@ -62,8 +62,7 @@ public abstract class AbstractClosureFactory implements ClosureFactory {
      */
     Closure createClosure(String rootMethodName, final Object closureObj) throws Exception {
         if (!isClosureCommand(closureObj)) {
-            throw new RuntimeException(format(ERROR_TYPE_MESSAGE, rootMethodName,
-                    getClosureCommandType().getName()).getMessage());
+            throw new RuntimeException(format(ERROR_TYPE_MESSAGE, rootMethodName, getClosureCommandType().getName()).getMessage());
         }
         Method closureMethod = closureObj.getClass().getMethod(INVOKE_METHOD);
         return new Closure(closureMethod, closureObj);

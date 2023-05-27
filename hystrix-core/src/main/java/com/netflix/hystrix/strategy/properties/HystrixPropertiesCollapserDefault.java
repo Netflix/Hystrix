@@ -1,12 +1,12 @@
 /**
  * Copyright 2012 Netflix, Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,7 +20,7 @@ import com.netflix.hystrix.HystrixCollapserProperties;
 
 /**
  * Default implementation of {@link HystrixCollapserProperties} using Archaius (https://github.com/Netflix/archaius)
- * 
+ *
  * @ExcludeFromJavadoc
  */
 public class HystrixPropertiesCollapserDefault extends HystrixCollapserProperties {
@@ -28,5 +28,4 @@ public class HystrixPropertiesCollapserDefault extends HystrixCollapserPropertie
     public HystrixPropertiesCollapserDefault(HystrixCollapserKey collapserKey, Setter builder) {
         super(collapserKey, builder);
     }
-
 }

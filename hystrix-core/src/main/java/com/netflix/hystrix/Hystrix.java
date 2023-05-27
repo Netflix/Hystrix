@@ -18,12 +18,10 @@ package com.netflix.hystrix;
 import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import rx.functions.Action0;
 
 /**
@@ -50,7 +48,7 @@ public class Hystrix {
      * <p>
      * NOTE: This can result in race conditions if HystrixCommands are concurrently being executed.
      * </p>
-     * 
+     *
      * @param time
      *            time to wait for thread-pools to shutdown
      * @param unit
@@ -80,6 +78,7 @@ public class Hystrix {
     }
 
     private static ThreadLocal<ConcurrentStack<HystrixCommandKey>> currentCommand = new ThreadLocal<ConcurrentStack<HystrixCommandKey>>() {
+
         @Override
         protected ConcurrentStack<HystrixCommandKey> initialValue() {
             return new ConcurrentStack<HystrixCommandKey>();
@@ -92,22 +91,22 @@ public class Hystrix {
      * When ExecutionIsolationStrategy is THREAD then this applies to the isolation (child/worker) thread not the calling thread.
      * <p>
      * When ExecutionIsolationStrategy is SEMAPHORE this applies to the calling thread.
-     * 
+     *
      * @return HystrixCommandKey of current command being executed or null if none.
      */
     public static HystrixCommandKey getCurrentThreadExecutingCommand() {
         if (currentCommand == null) {
-            // statics do "interesting" things across classloaders apparently so this can somehow be null ... 
+            // statics do "interesting" things across classloaders apparently so this can somehow be null ...
             return null;
         }
         return currentCommand.get().peek();
     }
 
     /**
-     * 
      * @return Action0 to perform the same work as `endCurrentThreadExecutingCommand()` but can be done from any thread
      */
-    /* package */static Action0 startCurrentThreadExecutingCommand(HystrixCommandKey key) {
+    /* package */
+    static Action0 startCurrentThreadExecutingCommand(HystrixCommandKey key) {
         final ConcurrentStack<HystrixCommandKey> list = currentCommand.get();
         try {
             list.push(key);
@@ -120,11 +119,11 @@ public class Hystrix {
             public void call() {
                 endCurrentThreadExecutingCommand(list);
             }
-
         };
     }
 
-    /* package */static void endCurrentThreadExecutingCommand() {
+    /* package */
+    static void endCurrentThreadExecutingCommand() {
         endCurrentThreadExecutingCommand(currentCommand.get());
     }
 
@@ -141,7 +140,8 @@ public class Hystrix {
         }
     }
 
-    /* package-private */ static int getCommandCount() {
+    /* package-private */
+    static int getCommandCount() {
         return currentCommand.get().size();
     }
 
@@ -150,6 +150,7 @@ public class Hystrix {
      * @param <E>
      */
     private static class ConcurrentStack<E> {
+
         AtomicReference<Node<E>> top = new AtomicReference<Node<E>>();
 
         public void push(E item) {
@@ -198,7 +199,9 @@ public class Hystrix {
         }
 
         private class Node<E> {
+
             public final E item;
+
             public Node<E> next;
 
             public Node(E item) {

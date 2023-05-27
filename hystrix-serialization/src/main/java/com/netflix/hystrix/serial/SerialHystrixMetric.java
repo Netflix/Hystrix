@@ -19,12 +19,14 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.nio.ByteBuffer;
 
 public class SerialHystrixMetric {
+
     protected final static JsonFactory jsonFactory = new JsonFactory();
+
     protected final static ObjectMapper mapper = new ObjectMapper();
+
     protected final static Logger logger = LoggerFactory.getLogger(SerialHystrixMetric.class);
 
     @Deprecated

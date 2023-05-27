@@ -1,12 +1,12 @@
 /**
  * Copyright 2016 Netflix, Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,7 +20,6 @@ import rx.Observable;
 import rx.subjects.PublishSubject;
 import rx.subjects.SerializedSubject;
 import rx.subjects.Subject;
-
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -33,6 +32,7 @@ public class HystrixThreadPoolStartStream implements HystrixEventStream<HystrixC
     private final HystrixThreadPoolKey threadPoolKey;
 
     private final Subject<HystrixCommandExecutionStarted, HystrixCommandExecutionStarted> writeOnlySubject;
+
     private final Observable<HystrixCommandExecutionStarted> readOnlyStream;
 
     private static final ConcurrentMap<String, HystrixThreadPoolStartStream> streams = new ConcurrentHashMap<String, HystrixThreadPoolStartStream>();
@@ -57,7 +57,6 @@ public class HystrixThreadPoolStartStream implements HystrixEventStream<HystrixC
 
     HystrixThreadPoolStartStream(final HystrixThreadPoolKey threadPoolKey) {
         this.threadPoolKey = threadPoolKey;
-
         this.writeOnlySubject = new SerializedSubject<HystrixCommandExecutionStarted, HystrixCommandExecutionStarted>(PublishSubject.<HystrixCommandExecutionStarted>create());
         this.readOnlyStream = writeOnlySubject.share();
     }

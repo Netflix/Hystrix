@@ -20,20 +20,17 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import rx.Observable;
 import rx.functions.Action0;
 import rx.functions.Action1;
-
 import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
 import com.netflix.hystrix.HystrixCollapserProperties;
 
 /**
  * A batch of requests collapsed together by a RequestCollapser instance. When full or time has expired it will execute and stop accepting further submissions.
- * 
+ *
  * @param <BatchReturnType>
  * @param <ResponseType>
  * @param <RequestArgumentType>
@@ -43,11 +40,13 @@ public class RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> {
     private static final Logger logger = LoggerFactory.getLogger(RequestBatch.class);
 
     private final HystrixCollapserBridge<BatchReturnType, ResponseType, RequestArgumentType> commandCollapser;
+
     private final int maxBatchSize;
+
     private final AtomicBoolean batchStarted = new AtomicBoolean();
 
-    private final ConcurrentMap<RequestArgumentType, CollapsedRequest<ResponseType, RequestArgumentType>> argumentMap =
-            new ConcurrentHashMap<RequestArgumentType, CollapsedRequest<ResponseType, RequestArgumentType>>();
+    private final ConcurrentMap<RequestArgumentType, CollapsedRequest<ResponseType, RequestArgumentType>> argumentMap = new ConcurrentHashMap<RequestArgumentType, CollapsedRequest<ResponseType, RequestArgumentType>>();
+
     private final HystrixCollapserProperties properties;
 
     private ReentrantReadWriteLock batchLock = new ReentrantReadWriteLock();
@@ -66,7 +65,6 @@ public class RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> {
         if (batchStarted.get()) {
             return null;
         }
-
         /*
          * The 'read' just means non-exclusive even though we are writing.
          */
@@ -76,12 +74,10 @@ public class RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> {
                 if (batchStarted.get()) {
                     return null;
                 }
-
                 if (argumentMap.size() >= maxBatchSize) {
                     return null;
                 } else {
-                    CollapsedRequestSubject<ResponseType, RequestArgumentType> collapsedRequest =
-                            new CollapsedRequestSubject<ResponseType, RequestArgumentType>(arg, this);
+                    CollapsedRequestSubject<ResponseType, RequestArgumentType> collapsedRequest = new CollapsedRequestSubject<ResponseType, RequestArgumentType>(arg, this);
                     final CollapsedRequestSubject<ResponseType, RequestArgumentType> existing = (CollapsedRequestSubject<ResponseType, RequestArgumentType>) argumentMap.putIfAbsent(arg, collapsedRequest);
                     /**
                      * If the argument already exists in the batch, then there are 2 options:
@@ -105,7 +101,6 @@ public class RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> {
                     } else {
                         return collapsedRequest.toObservable();
                     }
-
                 }
             } finally {
                 batchLock.readLock().unlock();
@@ -121,19 +116,18 @@ public class RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> {
      *
      * @param arg argument to remove from batch
      */
-    /* package-private */ void remove(RequestArgumentType arg) {
+    /* package-private */
+    void remove(RequestArgumentType arg) {
         if (batchStarted.get()) {
             //nothing we can do
             return;
         }
-
         if (batchLock.readLock().tryLock()) {
             try {
                 /* double-check now that we have the lock - if the batch is started, deleting is useless */
                 if (batchStarted.get()) {
                     return;
                 }
-
                 argumentMap.remove(arg);
             } finally {
                 batchLock.readLock().unlock();
@@ -151,7 +145,6 @@ public class RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> {
      * <li>Set ALL CollapsedRequest response values => Set the response values T on each CollapsedRequest<T, R>, even if the response is NULL otherwise the user thread waiting on the response will
      * think a response was never received and will either block indefinitely or will timeout while waiting.</li>
      * </ul>
-     * 
      */
     public void executeBatchIfNotAlreadyStarted() {
         /*
@@ -161,16 +154,14 @@ public class RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> {
         if (batchStarted.compareAndSet(false, true)) {
             /* wait for 'offer'/'remove' threads to finish before executing the batch so 'requests' is complete */
             batchLock.writeLock().lock();
-
             try {
                 // shard batches
                 Collection<Collection<CollapsedRequest<ResponseType, RequestArgumentType>>> shards = commandCollapser.shardRequests(argumentMap.values());
-                // for each shard execute its requests 
+                // for each shard execute its requests
                 for (final Collection<CollapsedRequest<ResponseType, RequestArgumentType>> shardRequests : shards) {
                     try {
                         // create a new command to handle this batch of requests
                         Observable<BatchReturnType> o = commandCollapser.createObservableCommand(shardRequests);
-
                         commandCollapser.mapResponseToRequests(o, shardRequests).doOnError(new Action1<Throwable>() {
 
                             /**
@@ -198,7 +189,6 @@ public class RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> {
                                     }
                                 }
                             }
-
                         }).doOnCompleted(new Action0() {
 
                             /**
@@ -210,15 +200,13 @@ public class RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> {
                                 Exception e = null;
                                 for (CollapsedRequest<ResponseType, RequestArgumentType> request : shardRequests) {
                                     try {
-                                       e = ((CollapsedRequestSubject<ResponseType, RequestArgumentType>) request).setExceptionIfResponseNotReceived(e,"No response set by " + commandCollapser.getCollapserKey().name() + " 'mapResponseToRequests' implementation.");
+                                        e = ((CollapsedRequestSubject<ResponseType, RequestArgumentType>) request).setExceptionIfResponseNotReceived(e, "No response set by " + commandCollapser.getCollapserKey().name() + " 'mapResponseToRequests' implementation.");
                                     } catch (IllegalStateException e2) {
                                         logger.debug("Partial success of 'mapResponseToRequests' resulted in IllegalStateException while setting 'No response set' Exception. Continuing ... ", e2);
                                     }
                                 }
                             }
-
                         }).subscribe();
-                        
                     } catch (Exception e) {
                         logger.error("Exception while creating and queueing command with batch.", e);
                         // if a failure occurs we want to pass that exception to all of the Futures that we've returned
@@ -231,7 +219,6 @@ public class RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> {
                         }
                     }
                 }
-
             } catch (Exception e) {
                 logger.error("Exception while sharding requests.", e);
                 // same error handling as we do around the shards, but this is a wider net in case the shardRequest method fails
@@ -275,7 +262,6 @@ public class RequestBatch<BatchReturnType, ResponseType, RequestArgumentType> {
                          */
                         logger.warn("Request still in queue but not be executed due to RequestCollapser shutdown. Argument => " + request.getArgument() + "   Request Object => " + request, new IllegalStateException());
                     }
-
                 }
             } finally {
                 batchLock.writeLock().unlock();

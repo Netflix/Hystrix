@@ -30,7 +30,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
  * https://github.com/Netflix/Hystrix/wiki/How-To-Use#Collapsing
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = {AopCglibConfig.class, CollapserTest.CollapserTestConfig.class})
+@ContextConfiguration(classes = { AopCglibConfig.class, CollapserTest.CollapserTestConfig.class })
 public class CollapserTest extends BasicCollapserTest {
 
     @Autowired
@@ -40,7 +40,6 @@ public class CollapserTest extends BasicCollapserTest {
     protected UserService createUserService() {
         return userService;
     }
-
 
     /**
      * Spring configuration.
@@ -53,5 +52,4 @@ public class CollapserTest extends BasicCollapserTest {
             return new UserService();
         }
     }
-
 }

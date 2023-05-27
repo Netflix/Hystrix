@@ -23,12 +23,9 @@ import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
 import java.lang.ref.Reference;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import static org.junit.Assert.*;
-
 
 public class HystrixTimerTest {
 
@@ -49,16 +46,13 @@ public class HystrixTimerTest {
         HystrixTimer timer = HystrixTimer.getInstance();
         TestListener l1 = new TestListener(50, "A");
         timer.addTimerListener(l1);
-
         TestListener l2 = new TestListener(50, "B");
         timer.addTimerListener(l2);
-
         try {
             Thread.sleep(500);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-
         // we should have 7 or more 50ms ticks within 500ms
         System.out.println("l1 ticks: " + l1.tickCount.get());
         System.out.println("l2 ticks: " + l2.tickCount.get());
@@ -71,30 +65,24 @@ public class HystrixTimerTest {
         HystrixTimer timer = HystrixTimer.getInstance();
         TestListener l1 = new TestListener(100, "A");
         timer.addTimerListener(l1);
-
         TestListener l2 = new TestListener(10, "B");
         timer.addTimerListener(l2);
-
         TestListener l3 = new TestListener(25, "C");
         timer.addTimerListener(l3);
-
         try {
             Thread.sleep(500);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-
         // we should have 3 or more 100ms ticks within 500ms
         System.out.println("l1 ticks: " + l1.tickCount.get());
         assertTrue(l1.tickCount.get() >= 3);
         // but it can't be more than 6
         assertTrue(l1.tickCount.get() < 6);
-
         // we should have 30 or more 10ms ticks within 500ms
         System.out.println("l2 ticks: " + l2.tickCount.get());
         assertTrue(l2.tickCount.get() > 30);
         assertTrue(l2.tickCount.get() < 550);
-
         // we should have 15-20 25ms ticks within 500ms
         System.out.println("l3 ticks: " + l3.tickCount.get());
         assertTrue(l3.tickCount.get() > 14);
@@ -106,36 +94,29 @@ public class HystrixTimerTest {
         HystrixTimer timer = HystrixTimer.getInstance();
         TestListener l1 = new TestListener(50, "A");
         timer.addTimerListener(l1);
-
         TestListener l2 = new TestListener(50, "B");
         Reference<TimerListener> l2ref = timer.addTimerListener(l2);
-
         try {
             Thread.sleep(500);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-
         // we should have 7 or more 50ms ticks within 500ms
         System.out.println("l1 ticks: " + l1.tickCount.get());
         System.out.println("l2 ticks: " + l2.tickCount.get());
         assertTrue(l1.tickCount.get() > 7);
         assertTrue(l2.tickCount.get() > 7);
-
         // remove l2
         l2ref.clear();
-
         // reset counts
         l1.tickCount.set(0);
         l2.tickCount.set(0);
-
         // wait for time to pass again
         try {
             Thread.sleep(500);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-
         // we should have 7 or more 50ms ticks within 500ms
         System.out.println("l1 ticks: " + l1.tickCount.get());
         System.out.println("l2 ticks: " + l2.tickCount.get());
@@ -151,25 +132,17 @@ public class HystrixTimerTest {
         HystrixTimer timer = HystrixTimer.getInstance();
         TestListener l1 = new TestListener(50, "A");
         timer.addTimerListener(l1);
-
         ScheduledExecutor ex = timer.executor.get();
-
         assertFalse(ex.executor.isShutdown());
-
         // perform reset which should shut it down
         HystrixTimer.reset();
-
         assertTrue(ex.executor.isShutdown());
         assertNull(timer.executor.get());
-
         // assert it starts up again on use
         TestListener l2 = new TestListener(50, "A");
         timer.addTimerListener(l2);
-
         ScheduledExecutor ex2 = timer.executor.get();
-
         assertFalse(ex2.executor.isShutdown());
-
         // reset again to shutdown what we just started
         HystrixTimer.reset();
         // try resetting again to make sure it's idempotent (ie. doesn't blow up on an NPE)
@@ -178,7 +151,6 @@ public class HystrixTimerTest {
 
     @Test
     public void testThreadPoolSizeDefault() {
-
         HystrixTimer hystrixTimer = HystrixTimer.getInstance();
         hystrixTimer.startThreadIfNeeded();
         assertEquals(Runtime.getRuntime().availableProcessors(), hystrixTimer.executor.get().getThreadPool().getCorePoolSize());
@@ -186,30 +158,26 @@ public class HystrixTimerTest {
 
     @Test
     public void testThreadPoolSizeConfiguredWithBuilder() {
-
         HystrixTimerThreadPoolProperties.Setter builder = HystrixTimerThreadPoolProperties.Setter().withCoreSize(1);
         final HystrixTimerThreadPoolProperties props = new HystrixTimerThreadPoolProperties(builder) {
         };
-
         HystrixPropertiesStrategy strategy = new HystrixPropertiesStrategy() {
+
             @Override
             public HystrixTimerThreadPoolProperties getTimerThreadPoolProperties() {
                 return props;
             }
         };
-
         HystrixPlugins.getInstance().registerPropertiesStrategy(strategy);
-
         HystrixTimer hystrixTimer = HystrixTimer.getInstance();
         hystrixTimer.startThreadIfNeeded();
-
         assertEquals(1, hystrixTimer.executor.get().getThreadPool().getCorePoolSize());
-
     }
 
     private static class TestListener implements TimerListener {
 
         private final int interval;
+
         AtomicInteger tickCount = new AtomicInteger();
 
         TestListener(int interval, String value) {
@@ -225,46 +193,39 @@ public class HystrixTimerTest {
         public int getIntervalTimeInMilliseconds() {
             return interval;
         }
-
     }
 
-    public static void main(String args[]) {
+    public static void main(String[] args) {
         PlayListener l1 = new PlayListener();
         PlayListener l2 = new PlayListener();
         PlayListener l3 = new PlayListener();
         PlayListener l4 = new PlayListener();
         PlayListener l5 = new PlayListener();
-
         Reference<TimerListener> ref = HystrixTimer.getInstance().addTimerListener(l1);
         HystrixTimer.getInstance().addTimerListener(l2);
         HystrixTimer.getInstance().addTimerListener(l3);
-
         HystrixTimer.getInstance().addTimerListener(l4);
-
         try {
             Thread.sleep(5000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-
         ref.clear();
         HystrixTimer.getInstance().addTimerListener(l5);
-
         try {
             Thread.sleep(10000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-
         System.out.println("counter: " + l1.counter);
         System.out.println("counter: " + l2.counter);
         System.out.println("counter: " + l3.counter);
         System.out.println("counter: " + l4.counter);
         System.out.println("counter: " + l5.counter);
-
     }
 
     public static class PlayListener implements TimerListener {
+
         int counter = 0;
 
         @Override
@@ -276,8 +237,5 @@ public class HystrixTimerTest {
         public int getIntervalTimeInMilliseconds() {
             return 10;
         }
-
     }
-
-
 }

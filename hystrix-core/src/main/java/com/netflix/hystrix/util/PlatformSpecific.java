@@ -19,9 +19,11 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.ThreadFactory;
 
 public class PlatformSpecific {
+
     private final Platform platform;
 
     private enum Platform {
+
         STANDARD, APPENGINE_STANDARD, APPENGINE_FLEXIBLE
     }
 
@@ -54,9 +56,7 @@ public class PlatformSpecific {
         }
         try {
             // If the current environment is null, we're not inside AppEngine.
-            boolean isInsideAppengine = Class.forName("com.google.apphosting.api.ApiProxy")
-                    .getMethod("getCurrentEnvironment")
-                    .invoke(null) != null;
+            boolean isInsideAppengine = Class.forName("com.google.apphosting.api.ApiProxy").getMethod("getCurrentEnvironment").invoke(null) != null;
             return isInsideAppengine ? Platform.APPENGINE_STANDARD : Platform.STANDARD;
         } catch (ClassNotFoundException e) {
             // If ApiProxy doesn't exist, we're not on AppEngine at all.
@@ -75,9 +75,7 @@ public class PlatformSpecific {
 
     public static ThreadFactory getAppEngineThreadFactory() {
         try {
-            return (ThreadFactory) Class.forName("com.google.appengine.api.ThreadManager")
-                    .getMethod("currentRequestThreadFactory")
-                    .invoke(null);
+            return (ThreadFactory) Class.forName("com.google.appengine.api.ThreadManager").getMethod("currentRequestThreadFactory").invoke(null);
         } catch (IllegalAccessException e) {
             throw new RuntimeException("Couldn't invoke ThreadManager.currentRequestThreadFactory", e);
         } catch (ClassNotFoundException e) {

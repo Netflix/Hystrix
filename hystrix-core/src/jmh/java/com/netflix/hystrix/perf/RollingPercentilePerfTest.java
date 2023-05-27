@@ -28,141 +28,111 @@ import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
-
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 public class RollingPercentilePerfTest {
-	@State(Scope.Thread)
-	public static class PercentileState {
-		HystrixRollingPercentile percentile;
 
-		@Param({"true", "false"})
-		public boolean percentileEnabled;
+    @State(Scope.Thread)
+    public static class PercentileState {
 
-		@Setup(Level.Iteration)
-		public void setUp() {
-			percentile = new HystrixRollingPercentile(100, 10, 1000, HystrixProperty.Factory.asProperty(percentileEnabled));
-		}
-	}
+        HystrixRollingPercentile percentile;
 
-	@State(Scope.Thread)
-	public static class LatencyState {
-		final Random r = new Random();
+        @Param({ "true", "false" })
+        public boolean percentileEnabled;
 
-		int latency;
+        @Setup(Level.Iteration)
+        public void setUp() {
+            percentile = new HystrixRollingPercentile(100, 10, 1000, HystrixProperty.Factory.asProperty(percentileEnabled));
+        }
+    }
 
-		@Setup(Level.Invocation)
-		public void setUp() {
-			latency = r.nextInt(100);
-		}
-	}
+    @State(Scope.Thread)
+    public static class LatencyState {
 
-	@Benchmark
-	@BenchmarkMode({Mode.Throughput})
-	@OutputTimeUnit(TimeUnit.MILLISECONDS)
-	public HystrixRollingPercentile writeOnly(PercentileState percentileState, LatencyState latencyState) {
-		percentileState.percentile.addValue(latencyState.latency);
-		return percentileState.percentile;
-	}
+        final Random r = new Random();
 
-	@Benchmark
-	@BenchmarkMode({Mode.Throughput})
-	@OutputTimeUnit(TimeUnit.MILLISECONDS)
-	public int readOnly(PercentileState percentileState) {
-		HystrixRollingPercentile percentile = percentileState.percentile;
-		return percentile.getMean() +
-				percentile.getPercentile(10) +
-				percentile.getPercentile(25) +
-				percentile.getPercentile(50) +
-				percentile.getPercentile(75) +
-				percentile.getPercentile(90) +
-				percentile.getPercentile(95) +
-				percentile.getPercentile(99) +
-				percentile.getPercentile(99.5);
-	}
+        int latency;
 
-	@Benchmark
-	@Group("writeHeavy")
-	@GroupThreads(7)
-	@BenchmarkMode({Mode.Throughput})
-	@OutputTimeUnit(TimeUnit.MILLISECONDS)
-	public HystrixRollingPercentile writeHeavyLatencyAdd(PercentileState percentileState, LatencyState latencyState) {
-		percentileState.percentile.addValue(latencyState.latency);
-		return percentileState.percentile;
-	}
+        @Setup(Level.Invocation)
+        public void setUp() {
+            latency = r.nextInt(100);
+        }
+    }
 
-	@Benchmark
-	@Group("writeHeavy")
-	@GroupThreads(1)
-	@BenchmarkMode({Mode.Throughput})
-	@OutputTimeUnit(TimeUnit.MILLISECONDS)
-	public int writeHeavyReadMetrics(PercentileState percentileState) {
-		HystrixRollingPercentile percentile = percentileState.percentile;
-		return percentile.getMean() +
-				percentile.getPercentile(10) +
-				percentile.getPercentile(25) +
-				percentile.getPercentile(50) +
-				percentile.getPercentile(75) +
-				percentile.getPercentile(90) +
-				percentile.getPercentile(95) +
-				percentile.getPercentile(99) +
-				percentile.getPercentile(99.5);
-	}
+    @Benchmark
+    @BenchmarkMode({ Mode.Throughput })
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    public HystrixRollingPercentile writeOnly(PercentileState percentileState, LatencyState latencyState) {
+        percentileState.percentile.addValue(latencyState.latency);
+        return percentileState.percentile;
+    }
 
-	@Benchmark
-	@Group("evenSplit")
-	@GroupThreads(4)
-	@BenchmarkMode({Mode.Throughput})
-	@OutputTimeUnit(TimeUnit.MILLISECONDS)
-	public HystrixRollingPercentile evenSplitLatencyAdd(PercentileState percentileState, LatencyState latencyState) {
-		percentileState.percentile.addValue(latencyState.latency);
-		return percentileState.percentile;
-	}
+    @Benchmark
+    @BenchmarkMode({ Mode.Throughput })
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    public int readOnly(PercentileState percentileState) {
+        HystrixRollingPercentile percentile = percentileState.percentile;
+        return percentile.getMean() + percentile.getPercentile(10) + percentile.getPercentile(25) + percentile.getPercentile(50) + percentile.getPercentile(75) + percentile.getPercentile(90) + percentile.getPercentile(95) + percentile.getPercentile(99) + percentile.getPercentile(99.5);
+    }
 
-	@Benchmark
-	@Group("evenSplit")
-	@GroupThreads(4)
-	@BenchmarkMode({Mode.Throughput})
-	@OutputTimeUnit(TimeUnit.MILLISECONDS)
-	public int evenSplitReadMetrics(PercentileState percentileState) {
-		HystrixRollingPercentile percentile = percentileState.percentile;
-		return percentile.getMean() +
-				percentile.getPercentile(10) +
-				percentile.getPercentile(25) +
-				percentile.getPercentile(50) +
-				percentile.getPercentile(75) +
-				percentile.getPercentile(90) +
-				percentile.getPercentile(95) +
-				percentile.getPercentile(99) +
-				percentile.getPercentile(99.5);
-	}
+    @Benchmark
+    @Group("writeHeavy")
+    @GroupThreads(7)
+    @BenchmarkMode({ Mode.Throughput })
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    public HystrixRollingPercentile writeHeavyLatencyAdd(PercentileState percentileState, LatencyState latencyState) {
+        percentileState.percentile.addValue(latencyState.latency);
+        return percentileState.percentile;
+    }
 
-	@Benchmark
-	@Group("readHeavy")
-	@GroupThreads(1)
-	@BenchmarkMode({Mode.Throughput})
-	@OutputTimeUnit(TimeUnit.MILLISECONDS)
-	public HystrixRollingPercentile readHeavyLatencyAdd(PercentileState percentileState, LatencyState latencyState) {
-		percentileState.percentile.addValue(latencyState.latency);
-		return percentileState.percentile;
-	}
+    @Benchmark
+    @Group("writeHeavy")
+    @GroupThreads(1)
+    @BenchmarkMode({ Mode.Throughput })
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    public int writeHeavyReadMetrics(PercentileState percentileState) {
+        HystrixRollingPercentile percentile = percentileState.percentile;
+        return percentile.getMean() + percentile.getPercentile(10) + percentile.getPercentile(25) + percentile.getPercentile(50) + percentile.getPercentile(75) + percentile.getPercentile(90) + percentile.getPercentile(95) + percentile.getPercentile(99) + percentile.getPercentile(99.5);
+    }
 
-	@Benchmark
-	@Group("readHeavy")
-	@GroupThreads(7)
-	@BenchmarkMode({Mode.Throughput})
-	@OutputTimeUnit(TimeUnit.MILLISECONDS)
-	public int readHeavyReadMetrics(PercentileState percentileState) {
-		HystrixRollingPercentile percentile = percentileState.percentile;
-		return percentile.getMean() +
-				percentile.getPercentile(10) +
-				percentile.getPercentile(25) +
-				percentile.getPercentile(50) +
-				percentile.getPercentile(75) +
-				percentile.getPercentile(90) +
-				percentile.getPercentile(95) +
-				percentile.getPercentile(99) +
-				percentile.getPercentile(99.5);
-	}
+    @Benchmark
+    @Group("evenSplit")
+    @GroupThreads(4)
+    @BenchmarkMode({ Mode.Throughput })
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    public HystrixRollingPercentile evenSplitLatencyAdd(PercentileState percentileState, LatencyState latencyState) {
+        percentileState.percentile.addValue(latencyState.latency);
+        return percentileState.percentile;
+    }
+
+    @Benchmark
+    @Group("evenSplit")
+    @GroupThreads(4)
+    @BenchmarkMode({ Mode.Throughput })
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    public int evenSplitReadMetrics(PercentileState percentileState) {
+        HystrixRollingPercentile percentile = percentileState.percentile;
+        return percentile.getMean() + percentile.getPercentile(10) + percentile.getPercentile(25) + percentile.getPercentile(50) + percentile.getPercentile(75) + percentile.getPercentile(90) + percentile.getPercentile(95) + percentile.getPercentile(99) + percentile.getPercentile(99.5);
+    }
+
+    @Benchmark
+    @Group("readHeavy")
+    @GroupThreads(1)
+    @BenchmarkMode({ Mode.Throughput })
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    public HystrixRollingPercentile readHeavyLatencyAdd(PercentileState percentileState, LatencyState latencyState) {
+        percentileState.percentile.addValue(latencyState.latency);
+        return percentileState.percentile;
+    }
+
+    @Benchmark
+    @Group("readHeavy")
+    @GroupThreads(7)
+    @BenchmarkMode({ Mode.Throughput })
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    public int readHeavyReadMetrics(PercentileState percentileState) {
+        HystrixRollingPercentile percentile = percentileState.percentile;
+        return percentile.getMean() + percentile.getPercentile(10) + percentile.getPercentile(25) + percentile.getPercentile(50) + percentile.getPercentile(75) + percentile.getPercentile(90) + percentile.getPercentile(95) + percentile.getPercentile(99) + percentile.getPercentile(99.5);
+    }
 }

@@ -9,7 +9,6 @@ import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
 import com.netflix.hystrix.contrib.javanica.test.common.BasicHystrixTest;
 import org.junit.Before;
 import org.junit.Test;
-
 import static com.netflix.hystrix.contrib.javanica.conf.HystrixPropertiesManager.EXECUTION_ISOLATION_THREAD_TIMEOUT_IN_MILLISECONDS;
 import static org.junit.Assert.assertEquals;
 
@@ -30,81 +29,62 @@ public abstract class BasicCommandDefaultPropertiesTest extends BasicHystrixTest
     @Test
     public void testCommandInheritsDefaultGroupKey() {
         service.commandInheritsDefaultProperties();
-        HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest()
-                .getAllExecutedCommands().iterator().next();
+        HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().iterator().next();
         assertEquals("DefaultGroupKey", command.getCommandGroup().name());
     }
 
     @Test
     public void testCommandOverridesDefaultGroupKey() {
         service.commandOverridesGroupKey();
-        HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest()
-                .getAllExecutedCommands().iterator().next();
+        HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().iterator().next();
         assertEquals("SpecificGroupKey", command.getCommandGroup().name());
     }
 
     @Test
     public void testCommandInheritsDefaultThreadPoolKey() {
         service.commandInheritsDefaultProperties();
-        HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest()
-                .getAllExecutedCommands().iterator().next();
+        HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().iterator().next();
         assertEquals("DefaultThreadPoolKey", command.getThreadPoolKey().name());
     }
 
     @Test
     public void testCommandOverridesDefaultThreadPoolKey() {
         service.commandOverridesThreadPoolKey();
-        HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest()
-                .getAllExecutedCommands().iterator().next();
+        HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().iterator().next();
         assertEquals("SpecificThreadPoolKey", command.getThreadPoolKey().name());
     }
 
     @Test
     public void testCommandInheritsDefaultCommandProperties() {
         service.commandInheritsDefaultProperties();
-        HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest()
-                .getAllExecutedCommands().iterator().next();
+        HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().iterator().next();
         assertEquals(456, command.getProperties().executionTimeoutInMilliseconds().get().intValue());
     }
 
     @Test
     public void testCommandOverridesDefaultCommandProperties() {
         service.commandOverridesDefaultCommandProperties();
-        HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest()
-                .getAllExecutedCommands().iterator().next();
+        HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().iterator().next();
         assertEquals(654, command.getProperties().executionTimeoutInMilliseconds().get().intValue());
     }
 
     @Test
     public void testCommandInheritsThreadPollProperties() {
         service.commandInheritsDefaultProperties();
-        HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest()
-                .getAllExecutedCommands().iterator().next();
-
+        HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().iterator().next();
         HystrixThreadPoolProperties properties = getThreadPoolProperties(command);
-
         assertEquals(123, properties.maxQueueSize().get().intValue());
     }
 
     @Test
     public void testCommandOverridesDefaultThreadPollProperties() {
         service.commandOverridesDefaultThreadPoolProperties();
-        HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest()
-                .getAllExecutedCommands().iterator().next();
-
+        HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().iterator().next();
         HystrixThreadPoolProperties properties = getThreadPoolProperties(command);
-
         assertEquals(321, properties.maxQueueSize().get().intValue());
     }
 
-    @DefaultProperties(groupKey = "DefaultGroupKey", threadPoolKey = "DefaultThreadPoolKey",
-            commandProperties = {
-                    @HystrixProperty(name = EXECUTION_ISOLATION_THREAD_TIMEOUT_IN_MILLISECONDS, value = "456")
-            },
-            threadPoolProperties = {
-                    @HystrixProperty(name = "maxQueueSize", value = "123")
-            }
-    )
+    @DefaultProperties(groupKey = "DefaultGroupKey", threadPoolKey = "DefaultThreadPoolKey", commandProperties = { @HystrixProperty(name = EXECUTION_ISOLATION_THREAD_TIMEOUT_IN_MILLISECONDS, value = "456") }, threadPoolProperties = { @HystrixProperty(name = "maxQueueSize", value = "123") })
     public static class Service {
 
         @HystrixCommand
@@ -122,16 +102,12 @@ public abstract class BasicCommandDefaultPropertiesTest extends BasicHystrixTest
             return null;
         }
 
-        @HystrixCommand(commandProperties = {
-                @HystrixProperty(name = EXECUTION_ISOLATION_THREAD_TIMEOUT_IN_MILLISECONDS, value = "654")
-        })
+        @HystrixCommand(commandProperties = { @HystrixProperty(name = EXECUTION_ISOLATION_THREAD_TIMEOUT_IN_MILLISECONDS, value = "654") })
         public Object commandOverridesDefaultCommandProperties() {
             return null;
         }
 
-        @HystrixCommand(threadPoolProperties = {
-                @HystrixProperty(name = "maxQueueSize", value = "321")
-        })
+        @HystrixCommand(threadPoolProperties = { @HystrixProperty(name = "maxQueueSize", value = "321") })
         public Object commandOverridesDefaultThreadPoolProperties() {
             return null;
         }

@@ -18,25 +18,23 @@ package com.netflix.hystrix.config;
 import com.netflix.hystrix.HystrixCollapserKey;
 import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixThreadPoolKey;
-
 import java.util.Map;
 
 public class HystrixConfiguration {
+
     private final Map<HystrixCommandKey, HystrixCommandConfiguration> commandConfig;
+
     private final Map<HystrixThreadPoolKey, HystrixThreadPoolConfiguration> threadPoolConfig;
+
     private final Map<HystrixCollapserKey, HystrixCollapserConfiguration> collapserConfig;
 
-    public HystrixConfiguration(Map<HystrixCommandKey, HystrixCommandConfiguration> commandConfig,
-                                 Map<HystrixThreadPoolKey, HystrixThreadPoolConfiguration> threadPoolConfig,
-                                 Map<HystrixCollapserKey, HystrixCollapserConfiguration> collapserConfig) {
+    public HystrixConfiguration(Map<HystrixCommandKey, HystrixCommandConfiguration> commandConfig, Map<HystrixThreadPoolKey, HystrixThreadPoolConfiguration> threadPoolConfig, Map<HystrixCollapserKey, HystrixCollapserConfiguration> collapserConfig) {
         this.commandConfig = commandConfig;
         this.threadPoolConfig = threadPoolConfig;
         this.collapserConfig = collapserConfig;
     }
 
-    public static HystrixConfiguration from(Map<HystrixCommandKey, HystrixCommandConfiguration> commandConfig,
-                                            Map<HystrixThreadPoolKey, HystrixThreadPoolConfiguration> threadPoolConfig,
-                                            Map<HystrixCollapserKey, HystrixCollapserConfiguration> collapserConfig) {
+    public static HystrixConfiguration from(Map<HystrixCommandKey, HystrixCommandConfiguration> commandConfig, Map<HystrixThreadPoolKey, HystrixThreadPoolConfiguration> threadPoolConfig, Map<HystrixCollapserKey, HystrixCollapserConfiguration> collapserConfig) {
         return new HystrixConfiguration(commandConfig, threadPoolConfig, collapserConfig);
     }
 

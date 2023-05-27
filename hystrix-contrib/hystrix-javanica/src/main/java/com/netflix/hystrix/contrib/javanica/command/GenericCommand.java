@@ -18,9 +18,7 @@ package com.netflix.hystrix.contrib.javanica.command;
 import com.netflix.hystrix.contrib.javanica.exception.FallbackInvocationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import javax.annotation.concurrent.ThreadSafe;
-
 import static com.netflix.hystrix.contrib.javanica.exception.ExceptionUtils.unwrapCause;
 import static com.netflix.hystrix.contrib.javanica.utils.CommonUtils.createArgsForFallback;
 
@@ -43,6 +41,7 @@ public class GenericCommand extends AbstractHystrixCommand<Object> {
     protected Object run() throws Exception {
         LOGGER.debug("execute command: {}", getCommandKey().name());
         return process(new Action() {
+
             @Override
             Object execute() {
                 return getCommandAction().execute(getExecutionType());
@@ -69,6 +68,7 @@ public class GenericCommand extends AbstractHystrixCommand<Object> {
         if (commandAction != null) {
             try {
                 return process(new Action() {
+
                     @Override
                     Object execute() {
                         MetaHolder metaHolder = commandAction.getMetaHolder();
@@ -77,13 +77,11 @@ public class GenericCommand extends AbstractHystrixCommand<Object> {
                     }
                 });
             } catch (Throwable e) {
-                LOGGER.error(FallbackErrorMessageBuilder.create()
-                        .append(commandAction, e).build());
+                LOGGER.error(FallbackErrorMessageBuilder.create().append(commandAction, e).build());
                 throw new FallbackInvocationException(unwrapCause(e));
             }
         } else {
             return super.getFallback();
         }
     }
-
 }

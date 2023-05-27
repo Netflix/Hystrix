@@ -1,12 +1,12 @@
 /**
  * Copyright 2012 Netflix, Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,23 +16,23 @@
 package com.netflix.hystrix.strategy.concurrency;
 
 import java.util.concurrent.Callable;
-
 import com.netflix.hystrix.strategy.HystrixPlugins;
 
 /**
  * Wrapper around {@link Runnable} that manages the {@link HystrixRequestContext} initialization and cleanup for the execution of the {@link Runnable}
- * 
+ *
  * @ExcludeFromJavadoc
  */
 public class HystrixContextRunnable implements Runnable {
 
     private final Callable<Void> actual;
+
     private final HystrixRequestContext parentThreadState;
 
     public HystrixContextRunnable(Runnable actual) {
         this(HystrixPlugins.getInstance().getConcurrencyStrategy(), actual);
     }
-    
+
     public HystrixContextRunnable(HystrixConcurrencyStrategy concurrencyStrategy, final Runnable actual) {
         this(concurrencyStrategy, HystrixRequestContext.getContextForCurrentThread(), actual);
     }
@@ -45,7 +45,6 @@ public class HystrixContextRunnable implements Runnable {
                 actual.run();
                 return null;
             }
-
         });
         this.parentThreadState = hystrixRequestContext;
     }
@@ -67,5 +66,4 @@ public class HystrixContextRunnable implements Runnable {
             HystrixRequestContext.setContextOnCurrentThread(existingState);
         }
     }
-
 }

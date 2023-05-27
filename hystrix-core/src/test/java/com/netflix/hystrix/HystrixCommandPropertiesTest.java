@@ -16,10 +16,8 @@
 package com.netflix.hystrix;
 
 import static org.junit.Assert.assertEquals;
-
 import org.junit.After;
 import org.junit.Test;
-
 import com.netflix.config.ConfigurationManager;
 import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
 import com.netflix.hystrix.HystrixCommandProperties.Setter;
@@ -30,41 +28,28 @@ public class HystrixCommandPropertiesTest {
     /**
      * Utility method for creating baseline properties for unit tests.
      */
-    /* package */static HystrixCommandProperties.Setter getUnitTestPropertiesSetter() {
-        return new HystrixCommandProperties.Setter()
-                .withExecutionTimeoutInMilliseconds(1000)// when an execution will be timed out
-                .withExecutionTimeoutEnabled(true)
-                .withExecutionIsolationStrategy(ExecutionIsolationStrategy.THREAD) // we want thread execution by default in tests
-                .withExecutionIsolationThreadInterruptOnTimeout(true)
-                .withExecutionIsolationThreadInterruptOnFutureCancel(true)
-                .withCircuitBreakerForceOpen(false) // we don't want short-circuiting by default
-                .withCircuitBreakerErrorThresholdPercentage(40) // % of 'marks' that must be failed to trip the circuit
-                .withMetricsRollingStatisticalWindowInMilliseconds(5000)// milliseconds back that will be tracked
-                .withMetricsRollingStatisticalWindowBuckets(5) // buckets
-                .withCircuitBreakerRequestVolumeThreshold(0) // in testing we will not have a threshold unless we're specifically testing that feature
-                .withCircuitBreakerSleepWindowInMilliseconds(5000000) // milliseconds after tripping circuit before allowing retry (by default set VERY long as we want it to effectively never allow a singleTest for most unit tests)
-                .withCircuitBreakerEnabled(true)
-                .withRequestLogEnabled(true)
-                .withExecutionIsolationSemaphoreMaxConcurrentRequests(20)
-                .withFallbackIsolationSemaphoreMaxConcurrentRequests(10)
-                .withFallbackEnabled(true)
-                .withCircuitBreakerForceClosed(false)
-                .withMetricsRollingPercentileEnabled(true)
-                .withRequestCacheEnabled(true)
-                .withMetricsRollingPercentileWindowInMilliseconds(60000)
-                .withMetricsRollingPercentileWindowBuckets(12)
-                .withMetricsRollingPercentileBucketSize(1000)
-                .withMetricsHealthSnapshotIntervalInMilliseconds(100);
+    /* package */
+    static HystrixCommandProperties.Setter getUnitTestPropertiesSetter() {
+        return new HystrixCommandProperties.Setter().withExecutionTimeoutInMilliseconds(// when an execution will be timed out
+        1000).withExecutionTimeoutEnabled(true).withExecutionIsolationStrategy(// we want thread execution by default in tests
+        ExecutionIsolationStrategy.THREAD).withExecutionIsolationThreadInterruptOnTimeout(true).withExecutionIsolationThreadInterruptOnFutureCancel(true).withCircuitBreakerForceOpen(// we don't want short-circuiting by default
+        false).withCircuitBreakerErrorThresholdPercentage(// % of 'marks' that must be failed to trip the circuit
+        40).withMetricsRollingStatisticalWindowInMilliseconds(// milliseconds back that will be tracked
+        5000).withMetricsRollingStatisticalWindowBuckets(// buckets
+        5).withCircuitBreakerRequestVolumeThreshold(// in testing we will not have a threshold unless we're specifically testing that feature
+        0).withCircuitBreakerSleepWindowInMilliseconds(// milliseconds after tripping circuit before allowing retry (by default set VERY long as we want it to effectively never allow a singleTest for most unit tests)
+        5000000).withCircuitBreakerEnabled(true).withRequestLogEnabled(true).withExecutionIsolationSemaphoreMaxConcurrentRequests(20).withFallbackIsolationSemaphoreMaxConcurrentRequests(10).withFallbackEnabled(true).withCircuitBreakerForceClosed(false).withMetricsRollingPercentileEnabled(true).withRequestCacheEnabled(true).withMetricsRollingPercentileWindowInMilliseconds(60000).withMetricsRollingPercentileWindowBuckets(12).withMetricsRollingPercentileBucketSize(1000).withMetricsHealthSnapshotIntervalInMilliseconds(100);
     }
 
     /**
      * Return a static representation of the properties with values from the Builder so that UnitTests can create properties that are not affected by the actual implementations which pick up their
      * values dynamically.
-     * 
+     *
      * @param builder command properties builder
      * @return HystrixCommandProperties
      */
-    /* package */static HystrixCommandProperties asMock(final Setter builder) {
+    /* package */
+    static HystrixCommandProperties asMock(final Setter builder) {
         return new HystrixCommandProperties(TestKey.TEST) {
 
             @Override
@@ -186,13 +171,12 @@ public class HystrixCommandPropertiesTest {
             public HystrixProperty<Boolean> requestLogEnabled() {
                 return HystrixProperty.Factory.asProperty(builder.getRequestLogEnabled());
             }
-
         };
     }
 
     // NOTE: We use "unitTestPrefix" as a prefix so we can't end up pulling in external properties that change unit test behavior
-
     public enum TestKey implements HystrixCommandKey {
+
         TEST
     }
 
@@ -201,7 +185,6 @@ public class HystrixCommandPropertiesTest {
         protected TestPropertiesCommand(HystrixCommandKey key, Setter builder, String propertyPrefix) {
             super(key, builder, propertyPrefix);
         }
-
     }
 
     @After
@@ -211,18 +194,14 @@ public class HystrixCommandPropertiesTest {
 
     @Test
     public void testBooleanBuilderOverride1() {
-        HystrixCommandProperties properties = new TestPropertiesCommand(TestKey.TEST,
-                new HystrixCommandProperties.Setter().withCircuitBreakerForceClosed(true), "unitTestPrefix");
-
+        HystrixCommandProperties properties = new TestPropertiesCommand(TestKey.TEST, new HystrixCommandProperties.Setter().withCircuitBreakerForceClosed(true), "unitTestPrefix");
         // the builder override should take precedence over the default
         assertEquals(true, properties.circuitBreakerForceClosed().get());
     }
 
     @Test
     public void testBooleanBuilderOverride2() {
-        HystrixCommandProperties properties = new TestPropertiesCommand(TestKey.TEST,
-                new HystrixCommandProperties.Setter().withCircuitBreakerForceClosed(false), "unitTestPrefix");
-
+        HystrixCommandProperties properties = new TestPropertiesCommand(TestKey.TEST, new HystrixCommandProperties.Setter().withCircuitBreakerForceClosed(false), "unitTestPrefix");
         // the builder override should take precedence over the default
         assertEquals(false, properties.circuitBreakerForceClosed().get());
     }
@@ -237,60 +216,47 @@ public class HystrixCommandPropertiesTest {
     public void testBooleanGlobalDynamicOverrideOfCodeDefault() throws Exception {
         HystrixCommandProperties properties = new TestPropertiesCommand(TestKey.TEST, new HystrixCommandProperties.Setter(), "unitTestPrefix");
         ConfigurationManager.getConfigInstance().setProperty("unitTestPrefix.command.default.circuitBreaker.forceClosed", true);
-
         // the global dynamic property should take precedence over the default
         assertEquals(true, properties.circuitBreakerForceClosed().get());
-
-        // cleanup 
+        // cleanup
         ConfigurationManager.getConfigInstance().clearProperty("unitTestPrefix.command.default.circuitBreaker.forceClosed");
     }
 
     @Test
     public void testBooleanInstanceBuilderOverrideOfGlobalDynamicOverride1() throws Exception {
-        HystrixCommandProperties properties = new TestPropertiesCommand(TestKey.TEST,
-                new HystrixCommandProperties.Setter().withCircuitBreakerForceClosed(true), "unitTestPrefix");
+        HystrixCommandProperties properties = new TestPropertiesCommand(TestKey.TEST, new HystrixCommandProperties.Setter().withCircuitBreakerForceClosed(true), "unitTestPrefix");
         ConfigurationManager.getConfigInstance().setProperty("unitTestPrefix.command.default.circuitBreaker.forceClosed", false);
-
         // the builder injected should take precedence over the global dynamic property
         assertEquals(true, properties.circuitBreakerForceClosed().get());
-
-        // cleanup 
+        // cleanup
         ConfigurationManager.getConfigInstance().clearProperty("unitTestPrefix.command.default.circuitBreaker.forceClosed");
     }
 
     @Test
     public void testBooleanInstanceBuilderOverrideOfGlobalDynamicOverride2() throws Exception {
-        HystrixCommandProperties properties = new TestPropertiesCommand(TestKey.TEST,
-                new HystrixCommandProperties.Setter().withCircuitBreakerForceClosed(false), "unitTestPrefix");
+        HystrixCommandProperties properties = new TestPropertiesCommand(TestKey.TEST, new HystrixCommandProperties.Setter().withCircuitBreakerForceClosed(false), "unitTestPrefix");
         ConfigurationManager.getConfigInstance().setProperty("unitTestPrefix.command.default.circuitBreaker.forceClosed", true);
-
         // the builder injected should take precedence over the global dynamic property
         assertEquals(false, properties.circuitBreakerForceClosed().get());
-
-        // cleanup 
+        // cleanup
         ConfigurationManager.getConfigInstance().clearProperty("unitTestPrefix.command.default.circuitBreaker.forceClosed");
     }
 
     @Test
     public void testBooleanInstanceDynamicOverrideOfEverything() throws Exception {
-        HystrixCommandProperties properties = new TestPropertiesCommand(TestKey.TEST,
-                new HystrixCommandProperties.Setter().withCircuitBreakerForceClosed(false), "unitTestPrefix");
+        HystrixCommandProperties properties = new TestPropertiesCommand(TestKey.TEST, new HystrixCommandProperties.Setter().withCircuitBreakerForceClosed(false), "unitTestPrefix");
         ConfigurationManager.getConfigInstance().setProperty("unitTestPrefix.command.default.circuitBreaker.forceClosed", false);
         ConfigurationManager.getConfigInstance().setProperty("unitTestPrefix.command.TEST.circuitBreaker.forceClosed", true);
-
         // the instance specific dynamic property should take precedence over everything
         assertEquals(true, properties.circuitBreakerForceClosed().get());
-
-        // cleanup 
+        // cleanup
         ConfigurationManager.getConfigInstance().clearProperty("unitTestPrefix.command.default.circuitBreaker.forceClosed");
         ConfigurationManager.getConfigInstance().clearProperty("unitTestPrefix.command.TEST.circuitBreaker.forceClosed");
     }
 
     @Test
     public void testIntegerBuilderOverride() {
-        HystrixCommandProperties properties = new TestPropertiesCommand(TestKey.TEST,
-                new HystrixCommandProperties.Setter().withMetricsRollingStatisticalWindowInMilliseconds(5000), "unitTestPrefix");
-
+        HystrixCommandProperties properties = new TestPropertiesCommand(TestKey.TEST, new HystrixCommandProperties.Setter().withMetricsRollingStatisticalWindowInMilliseconds(5000), "unitTestPrefix");
         // the builder override should take precedence over the default
         assertEquals(5000, properties.metricsRollingStatisticalWindowInMilliseconds().get().intValue());
     }
@@ -305,38 +271,30 @@ public class HystrixCommandPropertiesTest {
     public void testIntegerGlobalDynamicOverrideOfCodeDefault() throws Exception {
         HystrixCommandProperties properties = new TestPropertiesCommand(TestKey.TEST, new HystrixCommandProperties.Setter(), "unitTestPrefix");
         ConfigurationManager.getConfigInstance().setProperty("unitTestPrefix.command.default.metrics.rollingStats.timeInMilliseconds", 1234);
-
         // the global dynamic property should take precedence over the default
         assertEquals(1234, properties.metricsRollingStatisticalWindowInMilliseconds().get().intValue());
-
-        // cleanup 
+        // cleanup
         ConfigurationManager.getConfigInstance().clearProperty("unitTestPrefix.command.default.metrics.rollingStats.timeInMilliseconds");
     }
 
     @Test
     public void testIntegerInstanceBuilderOverrideOfGlobalDynamicOverride() throws Exception {
-        HystrixCommandProperties properties = new TestPropertiesCommand(TestKey.TEST,
-                new HystrixCommandProperties.Setter().withMetricsRollingStatisticalWindowInMilliseconds(5000), "unitTestPrefix");
+        HystrixCommandProperties properties = new TestPropertiesCommand(TestKey.TEST, new HystrixCommandProperties.Setter().withMetricsRollingStatisticalWindowInMilliseconds(5000), "unitTestPrefix");
         ConfigurationManager.getConfigInstance().setProperty("unitTestPrefix.command.default.rollingStats.timeInMilliseconds", 3456);
-
         // the builder injected should take precedence over the global dynamic property
         assertEquals(5000, properties.metricsRollingStatisticalWindowInMilliseconds().get().intValue());
-
-        // cleanup 
+        // cleanup
         ConfigurationManager.getConfigInstance().clearProperty("unitTestPrefix.command.default.rollingStats.timeInMilliseconds");
     }
 
     @Test
     public void testIntegerInstanceDynamicOverrideOfEverything() throws Exception {
-        HystrixCommandProperties properties = new TestPropertiesCommand(TestKey.TEST,
-                new HystrixCommandProperties.Setter().withMetricsRollingStatisticalWindowInMilliseconds(5000), "unitTestPrefix");
+        HystrixCommandProperties properties = new TestPropertiesCommand(TestKey.TEST, new HystrixCommandProperties.Setter().withMetricsRollingStatisticalWindowInMilliseconds(5000), "unitTestPrefix");
         ConfigurationManager.getConfigInstance().setProperty("unitTestPrefix.command.default.metrics.rollingStats.timeInMilliseconds", 1234);
         ConfigurationManager.getConfigInstance().setProperty("unitTestPrefix.command.TEST.metrics.rollingStats.timeInMilliseconds", 3456);
-
         // the instance specific dynamic property should take precedence over everything
         assertEquals(3456, properties.metricsRollingStatisticalWindowInMilliseconds().get().intValue());
-
-        // cleanup 
+        // cleanup
         ConfigurationManager.getConfigInstance().clearProperty("unitTestPrefix.command.default.metrics.rollingStats.timeInMilliseconds");
         ConfigurationManager.getConfigInstance().clearProperty("unitTestPrefix.command.TEST.metrics.rollingStats.timeInMilliseconds");
     }
@@ -350,10 +308,8 @@ public class HystrixCommandPropertiesTest {
         ConfigurationManager.getConfigInstance().setProperty("unitTestPrefix.command.TEST.threadPoolKeyOverride", "testPool");
         // now it should have a value
         assertEquals("testPool", properties.executionIsolationThreadPoolKeyOverride().get());
-
-        // cleanup 
+        // cleanup
         ConfigurationManager.getConfigInstance().clearProperty("unitTestPrefix.command.default.threadPoolKeyOverride");
         ConfigurationManager.getConfigInstance().clearProperty("unitTestPrefix.command.TEST.threadPoolKeyOverride");
     }
-
 }

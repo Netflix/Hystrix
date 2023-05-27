@@ -1,12 +1,12 @@
 /**
  * Copyright 2012 Netflix, Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,10 +24,8 @@ import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.locks.ReentrantLock;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.netflix.hystrix.strategy.properties.HystrixProperty;
 
 /**
@@ -47,21 +45,29 @@ public class HystrixRollingPercentile {
     private static final Logger logger = LoggerFactory.getLogger(HystrixRollingPercentile.class);
 
     private static final Time ACTUAL_TIME = new ActualTime();
+
     private final Time time;
-    /* package for testing */ final BucketCircularArray buckets;
+
+    /* package for testing */
+    final BucketCircularArray buckets;
+
     private final int timeInMilliseconds;
+
     private final int numberOfBuckets;
+
     private final int bucketDataLength;
+
     private final int bucketSizeInMilliseconds;
+
     private final HystrixProperty<Boolean> enabled;
 
     /*
      * This will get flipped each time a new bucket is created.
      */
-    /* package for testing */ volatile PercentileSnapshot currentPercentileSnapshot = new PercentileSnapshot(0);
+    /* package for testing */
+    volatile PercentileSnapshot currentPercentileSnapshot = new PercentileSnapshot(0);
 
     /**
-     * 
      * @param timeInMilliseconds
      *            {@code HystrixProperty<Integer>} for number of milliseconds of data that should be tracked
      *            Note that this value is represented as a {@link HystrixProperty}, but can not actually be modified
@@ -92,7 +98,6 @@ public class HystrixRollingPercentile {
     }
 
     /**
-     *
      * @param timeInMilliseconds
      *            number of milliseconds of data that should be tracked
      *            <p>
@@ -112,27 +117,25 @@ public class HystrixRollingPercentile {
      */
     public HystrixRollingPercentile(int timeInMilliseconds, int numberOfBuckets, int bucketDataLength, HystrixProperty<Boolean> enabled) {
         this(ACTUAL_TIME, timeInMilliseconds, numberOfBuckets, bucketDataLength, enabled);
-
     }
 
-    /* package for testing */ HystrixRollingPercentile(Time time, int timeInMilliseconds, int numberOfBuckets, int bucketDataLength, HystrixProperty<Boolean> enabled) {
+    /* package for testing */
+    HystrixRollingPercentile(Time time, int timeInMilliseconds, int numberOfBuckets, int bucketDataLength, HystrixProperty<Boolean> enabled) {
         this.time = time;
         this.timeInMilliseconds = timeInMilliseconds;
         this.numberOfBuckets = numberOfBuckets;
         this.bucketDataLength = bucketDataLength;
         this.enabled = enabled;
-
         if (this.timeInMilliseconds % this.numberOfBuckets != 0) {
             throw new IllegalArgumentException("The timeInMilliseconds must divide equally into numberOfBuckets. For example 1000/10 is ok, 1000/11 is not.");
         }
         this.bucketSizeInMilliseconds = this.timeInMilliseconds / this.numberOfBuckets;
-
         buckets = new BucketCircularArray(this.numberOfBuckets);
     }
 
     /**
      * Add value (or values) to current bucket.
-     * 
+     *
      * @param value
      *            Value to be stored in current bucket such as execution latency in milliseconds
      */
@@ -140,7 +143,6 @@ public class HystrixRollingPercentile {
         /* no-op if disabled */
         if (!enabled.get())
             return;
-
         for (int v : value) {
             try {
                 getCurrentBucket().data.addValue(v);
@@ -156,7 +158,7 @@ public class HystrixRollingPercentile {
      * For performance reasons it maintains a single snapshot of the sorted values from all buckets that is re-generated each time the bucket rotates.
      * <p>
      * This means that if a bucket is 5000ms, then this method will re-compute a percentile at most once every 5000ms.
-     * 
+     *
      * @param percentile
      *            value such as 99 (99th percentile), 99.5 (99.5th percentile), 50 (median, 50th percentile) to compute and retrieve percentile from rolling buckets.
      * @return int percentile value
@@ -165,7 +167,6 @@ public class HystrixRollingPercentile {
         /* no-op if disabled */
         if (!enabled.get())
             return -1;
-
         // force logic to move buckets forward in case other requests aren't making it happen
         getCurrentBucket();
         // fetch the current snapshot
@@ -174,14 +175,13 @@ public class HystrixRollingPercentile {
 
     /**
      * This returns the mean (average) of all values in the current snapshot. This is not a percentile but often desired so captured and exposed here.
-     * 
+     *
      * @return mean of all values
      */
     public int getMean() {
         /* no-op if disabled */
         if (!enabled.get())
             return -1;
-
         // force logic to move buckets forward in case other requests aren't making it happen
         getCurrentBucket();
         // fetch the current snapshot
@@ -203,12 +203,10 @@ public class HystrixRollingPercentile {
 
     private Bucket getCurrentBucket() {
         long currentTime = time.getCurrentTimeInMillis();
-
         /* a shortcut to try and get the most common result of immediately finding the current bucket */
-
         /**
          * Retrieve the latest bucket if the given time is BEFORE the end of the bucket window, otherwise it returns NULL.
-         * 
+         *
          * NOTE: This is thread-safe because it's accessing 'buckets' which is a LinkedBlockingDeque
          */
         Bucket currentBucket = buckets.peekLast();
@@ -218,26 +216,24 @@ public class HystrixRollingPercentile {
             // we'll just use the latest as long as we're not AFTER the window
             return currentBucket;
         }
-
         /* if we didn't find the current bucket above, then we have to create one */
-
         /**
          * The following needs to be synchronized/locked even with a synchronized/thread-safe data structure such as LinkedBlockingDeque because
          * the logic involves multiple steps to check existence, create an object then insert the object. The 'check' or 'insertion' themselves
          * are thread-safe by themselves but not the aggregate algorithm, thus we put this entire block of logic inside synchronized.
-         * 
+         *
          * I am using a tryLock if/then (http://download.oracle.com/javase/6/docs/api/java/util/concurrent/locks/Lock.html#tryLock())
          * so that a single thread will get the lock and as soon as one thread gets the lock all others will go the 'else' block
          * and just return the currentBucket until the newBucket is created. This should allow the throughput to be far higher
          * and only slow down 1 thread instead of blocking all of them in each cycle of creating a new bucket based on some testing
          * (and it makes sense that it should as well).
-         * 
+         *
          * This means the timing won't be exact to the millisecond as to what data ends up in a bucket, but that's acceptable.
          * It's not critical to have exact precision to the millisecond, as long as it's rolling, if we can instead reduce the impact synchronization.
-         * 
+         *
          * More importantly though it means that the 'if' block within the lock needs to be careful about what it changes that can still
          * be accessed concurrently in the 'else' block since we're not completely synchronizing access.
-         * 
+         *
          * For example, we can't have a multi-step process to add a bucket, remove a bucket, then update the sum since the 'else' block of code
          * can retrieve the sum while this is all happening. The trade-off is that we don't maintain the rolling sum and let readers just iterate
          * bucket to calculate the sum themselves. This is an example of favoring write-performance instead of read-performance and how the tryLock
@@ -266,7 +262,8 @@ public class HystrixRollingPercentile {
                             reset();
                             // recursively call getCurrentBucket which will create a new bucket and return it
                             return getCurrentBucket();
-                        } else { // we're past the window so we need to create a new bucket
+                        } else {
+                            // we're past the window so we need to create a new bucket
                             Bucket[] allBuckets = buckets.getArray();
                             // create a new bucket and add it as the new 'last' (once this is done other threads will start using it on subsequent retrievals)
                             buckets.addLast(new Bucket(lastBucket.windowStart + this.bucketSizeInMilliseconds, bucketDataLength));
@@ -305,17 +302,19 @@ public class HystrixRollingPercentile {
         /* no-op if disabled */
         if (!enabled.get())
             return;
-
         // clear buckets so we start over again
         buckets.clear();
-
         // and also make sure the percentile snapshot gets reset
         currentPercentileSnapshot = new PercentileSnapshot(buckets.getArray());
     }
 
-    /* package-private for testing */ static class PercentileBucketData {
+    /* package-private for testing */
+    static class PercentileBucketData {
+
         private final int length;
+
         private final AtomicIntegerArray list;
+
         private final AtomicInteger index = new AtomicInteger();
 
         public PercentileBucketData(int dataLength) {
@@ -340,18 +339,22 @@ public class HystrixRollingPercentile {
                 return index.get();
             }
         }
-
     }
 
     /**
      * @NotThreadSafe
      */
-    /* package for testing */ static class PercentileSnapshot {
+    /* package for testing */
+    static class PercentileSnapshot {
+
         private final int[] data;
+
         private final int length;
+
         private int mean;
 
-        /* package for testing */ PercentileSnapshot(Bucket[] buckets) {
+        /* package for testing */
+        PercentileSnapshot(Bucket[] buckets) {
             int lengthFromBuckets = 0;
             // we need to calculate it dynamically as it could have been changed by properties (rare, but possible)
             // also this way we capture the actual index size rather than the max so size the int[] to only what we need
@@ -376,24 +379,23 @@ public class HystrixRollingPercentile {
             } else {
                 this.mean = sum / this.length;
             }
-
             Arrays.sort(this.data, 0, length);
         }
 
-        /* package for testing */ PercentileSnapshot(int... data) {
+        /* package for testing */
+        PercentileSnapshot(int... data) {
             this.data = data;
             this.length = data.length;
-
             int sum = 0;
             for (int v : data) {
                 sum += v;
             }
             this.mean = sum / this.length;
-
             Arrays.sort(this.data, 0, length);
         }
 
-        /* package for testing */ int getMean() {
+        /* package for testing */
+        int getMean() {
             return mean;
         }
 
@@ -410,7 +412,7 @@ public class HystrixRollingPercentile {
         /**
          * @see <a href="http://en.wikipedia.org/wiki/Percentile">Percentile (Wikipedia)</a>
          * @see <a href="http://cnx.org/content/m10805/latest/">Percentile</a>
-         * 
+         *
          * @param percent percentile of data desired
          * @return data at the asked-for percentile.  Interpolation is used if exactness is not possible
          */
@@ -423,10 +425,8 @@ public class HystrixRollingPercentile {
             } else if (percent >= 100.0) {
                 return data[length - 1];
             }
-
             // ranking (http://en.wikipedia.org/wiki/Percentile#Alternative_methods)
             double rank = (percent / 100.0) * length;
-
             // linear interpolation between closest ranks
             int iLow = (int) Math.floor(rank);
             int iHigh = (int) Math.ceil(rank);
@@ -442,7 +442,6 @@ public class HystrixRollingPercentile {
                 return (int) (data[iLow] + (rank - iLow) * (data[iHigh] - data[iLow]));
             }
         }
-
     }
 
     /**
@@ -456,9 +455,14 @@ public class HystrixRollingPercentile {
      * <p>
      * benjchristensen => This implementation was chosen based on performance testing I did and documented at: http://benjchristensen.com/2011/10/08/atomiccirculararray/
      */
-    /* package for testing */ static class BucketCircularArray implements Iterable<Bucket> {
+    /* package for testing */
+    static class BucketCircularArray implements Iterable<Bucket> {
+
         private final AtomicReference<ListState> state;
-        private final int dataLength; // we don't resize, we always stay the same, so remember this
+
+        // we don't resize, we always stay the same, so remember this
+        private final int dataLength;
+
         private final int numBuckets;
 
         /**
@@ -467,14 +471,18 @@ public class HystrixRollingPercentile {
          * This handles the compound operations
          */
         private class ListState {
+
             /*
              * this is an AtomicReferenceArray and not a normal Array because we're copying the reference
              * between ListState objects and multiple threads could maintain references across these
              * compound operations so I want the visibility/concurrency guarantees
              */
             private final AtomicReferenceArray<Bucket> data;
+
             private final int size;
+
             private final int tail;
+
             private final int head;
 
             private ListState(AtomicReferenceArray<Bucket> data, int head, int tail) {
@@ -549,7 +557,8 @@ public class HystrixRollingPercentile {
         }
 
         BucketCircularArray(int size) {
-            AtomicReferenceArray<Bucket> _buckets = new AtomicReferenceArray<Bucket>(size + 1); // + 1 as extra room for the add/remove;
+            // + 1 as extra room for the add/remove;
+            AtomicReferenceArray<Bucket> _buckets = new AtomicReferenceArray<Bucket>(size + 1);
             state = new AtomicReference<ListState>(new ListState(_buckets, 0, 0));
             dataLength = _buckets.length();
             numBuckets = size;
@@ -589,7 +598,6 @@ public class HystrixRollingPercentile {
             ListState currentState = state.get();
             // create new version of state (what we want it to become)
             ListState newState = currentState.addBucket(o);
-
             /*
              * use compareAndSet to set in case multiple threads are attempting (which shouldn't be the case because since addLast will ONLY be called by a single thread at a time due to protection
              * provided in <code>getCurrentBucket</code>)
@@ -618,24 +626,27 @@ public class HystrixRollingPercentile {
         private Bucket[] getArray() {
             return state.get().getArray();
         }
-
     }
 
     /**
      * Counters for a given 'bucket' of time.
      */
-    /* package for testing */ static class Bucket {
+    /* package for testing */
+    static class Bucket {
+
         final long windowStart;
+
         final PercentileBucketData data;
 
         Bucket(long startTime, int bucketDataLength) {
             this.windowStart = startTime;
             this.data = new PercentileBucketData(bucketDataLength);
         }
-
     }
 
-    /* package for testing */ static interface Time {
+    /* package for testing */
+    static interface Time {
+
         public long getCurrentTimeInMillis();
     }
 
@@ -645,7 +656,5 @@ public class HystrixRollingPercentile {
         public long getCurrentTimeInMillis() {
             return System.currentTimeMillis();
         }
-
     }
-
 }

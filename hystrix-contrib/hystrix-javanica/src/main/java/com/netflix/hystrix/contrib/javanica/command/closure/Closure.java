@@ -24,6 +24,7 @@ import java.lang.reflect.Method;
 public class Closure {
 
     private final Method closureMethod;
+
     private final Object closureObj;
 
     public Closure() {
@@ -43,5 +44,4 @@ public class Closure {
     public Object getClosureObj() {
         return closureObj;
     }
-
 }

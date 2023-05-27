@@ -32,5 +32,4 @@ public class ErrorPropagationTest extends BasicErrorPropagationTest {
     protected UserService createUserService() {
         return new UserService();
     }
-
 }

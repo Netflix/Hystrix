@@ -1,12 +1,12 @@
 /**
  * Copyright 2012 Netflix, Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,7 +17,6 @@ package com.netflix.hystrix.strategy.concurrency;
 
 import java.io.Closeable;
 import java.util.concurrent.ConcurrentHashMap;
-
 import com.netflix.hystrix.HystrixCollapser;
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixRequestCache;
@@ -41,9 +40,9 @@ import com.netflix.hystrix.HystrixRequestLog;
  * message such as: <blockquote> HystrixRequestContext.initializeContext() must be called at the beginning of each request before RequestVariable functionality can be used. </blockquote>
  * <p>
  * Example ServletFilter for initializing {@link HystrixRequestContext} at the beginning of an HTTP request and shutting down at the end:
- * 
+ *
  * <blockquote>
- * 
+ *
  * <pre>
  * public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
  *      HystrixRequestContext context = HystrixRequestContext.initializeContext();
@@ -54,7 +53,7 @@ import com.netflix.hystrix.HystrixRequestLog;
  *      }
  * }
  * </pre>
- * 
+ *
  * </blockquote>
  * <p>
  * You can find an implementation at <a target="_top" href="https://github.com/Netflix/Hystrix/tree/master/hystrix-contrib/hystrix-request-servlet">hystrix-contrib/hystrix-request-servlet</a> on GitHub.
@@ -116,11 +115,11 @@ public class HystrixRequestContext implements Closeable {
      * 
      * Only HystrixRequestVariable has a reason to be accessing this field.
      */
-    /* package */ConcurrentHashMap<HystrixRequestVariableDefault<?>, HystrixRequestVariableDefault.LazyInitializer<?>> state = new ConcurrentHashMap<HystrixRequestVariableDefault<?>, HystrixRequestVariableDefault.LazyInitializer<?>>();
+    /* package */
+    ConcurrentHashMap<HystrixRequestVariableDefault<?>, HystrixRequestVariableDefault.LazyInitializer<?>> state = new ConcurrentHashMap<HystrixRequestVariableDefault<?>, HystrixRequestVariableDefault.LazyInitializer<?>>();
 
     // instantiation should occur via static factory methods.
     private HystrixRequestContext() {
-
     }
 
     /**
@@ -152,7 +151,6 @@ public class HystrixRequestContext implements Closeable {
      * This method invokes <code>shutdown()</code>
      */
     public void close() {
-      shutdown();
+        shutdown();
     }
-
 }

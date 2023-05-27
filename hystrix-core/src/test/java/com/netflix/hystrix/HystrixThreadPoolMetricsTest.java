@@ -18,14 +18,13 @@ package com.netflix.hystrix;
 import com.netflix.hystrix.metric.consumer.RollingThreadPoolEventCounterStream;
 import org.junit.Before;
 import org.junit.Test;
-
 import java.util.Collection;
-
 import static org.junit.Assert.assertEquals;
 
 public class HystrixThreadPoolMetricsTest {
 
     private static final HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("HystrixThreadPoolMetrics-UnitTest");
+
     private static final HystrixThreadPoolKey tpKey = HystrixThreadPoolKey.Factory.asKey("HystrixThreadPoolMetrics-ThreadPool");
 
     @Before
@@ -37,21 +36,17 @@ public class HystrixThreadPoolMetricsTest {
     public void shouldYieldNoExecutedTasksOnStartup() throws Exception {
         //given
         final Collection<HystrixThreadPoolMetrics> instances = HystrixThreadPoolMetrics.getInstances();
-
         //then
         assertEquals(0, instances.size());
-
     }
+
     @Test
     public void shouldReturnOneExecutedTask() throws Exception {
         //given
         RollingThreadPoolEventCounterStream.getInstance(tpKey, 10, 100).startCachingStreamValuesIfUnstarted();
-
         new NoOpHystrixCommand().execute();
         Thread.sleep(100);
-
         final Collection<HystrixThreadPoolMetrics> instances = HystrixThreadPoolMetrics.getInstances();
-
         //then
         assertEquals(1, instances.size());
         HystrixThreadPoolMetrics metrics = instances.iterator().next();
@@ -59,10 +54,9 @@ public class HystrixThreadPoolMetricsTest {
     }
 
     private static class NoOpHystrixCommand extends HystrixCommand<Void> {
+
         public NoOpHystrixCommand() {
-            super(Setter.withGroupKey(groupKey)
-                    .andThreadPoolKey(tpKey)
-                    .andThreadPoolPropertiesDefaults(HystrixThreadPoolProperties.Setter().withMetricsRollingStatisticalWindowInMilliseconds(100)));
+            super(Setter.withGroupKey(groupKey).andThreadPoolKey(tpKey).andThreadPoolPropertiesDefaults(HystrixThreadPoolProperties.Setter().withMetricsRollingStatisticalWindowInMilliseconds(100)));
         }
 
         @Override

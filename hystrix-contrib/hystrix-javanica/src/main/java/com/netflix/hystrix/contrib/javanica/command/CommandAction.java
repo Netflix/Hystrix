@@ -49,5 +49,4 @@ public interface CommandAction {
      * @return the action name
      */
     String getActionName();
-
 }

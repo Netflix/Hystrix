@@ -22,6 +22,7 @@ import org.junit.BeforeClass;
  * Created by dmgcodevil
  */
 public class CacheTest extends BasicCacheTest {
+
     @BeforeClass
     public static void setUpEnv() {
         System.setProperty("weavingMode", "compile");

@@ -25,7 +25,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = {AopCglibConfig.class, CollapserPropertiesTest.CollapserPropertiesTestConfig.class})
+@ContextConfiguration(classes = { AopCglibConfig.class, CollapserPropertiesTest.CollapserPropertiesTestConfig.class })
 public class CollapserPropertiesTest extends BasicCollapserPropertiesTest {
 
     @Autowired
@@ -35,7 +35,6 @@ public class CollapserPropertiesTest extends BasicCollapserPropertiesTest {
     protected UserService createUserService() {
         return userService;
     }
-
 
     @Configurable
     public static class CollapserPropertiesTestConfig {

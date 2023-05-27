@@ -1,12 +1,12 @@
 /**
  * Copyright 2012 Netflix, Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,15 +16,11 @@
 package com.netflix.hystrix.examples.basic;
 
 import static org.junit.Assert.*;
-
 import java.util.concurrent.Future;
-
 import org.junit.Test;
-
 import rx.Observable;
 import rx.Observer;
 import rx.functions.Action1;
-
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandGroupKey;
 
@@ -61,25 +57,20 @@ public class CommandHelloWorld extends HystrixCommand<String> {
 
         @Test
         public void testAsynchronous2() throws Exception {
-
             Future<String> fWorld = new CommandHelloWorld("World").queue();
             Future<String> fBob = new CommandHelloWorld("Bob").queue();
-
             assertEquals("Hello World!", fWorld.get());
             assertEquals("Hello Bob!", fBob.get());
         }
 
         @Test
         public void testObservable() throws Exception {
-
             Observable<String> fWorld = new CommandHelloWorld("World").observe();
             Observable<String> fBob = new CommandHelloWorld("Bob").observe();
-
             // blocking
             assertEquals("Hello World!", fWorld.toBlocking().single());
             assertEquals("Hello Bob!", fBob.toBlocking().single());
-
-            // non-blocking 
+            // non-blocking
             // - this is a verbose anonymous inner-class approach and doesn't do assertions
             fWorld.subscribe(new Observer<String>() {
 
@@ -97,9 +88,7 @@ public class CommandHelloWorld extends HystrixCommand<String> {
                 public void onNext(String v) {
                     System.out.println("onNext: " + v);
                 }
-
             });
-
             // non-blocking
             // - also verbose anonymous inner-class
             // - ignore errors and onCompleted signal
@@ -109,27 +98,19 @@ public class CommandHelloWorld extends HystrixCommand<String> {
                 public void call(String v) {
                     System.out.println("onNext: " + v);
                 }
-
             });
-
             // non-blocking
             // - using closures in Java 8 would look like this:
-            
             //            fWorld.subscribe((v) -> {
             //                System.out.println("onNext: " + v);
             //            })
-            
             // - or while also including error handling
-            
             //            fWorld.subscribe((v) -> {
             //                System.out.println("onNext: " + v);
             //            }, (exception) -> {
             //                exception.printStackTrace();
             //            })
-            
             // More information about Observable can be found at https://github.com/Netflix/RxJava/wiki/How-To-Use
-
         }
     }
-
 }

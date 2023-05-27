@@ -1,12 +1,12 @@
 /**
  * Copyright 2012 Netflix, Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,7 +16,6 @@
 package com.netflix.hystrix;
 
 import rx.Observable;
-
 import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
 import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
@@ -26,10 +25,10 @@ import com.netflix.hystrix.strategy.eventnotifier.HystrixEventNotifier;
  * Used to wrap code that will execute potentially risky functionality (typically meaning a service call over the network)
  * with fault and latency tolerance, statistics and performance metrics capture, circuit breaker and bulkhead functionality.
  * This command should be used for a purely non-blocking call pattern. The caller of this command will be subscribed to the Observable<R> returned by the run() method.
- * 
+ *
  * @param <R>
  *            the return type
- * 
+ *
  * @ThreadSafe
  */
 public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> implements HystrixObservable<R>, HystrixInvokableInfo<R> {
@@ -38,7 +37,7 @@ public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> imp
      * Construct a {@link HystrixObservableCommand} with defined {@link HystrixCommandGroupKey}.
      * <p>
      * The {@link HystrixCommandKey} will be derived from the implementing class name.
-     * 
+     *
      * @param group
      *            {@link HystrixCommandGroupKey} used to group together multiple {@link HystrixObservableCommand} objects.
      *            <p>
@@ -51,7 +50,6 @@ public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> imp
     }
 
     /**
-     *
      * Overridden to true so that all onNext emissions are captured
      *
      * @return if onNext events should be reported on
@@ -99,7 +97,7 @@ public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> imp
      * <p>
      * Properties passed in via {@link Setter#andCommandPropertiesDefaults} are cached for the given {@link HystrixCommandKey} for the life of the JVM
      * or until {@link Hystrix#reset()} is called. Dynamic properties allow runtime changes. Read more on the <a href="https://github.com/Netflix/Hystrix/wiki/Configuration">Hystrix Wiki</a>.
-     * 
+     *
      * @param setter
      *            Fluent interface for constructor arguments
      */
@@ -115,10 +113,7 @@ public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> imp
      * <p>
      * Most of the args will revert to a valid default if 'null' is passed in.
      */
-    HystrixObservableCommand(HystrixCommandGroupKey group, HystrixCommandKey key, HystrixThreadPoolKey threadPoolKey, HystrixCircuitBreaker circuitBreaker, HystrixThreadPool threadPool,
-            HystrixCommandProperties.Setter commandPropertiesDefaults, HystrixThreadPoolProperties.Setter threadPoolPropertiesDefaults,
-            HystrixCommandMetrics metrics, TryableSemaphore fallbackSemaphore, TryableSemaphore executionSemaphore,
-            HystrixPropertiesStrategy propertiesStrategy, HystrixCommandExecutionHook executionHook) {
+    HystrixObservableCommand(HystrixCommandGroupKey group, HystrixCommandKey key, HystrixThreadPoolKey threadPoolKey, HystrixCircuitBreaker circuitBreaker, HystrixThreadPool threadPool, HystrixCommandProperties.Setter commandPropertiesDefaults, HystrixThreadPoolProperties.Setter threadPoolPropertiesDefaults, HystrixCommandMetrics metrics, TryableSemaphore fallbackSemaphore, TryableSemaphore executionSemaphore, HystrixPropertiesStrategy propertiesStrategy, HystrixCommandExecutionHook executionHook) {
         super(group, key, threadPoolKey, circuitBreaker, threadPool, commandPropertiesDefaults, threadPoolPropertiesDefaults, metrics, fallbackSemaphore, executionSemaphore, propertiesStrategy, executionHook);
     }
 
@@ -130,25 +125,29 @@ public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> imp
      * Example:
      * <pre> {@code
      *  Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("GroupName"))
-                .andCommandKey(HystrixCommandKey.Factory.asKey("CommandName"))
-                .andEventNotifier(notifier);
+     *                .andCommandKey(HystrixCommandKey.Factory.asKey("CommandName"))
+     *                .andEventNotifier(notifier);
      * } </pre>
-     * 
+     *
      * @NotThreadSafe
      */
     final public static class Setter {
 
         protected final HystrixCommandGroupKey groupKey;
+
         protected HystrixCommandKey commandKey;
+
         protected HystrixThreadPoolKey threadPoolKey;
+
         protected HystrixCommandProperties.Setter commandPropertiesDefaults;
+
         protected HystrixThreadPoolProperties.Setter threadPoolPropertiesDefaults;
 
         /**
          * Setter factory method containing required values.
          * <p>
          * All optional arguments can be set via the chained methods.
-         * 
+         *
          * @param groupKey
          *            {@link HystrixCommandGroupKey} used to group together multiple {@link HystrixObservableCommand} objects.
          *            <p>
@@ -158,7 +157,6 @@ public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> imp
          */
         protected Setter(HystrixCommandGroupKey groupKey) {
             this.groupKey = groupKey;
-
             // default to using SEMAPHORE for ObservableCommand
             commandPropertiesDefaults = setDefaults(HystrixCommandProperties.Setter());
         }
@@ -167,7 +165,7 @@ public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> imp
          * Setter factory method with required values.
          * <p>
          * All optional arguments can be set via the chained methods.
-         * 
+         *
          * @param groupKey
          *            {@link HystrixCommandGroupKey} used to group together multiple {@link HystrixObservableCommand} objects.
          *            <p>
@@ -199,7 +197,7 @@ public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> imp
 
         /**
          * Optional
-         * 
+         *
          * @param commandPropertiesDefaults
          *            {@link HystrixCommandProperties.Setter} with property overrides for this specific instance of {@link HystrixObservableCommand}.
          *            <p>
@@ -218,12 +216,11 @@ public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> imp
             }
             return commandPropertiesDefaults;
         }
-
     }
 
     /**
      * Implement this method with code to be executed when {@link #observe()} or {@link #toObservable()} are invoked.
-     * 
+     *
      * @return R response type
      */
     protected abstract Observable<R> construct();
@@ -240,7 +237,7 @@ public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> imp
      * access and possibly has another level of fallback that does not involve network access.
      * <p>
      * DEFAULT BEHAVIOR: It throws UnsupportedOperationException.
-     * 
+     *
      * @return R or UnsupportedOperationException if not implemented
      */
     protected Observable<R> resumeWithFallback() {
@@ -251,7 +248,7 @@ public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> imp
     final protected Observable<R> getExecutionObservable() {
         return construct();
     }
-    
+
     @Override
     final protected Observable<R> getFallbackObservable() {
         return resumeWithFallback();

@@ -46,23 +46,24 @@ public class CommandExecutor {
     public static Object execute(HystrixInvokable invokable, ExecutionType executionType, MetaHolder metaHolder) throws RuntimeException {
         Validate.notNull(invokable);
         Validate.notNull(metaHolder);
-
-        switch (executionType) {
-            case SYNCHRONOUS: {
-                return castToExecutable(invokable, executionType).execute();
-            }
-            case ASYNCHRONOUS: {
-                HystrixExecutable executable = castToExecutable(invokable, executionType);
-                if (metaHolder.hasFallbackMethodCommand()
-                        && ExecutionType.ASYNCHRONOUS == metaHolder.getFallbackExecutionType()) {
-                    return new FutureDecorator(executable.queue());
+        switch(executionType) {
+            case SYNCHRONOUS:
+                {
+                    return castToExecutable(invokable, executionType).execute();
                 }
-                return executable.queue();
-            }
-            case OBSERVABLE: {
-                HystrixObservable observable = castToObservable(invokable);
-                return ObservableExecutionMode.EAGER == metaHolder.getObservableExecutionMode() ? observable.observe() : observable.toObservable();
-            }
+            case ASYNCHRONOUS:
+                {
+                    HystrixExecutable executable = castToExecutable(invokable, executionType);
+                    if (metaHolder.hasFallbackMethodCommand() && ExecutionType.ASYNCHRONOUS == metaHolder.getFallbackExecutionType()) {
+                        return new FutureDecorator(executable.queue());
+                    }
+                    return executable.queue();
+                }
+            case OBSERVABLE:
+                {
+                    HystrixObservable observable = castToObservable(invokable);
+                    return ObservableExecutionMode.EAGER == metaHolder.getObservableExecutionMode() ? observable.observe() : observable.toObservable();
+                }
             default:
                 throw new RuntimeException("unsupported execution type: " + executionType);
         }
@@ -81,5 +82,4 @@ public class CommandExecutor {
         }
         throw new RuntimeException("Command should implement " + HystrixObservable.class.getCanonicalName() + " interface to execute in observable mode");
     }
-
 }

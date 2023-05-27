@@ -1,12 +1,12 @@
 /**
  * Copyright 2012 Netflix, Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -41,7 +41,7 @@ public abstract class HystrixPropertiesStrategy {
      * <b>Default Implementation</b>
      * <p>
      * Constructs instance of {@link HystrixPropertiesCommandDefault}.
-     * 
+     *
      * @param commandKey
      *            {@link HystrixCommandKey} representing the name or type of {@link HystrixCommand}
      * @param builder
@@ -64,7 +64,7 @@ public abstract class HystrixPropertiesStrategy {
      * <b>Default Implementation</b>
      * <p>
      * Returns {@link HystrixCommandKey#name()}
-     * 
+     *
      * @param commandKey command key used in determining command's cache key
      * @param builder builder for {@link HystrixCommandProperties} used in determining command's cache key
      * @return String value to be used as the cache key of a {@link HystrixCommandProperties} implementation.
@@ -79,14 +79,14 @@ public abstract class HystrixPropertiesStrategy {
      * <b>Default Implementation</b>
      * <p>
      * Constructs instance of {@link HystrixPropertiesThreadPoolDefault}.
-     * 
+     *
      * @param threadPoolKey
      *            {@link HystrixThreadPoolKey} representing the name or type of {@link HystrixThreadPool}
      * @param builder
      *            {@link com.netflix.hystrix.HystrixThreadPoolProperties.Setter} with default overrides as injected via {@link HystrixCommand} to the {@link HystrixThreadPool} implementation.
      *            <p>
      *            The builder will return NULL for each value if no override was provided.
-     * 
+     *
      * @return Implementation of {@link HystrixThreadPoolProperties}
      */
     public HystrixThreadPoolProperties getThreadPoolProperties(HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolProperties.Setter builder) {
@@ -118,14 +118,14 @@ public abstract class HystrixPropertiesStrategy {
      * <b>Default Implementation</b>
      * <p>
      * Constructs instance of {@link HystrixPropertiesCollapserDefault}.
-     * 
+     *
      * @param collapserKey
      *            {@link HystrixCollapserKey} representing the name or type of {@link HystrixCollapser}
      * @param builder
      *            {@link com.netflix.hystrix.HystrixCollapserProperties.Setter} with default overrides as injected to the {@link HystrixCollapser} implementation.
      *            <p>
      *            The builder will return NULL for each value if no override was provided.
-     * 
+     *
      * @return Implementation of {@link HystrixCollapserProperties}
      */
     public HystrixCollapserProperties getCollapserProperties(HystrixCollapserKey collapserKey, HystrixCollapserProperties.Setter builder) {
@@ -156,7 +156,6 @@ public abstract class HystrixPropertiesStrategy {
      * that handles timeouts and collapser logic.
      * <p>
      * Constructs instance of {@link HystrixPropertiesTimerThreadPoolDefault}.
-     *
      *
      * @return Implementation of {@link com.netflix.hystrix.HystrixTimerThreadPoolProperties}
      */

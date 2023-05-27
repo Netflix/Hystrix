@@ -25,7 +25,7 @@ import java.lang.annotation.Target;
  * This annotation allows specify Hystrix command properties in the following format:
  * property name = property value.
  */
-@Target({ElementType.METHOD})
+@Target({ ElementType.METHOD })
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 public @interface HystrixProperty {
@@ -43,5 +43,4 @@ public @interface HystrixProperty {
      * @return value
      */
     String value();
-
 }

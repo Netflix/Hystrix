@@ -1,12 +1,12 @@
 /**
  * Copyright 2012 Netflix, Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -44,7 +44,6 @@ public abstract class HystrixMetricsPublisher {
     // TODO should this have cacheKey functionality like HystrixProperties does?
     // I think we do otherwise dynamically provided owner and properties won't work
     // a custom override would need the caching strategy for properties/publisher/owner etc to be in sync
-
     /**
      * Construct an implementation of {@link HystrixMetricsPublisherCommand} for {@link HystrixCommand} instances having key {@link HystrixCommandKey}.
      * <p>
@@ -53,7 +52,7 @@ public abstract class HystrixMetricsPublisher {
      * <b>Default Implementation</b>
      * <p>
      * Return instance of {@link HystrixMetricsPublisherCommandDefault}
-     * 
+     *
      * @param commandKey
      *            {@link HystrixCommandKey} representing the name or type of {@link HystrixCommand}
      * @param commandGroupKey
@@ -78,7 +77,7 @@ public abstract class HystrixMetricsPublisher {
      * <b>Default Implementation</b>
      * <p>
      * Return instance of {@link HystrixMetricsPublisherThreadPoolDefault}
-     * 
+     *
      * @param threadPoolKey
      *            {@link HystrixThreadPoolKey} representing the name or type of {@link HystrixThreadPool}
      * @param metrics
@@ -111,5 +110,4 @@ public abstract class HystrixMetricsPublisher {
     public HystrixMetricsPublisherCollapser getMetricsPublisherForCollapser(HystrixCollapserKey collapserKey, HystrixCollapserMetrics metrics, HystrixCollapserProperties properties) {
         return new HystrixMetricsPublisherCollapserDefault(collapserKey, metrics, properties);
     }
-
 }

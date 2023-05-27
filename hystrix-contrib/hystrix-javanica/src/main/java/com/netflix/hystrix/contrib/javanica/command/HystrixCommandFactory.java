@@ -26,7 +26,6 @@ public class HystrixCommandFactory {
     private static final HystrixCommandFactory INSTANCE = new HystrixCommandFactory();
 
     private HystrixCommandFactory() {
-
     }
 
     public static HystrixCommandFactory getInstance() {

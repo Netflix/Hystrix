@@ -1,12 +1,12 @@
 /**
  * Copyright 2012 Netflix, Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,7 +30,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.functions.Func0;
 import rx.functions.Func2;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
@@ -47,12 +46,15 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     private static final HystrixEventType[] ALL_EVENT_TYPES = HystrixEventType.values();
 
     public static final Func2<long[], HystrixCommandCompletion, long[]> appendEventToBucket = new Func2<long[], HystrixCommandCompletion, long[]>() {
+
         @Override
         public long[] call(long[] initialCountArray, HystrixCommandCompletion execution) {
             ExecutionResult.EventCounts eventCounts = execution.getEventCounts();
-            for (HystrixEventType eventType: ALL_EVENT_TYPES) {
-                switch (eventType) {
-                    case EXCEPTION_THROWN: break; //this is just a sum of other anyway - don't do the work here
+            for (HystrixEventType eventType : ALL_EVENT_TYPES) {
+                switch(eventType) {
+                    //this is just a sum of other anyway - don't do the work here
+                    case EXCEPTION_THROWN:
+                        break;
                     default:
                         initialCountArray[eventType.ordinal()] += eventCounts.getCount(eventType);
                         break;
@@ -63,12 +65,13 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     };
 
     public static final Func2<long[], long[], long[]> bucketAggregator = new Func2<long[], long[], long[]>() {
+
         @Override
         public long[] call(long[] cumulativeEvents, long[] bucketEventCounts) {
-            for (HystrixEventType eventType: ALL_EVENT_TYPES) {
-                switch (eventType) {
+            for (HystrixEventType eventType : ALL_EVENT_TYPES) {
+                switch(eventType) {
                     case EXCEPTION_THROWN:
-                        for (HystrixEventType exceptionEventType: HystrixEventType.EXCEPTION_PRODUCING_EVENT_TYPES) {
+                        for (HystrixEventType exceptionEventType : HystrixEventType.EXCEPTION_PRODUCING_EVENT_TYPES) {
                             cumulativeEvents[eventType.ordinal()] += bucketEventCounts[exceptionEventType.ordinal()];
                         }
                         break;
@@ -88,7 +91,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      * Get or create the {@link HystrixCommandMetrics} instance for a given {@link HystrixCommandKey}.
      * <p>
      * This is thread-safe and ensures only 1 {@link HystrixCommandMetrics} per {@link HystrixCommandKey}.
-     * 
+     *
      * @param key
      *            {@link HystrixCommandKey} of {@link HystrixCommand} instance requesting the {@link HystrixCommandMetrics}
      * @param commandGroup
@@ -141,7 +144,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
 
     /**
      * Get the {@link HystrixCommandMetrics} instance for a given {@link HystrixCommandKey} or null if one does not exist.
-     * 
+     *
      * @param key
      *            {@link HystrixCommandKey} of {@link HystrixCommand} instance requesting the {@link HystrixCommandMetrics}
      * @return {@link HystrixCommandMetrics}
@@ -152,7 +155,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
 
     /**
      * All registered instances of {@link HystrixCommandMetrics}
-     * 
+     *
      * @return {@code Collection<HystrixCommandMetrics>}
      */
     public static Collection<HystrixCommandMetrics> getInstances() {
@@ -162,43 +165,53 @@ public class HystrixCommandMetrics extends HystrixMetrics {
     /**
      * Clears all state from metrics. If new requests come in instances will be recreated and metrics started from scratch.
      */
-    /* package */ static void reset() {
-        for (HystrixCommandMetrics metricsInstance: getInstances()) {
+    /* package */
+    static void reset() {
+        for (HystrixCommandMetrics metricsInstance : getInstances()) {
             metricsInstance.unsubscribeAll();
         }
         metrics.clear();
     }
 
     private final HystrixCommandProperties properties;
+
     private final HystrixCommandKey key;
+
     private final HystrixCommandGroupKey group;
+
     private final HystrixThreadPoolKey threadPoolKey;
+
     private final AtomicInteger concurrentExecutionCount = new AtomicInteger();
 
     private HealthCountsStream healthCountsStream;
+
     private final RollingCommandEventCounterStream rollingCommandEventCounterStream;
+
     private final CumulativeCommandEventCounterStream cumulativeCommandEventCounterStream;
+
     private final RollingCommandLatencyDistributionStream rollingCommandLatencyDistributionStream;
+
     private final RollingCommandUserLatencyDistributionStream rollingCommandUserLatencyDistributionStream;
+
     private final RollingCommandMaxConcurrencyStream rollingCommandMaxConcurrencyStream;
 
-    /* package */HystrixCommandMetrics(final HystrixCommandKey key, HystrixCommandGroupKey commandGroup, HystrixThreadPoolKey threadPoolKey, HystrixCommandProperties properties, HystrixEventNotifier eventNotifier) {
+    /* package */
+    HystrixCommandMetrics(final HystrixCommandKey key, HystrixCommandGroupKey commandGroup, HystrixThreadPoolKey threadPoolKey, HystrixCommandProperties properties, HystrixEventNotifier eventNotifier) {
         super(null);
         this.key = key;
         this.group = commandGroup;
         this.threadPoolKey = threadPoolKey;
         this.properties = properties;
-
         healthCountsStream = HealthCountsStream.getInstance(key, properties);
         rollingCommandEventCounterStream = RollingCommandEventCounterStream.getInstance(key, properties);
         cumulativeCommandEventCounterStream = CumulativeCommandEventCounterStream.getInstance(key, properties);
-
         rollingCommandLatencyDistributionStream = RollingCommandLatencyDistributionStream.getInstance(key, properties);
         rollingCommandUserLatencyDistributionStream = RollingCommandUserLatencyDistributionStream.getInstance(key, properties);
         rollingCommandMaxConcurrencyStream = RollingCommandMaxConcurrencyStream.getInstance(key, properties);
     }
 
-    /* package */ synchronized void resetStream() {
+    /* package */
+    synchronized void resetStream() {
         healthCountsStream.unsubscribe();
         HealthCountsStream.removeByKey(key);
         healthCountsStream = HealthCountsStream.getInstance(key, properties);
@@ -206,7 +219,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
 
     /**
      * {@link HystrixCommandKey} these metrics represent.
-     * 
+     *
      * @return HystrixCommandKey
      */
     public HystrixCommandKey getCommandKey() {
@@ -233,7 +246,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
 
     /**
      * {@link HystrixCommandProperties} of the {@link HystrixCommand} these metrics represent.
-     * 
+     *
      * @return HystrixCommandProperties
      */
     public HystrixCommandProperties getProperties() {
@@ -262,7 +275,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      * Retrieve the execution time (in milliseconds) for the {@link HystrixCommand#run()} method being invoked at a given percentile.
      * <p>
      * Percentile capture and calculation is configured via {@link HystrixCommandProperties#metricsRollingStatisticalWindowInMilliseconds()} and other related properties.
-     * 
+     *
      * @param percentile
      *            Percentile such as 50, 99, or 99.5.
      * @return int time in milliseconds
@@ -275,7 +288,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      * The mean (average) execution time (in milliseconds) for the {@link HystrixCommand#run()}.
      * <p>
      * This uses the same backing data as {@link #getExecutionTimePercentile};
-     * 
+     *
      * @return int time in milliseconds
      */
     public int getExecutionTimeMean() {
@@ -298,7 +311,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      * the overhead of queuing, executing and waiting for a thread to invoke {@link HystrixCommand#run()} .
      * <p>
      * Percentile capture and calculation is configured via {@link HystrixCommandProperties#metricsRollingStatisticalWindowInMilliseconds()} and other related properties.
-     * 
+     *
      * @param percentile
      *            Percentile such as 50, 99, or 99.5.
      * @return int time in milliseconds
@@ -311,7 +324,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      * The mean (average) execution time (in milliseconds) for {@link HystrixCommand#execute()} or {@link HystrixCommand#queue()}.
      * <p>
      * This uses the same backing data as {@link #getTotalTimePercentile};
-     * 
+     *
      * @return int time in milliseconds
      */
     public int getTotalTimeMean() {
@@ -324,26 +337,29 @@ public class HystrixCommandMetrics extends HystrixMetrics {
 
     /**
      * Current number of concurrent executions of {@link HystrixCommand#run()};
-     * 
+     *
      * @return int
      */
     public int getCurrentConcurrentExecutionCount() {
         return concurrentExecutionCount.get();
     }
 
-    /* package-private */ void markCommandStart(HystrixCommandKey commandKey, HystrixThreadPoolKey threadPoolKey, HystrixCommandProperties.ExecutionIsolationStrategy isolationStrategy) {
+    /* package-private */
+    void markCommandStart(HystrixCommandKey commandKey, HystrixThreadPoolKey threadPoolKey, HystrixCommandProperties.ExecutionIsolationStrategy isolationStrategy) {
         int currentCount = concurrentExecutionCount.incrementAndGet();
         HystrixThreadEventStream.getInstance().commandExecutionStarted(commandKey, threadPoolKey, isolationStrategy, currentCount);
     }
 
-    /* package-private */ void markCommandDone(ExecutionResult executionResult, HystrixCommandKey commandKey, HystrixThreadPoolKey threadPoolKey, boolean executionStarted) {
+    /* package-private */
+    void markCommandDone(ExecutionResult executionResult, HystrixCommandKey commandKey, HystrixThreadPoolKey threadPoolKey, boolean executionStarted) {
         HystrixThreadEventStream.getInstance().executionDone(executionResult, commandKey, threadPoolKey);
         if (executionStarted) {
             concurrentExecutionCount.decrementAndGet();
         }
     }
 
-    /* package-private */ HealthCountsStream getHealthCountsStream() {
+    /* package-private */
+    HealthCountsStream getHealthCountsStream() {
         return healthCountsStream;
     }
 
@@ -367,7 +383,7 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      * <li>{@link HystrixEventType#EMIT} - this event is not a terminal state for the command
      * <li>{@link HystrixEventType#COLLAPSED} - this event is about the batching process, not the command execution
      * </ul><p>
-     * 
+     *
      * @return {@link HealthCounts}
      */
     public HealthCounts getHealthCounts() {
@@ -389,8 +405,11 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      * Error percentage;
      */
     public static class HealthCounts {
+
         private final long totalCount;
+
         private final long errorCount;
+
         private final int errorPercentage;
 
         HealthCounts(long total, long error) {
@@ -420,13 +439,11 @@ public class HystrixCommandMetrics extends HystrixMetrics {
         public HealthCounts plus(long[] eventTypeCounts) {
             long updatedTotalCount = totalCount;
             long updatedErrorCount = errorCount;
-
             long successCount = eventTypeCounts[HystrixEventType.SUCCESS.ordinal()];
             long failureCount = eventTypeCounts[HystrixEventType.FAILURE.ordinal()];
             long timeoutCount = eventTypeCounts[HystrixEventType.TIMEOUT.ordinal()];
             long threadPoolRejectedCount = eventTypeCounts[HystrixEventType.THREAD_POOL_REJECTED.ordinal()];
             long semaphoreRejectedCount = eventTypeCounts[HystrixEventType.SEMAPHORE_REJECTED.ordinal()];
-
             updatedTotalCount += (successCount + failureCount + timeoutCount + threadPoolRejectedCount + semaphoreRejectedCount);
             updatedErrorCount += (failureCount + timeoutCount + threadPoolRejectedCount + semaphoreRejectedCount);
             return new HealthCounts(updatedTotalCount, updatedErrorCount);

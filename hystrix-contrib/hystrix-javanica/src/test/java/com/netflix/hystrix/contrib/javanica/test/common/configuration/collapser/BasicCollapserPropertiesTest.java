@@ -25,11 +25,9 @@ import com.netflix.hystrix.contrib.javanica.test.common.BasicHystrixTest;
 import com.netflix.hystrix.contrib.javanica.test.common.domain.User;
 import org.junit.Before;
 import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-
 import static com.netflix.hystrix.contrib.javanica.conf.HystrixPropertiesManager.MAX_REQUESTS_IN_BATCH;
 import static com.netflix.hystrix.contrib.javanica.conf.HystrixPropertiesManager.TIMER_DELAY_IN_MILLISECONDS;
 import static org.junit.Assert.assertEquals;
@@ -51,19 +49,16 @@ public abstract class BasicCollapserPropertiesTest extends BasicHystrixTest {
 
     @Test
     public void testCollapser() throws ExecutionException, InterruptedException {
-
         User u1 = userService.getUser("1");
         User u2 = userService.getUser("2");
         User u3 = userService.getUser("3");
         User u4 = userService.getUser("4");
-
         assertEquals("name: 1", u1.getName());
         assertEquals("name: 2", u2.getName());
         assertEquals("name: 3", u3.getName());
         assertEquals("name: 4", u4.getName());
         assertEquals(4, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-        HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest()
-                .getAllExecutedCommands().iterator().next();
+        HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().iterator().next();
         assertEquals("getUsers", command.getCommandKey().name());
         // confirm that it was a COLLAPSED command execution
         assertTrue(command.getExecutionEvents().contains(HystrixEventType.COLLAPSED));
@@ -73,12 +68,7 @@ public abstract class BasicCollapserPropertiesTest extends BasicHystrixTest {
 
     public static class UserService {
 
-        @HystrixCollapser(
-                batchMethod = "getUsers",
-                collapserKey = "GetUserCollapser", collapserProperties = {
-                @HystrixProperty(name = TIMER_DELAY_IN_MILLISECONDS, value = "200"),
-                @HystrixProperty(name = MAX_REQUESTS_IN_BATCH, value = "1"),
-        })
+        @HystrixCollapser(batchMethod = "getUsers", collapserKey = "GetUserCollapser", collapserProperties = { @HystrixProperty(name = TIMER_DELAY_IN_MILLISECONDS, value = "200"), @HystrixProperty(name = MAX_REQUESTS_IN_BATCH, value = "1") })
         public User getUser(String id) {
             return null;
         }
@@ -91,6 +81,5 @@ public abstract class BasicCollapserPropertiesTest extends BasicHystrixTest {
             }
             return users;
         }
-
     }
 }

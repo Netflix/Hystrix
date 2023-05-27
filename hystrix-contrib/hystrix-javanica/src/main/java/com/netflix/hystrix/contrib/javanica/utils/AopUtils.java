@@ -20,7 +20,6 @@ import com.google.common.base.Throwables;
 import org.apache.commons.lang3.Validate;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
-
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -47,8 +46,7 @@ public final class AopUtils {
         Method method = null;
         if (joinPoint.getSignature() instanceof MethodSignature) {
             MethodSignature signature = (MethodSignature) joinPoint.getSignature();
-            method = getDeclaredMethod(joinPoint.getTarget().getClass(), signature.getName(),
-                    getParameterTypes(joinPoint));
+            method = getDeclaredMethod(joinPoint.getTarget().getClass(), signature.getName(), getParameterTypes(joinPoint));
         }
         return method;
     }
@@ -61,8 +59,7 @@ public final class AopUtils {
      * @return a {@link Method} object or null if method with specified <code>methodName</code> doesn't exist
      */
     public static Method getMethodFromTarget(JoinPoint joinPoint, String methodName) {
-        return getDeclaredMethod(joinPoint.getTarget().getClass(), methodName,
-                getParameterTypes(joinPoint));
+        return getDeclaredMethod(joinPoint.getTarget().getClass(), methodName, getParameterTypes(joinPoint));
     }
 
     /**
@@ -90,7 +87,7 @@ public final class AopUtils {
         Method method = null;
         try {
             method = type.getDeclaredMethod(methodName, parameterTypes);
-            if(method.isBridge()){
+            if (method.isBridge()) {
                 method = MethodProvider.getInstance().unbride(method, type);
             }
         } catch (NoSuchMethodException e) {
@@ -114,14 +111,13 @@ public final class AopUtils {
         Validate.notNull(annotation, "annotation cannot be null");
         Validate.notNull(type, "type cannot be null");
         for (Annotation ann : type.getDeclaredAnnotations()) {
-            if (ann.annotationType().equals(annotation)) return Optional.of((T) ann);
+            if (ann.annotationType().equals(annotation))
+                return Optional.of((T) ann);
         }
-
         Class<?> superType = type.getSuperclass();
         if (superType != null && !superType.equals(Object.class)) {
             return getAnnotation(superType, annotation);
         }
-
         return Optional.absent();
     }
 
@@ -129,10 +125,8 @@ public final class AopUtils {
         StringBuilder info = new StringBuilder();
         info.append("Method signature:").append("\n");
         info.append(m.toGenericString()).append("\n");
-
         info.append("Declaring class:\n");
         info.append(m.getDeclaringClass().getCanonicalName()).append("\n");
-
         info.append("\nFlags:").append("\n");
         info.append("Bridge=").append(m.isBridge()).append("\n");
         info.append("Synthetic=").append(m.isSynthetic()).append("\n");
@@ -141,11 +135,9 @@ public final class AopUtils {
         info.append("Synchronized=").append(Modifier.isSynchronized(m.getModifiers())).append("\n");
         info.append("Abstract=").append(Modifier.isAbstract(m.getModifiers())).append("\n");
         info.append("AccessLevel=").append(getAccessLevel(m.getModifiers())).append("\n");
-
         info.append("\nReturn Type: \n");
         info.append("ReturnType=").append(m.getReturnType()).append("\n");
         info.append("GenericReturnType=").append(m.getGenericReturnType()).append("\n");
-
         info.append("\nParameters:");
         Class<?>[] pType = m.getParameterTypes();
         Type[] gpType = m.getGenericParameterTypes();
@@ -159,7 +151,6 @@ public final class AopUtils {
             info.append("ParameterType=").append(pType[i]).append("\n");
             info.append("GenericParameterType=").append(gpType[i]).append("\n");
         }
-
         info.append("\nExceptions:");
         Class<?>[] xType = m.getExceptionTypes();
         Type[] gxType = m.getGenericExceptionTypes();
@@ -173,18 +164,15 @@ public final class AopUtils {
             info.append("ExceptionType=").append(xType[i]).append("\n");
             info.append("GenericExceptionType=").append(gxType[i]).append("\n");
         }
-
         info.append("\nAnnotations:");
         if (m.getAnnotations().length != 0) {
             info.append("\n");
         } else {
             info.append("empty\n");
         }
-
         for (int i = 0; i < m.getAnnotations().length; i++) {
             info.append("annotation[").append(i).append("]=").append(m.getAnnotations()[i]).append("\n");
         }
-
         return info.toString();
     }
 
@@ -199,5 +187,4 @@ public final class AopUtils {
             return "default";
         }
     }
-
 }

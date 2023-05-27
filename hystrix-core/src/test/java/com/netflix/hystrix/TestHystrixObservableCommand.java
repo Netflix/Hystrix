@@ -20,9 +20,7 @@ abstract public class TestHystrixObservableCommand<T> extends HystrixObservableC
     private final TestCommandBuilder builder;
 
     public TestHystrixObservableCommand(TestCommandBuilder builder) {
-        super(builder.owner, builder.dependencyKey, builder.threadPoolKey, builder.circuitBreaker, builder.threadPool,
-                builder.commandPropertiesDefaults, builder.threadPoolPropertiesDefaults, builder.metrics,
-                builder.fallbackSemaphore, builder.executionSemaphore, TEST_PROPERTIES_FACTORY, builder.executionHook);
+        super(builder.owner, builder.dependencyKey, builder.threadPoolKey, builder.circuitBreaker, builder.threadPool, builder.commandPropertiesDefaults, builder.threadPoolPropertiesDefaults, builder.metrics, builder.fallbackSemaphore, builder.executionSemaphore, TEST_PROPERTIES_FACTORY, builder.executionHook);
         this.builder = builder;
     }
 

@@ -16,7 +16,6 @@
 package com.netflix.hystrix.collapser;
 
 import java.lang.ref.Reference;
-
 import com.netflix.hystrix.util.HystrixTimer.TimerListener;
 
 /**

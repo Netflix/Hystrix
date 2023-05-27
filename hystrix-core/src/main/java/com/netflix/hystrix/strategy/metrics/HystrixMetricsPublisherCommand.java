@@ -30,7 +30,5 @@ import com.netflix.hystrix.HystrixCommand;
 public interface HystrixMetricsPublisherCommand {
 
     // TODO should the arguments be given via initialize rather than constructor so they can't accidentally do it wrong?
-    
     public void initialize();
-
 }

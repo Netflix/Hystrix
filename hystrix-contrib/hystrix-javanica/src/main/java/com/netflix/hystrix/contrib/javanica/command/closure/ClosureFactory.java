@@ -16,7 +16,6 @@
 package com.netflix.hystrix.contrib.javanica.command.closure;
 
 import com.netflix.hystrix.contrib.javanica.command.MetaHolder;
-
 import java.lang.reflect.Method;
 
 /**

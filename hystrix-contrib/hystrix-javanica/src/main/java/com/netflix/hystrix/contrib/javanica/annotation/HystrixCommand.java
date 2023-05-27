@@ -22,11 +22,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-
 /**
  * This annotation used to specify some methods which should be processes as hystrix commands.
  */
-@Target({ElementType.METHOD})
+@Target({ ElementType.METHOD })
 @Retention(RetentionPolicy.RUNTIME)
 @Inherited
 @Documented
@@ -131,4 +130,3 @@ public @interface HystrixCommand {
      */
     String defaultFallback() default "";
 }
-

@@ -16,7 +16,6 @@
 package com.netflix.hystrix.contrib.requestservlet;
 
 import java.io.IOException;
-
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -24,10 +23,8 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.netflix.hystrix.HystrixRequestLog;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 
@@ -38,7 +35,7 @@ import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
  * <p>
  * Install by adding the following lines to your project web.xml:
  * <p>
- * 
+ *
  * <pre>
  * {@code
  *   <filter>
@@ -56,12 +53,13 @@ import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
  * NOTE: This filter must complete before {@link HystrixRequestContext} is shutdown otherwise the {@link HystrixRequestLog} will already be cleared.
  * <p>
  * This will output a log line similar to this:
- * 
+ *
  * <pre>
  * Hystrix Executions [POST /order] => CreditCardCommand[SUCCESS][1122ms]
  * </pre>
  */
 public class HystrixRequestLogViaLoggerServletFilter implements Filter {
+
     private static final Logger logger = LoggerFactory.getLogger(HystrixRequestLogViaLoggerServletFilter.class);
 
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
@@ -85,17 +83,14 @@ public class HystrixRequestLogViaLoggerServletFilter implements Filter {
             } catch (Exception e) {
                 logger.warn("Unable to append HystrixRequestLog", e);
             }
-
         }
     }
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
-
     }
 
     @Override
     public void destroy() {
-
     }
 }

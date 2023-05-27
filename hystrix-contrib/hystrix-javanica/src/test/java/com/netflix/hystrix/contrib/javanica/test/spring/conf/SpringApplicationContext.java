@@ -28,5 +28,4 @@ public class SpringApplicationContext {
     public HystrixCommandAspect hystrixAspect() {
         return new HystrixCommandAspect();
     }
-
 }

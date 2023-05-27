@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.hystrix;
 
 import com.netflix.hystrix.exception.HystrixRuntimeException;
@@ -23,19 +22,18 @@ import com.netflix.hystrix.strategy.executionhook.HystrixCommandExecutionHook;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import static org.junit.Assert.*;
 
 public class UnsubscribedTasksRequestCacheTest {
 
     private AtomicBoolean encounteredCommandException = new AtomicBoolean(false);
+
     private AtomicInteger numOfExecutions = new AtomicInteger(0);
 
     public class CommandExecutionHook extends HystrixCommandExecutionHook {
@@ -82,20 +80,15 @@ public class UnsubscribedTasksRequestCacheTest {
 
     @Test
     public void testOneCommandIsUnsubscribed() throws ExecutionException, InterruptedException {
-
         HystrixPlugins.getInstance().registerCommandExecutionHook(new CommandExecutionHook());
         final HystrixRequestContext context = HystrixRequestContext.initializeContext();
         final AtomicInteger numCacheResponses = new AtomicInteger(0);
-
         try {
             ExecutorService executorService = Executors.newSingleThreadExecutor();
-
             Future futureCommand2a = executorService.submit(createCommandRunnable(context, numCacheResponses));
             Future futureCommand2b = executorService.submit(createCommandRunnable(context, numCacheResponses));
-
             futureCommand2a.get();
             futureCommand2b.get();
-
             assertEquals(1, numCacheResponses.get());
             assertEquals(1, numOfExecutions.get());
             assertFalse(encounteredCommandException.get());
@@ -108,12 +101,9 @@ public class UnsubscribedTasksRequestCacheTest {
         return new Runnable() {
 
             public void run() {
-
                 HystrixRequestContext.setContextOnCurrentThread(context);
-
                 CommandUsingRequestCache command2a = new CommandUsingRequestCache(2);
                 Future<Boolean> resultCommand2a = command2a.queue();
-
                 try {
                     assertTrue(resultCommand2a.get());
                     System.out.println(Thread.currentThread() + " " + command2a.isResponseFromCache());
@@ -126,5 +116,4 @@ public class UnsubscribedTasksRequestCacheTest {
             }
         };
     }
-
 }

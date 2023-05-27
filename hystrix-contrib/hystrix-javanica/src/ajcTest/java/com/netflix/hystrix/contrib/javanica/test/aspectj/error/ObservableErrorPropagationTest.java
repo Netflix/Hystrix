@@ -33,5 +33,4 @@ public class ObservableErrorPropagationTest extends BasicObservableErrorPropagat
     protected UserService createUserService() {
         return new UserService();
     }
-
 }

@@ -40,12 +40,10 @@ public class GetOrderCommand extends HystrixCommand<Order> {
         } catch (InterruptedException e) {
             // do nothing
         }
-
         /* fail rarely ... but allow failure as this one has no fallback */
         if (Math.random() > 0.9999) {
             throw new RuntimeException("random failure loading order over network");
         }
-
         /* latency spike 5% of the time */
         if (Math.random() > 0.95) {
             // random latency spike
@@ -55,9 +53,7 @@ public class GetOrderCommand extends HystrixCommand<Order> {
                 // do nothing
             }
         }
-
         /* success ... create Order with data "from" the remote service response */
         return new Order(orderId);
     }
-
 }

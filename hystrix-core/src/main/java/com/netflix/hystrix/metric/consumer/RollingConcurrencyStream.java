@@ -24,7 +24,6 @@ import rx.functions.Func0;
 import rx.functions.Func1;
 import rx.functions.Func2;
 import rx.subjects.BehaviorSubject;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -43,11 +42,15 @@ import java.util.concurrent.atomic.AtomicReference;
  * This is a stable value - there's no peeking into a bucket until it is emitted
  */
 public abstract class RollingConcurrencyStream {
+
     private AtomicReference<Subscription> rollingMaxSubscription = new AtomicReference<Subscription>(null);
+
     private final BehaviorSubject<Integer> rollingMax = BehaviorSubject.create(0);
+
     private final Observable<Integer> rollingMaxStream;
 
     private static final Func2<Integer, Integer, Integer> reduceToMax = new Func2<Integer, Integer, Integer>() {
+
         @Override
         public Integer call(Integer a, Integer b) {
             return Math.max(a, b);
@@ -55,6 +58,7 @@ public abstract class RollingConcurrencyStream {
     };
 
     private static final Func1<Observable<Integer>, Observable<Integer>> reduceStreamToMax = new Func1<Observable<Integer>, Observable<Integer>>() {
+
         @Override
         public Observable<Integer> call(Observable<Integer> observedConcurrency) {
             return observedConcurrency.reduce(0, reduceToMax);
@@ -62,6 +66,7 @@ public abstract class RollingConcurrencyStream {
     };
 
     private static final Func1<HystrixCommandExecutionStarted, Integer> getConcurrencyCountFromEvent = new Func1<HystrixCommandExecutionStarted, Integer>() {
+
         @Override
         public Integer call(HystrixCommandExecutionStarted event) {
             return event.getCurrentConcurrency();
@@ -73,17 +78,7 @@ public abstract class RollingConcurrencyStream {
         for (int i = 0; i < numBuckets; i++) {
             emptyRollingMaxBuckets.add(0);
         }
-
-        rollingMaxStream = inputEventStream
-                .observe()
-                .map(getConcurrencyCountFromEvent)
-                .window(bucketSizeInMs, TimeUnit.MILLISECONDS)
-                .flatMap(reduceStreamToMax)
-                .startWith(emptyRollingMaxBuckets)
-                .window(numBuckets, 1)
-                .flatMap(reduceStreamToMax)
-                .share()
-                .onBackpressureDrop();
+        rollingMaxStream = inputEventStream.observe().map(getConcurrencyCountFromEvent).window(bucketSizeInMs, TimeUnit.MILLISECONDS).flatMap(reduceStreamToMax).startWith(emptyRollingMaxBuckets).window(numBuckets, 1).flatMap(reduceStreamToMax).share().onBackpressureDrop();
     }
 
     public void startCachingStreamValuesIfUnstarted() {

@@ -24,6 +24,7 @@ package com.netflix.hystrix.strategy.concurrency;
  * does not depend on an a HystrixRequestContext
  */
 public class HystrixLifecycleForwardingRequestVariable<T> extends HystrixRequestVariableDefault<T> {
+
     private final HystrixRequestVariableLifecycle<T> lifecycle;
 
     /**
@@ -68,5 +69,4 @@ public class HystrixLifecycleForwardingRequestVariable<T> extends HystrixRequest
         }
         return super.get();
     }
-
 }

@@ -15,7 +15,6 @@
  */
 package com.netflix.hystrix.contrib.javanica.test.common.command;
 
-
 import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.HystrixInvokableInfo;
 import com.netflix.hystrix.HystrixRequestLog;
@@ -25,17 +24,17 @@ import com.netflix.hystrix.contrib.javanica.test.common.BasicHystrixTest;
 import com.netflix.hystrix.contrib.javanica.test.common.domain.User;
 import org.junit.Before;
 import org.junit.Test;
-
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public abstract class BasicCommandTest extends BasicHystrixTest {
 
     private UserService userService;
+
     private AdvancedUserService advancedUserService;
+
     private GenericService<String, Long, User> genericUserService;
 
     @Before
@@ -48,7 +47,6 @@ public abstract class BasicCommandTest extends BasicHystrixTest {
     @Test
     public void testGetUserAsync() throws ExecutionException, InterruptedException {
         Future<User> f1 = userService.getUserAsync("1", "name: ");
-
         assertEquals("name: 1", f1.get().getName());
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
         com.netflix.hystrix.HystrixInvokableInfo<?> command = getCommand();
@@ -77,7 +75,6 @@ public abstract class BasicCommandTest extends BasicHystrixTest {
     @Test
     public void should_work_with_parameterized_method() throws Exception {
         assertEquals(Integer.valueOf(1), userService.echo(1));
-
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
         assertTrue(getCommand().getExecutionEvents().contains(HystrixEventType.SUCCESS));
     }
@@ -85,7 +82,6 @@ public abstract class BasicCommandTest extends BasicHystrixTest {
     @Test
     public void should_work_with_parameterized_asyncMethod() throws Exception {
         assertEquals(Integer.valueOf(1), userService.echoAsync(1).get());
-
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
         assertTrue(getCommand().getExecutionEvents().contains(HystrixEventType.SUCCESS));
     }
@@ -95,16 +91,13 @@ public abstract class BasicCommandTest extends BasicHystrixTest {
         User user = genericUserService.getByKeyForceFail("1", 2L);
         assertEquals("name: 2", user.getName());
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
-        HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest()
-                .getAllExecutedCommands().iterator().next();
-
+        HystrixInvokableInfo<?> command = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().iterator().next();
         assertEquals("getByKeyForceFail", command.getCommandKey().name());
         // confirm that command has failed
         assertTrue(command.getExecutionEvents().contains(HystrixEventType.FAILURE));
         // and that fallback was successful
         assertTrue(command.getExecutionEvents().contains(HystrixEventType.FALLBACK_SUCCESS));
     }
-
 
     private void assertGetUserSnycCommandExecuted(User u1) {
         assertEquals("name: 1", u1.getName());
@@ -121,12 +114,17 @@ public abstract class BasicCommandTest extends BasicHystrixTest {
     }
 
     protected abstract UserService createUserService();
+
     protected abstract AdvancedUserService createAdvancedUserServiceService();
+
     protected abstract GenericService<String, Long, User> createGenericUserService();
 
     public interface GenericService<K1, K2, V> {
+
         V getByKey(K1 key1, K2 key2);
+
         V getByKeyForceFail(K1 key, K2 key2);
+
         V fallback(K1 key, K2 key2);
     }
 
@@ -135,7 +133,8 @@ public abstract class BasicCommandTest extends BasicHystrixTest {
         @HystrixCommand(fallbackMethod = "fallback")
         @Override
         public User getByKey(String sKey, Long lKey) {
-            return new User(sKey, "name: " + lKey); // it should be network call
+            // it should be network call
+            return new User(sKey, "name: " + lKey);
         }
 
         @HystrixCommand(fallbackMethod = "fallback")
@@ -148,7 +147,6 @@ public abstract class BasicCommandTest extends BasicHystrixTest {
         public User fallback(String sKey, Long lKey) {
             return new User(sKey, "name: " + lKey);
         }
-
     }
 
     public static class UserService {
@@ -156,16 +154,19 @@ public abstract class BasicCommandTest extends BasicHystrixTest {
         @HystrixCommand(commandKey = "GetUserCommand", threadPoolKey = "CommandTestAsync")
         public Future<User> getUserAsync(final String id, final String name) {
             return new AsyncResult<User>() {
+
                 @Override
                 public User invoke() {
-                    return new User(id, name + id); // it should be network call
+                    // it should be network call
+                    return new User(id, name + id);
                 }
             };
         }
 
         @HystrixCommand(groupKey = "UserGroup")
         public User getUserSync(String id, String name) {
-            return new User(id, name + id); // it should be network call
+            // it should be network call
+            return new User(id, name + id);
         }
 
         @HystrixCommand
@@ -176,17 +177,15 @@ public abstract class BasicCommandTest extends BasicHystrixTest {
         @HystrixCommand
         public <T> Future<T> echoAsync(final T value) {
             return new AsyncResult<T>() {
+
                 @Override
                 public T invoke() {
                     return value;
                 }
             };
         }
-
     }
 
     public static class AdvancedUserService extends UserService {
-
     }
-
 }

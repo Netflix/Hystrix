@@ -7,10 +7,13 @@ import java.util.concurrent.ConcurrentMap;
  * Utility to have 'intern' - like functionality, which holds single instance of wrapper for a given key
  */
 public class InternMap<K, V> {
+
     private final ConcurrentMap<K, V> storage = new ConcurrentHashMap<K, V>();
+
     private final ValueConstructor<K, V> valueConstructor;
 
     public interface ValueConstructor<K, V> {
+
         V create(K key);
     }
 
