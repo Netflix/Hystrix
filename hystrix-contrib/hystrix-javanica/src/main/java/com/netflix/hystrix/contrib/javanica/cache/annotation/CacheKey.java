@@ -29,7 +29,7 @@ import java.lang.annotation.Target;
  *
  * @author dmgcodevil
  */
-@Target({ElementType.PARAMETER})
+@Target({ ElementType.PARAMETER })
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 public @interface CacheKey {

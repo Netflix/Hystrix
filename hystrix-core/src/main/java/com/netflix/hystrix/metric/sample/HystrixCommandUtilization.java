@@ -18,6 +18,7 @@ package com.netflix.hystrix.metric.sample;
 import com.netflix.hystrix.HystrixCommandMetrics;
 
 public class HystrixCommandUtilization {
+
     private final int concurrentCommandCount;
 
     public HystrixCommandUtilization(int concurrentCommandCount) {

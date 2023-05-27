@@ -16,10 +16,8 @@
 package com.netflix.hystrix.collapser;
 
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.netflix.hystrix.HystrixCollapserKey;
 import com.netflix.hystrix.HystrixCollapserProperties;
 import com.netflix.hystrix.strategy.HystrixPlugins;
@@ -31,7 +29,7 @@ import com.netflix.hystrix.util.HystrixTimer;
 
 /**
  * Factory for retrieving the correct instance of a RequestCollapser.
- * 
+ *
  * @param <BatchReturnType>
  * @param <ResponseType>
  * @param <RequestArgumentType>
@@ -41,32 +39,37 @@ public class RequestCollapserFactory<BatchReturnType, ResponseType, RequestArgum
     private static final Logger logger = LoggerFactory.getLogger(RequestCollapserFactory.class);
 
     private final CollapserTimer timer;
+
     private final HystrixCollapserKey collapserKey;
+
     private final HystrixCollapserProperties properties;
+
     private final HystrixConcurrencyStrategy concurrencyStrategy;
+
     private final Scope scope;
 
     public static interface Scope {
+
         String name();
     }
-    
+
     // internally expected scopes, dealing with the not-so-fun inheritance issues of enum when shared between classes
     private static enum Scopes implements Scope {
+
         REQUEST, GLOBAL
     }
-    
+
     public RequestCollapserFactory(HystrixCollapserKey collapserKey, Scope scope, CollapserTimer timer, HystrixCollapserProperties.Setter propertiesBuilder) {
         this(collapserKey, scope, timer, HystrixPropertiesFactory.getCollapserProperties(collapserKey, propertiesBuilder));
     }
 
     public RequestCollapserFactory(HystrixCollapserKey collapserKey, Scope scope, CollapserTimer timer, HystrixCollapserProperties properties) {
-         /* strategy: ConcurrencyStrategy */
+        /* strategy: ConcurrencyStrategy */
         this.concurrencyStrategy = HystrixPlugins.getInstance().getConcurrencyStrategy();
         this.timer = timer;
         this.scope = scope;
         this.collapserKey = collapserKey;
         this.properties = properties;
-
     }
 
     public HystrixCollapserKey getCollapserKey() {
@@ -133,7 +136,7 @@ public class RequestCollapserFactory<BatchReturnType, ResponseType, RequestArgum
 
     /**
      * Lookup (or create and store) the RequestVariable for a given HystrixCollapserKey.
-     * 
+     *
      * @param commandCollapser collapser to retrieve {@link HystrixRequestVariableHolder} for
      * @return HystrixRequestVariableHolder
      */
@@ -197,9 +200,9 @@ public class RequestCollapserFactory<BatchReturnType, ResponseType, RequestArgum
          * <p>
          * Thus, do NOT put any instance variables in this class that are not static for all threads.
          */
-
         private RequestCollapserRequestVariable(final HystrixCollapserBridge<BatchReturnType, ResponseType, RequestArgumentType> commandCollapser, final HystrixCollapserProperties properties, final CollapserTimer timer, final HystrixConcurrencyStrategy concurrencyStrategy) {
             super(new HystrixRequestVariableLifecycle<RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType>>() {
+
                 @Override
                 public RequestCollapser<BatchReturnType, ResponseType, RequestArgumentType> initialValue() {
                     // this gets calls once per request per HystrixCollapser instance

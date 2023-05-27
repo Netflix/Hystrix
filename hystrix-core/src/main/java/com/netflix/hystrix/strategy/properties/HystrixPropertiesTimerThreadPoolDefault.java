@@ -19,9 +19,8 @@ import com.netflix.hystrix.HystrixTimerThreadPoolProperties;
 
 /**
  * Default implementation of {@link HystrixTimerThreadPoolProperties} using Archaius (https://github.com/Netflix/archaius)
- * 
+ *
  * @ExcludeFromJavadoc
  */
 public class HystrixPropertiesTimerThreadPoolDefault extends HystrixTimerThreadPoolProperties {
-
 }

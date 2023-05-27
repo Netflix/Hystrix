@@ -23,6 +23,7 @@ package com.netflix.hystrix.contrib.javanica.command;
 public class CommandActions {
 
     private final CommandAction commandAction;
+
     private final CommandAction fallbackAction;
 
     public CommandActions(Builder builder) {
@@ -47,7 +48,9 @@ public class CommandActions {
     }
 
     public static class Builder {
+
         private CommandAction commandAction;
+
         private CommandAction fallbackAction;
 
         public Builder commandAction(CommandAction pCommandAction) {
@@ -64,5 +67,4 @@ public class CommandActions {
             return new CommandActions(this);
         }
     }
-
 }

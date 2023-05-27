@@ -17,7 +17,6 @@ package com.netflix.hystrix.contrib.javanica.utils;
 
 import com.netflix.hystrix.contrib.javanica.command.MetaHolder;
 import org.apache.commons.lang3.ArrayUtils;
-
 import java.util.Arrays;
 
 /**
@@ -25,8 +24,7 @@ import java.util.Arrays;
  */
 public final class CommonUtils {
 
-    private CommonUtils(){
-
+    private CommonUtils() {
     }
 
     public static Object[] createArgsForFallback(MetaHolder metaHolder, Throwable exception) {

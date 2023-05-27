@@ -20,7 +20,7 @@ package com.netflix.hystrix.contrib.javanica.cache;
  *
  * @author dmgcodevil
  */
-public interface HystrixGeneratedCacheKey  {
+public interface HystrixGeneratedCacheKey {
 
     /**
      * Key to be used for request caching.

@@ -16,31 +16,46 @@
 package com.netflix.hystrix;
 
 public interface InspectableBuilder {
+
     public TestCommandBuilder getBuilder();
 
     public enum CommandKeyForUnitTest implements HystrixCommandKey {
+
         KEY_ONE, KEY_TWO
     }
 
     public enum CommandGroupForUnitTest implements HystrixCommandGroupKey {
+
         OWNER_ONE, OWNER_TWO
     }
 
     public enum ThreadPoolKeyForUnitTest implements HystrixThreadPoolKey {
+
         THREAD_POOL_ONE, THREAD_POOL_TWO
     }
 
     public static class TestCommandBuilder {
+
         HystrixCommandGroupKey owner = CommandGroupForUnitTest.OWNER_ONE;
+
         HystrixCommandKey dependencyKey = null;
+
         HystrixThreadPoolKey threadPoolKey = null;
+
         HystrixCircuitBreaker circuitBreaker;
+
         HystrixThreadPool threadPool = null;
+
         HystrixCommandProperties.Setter commandPropertiesDefaults = HystrixCommandPropertiesTest.getUnitTestPropertiesSetter();
+
         HystrixThreadPoolProperties.Setter threadPoolPropertiesDefaults = HystrixThreadPoolPropertiesTest.getUnitTestPropertiesBuilder();
+
         HystrixCommandMetrics metrics;
+
         AbstractCommand.TryableSemaphore fallbackSemaphore = null;
+
         AbstractCommand.TryableSemaphore executionSemaphore = null;
+
         TestableExecutionHook executionHook = new TestableExecutionHook();
 
         TestCommandBuilder(HystrixCommandProperties.ExecutionIsolationStrategy isolationStrategy) {
@@ -104,6 +119,5 @@ public interface InspectableBuilder {
             this.executionHook = executionHook;
             return this;
         }
-
     }
 }

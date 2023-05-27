@@ -27,7 +27,6 @@ import com.netflix.hystrix.HystrixThreadPoolKey;
 import com.netflix.hystrix.HystrixThreadPoolProperties;
 import com.netflix.hystrix.exception.HystrixBadRequestException;
 import rx.functions.Func2;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -42,12 +41,14 @@ public abstract class CommandStreamTest {
         final String arg;
 
         final HystrixEventType executionResult;
+
         final int executionLatency;
+
         final HystrixEventType fallbackExecutionResult;
+
         final int fallbackExecutionLatency;
 
-        private Command(Setter setter, HystrixEventType executionResult, int executionLatency, String arg,
-                        HystrixEventType fallbackExecutionResult, int fallbackExecutionLatency) {
+        private Command(Setter setter, HystrixEventType executionResult, int executionLatency, String arg, HystrixEventType fallbackExecutionResult, int fallbackExecutionLatency) {
             super(setter);
             this.executionResult = executionResult;
             this.executionLatency = executionLatency;
@@ -64,51 +65,26 @@ public abstract class CommandStreamTest {
             return from(groupKey, key, desiredEventType, latency, HystrixCommandProperties.ExecutionIsolationStrategy.THREAD);
         }
 
-        public static Command from(HystrixCommandGroupKey groupKey, HystrixCommandKey key, HystrixEventType desiredEventType, int latency,
-                                      HystrixEventType desiredFallbackEventType) {
+        public static Command from(HystrixCommandGroupKey groupKey, HystrixCommandKey key, HystrixEventType desiredEventType, int latency, HystrixEventType desiredFallbackEventType) {
             return from(groupKey, key, desiredEventType, latency, HystrixCommandProperties.ExecutionIsolationStrategy.THREAD, desiredFallbackEventType);
         }
 
-        public static Command from(HystrixCommandGroupKey groupKey, HystrixCommandKey key, HystrixEventType desiredEventType, int latency,
-                                      HystrixEventType desiredFallbackEventType, int fallbackLatency) {
+        public static Command from(HystrixCommandGroupKey groupKey, HystrixCommandKey key, HystrixEventType desiredEventType, int latency, HystrixEventType desiredFallbackEventType, int fallbackLatency) {
             return from(groupKey, key, desiredEventType, latency, HystrixCommandProperties.ExecutionIsolationStrategy.THREAD, desiredFallbackEventType, fallbackLatency);
         }
 
-        public static Command from(HystrixCommandGroupKey groupKey, HystrixCommandKey key, HystrixEventType desiredEventType, int latency,
-                                      HystrixCommandProperties.ExecutionIsolationStrategy isolationStrategy) {
+        public static Command from(HystrixCommandGroupKey groupKey, HystrixCommandKey key, HystrixEventType desiredEventType, int latency, HystrixCommandProperties.ExecutionIsolationStrategy isolationStrategy) {
             return from(groupKey, key, desiredEventType, latency, isolationStrategy, HystrixEventType.FALLBACK_SUCCESS, 0);
         }
 
-        public static Command from(HystrixCommandGroupKey groupKey, HystrixCommandKey key, HystrixEventType desiredEventType, int latency,
-                                      HystrixCommandProperties.ExecutionIsolationStrategy isolationStrategy,
-                                      HystrixEventType desiredFallbackEventType) {
+        public static Command from(HystrixCommandGroupKey groupKey, HystrixCommandKey key, HystrixEventType desiredEventType, int latency, HystrixCommandProperties.ExecutionIsolationStrategy isolationStrategy, HystrixEventType desiredFallbackEventType) {
             return from(groupKey, key, desiredEventType, latency, isolationStrategy, desiredFallbackEventType, 0);
         }
 
-        public static Command from(HystrixCommandGroupKey groupKey, HystrixCommandKey key, HystrixEventType desiredEventType, int latency,
-                                      HystrixCommandProperties.ExecutionIsolationStrategy isolationStrategy,
-                                      HystrixEventType desiredFallbackEventType, int fallbackLatency) {
-            Setter setter = Setter.withGroupKey(groupKey)
-                    .andCommandKey(key)
-                    .andCommandPropertiesDefaults(HystrixCommandProperties.Setter()
-                            .withExecutionTimeoutInMilliseconds(600)
-                            .withExecutionIsolationStrategy(isolationStrategy)
-                            .withCircuitBreakerEnabled(true)
-                            .withCircuitBreakerRequestVolumeThreshold(3)
-                            .withMetricsHealthSnapshotIntervalInMilliseconds(100)
-                            .withMetricsRollingStatisticalWindowInMilliseconds(1000)
-                            .withMetricsRollingStatisticalWindowBuckets(10)
-                            .withRequestCacheEnabled(true)
-                            .withRequestLogEnabled(true)
-                            .withFallbackIsolationSemaphoreMaxConcurrentRequests(5))
-                    .andThreadPoolKey(HystrixThreadPoolKey.Factory.asKey(groupKey.name()))
-                    .andThreadPoolPropertiesDefaults(HystrixThreadPoolProperties.Setter()
-                            .withCoreSize(10)
-                            .withMaxQueueSize(-1));
-
+        public static Command from(HystrixCommandGroupKey groupKey, HystrixCommandKey key, HystrixEventType desiredEventType, int latency, HystrixCommandProperties.ExecutionIsolationStrategy isolationStrategy, HystrixEventType desiredFallbackEventType, int fallbackLatency) {
+            Setter setter = Setter.withGroupKey(groupKey).andCommandKey(key).andCommandPropertiesDefaults(HystrixCommandProperties.Setter().withExecutionTimeoutInMilliseconds(600).withExecutionIsolationStrategy(isolationStrategy).withCircuitBreakerEnabled(true).withCircuitBreakerRequestVolumeThreshold(3).withMetricsHealthSnapshotIntervalInMilliseconds(100).withMetricsRollingStatisticalWindowInMilliseconds(1000).withMetricsRollingStatisticalWindowBuckets(10).withRequestCacheEnabled(true).withRequestLogEnabled(true).withFallbackIsolationSemaphoreMaxConcurrentRequests(5)).andThreadPoolKey(HystrixThreadPoolKey.Factory.asKey(groupKey.name())).andThreadPoolPropertiesDefaults(HystrixThreadPoolProperties.Setter().withCoreSize(10).withMaxQueueSize(-1));
             String uniqueArg;
-
-            switch (desiredEventType) {
+            switch(desiredEventType) {
                 case SUCCESS:
                     uniqueArg = uniqueId.incrementAndGet() + "";
                     return new Command(setter, HystrixEventType.SUCCESS, latency, uniqueArg, desiredFallbackEventType, 0);
@@ -142,7 +118,7 @@ public abstract class CommandStreamTest {
         protected Integer run() throws Exception {
             try {
                 Thread.sleep(executionLatency);
-                switch (executionResult) {
+                switch(executionResult) {
                     case SUCCESS:
                         return 1;
                     case FAILURE:
@@ -165,11 +141,15 @@ public abstract class CommandStreamTest {
             } catch (InterruptedException ex) {
                 throw new RuntimeException(ex);
             }
-            switch (fallbackExecutionResult) {
-                case FALLBACK_SUCCESS: return -1;
-                case FALLBACK_FAILURE: throw new RuntimeException("induced failure");
-                case FALLBACK_MISSING: throw new UnsupportedOperationException("fallback not defined");
-                default: throw new RuntimeException("unhandled HystrixEventType : " + fallbackExecutionResult);
+            switch(fallbackExecutionResult) {
+                case FALLBACK_SUCCESS:
+                    return -1;
+                case FALLBACK_FAILURE:
+                    throw new RuntimeException("induced failure");
+                case FALLBACK_MISSING:
+                    throw new UnsupportedOperationException("fallback not defined");
+                default:
+                    throw new RuntimeException("unhandled HystrixEventType : " + fallbackExecutionResult);
             }
         }
 
@@ -180,6 +160,7 @@ public abstract class CommandStreamTest {
     }
 
     public static class Collapser extends HystrixCollapser<List<Integer>, Integer, Integer> {
+
         private final Integer arg;
 
         public static Collapser from(Integer arg) {
@@ -191,10 +172,7 @@ public abstract class CommandStreamTest {
         }
 
         private Collapser(HystrixCollapserKey key, Integer arg) {
-            super(Setter.withCollapserKey(key)
-                    .andCollapserPropertiesDefaults(
-                            HystrixCollapserProperties.Setter()
-                    .withTimerDelayInMilliseconds(100)));
+            super(Setter.withCollapserKey(key).andCollapserPropertiesDefaults(HystrixCollapserProperties.Setter().withTimerDelayInMilliseconds(100)));
             this.arg = arg;
         }
 
@@ -206,7 +184,7 @@ public abstract class CommandStreamTest {
         @Override
         protected HystrixCommand<List<Integer>> createCommand(Collection<CollapsedRequest<Integer, Integer>> collapsedRequests) {
             List<Integer> args = new ArrayList<Integer>();
-            for (CollapsedRequest<Integer, Integer> collapsedReq: collapsedRequests) {
+            for (CollapsedRequest<Integer, Integer> collapsedReq : collapsedRequests) {
                 args.add(collapsedReq.getArgument());
             }
             return new BatchCommand(args);
@@ -214,7 +192,7 @@ public abstract class CommandStreamTest {
 
         @Override
         protected void mapResponseToRequests(List<Integer> batchResponse, Collection<CollapsedRequest<Integer, Integer>> collapsedRequests) {
-            for (CollapsedRequest<Integer, Integer> collapsedReq: collapsedRequests) {
+            for (CollapsedRequest<Integer, Integer> collapsedReq : collapsedRequests) {
                 collapsedReq.emitResponse(collapsedReq.getArgument());
                 collapsedReq.setComplete();
             }
@@ -227,6 +205,7 @@ public abstract class CommandStreamTest {
     }
 
     private static class BatchCommand extends HystrixCommand<List<Integer>> {
+
         private List<Integer> args;
 
         protected BatchCommand(List<Integer> args) {

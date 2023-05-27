@@ -15,7 +15,6 @@
  */
 package com.netflix.hystrix.contrib.javanica.utils;
 
-
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Supplier;
@@ -25,7 +24,6 @@ import com.netflix.hystrix.contrib.javanica.exception.FallbackDefinitionExceptio
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import rx.Completable;
-
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.lang.reflect.Method;
@@ -37,7 +35,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
 import static com.netflix.hystrix.contrib.javanica.utils.TypeHelper.flattenTypeVariables;
 import static com.netflix.hystrix.contrib.javanica.utils.TypeHelper.isGenericReturnType;
 import static com.netflix.hystrix.contrib.javanica.utils.TypeHelper.isParametrizedType;
@@ -47,10 +44,12 @@ import static com.netflix.hystrix.contrib.javanica.utils.TypeHelper.isWildcardTy
 
 public class FallbackMethod {
 
-
     private final Method method;
+
     private final boolean extended;
+
     private final boolean defaultFallback;
+
     private ExecutionType executionType;
 
     public static final FallbackMethod ABSENT = new FallbackMethod(null, false, false);
@@ -98,13 +97,11 @@ public class FallbackMethod {
             if (ExecutionType.OBSERVABLE == ExecutionType.getExecutionType(commandReturnType)) {
                 if (ExecutionType.OBSERVABLE != getExecutionType()) {
                     Type commandParametrizedType = commandMethod.getGenericReturnType();
-
                     // basically any object can be wrapped into Completable, Completable itself ins't parametrized
-                    if(Completable.class.isAssignableFrom(commandMethod.getReturnType())) {
+                    if (Completable.class.isAssignableFrom(commandMethod.getReturnType())) {
                         validateCompletableReturnType(commandMethod, method.getReturnType());
                         return;
                     }
-
                     if (isReturnTypeParametrized(commandMethod)) {
                         commandParametrizedType = getFirstParametrizedType(commandMethod);
                     }
@@ -112,8 +109,6 @@ public class FallbackMethod {
                 } else {
                     validateReturnType(commandMethod, method);
                 }
-
-
             } else if (ExecutionType.ASYNCHRONOUS == ExecutionType.getExecutionType(commandReturnType)) {
                 if (isCommand() && ExecutionType.ASYNCHRONOUS == getExecutionType()) {
                     validateReturnType(commandMethod, method);
@@ -137,7 +132,6 @@ public class FallbackMethod {
                 }
                 validateReturnType(commandMethod, method);
             }
-
         }
     }
 
@@ -173,9 +167,7 @@ public class FallbackMethod {
                             extraHint = "--> " + ((ParameterizedType) parentKind).getRawType().toString() + "<Ooops!>\n";
                         }
                     }
-                    msg.add(String.format(error.reason + "\n" + extraHint + "Command type literal pos: %s; Fallback type literal pos: %s",
-                            positionAsString(error.commandType, commandParametrizedTypes),
-                            positionAsString(error.fallbackType, fallbackParametrizedTypes)));
+                    msg.add(String.format(error.reason + "\n" + extraHint + "Command type literal pos: %s; Fallback type literal pos: %s", positionAsString(error.commandType, commandParametrizedTypes), positionAsString(error.fallbackType, fallbackParametrizedTypes)));
                 }
                 throw new FallbackDefinitionException(createErrorMsg(commandMethod, method, StringUtils.join(msg, "\n")));
             }
@@ -189,41 +181,33 @@ public class FallbackMethod {
 
     private void validatePlainReturnType(Class<?> commandReturnType, Class<?> fallbackReturnType, Method commandMethod, Method fallbackMethod) {
         if (!commandReturnType.isAssignableFrom(fallbackReturnType)) {
-            throw new FallbackDefinitionException(createErrorMsg(commandMethod, fallbackMethod, "Fallback method '"
-                    + fallbackMethod + "' must return: " + commandReturnType + " or its subclass"));
+            throw new FallbackDefinitionException(createErrorMsg(commandMethod, fallbackMethod, "Fallback method '" + fallbackMethod + "' must return: " + commandReturnType + " or its subclass"));
         }
     }
 
     private void validateParametrizedType(Type commandReturnType, Type fallbackReturnType, Method commandMethod, Method fallbackMethod) {
         if (!commandReturnType.equals(fallbackReturnType)) {
-            throw new FallbackDefinitionException(createErrorMsg(commandMethod, fallbackMethod, "Fallback method '"
-                    + fallbackMethod + "' must return: " + commandReturnType + " or its subclass"));
+            throw new FallbackDefinitionException(createErrorMsg(commandMethod, fallbackMethod, "Fallback method '" + fallbackMethod + "' must return: " + commandReturnType + " or its subclass"));
         }
     }
 
     private String createErrorMsg(Method commandMethod, Method fallbackMethod, String hint) {
-        return "Incompatible return types. \nCommand method: " + commandMethod + ";\nFallback method: " + fallbackMethod + ";\n"
-                + (StringUtils.isNotBlank(hint) ? "Hint: " + hint : "");
+        return "Incompatible return types. \nCommand method: " + commandMethod + ";\nFallback method: " + fallbackMethod + ";\n" + (StringUtils.isNotBlank(hint) ? "Hint: " + hint : "");
     }
 
     private static final Result SUCCESS = Result.success();
 
     private Result equalsParametrizedTypes(List<Type> commandParametrizedTypes, List<Type> fallbackParametrizedTypes) {
         if (commandParametrizedTypes.size() != fallbackParametrizedTypes.size()) {
-            return Result.failure(Collections.singletonList(
-                    new Error("Different size of types variables.\n" +
-                            "Command  type literals size = " + commandParametrizedTypes.size() + ": " + commandParametrizedTypes + "\n" +
-                            "Fallback type literals size = " + fallbackParametrizedTypes.size() + ": " + fallbackParametrizedTypes + "\n"
-                    )));
+            return Result.failure(Collections.singletonList(new Error("Different size of types variables.\n" + "Command  type literals size = " + commandParametrizedTypes.size() + ": " + commandParametrizedTypes + "\n" + "Fallback type literals size = " + fallbackParametrizedTypes.size() + ": " + fallbackParametrizedTypes + "\n")));
         }
-
         for (int i = 0; i < commandParametrizedTypes.size(); i++) {
             Type commandParametrizedType = commandParametrizedTypes.get(i);
             Type fallbackParametrizedType = fallbackParametrizedTypes.get(i);
             Result result = equals(commandParametrizedType, fallbackParametrizedType);
-            if (!result.success) return result;
+            if (!result.success)
+                return result;
         }
-
         return SUCCESS;
     }
 
@@ -237,6 +221,7 @@ public class FallbackMethod {
             final ParameterizedType pt2 = (ParameterizedType) fallbackType;
             Result result = regularEquals(pt1.getRawType(), pt2.getRawType());
             return result.andThen(new Supplier<Result>() {
+
                 @Override
                 public Result get() {
                     return FallbackMethod.equals(pt1.getActualTypeArguments(), pt2.getActualTypeArguments());
@@ -248,6 +233,7 @@ public class FallbackMethod {
             if (tv1.getGenericDeclaration() instanceof Method && tv2.getGenericDeclaration() instanceof Method) {
                 Result result = equals(tv1.getBounds(), tv2.getBounds());
                 return result.append(new Supplier<List<Error>>() {
+
                     @Override
                     public List<Error> get() {
                         return Collections.singletonList(boundsError(tv1, tv1.getBounds(), "", tv2, tv2.getBounds()));
@@ -260,16 +246,17 @@ public class FallbackMethod {
             final WildcardType wt2 = (WildcardType) fallbackType;
             Result result = equals(wt1.getLowerBounds(), wt2.getLowerBounds());
             result = result.append(new Supplier<List<Error>>() {
+
                 @Override
                 public List<Error> get() {
                     return Collections.singletonList(boundsError(wt1, wt1.getLowerBounds(), "lower", wt2, wt2.getLowerBounds()));
                 }
             });
-
-            if (result.isFailure()) return result;
-
+            if (result.isFailure())
+                return result;
             result = equals(wt1.getUpperBounds(), wt2.getUpperBounds());
             return result.append(new Supplier<List<Error>>() {
+
                 @Override
                 public List<Error> get() {
                     return Collections.singletonList(boundsError(wt1, wt1.getUpperBounds(), "upper", wt2, wt2.getUpperBounds()));
@@ -282,19 +269,18 @@ public class FallbackMethod {
 
     private static Result regularEquals(final Type commandType, final Type fallbackType) {
         return Result.of(Objects.equal(commandType, fallbackType), new Supplier<List<Error>>() {
+
             @Override
             public List<Error> get() {
-                return Collections.singletonList(new Error(
-                        commandType,
-                        String.format("Different types. Command type: '%s'; fallback type: '%s'", commandType, fallbackType),
-                        fallbackType));
+                return Collections.singletonList(new Error(commandType, String.format("Different types. Command type: '%s'; fallback type: '%s'", commandType, fallbackType), fallbackType));
             }
         });
     }
 
     private static Optional<Type> getParentKind(Type type, List<Type> types) {
         int pos = position(type, types);
-        if (pos <= 0) return Optional.absent();
+        if (pos <= 0)
+            return Optional.absent();
         return Optional.of(types.get(pos - 1));
     }
 
@@ -307,37 +293,39 @@ public class FallbackMethod {
     }
 
     private static int position(Type type, List<Type> types) {
-        if (type == null) return -1;
-        if (types == null || types.isEmpty()) return -1;
+        if (type == null)
+            return -1;
+        if (types == null || types.isEmpty())
+            return -1;
         return types.indexOf(type);
     }
 
     private static Error boundsError(Type t1, Type[] b1, String boundType, Type t2, Type[] b2) {
-        return new Error(t1,
-                String.format("Different %s bounds. Command bounds: '%s'; Fallback bounds: '%s'",
-                        boundType,
-                        StringUtils.join(b1, ", "),
-                        StringUtils.join(b2, ", ")),
-                t2);
+        return new Error(t1, String.format("Different %s bounds. Command bounds: '%s'; Fallback bounds: '%s'", boundType, StringUtils.join(b1, ", "), StringUtils.join(b2, ", ")), t2);
     }
 
     private static Result equals(Type[] t1, Type[] t2) {
-        if (t1 == null && t2 == null) return SUCCESS;
-        if (t1 == null) return Result.failure();
-        if (t2 == null) return Result.failure();
+        if (t1 == null && t2 == null)
+            return SUCCESS;
+        if (t1 == null)
+            return Result.failure();
+        if (t2 == null)
+            return Result.failure();
         if (t1.length != t2.length)
-            return Result.failure(new Error(String.format("Different size of type literals. Command size = %d, fallback size = %d",
-                    t1.length, t2.length)));
+            return Result.failure(new Error(String.format("Different size of type literals. Command size = %d, fallback size = %d", t1.length, t2.length)));
         Result result = SUCCESS;
         for (int i = 0; i < t1.length; i++) {
             result = result.combine(equals(t1[i], t2[i]));
-            if (result.isFailure()) return result;
+            if (result.isFailure())
+                return result;
         }
         return result;
     }
 
     private static class Result {
+
         boolean success;
+
         List<Error> errors = Collections.emptyList();
 
         boolean isSuccess() {
@@ -349,7 +337,8 @@ public class FallbackMethod {
         }
 
         static Result of(boolean res, Supplier<List<Error>> errors) {
-            if (res) return success();
+            if (res)
+                return success();
             return failure(errors.get());
         }
 
@@ -374,17 +363,20 @@ public class FallbackMethod {
         }
 
         Result andThen(Supplier<Result> resultSupplier) {
-            if (!success) return this;
+            if (!success)
+                return this;
             return resultSupplier.get();
         }
 
         Result append(List<Error> errors) {
-            if (success) return this;
+            if (success)
+                return this;
             return failure(merge(this.errors, errors));
         }
 
         Result append(Supplier<List<Error>> errors) {
-            if (success) return this;
+            if (success)
+                return this;
             return append(errors.get());
         }
 
@@ -408,9 +400,12 @@ public class FallbackMethod {
     }
 
     private static class Error {
+
         @Nullable
         Type commandType;
+
         String reason;
+
         @Nullable
         Type fallbackType;
 
@@ -424,5 +419,4 @@ public class FallbackMethod {
             this.fallbackType = fallbackType;
         }
     }
-
 }

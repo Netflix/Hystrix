@@ -25,18 +25,19 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import rx.Subscriber;
-
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import static org.junit.Assert.*;
 
 public class RollingCollapserEventCounterStreamTest extends CommandStreamTest {
+
     HystrixRequestContext context;
+
     RollingCollapserEventCounterStream stream;
 
     private static Subscriber<long[]> getSubscriber(final CountDownLatch latch) {
         return new Subscriber<long[]>() {
+
             @Override
             public void onCompleted() {
                 latch.countDown();
@@ -83,12 +84,9 @@ public class RollingCollapserEventCounterStreamTest extends CommandStreamTest {
         HystrixCollapserKey key = HystrixCollapserKey.Factory.asKey("RollingCollapser-A");
         stream = RollingCollapserEventCounterStream.getInstance(key, 10, 100);
         stream.startCachingStreamValuesIfUnstarted();
-
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
-
         //no writes
-
         try {
             assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
@@ -101,20 +99,16 @@ public class RollingCollapserEventCounterStreamTest extends CommandStreamTest {
         assertEquals(0, stream.getLatest(HystrixEventType.Collapser.RESPONSE_FROM_CACHE));
     }
 
-
     @Test
     public void testCollapsed() {
         HystrixCollapserKey key = HystrixCollapserKey.Factory.asKey("RollingCollapser-B");
         stream = RollingCollapserEventCounterStream.getInstance(key, 10, 100);
         stream.startCachingStreamValuesIfUnstarted();
-
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
-
         for (int i = 0; i < 3; i++) {
             CommandStreamTest.Collapser.from(key, i).observe();
         }
-
         try {
             assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
@@ -133,16 +127,15 @@ public class RollingCollapserEventCounterStreamTest extends CommandStreamTest {
         HystrixCollapserKey key = HystrixCollapserKey.Factory.asKey("RollingCollapser-C");
         stream = RollingCollapserEventCounterStream.getInstance(key, 10, 100);
         stream.startCachingStreamValuesIfUnstarted();
-
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(10).subscribe(getSubscriber(latch));
-
         for (int i = 0; i < 3; i++) {
             CommandStreamTest.Collapser.from(key, i).observe();
-            CommandStreamTest.Collapser.from(key, i).observe(); //same arg - should get a response from cache
-            CommandStreamTest.Collapser.from(key, i).observe(); //same arg - should get a response from cache
+            //same arg - should get a response from cache
+            CommandStreamTest.Collapser.from(key, i).observe();
+            //same arg - should get a response from cache
+            CommandStreamTest.Collapser.from(key, i).observe();
         }
-
         try {
             assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
@@ -163,16 +156,15 @@ public class RollingCollapserEventCounterStreamTest extends CommandStreamTest {
         HystrixCollapserKey key = HystrixCollapserKey.Factory.asKey("RollingCollapser-D");
         stream = RollingCollapserEventCounterStream.getInstance(key, 10, 100);
         stream.startCachingStreamValuesIfUnstarted();
-
         final CountDownLatch latch = new CountDownLatch(1);
         stream.observe().take(30).subscribe(getSubscriber(latch));
-
         for (int i = 0; i < 3; i++) {
             CommandStreamTest.Collapser.from(key, i).observe();
-            CommandStreamTest.Collapser.from(key, i).observe(); //same arg - should get a response from cache
-            CommandStreamTest.Collapser.from(key, i).observe(); //same arg - should get a response from cache
+            //same arg - should get a response from cache
+            CommandStreamTest.Collapser.from(key, i).observe();
+            //same arg - should get a response from cache
+            CommandStreamTest.Collapser.from(key, i).observe();
         }
-
         try {
             assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {

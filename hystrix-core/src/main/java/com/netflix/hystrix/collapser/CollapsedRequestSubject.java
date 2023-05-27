@@ -19,7 +19,6 @@ import com.netflix.hystrix.HystrixCollapser.CollapsedRequest;
 import rx.Observable;
 import rx.functions.Action0;
 import rx.subjects.ReplaySubject;
-
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -39,14 +38,18 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * <p>
  *
  * @param <T>
- * 
+ *
  * @param <R>
  */
-/* package */class CollapsedRequestSubject<T, R> implements CollapsedRequest<T, R> {
+/* package */
+class CollapsedRequestSubject<T, R> implements CollapsedRequest<T, R> {
+
     private final R argument;
 
     private AtomicBoolean valueSet = new AtomicBoolean(false);
+
     private final ReplaySubject<T> subject = ReplaySubject.create();
+
     private final Observable<T> subjectWithAccounting;
 
     private volatile int outstandingSubscriptions = 0;
@@ -57,22 +60,22 @@ import java.util.concurrent.atomic.AtomicBoolean;
         } else {
             this.argument = arg;
         }
-        this.subjectWithAccounting = subject
-                .doOnSubscribe(new Action0() {
-                    @Override
-                    public void call() {
-                        outstandingSubscriptions++;
-                    }
-                })
-                .doOnUnsubscribe(new Action0() {
-                    @Override
-                    public void call() {
-                        outstandingSubscriptions--;
-                        if (outstandingSubscriptions == 0) {
-                            containingBatch.remove(arg);
-                        }
-                    }
-                });
+        this.subjectWithAccounting = subject.doOnSubscribe(new Action0() {
+
+            @Override
+            public void call() {
+                outstandingSubscriptions++;
+            }
+        }).doOnUnsubscribe(new Action0() {
+
+            @Override
+            public void call() {
+                outstandingSubscriptions--;
+                if (outstandingSubscriptions == 0) {
+                    containingBatch.remove(arg);
+                }
+            }
+        });
     }
 
     public CollapsedRequestSubject(final R arg) {
@@ -82,7 +85,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
     /**
      * The request argument.
-     * 
+     *
      * @return request argument
      */
     @Override
@@ -92,7 +95,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
     /**
      * When set any client thread blocking on get() will immediately be unblocked and receive the single-valued response.
-     * 
+     *
      * @throws IllegalStateException
      *             if called more than once or after setException.
      * @param response response to give to initial command
@@ -131,7 +134,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
     /**
      * Set an exception if a response is not yet received otherwise skip it
-     * 
+     *
      * @param e synthetic error to set on initial command when no actual response is available
      */
     public void setExceptionIfResponseNotReceived(Exception e) {
@@ -148,7 +151,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
      */
     public Exception setExceptionIfResponseNotReceived(Exception e, String exceptionMessage) {
         Exception exception = e;
-
         if (!valueSet.get() && !isTerminated()) {
             if (e == null) {
                 exception = new IllegalStateException(exceptionMessage);
@@ -161,7 +163,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
     /**
      * When set any client thread blocking on get() will immediately be unblocked and receive the exception.
-     * 
+     *
      * @throws IllegalStateException
      *             if called more than once or after setResponse.
      * @param e received exception that gets set on the initial command

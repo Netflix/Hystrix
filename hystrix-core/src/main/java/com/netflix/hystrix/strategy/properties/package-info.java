@@ -15,7 +15,8 @@
  */
 /**
  * Strategy definition for properties and configuration and default implementation.
- * 
+ *
  * @since 1.0.0
  */
 package com.netflix.hystrix.strategy.properties;
+

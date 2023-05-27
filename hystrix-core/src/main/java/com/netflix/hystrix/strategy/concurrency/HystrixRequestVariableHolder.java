@@ -1,12 +1,12 @@
 /**
  * Copyright 2012 Netflix, Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,7 +16,6 @@
 package com.netflix.hystrix.strategy.concurrency;
 
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,9 +26,9 @@ import org.slf4j.LoggerFactory;
  * <p>
  * Typically a {@link HystrixRequestVariable} would be statically referenced (similar to a ThreadLocal) but to allow dynamic injection we instead statically reference this class which can then
  * dynamically fetch the correct implementation and statically retain an instance across threads within a context (such as {@link HystrixRequestContext}.
- * 
+ *
  * @param <T>
- * 
+ *
  * @ExcludeFromJavadoc
  */
 public class HystrixRequestVariableHolder<T> {
@@ -64,13 +63,13 @@ public class HystrixRequestVariableHolder<T> {
                 logger.warn("Over 100 instances of HystrixRequestVariable are being stored. This is likely the sign of a memory leak caused by using unique instances of HystrixConcurrencyStrategy instead of a single instance.");
             }
         }
-
         return (T) requestVariableInstance.get(key).get();
     }
 
     private static class RVCacheKey {
 
         private final HystrixRequestVariableHolder<?> rvHolder;
+
         private final HystrixConcurrencyStrategy concurrencyStrategy;
 
         private RVCacheKey(HystrixRequestVariableHolder<?> rvHolder, HystrixConcurrencyStrategy concurrencyStrategy) {
@@ -108,6 +107,5 @@ public class HystrixRequestVariableHolder<T> {
                 return false;
             return true;
         }
-
     }
 }

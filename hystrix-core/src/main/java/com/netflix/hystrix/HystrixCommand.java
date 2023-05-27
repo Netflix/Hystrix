@@ -1,12 +1,12 @@
 /**
  * Copyright 2012 Netflix, Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,11 +22,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-
 import com.netflix.hystrix.util.Exceptions;
 import rx.Observable;
 import rx.functions.Action0;
-
 import com.netflix.hystrix.exception.HystrixBadRequestException;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
 import com.netflix.hystrix.exception.HystrixRuntimeException.FailureType;
@@ -38,20 +36,19 @@ import rx.functions.Func0;
  * Used to wrap code that will execute potentially risky functionality (typically meaning a service call over the network)
  * with fault and latency tolerance, statistics and performance metrics capture, circuit breaker and bulkhead functionality.
  * This command is essentially a blocking command but provides an Observable facade if used with observe()
- * 
+ *
  * @param <R>
  *            the return type
- * 
+ *
  * @ThreadSafe
  */
 public abstract class HystrixCommand<R> extends AbstractCommand<R> implements HystrixExecutable<R>, HystrixInvokableInfo<R>, HystrixObservable<R> {
-
 
     /**
      * Construct a {@link HystrixCommand} with defined {@link HystrixCommandGroupKey}.
      * <p>
      * The {@link HystrixCommandKey} will be derived from the implementing class name.
-     * 
+     *
      * @param group
      *            {@link HystrixCommandGroupKey} used to group together multiple {@link HystrixCommand} objects.
      *            <p>
@@ -61,7 +58,6 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
     protected HystrixCommand(HystrixCommandGroupKey group) {
         super(group, null, null, null, null, null, null, null, null, null, null, null);
     }
-
 
     /**
      * Construct a {@link HystrixCommand} with defined {@link HystrixCommandGroupKey} and {@link HystrixThreadPoolKey}.
@@ -125,7 +121,7 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
      * <p>
      * Properties passed in via {@link Setter#andCommandPropertiesDefaults} or {@link Setter#andThreadPoolPropertiesDefaults} are cached for the given {@link HystrixCommandKey} for the life of the JVM
      * or until {@link Hystrix#reset()} is called. Dynamic properties allow runtime changes. Read more on the <a href="https://github.com/Netflix/Hystrix/wiki/Configuration">Hystrix Wiki</a>.
-     * 
+     *
      * @param setter
      *            Fluent interface for constructor arguments
      */
@@ -141,10 +137,8 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
      * <p>
      * Most of the args will revert to a valid default if 'null' is passed in.
      */
-    /* package for testing */HystrixCommand(HystrixCommandGroupKey group, HystrixCommandKey key, HystrixThreadPoolKey threadPoolKey, HystrixCircuitBreaker circuitBreaker, HystrixThreadPool threadPool,
-            HystrixCommandProperties.Setter commandPropertiesDefaults, HystrixThreadPoolProperties.Setter threadPoolPropertiesDefaults,
-            HystrixCommandMetrics metrics, TryableSemaphore fallbackSemaphore, TryableSemaphore executionSemaphore,
-            HystrixPropertiesStrategy propertiesStrategy, HystrixCommandExecutionHook executionHook) {
+    /* package for testing */
+    HystrixCommand(HystrixCommandGroupKey group, HystrixCommandKey key, HystrixThreadPoolKey threadPoolKey, HystrixCircuitBreaker circuitBreaker, HystrixThreadPool threadPool, HystrixCommandProperties.Setter commandPropertiesDefaults, HystrixThreadPoolProperties.Setter threadPoolPropertiesDefaults, HystrixCommandMetrics metrics, TryableSemaphore fallbackSemaphore, TryableSemaphore executionSemaphore, HystrixPropertiesStrategy propertiesStrategy, HystrixCommandExecutionHook executionHook) {
         super(group, key, threadPoolKey, circuitBreaker, threadPool, commandPropertiesDefaults, threadPoolPropertiesDefaults, metrics, fallbackSemaphore, executionSemaphore, propertiesStrategy, executionHook);
     }
 
@@ -156,24 +150,28 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
      * Example:
      * <pre> {@code
      *  Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("GroupName"))
-                .andCommandKey(HystrixCommandKey.Factory.asKey("CommandName"));
+     *                .andCommandKey(HystrixCommandKey.Factory.asKey("CommandName"));
      * } </pre>
-     * 
+     *
      * @NotThreadSafe
      */
     final public static class Setter {
 
         protected final HystrixCommandGroupKey groupKey;
+
         protected HystrixCommandKey commandKey;
+
         protected HystrixThreadPoolKey threadPoolKey;
+
         protected HystrixCommandProperties.Setter commandPropertiesDefaults;
+
         protected HystrixThreadPoolProperties.Setter threadPoolPropertiesDefaults;
 
         /**
          * Setter factory method containing required values.
          * <p>
          * All optional arguments can be set via the chained methods.
-         * 
+         *
          * @param groupKey
          *            {@link HystrixCommandGroupKey} used to group together multiple {@link HystrixCommand} objects.
          *            <p>
@@ -189,7 +187,7 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
          * Setter factory method with required values.
          * <p>
          * All optional arguments can be set via the chained methods.
-         * 
+         *
          * @param groupKey
          *            {@link HystrixCommandGroupKey} used to group together multiple {@link HystrixCommand} objects.
          *            <p>
@@ -235,7 +233,7 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
 
         /**
          * Optional
-         * 
+         *
          * @param commandPropertiesDefaults
          *            {@link HystrixCommandProperties.Setter} with property overrides for this specific instance of {@link HystrixCommand}.
          *            <p>
@@ -249,7 +247,7 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
 
         /**
          * Optional
-         * 
+         *
          * @param threadPoolPropertiesDefaults
          *            {@link HystrixThreadPoolProperties.Setter} with property overrides for the {@link HystrixThreadPool} used by this specific instance of {@link HystrixCommand}.
          *            <p>
@@ -260,15 +258,15 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
             this.threadPoolPropertiesDefaults = threadPoolPropertiesDefaults;
             return this;
         }
-
     }
 
-	private final AtomicReference<Thread> executionThread = new AtomicReference<Thread>();
-	private final AtomicBoolean interruptOnFutureCancel = new AtomicBoolean(false);
+    private final AtomicReference<Thread> executionThread = new AtomicReference<Thread>();
 
-	/**
+    private final AtomicBoolean interruptOnFutureCancel = new AtomicBoolean(false);
+
+    /**
      * Implement this method with code to be executed when {@link #execute()} or {@link #queue()} are invoked.
-     * 
+     *
      * @return R response type
      * @throws Exception
      *             if command execution fails
@@ -286,7 +284,7 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
      * access and possibly has another level of fallback that does not involve network access.
      * <p>
      * DEFAULT BEHAVIOR: It throws UnsupportedOperationException.
-     * 
+     *
      * @return R or throw UnsupportedOperationException if not implemented
      */
     protected R getFallback() {
@@ -296,6 +294,7 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
     @Override
     final protected Observable<R> getExecutionObservable() {
         return Observable.defer(new Func0<Observable<R>>() {
+
             @Override
             public Observable<R> call() {
                 try {
@@ -305,6 +304,7 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
                 }
             }
         }).doOnSubscribe(new Action0() {
+
             @Override
             public void call() {
                 // Save thread on which we get subscribed so that we can interrupt it later if needed
@@ -316,6 +316,7 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
     @Override
     final protected Observable<R> getFallbackObservable() {
         return Observable.defer(new Func0<Observable<R>>() {
+
             @Override
             public Observable<R> call() {
                 try {
@@ -329,7 +330,7 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
 
     /**
      * Used for synchronous execution of command.
-     * 
+     *
      * @return R
      *         Result of {@link #run()} execution or a fallback from {@link #getFallback()} if the command fails for any reason.
      * @throws HystrixRuntimeException
@@ -355,7 +356,7 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
      * NOTE: If configured to not run in a separate thread, this will have the same effect as {@link #execute()} and will block.
      * <p>
      * We don't throw an exception but just flip to synchronous execution so code doesn't need to change in order to switch a command from running on a separate thread to the calling thread.
-     * 
+     *
      * @return {@code Future<R>} Result of {@link #run()} execution or a fallback from {@link #getFallback()} if the command fails for any reason.
      * @throws HystrixRuntimeException
      *             if a fallback does not exist
@@ -376,7 +377,6 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
          * thus, to comply with the contract of Future, we must wrap around it.
          */
         final Future<R> delegate = toObservable().toBlocking().toFuture();
-    	
         final Future<R> f = new Future<R>() {
 
             @Override
@@ -384,7 +384,6 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
                 if (delegate.isCancelled()) {
                     return false;
                 }
-
                 if (HystrixCommand.this.getProperties().executionIsolationThreadInterruptOnFutureCancel().get()) {
                     /*
                      * The only valid transition here is false -> true. If there are two futures, say f1 and f2, created by this command
@@ -394,29 +393,26 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
                      * than that interruption request cannot be taken back.
                      */
                     interruptOnFutureCancel.compareAndSet(false, mayInterruptIfRunning);
-        		}
-
+                }
                 final boolean res = delegate.cancel(interruptOnFutureCancel.get());
-
                 if (!isExecutionComplete() && interruptOnFutureCancel.get()) {
                     final Thread t = executionThread.get();
                     if (t != null && !t.equals(Thread.currentThread())) {
                         t.interrupt();
                     }
                 }
-
                 return res;
-			}
+            }
 
             @Override
             public boolean isCancelled() {
                 return delegate.isCancelled();
-			}
+            }
 
             @Override
             public boolean isDone() {
                 return delegate.isDone();
-			}
+            }
 
             @Override
             public R get() throws InterruptedException, ExecutionException {
@@ -427,9 +423,7 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
             public R get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
                 return delegate.get(timeout, unit);
             }
-        	
         };
-
         /* special handling of error states that throw immediately */
         if (f.isDone()) {
             try {
@@ -441,21 +435,20 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
                     return f;
                 } else if (t instanceof HystrixRuntimeException) {
                     HystrixRuntimeException hre = (HystrixRuntimeException) t;
-                    switch (hre.getFailureType()) {
-					case COMMAND_EXCEPTION:
-					case TIMEOUT:
-						// we don't throw these types from queue() only from queue().get() as they are execution errors
-						return f;
-					default:
-						// these are errors we throw from queue() as they as rejection type errors
-						throw hre;
-					}
+                    switch(hre.getFailureType()) {
+                        case COMMAND_EXCEPTION:
+                        case TIMEOUT:
+                            // we don't throw these types from queue() only from queue().get() as they are execution errors
+                            return f;
+                        default:
+                            // these are errors we throw from queue() as they as rejection type errors
+                            throw hre;
+                    }
                 } else {
                     throw Exceptions.sneakyThrow(t);
                 }
             }
         }
-
         return f;
     }
 

@@ -22,7 +22,6 @@ import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.metric.HystrixCollapserEvent;
 import com.netflix.hystrix.metric.HystrixCollapserEventStream;
 import rx.functions.Func2;
-
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -50,7 +49,6 @@ public class CumulativeCollapserEventCounterStream extends BucketedCumulativeCou
         final int counterMetricWindow = properties.metricsRollingStatisticalWindowInMilliseconds().get();
         final int numCounterBuckets = properties.metricsRollingStatisticalWindowBuckets().get();
         final int counterBucketSizeInMs = counterMetricWindow / numCounterBuckets;
-
         return getInstance(collapserKey, numCounterBuckets, counterBucketSizeInMs);
     }
 
@@ -76,9 +74,7 @@ public class CumulativeCollapserEventCounterStream extends BucketedCumulativeCou
         streams.clear();
     }
 
-    private CumulativeCollapserEventCounterStream(HystrixCollapserKey collapserKey, int numCounterBuckets, int counterBucketSizeInMs,
-                                                Func2<long[], HystrixCollapserEvent, long[]> appendEventToBucket,
-                                                Func2<long[], long[], long[]> reduceBucket) {
+    private CumulativeCollapserEventCounterStream(HystrixCollapserKey collapserKey, int numCounterBuckets, int counterBucketSizeInMs, Func2<long[], HystrixCollapserEvent, long[]> appendEventToBucket, Func2<long[], long[], long[]> reduceBucket) {
         super(HystrixCollapserEventStream.getInstance(collapserKey), numCounterBuckets, counterBucketSizeInMs, appendEventToBucket, reduceBucket);
     }
 

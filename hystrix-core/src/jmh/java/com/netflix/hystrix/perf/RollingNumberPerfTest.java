@@ -27,13 +27,14 @@ import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
-
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 public class RollingNumberPerfTest {
+
     @State(Scope.Thread)
     public static class CounterState {
+
         HystrixRollingNumber counter;
 
         @Setup(Level.Iteration)
@@ -44,9 +45,11 @@ public class RollingNumberPerfTest {
 
     @State(Scope.Thread)
     public static class ValueState {
+
         final Random r = new Random();
 
         int value;
+
         HystrixRollingNumberEvent type;
 
         @Setup(Level.Invocation)
@@ -63,13 +66,14 @@ public class RollingNumberPerfTest {
                 case 2:
                     type = HystrixRollingNumberEvent.TIMEOUT;
                     break;
-                default: throw new RuntimeException("Unexpected : " + typeInt);
+                default:
+                    throw new RuntimeException("Unexpected : " + typeInt);
             }
         }
     }
 
     @Benchmark
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode({ Mode.Throughput })
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public HystrixRollingNumber writeOnly(CounterState counterState, ValueState valueState) {
         counterState.counter.add(valueState.type, valueState.value);
@@ -77,22 +81,17 @@ public class RollingNumberPerfTest {
     }
 
     @Benchmark
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode({ Mode.Throughput })
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public long readOnly(CounterState counterState) {
         HystrixRollingNumber counter = counterState.counter;
-        return counter.getCumulativeSum(HystrixRollingNumberEvent.SUCCESS) +
-                counter.getCumulativeSum(HystrixRollingNumberEvent.FAILURE) +
-                counter.getCumulativeSum(HystrixRollingNumberEvent.TIMEOUT) +
-                counter.getRollingSum(HystrixRollingNumberEvent.SUCCESS) +
-                counter.getRollingSum(HystrixRollingNumberEvent.FAILURE) +
-                counter.getRollingSum(HystrixRollingNumberEvent.TIMEOUT);
+        return counter.getCumulativeSum(HystrixRollingNumberEvent.SUCCESS) + counter.getCumulativeSum(HystrixRollingNumberEvent.FAILURE) + counter.getCumulativeSum(HystrixRollingNumberEvent.TIMEOUT) + counter.getRollingSum(HystrixRollingNumberEvent.SUCCESS) + counter.getRollingSum(HystrixRollingNumberEvent.FAILURE) + counter.getRollingSum(HystrixRollingNumberEvent.TIMEOUT);
     }
 
     @Benchmark
     @Group("writeHeavy")
     @GroupThreads(7)
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode({ Mode.Throughput })
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public HystrixRollingNumber writeHeavyCounterAdd(CounterState counterState, ValueState valueState) {
         counterState.counter.add(valueState.type, valueState.value);
@@ -102,22 +101,17 @@ public class RollingNumberPerfTest {
     @Benchmark
     @Group("writeHeavy")
     @GroupThreads(1)
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode({ Mode.Throughput })
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public long writeHeavyReadMetrics(CounterState counterState) {
         HystrixRollingNumber counter = counterState.counter;
-        return counter.getCumulativeSum(HystrixRollingNumberEvent.SUCCESS) +
-                counter.getCumulativeSum(HystrixRollingNumberEvent.FAILURE) +
-                counter.getCumulativeSum(HystrixRollingNumberEvent.TIMEOUT) +
-                counter.getRollingSum(HystrixRollingNumberEvent.SUCCESS) +
-                counter.getRollingSum(HystrixRollingNumberEvent.FAILURE) +
-                counter.getRollingSum(HystrixRollingNumberEvent.TIMEOUT);
+        return counter.getCumulativeSum(HystrixRollingNumberEvent.SUCCESS) + counter.getCumulativeSum(HystrixRollingNumberEvent.FAILURE) + counter.getCumulativeSum(HystrixRollingNumberEvent.TIMEOUT) + counter.getRollingSum(HystrixRollingNumberEvent.SUCCESS) + counter.getRollingSum(HystrixRollingNumberEvent.FAILURE) + counter.getRollingSum(HystrixRollingNumberEvent.TIMEOUT);
     }
 
     @Benchmark
     @Group("evenSplit")
     @GroupThreads(4)
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode({ Mode.Throughput })
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public HystrixRollingNumber evenSplitCounterAdd(CounterState counterState, ValueState valueState) {
         counterState.counter.add(valueState.type, valueState.value);
@@ -127,22 +121,17 @@ public class RollingNumberPerfTest {
     @Benchmark
     @Group("evenSplit")
     @GroupThreads(4)
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode({ Mode.Throughput })
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public long evenSplitReadMetrics(CounterState counterState) {
         HystrixRollingNumber counter = counterState.counter;
-        return counter.getCumulativeSum(HystrixRollingNumberEvent.SUCCESS) +
-                counter.getCumulativeSum(HystrixRollingNumberEvent.FAILURE) +
-                counter.getCumulativeSum(HystrixRollingNumberEvent.TIMEOUT) +
-                counter.getRollingSum(HystrixRollingNumberEvent.SUCCESS) +
-                counter.getRollingSum(HystrixRollingNumberEvent.FAILURE) +
-                counter.getRollingSum(HystrixRollingNumberEvent.TIMEOUT);
+        return counter.getCumulativeSum(HystrixRollingNumberEvent.SUCCESS) + counter.getCumulativeSum(HystrixRollingNumberEvent.FAILURE) + counter.getCumulativeSum(HystrixRollingNumberEvent.TIMEOUT) + counter.getRollingSum(HystrixRollingNumberEvent.SUCCESS) + counter.getRollingSum(HystrixRollingNumberEvent.FAILURE) + counter.getRollingSum(HystrixRollingNumberEvent.TIMEOUT);
     }
 
     @Benchmark
     @Group("readHeavy")
     @GroupThreads(1)
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode({ Mode.Throughput })
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public HystrixRollingNumber readHeavyCounterAdd(CounterState counterState, ValueState valueState) {
         counterState.counter.add(valueState.type, valueState.value);
@@ -152,15 +141,10 @@ public class RollingNumberPerfTest {
     @Benchmark
     @Group("readHeavy")
     @GroupThreads(7)
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode({ Mode.Throughput })
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public long readHeavyReadMetrics(CounterState counterState) {
         HystrixRollingNumber counter = counterState.counter;
-        return counter.getCumulativeSum(HystrixRollingNumberEvent.SUCCESS) +
-                counter.getCumulativeSum(HystrixRollingNumberEvent.FAILURE) +
-                counter.getCumulativeSum(HystrixRollingNumberEvent.TIMEOUT) +
-                counter.getRollingSum(HystrixRollingNumberEvent.SUCCESS) +
-                counter.getRollingSum(HystrixRollingNumberEvent.FAILURE) +
-                counter.getRollingSum(HystrixRollingNumberEvent.TIMEOUT);
+        return counter.getCumulativeSum(HystrixRollingNumberEvent.SUCCESS) + counter.getCumulativeSum(HystrixRollingNumberEvent.FAILURE) + counter.getCumulativeSum(HystrixRollingNumberEvent.TIMEOUT) + counter.getRollingSum(HystrixRollingNumberEvent.SUCCESS) + counter.getRollingSum(HystrixRollingNumberEvent.FAILURE) + counter.getRollingSum(HystrixRollingNumberEvent.TIMEOUT);
     }
 }

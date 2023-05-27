@@ -36,7 +36,9 @@ import com.netflix.hystrix.strategy.metrics.HystrixMetricsPublisherThreadPool;
  * Coda Hale Metrics (https://github.com/codahale/metrics) implementation of {@link HystrixMetricsPublisher}.
  */
 public class HystrixCodaHaleMetricsPublisher extends HystrixMetricsPublisher {
+
     private final String metricsRootNode;
+
     private final MetricRegistry metricRegistry;
 
     public HystrixCodaHaleMetricsPublisher(MetricRegistry metricRegistry) {

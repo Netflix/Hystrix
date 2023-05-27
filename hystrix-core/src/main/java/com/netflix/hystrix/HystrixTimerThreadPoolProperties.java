@@ -1,7 +1,6 @@
 package com.netflix.hystrix;
 
 import static com.netflix.hystrix.strategy.properties.HystrixPropertiesChainedProperty.forInteger;
-
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 import com.netflix.hystrix.strategy.properties.HystrixProperty;
 
@@ -23,10 +22,7 @@ public abstract class HystrixTimerThreadPoolProperties {
     }
 
     private static HystrixProperty<Integer> getProperty(String propertyPrefix, String instanceProperty, Integer defaultValue) {
-        
-        return forInteger()
-                .add(propertyPrefix + ".timer.threadpool.default." + instanceProperty, defaultValue)
-                .build();
+        return forInteger().add(propertyPrefix + ".timer.threadpool.default." + instanceProperty, defaultValue).build();
     }
 
     public HystrixProperty<Integer> getCorePoolSize() {
@@ -55,6 +51,7 @@ public abstract class HystrixTimerThreadPoolProperties {
      * @NotThreadSafe
      */
     public static class Setter {
+
         private Integer coreSize = null;
 
         private Setter() {

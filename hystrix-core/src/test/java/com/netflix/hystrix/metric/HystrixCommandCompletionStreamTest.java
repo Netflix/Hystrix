@@ -21,10 +21,8 @@ import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.HystrixThreadPoolKey;
 import org.junit.Test;
 import rx.Subscriber;
-
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -33,6 +31,7 @@ public class HystrixCommandCompletionStreamTest {
 
     private <T> Subscriber<T> getLatchedSubscriber(final CountDownLatch latch) {
         return new Subscriber<T>() {
+
             @Override
             public void onCompleted() {
                 latch.countDown();
@@ -53,18 +52,17 @@ public class HystrixCommandCompletionStreamTest {
     }
 
     static final HystrixCommandKey commandKey = HystrixCommandKey.Factory.asKey("COMMAND");
+
     static final HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("ThreadPool");
+
     final HystrixCommandCompletionStream commandStream = new HystrixCommandCompletionStream(commandKey);
 
     @Test
     public void noEvents() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
         Subscriber<HystrixCommandCompletion> subscriber = getLatchedSubscriber(latch);
-
         commandStream.observe().take(1).subscribe(subscriber);
-
         //no writes
-
         assertFalse(latch.await(1000, TimeUnit.MILLISECONDS));
     }
 
@@ -72,13 +70,10 @@ public class HystrixCommandCompletionStreamTest {
     public void testSingleWriteSingleSubscriber() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
         Subscriber<HystrixCommandCompletion> subscriber = getLatchedSubscriber(latch);
-
         commandStream.observe().take(1).subscribe(subscriber);
-
         ExecutionResult result = ExecutionResult.from(HystrixEventType.SUCCESS).setExecutedInThread();
         HystrixCommandCompletion event = HystrixCommandCompletion.from(result, commandKey, threadPoolKey);
         commandStream.write(event);
-
         assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
     }
 
@@ -86,17 +81,13 @@ public class HystrixCommandCompletionStreamTest {
     public void testSingleWriteMultipleSubscribers() throws InterruptedException {
         CountDownLatch latch1 = new CountDownLatch(1);
         Subscriber<HystrixCommandCompletion> subscriber1 = getLatchedSubscriber(latch1);
-
         CountDownLatch latch2 = new CountDownLatch(1);
         Subscriber<HystrixCommandCompletion> subscriber2 = getLatchedSubscriber(latch2);
-
         commandStream.observe().take(1).subscribe(subscriber1);
         commandStream.observe().take(1).subscribe(subscriber2);
-
         ExecutionResult result = ExecutionResult.from(HystrixEventType.SUCCESS).setExecutedInThread();
         HystrixCommandCompletion event = HystrixCommandCompletion.from(result, commandKey, threadPoolKey);
         commandStream.write(event);
-
         assertTrue(latch1.await(1000, TimeUnit.MILLISECONDS));
         assertTrue(latch2.await(10, TimeUnit.MILLISECONDS));
     }

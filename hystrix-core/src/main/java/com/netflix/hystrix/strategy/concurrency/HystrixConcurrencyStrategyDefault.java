@@ -17,7 +17,7 @@ package com.netflix.hystrix.strategy.concurrency;
 
 /**
  * Default implementation of {@link HystrixConcurrencyStrategy} using standard java.util.concurrent.* implementations.
- * 
+ *
  * @ExcludeFromJavadoc
  */
 public class HystrixConcurrencyStrategyDefault extends HystrixConcurrencyStrategy {
@@ -30,5 +30,4 @@ public class HystrixConcurrencyStrategyDefault extends HystrixConcurrencyStrateg
 
     private HystrixConcurrencyStrategyDefault() {
     }
-
 }

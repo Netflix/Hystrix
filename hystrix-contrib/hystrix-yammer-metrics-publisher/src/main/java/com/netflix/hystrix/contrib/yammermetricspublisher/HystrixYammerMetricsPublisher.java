@@ -37,6 +37,7 @@ import com.yammer.metrics.core.MetricsRegistry;
  * Yammer Metrics (https://github.com/codahale/metrics) implementation of {@link HystrixMetricsPublisher}.
  */
 public class HystrixYammerMetricsPublisher extends HystrixMetricsPublisher {
+
     private final MetricsRegistry metricsRegistry;
 
     public HystrixYammerMetricsPublisher() {

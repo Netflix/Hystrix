@@ -1,12 +1,12 @@
 /**
  * Copyright 2013 Netflix, Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.security.ProtectionDomain;
-
 import javassist.CannotCompileException;
 import javassist.ClassPool;
 import javassist.CtClass;
@@ -49,20 +48,19 @@ public class NetworkClassTransform implements ClassFileTransformer {
                 // this one seems to be fairly reliable in counting each time a request/response occurs on blocking IO
                 return wrapConstructorsOfClass(name);
             } else if (name.equals("java.nio.channels.SocketChannel")) {
-                // handle NIO 
+                // handle NIO
                 return wrapConstructorsOfClass(name);
             }
         } catch (Exception e) {
             throw new RuntimeException("Failed trying to wrap class: " + className, e);
         }
-
         // we didn't transform anything so return null to leave untouched
         return null;
     }
 
     /**
      * Wrap all constructors of a given class
-     * 
+     *
      * @param className
      * @throws NotFoundException
      * @throws CannotCompileException
@@ -74,7 +72,7 @@ public class NetworkClassTransform implements ClassFileTransformer {
 
     /**
      * Wrap all signatures of a given method name.
-     * 
+     *
      * @param className
      * @param methodName
      * @throws NotFoundException
@@ -93,7 +91,6 @@ public class NetworkClassTransform implements ClassFileTransformer {
                 } catch (Exception e) {
                     throw new RuntimeException("Failed trying to wrap constructor of class: " + className, e);
                 }
-
             }
         }
         // methods
@@ -111,5 +108,4 @@ public class NetworkClassTransform implements ClassFileTransformer {
         }
         return ctClazz.toBytecode();
     }
-
 }

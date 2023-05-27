@@ -51,9 +51,7 @@ public class DefaultHystrixGeneratedCacheKey implements HystrixGeneratedCacheKey
             return true;
         if (o == null || getClass() != o.getClass())
             return false;
-
         DefaultHystrixGeneratedCacheKey that = (DefaultHystrixGeneratedCacheKey) o;
-
         return Objects.equal(this.cacheKey, that.cacheKey);
     }
 }

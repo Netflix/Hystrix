@@ -27,7 +27,7 @@ public class CommandPropertiesTest extends BasicCommandPropertiesTest {
     public static void setUpEnv() {
         System.setProperty("weavingMode", "compile");
     }
-    
+
     @Override
     protected UserService createUserService() {
         return new UserService();

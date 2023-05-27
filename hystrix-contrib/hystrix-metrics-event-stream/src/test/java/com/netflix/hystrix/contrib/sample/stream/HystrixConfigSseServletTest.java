@@ -28,7 +28,6 @@ import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -36,21 +35,28 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class HystrixConfigSseServletTest {
 
-    @Mock HttpServletRequest mockReq;
-    @Mock HttpServletResponse mockResp;
-    @Mock HystrixConfiguration mockConfig;
-    @Mock PrintWriter mockPrintWriter;
+    @Mock
+    HttpServletRequest mockReq;
+
+    @Mock
+    HttpServletResponse mockResp;
+
+    @Mock
+    HystrixConfiguration mockConfig;
+
+    @Mock
+    PrintWriter mockPrintWriter;
 
     HystrixConfigSseServlet servlet;
 
     private final Observable<HystrixConfiguration> streamOfOnNexts = Observable.interval(100, TimeUnit.MILLISECONDS).map(new Func1<Long, HystrixConfiguration>() {
+
         @Override
         public HystrixConfiguration call(Long timestamp) {
             return mockConfig;
@@ -58,6 +64,7 @@ public class HystrixConfigSseServletTest {
     });
 
     private final Observable<HystrixConfiguration> streamOfOnNextThenOnError = Observable.create(new Observable.OnSubscribe<HystrixConfiguration>() {
+
         @Override
         public void call(Subscriber<? super HystrixConfiguration> subscriber) {
             try {
@@ -72,6 +79,7 @@ public class HystrixConfigSseServletTest {
     }).subscribeOn(Schedulers.computation());
 
     private final Observable<HystrixConfiguration> streamOfOnNextThenOnCompleted = Observable.create(new Observable.OnSubscribe<HystrixConfiguration>() {
+
         @Override
         public void call(Subscriber<? super HystrixConfiguration> subscriber) {
             try {
@@ -102,13 +110,9 @@ public class HystrixConfigSseServletTest {
         try {
             servlet.init();
         } catch (ServletException ex) {
-
         }
-
         servlet.shutdown();
-
         servlet.doGet(mockReq, mockResp);
-
         verify(mockResp).sendError(503, "Service has been shut down.");
     }
 
@@ -118,27 +122,24 @@ public class HystrixConfigSseServletTest {
         try {
             servlet.init();
         } catch (ServletException ex) {
-
         }
-
         final AtomicInteger writes = new AtomicInteger(0);
-
         when(mockReq.getParameter("delay")).thenReturn("100");
         when(mockResp.getWriter()).thenReturn(mockPrintWriter);
         Mockito.doAnswer(new Answer<Void>() {
+
             @Override
             public Void answer(InvocationOnMock invocation) throws Throwable {
                 String written = (String) invocation.getArguments()[0];
                 System.out.println("ARG : " + written);
-
                 if (!written.contains("ping")) {
                     writes.incrementAndGet();
                 }
                 return null;
             }
         }).when(mockPrintWriter).print(Mockito.anyString());
-
         Runnable simulateClient = new Runnable() {
+
             @Override
             public void run() {
                 try {
@@ -150,25 +151,20 @@ public class HystrixConfigSseServletTest {
                 }
             }
         };
-
         Thread t = new Thread(simulateClient);
         System.out.println("Starting thread : " + t.getName());
         t.start();
         System.out.println("Started thread : " + t.getName());
-
         try {
             Thread.sleep(1000);
             System.out.println("Woke up from sleep : " + Thread.currentThread().getName());
         } catch (InterruptedException ex) {
             fail(ex.getMessage());
         }
-
         System.out.println("About to interrupt");
         t.interrupt();
         System.out.println("Done interrupting");
-
         Thread.sleep(100);
-
         System.out.println("WRITES : " + writes.get());
         assertTrue(writes.get() >= 9);
         assertEquals(0, servlet.getNumberCurrentConnections());
@@ -180,27 +176,24 @@ public class HystrixConfigSseServletTest {
         try {
             servlet.init();
         } catch (ServletException ex) {
-
         }
-
         final AtomicInteger writes = new AtomicInteger(0);
-
         when(mockReq.getParameter("delay")).thenReturn("100");
         when(mockResp.getWriter()).thenReturn(mockPrintWriter);
         Mockito.doAnswer(new Answer<Void>() {
+
             @Override
             public Void answer(InvocationOnMock invocation) throws Throwable {
                 String written = (String) invocation.getArguments()[0];
                 System.out.println("ARG : " + written);
-
                 if (!written.contains("ping")) {
                     writes.incrementAndGet();
                 }
                 return null;
             }
         }).when(mockPrintWriter).print(Mockito.anyString());
-
         Runnable simulateClient = new Runnable() {
+
             @Override
             public void run() {
                 try {
@@ -212,17 +205,14 @@ public class HystrixConfigSseServletTest {
                 }
             }
         };
-
         Thread t = new Thread(simulateClient);
         t.start();
-
         try {
             Thread.sleep(1000);
             System.out.println(System.currentTimeMillis() + " Woke up from sleep : " + Thread.currentThread().getName());
         } catch (InterruptedException ex) {
             fail(ex.getMessage());
         }
-
         assertEquals(1, writes.get());
         assertEquals(0, servlet.getNumberCurrentConnections());
     }
@@ -233,27 +223,24 @@ public class HystrixConfigSseServletTest {
         try {
             servlet.init();
         } catch (ServletException ex) {
-
         }
-
         final AtomicInteger writes = new AtomicInteger(0);
-
         when(mockReq.getParameter("delay")).thenReturn("100");
         when(mockResp.getWriter()).thenReturn(mockPrintWriter);
         Mockito.doAnswer(new Answer<Void>() {
+
             @Override
             public Void answer(InvocationOnMock invocation) throws Throwable {
                 String written = (String) invocation.getArguments()[0];
                 System.out.println("ARG : " + written);
-
                 if (!written.contains("ping")) {
                     writes.incrementAndGet();
                 }
                 return null;
             }
         }).when(mockPrintWriter).print(Mockito.anyString());
-
         Runnable simulateClient = new Runnable() {
+
             @Override
             public void run() {
                 try {
@@ -265,17 +252,14 @@ public class HystrixConfigSseServletTest {
                 }
             }
         };
-
         Thread t = new Thread(simulateClient);
         t.start();
-
         try {
             Thread.sleep(1000);
             System.out.println(System.currentTimeMillis() + " Woke up from sleep : " + Thread.currentThread().getName());
         } catch (InterruptedException ex) {
             fail(ex.getMessage());
         }
-
         assertEquals(1, writes.get());
         assertEquals(0, servlet.getNumberCurrentConnections());
     }
@@ -286,26 +270,23 @@ public class HystrixConfigSseServletTest {
         try {
             servlet.init();
         } catch (ServletException ex) {
-
         }
-
         final AtomicInteger writes = new AtomicInteger(0);
-
         when(mockResp.getWriter()).thenReturn(mockPrintWriter);
         Mockito.doAnswer(new Answer<Void>() {
+
             @Override
             public Void answer(InvocationOnMock invocation) throws Throwable {
                 String written = (String) invocation.getArguments()[0];
                 System.out.println("ARG : " + written);
-
                 if (!written.contains("ping")) {
                     writes.incrementAndGet();
                 }
                 throw new IOException("simulated IO Exception");
             }
         }).when(mockPrintWriter).print(Mockito.anyString());
-
         Runnable simulateClient = new Runnable() {
+
             @Override
             public void run() {
                 try {
@@ -317,17 +298,14 @@ public class HystrixConfigSseServletTest {
                 }
             }
         };
-
         Thread t = new Thread(simulateClient);
         t.start();
-
         try {
             Thread.sleep(1000);
             System.out.println(System.currentTimeMillis() + " Woke up from sleep : " + Thread.currentThread().getName());
         } catch (InterruptedException ex) {
             fail(ex.getMessage());
         }
-
         assertTrue(writes.get() <= 2);
         assertEquals(0, servlet.getNumberCurrentConnections());
     }

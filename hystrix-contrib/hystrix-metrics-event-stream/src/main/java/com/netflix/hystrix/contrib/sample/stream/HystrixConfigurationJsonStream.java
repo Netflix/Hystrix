@@ -28,7 +28,6 @@ import com.netflix.hystrix.config.HystrixThreadPoolConfiguration;
 import com.netflix.hystrix.metric.HystrixRequestEventsStream;
 import rx.Observable;
 import rx.functions.Func1;
-
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Map;
@@ -43,15 +42,19 @@ import java.util.Map;
  *
  * @deprecated Instead, prefer mapping your preferred serialization on top of {@link HystrixConfigurationStream#observe()}.
  */
-@Deprecated //since 1.5.4
+//since 1.5.4
+@Deprecated
 public class HystrixConfigurationJsonStream {
 
     private static final JsonFactory jsonFactory = new JsonFactory();
+
     private final Func1<Integer, Observable<HystrixConfiguration>> streamGenerator;
 
-    @Deprecated //since 1.5.4
+    //since 1.5.4
+    @Deprecated
     public HystrixConfigurationJsonStream() {
         this.streamGenerator = new Func1<Integer, Observable<HystrixConfiguration>>() {
+
             @Override
             public Observable<HystrixConfiguration> call(Integer delay) {
                 return HystrixConfigurationStream.getInstance().observe();
@@ -59,12 +62,14 @@ public class HystrixConfigurationJsonStream {
         };
     }
 
-    @Deprecated //since 1.5.4
+    //since 1.5.4
+    @Deprecated
     public HystrixConfigurationJsonStream(Func1<Integer, Observable<HystrixConfiguration>> streamGenerator) {
         this.streamGenerator = streamGenerator;
     }
 
     private static final Func1<HystrixConfiguration, String> convertToJson = new Func1<HystrixConfiguration, String>() {
+
         @Override
         public String call(HystrixConfiguration hystrixConfiguration) {
             try {
@@ -143,31 +148,27 @@ public class HystrixConfigurationJsonStream {
         json.writeEndObject();
     }
 
-   public static String convertToString(HystrixConfiguration config) throws IOException {
+    public static String convertToString(HystrixConfiguration config) throws IOException {
         StringWriter jsonString = new StringWriter();
         JsonGenerator json = jsonFactory.createGenerator(jsonString);
-
         json.writeStartObject();
         json.writeStringField("type", "HystrixConfig");
         json.writeObjectFieldStart("commands");
-        for (Map.Entry<HystrixCommandKey, HystrixCommandConfiguration> entry: config.getCommandConfig().entrySet()) {
+        for (Map.Entry<HystrixCommandKey, HystrixCommandConfiguration> entry : config.getCommandConfig().entrySet()) {
             final HystrixCommandKey key = entry.getKey();
             final HystrixCommandConfiguration commandConfig = entry.getValue();
             writeCommandConfigJson(json, key, commandConfig);
-
         }
         json.writeEndObject();
-
         json.writeObjectFieldStart("threadpools");
-        for (Map.Entry<HystrixThreadPoolKey, HystrixThreadPoolConfiguration> entry: config.getThreadPoolConfig().entrySet()) {
+        for (Map.Entry<HystrixThreadPoolKey, HystrixThreadPoolConfiguration> entry : config.getThreadPoolConfig().entrySet()) {
             final HystrixThreadPoolKey threadPoolKey = entry.getKey();
             final HystrixThreadPoolConfiguration threadPoolConfig = entry.getValue();
             writeThreadPoolConfigJson(json, threadPoolKey, threadPoolConfig);
         }
         json.writeEndObject();
-
         json.writeObjectFieldStart("collapsers");
-        for (Map.Entry<HystrixCollapserKey, HystrixCollapserConfiguration> entry: config.getCollapserConfig().entrySet()) {
+        for (Map.Entry<HystrixCollapserKey, HystrixCollapserConfiguration> entry : config.getCollapserConfig().entrySet()) {
             final HystrixCollapserKey collapserKey = entry.getKey();
             final HystrixCollapserConfiguration collapserConfig = entry.getValue();
             writeCollapserConfigJson(json, collapserKey, collapserConfig);
@@ -175,7 +176,6 @@ public class HystrixConfigurationJsonStream {
         json.writeEndObject();
         json.writeEndObject();
         json.close();
-
         return jsonString.getBuffer().toString();
     }
 
@@ -185,7 +185,8 @@ public class HystrixConfigurationJsonStream {
      * @param delay interval between data emissions
      * @return sampled utilization as Java object, taken on a timer
      */
-    @Deprecated //deprecated in 1.5.4
+    //deprecated in 1.5.4
+    @Deprecated
     public Observable<HystrixConfiguration> observe(int delay) {
         return streamGenerator.call(delay);
     }
@@ -197,7 +198,8 @@ public class HystrixConfigurationJsonStream {
      * @param delay interval between data emissions
      * @return sampled utilization as JSON string, taken on a timer
      */
-    @Deprecated //deprecated in 1.5.4
+    //deprecated in 1.5.4
+    @Deprecated
     public Observable<String> observeJson(int delay) {
         return streamGenerator.call(delay).map(convertToJson);
     }

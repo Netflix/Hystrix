@@ -10,7 +10,7 @@ import org.springframework.test.context.ContextConfiguration;
 /**
  * Created by dmgcodevil.
  */
-@ContextConfiguration(classes = {AopCglibConfig.class})
+@ContextConfiguration(classes = { AopCglibConfig.class })
 public class GenericFallbackTest extends BasicGenericFallbackTest {
 
     @Autowired
@@ -21,5 +21,4 @@ public class GenericFallbackTest extends BasicGenericFallbackTest {
         AutowireCapableBeanFactory beanFactory = applicationContext.getAutowireCapableBeanFactory();
         return beanFactory.createBean(t);
     }
-
 }

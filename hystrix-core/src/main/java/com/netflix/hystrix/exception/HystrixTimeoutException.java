@@ -29,6 +29,4 @@ import com.netflix.hystrix.HystrixObservableCommand;
 public class HystrixTimeoutException extends Exception {
 
     private static final long serialVersionUID = -5085623652043595962L;
-
 }
-

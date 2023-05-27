@@ -33,12 +33,10 @@ import rx.functions.Action0;
 import rx.functions.Func1;
 import rx.functions.Func2;
 import rx.schedulers.Schedulers;
-
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -48,7 +46,9 @@ public class HystrixConfigurationStreamTest extends CommandStreamTest {
     public HystrixRequestContextRule ctx = new HystrixRequestContextRule();
 
     HystrixConfigurationStream stream;
+
     private final static HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("Config");
+
     private final static HystrixCommandKey commandKey = HystrixCommandKey.Factory.asKey("Command");
 
     @Before
@@ -62,38 +62,35 @@ public class HystrixConfigurationStreamTest extends CommandStreamTest {
         final AtomicBoolean threadPoolShowsUp = new AtomicBoolean(false);
         final CountDownLatch latch = new CountDownLatch(1);
         final int NUM = 10;
-
         for (int i = 0; i < 2; i++) {
             HystrixCommand<Integer> cmd = Command.from(groupKey, commandKey, HystrixEventType.SUCCESS, 50);
             cmd.observe();
         }
+        stream.observe().take(NUM).subscribe(new Subscriber<HystrixConfiguration>() {
 
-        stream.observe().take(NUM).subscribe(
-                new Subscriber<HystrixConfiguration>() {
-                    @Override
-                    public void onCompleted() {
-                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " OnCompleted");
-                        latch.countDown();
-                    }
+            @Override
+            public void onCompleted() {
+                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " OnCompleted");
+                latch.countDown();
+            }
 
-                    @Override
-                    public void onError(Throwable e) {
-                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " OnError : " + e);
-                        latch.countDown();
-                    }
+            @Override
+            public void onError(Throwable e) {
+                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " OnError : " + e);
+                latch.countDown();
+            }
 
-                    @Override
-                    public void onNext(HystrixConfiguration configuration) {
-                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : Received data with : " + configuration.getCommandConfig().size() + " commands");
-                        if (configuration.getCommandConfig().containsKey(commandKey)) {
-                            commandShowsUp.set(true);
-                        }
-                        if (!configuration.getThreadPoolConfig().isEmpty()) {
-                            threadPoolShowsUp.set(true);
-                        }
-                    }
-                });
-
+            @Override
+            public void onNext(HystrixConfiguration configuration) {
+                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : Received data with : " + configuration.getCommandConfig().size() + " commands");
+                if (configuration.getCommandConfig().containsKey(commandKey)) {
+                    commandShowsUp.set(true);
+                }
+                if (!configuration.getThreadPoolConfig().isEmpty()) {
+                    threadPoolShowsUp.set(true);
+                }
+            }
+        });
         assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         assertTrue(commandShowsUp.get());
         assertTrue(threadPoolShowsUp.get());
@@ -105,64 +102,58 @@ public class HystrixConfigurationStreamTest extends CommandStreamTest {
         final CountDownLatch latch2 = new CountDownLatch(1);
         final AtomicInteger payloads1 = new AtomicInteger(0);
         final AtomicInteger payloads2 = new AtomicInteger(0);
+        Subscription s1 = stream.observe().take(100).doOnUnsubscribe(new Action0() {
 
-        Subscription s1 = stream
-                .observe()
-                .take(100)
-                .doOnUnsubscribe(new Action0() {
-                    @Override
-                    public void call() {
-                        latch1.countDown();
-                    }
-                })
-                .subscribe(new Subscriber<HystrixConfiguration>() {
-                    @Override
-                    public void onCompleted() {
-                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : Dashboard 1 OnCompleted");
-                        latch1.countDown();
-                    }
+            @Override
+            public void call() {
+                latch1.countDown();
+            }
+        }).subscribe(new Subscriber<HystrixConfiguration>() {
 
-                    @Override
-                    public void onError(Throwable e) {
-                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : Dashboard 1 OnError : " + e);
-                        latch1.countDown();
-                    }
+            @Override
+            public void onCompleted() {
+                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : Dashboard 1 OnCompleted");
+                latch1.countDown();
+            }
 
-                    @Override
-                    public void onNext(HystrixConfiguration configuration) {
-                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : Dashboard 1 OnNext : " + configuration);
-                        payloads1.incrementAndGet();
-                    }
-                });
+            @Override
+            public void onError(Throwable e) {
+                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : Dashboard 1 OnError : " + e);
+                latch1.countDown();
+            }
 
-        Subscription s2 = stream
-                .observe()
-                .take(100)
-                .doOnUnsubscribe(new Action0() {
-                    @Override
-                    public void call() {
-                        latch2.countDown();
-                    }
-                })
-                .subscribe(new Subscriber<HystrixConfiguration>() {
-                    @Override
-                    public void onCompleted() {
-                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : Dashboard 2 OnCompleted");
-                        latch2.countDown();
-                    }
+            @Override
+            public void onNext(HystrixConfiguration configuration) {
+                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : Dashboard 1 OnNext : " + configuration);
+                payloads1.incrementAndGet();
+            }
+        });
+        Subscription s2 = stream.observe().take(100).doOnUnsubscribe(new Action0() {
 
-                    @Override
-                    public void onError(Throwable e) {
-                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : Dashboard 2 OnError : " + e);
-                        latch2.countDown();
-                    }
+            @Override
+            public void call() {
+                latch2.countDown();
+            }
+        }).subscribe(new Subscriber<HystrixConfiguration>() {
 
-                    @Override
-                    public void onNext(HystrixConfiguration configuration) {
-                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : Dashboard 2 OnNext : " + configuration);
-                        payloads2.incrementAndGet();
-                    }
-                });
+            @Override
+            public void onCompleted() {
+                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : Dashboard 2 OnCompleted");
+                latch2.countDown();
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : Dashboard 2 OnError : " + e);
+                latch2.countDown();
+            }
+
+            @Override
+            public void onNext(HystrixConfiguration configuration) {
+                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : Dashboard 2 OnNext : " + configuration);
+                payloads2.incrementAndGet();
+            }
+        });
         //execute 1 command, then unsubscribe from first stream. then execute the rest
         for (int i = 0; i < 50; i++) {
             HystrixCommand<Integer> cmd = Command.from(groupKey, commandKey, HystrixEventType.SUCCESS, 50);
@@ -171,7 +162,6 @@ public class HystrixConfigurationStreamTest extends CommandStreamTest {
                 s1.unsubscribe();
             }
         }
-
         assertTrue(latch1.await(10000, TimeUnit.MILLISECONDS));
         assertTrue(latch2.await(10000, TimeUnit.MILLISECONDS));
         System.out.println("s1 got : " + payloads1.get() + ", s2 got : " + payloads2.get());
@@ -186,64 +176,58 @@ public class HystrixConfigurationStreamTest extends CommandStreamTest {
         final CountDownLatch latch2 = new CountDownLatch(1);
         final AtomicInteger payloads1 = new AtomicInteger(0);
         final AtomicInteger payloads2 = new AtomicInteger(0);
+        Subscription s1 = stream.observe().take(100).doOnUnsubscribe(new Action0() {
 
-        Subscription s1 = stream
-                .observe()
-                .take(100)
-                .doOnUnsubscribe(new Action0() {
-                    @Override
-                    public void call() {
-                        latch1.countDown();
-                    }
-                })
-                .subscribe(new Subscriber<HystrixConfiguration>() {
-                    @Override
-                    public void onCompleted() {
-                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : Dashboard 1 OnCompleted");
-                        latch1.countDown();
-                    }
+            @Override
+            public void call() {
+                latch1.countDown();
+            }
+        }).subscribe(new Subscriber<HystrixConfiguration>() {
 
-                    @Override
-                    public void onError(Throwable e) {
-                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : Dashboard 1 OnError : " + e);
-                        latch1.countDown();
-                    }
+            @Override
+            public void onCompleted() {
+                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : Dashboard 1 OnCompleted");
+                latch1.countDown();
+            }
 
-                    @Override
-                    public void onNext(HystrixConfiguration configuration) {
-                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : Dashboard 1 OnNext : " + configuration);
-                        payloads1.incrementAndGet();
-                    }
-                });
+            @Override
+            public void onError(Throwable e) {
+                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : Dashboard 1 OnError : " + e);
+                latch1.countDown();
+            }
 
-        Subscription s2 = stream
-                .observe()
-                .take(100)
-                .doOnUnsubscribe(new Action0() {
-                    @Override
-                    public void call() {
-                        latch2.countDown();
-                    }
-                })
-                .subscribe(new Subscriber<HystrixConfiguration>() {
-                    @Override
-                    public void onCompleted() {
-                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : Dashboard 2 OnCompleted");
-                        latch2.countDown();
-                    }
+            @Override
+            public void onNext(HystrixConfiguration configuration) {
+                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : Dashboard 1 OnNext : " + configuration);
+                payloads1.incrementAndGet();
+            }
+        });
+        Subscription s2 = stream.observe().take(100).doOnUnsubscribe(new Action0() {
 
-                    @Override
-                    public void onError(Throwable e) {
-                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : Dashboard 2 OnError : " + e);
-                        latch2.countDown();
-                    }
+            @Override
+            public void call() {
+                latch2.countDown();
+            }
+        }).subscribe(new Subscriber<HystrixConfiguration>() {
 
-                    @Override
-                    public void onNext(HystrixConfiguration configuration) {
-                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : Dashboard 2 OnNext : " + configuration);
-                        payloads2.incrementAndGet();
-                    }
-                });
+            @Override
+            public void onCompleted() {
+                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : Dashboard 2 OnCompleted");
+                latch2.countDown();
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : Dashboard 2 OnError : " + e);
+                latch2.countDown();
+            }
+
+            @Override
+            public void onNext(HystrixConfiguration configuration) {
+                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : Dashboard 2 OnNext : " + configuration);
+                payloads2.incrementAndGet();
+            }
+        });
         //execute 2 commands, then unsubscribe from both streams, then execute the rest
         for (int i = 0; i < 10; i++) {
             HystrixCommand<Integer> cmd = Command.from(groupKey, commandKey, HystrixEventType.SUCCESS, 50);
@@ -253,8 +237,8 @@ public class HystrixConfigurationStreamTest extends CommandStreamTest {
                 s2.unsubscribe();
             }
         }
-        assertFalse(stream.isSourceCurrentlySubscribed());  //both subscriptions have been cancelled - source should be too
-
+        //both subscriptions have been cancelled - source should be too
+        assertFalse(stream.isSourceCurrentlySubscribed());
         assertTrue(latch1.await(10000, TimeUnit.MILLISECONDS));
         assertTrue(latch2.await(10000, TimeUnit.MILLISECONDS));
         System.out.println("s1 got : " + payloads1.get() + ", s2 got : " + payloads2.get());
@@ -266,60 +250,51 @@ public class HystrixConfigurationStreamTest extends CommandStreamTest {
     public void testTwoSubscribersOneSlowOneFast() throws Exception {
         final CountDownLatch latch = new CountDownLatch(1);
         final AtomicBoolean foundError = new AtomicBoolean(false);
+        Observable<HystrixConfiguration> fast = stream.observe().observeOn(Schedulers.newThread());
+        Observable<HystrixConfiguration> slow = stream.observe().observeOn(Schedulers.newThread()).map(new Func1<HystrixConfiguration, HystrixConfiguration>() {
 
-        Observable<HystrixConfiguration> fast = stream
-                .observe()
-                .observeOn(Schedulers.newThread());
-        Observable<HystrixConfiguration> slow = stream
-                .observe()
-                .observeOn(Schedulers.newThread())
-                .map(new Func1<HystrixConfiguration, HystrixConfiguration>() {
-                    @Override
-                    public HystrixConfiguration call(HystrixConfiguration config) {
-                        try {
-                            Thread.sleep(100);
-                            return config;
-                        } catch (InterruptedException ex) {
-                            return config;
-                        }
-                    }
-                });
-
+            @Override
+            public HystrixConfiguration call(HystrixConfiguration config) {
+                try {
+                    Thread.sleep(100);
+                    return config;
+                } catch (InterruptedException ex) {
+                    return config;
+                }
+            }
+        });
         Observable<Boolean> checkZippedEqual = Observable.zip(fast, slow, new Func2<HystrixConfiguration, HystrixConfiguration, Boolean>() {
+
             @Override
             public Boolean call(HystrixConfiguration payload, HystrixConfiguration payload2) {
                 return payload == payload2;
             }
         });
+        Subscription s1 = checkZippedEqual.take(10000).subscribe(new Subscriber<Boolean>() {
 
-        Subscription s1 = checkZippedEqual
-                .take(10000)
-                .subscribe(new Subscriber<Boolean>() {
-                    @Override
-                    public void onCompleted() {
-                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : OnCompleted");
-                        latch.countDown();
-                    }
+            @Override
+            public void onCompleted() {
+                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : OnCompleted");
+                latch.countDown();
+            }
 
-                    @Override
-                    public void onError(Throwable e) {
-                        System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : OnError : " + e);
-                        e.printStackTrace();
-                        foundError.set(true);
-                        latch.countDown();
-                    }
+            @Override
+            public void onError(Throwable e) {
+                System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : OnError : " + e);
+                e.printStackTrace();
+                foundError.set(true);
+                latch.countDown();
+            }
 
-                    @Override
-                    public void onNext(Boolean b) {
-                        //System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : OnNext : " + b);
-                    }
-                });
-
+            @Override
+            public void onNext(Boolean b) {
+                //System.out.println(System.currentTimeMillis() + " : " + Thread.currentThread().getName() + " : OnNext : " + b);
+            }
+        });
         for (int i = 0; i < 50; i++) {
             HystrixCommand<Integer> cmd = Command.from(groupKey, commandKey, HystrixEventType.SUCCESS, 50);
             cmd.execute();
         }
-
         latch.await(10000, TimeUnit.MILLISECONDS);
         assertFalse(foundError.get());
     }

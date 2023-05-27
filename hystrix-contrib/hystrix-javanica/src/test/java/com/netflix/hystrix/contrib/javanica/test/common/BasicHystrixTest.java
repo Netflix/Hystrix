@@ -22,13 +22,13 @@ import com.netflix.hystrix.HystrixThreadPool;
 import com.netflix.hystrix.HystrixThreadPoolProperties;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import org.junit.Rule;
-
 import java.lang.reflect.Field;
 
 /**
  * Created by dmgcodevil
  */
 public abstract class BasicHystrixTest {
+
     @Rule
     public HystrixRequestContextRule request = new HystrixRequestContextRule();
 
@@ -45,11 +45,9 @@ public abstract class BasicHystrixTest {
             Field field = command.getClass().getSuperclass().getSuperclass().getSuperclass().getDeclaredField("threadPool");
             field.setAccessible(true);
             HystrixThreadPool threadPool = (HystrixThreadPool) field.get(command);
-
             Field field2 = HystrixThreadPool.HystrixThreadPoolDefault.class.getDeclaredField("properties");
             field2.setAccessible(true);
             return (HystrixThreadPoolProperties) field2.get(threadPool);
-
         } catch (NoSuchFieldException e) {
             throw Throwables.propagate(e);
         } catch (IllegalAccessException e) {

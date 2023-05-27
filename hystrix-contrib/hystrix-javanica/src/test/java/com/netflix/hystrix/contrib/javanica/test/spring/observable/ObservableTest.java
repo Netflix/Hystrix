@@ -29,7 +29,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
  * https://github.com/Netflix/Hystrix/wiki/How-To-Use#Reactive-Execution
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = {AopCglibConfig.class, ObservableTest.ObservableTestConfig.class})
+@ContextConfiguration(classes = { AopCglibConfig.class, ObservableTest.ObservableTestConfig.class })
 public class ObservableTest extends BasicObservableTest {
 
     @Autowired
@@ -48,5 +48,4 @@ public class ObservableTest extends BasicObservableTest {
             return new UserService();
         }
     }
-
 }

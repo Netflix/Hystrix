@@ -30,7 +30,6 @@ import rx.functions.Action1;
 import rx.subjects.PublishSubject;
 import rx.subjects.Subject;
 import rx.subscriptions.MultipleAssignmentSubscription;
-
 import java.nio.charset.Charset;
 import java.util.concurrent.TimeUnit;
 
@@ -54,11 +53,15 @@ public class HystrixMetricsStreamHandler<I, O> implements RequestHandler<I, O> {
     public static final int DEFAULT_INTERVAL = 2000;
 
     private static final byte[] HEADER = "data: ".getBytes(Charset.defaultCharset());
-    private static final byte[] FOOTER = {10, 10};
+
+    private static final byte[] FOOTER = { 10, 10 };
+
     private static final int EXTRA_SPACE = HEADER.length + FOOTER.length;
 
     private final String hystrixPrefix;
+
     private final long interval;
+
     private final RequestHandler<I, O> appHandler;
 
     public HystrixMetricsStreamHandler(RequestHandler<I, O> appHandler) {
@@ -81,32 +84,31 @@ public class HystrixMetricsStreamHandler<I, O> implements RequestHandler<I, O> {
 
     private Observable<Void> handleHystrixRequest(final HttpServerResponse<O> response) {
         writeHeaders(response);
-
         final Subject<Void, Void> subject = PublishSubject.create();
         final MultipleAssignmentSubscription subscription = new MultipleAssignmentSubscription();
-        Subscription actionSubscription = Observable.interval(interval, TimeUnit.MILLISECONDS)
-                .subscribe(new Action1<Long>() {
-                    @Override
-                    public void call(Long tick) {
-                        if (!response.getChannel().isOpen()) {
-                            subscription.unsubscribe();
-                            return;
-                        }
-                        try {
-                            for (HystrixCommandMetrics commandMetrics : HystrixCommandMetrics.getInstances()) {
-                                writeMetric(SerialHystrixDashboardData.toJsonString(commandMetrics), response);
-                            }
-                            for (HystrixThreadPoolMetrics threadPoolMetrics : HystrixThreadPoolMetrics.getInstances()) {
-                                writeMetric(SerialHystrixDashboardData.toJsonString(threadPoolMetrics), response);
-                            }
-                            for (HystrixCollapserMetrics collapserMetrics : HystrixCollapserMetrics.getInstances()) {
-                                writeMetric(SerialHystrixDashboardData.toJsonString(collapserMetrics), response);
-                            }
-                        } catch (Exception e) {
-                            subject.onError(e);
-                        }
+        Subscription actionSubscription = Observable.interval(interval, TimeUnit.MILLISECONDS).subscribe(new Action1<Long>() {
+
+            @Override
+            public void call(Long tick) {
+                if (!response.getChannel().isOpen()) {
+                    subscription.unsubscribe();
+                    return;
+                }
+                try {
+                    for (HystrixCommandMetrics commandMetrics : HystrixCommandMetrics.getInstances()) {
+                        writeMetric(SerialHystrixDashboardData.toJsonString(commandMetrics), response);
                     }
-                });
+                    for (HystrixThreadPoolMetrics threadPoolMetrics : HystrixThreadPoolMetrics.getInstances()) {
+                        writeMetric(SerialHystrixDashboardData.toJsonString(threadPoolMetrics), response);
+                    }
+                    for (HystrixCollapserMetrics collapserMetrics : HystrixCollapserMetrics.getInstances()) {
+                        writeMetric(SerialHystrixDashboardData.toJsonString(collapserMetrics), response);
+                    }
+                } catch (Exception e) {
+                    subject.onError(e);
+                }
+            }
+        });
         subscription.set(actionSubscription);
         return subject;
     }

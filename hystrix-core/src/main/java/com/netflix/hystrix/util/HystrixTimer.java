@@ -1,12 +1,12 @@
 /**
  * Copyright 2012 Netflix, Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,7 +21,6 @@ import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.lang.ref.Reference;
 import java.lang.ref.SoftReference;
 import java.util.concurrent.ScheduledFuture;
@@ -64,7 +63,8 @@ public class HystrixTimer {
         }
     }
 
-    /* package */ AtomicReference<ScheduledExecutor> executor = new AtomicReference<ScheduledExecutor>();
+    /* package */
+    AtomicReference<ScheduledExecutor> executor = new AtomicReference<ScheduledExecutor>();
 
     /**
      * Add a {@link TimerListener} that will be executed until it is garbage collected or removed by clearing the returned {@link Reference}.
@@ -72,17 +72,16 @@ public class HystrixTimer {
      * NOTE: It is the responsibility of code that adds a listener via this method to clear this listener when completed.
      * <p>
      * <blockquote>
-     * 
+     *
      * <pre> {@code
-     * // add a TimerListener 
+     * // add a TimerListener
      * Reference<TimerListener> listener = HystrixTimer.getInstance().addTimerListener(listenerImpl);
-     * 
+     *
      * // sometime later, often in a thread shutdown, request cleanup, servlet filter or something similar the listener must be shutdown via the clear() method
      * listener.clear();
      * }</pre>
      * </blockquote>
-     * 
-     * 
+     *
      * @param listener
      *            TimerListener implementation that will be triggered according to its <code>getIntervalTimeInMilliseconds()</code> method implementation.
      * @return reference to the TimerListener that allows cleanup via the <code>clear()</code> method
@@ -90,7 +89,6 @@ public class HystrixTimer {
     public Reference<TimerListener> addTimerListener(final TimerListener listener) {
         startThreadIfNeeded();
         // add the listener
-
         Runnable r = new Runnable() {
 
             @Override
@@ -102,7 +100,6 @@ public class HystrixTimer {
                 }
             }
         };
-
         ScheduledFuture<?> f = executor.get().getThreadPool().scheduleAtFixedRate(r, listener.getIntervalTimeInMilliseconds(), listener.getIntervalTimeInMilliseconds(), TimeUnit.MILLISECONDS);
         return new TimerReference(listener, f);
     }
@@ -122,7 +119,6 @@ public class HystrixTimer {
             // stop this ScheduledFuture from any further executions
             f.cancel(false);
         }
-
     }
 
     /**
@@ -132,7 +128,7 @@ public class HystrixTimer {
      */
     protected void startThreadIfNeeded() {
         // create and start thread if one doesn't exist
-        while (executor.get() == null || ! executor.get().isInitialized()) {
+        while (executor.get() == null || !executor.get().isInitialized()) {
             if (executor.compareAndSet(null, new ScheduledExecutor())) {
                 // initialize the executor that we 'won' setting
                 executor.get().initialize();
@@ -140,21 +136,24 @@ public class HystrixTimer {
         }
     }
 
-    /* package */ static class ScheduledExecutor {
-        /* package */ volatile ScheduledThreadPoolExecutor executor;
+    /* package */
+    static class ScheduledExecutor {
+
+        /* package */
+        volatile ScheduledThreadPoolExecutor executor;
+
         private volatile boolean initialized;
 
         /**
          * We want this only done once when created in compareAndSet so use an initialize method
          */
         public void initialize() {
-
             HystrixPropertiesStrategy propertiesStrategy = HystrixPlugins.getInstance().getPropertiesStrategy();
             int coreSize = propertiesStrategy.getTimerThreadPoolProperties().getCorePoolSize().get();
-
             ThreadFactory threadFactory = null;
             if (!PlatformSpecific.isAppEngineStandardEnvironment()) {
                 threadFactory = new ThreadFactory() {
+
                     final AtomicInteger counter = new AtomicInteger();
 
                     @Override
@@ -163,12 +162,10 @@ public class HystrixTimer {
                         thread.setDaemon(true);
                         return thread;
                     }
-
                 };
             } else {
                 threadFactory = PlatformSpecific.getAppEngineThreadFactory();
             }
-
             executor = new ScheduledThreadPoolExecutor(coreSize, threadFactory);
             initialized = true;
         }
@@ -200,5 +197,4 @@ public class HystrixTimer {
          */
         public int getIntervalTimeInMilliseconds();
     }
-
 }

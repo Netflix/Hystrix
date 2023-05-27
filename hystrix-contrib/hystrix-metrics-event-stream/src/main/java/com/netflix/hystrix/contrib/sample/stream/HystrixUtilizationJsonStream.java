@@ -25,7 +25,6 @@ import com.netflix.hystrix.metric.sample.HystrixUtilization;
 import com.netflix.hystrix.metric.sample.HystrixUtilizationStream;
 import rx.Observable;
 import rx.functions.Func1;
-
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Map;
@@ -39,13 +38,16 @@ import java.util.Map;
  * </ul>
  * @deprecated Instead, prefer mapping your preferred serialization on top of {@link HystrixUtilizationStream#observe()}.
  */
-@Deprecated //since 1.5.4
+//since 1.5.4
+@Deprecated
 public class HystrixUtilizationJsonStream {
+
     private final Func1<Integer, Observable<HystrixUtilization>> streamGenerator;
 
     private static final JsonFactory jsonFactory = new JsonFactory();
 
     private static final Func1<HystrixUtilization, String> convertToJsonFunc = new Func1<HystrixUtilization, String>() {
+
         @Override
         public String call(HystrixUtilization utilization) {
             try {
@@ -56,9 +58,11 @@ public class HystrixUtilizationJsonStream {
         }
     };
 
-    @Deprecated //since 1.5.4
+    //since 1.5.4
+    @Deprecated
     public HystrixUtilizationJsonStream() {
         this.streamGenerator = new Func1<Integer, Observable<HystrixUtilization>>() {
+
             @Override
             public Observable<HystrixUtilization> call(Integer delay) {
                 return HystrixUtilizationStream.getInstance().observe();
@@ -66,7 +70,8 @@ public class HystrixUtilizationJsonStream {
         };
     }
 
-    @Deprecated //since 1.5.4
+    //since 1.5.4
+    @Deprecated
     public HystrixUtilizationJsonStream(Func1<Integer, Observable<HystrixUtilization>> streamGenerator) {
         this.streamGenerator = streamGenerator;
     }
@@ -89,20 +94,17 @@ public class HystrixUtilizationJsonStream {
     protected static String convertToJson(HystrixUtilization utilization) throws IOException {
         StringWriter jsonString = new StringWriter();
         JsonGenerator json = jsonFactory.createGenerator(jsonString);
-
         json.writeStartObject();
         json.writeStringField("type", "HystrixUtilization");
         json.writeObjectFieldStart("commands");
-        for (Map.Entry<HystrixCommandKey, HystrixCommandUtilization> entry: utilization.getCommandUtilizationMap().entrySet()) {
+        for (Map.Entry<HystrixCommandKey, HystrixCommandUtilization> entry : utilization.getCommandUtilizationMap().entrySet()) {
             final HystrixCommandKey key = entry.getKey();
             final HystrixCommandUtilization commandUtilization = entry.getValue();
             writeCommandUtilizationJson(json, key, commandUtilization);
-
         }
         json.writeEndObject();
-
         json.writeObjectFieldStart("threadpools");
-        for (Map.Entry<HystrixThreadPoolKey, HystrixThreadPoolUtilization> entry: utilization.getThreadPoolUtilizationMap().entrySet()) {
+        for (Map.Entry<HystrixThreadPoolKey, HystrixThreadPoolUtilization> entry : utilization.getThreadPoolUtilizationMap().entrySet()) {
             final HystrixThreadPoolKey threadPoolKey = entry.getKey();
             final HystrixThreadPoolUtilization threadPoolUtilization = entry.getValue();
             writeThreadPoolUtilizationJson(json, threadPoolKey, threadPoolUtilization);
@@ -110,7 +112,6 @@ public class HystrixUtilizationJsonStream {
         json.writeEndObject();
         json.writeEndObject();
         json.close();
-
         return jsonString.getBuffer().toString();
     }
 
@@ -120,7 +121,8 @@ public class HystrixUtilizationJsonStream {
      * @param delay interval between data emissions
      * @return sampled utilization as Java object, taken on a timer
      */
-    @Deprecated //deprecated as of 1.5.4
+    //deprecated as of 1.5.4
+    @Deprecated
     public Observable<HystrixUtilization> observe(int delay) {
         return streamGenerator.call(delay);
     }

@@ -17,10 +17,8 @@ package com.netflix.hystrix.contrib.javanica.util.bridge;
 
 import com.netflix.hystrix.contrib.javanica.utils.MethodProvider;
 import org.junit.Test;
-
 import java.io.IOException;
 import java.lang.reflect.Method;
-
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;

@@ -14,6 +14,7 @@ import org.junit.Test;
  * Created by dmgcodevil.
  */
 public abstract class BasicDefaultIgnoreExceptionsTest {
+
     private Service service;
 
     @Before
@@ -39,13 +40,15 @@ public abstract class BasicDefaultIgnoreExceptionsTest {
         service.commandOverridesDefaultIgnoreExceptions(BadRequestException.class);
     }
 
-    @Ignore // https://github.com/Netflix/Hystrix/issues/993#issuecomment-229542203
+    // https://github.com/Netflix/Hystrix/issues/993#issuecomment-229542203
+    @Ignore
     @Test(expected = BadRequestException.class)
     public void testFallbackCommandInheritsDefaultIgnoreException() {
         service.commandWithFallbackInheritsDefaultIgnoreExceptions();
     }
 
-    @Ignore // https://github.com/Netflix/Hystrix/issues/993#issuecomment-229542203
+    // https://github.com/Netflix/Hystrix/issues/993#issuecomment-229542203
+    @Ignore
     @Test(expected = SpecificException.class)
     public void testFallbackCommandOverridesDefaultIgnoreExceptions() {
         service.commandWithFallbackOverridesDefaultIgnoreExceptions(SpecificException.class);
@@ -58,6 +61,7 @@ public abstract class BasicDefaultIgnoreExceptionsTest {
 
     @DefaultProperties(ignoreExceptions = BadRequestException.class)
     public static class Service {
+
         @HystrixCommand
         public Object commandInheritsDefaultIgnoreExceptions() throws BadRequestException {
             // this exception will be ignored (wrapped in HystrixBadRequestException) because specified in default ignore exceptions
@@ -65,8 +69,8 @@ public abstract class BasicDefaultIgnoreExceptionsTest {
         }
 
         @HystrixCommand(ignoreExceptions = SpecificException.class)
-        public Object commandOverridesDefaultIgnoreExceptions(Class<? extends Throwable> errorType) throws BadRequestException, SpecificException  {
-            if(errorType.equals(BadRequestException.class)){
+        public Object commandOverridesDefaultIgnoreExceptions(Class<? extends Throwable> errorType) throws BadRequestException, SpecificException {
+            if (errorType.equals(BadRequestException.class)) {
                 // isn't ignored because command doesn't specify this exception type in 'ignoreExceptions'
                 throw new BadRequestException("from 'commandOverridesDefaultIgnoreExceptions', cause: " + errorType.getSimpleName());
             }
@@ -94,7 +98,7 @@ public abstract class BasicDefaultIgnoreExceptionsTest {
 
         @HystrixCommand(ignoreExceptions = SpecificException.class)
         private Object fallbackOverridesDefaultIgnoreExceptions(Class<? extends Throwable> errorType) {
-            if(errorType.equals(BadRequestException.class)){
+            if (errorType.equals(BadRequestException.class)) {
                 // isn't ignored because fallback doesn't specify this exception type in 'ignoreExceptions'
                 throw new BadRequestException("from 'fallbackOverridesDefaultIgnoreExceptions', cause: " + errorType.getSimpleName());
             }
@@ -104,6 +108,7 @@ public abstract class BasicDefaultIgnoreExceptionsTest {
     }
 
     public static final class BadRequestException extends RuntimeException {
+
         public BadRequestException() {
         }
 
@@ -113,6 +118,7 @@ public abstract class BasicDefaultIgnoreExceptionsTest {
     }
 
     public static final class SpecificException extends RuntimeException {
+
         public SpecificException() {
         }
 

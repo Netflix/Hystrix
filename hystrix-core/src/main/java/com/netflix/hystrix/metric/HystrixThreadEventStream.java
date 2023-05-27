@@ -1,12 +1,12 @@
 /**
  * Copyright 2015 Netflix, Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -53,14 +53,19 @@ import rx.subjects.Subject;
  * RxComputationThreadPool.
  */
 public class HystrixThreadEventStream {
+
     private final long threadId;
+
     private final String threadName;
 
     private final Subject<HystrixCommandExecutionStarted, HystrixCommandExecutionStarted> writeOnlyCommandStartSubject;
+
     private final Subject<HystrixCommandCompletion, HystrixCommandCompletion> writeOnlyCommandCompletionSubject;
+
     private final Subject<HystrixCollapserEvent, HystrixCollapserEvent> writeOnlyCollapserSubject;
 
     private static final ThreadLocal<HystrixThreadEventStream> threadLocalStreams = new ThreadLocal<HystrixThreadEventStream>() {
+
         @Override
         protected HystrixThreadEventStream initialValue() {
             return new HystrixThreadEventStream(Thread.currentThread());
@@ -68,11 +73,11 @@ public class HystrixThreadEventStream {
     };
 
     private static final Action1<HystrixCommandExecutionStarted> writeCommandStartsToShardedStreams = new Action1<HystrixCommandExecutionStarted>() {
+
         @Override
         public void call(HystrixCommandExecutionStarted event) {
             HystrixCommandStartStream commandStartStream = HystrixCommandStartStream.getInstance(event.getCommandKey());
             commandStartStream.write(event);
-
             if (event.isExecutedInThread()) {
                 HystrixThreadPoolStartStream threadPoolStartStream = HystrixThreadPoolStartStream.getInstance(event.getThreadPoolKey());
                 threadPoolStartStream.write(event);
@@ -81,11 +86,11 @@ public class HystrixThreadEventStream {
     };
 
     private static final Action1<HystrixCommandCompletion> writeCommandCompletionsToShardedStreams = new Action1<HystrixCommandCompletion>() {
+
         @Override
         public void call(HystrixCommandCompletion commandCompletion) {
             HystrixCommandCompletionStream commandStream = HystrixCommandCompletionStream.getInstance(commandCompletion.getCommandKey());
             commandStream.write(commandCompletion);
-
             if (commandCompletion.isExecutedInThread() || commandCompletion.isResponseThreadPoolRejected()) {
                 HystrixThreadPoolCompletionStream threadPoolStream = HystrixThreadPoolCompletionStream.getInstance(commandCompletion.getThreadPoolKey());
                 threadPoolStream.write(commandCompletion);
@@ -94,6 +99,7 @@ public class HystrixThreadEventStream {
     };
 
     private static final Action1<HystrixCollapserEvent> writeCollapserExecutionsToShardedStreams = new Action1<HystrixCollapserEvent>() {
+
         @Override
         public void call(HystrixCollapserEvent collapserEvent) {
             HystrixCollapserEventStream collapserStream = HystrixCollapserEventStream.getInstance(collapserEvent.getCollapserKey());
@@ -101,27 +107,16 @@ public class HystrixThreadEventStream {
         }
     };
 
-    /* package */ HystrixThreadEventStream(Thread thread) {
+    /* package */
+    HystrixThreadEventStream(Thread thread) {
         this.threadId = thread.getId();
         this.threadName = thread.getName();
         writeOnlyCommandStartSubject = PublishSubject.create();
         writeOnlyCommandCompletionSubject = PublishSubject.create();
         writeOnlyCollapserSubject = PublishSubject.create();
-
-        writeOnlyCommandStartSubject
-                .onBackpressureBuffer()
-                .doOnNext(writeCommandStartsToShardedStreams)
-                .unsafeSubscribe(Subscribers.empty());
-
-        writeOnlyCommandCompletionSubject
-                .onBackpressureBuffer()
-                .doOnNext(writeCommandCompletionsToShardedStreams)
-                .unsafeSubscribe(Subscribers.empty());
-
-        writeOnlyCollapserSubject
-                .onBackpressureBuffer()
-                .doOnNext(writeCollapserExecutionsToShardedStreams)
-                .unsafeSubscribe(Subscribers.empty());
+        writeOnlyCommandStartSubject.onBackpressureBuffer().doOnNext(writeCommandStartsToShardedStreams).unsafeSubscribe(Subscribers.empty());
+        writeOnlyCommandCompletionSubject.onBackpressureBuffer().doOnNext(writeCommandCompletionsToShardedStreams).unsafeSubscribe(Subscribers.empty());
+        writeOnlyCollapserSubject.onBackpressureBuffer().doOnNext(writeCollapserExecutionsToShardedStreams).unsafeSubscribe(Subscribers.empty());
     }
 
     public static HystrixThreadEventStream getInstance() {
@@ -134,8 +129,7 @@ public class HystrixThreadEventStream {
         writeOnlyCollapserSubject.onCompleted();
     }
 
-    public void commandExecutionStarted(HystrixCommandKey commandKey, HystrixThreadPoolKey threadPoolKey,
-                                        HystrixCommandProperties.ExecutionIsolationStrategy isolationStrategy, int currentConcurrency) {
+    public void commandExecutionStarted(HystrixCommandKey commandKey, HystrixThreadPoolKey threadPoolKey, HystrixCommandProperties.ExecutionIsolationStrategy isolationStrategy, int currentConcurrency) {
         HystrixCommandExecutionStarted event = new HystrixCommandExecutionStarted(commandKey, threadPoolKey, isolationStrategy, currentConcurrency);
         writeOnlyCommandStartSubject.onNext(event);
     }

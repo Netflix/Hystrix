@@ -23,10 +23,7 @@ import com.netflix.hystrix.contrib.javanica.cache.annotation.CacheResult;
 import com.netflix.hystrix.contrib.javanica.command.MetaHolder;
 import com.netflix.hystrix.contrib.javanica.exception.HystrixCachingException;
 import org.junit.Test;
-
-
 import java.lang.annotation.Annotation;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -39,20 +36,15 @@ import static org.junit.Assert.assertTrue;
 public class CacheInvocationContextFactoryTest {
 
     @Test
-    public void testCreateCacheResultInvocationContext_givenMethodAnnotatedWithCacheResult_shouldCreateCorrectCacheKeyInvocationContext()
-            throws NoSuchMethodException {
+    public void testCreateCacheResultInvocationContext_givenMethodAnnotatedWithCacheResult_shouldCreateCorrectCacheKeyInvocationContext() throws NoSuchMethodException {
         // given
         TestCacheClass testCacheClass = new TestCacheClass();
         String param1 = "val_1";
         String param2 = "val_2";
         Integer param3 = 3;
-        MetaHolder metaHolder = MetaHolder.builder()
-                .method(TestCacheClass.class.getMethod("cacheResultMethod", String.class, String.class, Integer.class))
-                .args(new Object[]{param1, param2, param3})
-                .obj(testCacheClass).build();
+        MetaHolder metaHolder = MetaHolder.builder().method(TestCacheClass.class.getMethod("cacheResultMethod", String.class, String.class, Integer.class)).args(new Object[] { param1, param2, param3 }).obj(testCacheClass).build();
         // when
         CacheInvocationContext<CacheResult> context = CacheInvocationContextFactory.createCacheResultInvocationContext(metaHolder);
-
         // then
         assertNotNull(context.getKeyParameters());
         assertEquals(2, context.getKeyParameters().size());
@@ -60,7 +52,6 @@ public class CacheInvocationContextFactoryTest {
         assertEquals(0, context.getKeyParameters().get(0).getPosition());
         assertEquals(param1, context.getKeyParameters().get(0).getValue());
         assertTrue(isAnnotationPresent(context.getKeyParameters().get(0), CacheKey.class));
-
         assertEquals(Integer.class, context.getKeyParameters().get(1).getRawType());
         assertEquals(2, context.getKeyParameters().get(1).getPosition());
         assertEquals(param3, context.getKeyParameters().get(1).getValue());
@@ -68,18 +59,13 @@ public class CacheInvocationContextFactoryTest {
     }
 
     @Test
-    public void testCreateCacheRemoveInvocationContext_givenMethodAnnotatedWithCacheRemove_shouldCreateCorrectCacheKeyInvocationContext()
-            throws NoSuchMethodException {
+    public void testCreateCacheRemoveInvocationContext_givenMethodAnnotatedWithCacheRemove_shouldCreateCorrectCacheKeyInvocationContext() throws NoSuchMethodException {
         // given
         TestCacheClass testCacheClass = new TestCacheClass();
         String param1 = "val_1";
-        MetaHolder metaHolder = MetaHolder.builder()
-                .method(TestCacheClass.class.getMethod("cacheRemoveMethod", String.class))
-                .args(new Object[]{param1})
-                .obj(testCacheClass).build();
+        MetaHolder metaHolder = MetaHolder.builder().method(TestCacheClass.class.getMethod("cacheRemoveMethod", String.class)).args(new Object[] { param1 }).obj(testCacheClass).build();
         // when
         CacheInvocationContext<CacheRemove> context = CacheInvocationContextFactory.createCacheRemoveInvocationContext(metaHolder);
-
         // then
         assertNotNull(context.getKeyParameters());
         assertEquals(1, context.getKeyParameters().size());
@@ -94,10 +80,7 @@ public class CacheInvocationContextFactoryTest {
         // given
         TestCacheClass testCacheClass = new TestCacheClass();
         String param1 = "val_1";
-        MetaHolder metaHolder = MetaHolder.builder()
-                .method(TestCacheClass.class.getMethod("cacheResultMethodWithWrongCacheKeyMethodSignature", String.class))
-                .args(new Object[]{param1})
-                .obj(testCacheClass).build();
+        MetaHolder metaHolder = MetaHolder.builder().method(TestCacheClass.class.getMethod("cacheResultMethodWithWrongCacheKeyMethodSignature", String.class)).args(new Object[] { param1 }).obj(testCacheClass).build();
         // when
         CacheInvocationContext<CacheResult> context = CacheInvocationContextFactory.createCacheResultInvocationContext(metaHolder);
         // then expected HystrixCachingException
@@ -108,10 +91,7 @@ public class CacheInvocationContextFactoryTest {
         // given
         TestCacheClass testCacheClass = new TestCacheClass();
         String param1 = "val_1";
-        MetaHolder metaHolder = MetaHolder.builder()
-                .method(TestCacheClass.class.getMethod("cacheResultMethodWithCacheKeyMethodWithWrongReturnType", String.class, String.class))
-                .args(new Object[]{param1})
-                .obj(testCacheClass).build();
+        MetaHolder metaHolder = MetaHolder.builder().method(TestCacheClass.class.getMethod("cacheResultMethodWithCacheKeyMethodWithWrongReturnType", String.class, String.class)).args(new Object[] { param1 }).obj(testCacheClass).build();
         // when
         CacheInvocationContext<CacheResult> context = CacheInvocationContextFactory.createCacheResultInvocationContext(metaHolder);
         System.out.println(context);
@@ -151,6 +131,7 @@ public class CacheInvocationContextFactoryTest {
 
     private static boolean isAnnotationPresent(CacheInvocationParameter parameter, final Class<?> annotation) {
         return Iterables.tryFind(parameter.getAnnotations(), new Predicate<Annotation>() {
+
             @Override
             public boolean apply(Annotation input) {
                 return input.annotationType().equals(annotation);

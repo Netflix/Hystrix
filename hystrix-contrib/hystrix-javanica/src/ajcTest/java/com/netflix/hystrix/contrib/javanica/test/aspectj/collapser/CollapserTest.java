@@ -22,6 +22,7 @@ import org.junit.BeforeClass;
  * Created by dmgcodevil
  */
 public class CollapserTest extends BasicCollapserTest {
+
     @BeforeClass
     public static void setUpEnv() {
         System.setProperty("weavingMode", "compile");

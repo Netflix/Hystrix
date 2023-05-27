@@ -19,22 +19,21 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.netflix.hystrix.strategy.HystrixPlugins;
 
 /**
  * Chained property allowing a chain of defaults properties which is uses the properties plugin.
  * <p>
  * Instead of just a single dynamic property with a default this allows a sequence of properties that fallback to the farthest down the chain with a value.
- * 
+ *
  * TODO This should be replaced by a version in the Archaius library once available.
- * 
+ *
  * @ExcludeFromJavadoc
  */
 public abstract class HystrixPropertiesChainedProperty {
+
     private static final Logger logger = LoggerFactory.getLogger(HystrixPropertiesChainedProperty.class);
 
     /**
@@ -43,7 +42,9 @@ public abstract class HystrixPropertiesChainedProperty {
     private static abstract class ChainLink<T> {
 
         private final AtomicReference<ChainLink<T>> pReference;
+
         private final ChainLink<T> next;
+
         private final List<Runnable> callbacks;
 
         /**
@@ -85,7 +86,6 @@ public abstract class HystrixPropertiesChainedProperty {
                 pReference.set(this);
                 return;
             }
-
             if (this.isValueAcceptable()) {
                 logger.debug("Flipping property: {} to use its current value: {}", getName(), getValue());
                 pReference.set(this);
@@ -93,7 +93,6 @@ public abstract class HystrixPropertiesChainedProperty {
                 logger.debug("Flipping property: {} to use NEXT property: {}", getName(), next);
                 pReference.set(next);
             }
-
             for (Runnable r : callbacks) {
                 r.run();
             }
@@ -124,81 +123,81 @@ public abstract class HystrixPropertiesChainedProperty {
             return getName() + " = " + get();
         }
     }
-    
+
     public static abstract class ChainBuilder<T> {
-        
+
         private ChainBuilder() {
-            super();        
+            super();
         }
-        
-        private List<HystrixDynamicProperty<T>> properties = 
-                new ArrayList<HystrixDynamicProperty<T>>();
-        
-        
+
+        private List<HystrixDynamicProperty<T>> properties = new ArrayList<HystrixDynamicProperty<T>>();
+
         public ChainBuilder<T> add(HystrixDynamicProperty<T> property) {
             properties.add(property);
             return this;
         }
-        
+
         public ChainBuilder<T> add(String name, T defaultValue) {
             properties.add(getDynamicProperty(name, defaultValue, getType()));
             return this;
         }
-        
+
         public HystrixDynamicProperty<T> build() {
-            if (properties.size() < 1) throw new IllegalArgumentException();
-            if (properties.size() == 1) return properties.get(0);
-            List<HystrixDynamicProperty<T>> reversed = 
-                    new ArrayList<HystrixDynamicProperty<T>>(properties);
+            if (properties.size() < 1)
+                throw new IllegalArgumentException();
+            if (properties.size() == 1)
+                return properties.get(0);
+            List<HystrixDynamicProperty<T>> reversed = new ArrayList<HystrixDynamicProperty<T>>(properties);
             Collections.reverse(reversed);
             ChainProperty<T> current = null;
             for (HystrixDynamicProperty<T> p : reversed) {
                 if (current == null) {
                     current = new ChainProperty<T>(p);
-                }
-                else {
+                } else {
                     current = new ChainProperty<T>(p, current);
                 }
             }
-            
             return new ChainHystrixProperty<T>(current);
-            
         }
-        
+
         protected abstract Class<T> getType();
-        
     }
 
     private static <T> ChainBuilder<T> forType(final Class<T> type) {
         return new ChainBuilder<T>() {
+
             @Override
             protected Class<T> getType() {
                 return type;
             }
         };
     }
-    
+
     public static ChainBuilder<String> forString() {
         return forType(String.class);
     }
+
     public static ChainBuilder<Integer> forInteger() {
         return forType(Integer.class);
     }
+
     public static ChainBuilder<Boolean> forBoolean() {
         return forType(Boolean.class);
     }
+
     public static ChainBuilder<Long> forLong() {
         return forType(Long.class);
-    }    
-    
+    }
+
     private static class ChainHystrixProperty<T> implements HystrixDynamicProperty<T> {
+
         private final ChainProperty<T> property;
-        
+
         public ChainHystrixProperty(ChainProperty<T> property) {
             super();
             this.property = property;
         }
-        
+
         @Override
         public String getName() {
             return property.getName();
@@ -208,14 +207,13 @@ public abstract class HystrixPropertiesChainedProperty {
         public T get() {
             return property.get();
         }
-        
+
         @Override
         public void addCallback(Runnable callback) {
             property.addCallback(callback);
         }
-        
     }
-    
+
     private static class ChainProperty<T> extends ChainLink<T> {
 
         private final HystrixDynamicProperty<T> sProp;
@@ -225,12 +223,12 @@ public abstract class HystrixPropertiesChainedProperty {
             sProp = sProperty;
         }
 
-
         public ChainProperty(HystrixDynamicProperty<T> sProperty, ChainProperty<T> next) {
-            super(next); // setup next pointer
-
+            // setup next pointer
+            super(next);
             sProp = sProperty;
             sProp.addCallback(new Runnable() {
+
                 @Override
                 public void run() {
                     logger.debug("Property changed: '{} = {}'", getName(), getValue());
@@ -254,15 +252,11 @@ public abstract class HystrixPropertiesChainedProperty {
         public String getName() {
             return sProp.getName();
         }
-        
-    }
-    
-    private static <T> HystrixDynamicProperty<T> 
-        getDynamicProperty(String propName, T defaultValue, Class<T> type) {
-        HystrixDynamicProperties properties = HystrixPlugins.getInstance().getDynamicProperties();
-        HystrixDynamicProperty<T> p = 
-                HystrixDynamicProperties.Util.getProperty(properties, propName, defaultValue, type);
-        return p;
     }
 
+    private static <T> HystrixDynamicProperty<T> getDynamicProperty(String propName, T defaultValue, Class<T> type) {
+        HystrixDynamicProperties properties = HystrixPlugins.getInstance().getDynamicProperties();
+        HystrixDynamicProperty<T> p = HystrixDynamicProperties.Util.getProperty(properties, propName, defaultValue, type);
+        return p;
+    }
 }

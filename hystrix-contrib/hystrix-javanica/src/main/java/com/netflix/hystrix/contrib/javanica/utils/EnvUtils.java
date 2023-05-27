@@ -16,22 +16,20 @@
 package com.netflix.hystrix.contrib.javanica.utils;
 
 import com.netflix.hystrix.contrib.javanica.aop.aspectj.WeavingMode;
-
 import java.util.Arrays;
 
 /**
  * Created by dmgcodevil
  */
 public final class EnvUtils {
-	
-	private static final String WEAVING_MODE;
-	
-	static {
-		WEAVING_MODE = System.getProperty("weavingMode", WeavingMode.RUNTIME.name()).toUpperCase();
-	}
-	
-    private EnvUtils(){
 
+    private static final String WEAVING_MODE;
+
+    static {
+        WEAVING_MODE = System.getProperty("weavingMode", WeavingMode.RUNTIME.name()).toUpperCase();
+    }
+
+    private EnvUtils() {
     }
 
     public static WeavingMode getWeavingMode() {

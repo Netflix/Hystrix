@@ -25,7 +25,7 @@ import com.netflix.hystrix.HystrixCommandProperties;
  * Default implementation of {@link HystrixMetricsPublisherCommand} that does nothing.
  * <p>
  * See <a href="https://github.com/Netflix/Hystrix/wiki/Plugins">Wiki docs</a> about plugins for more information.
- * 
+ *
  * @ExcludeFromJavadoc
  */
 public class HystrixMetricsPublisherCommandDefault implements HystrixMetricsPublisherCommand {
@@ -38,5 +38,4 @@ public class HystrixMetricsPublisherCommandDefault implements HystrixMetricsPubl
     public void initialize() {
         // do nothing by default
     }
-
 }

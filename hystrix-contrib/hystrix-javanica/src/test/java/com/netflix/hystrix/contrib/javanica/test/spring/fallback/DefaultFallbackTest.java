@@ -13,14 +13,14 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
  * Created by dmgcodevil.
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = {AopCglibConfig.class, DefaultFallbackTest.Config.class})
+@ContextConfiguration(classes = { AopCglibConfig.class, DefaultFallbackTest.Config.class })
 public class DefaultFallbackTest extends BasicDefaultFallbackTest {
 
     @Autowired
     private ServiceWithDefaultFallback serviceWithDefaultFallback;
+
     @Autowired
     private ServiceWithDefaultCommandFallback serviceWithDefaultCommandFallback;
-
 
     @Override
     protected ServiceWithDefaultFallback createServiceWithDefaultFallback() {
@@ -34,6 +34,7 @@ public class DefaultFallbackTest extends BasicDefaultFallbackTest {
 
     @Configurable
     public static class Config {
+
         @Bean
         public ServiceWithDefaultFallback serviceWithDefaultFallback() {
             return new ServiceWithDefaultFallback();

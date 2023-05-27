@@ -59,5 +59,4 @@ public abstract class AsyncResult<T> implements Future<T>, ClosureCommand<T> {
      */
     @Override
     public abstract T invoke();
-
 }

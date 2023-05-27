@@ -1,12 +1,12 @@
 /**
  * Copyright 2015 Netflix, Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,7 +20,6 @@ import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.HystrixThreadPoolKey;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,13 +27,14 @@ import java.util.List;
  * Data class which gets fed into event stream when a command completes (with any of the outcomes in {@link HystrixEventType}).
  */
 public class HystrixCommandCompletion extends HystrixCommandEvent {
+
     protected final ExecutionResult executionResult;
+
     protected final HystrixRequestContext requestContext;
 
     private final static HystrixEventType[] ALL_EVENT_TYPES = HystrixEventType.values();
 
-    HystrixCommandCompletion(ExecutionResult executionResult, HystrixCommandKey commandKey,
-                             HystrixThreadPoolKey threadPoolKey, HystrixRequestContext requestContext) {
+    HystrixCommandCompletion(ExecutionResult executionResult, HystrixCommandKey commandKey, HystrixThreadPoolKey threadPoolKey, HystrixRequestContext requestContext) {
         super(commandKey, threadPoolKey);
         this.executionResult = executionResult;
         this.requestContext = requestContext;
@@ -93,20 +93,18 @@ public class HystrixCommandCompletion extends HystrixCommandEvent {
     public String toString() {
         StringBuffer sb = new StringBuffer();
         List<HystrixEventType> foundEventTypes = new ArrayList<HystrixEventType>();
-
         sb.append(getCommandKey().name()).append("[");
-        for (HystrixEventType eventType: ALL_EVENT_TYPES) {
+        for (HystrixEventType eventType : ALL_EVENT_TYPES) {
             if (executionResult.getEventCounts().contains(eventType)) {
                 foundEventTypes.add(eventType);
             }
         }
         int i = 0;
-        for (HystrixEventType eventType: foundEventTypes) {
+        for (HystrixEventType eventType : foundEventTypes) {
             sb.append(eventType.name());
             int eventCount = executionResult.getEventCounts().getCount(eventType);
             if (eventCount > 1) {
                 sb.append("x").append(eventCount);
-
             }
             if (i < foundEventTypes.size() - 1) {
                 sb.append(", ");

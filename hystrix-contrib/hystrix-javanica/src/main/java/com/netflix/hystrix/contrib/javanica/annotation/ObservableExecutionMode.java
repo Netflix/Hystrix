@@ -33,7 +33,6 @@ public enum ObservableExecutionMode {
      * This mode lazily starts execution of the command only once the {@link Observable} is subscribed to.
      */
     LAZY,
-
     /**
      * This mode eagerly starts execution of the command the same as {@link com.netflix.hystrix.HystrixCommand#queue()}
      * and {@link com.netflix.hystrix.HystrixCommand#execute()}.

@@ -18,7 +18,7 @@ package com.netflix.hystrix.strategy.properties;
 /**
  * Generic interface to represent a <b>dynamic</b> property value so Hystrix can consume
  * properties without being tied to any particular backing implementation.
- * 
+ *
  * @author agentgt
  *
  * @param <T>
@@ -26,15 +26,14 @@ package com.netflix.hystrix.strategy.properties;
  * @see HystrixProperty
  * @see HystrixDynamicProperties
  */
-public interface HystrixDynamicProperty<T> extends HystrixProperty<T>{
-    
+public interface HystrixDynamicProperty<T> extends HystrixProperty<T> {
+
     public String getName();
-    
+
     /**
      * Register a callback to be run if the property is updated.
      * Backing implementations may choose to do nothing.
      * @param callback callback.
      */
     public void addCallback(Runnable callback);
-    
 }

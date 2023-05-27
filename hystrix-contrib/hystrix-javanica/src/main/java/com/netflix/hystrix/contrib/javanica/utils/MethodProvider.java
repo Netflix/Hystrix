@@ -25,13 +25,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
-
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 import static org.objectweb.asm.Opcodes.ACC_BRIDGE;
 import static org.objectweb.asm.Opcodes.ACC_SYNTHETIC;
 import static org.objectweb.asm.Opcodes.ASM5;
@@ -42,7 +40,6 @@ import static org.objectweb.asm.Opcodes.ASM5;
 public final class MethodProvider {
 
     private MethodProvider() {
-
     }
 
     private static final MethodProvider INSTANCE = new MethodProvider();
@@ -75,8 +72,7 @@ public final class MethodProvider {
         return FallbackMethod.ABSENT;
     }
 
-    private void getDefaultFallback(){
-
+    private void getDefaultFallback() {
     }
 
     private String getClassLevelFallback(Class<?> enclosingClass) {
@@ -109,6 +105,7 @@ public final class MethodProvider {
     }
 
     private static class DefaultCallback extends FallbackMethodFinder {
+
         @Override
         boolean isDefault() {
             return true;
@@ -117,14 +114,13 @@ public final class MethodProvider {
         @Override
         public String getFallbackName(Class<?> enclosingType, Method commandMethod) {
             String commandDefaultFallback = commandMethod.getAnnotation(HystrixCommand.class).defaultFallback();
-            String classDefaultFallback = Optional.fromNullable(enclosingType.getAnnotation(DefaultProperties.class))
-                    .transform(new Function<DefaultProperties, String>() {
-                        @Override
-                        public String apply(DefaultProperties input) {
-                            return input.defaultFallback();
-                        }
-                    }).or(StringUtils.EMPTY);
+            String classDefaultFallback = Optional.fromNullable(enclosingType.getAnnotation(DefaultProperties.class)).transform(new Function<DefaultProperties, String>() {
 
+                @Override
+                public String apply(DefaultProperties input) {
+                    return input.defaultFallback();
+                }
+            }).or(StringUtils.EMPTY);
             return StringUtils.defaultIfEmpty(commandDefaultFallback, classDefaultFallback);
         }
 
@@ -135,6 +131,7 @@ public final class MethodProvider {
     }
 
     private static abstract class FallbackMethodFinder {
+
         FallbackMethodFinder next;
 
         public FallbackMethodFinder() {
@@ -148,7 +145,7 @@ public final class MethodProvider {
             return false;
         }
 
-        boolean isSpecific(){
+        boolean isSpecific() {
             return false;
         }
 
@@ -174,15 +171,11 @@ public final class MethodProvider {
             } else {
                 fallbackParameterTypes = commandMethod.getParameterTypes();
             }
-
             if (extended && fallbackParameterTypes[fallbackParameterTypes.length - 1] == Throwable.class) {
                 fallbackParameterTypes = ArrayUtils.remove(fallbackParameterTypes, fallbackParameterTypes.length - 1);
             }
-
-            Class<?>[] extendedFallbackParameterTypes = Arrays.copyOf(fallbackParameterTypes,
-                    fallbackParameterTypes.length + 1);
+            Class<?>[] extendedFallbackParameterTypes = Arrays.copyOf(fallbackParameterTypes, fallbackParameterTypes.length + 1);
             extendedFallbackParameterTypes[fallbackParameterTypes.length] = Throwable.class;
-
             Optional<Method> exFallbackMethod = getMethod(enclosingType, name, extendedFallbackParameterTypes);
             Optional<Method> fMethod = getMethod(enclosingType, name, fallbackParameterTypes);
             Method method = exFallbackMethod.or(fMethod).orNull();
@@ -191,9 +184,7 @@ public final class MethodProvider {
             }
             return new FallbackMethod(method, exFallbackMethod.isPresent(), isDefault());
         }
-
     }
-
 
     /**
      * Gets method by name and parameters types using reflection,
@@ -234,10 +225,10 @@ public final class MethodProvider {
             if (cache.containsKey(bridgeMethod)) {
                 return cache.get(bridgeMethod);
             }
-
             ClassReader classReader = new ClassReader(aClass.getName());
             final MethodSignature methodSignature = new MethodSignature();
             classReader.accept(new ClassVisitor(ASM5) {
+
                 @Override
                 public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
                     boolean bridge = (access & ACC_BRIDGE) != 0 && (access & ACC_SYNTHETIC) != 0;
@@ -250,7 +241,6 @@ public final class MethodProvider {
             Method method = aClass.getDeclaredMethod(methodSignature.name, methodSignature.getParameterTypes());
             cache.put(bridgeMethod, method);
             return method;
-
         } else {
             return bridgeMethod;
         }
@@ -269,7 +259,9 @@ public final class MethodProvider {
     }
 
     private static class MethodSignature {
+
         String name;
+
         String desc;
 
         public Class<?>[] getParameterTypes() throws ClassNotFoundException {
@@ -278,7 +270,6 @@ public final class MethodProvider {
             }
             String[] params = parseParams(desc);
             Class<?>[] parameterTypes = new Class[params.length];
-
             for (int i = 0; i < params.length; i++) {
                 String arg = params[i].substring(1).replace("/", ".");
                 parameterTypes[i] = Class.forName(arg);
@@ -288,6 +279,7 @@ public final class MethodProvider {
     }
 
     private static class MethodFinder extends MethodVisitor {
+
         private MethodSignature methodSignature;
 
         public MethodFinder(MethodSignature methodSignature) {

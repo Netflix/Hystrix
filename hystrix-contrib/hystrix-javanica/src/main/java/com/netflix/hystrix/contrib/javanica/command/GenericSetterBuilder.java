@@ -27,11 +27,9 @@ import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
 import com.netflix.hystrix.contrib.javanica.conf.HystrixPropertiesManager;
 import com.netflix.hystrix.contrib.javanica.exception.HystrixPropertyException;
 import org.apache.commons.lang3.StringUtils;
-
 import javax.annotation.concurrent.Immutable;
 import java.util.Collections;
 import java.util.List;
-
 import static com.netflix.hystrix.contrib.javanica.conf.HystrixPropertiesManager.initializeCollapserProperties;
 
 /**
@@ -41,12 +39,19 @@ import static com.netflix.hystrix.contrib.javanica.conf.HystrixPropertiesManager
 public class GenericSetterBuilder {
 
     private String groupKey;
+
     private String commandKey;
+
     private String threadPoolKey;
+
     private String collapserKey;
+
     private HystrixCollapser.Scope scope;
+
     private List<HystrixProperty> commandProperties = Collections.emptyList();
+
     private List<HystrixProperty> collapserProperties = Collections.emptyList();
+
     private List<HystrixProperty> threadPoolProperties = Collections.emptyList();
 
     public GenericSetterBuilder(Builder builder) {
@@ -60,10 +65,9 @@ public class GenericSetterBuilder {
         this.threadPoolProperties = builder.threadPoolProperties;
     }
 
-    public static Builder builder(){
+    public static Builder builder() {
         return new Builder();
     }
-
 
     /**
      * Creates instance of {@link HystrixCommand.Setter}.
@@ -71,9 +75,7 @@ public class GenericSetterBuilder {
      * @return the instance of {@link HystrixCommand.Setter}
      */
     public HystrixCommand.Setter build() throws HystrixPropertyException {
-        HystrixCommand.Setter setter = HystrixCommand.Setter
-                .withGroupKey(HystrixCommandGroupKey.Factory.asKey(groupKey))
-                .andCommandKey(HystrixCommandKey.Factory.asKey(commandKey));
+        HystrixCommand.Setter setter = HystrixCommand.Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey(groupKey)).andCommandKey(HystrixCommandKey.Factory.asKey(commandKey));
         if (StringUtils.isNotBlank(threadPoolKey)) {
             setter.andThreadPoolKey(HystrixThreadPoolKey.Factory.asKey(threadPoolKey));
         }
@@ -92,9 +94,7 @@ public class GenericSetterBuilder {
 
     // todo dmgcodevil: it would be better to reuse the code from build() method
     public HystrixObservableCommand.Setter buildObservableCommandSetter() {
-        HystrixObservableCommand.Setter setter = HystrixObservableCommand.Setter
-                .withGroupKey(HystrixCommandGroupKey.Factory.asKey(groupKey))
-                .andCommandKey(HystrixCommandKey.Factory.asKey(commandKey));
+        HystrixObservableCommand.Setter setter = HystrixObservableCommand.Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey(groupKey)).andCommandKey(HystrixCommandKey.Factory.asKey(commandKey));
         try {
             setter.andCommandPropertiesDefaults(HystrixPropertiesManager.initializeCommandProperties(commandProperties));
         } catch (IllegalArgumentException e) {
@@ -103,25 +103,31 @@ public class GenericSetterBuilder {
         return setter;
     }
 
-    public HystrixCollapser.Setter buildCollapserCommandSetter(){
+    public HystrixCollapser.Setter buildCollapserCommandSetter() {
         HystrixCollapserProperties.Setter propSetter = initializeCollapserProperties(collapserProperties);
-        return HystrixCollapser.Setter.withCollapserKey(HystrixCollapserKey.Factory.asKey(collapserKey)).andScope(scope)
-                .andCollapserPropertiesDefaults(propSetter);
+        return HystrixCollapser.Setter.withCollapserKey(HystrixCollapserKey.Factory.asKey(collapserKey)).andScope(scope).andCollapserPropertiesDefaults(propSetter);
     }
 
     private String getInfo() {
         return "groupKey: '" + groupKey + "', commandKey: '" + commandKey + "', threadPoolKey: '" + threadPoolKey + "'";
     }
 
-
     public static class Builder {
+
         private String groupKey;
+
         private String commandKey;
+
         private String threadPoolKey;
+
         private String collapserKey;
+
         private HystrixCollapser.Scope scope;
+
         private List<HystrixProperty> commandProperties = Collections.emptyList();
+
         private List<HystrixProperty> collapserProperties = Collections.emptyList();
+
         private List<HystrixProperty> threadPoolProperties = Collections.emptyList();
 
         public Builder groupKey(String pGroupKey) {
@@ -165,7 +171,6 @@ public class GenericSetterBuilder {
             return this;
         }
 
-
         public Builder threadPoolProperties(List<HystrixProperty> properties) {
             threadPoolProperties = properties;
             return this;
@@ -176,13 +181,8 @@ public class GenericSetterBuilder {
             return this;
         }
 
-        public GenericSetterBuilder build(){
+        public GenericSetterBuilder build() {
             return new GenericSetterBuilder(this);
         }
-
     }
-
-
-
-
 }

@@ -19,7 +19,6 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.netflix.hystrix.ExecutionResult;
 import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.metric.HystrixRequestEvents;
-
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.List;
@@ -34,26 +33,21 @@ public class SerialHystrixRequestEvents extends SerialHystrixMetric {
 
     public static String toJsonString(HystrixRequestEvents requestEvents) {
         StringWriter jsonString = new StringWriter();
-
         try {
             JsonGenerator json = jsonFactory.createGenerator(jsonString);
-
             serializeRequestEvents(requestEvents, json);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-
         return jsonString.getBuffer().toString();
     }
 
     private static void serializeRequestEvents(HystrixRequestEvents requestEvents, JsonGenerator json) {
         try {
             json.writeStartArray();
-
-            for (Map.Entry<HystrixRequestEvents.ExecutionSignature, List<Integer>> entry: requestEvents.getExecutionsMappedToLatencies().entrySet()) {
+            for (Map.Entry<HystrixRequestEvents.ExecutionSignature, List<Integer>> entry : requestEvents.getExecutionsMappedToLatencies().entrySet()) {
                 convertExecutionToJson(json, entry.getKey(), entry.getValue());
             }
-
             json.writeEndArray();
             json.close();
         } catch (Exception e) {
@@ -66,24 +60,22 @@ public class SerialHystrixRequestEvents extends SerialHystrixMetric {
         json.writeStringField("name", executionSignature.getCommandName());
         json.writeArrayFieldStart("events");
         ExecutionResult.EventCounts eventCounts = executionSignature.getEventCounts();
-        for (HystrixEventType eventType: HystrixEventType.values()) {
-            if (!eventType.equals(HystrixEventType.COLLAPSED)) {
-                if (eventCounts.contains(eventType)) {
-                    int eventCount = eventCounts.getCount(eventType);
-                    if (eventCount > 1) {
-                        json.writeStartObject();
-                        json.writeStringField("name", eventType.name());
-                        json.writeNumberField("count", eventCount);
-                        json.writeEndObject();
-                    } else {
-                        json.writeString(eventType.name());
-                    }
+        for (HystrixEventType eventType : HystrixEventType.values()) {
+            if (!eventType.equals(HystrixEventType.COLLAPSED) && eventCounts.contains(eventType)) {
+                int eventCount = eventCounts.getCount(eventType);
+                if (eventCount > 1) {
+                    json.writeStartObject();
+                    json.writeStringField("name", eventType.name());
+                    json.writeNumberField("count", eventCount);
+                    json.writeEndObject();
+                } else {
+                    json.writeString(eventType.name());
                 }
             }
         }
         json.writeEndArray();
         json.writeArrayFieldStart("latencies");
-        for (int latency: latencies) {
+        for (int latency : latencies) {
             json.writeNumber(latency);
         }
         json.writeEndArray();

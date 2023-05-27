@@ -15,7 +15,6 @@
  */
 package com.netflix.hystrix.contrib.javanica.command;
 
-
 import com.netflix.hystrix.HystrixCollapser;
 import com.netflix.hystrix.contrib.javanica.cache.CacheInvocationContext;
 import com.netflix.hystrix.contrib.javanica.cache.HystrixCacheKeyGenerator;
@@ -26,7 +25,6 @@ import com.netflix.hystrix.contrib.javanica.cache.annotation.CacheResult;
 import com.netflix.hystrix.contrib.javanica.exception.CommandActionExecutionException;
 import com.netflix.hystrix.exception.HystrixBadRequestException;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
-
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.Collection;
 import java.util.List;
@@ -40,11 +38,17 @@ import java.util.List;
 public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.HystrixCommand<T> {
 
     private final CommandActions commandActions;
+
     private final CacheInvocationContext<CacheResult> cacheResultInvocationContext;
+
     private final CacheInvocationContext<CacheRemove> cacheRemoveInvocationContext;
+
     private final Collection<HystrixCollapser.CollapsedRequest<Object, Object>> collapsedRequests;
+
     private final List<Class<? extends Throwable>> ignoreExceptions;
+
     private final ExecutionType executionType;
+
     private final HystrixCacheKeyGenerator defaultCacheKeyGenerator = HystrixCacheKeyGenerator.getInstance();
 
     protected AbstractHystrixCommand(HystrixCommandBuilder builder) {
@@ -104,8 +108,7 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
     protected String getCacheKey() {
         String key = null;
         if (cacheResultInvocationContext != null) {
-            HystrixGeneratedCacheKey hystrixGeneratedCacheKey =
-                    defaultCacheKeyGenerator.generateCacheKey(cacheResultInvocationContext);
+            HystrixGeneratedCacheKey hystrixGeneratedCacheKey = defaultCacheKeyGenerator.generateCacheKey(cacheResultInvocationContext);
             key = hystrixGeneratedCacheKey.getCacheKey();
         }
         return key;
@@ -180,6 +183,7 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
      * Common action.
      */
     abstract class Action {
+
         /**
          * Each implementation of this method should wrap any exceptions in CommandActionExecutionException.
          *
@@ -189,11 +193,11 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
         abstract Object execute() throws CommandActionExecutionException;
     }
 
-
     /**
      * Builder to create error message for failed fallback operation.
      */
     static class FallbackErrorMessageBuilder {
+
         private StringBuilder builder = new StringBuilder("failed to process fallback");
 
         static FallbackErrorMessageBuilder create() {
@@ -206,8 +210,7 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
 
         private FallbackErrorMessageBuilder commandAction(CommandAction action) {
             if (action instanceof CommandExecutionAction || action instanceof LazyCommandExecutionAction) {
-                builder.append(": '").append(action.getActionName()).append("'. ")
-                        .append(action.getActionName()).append(" fallback is a hystrix command. ");
+                builder.append(": '").append(action.getActionName()).append("'. ").append(action.getActionName()).append(" fallback is a hystrix command. ");
             } else if (action instanceof MethodExecutionAction) {
                 builder.append(" is the method: '").append(action.getActionName()).append("'. ");
             }
@@ -216,11 +219,9 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
 
         private FallbackErrorMessageBuilder exception(Throwable throwable) {
             if (throwable instanceof HystrixBadRequestException) {
-                builder.append("exception: '").append(throwable.getCause().getClass())
-                        .append("' occurred in fallback was ignored and wrapped to HystrixBadRequestException.\n");
+                builder.append("exception: '").append(throwable.getCause().getClass()).append("' occurred in fallback was ignored and wrapped to HystrixBadRequestException.\n");
             } else if (throwable instanceof HystrixRuntimeException) {
-                builder.append("exception: '").append(throwable.getCause().getClass())
-                        .append("' occurred in fallback wasn't ignored.\n");
+                builder.append("exception: '").append(throwable.getCause().getClass()).append("' occurred in fallback wasn't ignored.\n");
             }
             return this;
         }
@@ -229,5 +230,4 @@ public abstract class AbstractHystrixCommand<T> extends com.netflix.hystrix.Hyst
             return builder.toString();
         }
     }
-
 }

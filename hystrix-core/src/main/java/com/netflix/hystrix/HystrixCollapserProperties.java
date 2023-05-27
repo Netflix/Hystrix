@@ -1,12 +1,12 @@
 /**
  * Copyright 2012 Netflix, Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,7 +18,6 @@ package com.netflix.hystrix;
 import static com.netflix.hystrix.strategy.properties.HystrixPropertiesChainedProperty.forBoolean;
 import static com.netflix.hystrix.strategy.properties.HystrixPropertiesChainedProperty.forInteger;
 import static com.netflix.hystrix.strategy.properties.HystrixPropertiesChainedProperty.forString;
-
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 import com.netflix.hystrix.strategy.properties.HystrixProperty;
 import com.netflix.hystrix.util.HystrixRollingNumber;
@@ -33,24 +32,52 @@ public abstract class HystrixCollapserProperties {
 
     /* defaults */
     private static final Integer default_maxRequestsInBatch = Integer.MAX_VALUE;
+
     private static final Integer default_timerDelayInMilliseconds = 10;
+
     private static final Boolean default_requestCacheEnabled = true;
-    /* package */ static final Integer default_metricsRollingStatisticalWindow = 10000;// default => statisticalWindow: 10000 = 10 seconds (and default of 10 buckets so each bucket is 1 second)
-    private static final Integer default_metricsRollingStatisticalWindowBuckets = 10;// default => statisticalWindowBuckets: 10 = 10 buckets in a 10 second window so each bucket is 1 second
+
+    /* package */
+    // default => statisticalWindow: 10000 = 10 seconds (and default of 10 buckets so each bucket is 1 second)
+    static final Integer default_metricsRollingStatisticalWindow = 10000;
+
+    // default => statisticalWindowBuckets: 10 = 10 buckets in a 10 second window so each bucket is 1 second
+    private static final Integer default_metricsRollingStatisticalWindowBuckets = 10;
+
     private static final Boolean default_metricsRollingPercentileEnabled = true;
-    private static final Integer default_metricsRollingPercentileWindow = 60000; // default to 1 minute for RollingPercentile
-    private static final Integer default_metricsRollingPercentileWindowBuckets = 6; // default to 6 buckets (10 seconds each in 60 second window)
-    private static final Integer default_metricsRollingPercentileBucketSize = 100; // default to 100 values max per bucket
+
+    // default to 1 minute for RollingPercentile
+    private static final Integer default_metricsRollingPercentileWindow = 60000;
+
+    // default to 6 buckets (10 seconds each in 60 second window)
+    private static final Integer default_metricsRollingPercentileWindowBuckets = 6;
+
+    // default to 100 values max per bucket
+    private static final Integer default_metricsRollingPercentileBucketSize = 100;
 
     private final HystrixProperty<Integer> maxRequestsInBatch;
+
     private final HystrixProperty<Integer> timerDelayInMilliseconds;
+
     private final HystrixProperty<Boolean> requestCacheEnabled;
-    private final HystrixProperty<Integer> metricsRollingStatisticalWindowInMilliseconds; // milliseconds back that will be tracked
-    private final HystrixProperty<Integer> metricsRollingStatisticalWindowBuckets; // number of buckets in the statisticalWindow
-    private final HystrixProperty<Boolean> metricsRollingPercentileEnabled; // Whether monitoring should be enabled
-    private final HystrixProperty<Integer> metricsRollingPercentileWindowInMilliseconds; // number of milliseconds that will be tracked in RollingPercentile
-    private final HystrixProperty<Integer> metricsRollingPercentileWindowBuckets; // number of buckets percentileWindow will be divided into
-    private final HystrixProperty<Integer> metricsRollingPercentileBucketSize; // how many values will be stored in each percentileWindowBucket
+
+    // milliseconds back that will be tracked
+    private final HystrixProperty<Integer> metricsRollingStatisticalWindowInMilliseconds;
+
+    // number of buckets in the statisticalWindow
+    private final HystrixProperty<Integer> metricsRollingStatisticalWindowBuckets;
+
+    // Whether monitoring should be enabled
+    private final HystrixProperty<Boolean> metricsRollingPercentileEnabled;
+
+    // number of milliseconds that will be tracked in RollingPercentile
+    private final HystrixProperty<Integer> metricsRollingPercentileWindowInMilliseconds;
+
+    // number of buckets percentileWindow will be divided into
+    private final HystrixProperty<Integer> metricsRollingPercentileWindowBuckets;
+
+    // how many values will be stored in each percentileWindowBucket
+    private final HystrixProperty<Integer> metricsRollingPercentileBucketSize;
 
     protected HystrixCollapserProperties(HystrixCollapserKey collapserKey) {
         this(collapserKey, new Setter(), "hystrix");
@@ -73,19 +100,11 @@ public abstract class HystrixCollapserProperties {
     }
 
     private static HystrixProperty<Integer> getProperty(String propertyPrefix, HystrixCollapserKey key, String instanceProperty, Integer builderOverrideValue, Integer defaultValue) {
-        return forInteger()
-              .add(propertyPrefix + ".collapser." + key.name() + "." + instanceProperty, builderOverrideValue)
-              .add(propertyPrefix + ".collapser.default." + instanceProperty, defaultValue)
-              .build();
-              
-
+        return forInteger().add(propertyPrefix + ".collapser." + key.name() + "." + instanceProperty, builderOverrideValue).add(propertyPrefix + ".collapser.default." + instanceProperty, defaultValue).build();
     }
 
     private static HystrixProperty<Boolean> getProperty(String propertyPrefix, HystrixCollapserKey key, String instanceProperty, Boolean builderOverrideValue, Boolean defaultValue) {
-        return forBoolean()
-                .add(propertyPrefix + ".collapser." + key.name() + "." + instanceProperty, builderOverrideValue)
-                .add(propertyPrefix + ".collapser.default." + instanceProperty, defaultValue)
-                .build();
+        return forBoolean().add(propertyPrefix + ".collapser." + key.name() + "." + instanceProperty, builderOverrideValue).add(propertyPrefix + ".collapser.default." + instanceProperty, defaultValue).build();
     }
 
     /**
@@ -111,7 +130,7 @@ public abstract class HystrixCollapserProperties {
 
     /**
      * The maximum number of requests allowed in a batch before triggering a batch execution.
-     * 
+     *
      * @return {@code HystrixProperty<Integer>}
      */
     public HystrixProperty<Integer> maxRequestsInBatch() {
@@ -120,7 +139,7 @@ public abstract class HystrixCollapserProperties {
 
     /**
      * The number of milliseconds between batch executions (unless {@link #maxRequestsInBatch} is hit which will cause a batch to execute early.
-     * 
+     *
      * @return {@code HystrixProperty<Integer>}
      */
     public HystrixProperty<Integer> timerDelayInMilliseconds() {
@@ -209,19 +228,30 @@ public abstract class HystrixCollapserProperties {
      *           .setMaxRequestsInBatch(100)
      *           .setTimerDelayInMilliseconds(10);
      * } </pre>
-     * 
+     *
      * @NotThreadSafe
      */
     public static class Setter {
-        @Deprecated private Boolean collapsingEnabled = null;
+
+        @Deprecated
+        private Boolean collapsingEnabled = null;
+
         private Integer maxRequestsInBatch = null;
+
         private Integer timerDelayInMilliseconds = null;
+
         private Boolean requestCacheEnabled = null;
+
         private Integer metricsRollingStatisticalWindowInMilliseconds = null;
+
         private Integer metricsRollingStatisticalWindowBuckets = null;
+
         private Integer metricsRollingPercentileBucketSize = null;
+
         private Boolean metricsRollingPercentileEnabled = null;
+
         private Integer metricsRollingPercentileWindowInMilliseconds = null;
+
         private Integer metricsRollingPercentileWindowBuckets = null;
 
         private Setter() {
@@ -328,21 +358,20 @@ public abstract class HystrixCollapserProperties {
         /**
          * Base properties for unit testing.
          */
-        /* package */static Setter getUnitTestPropertiesBuilder() {
-            return new Setter()
-                    .withMaxRequestsInBatch(Integer.MAX_VALUE)
-                    .withTimerDelayInMilliseconds(10)
-                    .withRequestCacheEnabled(true);
+        /* package */
+        static Setter getUnitTestPropertiesBuilder() {
+            return new Setter().withMaxRequestsInBatch(Integer.MAX_VALUE).withTimerDelayInMilliseconds(10).withRequestCacheEnabled(true);
         }
 
         /**
          * Return a static representation of the properties with values from the Builder so that UnitTests can create properties that are not affected by the actual implementations which pick up their
          * values dynamically.
-         * 
+         *
          * @param builder collapser properties builder
          * @return HystrixCollapserProperties
          */
-        /* package */static HystrixCollapserProperties asMock(final Setter builder) {
+        /* package */
+        static HystrixCollapserProperties asMock(final Setter builder) {
             return new HystrixCollapserProperties(TestHystrixCollapserKey.TEST) {
 
                 @Override
@@ -359,13 +388,12 @@ public abstract class HystrixCollapserProperties {
                 public HystrixProperty<Integer> timerDelayInMilliseconds() {
                     return HystrixProperty.Factory.asProperty(builder.timerDelayInMilliseconds);
                 }
-
             };
         }
 
         private static enum TestHystrixCollapserKey implements HystrixCollapserKey {
+
             TEST
         }
     }
-
 }

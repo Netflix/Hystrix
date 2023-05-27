@@ -1,12 +1,12 @@
 /**
  * Copyright 2016 Netflix, Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -34,15 +34,17 @@ public class HystrixRequestEventsSseServlet extends HystrixSampleSseServlet {
 
     /* used to track number of connections and throttle */
     private static AtomicInteger concurrentConnections = new AtomicInteger(0);
-    private static DynamicIntProperty maxConcurrentConnections =
-            DynamicPropertyFactory.getInstance().getIntProperty("hystrix.config.stream.maxConcurrentConnections", 5);
+
+    private static DynamicIntProperty maxConcurrentConnections = DynamicPropertyFactory.getInstance().getIntProperty("hystrix.config.stream.maxConcurrentConnections", 5);
 
     public HystrixRequestEventsSseServlet() {
         this(HystrixRequestEventsStream.getInstance().observe(), DEFAULT_PAUSE_POLLER_THREAD_DELAY_IN_MS);
     }
 
-    /* package-private */ HystrixRequestEventsSseServlet(Observable<HystrixRequestEvents> sampleStream, int pausePollerThreadDelayInMs) {
+    /* package-private */
+    HystrixRequestEventsSseServlet(Observable<HystrixRequestEvents> sampleStream, int pausePollerThreadDelayInMs) {
         super(sampleStream.map(new Func1<HystrixRequestEvents, String>() {
+
             @Override
             public String call(HystrixRequestEvents requestEvents) {
                 return SerialHystrixRequestEvents.toJsonString(requestEvents);
@@ -70,5 +72,3 @@ public class HystrixRequestEventsSseServlet extends HystrixSampleSseServlet {
         concurrentConnections.decrementAndGet();
     }
 }
-
-

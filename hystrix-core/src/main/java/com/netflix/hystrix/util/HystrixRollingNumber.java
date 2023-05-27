@@ -1,12 +1,12 @@
 /**
  * Copyright 2012 Netflix, Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,10 +22,8 @@ import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.locks.ReentrantLock;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.netflix.hystrix.strategy.properties.HystrixProperty;
 
 /**
@@ -43,18 +41,23 @@ import com.netflix.hystrix.strategy.properties.HystrixProperty;
  * ensure the sum is up-to-date when the read can easily iterate each bucket to get the sum when it needs it.
  * <p>
  * See UnitTest for usage and expected behavior examples.
- * 
+ *
  * @ThreadSafe
  */
 public class HystrixRollingNumber {
 
     private static final Time ACTUAL_TIME = new ActualTime();
+
     private final Time time;
+
     final int timeInMilliseconds;
+
     final int numberOfBuckets;
+
     final int bucketSizeInMillseconds;
 
     final BucketCircularArray buckets;
+
     private final CumulativeSum cumulativeSum = new CumulativeSum();
 
     /**
@@ -74,16 +77,15 @@ public class HystrixRollingNumber {
         this(ACTUAL_TIME, timeInMilliseconds, numberOfBuckets);
     }
 
-    /* package for testing */ HystrixRollingNumber(Time time, int timeInMilliseconds, int numberOfBuckets) {
+    /* package for testing */
+    HystrixRollingNumber(Time time, int timeInMilliseconds, int numberOfBuckets) {
         this.time = time;
         this.timeInMilliseconds = timeInMilliseconds;
         this.numberOfBuckets = numberOfBuckets;
-
         if (timeInMilliseconds % numberOfBuckets != 0) {
             throw new IllegalArgumentException("The timeInMilliseconds must divide equally into numberOfBuckets. For example 1000/10 is ok, 1000/11 is not.");
         }
         this.bucketSizeInMillseconds = timeInMilliseconds / numberOfBuckets;
-
         buckets = new BucketCircularArray(numberOfBuckets);
     }
 
@@ -91,7 +93,7 @@ public class HystrixRollingNumber {
      * Increment the counter in the current bucket by one for the given {@link HystrixRollingNumberEvent} type.
      * <p>
      * The {@link HystrixRollingNumberEvent} must be a "counter" type <code>HystrixRollingNumberEvent.isCounter() == true</code>.
-     * 
+     *
      * @param type
      *            HystrixRollingNumberEvent defining which counter to increment
      */
@@ -103,7 +105,7 @@ public class HystrixRollingNumber {
      * Add to the counter in the current bucket for the given {@link HystrixRollingNumberEvent} type.
      * <p>
      * The {@link HystrixRollingNumberEvent} must be a "counter" type <code>HystrixRollingNumberEvent.isCounter() == true</code>.
-     * 
+     *
      * @param type
      *            HystrixRollingNumberEvent defining which counter to add to
      * @param value
@@ -117,7 +119,7 @@ public class HystrixRollingNumber {
      * Update a value and retain the max value.
      * <p>
      * The {@link HystrixRollingNumberEvent} must be a "max updater" type <code>HystrixRollingNumberEvent.isMaxUpdater() == true</code>.
-     * 
+     *
      * @param type  HystrixRollingNumberEvent defining which counter to retrieve values from
      * @param value long value to be given to the max updater
      */
@@ -136,7 +138,6 @@ public class HystrixRollingNumber {
         if (lastBucket != null) {
             cumulativeSum.addBucket(lastBucket);
         }
-
         // clear buckets so we start over again
         buckets.clear();
     }
@@ -147,7 +148,7 @@ public class HystrixRollingNumber {
      * See {@link #getRollingSum(HystrixRollingNumberEvent)} for the rolling sum.
      * <p>
      * The {@link HystrixRollingNumberEvent} must be a "counter" type <code>HystrixRollingNumberEvent.isCounter() == true</code>.
-     * 
+     *
      * @param type HystrixRollingNumberEvent defining which counter to retrieve values from
      * @return cumulative sum of all increments and adds for the given {@link HystrixRollingNumberEvent} counter type
      */
@@ -162,7 +163,7 @@ public class HystrixRollingNumber {
      * Get the sum of all buckets in the rolling counter for the given {@link HystrixRollingNumberEvent} type.
      * <p>
      * The {@link HystrixRollingNumberEvent} must be a "counter" type <code>HystrixRollingNumberEvent.isCounter() == true</code>.
-     * 
+     *
      * @param type
      *            HystrixRollingNumberEvent defining which counter to retrieve values from
      * @return
@@ -172,7 +173,6 @@ public class HystrixRollingNumber {
         Bucket lastBucket = getCurrentBucket();
         if (lastBucket == null)
             return 0;
-
         long sum = 0;
         for (Bucket b : buckets) {
             sum += b.getAdder(type).sum();
@@ -184,7 +184,7 @@ public class HystrixRollingNumber {
      * Get the value of the latest (current) bucket in the rolling counter for the given {@link HystrixRollingNumberEvent} type.
      * <p>
      * The {@link HystrixRollingNumberEvent} must be a "counter" type <code>HystrixRollingNumberEvent.isCounter() == true</code>.
-     * 
+     *
      * @param type
      *            HystrixRollingNumberEvent defining which counter to retrieve value from
      * @return
@@ -204,7 +204,7 @@ public class HystrixRollingNumber {
      * Index 0 is the oldest bucket.
      * <p>
      * The {@link HystrixRollingNumberEvent} must be a "counter" type <code>HystrixRollingNumberEvent.isCounter() == true</code>.
-     * 
+     *
      * @param type
      *            HystrixRollingNumberEvent defining which counter to retrieve values from
      * @return array of values from each of the rolling buckets for given {@link HystrixRollingNumberEvent} counter type
@@ -213,12 +213,10 @@ public class HystrixRollingNumber {
         Bucket lastBucket = getCurrentBucket();
         if (lastBucket == null)
             return new long[0];
-
         // get buckets as an array (which is a copy of the current state at this point in time)
         Bucket[] bucketArray = buckets.getArray();
-
         // we have bucket data so we'll return an array of values for all buckets
-        long values[] = new long[bucketArray.length];
+        long[] values = new long[bucketArray.length];
         int i = 0;
         for (Bucket bucket : bucketArray) {
             if (type.isCounter()) {
@@ -234,13 +232,13 @@ public class HystrixRollingNumber {
      * Get the max value of values in all buckets for the given {@link HystrixRollingNumberEvent} type.
      * <p>
      * The {@link HystrixRollingNumberEvent} must be a "max updater" type <code>HystrixRollingNumberEvent.isMaxUpdater() == true</code>.
-     * 
+     *
      * @param type
      *            HystrixRollingNumberEvent defining which "max updater" to retrieve values from
      * @return max value for given {@link HystrixRollingNumberEvent} type during rolling window
      */
     public long getRollingMaxValue(HystrixRollingNumberEvent type) {
-        long values[] = getValues(type);
+        long[] values = getValues(type);
         if (values.length == 0) {
             return 0;
         } else {
@@ -251,14 +249,13 @@ public class HystrixRollingNumber {
 
     private ReentrantLock newBucketLock = new ReentrantLock();
 
-    /* package for testing */Bucket getCurrentBucket() {
+    /* package for testing */
+    Bucket getCurrentBucket() {
         long currentTime = time.getCurrentTimeInMillis();
-
         /* a shortcut to try and get the most common result of immediately finding the current bucket */
-
         /**
          * Retrieve the latest bucket if the given time is BEFORE the end of the bucket window, otherwise it returns NULL.
-         * 
+         *
          * NOTE: This is thread-safe because it's accessing 'buckets' which is a LinkedBlockingDeque
          */
         Bucket currentBucket = buckets.peekLast();
@@ -268,26 +265,24 @@ public class HystrixRollingNumber {
             // we'll just use the latest as long as we're not AFTER the window
             return currentBucket;
         }
-
         /* if we didn't find the current bucket above, then we have to create one */
-
         /**
          * The following needs to be synchronized/locked even with a synchronized/thread-safe data structure such as LinkedBlockingDeque because
          * the logic involves multiple steps to check existence, create an object then insert the object. The 'check' or 'insertion' themselves
          * are thread-safe by themselves but not the aggregate algorithm, thus we put this entire block of logic inside synchronized.
-         * 
+         *
          * I am using a tryLock if/then (http://download.oracle.com/javase/6/docs/api/java/util/concurrent/locks/Lock.html#tryLock())
          * so that a single thread will get the lock and as soon as one thread gets the lock all others will go the 'else' block
          * and just return the currentBucket until the newBucket is created. This should allow the throughput to be far higher
          * and only slow down 1 thread instead of blocking all of them in each cycle of creating a new bucket based on some testing
          * (and it makes sense that it should as well).
-         * 
+         *
          * This means the timing won't be exact to the millisecond as to what data ends up in a bucket, but that's acceptable.
          * It's not critical to have exact precision to the millisecond, as long as it's rolling, if we can instead reduce the impact synchronization.
-         * 
+         *
          * More importantly though it means that the 'if' block within the lock needs to be careful about what it changes that can still
          * be accessed concurrently in the 'else' block since we're not completely synchronizing access.
-         * 
+         *
          * For example, we can't have a multi-step process to add a bucket, remove a bucket, then update the sum since the 'else' block of code
          * can retrieve the sum while this is all happening. The trade-off is that we don't maintain the rolling sum and let readers just iterate
          * bucket to calculate the sum themselves. This is an example of favoring write-performance instead of read-performance and how the tryLock
@@ -316,7 +311,8 @@ public class HystrixRollingNumber {
                             reset();
                             // recursively call getCurrentBucket which will create a new bucket and return it
                             return getCurrentBucket();
-                        } else { // we're past the window so we need to create a new bucket
+                        } else {
+                            // we're past the window so we need to create a new bucket
                             // create a new bucket and add it as the new 'last'
                             buckets.addLast(new Bucket(lastBucket.windowStart + this.bucketSizeInMillseconds));
                             // add the lastBucket values to the cumulativeSum
@@ -347,7 +343,9 @@ public class HystrixRollingNumber {
         }
     }
 
-    /* package */static interface Time {
+    /* package */
+    static interface Time {
+
         public long getCurrentTimeInMillis();
     }
 
@@ -357,27 +355,28 @@ public class HystrixRollingNumber {
         public long getCurrentTimeInMillis() {
             return System.currentTimeMillis();
         }
-
     }
 
     /**
      * Counters for a given 'bucket' of time.
      */
-    /* package */static class Bucket {
+    /* package */
+    static class Bucket {
+
         final long windowStart;
+
         final LongAdder[] adderForCounterType;
+
         final LongMaxUpdater[] updaterForCounterType;
 
         Bucket(long startTime) {
             this.windowStart = startTime;
-
             /*
              * We support both LongAdder and LongMaxUpdater in a bucket but don't want the memory allocation
              * of all types for each so we only allocate the objects if the HystrixRollingNumberEvent matches
              * the correct type - though we still have the allocation of empty arrays to the given length
              * as we want to keep using the type.ordinal() value for fast random access.
              */
-
             // initialize the array of LongAdders
             adderForCounterType = new LongAdder[HystrixRollingNumberEvent.values().length];
             for (HystrixRollingNumberEvent type : HystrixRollingNumberEvent.values()) {
@@ -385,7 +384,6 @@ public class HystrixRollingNumber {
                     adderForCounterType[type.ordinal()] = new LongAdder();
                 }
             }
-
             updaterForCounterType = new LongMaxUpdater[HystrixRollingNumberEvent.values().length];
             for (HystrixRollingNumberEvent type : HystrixRollingNumberEvent.values()) {
                 if (type.isMaxUpdater()) {
@@ -419,25 +417,25 @@ public class HystrixRollingNumber {
             }
             return updaterForCounterType[type.ordinal()];
         }
-
     }
 
     /**
      * Cumulative counters (from start of JVM) from each Type
      */
-    /* package */static class CumulativeSum {
+    /* package */
+    static class CumulativeSum {
+
         final LongAdder[] adderForCounterType;
+
         final LongMaxUpdater[] updaterForCounterType;
 
         CumulativeSum() {
-
             /*
              * We support both LongAdder and LongMaxUpdater in a bucket but don't want the memory allocation
              * of all types for each so we only allocate the objects if the HystrixRollingNumberEvent matches
              * the correct type - though we still have the allocation of empty arrays to the given length
              * as we want to keep using the type.ordinal() value for fast random access.
              */
-
             // initialize the array of LongAdders
             adderForCounterType = new LongAdder[HystrixRollingNumberEvent.values().length];
             for (HystrixRollingNumberEvent type : HystrixRollingNumberEvent.values()) {
@@ -445,7 +443,6 @@ public class HystrixRollingNumber {
                     adderForCounterType[type.ordinal()] = new LongAdder();
                 }
             }
-
             updaterForCounterType = new LongMaxUpdater[HystrixRollingNumberEvent.values().length];
             for (HystrixRollingNumberEvent type : HystrixRollingNumberEvent.values()) {
                 if (type.isMaxUpdater()) {
@@ -490,7 +487,6 @@ public class HystrixRollingNumber {
             }
             return updaterForCounterType[type.ordinal()];
         }
-
     }
 
     /**
@@ -504,9 +500,14 @@ public class HystrixRollingNumber {
      * <p>
      * benjchristensen => This implementation was chosen based on performance testing I did and documented at: http://benjchristensen.com/2011/10/08/atomiccirculararray/
      */
-    /* package */static class BucketCircularArray implements Iterable<Bucket> {
+    /* package */
+    static class BucketCircularArray implements Iterable<Bucket> {
+
         private final AtomicReference<ListState> state;
-        private final int dataLength; // we don't resize, we always stay the same, so remember this
+
+        // we don't resize, we always stay the same, so remember this
+        private final int dataLength;
+
         private final int numBuckets;
 
         /**
@@ -515,14 +516,18 @@ public class HystrixRollingNumber {
          * This handles the compound operations
          */
         private class ListState {
+
             /*
              * this is an AtomicReferenceArray and not a normal Array because we're copying the reference
              * between ListState objects and multiple threads could maintain references across these
              * compound operations so I want the visibility/concurrency guarantees
              */
             private final AtomicReferenceArray<Bucket> data;
+
             private final int size;
+
             private final int tail;
+
             private final int head;
 
             private ListState(AtomicReferenceArray<Bucket> data, int head, int tail) {
@@ -597,7 +602,8 @@ public class HystrixRollingNumber {
         }
 
         BucketCircularArray(int size) {
-            AtomicReferenceArray<Bucket> _buckets = new AtomicReferenceArray<Bucket>(size + 1); // + 1 as extra room for the add/remove;
+            // + 1 as extra room for the add/remove;
+            AtomicReferenceArray<Bucket> _buckets = new AtomicReferenceArray<Bucket>(size + 1);
             state = new AtomicReference<ListState>(new ListState(_buckets, 0, 0));
             dataLength = _buckets.length();
             numBuckets = size;
@@ -637,7 +643,6 @@ public class HystrixRollingNumber {
             ListState currentState = state.get();
             // create new version of state (what we want it to become)
             ListState newState = currentState.addBucket(o);
-
             /*
              * use compareAndSet to set in case multiple threads are attempting (which shouldn't be the case because since addLast will ONLY be called by a single thread at a time due to protection
              * provided in <code>getCurrentBucket</code>)
@@ -670,7 +675,5 @@ public class HystrixRollingNumber {
         private Bucket[] getArray() {
             return state.get().getArray();
         }
-
     }
-
 }

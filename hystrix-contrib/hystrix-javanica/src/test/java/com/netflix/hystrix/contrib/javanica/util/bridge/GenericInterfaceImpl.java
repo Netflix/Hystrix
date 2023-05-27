@@ -20,7 +20,6 @@ package com.netflix.hystrix.contrib.javanica.util.bridge;
  */
 public class GenericInterfaceImpl implements GenericInterface<Child, Parent> {
 
-
     public Child foo(SubChild c) {
         return null;
     }
@@ -33,5 +32,4 @@ public class GenericInterfaceImpl implements GenericInterface<Child, Parent> {
     public Child foo(Parent c) {
         return null;
     }
-
 }

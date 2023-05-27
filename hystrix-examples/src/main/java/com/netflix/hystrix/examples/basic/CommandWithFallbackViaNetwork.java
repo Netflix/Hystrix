@@ -1,12 +1,12 @@
 /**
  * Copyright 2012 Netflix, Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,9 +16,7 @@
 package com.netflix.hystrix.examples.basic;
 
 import static org.junit.Assert.*;
-
 import org.junit.Test;
-
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandGroupKey;
 import com.netflix.hystrix.HystrixCommandKey;
@@ -39,11 +37,11 @@ import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
  * and the fallback command never have a chance to execute.
  */
 public class CommandWithFallbackViaNetwork extends HystrixCommand<String> {
+
     private final int id;
 
     protected CommandWithFallbackViaNetwork(int id) {
-        super(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("RemoteServiceX"))
-                .andCommandKey(HystrixCommandKey.Factory.asKey("GetValueCommand")));
+        super(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("RemoteServiceX")).andCommandKey(HystrixCommandKey.Factory.asKey("GetValueCommand")));
         this.id = id;
     }
 
@@ -59,15 +57,14 @@ public class CommandWithFallbackViaNetwork extends HystrixCommand<String> {
     }
 
     private static class FallbackViaNetwork extends HystrixCommand<String> {
+
         private final int id;
 
         public FallbackViaNetwork(int id) {
-            super(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("RemoteServiceX"))
-                    .andCommandKey(HystrixCommandKey.Factory.asKey("GetValueFallbackCommand"))
-                    // use a different threadpool for the fallback command
-                    // so saturating the RemoteServiceX pool won't prevent
-                    // fallbacks from executing
-                    .andThreadPoolKey(HystrixThreadPoolKey.Factory.asKey("RemoteServiceXFallback")));
+            super(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("RemoteServiceX")).andCommandKey(HystrixCommandKey.Factory.asKey("GetValueFallbackCommand")).// use a different threadpool for the fallback command
+            // so saturating the RemoteServiceX pool won't prevent
+            // fallbacks from executing
+            andThreadPoolKey(HystrixThreadPoolKey.Factory.asKey("RemoteServiceXFallback")));
             this.id = id;
         }
 
@@ -80,7 +77,7 @@ public class CommandWithFallbackViaNetwork extends HystrixCommand<String> {
         @Override
         protected String getFallback() {
             // the fallback also failed
-            // so this fallback-of-a-fallback will 
+            // so this fallback-of-a-fallback will
             // fail silently and return null
             return null;
         }
@@ -93,11 +90,9 @@ public class CommandWithFallbackViaNetwork extends HystrixCommand<String> {
             HystrixRequestContext context = HystrixRequestContext.initializeContext();
             try {
                 assertEquals(null, new CommandWithFallbackViaNetwork(1).execute());
-
                 HystrixInvokableInfo<?> command1 = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().toArray(new HystrixInvokableInfo<?>[2])[0];
                 assertEquals("GetValueCommand", command1.getCommandKey().name());
                 assertTrue(command1.getExecutionEvents().contains(HystrixEventType.FAILURE));
-
                 HystrixInvokableInfo<?> command2 = HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().toArray(new HystrixInvokableInfo<?>[2])[1];
                 assertEquals("GetValueFallbackCommand", command2.getCommandKey().name());
                 assertTrue(command2.getExecutionEvents().contains(HystrixEventType.FAILURE));

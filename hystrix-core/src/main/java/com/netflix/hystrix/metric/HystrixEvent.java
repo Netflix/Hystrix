@@ -19,5 +19,4 @@ package com.netflix.hystrix.metric;
  * Marker interface for events which may appear in an event stream
  */
 public interface HystrixEvent {
-
 }

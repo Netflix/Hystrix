@@ -22,7 +22,6 @@ import com.netflix.hystrix.HystrixThreadPoolProperties;
 import com.netflix.hystrix.metric.HystrixCommandCompletion;
 import com.netflix.hystrix.metric.HystrixThreadPoolCompletionStream;
 import rx.functions.Func2;
-
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -49,7 +48,6 @@ public class RollingThreadPoolEventCounterStream extends BucketedRollingCounterS
         final int counterMetricWindow = properties.metricsRollingStatisticalWindowInMilliseconds().get();
         final int numCounterBuckets = properties.metricsRollingStatisticalWindowBuckets().get();
         final int counterBucketSizeInMs = counterMetricWindow / numCounterBuckets;
-
         return getInstance(threadPoolKey, numCounterBuckets, counterBucketSizeInMs);
     }
 
@@ -61,9 +59,7 @@ public class RollingThreadPoolEventCounterStream extends BucketedRollingCounterS
             synchronized (RollingThreadPoolEventCounterStream.class) {
                 RollingThreadPoolEventCounterStream existingStream = streams.get(threadPoolKey.name());
                 if (existingStream == null) {
-                    RollingThreadPoolEventCounterStream newStream =
-                            new RollingThreadPoolEventCounterStream(threadPoolKey, numBuckets, bucketSizeInMs,
-                                    HystrixThreadPoolMetrics.appendEventToBucket, HystrixThreadPoolMetrics.counterAggregator);
+                    RollingThreadPoolEventCounterStream newStream = new RollingThreadPoolEventCounterStream(threadPoolKey, numBuckets, bucketSizeInMs, HystrixThreadPoolMetrics.appendEventToBucket, HystrixThreadPoolMetrics.counterAggregator);
                     streams.putIfAbsent(threadPoolKey.name(), newStream);
                     return newStream;
                 } else {
@@ -77,9 +73,7 @@ public class RollingThreadPoolEventCounterStream extends BucketedRollingCounterS
         streams.clear();
     }
 
-    private RollingThreadPoolEventCounterStream(HystrixThreadPoolKey threadPoolKey, int numCounterBuckets, int counterBucketSizeInMs,
-                                                Func2<long[], HystrixCommandCompletion, long[]> reduceCommandCompletion,
-                                                Func2<long[], long[], long[]> reduceBucket) {
+    private RollingThreadPoolEventCounterStream(HystrixThreadPoolKey threadPoolKey, int numCounterBuckets, int counterBucketSizeInMs, Func2<long[], HystrixCommandCompletion, long[]> reduceCommandCompletion, Func2<long[], long[], long[]> reduceBucket) {
         super(HystrixThreadPoolCompletionStream.getInstance(threadPoolKey), numCounterBuckets, counterBucketSizeInMs, reduceCommandCompletion, reduceBucket);
     }
 

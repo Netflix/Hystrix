@@ -25,7 +25,7 @@ import com.netflix.hystrix.strategy.HystrixPlugins;
  * Custom implementations can be injected using {@link HystrixPlugins} and {@link HystrixConcurrencyStrategy#getRequestVariable}.
  * <p>
  * See JavaDoc of {@link HystrixRequestContext} for more information about functionality this enables and how to use the default implementation.
- * 
+ *
  * @param <T>
  *            Type to be stored on the HystrixRequestVariable
  */
@@ -33,9 +33,8 @@ public interface HystrixRequestVariable<T> extends HystrixRequestVariableLifecyc
 
     /**
      * Retrieve current value or initialize and then return value for this variable for the current request scope.
-     * 
+     *
      * @return T value of variable for current request scope.
      */
     public T get();
-
 }

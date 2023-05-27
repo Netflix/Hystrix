@@ -1,12 +1,12 @@
 /**
  * Copyright 2013 Netflix, Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,13 +16,11 @@
 package com.netflix.hystrix.strategy.concurrency;
 
 import java.util.concurrent.*;
-
 import rx.*;
 import rx.functions.Action0;
 import rx.functions.Func0;
 import rx.internal.schedulers.ScheduledAction;
 import rx.subscriptions.*;
-
 import com.netflix.hystrix.HystrixThreadPool;
 import com.netflix.hystrix.strategy.HystrixPlugins;
 
@@ -33,7 +31,9 @@ import com.netflix.hystrix.strategy.HystrixPlugins;
 public class HystrixContextScheduler extends Scheduler {
 
     private final HystrixConcurrencyStrategy concurrencyStrategy;
+
     private final Scheduler actualScheduler;
+
     private final HystrixThreadPool threadPool;
 
     public HystrixContextScheduler(Scheduler scheduler) {
@@ -50,6 +50,7 @@ public class HystrixContextScheduler extends Scheduler {
 
     public HystrixContextScheduler(HystrixConcurrencyStrategy concurrencyStrategy, HystrixThreadPool threadPool) {
         this(concurrencyStrategy, threadPool, new Func0<Boolean>() {
+
             @Override
             public Boolean call() {
                 return true;
@@ -88,29 +89,25 @@ public class HystrixContextScheduler extends Scheduler {
 
         @Override
         public Subscription schedule(Action0 action, long delayTime, TimeUnit unit) {
-            if (threadPool != null) {
-                if (!threadPool.isQueueSpaceAvailable()) {
-                    throw new RejectedExecutionException("Rejected command because thread-pool queueSize is at rejection threshold.");
-                }
+            if (threadPool != null && !threadPool.isQueueSpaceAvailable()) {
+                throw new RejectedExecutionException("Rejected command because thread-pool queueSize is at rejection threshold.");
             }
             return worker.schedule(new HystrixContextSchedulerAction(concurrencyStrategy, action), delayTime, unit);
         }
 
         @Override
         public Subscription schedule(Action0 action) {
-            if (threadPool != null) {
-                if (!threadPool.isQueueSpaceAvailable()) {
-                    throw new RejectedExecutionException("Rejected command because thread-pool queueSize is at rejection threshold.");
-                }
+            if (threadPool != null && !threadPool.isQueueSpaceAvailable()) {
+                throw new RejectedExecutionException("Rejected command because thread-pool queueSize is at rejection threshold.");
             }
             return worker.schedule(new HystrixContextSchedulerAction(concurrencyStrategy, action));
         }
-
     }
 
     private static class ThreadPoolScheduler extends Scheduler {
 
         private final HystrixThreadPool threadPool;
+
         private final Func0<Boolean> shouldInterruptThread;
 
         public ThreadPoolScheduler(HystrixThreadPool threadPool, Func0<Boolean> shouldInterruptThread) {
@@ -122,7 +119,6 @@ public class HystrixContextScheduler extends Scheduler {
         public Worker createWorker() {
             return new ThreadPoolWorker(threadPool, shouldInterruptThread);
         }
-
     }
 
     /**
@@ -137,7 +133,9 @@ public class HystrixContextScheduler extends Scheduler {
     private static class ThreadPoolWorker extends Worker {
 
         private final HystrixThreadPool threadPool;
+
         private final CompositeSubscription subscription = new CompositeSubscription();
+
         private final Func0<Boolean> shouldInterruptThread;
 
         public ThreadPoolWorker(HystrixThreadPool threadPool, Func0<Boolean> shouldInterruptThread) {
@@ -161,17 +159,13 @@ public class HystrixContextScheduler extends Scheduler {
                 // don't schedule, we are unsubscribed
                 return Subscriptions.unsubscribed();
             }
-
             // This is internal RxJava API but it is too useful.
             ScheduledAction sa = new ScheduledAction(action);
-
             subscription.add(sa);
             sa.addParent(subscription);
-
             ThreadPoolExecutor executor = (ThreadPoolExecutor) threadPool.getExecutor();
             FutureTask<?> f = (FutureTask<?>) executor.submit(sa);
             sa.add(new FutureCompleterWithConfigurableInterrupt(f, shouldInterruptThread, executor));
-
             return sa;
         }
 
@@ -185,8 +179,11 @@ public class HystrixContextScheduler extends Scheduler {
      * Very similar to rx.internal.schedulers.ScheduledAction.FutureCompleter, but with configurable interrupt behavior
      */
     private static class FutureCompleterWithConfigurableInterrupt implements Subscription {
+
         private final FutureTask<?> f;
+
         private final Func0<Boolean> shouldInterruptThread;
+
         private final ThreadPoolExecutor executor;
 
         private FutureCompleterWithConfigurableInterrupt(FutureTask<?> f, Func0<Boolean> shouldInterruptThread, ThreadPoolExecutor executor) {
@@ -210,5 +207,4 @@ public class HystrixContextScheduler extends Scheduler {
             return f.isCancelled();
         }
     }
-
 }

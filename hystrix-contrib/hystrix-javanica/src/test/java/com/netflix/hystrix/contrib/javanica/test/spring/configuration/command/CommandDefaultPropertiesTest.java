@@ -14,7 +14,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
  * Created by dmgcodevil.
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = {AopCglibConfig.class, CommandDefaultPropertiesTest.Config.class})
+@ContextConfiguration(classes = { AopCglibConfig.class, CommandDefaultPropertiesTest.Config.class })
 public class CommandDefaultPropertiesTest extends BasicCommandDefaultPropertiesTest {
 
     @Autowired
@@ -27,6 +27,7 @@ public class CommandDefaultPropertiesTest extends BasicCommandDefaultPropertiesT
 
     @Configurable
     public static class Config {
+
         @Bean
         @Scope(value = "prototype")
         public BasicCommandDefaultPropertiesTest.Service service() {

@@ -17,7 +17,7 @@ package com.netflix.hystrix.strategy.concurrency;
 
 /**
  * Interface for lifecycle methods that are then executed by an implementation of {@link HystrixRequestVariable}.
- * 
+ *
  * @param <T>
  */
 public interface HystrixRequestVariableLifecycle<T> {
@@ -26,7 +26,7 @@ public interface HystrixRequestVariableLifecycle<T> {
      * Invoked when {@link HystrixRequestVariable#get()} is first called.
      * <p>
      * When using the default implementation this is invoked when {@link HystrixRequestVariableDefault#get()} is called.
-     * 
+     *
      * @return T with initial value or null if none.
      */
     public T initialValue();
@@ -37,12 +37,11 @@ public interface HystrixRequestVariableLifecycle<T> {
      * When using the default implementation this is invoked when {@link HystrixRequestContext#shutdown()} is called.
      * <p>
      * The {@link HystrixRequestVariable#get()} method should not be called from within this method as it will result in {@link #initialValue()} being called again.
-     * 
+     *
      * @param value
      *            of request variable to allow cleanup activity.
      *            <p>
      *            If nothing needs to be cleaned up then nothing needs to be done in this method.
      */
     public void shutdown(T value);
-
 }

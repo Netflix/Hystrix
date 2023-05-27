@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.hystrix.metric.consumer;
 
 import com.netflix.hystrix.HystrixCommandKey;
@@ -23,7 +22,6 @@ import com.netflix.hystrix.metric.HystrixCommandCompletionStream;
 import com.netflix.hystrix.metric.HystrixCommandEvent;
 import org.HdrHistogram.Histogram;
 import rx.functions.Func2;
-
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -47,9 +45,11 @@ import java.util.concurrent.ConcurrentMap;
  * ** Total time is the time spent from the perspecitve of the consumer, and includes all Hystrix bookkeeping.
  */
 public class RollingCommandLatencyDistributionStream extends RollingDistributionStream<HystrixCommandCompletion> {
+
     private static final ConcurrentMap<String, RollingCommandLatencyDistributionStream> streams = new ConcurrentHashMap<String, RollingCommandLatencyDistributionStream>();
 
     private static final Func2<Histogram, HystrixCommandCompletion, Histogram> addValuesToBucket = new Func2<Histogram, HystrixCommandCompletion, Histogram>() {
+
         @Override
         public Histogram call(Histogram initialDistribution, HystrixCommandCompletion event) {
             if (event.didCommandExecute() && event.getExecutionLatency() > -1) {
@@ -63,7 +63,6 @@ public class RollingCommandLatencyDistributionStream extends RollingDistribution
         final int percentileMetricWindow = properties.metricsRollingPercentileWindowInMilliseconds().get();
         final int numPercentileBuckets = properties.metricsRollingPercentileWindowBuckets().get();
         final int percentileBucketSizeInMs = percentileMetricWindow / numPercentileBuckets;
-
         return getInstance(commandKey, numPercentileBuckets, percentileBucketSizeInMs);
     }
 

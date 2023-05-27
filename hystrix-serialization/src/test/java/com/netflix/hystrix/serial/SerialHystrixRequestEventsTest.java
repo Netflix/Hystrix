@@ -26,20 +26,22 @@ import com.netflix.hystrix.HystrixInvokableInfo;
 import com.netflix.hystrix.HystrixThreadPoolKey;
 import com.netflix.hystrix.metric.HystrixRequestEvents;
 import org.junit.Test;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class SerialHystrixRequestEventsTest {
 
     private static final HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("GROUP");
+
     private static final HystrixThreadPoolKey threadPoolKey = HystrixThreadPoolKey.Factory.asKey("ThreadPool");
+
     private static final HystrixCommandKey fooKey = HystrixCommandKey.Factory.asKey("Foo");
+
     private static final HystrixCommandKey barKey = HystrixCommandKey.Factory.asKey("Bar");
+
     private static final HystrixCollapserKey collapserKey = HystrixCollapserKey.Factory.asKey("FooCollapser");
 
     @Test
@@ -160,8 +162,7 @@ public class SerialHystrixRequestEventsTest {
         executions.add(bar1);
         HystrixRequestEvents request = new HystrixRequestEvents(executions);
         String actual = SerialHystrixRequestEvents.toJsonString(request);
-        assertTrue(actual.equals("[{\"name\":\"Foo\",\"events\":[\"SUCCESS\"],\"latencies\":[23]},{\"name\":\"Bar\",\"events\":[\"SUCCESS\"],\"latencies\":[34]}]") ||
-                actual.equals("[{\"name\":\"Bar\",\"events\":[\"SUCCESS\"],\"latencies\":[34]},{\"name\":\"Foo\",\"events\":[\"SUCCESS\"],\"latencies\":[23]}]"));
+        assertTrue(actual.equals("[{\"name\":\"Foo\",\"events\":[\"SUCCESS\"],\"latencies\":[23]},{\"name\":\"Bar\",\"events\":[\"SUCCESS\"],\"latencies\":[34]}]") || actual.equals("[{\"name\":\"Bar\",\"events\":[\"SUCCESS\"],\"latencies\":[34]},{\"name\":\"Foo\",\"events\":[\"SUCCESS\"],\"latencies\":[23]}]"));
     }
 
     @Test
@@ -187,8 +188,7 @@ public class SerialHystrixRequestEventsTest {
         executions.add(foo3);
         HystrixRequestEvents request = new HystrixRequestEvents(executions);
         String actual = SerialHystrixRequestEvents.toJsonString(request);
-        assertTrue(actual.equals("[{\"name\":\"Foo\",\"events\":[\"SUCCESS\"],\"latencies\":[10,11]},{\"name\":\"Foo\",\"events\":[\"FAILURE\",\"FALLBACK_SUCCESS\"],\"latencies\":[67]}]") ||
-                actual.equals("[{\"name\":\"Foo\",\"events\":[\"FAILURE\",\"FALLBACK_SUCCESS\"],\"latencies\":[67]},{\"name\":\"Foo\",\"events\":[\"SUCCESS\"],\"latencies\":[10,11]}]"));
+        assertTrue(actual.equals("[{\"name\":\"Foo\",\"events\":[\"SUCCESS\"],\"latencies\":[10,11]},{\"name\":\"Foo\",\"events\":[\"FAILURE\",\"FALLBACK_SUCCESS\"],\"latencies\":[67]}]") || actual.equals("[{\"name\":\"Foo\",\"events\":[\"FAILURE\",\"FALLBACK_SUCCESS\"],\"latencies\":[67]},{\"name\":\"Foo\",\"events\":[\"SUCCESS\"],\"latencies\":[10,11]}]"));
     }
 
     @Test
@@ -230,8 +230,7 @@ public class SerialHystrixRequestEventsTest {
         executions.add(cachedFoo2);
         HystrixRequestEvents request = new HystrixRequestEvents(executions);
         String actual = SerialHystrixRequestEvents.toJsonString(request);
-        assertTrue(actual.equals("[{\"name\":\"Foo\",\"events\":[\"SUCCESS\"],\"latencies\":[67],\"cached\":1},{\"name\":\"Foo\",\"events\":[\"SUCCESS\"],\"latencies\":[23],\"cached\":1}]") ||
-                actual.equals("[{\"name\":\"Foo\",\"events\":[\"SUCCESS\"],\"latencies\":[23],\"cached\":1},{\"name\":\"Foo\",\"events\":[\"SUCCESS\"],\"latencies\":[67],\"cached\":1}]"));
+        assertTrue(actual.equals("[{\"name\":\"Foo\",\"events\":[\"SUCCESS\"],\"latencies\":[67],\"cached\":1},{\"name\":\"Foo\",\"events\":[\"SUCCESS\"],\"latencies\":[23],\"cached\":1}]") || actual.equals("[{\"name\":\"Foo\",\"events\":[\"SUCCESS\"],\"latencies\":[23],\"cached\":1},{\"name\":\"Foo\",\"events\":[\"SUCCESS\"],\"latencies\":[67],\"cached\":1}]"));
     }
 
     @Test
@@ -271,9 +270,13 @@ public class SerialHystrixRequestEventsTest {
     }
 
     private class SimpleExecution implements HystrixInvokableInfo<Integer> {
+
         private final HystrixCommandKey commandKey;
+
         private final ExecutionResult executionResult;
+
         private final String cacheKey;
+
         private final HystrixCollapserKey collapserKey;
 
         public SimpleExecution(HystrixCommandKey commandKey, int latency, HystrixEventType... events) {
@@ -355,7 +358,8 @@ public class SerialHystrixRequestEventsTest {
 
         @Override
         public boolean isExecutedInThread() {
-            return false; //do i want this?
+            //do i want this?
+            return false;
         }
 
         @Override
@@ -445,12 +449,7 @@ public class SerialHystrixRequestEventsTest {
 
         @Override
         public String toString() {
-            return "SimpleExecution{" +
-                    "commandKey=" + commandKey.name() +
-                    ", executionResult=" + executionResult +
-                    ", cacheKey='" + cacheKey + '\'' +
-                    ", collapserKey=" + collapserKey +
-                    '}';
+            return "SimpleExecution{" + "commandKey=" + commandKey.name() + ", executionResult=" + executionResult + ", cacheKey='" + cacheKey + '\'' + ", collapserKey=" + collapserKey + '}';
         }
     }
 }

@@ -23,7 +23,7 @@ import com.netflix.hystrix.HystrixCollapserProperties;
  * Default implementation of {@link HystrixMetricsPublisherCollapser} that does nothing.
  * <p>
  * See <a href="https://github.com/Netflix/Hystrix/wiki/Plugins">Wiki docs</a> about plugins for more information.
- * 
+ *
  * @ExcludeFromJavadoc
  */
 public class HystrixMetricsPublisherCollapserDefault implements HystrixMetricsPublisherCollapser {
@@ -36,5 +36,4 @@ public class HystrixMetricsPublisherCollapserDefault implements HystrixMetricsPu
     public void initialize() {
         // do nothing by default
     }
-
 }

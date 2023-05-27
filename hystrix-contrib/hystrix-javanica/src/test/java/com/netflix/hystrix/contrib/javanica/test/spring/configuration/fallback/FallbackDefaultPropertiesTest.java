@@ -10,7 +10,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = {AopCglibConfig.class, FallbackDefaultPropertiesTest.Config.class})
+@ContextConfiguration(classes = { AopCglibConfig.class, FallbackDefaultPropertiesTest.Config.class })
 public class FallbackDefaultPropertiesTest extends BasicFallbackDefaultPropertiesTest {
 
     @Autowired
@@ -23,6 +23,7 @@ public class FallbackDefaultPropertiesTest extends BasicFallbackDefaultPropertie
 
     @Configurable
     public static class Config {
+
         @Bean
         public BasicFallbackDefaultPropertiesTest.Service service() {
             return new BasicFallbackDefaultPropertiesTest.Service();

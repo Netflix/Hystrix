@@ -17,7 +17,6 @@ package com.netflix.hystrix.strategy;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-
 import com.netflix.hystrix.strategy.properties.HystrixDynamicProperties;
 
 /**
@@ -32,9 +31,11 @@ class HystrixArchaiusHelper {
      * @author agent
      */
     private static class LazyHolder {
+
         private final static Method loadCascadedPropertiesFromResources;
+
         private final static String CONFIG_MANAGER_CLASS = "com.netflix.config.ConfigurationManager";
-    
+
         static {
             Method load = null;
             try {
@@ -42,7 +43,6 @@ class HystrixArchaiusHelper {
                 load = configManager.getMethod("loadCascadedPropertiesFromResources", String.class);
             } catch (Exception e) {
             }
-    
             loadCascadedPropertiesFromResources = load;
         }
     }
@@ -72,8 +72,7 @@ class HystrixArchaiusHelper {
         if (isArchaiusV1Available()) {
             loadCascadedPropertiesFromResources("hystrix-plugins");
             try {
-                Class<?> defaultProperties = Class.forName(
-                        "com.netflix.hystrix.strategy.properties.archaius" + ".HystrixDynamicPropertiesArchaius");
+                Class<?> defaultProperties = Class.forName("com.netflix.hystrix.strategy.properties.archaius" + ".HystrixDynamicPropertiesArchaius");
                 return (HystrixDynamicProperties) defaultProperties.newInstance();
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException(e);
@@ -86,5 +85,4 @@ class HystrixArchaiusHelper {
         // Fallback to System properties.
         return null;
     }
-
 }

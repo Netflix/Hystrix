@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.hystrix.metric.consumer;
 
 import com.netflix.hystrix.HystrixCollapserKey;
@@ -22,7 +21,6 @@ import com.netflix.hystrix.metric.HystrixCollapserEvent;
 import com.netflix.hystrix.metric.HystrixCollapserEventStream;
 import org.HdrHistogram.Histogram;
 import rx.functions.Func2;
-
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -39,12 +37,14 @@ import java.util.concurrent.ConcurrentMap;
  * These values get produced and cached in this class, as soon as this stream is queried for the first time.
  */
 public class RollingCollapserBatchSizeDistributionStream extends RollingDistributionStream<HystrixCollapserEvent> {
+
     private static final ConcurrentMap<String, RollingCollapserBatchSizeDistributionStream> streams = new ConcurrentHashMap<String, RollingCollapserBatchSizeDistributionStream>();
 
     private static final Func2<Histogram, HystrixCollapserEvent, Histogram> addValuesToBucket = new Func2<Histogram, HystrixCollapserEvent, Histogram>() {
+
         @Override
         public Histogram call(Histogram initialDistribution, HystrixCollapserEvent event) {
-            switch (event.getEventType()) {
+            switch(event.getEventType()) {
                 case ADDED_TO_BATCH:
                     if (event.getCount() > -1) {
                         initialDistribution.recordValue(event.getCount());
@@ -62,7 +62,6 @@ public class RollingCollapserBatchSizeDistributionStream extends RollingDistribu
         final int percentileMetricWindow = properties.metricsRollingPercentileWindowInMilliseconds().get();
         final int numPercentileBuckets = properties.metricsRollingPercentileWindowBuckets().get();
         final int percentileBucketSizeInMs = percentileMetricWindow / numPercentileBuckets;
-
         return getInstance(collapserKey, numPercentileBuckets, percentileBucketSizeInMs);
     }
 

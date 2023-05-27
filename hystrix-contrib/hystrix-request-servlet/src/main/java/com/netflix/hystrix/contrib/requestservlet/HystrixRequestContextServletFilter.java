@@ -16,14 +16,12 @@
 package com.netflix.hystrix.contrib.requestservlet;
 
 import java.io.IOException;
-
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
-
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 
 /**
@@ -31,7 +29,7 @@ import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
  * <p>
  * Install by adding the following lines to your project web.xml:
  * <p>
- * 
+ *
  * <pre>
  * {@code
  *   <filter>
@@ -47,6 +45,7 @@ import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
  * </pre>
  */
 public class HystrixRequestContextServletFilter implements Filter {
+
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
         HystrixRequestContext context = HystrixRequestContext.initializeContext();
         try {
@@ -58,11 +57,9 @@ public class HystrixRequestContextServletFilter implements Filter {
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
-
     }
 
     @Override
     public void destroy() {
-
     }
 }

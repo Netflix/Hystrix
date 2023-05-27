@@ -17,7 +17,7 @@ package com.netflix.hystrix.strategy.properties;
 
 /**
  * Default implementation of {@link HystrixPropertiesStrategy}.
- * 
+ *
  * @ExcludeFromJavadoc
  */
 public class HystrixPropertiesStrategyDefault extends HystrixPropertiesStrategy {
@@ -30,5 +30,4 @@ public class HystrixPropertiesStrategyDefault extends HystrixPropertiesStrategy 
     public static HystrixPropertiesStrategy getInstance() {
         return INSTANCE;
     }
-
 }

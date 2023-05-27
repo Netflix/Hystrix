@@ -16,7 +16,6 @@
 package com.netflix.hystrix.contrib.javanica.annotation;
 
 import com.netflix.hystrix.HystrixCollapser.Scope;
-
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -55,7 +54,7 @@ import java.lang.annotation.Target;
  * <p/>
  * Note: batch command method must be annotated with {@link HystrixCommand} annotation.
  */
-@Target({ElementType.METHOD})
+@Target({ ElementType.METHOD })
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 public @interface HystrixCollapser {
@@ -97,5 +96,4 @@ public @interface HystrixCollapser {
      * @return collapser properties
      */
     HystrixProperty[] collapserProperties() default {};
-
 }

@@ -17,7 +17,6 @@ package com.netflix.hystrix.examples.demo;
 
 import java.math.BigDecimal;
 import java.net.HttpCookie;
-
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandGroupKey;
 import com.netflix.hystrix.HystrixCommandProperties;
@@ -31,7 +30,6 @@ import com.netflix.hystrix.HystrixCommandProperties;
 // import net.authorize.TransactionType;
 // import net.authorize.aim.Result;
 // import net.authorize.aim.Transaction;
-
 /**
  * HystrixCommand for submitting credit card payments.
  * <p>
@@ -57,17 +55,21 @@ import com.netflix.hystrix.HystrixCommandProperties;
  * saturation under high volume traffic when latency spikes.
  */
 public class CreditCardCommand extends HystrixCommand<CreditCardAuthorizationResult> {
+
     private final static AuthorizeNetGateway DEFAULT_GATEWAY = new AuthorizeNetGateway();
 
     private final AuthorizeNetGateway gateway;
+
     private final Order order;
+
     private final PaymentInformation payment;
+
     private final BigDecimal amount;
 
     /**
      * A HystrixCommand implementation accepts arguments into the constructor which are then accessible
      * to the <code>run()</code> method when it executes.
-     * 
+     *
      * @param order
      * @param payment
      * @param amount
@@ -77,9 +79,8 @@ public class CreditCardCommand extends HystrixCommand<CreditCardAuthorizationRes
     }
 
     private CreditCardCommand(AuthorizeNetGateway gateway, Order order, PaymentInformation payment, BigDecimal amount) {
-        super(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("CreditCard"))
-                // defaulting to a fairly long timeout value because failing a credit card transaction is a bad user experience and 'costly' to re-attempt
-                .andCommandPropertiesDefaults(HystrixCommandProperties.Setter().withExecutionTimeoutInMilliseconds(3000)));
+        super(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("CreditCard")).// defaulting to a fairly long timeout value because failing a credit card transaction is a bad user experience and 'costly' to re-attempt
+        andCommandPropertiesDefaults(HystrixCommandProperties.Setter().withExecutionTimeoutInMilliseconds(3000)));
         this.gateway = gateway;
         this.order = order;
         this.payment = payment;
@@ -101,38 +102,31 @@ public class CreditCardCommand extends HystrixCommand<CreditCardAuthorizationRes
         } else {
             // do something else
         }
-
         // perform credit card transaction
-        Result<Transaction> result = gateway.submit(payment.getCreditCardNumber(),
-                String.valueOf(payment.getExpirationMonth()),
-                String.valueOf(payment.getExpirationYear()),
-                TransactionType.AUTH_CAPTURE, amount, order);
-
+        Result<Transaction> result = gateway.submit(payment.getCreditCardNumber(), String.valueOf(payment.getExpirationMonth()), String.valueOf(payment.getExpirationYear()), TransactionType.AUTH_CAPTURE, amount, order);
         if (result.isApproved()) {
             return CreditCardAuthorizationResult.createSuccessResponse(result.getTarget().getTransactionId(), result.getTarget().getAuthorizationCode());
         } else if (result.isDeclined()) {
             return CreditCardAuthorizationResult.createFailedResponse(result.getReasonResponseCode() + " : " + result.getResponseText());
         } else {
             // check for duplicate transaction
-            if (result.getReasonResponseCode().getResponseReasonCode() == 11) {
-                if (result.getTarget().getAuthorizationCode() != null) {
-                    // We will treat this as a success as this is telling us we have a successful authorization code
-                    // just that we attempted to re-post it again during the 'duplicateWindow' time period.
-                    // This is part of the idempotent behavior we require so that we can safely timeout and/or fail and allow
-                    // client applications to re-attempt submitting a credit card transaction for the same order again.
-                    // In those cases if the client saw a failure but the transaction actually succeeded, this will capture the
-                    // duplicate response and behave to the client as a success.
-                    return CreditCardAuthorizationResult.createDuplicateSuccessResponse(result.getTarget().getTransactionId(), result.getTarget().getAuthorizationCode());
-                }
+            if (result.getReasonResponseCode().getResponseReasonCode() == 11 && result.getTarget().getAuthorizationCode() != null) {
+                // We will treat this as a success as this is telling us we have a successful authorization code
+                // just that we attempted to re-post it again during the 'duplicateWindow' time period.
+                // This is part of the idempotent behavior we require so that we can safely timeout and/or fail and allow
+                // client applications to re-attempt submitting a credit card transaction for the same order again.
+                // In those cases if the client saw a failure but the transaction actually succeeded, this will capture the
+                // duplicate response and behave to the client as a success.
+                return CreditCardAuthorizationResult.createDuplicateSuccessResponse(result.getTarget().getTransactionId(), result.getTarget().getAuthorizationCode());
             }
             // handle all other errors
             return CreditCardAuthorizationResult.createFailedResponse(result.getReasonResponseCode() + " : " + result.getResponseText());
             /**
              * NOTE that in this use case we do not throw an exception for an "error" as this type of error from the service is not a system error,
              * but a legitimate usage problem successfully delivered back from the service.
-             * 
+             *
              * Unexpected errors will be allowed to throw RuntimeExceptions.
-             * 
+             *
              * The HystrixBadRequestException could potentially be used here, but with such a complex set of errors and reason codes
              * it was chosen to stick with the response object approach rather than using an exception.
              */
@@ -144,10 +138,9 @@ public class CreditCardCommand extends HystrixCommand<CreditCardAuthorizationRes
      * 
      * They are statically mocked in this example to demonstrate how Hystrix might behave when wrapping this type of call.
      */
-
     public static class AuthorizeNetGateway {
-        public AuthorizeNetGateway() {
 
+        public AuthorizeNetGateway() {
         }
 
         public Result<Transaction> submit(String creditCardNumber, String expirationMonth, String expirationYear, TransactionType authCapture, BigDecimal amount, Order order) {
@@ -157,7 +150,6 @@ public class CreditCardCommand extends HystrixCommand<CreditCardAuthorizationRes
             } catch (InterruptedException e) {
                 // do nothing
             }
-
             /* and every once in a while we'll cause it to go longer than 3000ms which will cause the command to timeout */
             if (Math.random() > 0.99) {
                 try {
@@ -166,13 +158,11 @@ public class CreditCardCommand extends HystrixCommand<CreditCardAuthorizationRes
                     // do nothing
                 }
             }
-
             if (Math.random() < 0.8) {
                 return new Result<Transaction>(true);
             } else {
                 return new Result<Transaction>(false);
             }
-
         }
     }
 
@@ -203,7 +193,6 @@ public class CreditCardCommand extends HystrixCommand<CreditCardAuthorizationRes
         public boolean isDeclined() {
             return !approved;
         }
-
     }
 
     public static class ResponseCode {
@@ -211,7 +200,6 @@ public class CreditCardCommand extends HystrixCommand<CreditCardAuthorizationRes
         public int getResponseReasonCode() {
             return 0;
         }
-
     }
 
     public static class Target {
@@ -223,15 +211,13 @@ public class CreditCardCommand extends HystrixCommand<CreditCardAuthorizationRes
         public String getAuthorizationCode() {
             return "authorizedCode";
         }
-
     }
 
     public static class Transaction {
-
     }
 
     public static enum TransactionType {
+
         AUTH_CAPTURE
     }
-
 }

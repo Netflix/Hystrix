@@ -18,7 +18,6 @@ package com.netflix.hystrix.metric.consumer;
 import com.netflix.hystrix.HystrixThreadPoolKey;
 import com.netflix.hystrix.HystrixThreadPoolProperties;
 import com.netflix.hystrix.metric.HystrixThreadPoolStartStream;
-
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -42,7 +41,6 @@ public class RollingThreadPoolMaxConcurrencyStream extends RollingConcurrencyStr
         final int counterMetricWindow = properties.metricsRollingStatisticalWindowInMilliseconds().get();
         final int numCounterBuckets = properties.metricsRollingStatisticalWindowBuckets().get();
         final int counterBucketSizeInMs = counterMetricWindow / numCounterBuckets;
-
         return getInstance(threadPoolKey, numCounterBuckets, counterBucketSizeInMs);
     }
 
@@ -54,8 +52,7 @@ public class RollingThreadPoolMaxConcurrencyStream extends RollingConcurrencyStr
             synchronized (RollingThreadPoolMaxConcurrencyStream.class) {
                 RollingThreadPoolMaxConcurrencyStream existingStream = streams.get(threadPoolKey.name());
                 if (existingStream == null) {
-                    RollingThreadPoolMaxConcurrencyStream newStream =
-                            new RollingThreadPoolMaxConcurrencyStream(threadPoolKey, numBuckets, bucketSizeInMs);
+                    RollingThreadPoolMaxConcurrencyStream newStream = new RollingThreadPoolMaxConcurrencyStream(threadPoolKey, numBuckets, bucketSizeInMs);
                     streams.putIfAbsent(threadPoolKey.name(), newStream);
                     return newStream;
                 } else {

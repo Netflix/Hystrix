@@ -18,9 +18,13 @@ package com.netflix.hystrix.metric.sample;
 import com.netflix.hystrix.HystrixThreadPoolMetrics;
 
 public class HystrixThreadPoolUtilization {
+
     private final int currentActiveCount;
+
     private final int currentCorePoolSize;
+
     private final int currentPoolSize;
+
     private final int currentQueueSize;
 
     public HystrixThreadPoolUtilization(int currentActiveCount, int currentCorePoolSize, int currentPoolSize, int currentQueueSize) {
@@ -31,12 +35,7 @@ public class HystrixThreadPoolUtilization {
     }
 
     public static HystrixThreadPoolUtilization sample(HystrixThreadPoolMetrics threadPoolMetrics) {
-        return new HystrixThreadPoolUtilization(
-                threadPoolMetrics.getCurrentActiveCount().intValue(),
-                threadPoolMetrics.getCurrentCorePoolSize().intValue(),
-                threadPoolMetrics.getCurrentPoolSize().intValue(),
-                threadPoolMetrics.getCurrentQueueSize().intValue()
-        );
+        return new HystrixThreadPoolUtilization(threadPoolMetrics.getCurrentActiveCount().intValue(), threadPoolMetrics.getCurrentCorePoolSize().intValue(), threadPoolMetrics.getCurrentPoolSize().intValue(), threadPoolMetrics.getCurrentQueueSize().intValue());
     }
 
     public int getCurrentActiveCount() {

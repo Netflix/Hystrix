@@ -1,12 +1,12 @@
 /**
  * Copyright 2012 Netflix, Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,7 +16,6 @@
 package com.netflix.hystrix.strategy.properties;
 
 import java.util.concurrent.ConcurrentHashMap;
-
 import com.netflix.hystrix.HystrixCollapserKey;
 import com.netflix.hystrix.HystrixCollapserProperties;
 import com.netflix.hystrix.HystrixCommand;
@@ -31,7 +30,7 @@ import com.netflix.hystrix.strategy.HystrixPlugins;
  * Factory for retrieving properties implementations.
  * <p>
  * This uses given {@link HystrixPropertiesStrategy} implementations to construct Properties instances and caches each instance according to the cache key provided.
- * 
+ *
  * @ExcludeFromJavadoc
  */
 public class HystrixPropertiesFactory {
@@ -51,7 +50,7 @@ public class HystrixPropertiesFactory {
 
     /**
      * Get an instance of {@link HystrixCommandProperties} with the given factory {@link HystrixPropertiesStrategy} implementation for each {@link HystrixCommand} instance.
-     * 
+     *
      * @param key
      *            Pass-thru to {@link HystrixPropertiesStrategy#getCommandProperties} implementation.
      * @param builder
@@ -90,7 +89,7 @@ public class HystrixPropertiesFactory {
 
     /**
      * Get an instance of {@link HystrixThreadPoolProperties} with the given factory {@link HystrixPropertiesStrategy} implementation for each {@link HystrixThreadPool} instance.
-     * 
+     *
      * @param key
      *            Pass-thru to {@link HystrixPropertiesStrategy#getThreadPoolProperties} implementation.
      * @param builder
@@ -129,7 +128,7 @@ public class HystrixPropertiesFactory {
 
     /**
      * Get an instance of {@link HystrixCollapserProperties} with the given factory {@link HystrixPropertiesStrategy} implementation for each {@link HystrixCollapserKey} instance.
-     * 
+     *
      * @param key
      *            Pass-thru to {@link HystrixPropertiesStrategy#getCollapserProperties} implementation.
      * @param builder
@@ -162,5 +161,4 @@ public class HystrixPropertiesFactory {
             return hystrixPropertiesStrategy.getCollapserProperties(key, builder);
         }
     }
-
 }

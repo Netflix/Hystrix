@@ -37,22 +37,21 @@ import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.infra.Blackhole;
 import rx.Observable;
 import rx.Subscription;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class CollapserPerfTest {
+
     @State(Scope.Benchmark)
     public static class ThreadPoolState {
+
         HystrixThreadPool hystrixThreadPool;
 
         @Setup
         public void setUp() {
-            hystrixThreadPool = new HystrixThreadPool.HystrixThreadPoolDefault(
-                    HystrixThreadPoolKey.Factory.asKey("PERF")
-                    , HystrixThreadPoolProperties.Setter().withCoreSize(100));
+            hystrixThreadPool = new HystrixThreadPool.HystrixThreadPoolDefault(HystrixThreadPoolKey.Factory.asKey("PERF"), HystrixThreadPoolProperties.Setter().withCoreSize(100));
         }
 
         @TearDown
@@ -63,26 +62,25 @@ public class CollapserPerfTest {
 
     @State(Scope.Thread)
     public static class CollapserState {
-        @Param({"1", "10", "100", "1000"})
+
+        @Param({ "1", "10", "100", "1000" })
         int numToCollapse;
 
-        @Param({"1", "1000", "1000000"})
+        @Param({ "1", "1000", "1000000" })
         int blackholeConsumption;
 
         HystrixRequestContext reqContext;
+
         Observable<String> executionHandle;
 
         @Setup(Level.Invocation)
         public void setUp() {
             reqContext = HystrixRequestContext.initializeContext();
-
             List<Observable<String>> os = new ArrayList<Observable<String>>();
-
             for (int i = 0; i < numToCollapse; i++) {
                 IdentityCollapser collapser = new IdentityCollapser(i, blackholeConsumption);
                 os.add(collapser.observe());
             }
-
             executionHandle = Observable.merge(os);
         }
 
@@ -90,12 +88,12 @@ public class CollapserPerfTest {
         public void tearDown() {
             reqContext.shutdown();
         }
-
     }
 
     private static class IdentityCollapser extends HystrixCollapser<List<String>, String, String> {
 
         private final int arg;
+
         private final int blackholeConsumption;
 
         IdentityCollapser(int arg, int blackholeConsumption) {
@@ -112,7 +110,7 @@ public class CollapserPerfTest {
         @Override
         protected HystrixCommand<List<String>> createCommand(Collection<CollapsedRequest<String, String>> collapsedRequests) {
             List<String> args = new ArrayList<String>();
-            for (CollapsedRequest<String, String> collapsedReq: collapsedRequests) {
+            for (CollapsedRequest<String, String> collapsedReq : collapsedRequests) {
                 args.add(collapsedReq.getArgument());
             }
             return new BatchCommand(args, blackholeConsumption);
@@ -120,10 +118,10 @@ public class CollapserPerfTest {
 
         @Override
         protected void mapResponseToRequests(List<String> batchResponse, Collection<CollapsedRequest<String, String>> collapsedRequests) {
-            for (CollapsedRequest<String, String> collapsedReq: collapsedRequests) {
+            for (CollapsedRequest<String, String> collapsedReq : collapsedRequests) {
                 String requestArg = collapsedReq.getArgument();
                 String response = "<not found>";
-                for (String responsePiece: batchResponse) {
+                for (String responsePiece : batchResponse) {
                     if (responsePiece.startsWith(requestArg + ":")) {
                         response = responsePiece;
                         break;
@@ -135,7 +133,9 @@ public class CollapserPerfTest {
     }
 
     private static class BatchCommand extends HystrixCommand<List<String>> {
+
         private final List<String> inputArgs;
+
         private final int blackholeConsumption;
 
         BatchCommand(List<String> inputArgs, int blackholeConsumption) {
@@ -148,7 +148,7 @@ public class CollapserPerfTest {
         protected List<String> run() throws Exception {
             Blackhole.consumeCPU(blackholeConsumption);
             List<String> toReturn = new ArrayList<String>();
-            for (String inputArg: inputArgs) {
+            for (String inputArg : inputArgs) {
                 toReturn.add(inputArg + ":1");
             }
             return toReturn;
@@ -156,7 +156,7 @@ public class CollapserPerfTest {
     }
 
     @Benchmark
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode({ Mode.Throughput })
     @OutputTimeUnit(TimeUnit.SECONDS)
     public List<String> observeCollapsedAndWait(CollapserState collapserState, ThreadPoolState threadPoolState) {
         return collapserState.executionHandle.toList().toBlocking().single();

@@ -1,12 +1,12 @@
 /**
  * Copyright 2012 Netflix, Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,9 +16,7 @@
 package com.netflix.hystrix.examples.basic;
 
 import static org.junit.Assert.*;
-
 import org.junit.Test;
-
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandGroupKey;
 import com.netflix.hystrix.HystrixCommandKey;
@@ -38,11 +36,11 @@ public class CommandUsingRequestCacheInvalidation {
     public static class GetterCommand extends HystrixCommand<String> {
 
         private static final HystrixCommandKey GETTER_KEY = HystrixCommandKey.Factory.asKey("GetterCommand");
+
         private final int id;
 
         public GetterCommand(int id) {
-            super(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("GetSetGet"))
-                    .andCommandKey(GETTER_KEY));
+            super(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("GetSetGet")).andCommandKey(GETTER_KEY));
             this.id = id;
         }
 
@@ -58,20 +56,19 @@ public class CommandUsingRequestCacheInvalidation {
 
         /**
          * Allow the cache to be flushed for this object.
-         * 
+         *
          * @param id
          *            argument that would normally be passed to the command
          */
         public static void flushCache(int id) {
-            HystrixRequestCache.getInstance(GETTER_KEY,
-                    HystrixConcurrencyStrategyDefault.getInstance()).clear(String.valueOf(id));
+            HystrixRequestCache.getInstance(GETTER_KEY, HystrixConcurrencyStrategyDefault.getInstance()).clear(String.valueOf(id));
         }
-
     }
 
     public static class SetterCommand extends HystrixCommand<Void> {
 
         private final int id;
+
         private final String prefix;
 
         public SetterCommand(int id, String prefix) {
@@ -114,5 +111,4 @@ public class CommandUsingRequestCacheInvalidation {
             }
         }
     }
-
 }

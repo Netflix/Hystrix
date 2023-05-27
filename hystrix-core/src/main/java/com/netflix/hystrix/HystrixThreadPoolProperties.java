@@ -1,12 +1,12 @@
 /**
  * Copyright 2012 Netflix, Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,11 +17,9 @@ package com.netflix.hystrix;
 
 import static com.netflix.hystrix.strategy.properties.HystrixPropertiesChainedProperty.forBoolean;
 import static com.netflix.hystrix.strategy.properties.HystrixPropertiesChainedProperty.forInteger;
-
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 import com.netflix.hystrix.strategy.properties.HystrixProperty;
@@ -46,26 +44,46 @@ import com.netflix.hystrix.util.HystrixRollingNumber;
 public abstract class HystrixThreadPoolProperties {
 
     /* defaults */
-    static int default_coreSize = 10;            // core size of thread pool
-    static int default_maximumSize = 10;         // maximum size of thread pool
-    static int default_keepAliveTimeMinutes = 1; // minutes to keep a thread alive
-    static int default_maxQueueSize = -1;        // size of queue (this can't be dynamically changed so we use 'queueSizeRejectionThreshold' to artificially limit and reject)
-                                                 // -1 turns it off and makes us use SynchronousQueue
-    static boolean default_allow_maximum_size_to_diverge_from_core_size = false; //should the maximumSize config value get read and used in configuring the threadPool
-                                                                                 //turning this on should be a conscious decision by the user, so we default it to false
+    // core size of thread pool
+    static int default_coreSize = 10;
 
-    static int default_queueSizeRejectionThreshold = 5; // number of items in queue
-    static int default_threadPoolRollingNumberStatisticalWindow = 10000; // milliseconds for rolling number
-    static int default_threadPoolRollingNumberStatisticalWindowBuckets = 10; // number of buckets in rolling number (10 1-second buckets)
+    // maximum size of thread pool
+    static int default_maximumSize = 10;
+
+    // minutes to keep a thread alive
+    static int default_keepAliveTimeMinutes = 1;
+
+    // size of queue (this can't be dynamically changed so we use 'queueSizeRejectionThreshold' to artificially limit and reject)
+    static int default_maxQueueSize = -1;
+
+    // -1 turns it off and makes us use SynchronousQueue
+    //should the maximumSize config value get read and used in configuring the threadPool
+    static boolean default_allow_maximum_size_to_diverge_from_core_size = false;
+
+    //turning this on should be a conscious decision by the user, so we default it to false
+    // number of items in queue
+    static int default_queueSizeRejectionThreshold = 5;
+
+    // milliseconds for rolling number
+    static int default_threadPoolRollingNumberStatisticalWindow = 10000;
+
+    // number of buckets in rolling number (10 1-second buckets)
+    static int default_threadPoolRollingNumberStatisticalWindowBuckets = 10;
 
     private final HystrixProperty<Integer> corePoolSize;
+
     private final HystrixProperty<Integer> maximumPoolSize;
+
     private final HystrixProperty<Integer> keepAliveTime;
+
     private final HystrixProperty<Integer> maxQueueSize;
+
     private final HystrixProperty<Integer> queueSizeRejectionThreshold;
+
     private final HystrixProperty<Boolean> allowMaximumSizeToDivergeFromCoreSize;
 
     private final HystrixProperty<Integer> threadPoolRollingNumberStatisticalWindowInMilliseconds;
+
     private final HystrixProperty<Integer> threadPoolRollingNumberStatisticalWindowBuckets;
 
     protected HystrixThreadPoolProperties(HystrixThreadPoolKey key) {
@@ -77,14 +95,11 @@ public abstract class HystrixThreadPoolProperties {
     }
 
     protected HystrixThreadPoolProperties(HystrixThreadPoolKey key, Setter builder, String propertyPrefix) {
-        this.allowMaximumSizeToDivergeFromCoreSize = getProperty(propertyPrefix, key, "allowMaximumSizeToDivergeFromCoreSize",
-                builder.getAllowMaximumSizeToDivergeFromCoreSize(), default_allow_maximum_size_to_diverge_from_core_size);
-
+        this.allowMaximumSizeToDivergeFromCoreSize = getProperty(propertyPrefix, key, "allowMaximumSizeToDivergeFromCoreSize", builder.getAllowMaximumSizeToDivergeFromCoreSize(), default_allow_maximum_size_to_diverge_from_core_size);
         this.corePoolSize = getProperty(propertyPrefix, key, "coreSize", builder.getCoreSize(), default_coreSize);
         //this object always contains a reference to the configuration value for the maximumSize of the threadpool
         //it only gets applied if allowMaximumSizeToDivergeFromCoreSize is true
         this.maximumPoolSize = getProperty(propertyPrefix, key, "maximumSize", builder.getMaximumSize(), default_maximumSize);
-
         this.keepAliveTime = getProperty(propertyPrefix, key, "keepAliveTimeMinutes", builder.getKeepAliveTimeMinutes(), default_keepAliveTimeMinutes);
         this.maxQueueSize = getProperty(propertyPrefix, key, "maxQueueSize", builder.getMaxQueueSize(), default_maxQueueSize);
         this.queueSizeRejectionThreshold = getProperty(propertyPrefix, key, "queueSizeRejectionThreshold", builder.getQueueSizeRejectionThreshold(), default_queueSizeRejectionThreshold);
@@ -93,22 +108,16 @@ public abstract class HystrixThreadPoolProperties {
     }
 
     private static HystrixProperty<Integer> getProperty(String propertyPrefix, HystrixThreadPoolKey key, String instanceProperty, Integer builderOverrideValue, Integer defaultValue) {
-        return forInteger()
-                .add(propertyPrefix + ".threadpool." + key.name() + "." + instanceProperty, builderOverrideValue)
-                .add(propertyPrefix + ".threadpool.default." + instanceProperty, defaultValue)
-                .build();
+        return forInteger().add(propertyPrefix + ".threadpool." + key.name() + "." + instanceProperty, builderOverrideValue).add(propertyPrefix + ".threadpool.default." + instanceProperty, defaultValue).build();
     }
 
     private static HystrixProperty<Boolean> getProperty(String propertyPrefix, HystrixThreadPoolKey key, String instanceProperty, Boolean builderOverrideValue, Boolean defaultValue) {
-        return forBoolean()
-                .add(propertyPrefix + ".threadpool." + key.name() + "." + instanceProperty, builderOverrideValue)
-                .add(propertyPrefix + ".threadpool.default." + instanceProperty, defaultValue)
-                .build();
+        return forBoolean().add(propertyPrefix + ".threadpool." + key.name() + "." + instanceProperty, builderOverrideValue).add(propertyPrefix + ".threadpool.default." + instanceProperty, defaultValue).build();
     }
 
     /**
      * Core thread-pool size that gets passed to {@link ThreadPoolExecutor#setCorePoolSize(int)}
-     * 
+     *
      * @return {@code HystrixProperty<Integer>}
      */
     public HystrixProperty<Integer> coreSize() {
@@ -151,7 +160,7 @@ public abstract class HystrixThreadPoolProperties {
 
     /**
      * Keep-alive time in minutes that gets passed to {@link ThreadPoolExecutor#setKeepAliveTime(long, TimeUnit)}
-     * 
+     *
      * @return {@code HystrixProperty<Integer>}
      */
     public HystrixProperty<Integer> keepAliveTimeMinutes() {
@@ -163,7 +172,7 @@ public abstract class HystrixThreadPoolProperties {
      *
      * This should only affect the instantiation of a threadpool - it is not eliglible to change a queue size on the fly.
      * For that, use {@link #queueSizeRejectionThreshold()}.
-     * 
+     *
      * @return {@code HystrixProperty<Integer>}
      */
     public HystrixProperty<Integer> maxQueueSize() {
@@ -175,7 +184,7 @@ public abstract class HystrixThreadPoolProperties {
      * {@link BlockingQueue} can not be dynamically changed and we want to support dynamically changing the queue size that affects rejections.
      * <p>
      * This is used by {@link HystrixCommand} when queuing a thread for execution.
-     * 
+     *
      * @return {@code HystrixProperty<Integer>}
      */
     public HystrixProperty<Integer> queueSizeRejectionThreshold() {
@@ -188,7 +197,7 @@ public abstract class HystrixThreadPoolProperties {
 
     /**
      * Duration of statistical rolling window in milliseconds. This is passed into {@link HystrixRollingNumber} inside each {@link HystrixThreadPoolMetrics} instance.
-     * 
+     *
      * @return {@code HystrixProperty<Integer>}
      */
     public HystrixProperty<Integer> metricsRollingStatisticalWindowInMilliseconds() {
@@ -197,7 +206,7 @@ public abstract class HystrixThreadPoolProperties {
 
     /**
      * Number of buckets the rolling statistical window is broken into. This is passed into {@link HystrixRollingNumber} inside each {@link HystrixThreadPoolMetrics} instance.
-     * 
+     *
      * @return {@code HystrixProperty<Integer>}
      */
     public HystrixProperty<Integer> metricsRollingStatisticalWindowBuckets() {
@@ -233,17 +242,25 @@ public abstract class HystrixThreadPoolProperties {
      *           .withCoreSize(10)
      *           .withQueueSizeRejectionThreshold(10);
      * } </pre>
-     * 
+     *
      * @NotThreadSafe
      */
     public static class Setter {
+
         private Integer coreSize = null;
+
         private Integer maximumSize = null;
+
         private Integer keepAliveTimeMinutes = null;
+
         private Integer maxQueueSize = null;
+
         private Integer queueSizeRejectionThreshold = null;
+
         private Boolean allowMaximumSizeToDivergeFromCoreSize = null;
+
         private Integer rollingStatisticalWindowInMilliseconds = null;
+
         private Integer rollingStatisticalWindowBuckets = null;
 
         private Setter() {
@@ -320,9 +337,5 @@ public abstract class HystrixThreadPoolProperties {
             this.rollingStatisticalWindowBuckets = value;
             return this;
         }
-
-
-
-
     }
 }

@@ -1,12 +1,12 @@
 /**
  * Copyright 2012 Netflix, Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,7 +25,6 @@ import com.netflix.hystrix.util.HystrixRollingNumberEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.functions.Func2;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
@@ -46,7 +45,7 @@ public class HystrixCollapserMetrics extends HystrixMetrics {
      * Get or create the {@link HystrixCollapserMetrics} instance for a given {@link HystrixCollapserKey}.
      * <p>
      * This is thread-safe and ensures only 1 {@link HystrixCollapserMetrics} per {@link HystrixCollapserKey}.
-     * 
+     *
      * @param key
      *            {@link HystrixCollapserKey} of {@link HystrixCollapser} instance requesting the {@link HystrixCollapserMetrics}
      * @return {@link HystrixCollapserMetrics}
@@ -72,7 +71,7 @@ public class HystrixCollapserMetrics extends HystrixMetrics {
 
     /**
      * All registered instances of {@link HystrixCollapserMetrics}
-     * 
+     *
      * @return {@code Collection<HystrixCollapserMetrics>}
      */
     public static Collection<HystrixCollapserMetrics> getInstances() {
@@ -82,6 +81,7 @@ public class HystrixCollapserMetrics extends HystrixMetrics {
     private static final HystrixEventType.Collapser[] ALL_EVENT_TYPES = HystrixEventType.Collapser.values();
 
     public static final Func2<long[], HystrixCollapserEvent, long[]> appendEventToBucket = new Func2<long[], HystrixCollapserEvent, long[]>() {
+
         @Override
         public long[] call(long[] initialCountArray, HystrixCollapserEvent collapserEvent) {
             HystrixEventType.Collapser eventType = collapserEvent.getEventType();
@@ -92,9 +92,10 @@ public class HystrixCollapserMetrics extends HystrixMetrics {
     };
 
     public static final Func2<long[], long[], long[]> bucketAggregator = new Func2<long[], long[], long[]>() {
+
         @Override
         public long[] call(long[] cumulativeEvents, long[] bucketEventCounts) {
-            for (HystrixEventType.Collapser eventType: ALL_EVENT_TYPES) {
+            for (HystrixEventType.Collapser eventType : ALL_EVENT_TYPES) {
                 cumulativeEvents[eventType.ordinal()] += bucketEventCounts[eventType.ordinal()];
             }
             return cumulativeEvents;
@@ -104,22 +105,26 @@ public class HystrixCollapserMetrics extends HystrixMetrics {
     /**
      * Clears all state from metrics. If new requests come in instances will be recreated and metrics started from scratch.
      */
-    /* package */ static void reset() {
+    /* package */
+    static void reset() {
         metrics.clear();
     }
 
     private final HystrixCollapserKey collapserKey;
+
     private final HystrixCollapserProperties properties;
 
     private final RollingCollapserEventCounterStream rollingCollapserEventCounterStream;
+
     private final CumulativeCollapserEventCounterStream cumulativeCollapserEventCounterStream;
+
     private final RollingCollapserBatchSizeDistributionStream rollingCollapserBatchSizeDistributionStream;
 
-    /* package */HystrixCollapserMetrics(HystrixCollapserKey key, HystrixCollapserProperties properties) {
+    /* package */
+    HystrixCollapserMetrics(HystrixCollapserKey key, HystrixCollapserProperties properties) {
         super(null);
         this.collapserKey = key;
         this.properties = properties;
-
         rollingCollapserEventCounterStream = RollingCollapserEventCounterStream.getInstance(key, properties);
         cumulativeCollapserEventCounterStream = CumulativeCollapserEventCounterStream.getInstance(key, properties);
         rollingCollapserBatchSizeDistributionStream = RollingCollapserBatchSizeDistributionStream.getInstance(key, properties);
@@ -127,7 +132,7 @@ public class HystrixCollapserMetrics extends HystrixMetrics {
 
     /**
      * {@link HystrixCollapserKey} these metrics represent.
-     * 
+     *
      * @return HystrixCollapserKey
      */
     public HystrixCollapserKey getCollapserKey() {

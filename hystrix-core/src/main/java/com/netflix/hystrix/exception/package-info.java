@@ -15,7 +15,8 @@
  */
 /**
  * Custom exception implementations.
- * 
+ *
  * @since 1.0.0
  */
 package com.netflix.hystrix.exception;
+

@@ -29,7 +29,6 @@ import rx.Scheduler;
 import rx.Subscriber;
 import rx.functions.Action1;
 import rx.functions.Func0;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -39,7 +38,6 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import static org.junit.Assert.*;
 
 /**
@@ -101,7 +99,6 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                 ex.printStackTrace();
             }
         }
-
         assertion.call(command);
     }
 
@@ -115,10 +112,9 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
     protected void assertNonBlockingObserve(C command, Action1<C> assertion, boolean isSuccess) {
         System.out.println("Running command.observe(), awaiting terminal state of Observable, then running assertions...");
         final CountDownLatch latch = new CountDownLatch(1);
-
         Observable<Integer> o = command.observe();
-
         o.subscribe(new Subscriber<Integer>() {
+
             @Override
             public void onCompleted() {
                 latch.countDown();
@@ -134,14 +130,12 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
                 //do nothing
             }
         });
-
         try {
             latch.await(3, TimeUnit.SECONDS);
             assertion.call(command);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-
         if (isSuccess) {
             try {
                 o.toList().toBlocking().single();
@@ -161,7 +155,6 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
 
     protected void assertSaneHystrixRequestLog(final int numCommands) {
         HystrixRequestLog currentRequestLog = HystrixRequestLog.getCurrentRequest();
-
         try {
             assertEquals(numCommands, currentRequestLog.getAllExecutedCommands().size());
             assertFalse(currentRequestLog.getExecutedCommandsAsString().contains("Executed"));
@@ -176,13 +169,10 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
     protected void assertCommandExecutionEvents(HystrixInvokableInfo<?> command, HystrixEventType... expectedEventTypes) {
         boolean emitExpected = false;
         int expectedEmitCount = 0;
-
         boolean fallbackEmitExpected = false;
         int expectedFallbackEmitCount = 0;
-
         List<HystrixEventType> condensedEmitExpectedEventTypes = new ArrayList<HystrixEventType>();
-
-        for (HystrixEventType expectedEventType: expectedEventTypes) {
+        for (HystrixEventType expectedEventType : expectedEventTypes) {
             if (expectedEventType.equals(HystrixEventType.EMIT)) {
                 if (!emitExpected) {
                     //first EMIT encountered, add it to condensedEmitExpectedEventTypes
@@ -213,7 +203,9 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
     protected static class SingleThreadedPoolWithQueue implements HystrixThreadPool {
 
         final LinkedBlockingQueue<Runnable> queue;
+
         final ThreadPoolExecutor pool;
+
         private final int rejectionQueueSizeThreshold;
 
         public SingleThreadedPoolWithQueue(int queueSize) {
@@ -260,7 +252,6 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
         public boolean isQueueSpaceAvailable() {
             return queue.size() < rejectionQueueSizeThreshold;
         }
-
     }
 
     /**
@@ -269,6 +260,7 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
     protected static class SingleThreadedPoolWithNoQueue implements HystrixThreadPool {
 
         final SynchronousQueue<Runnable> queue;
+
         final ThreadPoolExecutor pool;
 
         public SingleThreadedPoolWithNoQueue() {
@@ -308,17 +300,14 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
 
         @Override
         public boolean isQueueSpaceAvailable() {
-            return true; //let the thread pool reject
+            //let the thread pool reject
+            return true;
         }
-
     }
 
-
-
     /**
-     ********************* SEMAPHORE-ISOLATED Execution Hook Tests ***********************************
+     * ******************** SEMAPHORE-ISOLATED Execution Hook Tests ***********************************
      */
-
     /**
      * Short-circuit? : NO
      * Thread/semaphore: SEMAPHORE
@@ -327,23 +316,23 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
      */
     @Test
     public void testExecutionHookSemaphoreSuccess() {
-        assertHooksOnSuccess(
-                new Func0<C>() {
-                    @Override
-                    public C call() {
-                        return getCommand(ExecutionIsolationStrategy.SEMAPHORE, ExecutionResult.SUCCESS, FallbackResult.SUCCESS);
-                    }
-                },
-                new Action1<C>() {
-                    @Override
-                    public void call(C command) {
-                        TestableExecutionHook hook = command.getBuilder().executionHook;
-                        assertTrue(hook.commandEmissionsMatch(1, 0, 1));
-                        assertTrue(hook.executionEventsMatch(1, 0, 1));
-                        assertTrue(hook.fallbackEventsMatch(0, 0, 0));
-                        assertEquals("onStart - !onRunStart - onExecutionStart - onExecutionEmit - !onRunSuccess - !onComplete - onEmit - onExecutionSuccess - onSuccess - ", hook.executionSequence.toString());
-                    }
-                });
+        assertHooksOnSuccess(new Func0<C>() {
+
+            @Override
+            public C call() {
+                return getCommand(ExecutionIsolationStrategy.SEMAPHORE, ExecutionResult.SUCCESS, FallbackResult.SUCCESS);
+            }
+        }, new Action1<C>() {
+
+            @Override
+            public void call(C command) {
+                TestableExecutionHook hook = command.getBuilder().executionHook;
+                assertTrue(hook.commandEmissionsMatch(1, 0, 1));
+                assertTrue(hook.executionEventsMatch(1, 0, 1));
+                assertTrue(hook.fallbackEventsMatch(0, 0, 0));
+                assertEquals("onStart - !onRunStart - onExecutionStart - onExecutionEmit - !onRunSuccess - !onComplete - onEmit - onExecutionSuccess - onSuccess - ", hook.executionSequence.toString());
+            }
+        });
     }
 
     /**
@@ -354,25 +343,25 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
      */
     @Test
     public void testExecutionHookSemaphoreBadRequestException() {
-        assertHooksOnFailure(
-                new Func0<C>() {
-                    @Override
-                    public C call() {
-                        return getCommand(ExecutionIsolationStrategy.SEMAPHORE, ExecutionResult.BAD_REQUEST, FallbackResult.SUCCESS);
-                    }
-                },
-                new Action1<C>() {
-                    @Override
-                    public void call(C command) {
-                        TestableExecutionHook hook = command.getBuilder().executionHook;
-                        assertTrue(hook.commandEmissionsMatch(0, 1, 0));
-                        assertTrue(hook.executionEventsMatch(0, 1, 0));
-                        assertTrue(hook.fallbackEventsMatch(0, 0, 0));
-                        assertEquals(HystrixBadRequestException.class, hook.getCommandException().getClass());
-                        assertEquals(HystrixBadRequestException.class, hook.getExecutionException().getClass());
-                        assertEquals("onStart - !onRunStart - onExecutionStart - onExecutionError - !onRunError - onError - ", hook.executionSequence.toString());
-                    }
-                });
+        assertHooksOnFailure(new Func0<C>() {
+
+            @Override
+            public C call() {
+                return getCommand(ExecutionIsolationStrategy.SEMAPHORE, ExecutionResult.BAD_REQUEST, FallbackResult.SUCCESS);
+            }
+        }, new Action1<C>() {
+
+            @Override
+            public void call(C command) {
+                TestableExecutionHook hook = command.getBuilder().executionHook;
+                assertTrue(hook.commandEmissionsMatch(0, 1, 0));
+                assertTrue(hook.executionEventsMatch(0, 1, 0));
+                assertTrue(hook.fallbackEventsMatch(0, 0, 0));
+                assertEquals(HystrixBadRequestException.class, hook.getCommandException().getClass());
+                assertEquals(HystrixBadRequestException.class, hook.getExecutionException().getClass());
+                assertEquals("onStart - !onRunStart - onExecutionStart - onExecutionError - !onRunError - onError - ", hook.executionSequence.toString());
+            }
+        });
     }
 
     /**
@@ -384,26 +373,26 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
      */
     @Test
     public void testExecutionHookSemaphoreExceptionNoFallback() {
-        assertHooksOnFailure(
-                new Func0<C>() {
-                    @Override
-                    public C call() {
-                        return getCommand(ExecutionIsolationStrategy.SEMAPHORE, ExecutionResult.FAILURE, FallbackResult.UNIMPLEMENTED);
-                    }
-                },
-                new Action1<C>() {
-                    @Override
-                    public void call(C command) {
-                        TestableExecutionHook hook = command.getBuilder().executionHook;
-                        assertTrue(hook.commandEmissionsMatch(0, 1, 0));
-                        assertTrue(hook.executionEventsMatch(0, 1, 0));
-                        assertTrue(hook.fallbackEventsMatch(0, 0, 0));
-                        assertEquals(RuntimeException.class, hook.getCommandException().getClass());
-                        assertEquals(RuntimeException.class, hook.getExecutionException().getClass());
-                        assertNull(hook.getFallbackException());
-                        assertEquals("onStart - !onRunStart - onExecutionStart - onExecutionError - !onRunError - onError - ", hook.executionSequence.toString());
-                    }
-                });
+        assertHooksOnFailure(new Func0<C>() {
+
+            @Override
+            public C call() {
+                return getCommand(ExecutionIsolationStrategy.SEMAPHORE, ExecutionResult.FAILURE, FallbackResult.UNIMPLEMENTED);
+            }
+        }, new Action1<C>() {
+
+            @Override
+            public void call(C command) {
+                TestableExecutionHook hook = command.getBuilder().executionHook;
+                assertTrue(hook.commandEmissionsMatch(0, 1, 0));
+                assertTrue(hook.executionEventsMatch(0, 1, 0));
+                assertTrue(hook.fallbackEventsMatch(0, 0, 0));
+                assertEquals(RuntimeException.class, hook.getCommandException().getClass());
+                assertEquals(RuntimeException.class, hook.getExecutionException().getClass());
+                assertNull(hook.getFallbackException());
+                assertEquals("onStart - !onRunStart - onExecutionStart - onExecutionError - !onRunError - onError - ", hook.executionSequence.toString());
+            }
+        });
     }
 
     /**
@@ -415,24 +404,24 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
      */
     @Test
     public void testExecutionHookSemaphoreExceptionSuccessfulFallback() {
-        assertHooksOnSuccess(
-                new Func0<C>() {
-                    @Override
-                    public C call() {
-                        return getCommand(ExecutionIsolationStrategy.SEMAPHORE, ExecutionResult.FAILURE, FallbackResult.SUCCESS);
-                    }
-                },
-                new Action1<C>() {
-                    @Override
-                    public void call(C command) {
-                        TestableExecutionHook hook = command.getBuilder().executionHook;
-                        assertTrue(hook.commandEmissionsMatch(1, 0, 1));
-                        assertTrue(hook.executionEventsMatch(0, 1, 0));
-                        assertTrue(hook.fallbackEventsMatch(1, 0, 1));
-                        assertEquals(RuntimeException.class, hook.getExecutionException().getClass());
-                        assertEquals("onStart - !onRunStart - onExecutionStart - onExecutionError - !onRunError - onFallbackStart - onFallbackEmit - !onFallbackSuccess - !onComplete - onEmit - onFallbackSuccess - onSuccess - ", hook.executionSequence.toString());
-                    }
-                });
+        assertHooksOnSuccess(new Func0<C>() {
+
+            @Override
+            public C call() {
+                return getCommand(ExecutionIsolationStrategy.SEMAPHORE, ExecutionResult.FAILURE, FallbackResult.SUCCESS);
+            }
+        }, new Action1<C>() {
+
+            @Override
+            public void call(C command) {
+                TestableExecutionHook hook = command.getBuilder().executionHook;
+                assertTrue(hook.commandEmissionsMatch(1, 0, 1));
+                assertTrue(hook.executionEventsMatch(0, 1, 0));
+                assertTrue(hook.fallbackEventsMatch(1, 0, 1));
+                assertEquals(RuntimeException.class, hook.getExecutionException().getClass());
+                assertEquals("onStart - !onRunStart - onExecutionStart - onExecutionError - !onRunError - onFallbackStart - onFallbackEmit - !onFallbackSuccess - !onComplete - onEmit - onFallbackSuccess - onSuccess - ", hook.executionSequence.toString());
+            }
+        });
     }
 
     /**
@@ -444,26 +433,26 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
      */
     @Test
     public void testExecutionHookSemaphoreExceptionUnsuccessfulFallback() {
-        assertHooksOnFailure(
-                new Func0<C>() {
-                    @Override
-                    public C call() {
-                        return getCommand(ExecutionIsolationStrategy.SEMAPHORE, ExecutionResult.FAILURE, FallbackResult.FAILURE);
-                    }
-                },
-                new Action1<C>() {
-                    @Override
-                    public void call(C command) {
-                        TestableExecutionHook hook = command.getBuilder().executionHook;
-                        assertTrue(hook.commandEmissionsMatch(0, 1, 0));
-                        assertTrue(hook.executionEventsMatch(0, 1, 0));
-                        assertTrue(hook.fallbackEventsMatch(0, 1, 0));
-                        assertEquals(RuntimeException.class, hook.getCommandException().getClass());
-                        assertEquals(RuntimeException.class, hook.getExecutionException().getClass());
-                        assertEquals(RuntimeException.class, hook.getFallbackException().getClass());
-                        assertEquals("onStart - !onRunStart - onExecutionStart - onExecutionError - !onRunError - onFallbackStart - onFallbackError - onError - ", hook.executionSequence.toString());
-                    }
-                });
+        assertHooksOnFailure(new Func0<C>() {
+
+            @Override
+            public C call() {
+                return getCommand(ExecutionIsolationStrategy.SEMAPHORE, ExecutionResult.FAILURE, FallbackResult.FAILURE);
+            }
+        }, new Action1<C>() {
+
+            @Override
+            public void call(C command) {
+                TestableExecutionHook hook = command.getBuilder().executionHook;
+                assertTrue(hook.commandEmissionsMatch(0, 1, 0));
+                assertTrue(hook.executionEventsMatch(0, 1, 0));
+                assertTrue(hook.fallbackEventsMatch(0, 1, 0));
+                assertEquals(RuntimeException.class, hook.getCommandException().getClass());
+                assertEquals(RuntimeException.class, hook.getExecutionException().getClass());
+                assertEquals(RuntimeException.class, hook.getFallbackException().getClass());
+                assertEquals("onStart - !onRunStart - onExecutionStart - onExecutionError - !onRunError - onFallbackStart - onFallbackError - onError - ", hook.executionSequence.toString());
+            }
+        });
     }
 
     /**
@@ -474,54 +463,50 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
      */
     @Test
     public void testExecutionHookSemaphoreRejectedNoFallback() {
-        assertHooksOnFailFast(
-                new Func0<C>() {
+        assertHooksOnFailFast(new Func0<C>() {
+
+            @Override
+            public C call() {
+                AbstractCommand.TryableSemaphore semaphore = new AbstractCommand.TryableSemaphoreActual(HystrixProperty.Factory.asProperty(2));
+                final C cmd1 = getLatentCommand(ExecutionIsolationStrategy.SEMAPHORE, ExecutionResult.SUCCESS, 500, FallbackResult.UNIMPLEMENTED, semaphore);
+                final C cmd2 = getLatentCommand(ExecutionIsolationStrategy.SEMAPHORE, ExecutionResult.SUCCESS, 500, FallbackResult.UNIMPLEMENTED, semaphore);
+                //saturate the semaphore
+                new Thread() {
+
                     @Override
-                    public C call() {
-                        AbstractCommand.TryableSemaphore semaphore = new AbstractCommand.TryableSemaphoreActual(HystrixProperty.Factory.asProperty(2));
-
-                        final C cmd1 = getLatentCommand(ExecutionIsolationStrategy.SEMAPHORE, ExecutionResult.SUCCESS, 500, FallbackResult.UNIMPLEMENTED, semaphore);
-                        final C cmd2 = getLatentCommand(ExecutionIsolationStrategy.SEMAPHORE, ExecutionResult.SUCCESS, 500, FallbackResult.UNIMPLEMENTED, semaphore);
-
-                        //saturate the semaphore
-                        new Thread() {
-                            @Override
-                            public void run() {
-                                cmd1.observe();
-                            }
-                        }.start();
-                        new Thread() {
-                            @Override
-                            public void run() {
-                                cmd2.observe();
-                            }
-                        }.start();
-
-                        try {
-                            //give the saturating threads a chance to run before we run the command we want to get rejected
-                            Thread.sleep(200);
-                        } catch (InterruptedException ie) {
-                            throw new RuntimeException(ie);
-                        }
-
-                        return getLatentCommand(ExecutionIsolationStrategy.SEMAPHORE, ExecutionResult.SUCCESS, 500, FallbackResult.UNIMPLEMENTED, semaphore);
+                    public void run() {
+                        cmd1.observe();
                     }
-                },
-                new Action1<C>() {
+                }.start();
+                new Thread() {
+
                     @Override
-                    public void call(C command) {
-                        TestableExecutionHook hook = command.getBuilder().executionHook;
-                        assertTrue(hook.commandEmissionsMatch(0, 1, 0));
-                        assertTrue(hook.executionEventsMatch(0, 0, 0));
-                        assertTrue(hook.fallbackEventsMatch(0, 0, 0));
-                        assertEquals(RuntimeException.class, hook.getCommandException().getClass());
-                        assertNull(hook.getFallbackException());
-                        assertEquals("onStart - onError - ", hook.executionSequence.toString());
+                    public void run() {
+                        cmd2.observe();
                     }
-                });
+                }.start();
+                try {
+                    //give the saturating threads a chance to run before we run the command we want to get rejected
+                    Thread.sleep(200);
+                } catch (InterruptedException ie) {
+                    throw new RuntimeException(ie);
+                }
+                return getLatentCommand(ExecutionIsolationStrategy.SEMAPHORE, ExecutionResult.SUCCESS, 500, FallbackResult.UNIMPLEMENTED, semaphore);
+            }
+        }, new Action1<C>() {
+
+            @Override
+            public void call(C command) {
+                TestableExecutionHook hook = command.getBuilder().executionHook;
+                assertTrue(hook.commandEmissionsMatch(0, 1, 0));
+                assertTrue(hook.executionEventsMatch(0, 0, 0));
+                assertTrue(hook.fallbackEventsMatch(0, 0, 0));
+                assertEquals(RuntimeException.class, hook.getCommandException().getClass());
+                assertNull(hook.getFallbackException());
+                assertEquals("onStart - onError - ", hook.executionSequence.toString());
+            }
+        });
     }
-
-
 
     /**
      * Short-circuit? : NO
@@ -531,49 +516,47 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
      */
     @Test
     public void testExecutionHookSemaphoreRejectedSuccessfulFallback() {
-        assertHooksOnSuccess(
-                new Func0<C>() {
+        assertHooksOnSuccess(new Func0<C>() {
+
+            @Override
+            public C call() {
+                AbstractCommand.TryableSemaphore semaphore = new AbstractCommand.TryableSemaphoreActual(HystrixProperty.Factory.asProperty(2));
+                final C cmd1 = getLatentCommand(ExecutionIsolationStrategy.SEMAPHORE, ExecutionResult.SUCCESS, 1500, FallbackResult.SUCCESS, semaphore);
+                final C cmd2 = getLatentCommand(ExecutionIsolationStrategy.SEMAPHORE, ExecutionResult.SUCCESS, 1500, FallbackResult.SUCCESS, semaphore);
+                //saturate the semaphore
+                new Thread() {
+
                     @Override
-                    public C call() {
-                        AbstractCommand.TryableSemaphore semaphore = new AbstractCommand.TryableSemaphoreActual(HystrixProperty.Factory.asProperty(2));
-
-                        final C cmd1 = getLatentCommand(ExecutionIsolationStrategy.SEMAPHORE, ExecutionResult.SUCCESS, 1500, FallbackResult.SUCCESS, semaphore);
-                        final C cmd2 = getLatentCommand(ExecutionIsolationStrategy.SEMAPHORE, ExecutionResult.SUCCESS, 1500, FallbackResult.SUCCESS, semaphore);
-
-                        //saturate the semaphore
-                        new Thread() {
-                            @Override
-                            public void run() {
-                                cmd1.observe();
-                            }
-                        }.start();
-                        new Thread() {
-                            @Override
-                            public void run() {
-                                cmd2.observe();
-                            }
-                        }.start();
-
-                        try {
-                            //give the saturating threads a chance to run before we run the command we want to get rejected
-                            Thread.sleep(200);
-                        } catch (InterruptedException ie) {
-                            throw new RuntimeException(ie);
-                        }
-
-                        return getLatentCommand(ExecutionIsolationStrategy.SEMAPHORE, ExecutionResult.SUCCESS, 500, FallbackResult.SUCCESS, semaphore);
+                    public void run() {
+                        cmd1.observe();
                     }
-                },
-                new Action1<C>() {
+                }.start();
+                new Thread() {
+
                     @Override
-                    public void call(C command) {
-                        TestableExecutionHook hook = command.getBuilder().executionHook;
-                        assertTrue(hook.commandEmissionsMatch(1, 0, 1));
-                        assertTrue(hook.executionEventsMatch(0, 0, 0));
-                        assertTrue(hook.fallbackEventsMatch(1, 0, 1));
-                        assertEquals("onStart - onFallbackStart - onFallbackEmit - !onFallbackSuccess - !onComplete - onEmit - onFallbackSuccess - onSuccess - ", hook.executionSequence.toString());
+                    public void run() {
+                        cmd2.observe();
                     }
-                });
+                }.start();
+                try {
+                    //give the saturating threads a chance to run before we run the command we want to get rejected
+                    Thread.sleep(200);
+                } catch (InterruptedException ie) {
+                    throw new RuntimeException(ie);
+                }
+                return getLatentCommand(ExecutionIsolationStrategy.SEMAPHORE, ExecutionResult.SUCCESS, 500, FallbackResult.SUCCESS, semaphore);
+            }
+        }, new Action1<C>() {
+
+            @Override
+            public void call(C command) {
+                TestableExecutionHook hook = command.getBuilder().executionHook;
+                assertTrue(hook.commandEmissionsMatch(1, 0, 1));
+                assertTrue(hook.executionEventsMatch(0, 0, 0));
+                assertTrue(hook.fallbackEventsMatch(1, 0, 1));
+                assertEquals("onStart - onFallbackStart - onFallbackEmit - !onFallbackSuccess - !onComplete - onEmit - onFallbackSuccess - onSuccess - ", hook.executionSequence.toString());
+            }
+        });
     }
 
     /**
@@ -584,51 +567,49 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
      */
     @Test
     public void testExecutionHookSemaphoreRejectedUnsuccessfulFallback() {
-        assertHooksOnFailFast(
-                new Func0<C>() {
+        assertHooksOnFailFast(new Func0<C>() {
+
+            @Override
+            public C call() {
+                AbstractCommand.TryableSemaphore semaphore = new AbstractCommand.TryableSemaphoreActual(HystrixProperty.Factory.asProperty(2));
+                final C cmd1 = getLatentCommand(ExecutionIsolationStrategy.SEMAPHORE, ExecutionResult.SUCCESS, 500, FallbackResult.FAILURE, semaphore);
+                final C cmd2 = getLatentCommand(ExecutionIsolationStrategy.SEMAPHORE, ExecutionResult.SUCCESS, 500, FallbackResult.FAILURE, semaphore);
+                //saturate the semaphore
+                new Thread() {
+
                     @Override
-                    public C call() {
-                        AbstractCommand.TryableSemaphore semaphore = new AbstractCommand.TryableSemaphoreActual(HystrixProperty.Factory.asProperty(2));
-
-                        final C cmd1 = getLatentCommand(ExecutionIsolationStrategy.SEMAPHORE, ExecutionResult.SUCCESS, 500, FallbackResult.FAILURE, semaphore);
-                        final C cmd2 = getLatentCommand(ExecutionIsolationStrategy.SEMAPHORE, ExecutionResult.SUCCESS, 500, FallbackResult.FAILURE, semaphore);
-
-                        //saturate the semaphore
-                        new Thread() {
-                            @Override
-                            public void run() {
-                                cmd1.observe();
-                            }
-                        }.start();
-                        new Thread() {
-                            @Override
-                            public void run() {
-                                cmd2.observe();
-                            }
-                        }.start();
-
-                        try {
-                            //give the saturating threads a chance to run before we run the command we want to get rejected
-                            Thread.sleep(200);
-                        } catch (InterruptedException ie) {
-                            throw new RuntimeException(ie);
-                        }
-
-                        return getLatentCommand(ExecutionIsolationStrategy.SEMAPHORE, ExecutionResult.SUCCESS, 500, FallbackResult.FAILURE, semaphore);
+                    public void run() {
+                        cmd1.observe();
                     }
-                },
-                new Action1<C>() {
+                }.start();
+                new Thread() {
+
                     @Override
-                    public void call(C command) {
-                        TestableExecutionHook hook = command.getBuilder().executionHook;
-                        assertTrue(hook.commandEmissionsMatch(0, 1, 0));
-                        assertTrue(hook.executionEventsMatch(0, 0, 0));
-                        assertTrue(hook.fallbackEventsMatch(0, 1, 0));
-                        assertEquals(RuntimeException.class, hook.getCommandException().getClass());
-                        assertEquals(RuntimeException.class, hook.getFallbackException().getClass());
-                        assertEquals("onStart - onFallbackStart - onFallbackError - onError - ", hook.executionSequence.toString());
+                    public void run() {
+                        cmd2.observe();
                     }
-                });
+                }.start();
+                try {
+                    //give the saturating threads a chance to run before we run the command we want to get rejected
+                    Thread.sleep(200);
+                } catch (InterruptedException ie) {
+                    throw new RuntimeException(ie);
+                }
+                return getLatentCommand(ExecutionIsolationStrategy.SEMAPHORE, ExecutionResult.SUCCESS, 500, FallbackResult.FAILURE, semaphore);
+            }
+        }, new Action1<C>() {
+
+            @Override
+            public void call(C command) {
+                TestableExecutionHook hook = command.getBuilder().executionHook;
+                assertTrue(hook.commandEmissionsMatch(0, 1, 0));
+                assertTrue(hook.executionEventsMatch(0, 0, 0));
+                assertTrue(hook.fallbackEventsMatch(0, 1, 0));
+                assertEquals(RuntimeException.class, hook.getCommandException().getClass());
+                assertEquals(RuntimeException.class, hook.getFallbackException().getClass());
+                assertEquals("onStart - onFallbackStart - onFallbackError - onError - ", hook.executionSequence.toString());
+            }
+        });
     }
 
     /**
@@ -638,25 +619,25 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
      */
     @Test
     public void testExecutionHookSemaphoreShortCircuitNoFallback() {
-        assertHooksOnFailFast(
-                new Func0<C>() {
-                    @Override
-                    public C call() {
-                        return getCircuitOpenCommand(ExecutionIsolationStrategy.SEMAPHORE, FallbackResult.UNIMPLEMENTED);
-                    }
-                },
-                new Action1<C>() {
-                    @Override
-                    public void call(C command) {
-                        TestableExecutionHook hook = command.getBuilder().executionHook;
-                        assertTrue(hook.commandEmissionsMatch(0, 1, 0));
-                        assertTrue(hook.executionEventsMatch(0, 0, 0));
-                        assertTrue(hook.fallbackEventsMatch(0, 0, 0));
-                        assertEquals(RuntimeException.class, hook.getCommandException().getClass());
-                        assertNull(hook.getFallbackException());
-                        assertEquals("onStart - onError - ", hook.executionSequence.toString());
-                    }
-                });
+        assertHooksOnFailFast(new Func0<C>() {
+
+            @Override
+            public C call() {
+                return getCircuitOpenCommand(ExecutionIsolationStrategy.SEMAPHORE, FallbackResult.UNIMPLEMENTED);
+            }
+        }, new Action1<C>() {
+
+            @Override
+            public void call(C command) {
+                TestableExecutionHook hook = command.getBuilder().executionHook;
+                assertTrue(hook.commandEmissionsMatch(0, 1, 0));
+                assertTrue(hook.executionEventsMatch(0, 0, 0));
+                assertTrue(hook.fallbackEventsMatch(0, 0, 0));
+                assertEquals(RuntimeException.class, hook.getCommandException().getClass());
+                assertNull(hook.getFallbackException());
+                assertEquals("onStart - onError - ", hook.executionSequence.toString());
+            }
+        });
     }
 
     /**
@@ -666,23 +647,23 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
      */
     @Test
     public void testExecutionHookSemaphoreShortCircuitSuccessfulFallback() {
-        assertHooksOnSuccess(
-                new Func0<C>() {
-                    @Override
-                    public C call() {
-                        return getCircuitOpenCommand(ExecutionIsolationStrategy.SEMAPHORE, FallbackResult.SUCCESS);
-                    }
-                },
-                new Action1<C>() {
-                    @Override
-                    public void call(C command) {
-                        TestableExecutionHook hook = command.getBuilder().executionHook;
-                        assertTrue(hook.commandEmissionsMatch(1, 0, 1));
-                        assertTrue(hook.executionEventsMatch(0, 0, 0));
-                        assertTrue(hook.fallbackEventsMatch(1, 0, 1));
-                        assertEquals("onStart - onFallbackStart - onFallbackEmit - !onFallbackSuccess - !onComplete - onEmit - onFallbackSuccess - onSuccess - ", hook.executionSequence.toString());
-                    }
-                });
+        assertHooksOnSuccess(new Func0<C>() {
+
+            @Override
+            public C call() {
+                return getCircuitOpenCommand(ExecutionIsolationStrategy.SEMAPHORE, FallbackResult.SUCCESS);
+            }
+        }, new Action1<C>() {
+
+            @Override
+            public void call(C command) {
+                TestableExecutionHook hook = command.getBuilder().executionHook;
+                assertTrue(hook.commandEmissionsMatch(1, 0, 1));
+                assertTrue(hook.executionEventsMatch(0, 0, 0));
+                assertTrue(hook.fallbackEventsMatch(1, 0, 1));
+                assertEquals("onStart - onFallbackStart - onFallbackEmit - !onFallbackSuccess - !onComplete - onEmit - onFallbackSuccess - onSuccess - ", hook.executionSequence.toString());
+            }
+        });
     }
 
     /**
@@ -692,37 +673,35 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
      */
     @Test
     public void testExecutionHookSemaphoreShortCircuitUnsuccessfulFallback() {
-        assertHooksOnFailFast(
-                new Func0<C>() {
-                    @Override
-                    public C call() {
-                        return getCircuitOpenCommand(ExecutionIsolationStrategy.SEMAPHORE, FallbackResult.FAILURE);
-                    }
-                },
-                new Action1<C>() {
-                    @Override
-                    public void call(C command) {
-                        TestableExecutionHook hook = command.getBuilder().executionHook;
-                        assertTrue(hook.commandEmissionsMatch(0, 1, 0));
-                        assertTrue(hook.executionEventsMatch(0, 0, 0));
-                        assertTrue(hook.fallbackEventsMatch(0, 1, 0));
-                        assertEquals(RuntimeException.class, hook.getCommandException().getClass());
-                        assertEquals(RuntimeException.class, hook.getFallbackException().getClass());
-                        assertEquals("onStart - onFallbackStart - onFallbackError - onError - ", hook.executionSequence.toString());
-                    }
-                });
+        assertHooksOnFailFast(new Func0<C>() {
+
+            @Override
+            public C call() {
+                return getCircuitOpenCommand(ExecutionIsolationStrategy.SEMAPHORE, FallbackResult.FAILURE);
+            }
+        }, new Action1<C>() {
+
+            @Override
+            public void call(C command) {
+                TestableExecutionHook hook = command.getBuilder().executionHook;
+                assertTrue(hook.commandEmissionsMatch(0, 1, 0));
+                assertTrue(hook.executionEventsMatch(0, 0, 0));
+                assertTrue(hook.fallbackEventsMatch(0, 1, 0));
+                assertEquals(RuntimeException.class, hook.getCommandException().getClass());
+                assertEquals(RuntimeException.class, hook.getFallbackException().getClass());
+                assertEquals("onStart - onFallbackStart - onFallbackError - onError - ", hook.executionSequence.toString());
+            }
+        });
     }
 
     /**
-     ********************* END SEMAPHORE-ISOLATED Execution Hook Tests ***********************************
+     * ******************** END SEMAPHORE-ISOLATED Execution Hook Tests ***********************************
      */
-
     /**
      * Abstract methods defining a way to instantiate each of the described commands.
      * {@link HystrixCommandTest} and {@link HystrixObservableCommandTest} should each provide concrete impls for
      * {@link HystrixCommand}s and {@link} HystrixObservableCommand}s, respectively.
      */
-
     C getCommand(ExecutionIsolationStrategy isolationStrategy, ExecutionResult executionResult) {
         return getCommand(isolationStrategy, executionResult, FallbackResult.UNIMPLEMENTED);
     }
@@ -750,7 +729,6 @@ public abstract class CommonHystrixCommandTests<C extends AbstractTestHystrixCom
     C getCommand(HystrixCommandKey key, ExecutionIsolationStrategy isolationStrategy, ExecutionResult executionResult, int executionLatency, FallbackResult fallbackResult, int fallbackLatency, HystrixCircuitBreakerTest.TestCircuitBreaker circuitBreaker, HystrixThreadPool threadPool, int timeout, CacheEnabled cacheEnabled, Object value, int executionSemaphoreCount, int fallbackSemaphoreCount) {
         AbstractCommand.TryableSemaphoreActual executionSemaphore = new AbstractCommand.TryableSemaphoreActual(HystrixProperty.Factory.asProperty(executionSemaphoreCount));
         AbstractCommand.TryableSemaphoreActual fallbackSemaphore = new AbstractCommand.TryableSemaphoreActual(HystrixProperty.Factory.asProperty(fallbackSemaphoreCount));
-
         return getCommand(key, isolationStrategy, executionResult, executionLatency, fallbackResult, fallbackLatency, circuitBreaker, threadPool, timeout, cacheEnabled, value, executionSemaphore, fallbackSemaphore, false);
     }
 

@@ -20,7 +20,6 @@ import com.netflix.hystrix.HystrixRequestCache;
 import com.netflix.hystrix.contrib.javanica.cache.annotation.CacheRemove;
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategyDefault;
 
-
 /**
  * Cache manager to work with {@link HystrixRequestCache}.
  *
@@ -46,10 +45,8 @@ public final class HystrixRequestCacheManager {
     public void clearCache(CacheInvocationContext<CacheRemove> context) {
         HystrixCacheKeyGenerator defaultCacheKeyGenerator = HystrixCacheKeyGenerator.getInstance();
         String cacheName = context.getCacheAnnotation().commandKey();
-        HystrixGeneratedCacheKey hystrixGeneratedCacheKey =
-                defaultCacheKeyGenerator.generateCacheKey(context);
+        HystrixGeneratedCacheKey hystrixGeneratedCacheKey = defaultCacheKeyGenerator.generateCacheKey(context);
         String key = hystrixGeneratedCacheKey.getCacheKey();
-        HystrixRequestCache.getInstance(HystrixCommandKey.Factory.asKey(cacheName),
-                HystrixConcurrencyStrategyDefault.getInstance()).clear(key);
+        HystrixRequestCache.getInstance(HystrixCommandKey.Factory.asKey(cacheName), HystrixConcurrencyStrategyDefault.getInstance()).clear(key);
     }
 }

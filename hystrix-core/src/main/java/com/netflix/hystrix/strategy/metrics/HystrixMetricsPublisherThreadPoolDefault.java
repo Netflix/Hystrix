@@ -23,7 +23,7 @@ import com.netflix.hystrix.HystrixThreadPoolProperties;
  * Default implementation of {@link HystrixMetricsPublisherThreadPool} that does nothing.
  * <p>
  * See <a href="https://github.com/Netflix/Hystrix/wiki/Plugins">Wiki docs</a> about plugins for more information.
- * 
+ *
  * @ExcludeFromJavadoc
  */
 public class HystrixMetricsPublisherThreadPoolDefault implements HystrixMetricsPublisherThreadPool {
@@ -36,5 +36,4 @@ public class HystrixMetricsPublisherThreadPoolDefault implements HystrixMetricsP
     public void initialize() {
         // do nothing by default
     }
-
 }

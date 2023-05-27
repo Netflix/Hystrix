@@ -15,13 +15,10 @@
  */
 package com.netflix.hystrix.contrib.javanica.cache;
 
-
 import com.netflix.hystrix.contrib.javanica.cache.annotation.CacheKey;
 import org.junit.Test;
-
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -45,7 +42,6 @@ public class CacheInvocationParameterTest {
         assertEquals(annotations[0], cacheInvocationParameter.getCacheKeyAnnotation());
         assertTrue(cacheInvocationParameter.hasCacheKeyAnnotation());
         assertTrue(cacheInvocationParameter.getAnnotations().contains(annotations[0]));
-
         try {
             cacheInvocationParameter.getAnnotations().clear();
             fail();
@@ -55,6 +51,5 @@ public class CacheInvocationParameterTest {
     }
 
     private static void stabMethod(@CacheKey String val) {
-
     }
 }

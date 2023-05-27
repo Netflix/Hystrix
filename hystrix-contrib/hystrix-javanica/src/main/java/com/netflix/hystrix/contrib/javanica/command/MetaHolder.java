@@ -24,7 +24,6 @@ import com.netflix.hystrix.contrib.javanica.annotation.*;
 import com.netflix.hystrix.contrib.javanica.command.closure.Closure;
 import org.apache.commons.lang3.StringUtils;
 import org.aspectj.lang.JoinPoint;
-
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 import java.lang.reflect.Method;
@@ -40,33 +39,57 @@ import java.util.List;
 public final class MetaHolder {
 
     private final HystrixCollapser hystrixCollapser;
+
     private final HystrixCommand hystrixCommand;
+
     private final DefaultProperties defaultProperties;
 
     private final Method method;
+
     private final Method cacheKeyMethod;
+
     private final Method ajcMethod;
+
     private final Method fallbackMethod;
+
     private final Object obj;
+
     private final Object proxyObj;
+
     private final Object[] args;
+
     private final Closure closure;
+
     private final String defaultGroupKey;
+
     private final String defaultCommandKey;
+
     private final String defaultCollapserKey;
+
     private final String defaultThreadPoolKey;
+
     private final ExecutionType executionType;
+
     private final boolean extendedFallback;
+
     private final ExecutionType collapserExecutionType;
+
     private final ExecutionType fallbackExecutionType;
+
     private final boolean fallback;
+
     private boolean extendedParentFallback;
+
     private final boolean defaultFallback;
+
     private final JoinPoint joinPoint;
+
     private final boolean observable;
+
     private final ObservableExecutionMode observableExecutionMode;
 
     private static final Function identityFun = new Function<Object, Object>() {
+
         @Nullable
         @Override
         public Object apply(@Nullable Object input) {
@@ -147,7 +170,7 @@ public final class MetaHolder {
     }
 
     public Object[] getArgs() {
-        return args != null ? Arrays.copyOf(args, args.length) : new Object[]{};
+        return args != null ? Arrays.copyOf(args, args.length) : new Object[] {};
     }
 
     public String getCommandGroupKey() {
@@ -236,18 +259,19 @@ public final class MetaHolder {
 
     @SuppressWarnings("unchecked")
     public List<Class<? extends Throwable>> getCommandIgnoreExceptions() {
-        if (!isCommandAnnotationPresent()) return Collections.emptyList();
+        if (!isCommandAnnotationPresent())
+            return Collections.emptyList();
         return getOrDefault(new Supplier<List<Class<? extends Throwable>>>() {
+
             @Override
             public List<Class<? extends Throwable>> get() {
                 return ImmutableList.<Class<? extends Throwable>>copyOf(hystrixCommand.ignoreExceptions());
             }
         }, new Supplier<List<Class<? extends Throwable>>>() {
+
             @Override
             public List<Class<? extends Throwable>> get() {
-                return hasDefaultProperties()
-                        ? ImmutableList.<Class<? extends Throwable>>copyOf(defaultProperties.ignoreExceptions())
-                        : Collections.<Class<? extends Throwable>>emptyList();
+                return hasDefaultProperties() ? ImmutableList.<Class<? extends Throwable>>copyOf(defaultProperties.ignoreExceptions()) : Collections.<Class<? extends Throwable>>emptyList();
             }
         }, this.<Class<? extends Throwable>>nonEmptyList());
     }
@@ -257,18 +281,19 @@ public final class MetaHolder {
     }
 
     public List<HystrixProperty> getCommandProperties() {
-        if (!isCommandAnnotationPresent()) return Collections.emptyList();
+        if (!isCommandAnnotationPresent())
+            return Collections.emptyList();
         return getOrDefault(new Supplier<List<HystrixProperty>>() {
+
             @Override
             public List<HystrixProperty> get() {
                 return ImmutableList.copyOf(hystrixCommand.commandProperties());
             }
         }, new Supplier<List<HystrixProperty>>() {
+
             @Override
             public List<HystrixProperty> get() {
-                return hasDefaultProperties()
-                        ? ImmutableList.copyOf(defaultProperties.commandProperties())
-                        : Collections.<HystrixProperty>emptyList();
+                return hasDefaultProperties() ? ImmutableList.copyOf(defaultProperties.commandProperties()) : Collections.<HystrixProperty>emptyList();
             }
         }, this.<HystrixProperty>nonEmptyList());
     }
@@ -278,18 +303,19 @@ public final class MetaHolder {
     }
 
     public List<HystrixProperty> getThreadPoolProperties() {
-        if (!isCommandAnnotationPresent()) return Collections.emptyList();
+        if (!isCommandAnnotationPresent())
+            return Collections.emptyList();
         return getOrDefault(new Supplier<List<HystrixProperty>>() {
+
             @Override
             public List<HystrixProperty> get() {
                 return ImmutableList.copyOf(hystrixCommand.threadPoolProperties());
             }
         }, new Supplier<List<HystrixProperty>>() {
+
             @Override
             public List<HystrixProperty> get() {
-                return hasDefaultProperties()
-                        ? ImmutableList.copyOf(defaultProperties.threadPoolProperties())
-                        : Collections.<HystrixProperty>emptyList();
+                return hasDefaultProperties() ? ImmutableList.copyOf(defaultProperties.threadPoolProperties()) : Collections.<HystrixProperty>emptyList();
             }
         }, this.<HystrixProperty>nonEmptyList());
     }
@@ -308,17 +334,16 @@ public final class MetaHolder {
 
     public List<HystrixException> getRaiseHystrixExceptions() {
         return getOrDefault(new Supplier<List<HystrixException>>() {
+
             @Override
             public List<HystrixException> get() {
                 return ImmutableList.copyOf(hystrixCommand.raiseHystrixExceptions());
             }
         }, new Supplier<List<HystrixException>>() {
+
             @Override
             public List<HystrixException> get() {
-                return hasDefaultProperties()
-                        ? ImmutableList.copyOf(defaultProperties.raiseHystrixExceptions())
-                        : Collections.<HystrixException>emptyList();
-
+                return hasDefaultProperties() ? ImmutableList.copyOf(defaultProperties.raiseHystrixExceptions()) : Collections.<HystrixException>emptyList();
             }
         }, this.<HystrixException>nonEmptyList());
     }
@@ -329,6 +354,7 @@ public final class MetaHolder {
 
     private <T> Predicate<List<T>> nonEmptyList() {
         return new Predicate<List<T>>() {
+
             @Override
             public boolean apply(@Nullable List<T> input) {
                 return input != null && !input.isEmpty();
@@ -351,32 +377,56 @@ public final class MetaHolder {
 
     public static final class Builder {
 
-        private static final Class<?>[] EMPTY_ARRAY_OF_TYPES= new Class[0];
+        private static final Class<?>[] EMPTY_ARRAY_OF_TYPES = new Class[0];
 
         private HystrixCollapser hystrixCollapser;
+
         private HystrixCommand hystrixCommand;
+
         private DefaultProperties defaultProperties;
+
         private Method method;
+
         private Method cacheKeyMethod;
+
         private Method fallbackMethod;
+
         private Method ajcMethod;
+
         private Object obj;
+
         private Object proxyObj;
+
         private Closure closure;
+
         private Object[] args;
+
         private String defaultGroupKey;
+
         private String defaultCommandKey;
+
         private String defaultCollapserKey;
+
         private String defaultThreadPoolKey;
+
         private ExecutionType executionType;
+
         private ExecutionType collapserExecutionType;
+
         private ExecutionType fallbackExecutionType;
+
         private boolean extendedFallback;
+
         private boolean fallback;
+
         private boolean extendedParentFallback;
+
         private boolean defaultFallback;
+
         private boolean observable;
+
         private JoinPoint joinPoint;
+
         private ObservableExecutionMode observableExecutionMode;
 
         public Builder hystrixCollapser(HystrixCollapser hystrixCollapser) {
@@ -507,8 +557,5 @@ public final class MetaHolder {
         public MetaHolder build() {
             return new MetaHolder(this);
         }
-
-
     }
-
 }

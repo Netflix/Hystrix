@@ -29,11 +29,9 @@ import com.netflix.hystrix.contrib.javanica.test.common.domain.User;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import org.junit.Before;
 import org.junit.Test;
-
 import javax.annotation.PostConstruct;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 import static com.netflix.hystrix.contrib.javanica.test.common.CommonUtils.getLastExecutedCommand;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -74,27 +72,26 @@ public abstract class BasicCacheTest extends BasicHystrixTest {
      */
     @Test
     public void testGetSetGetUserCache_givenTwoCommands() {
-
         User user = userService.getUserById("1");
         HystrixInvokableInfo<?> getUserByIdCommand = getLastExecutedCommand();
         // this is the first time we've executed this command with
         // the value of "1" so it should not be from cache
         assertFalse(getUserByIdCommand.isResponseFromCache());
         assertEquals("1", user.getId());
-        assertEquals("name", user.getName()); // initial name value
-
+        // initial name value
+        assertEquals("name", user.getName());
         user = userService.getUserById("1");
         assertEquals("1", user.getId());
         getUserByIdCommand = getLastExecutedCommand();
         // this is the second time we've executed this command with
         // the same value so it should return from cache
         assertTrue(getUserByIdCommand.isResponseFromCache());
-        assertEquals("name", user.getName()); // same name
-
+        // same name
+        assertEquals("name", user.getName());
         // create new user with same id but with new name
         user = new User("1", "new_name");
-        userService.update(user); // update the user
-
+        // update the user
+        userService.update(user);
         user = userService.getUserById("1");
         getUserByIdCommand = getLastExecutedCommand();
         // this is the first time we've executed this command after "update"
@@ -103,17 +100,14 @@ public abstract class BasicCacheTest extends BasicHystrixTest {
         assertFalse(getUserByIdCommand.isResponseFromCache());
         assertEquals("1", user.getId());
         assertEquals("new_name", user.getName());
-
         // start a new request context
         resetContext();
-
         user = userService.getUserById("1");
         getUserByIdCommand = getLastExecutedCommand();
         assertEquals("1", user.getId());
         // this is a new request context so this
         // should not come from cache
         assertFalse(getUserByIdCommand.isResponseFromCache());
-
     }
 
     @Test
@@ -125,22 +119,22 @@ public abstract class BasicCacheTest extends BasicHystrixTest {
         assertFalse(getUserByIdCommand.isResponseFromCache());
         assertEquals("1", user.getId());
         assertEquals("name", user.getName());
-        assertEquals("email", user.getProfile().getEmail()); // initial email value
-
+        // initial email value
+        assertEquals("email", user.getProfile().getEmail());
         user = userService.getUserByEmail("email");
         assertEquals("1", user.getId());
         getUserByIdCommand = getLastExecutedCommand();
         // this is the second time we've executed this command with
         // the same value so it should return from cache
         assertTrue(getUserByIdCommand.isResponseFromCache());
-        assertEquals("email", user.getProfile().getEmail()); // same email
-
+        // same email
+        assertEquals("email", user.getProfile().getEmail());
         // create new user with same id but with new email
         Profile profile = new Profile();
         profile.setEmail("new_email");
         user.setProfile(profile);
-        userService.updateProfile(user); // update the user profile
-
+        // update the user profile
+        userService.updateProfile(user);
         user = userService.getUserByEmail("new_email");
         getUserByIdCommand = getLastExecutedCommand();
         // this is the first time we've executed this command after "updateProfile"
@@ -150,10 +144,8 @@ public abstract class BasicCacheTest extends BasicHystrixTest {
         assertEquals("1", user.getId());
         assertEquals("name", user.getName());
         assertEquals("new_email", user.getProfile().getEmail());
-
         // start a new request context
         resetContext();
-
         user = userService.getUserByEmail("new_email");
         getUserByIdCommand = getLastExecutedCommand();
         assertEquals("1", user.getId());
@@ -171,19 +163,19 @@ public abstract class BasicCacheTest extends BasicHystrixTest {
         // the value of "1" so it should not be from cache
         assertFalse(getUserByIdCommand.isResponseFromCache());
         assertEquals("1", user.getId());
-        assertEquals("name", user.getName()); // initial name value
-
+        // initial name value
+        assertEquals("name", user.getName());
         user = userService.getUserById("1");
         assertEquals("1", user.getId());
         getUserByIdCommand = getLastExecutedCommand();
         // this is the second time we've executed this command with
         // the same value so it should return from cache
         assertTrue(getUserByIdCommand.isResponseFromCache());
-        assertEquals("name", user.getName()); // same name
-
+        // same name
+        assertEquals("name", user.getName());
         // when
-        userService.updateName("1", "new_name"); // update the user name
-
+        // update the user name
+        userService.updateName("1", "new_name");
         // then
         user = userService.getUserById("1");
         getUserByIdCommand = getLastExecutedCommand();
@@ -193,7 +185,6 @@ public abstract class BasicCacheTest extends BasicHystrixTest {
         assertFalse(getUserByIdCommand.isResponseFromCache());
         assertEquals("1", user.getId());
         assertEquals("new_name", user.getName());
-
         // start a new request context
         resetContext();
         user = userService.getUserById("1");
@@ -203,7 +194,6 @@ public abstract class BasicCacheTest extends BasicHystrixTest {
         // should not come from cache
         assertFalse(getUserByIdCommand.isResponseFromCache());
     }
-
 
     @Test(expected = HystrixCachingException.class)
     public void testGetUser_givenWrongCacheKeyMethodReturnType_shouldThrowException() {
@@ -226,6 +216,7 @@ public abstract class BasicCacheTest extends BasicHystrixTest {
     }
 
     public static class UserService {
+
         private Map<String, User> storage = new ConcurrentHashMap<String, User>();
 
         @PostConstruct
@@ -263,6 +254,7 @@ public abstract class BasicCacheTest extends BasicHystrixTest {
         @HystrixCommand
         public User getUserByEmail(final String email) {
             return Iterables.tryFind(storage.values(), new Predicate<User>() {
+
                 @Override
                 public boolean apply(User input) {
                     return input.getProfile().getEmail().equalsIgnoreCase(email);
@@ -290,7 +282,5 @@ public abstract class BasicCacheTest extends BasicHystrixTest {
         public void updateName(@CacheKey String id, String name) {
             storage.get(id).setName(name);
         }
-
     }
-
 }

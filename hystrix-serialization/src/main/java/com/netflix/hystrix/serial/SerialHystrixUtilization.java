@@ -23,7 +23,6 @@ import com.netflix.hystrix.metric.sample.HystrixThreadPoolUtilization;
 import com.netflix.hystrix.metric.sample.HystrixUtilization;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.ByteBuffer;
@@ -40,15 +39,12 @@ public class SerialHystrixUtilization extends SerialHystrixMetric {
 
     public static String toJsonString(HystrixUtilization utilization) {
         StringWriter jsonString = new StringWriter();
-
         try {
             JsonGenerator json = jsonFactory.createGenerator(jsonString);
-
             serializeUtilization(utilization, json);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-
         return jsonString.getBuffer().toString();
     }
 
@@ -57,16 +53,14 @@ public class SerialHystrixUtilization extends SerialHystrixMetric {
             json.writeStartObject();
             json.writeStringField("type", "HystrixUtilization");
             json.writeObjectFieldStart("commands");
-            for (Map.Entry<HystrixCommandKey, HystrixCommandUtilization> entry: utilization.getCommandUtilizationMap().entrySet()) {
+            for (Map.Entry<HystrixCommandKey, HystrixCommandUtilization> entry : utilization.getCommandUtilizationMap().entrySet()) {
                 final HystrixCommandKey key = entry.getKey();
                 final HystrixCommandUtilization commandUtilization = entry.getValue();
                 writeCommandUtilizationJson(json, key, commandUtilization);
-
             }
             json.writeEndObject();
-
             json.writeObjectFieldStart("threadpools");
-            for (Map.Entry<HystrixThreadPoolKey, HystrixThreadPoolUtilization> entry: utilization.getThreadPoolUtilizationMap().entrySet()) {
+            for (Map.Entry<HystrixThreadPoolKey, HystrixThreadPoolUtilization> entry : utilization.getThreadPoolUtilizationMap().entrySet()) {
                 final HystrixThreadPoolKey threadPoolKey = entry.getKey();
                 final HystrixThreadPoolUtilization threadPoolUtilization = entry.getValue();
                 writeThreadPoolUtilizationJson(json, threadPoolKey, threadPoolUtilization);

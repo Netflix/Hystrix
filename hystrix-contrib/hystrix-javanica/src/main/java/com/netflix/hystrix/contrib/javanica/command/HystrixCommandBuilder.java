@@ -20,7 +20,6 @@ import com.netflix.hystrix.HystrixCollapser;
 import com.netflix.hystrix.contrib.javanica.cache.CacheInvocationContext;
 import com.netflix.hystrix.contrib.javanica.cache.annotation.CacheRemove;
 import com.netflix.hystrix.contrib.javanica.cache.annotation.CacheResult;
-
 import javax.annotation.concurrent.Immutable;
 import java.util.Collection;
 import java.util.Collections;
@@ -35,11 +34,17 @@ import java.util.List;
 public class HystrixCommandBuilder {
 
     private final GenericSetterBuilder setterBuilder;
+
     private final CommandActions commandActions;
+
     private final CacheInvocationContext<CacheResult> cacheResultInvocationContext;
+
     private final CacheInvocationContext<CacheRemove> cacheRemoveInvocationContext;
+
     private final Collection<HystrixCollapser.CollapsedRequest<Object, Object>> collapsedRequests;
+
     private final List<Class<? extends Throwable>> ignoreExceptions;
+
     private final ExecutionType executionType;
 
     public HystrixCommandBuilder(Builder builder) {
@@ -84,14 +89,20 @@ public class HystrixCommandBuilder {
         return executionType;
     }
 
-
     public static class Builder<ResponseType> {
+
         private GenericSetterBuilder setterBuilder;
+
         private CommandActions commandActions;
+
         private CacheInvocationContext<CacheResult> cacheResultInvocationContext;
+
         private CacheInvocationContext<CacheRemove> cacheRemoveInvocationContext;
+
         private Collection<HystrixCollapser.CollapsedRequest<ResponseType, Object>> collapsedRequests = Collections.emptyList();
+
         private List<Class<? extends Throwable>> ignoreExceptions = Collections.emptyList();
+
         private ExecutionType executionType = ExecutionType.SYNCHRONOUS;
 
         /**
@@ -180,5 +191,4 @@ public class HystrixCommandBuilder {
             return new HystrixCommandBuilder(this);
         }
     }
-
 }

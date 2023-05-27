@@ -21,9 +21,7 @@ import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
 import java.lang.reflect.Method;
-
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -45,7 +43,7 @@ public class FallbackMethodTest {
     }
 
     @Test
-    @DataProvider({"true", "false"})
+    @DataProvider({ "true", "false" })
     public void testGetFallbackForExtendedCommand(boolean extended) throws NoSuchMethodException {
         // given
         Method extFallback = Service.class.getDeclaredMethod("extCommand", String.class, Integer.class, Throwable.class);
@@ -73,7 +71,6 @@ public class FallbackMethodTest {
         assertNull(fallback);
     }
 
-
     private static void assertParamsTypes(Method method, Class<?>... expected) {
         assertEquals(expected.length, method.getParameterTypes().length);
         Class<?>[] actual = method.getParameterTypes();
@@ -81,6 +78,7 @@ public class FallbackMethodTest {
     }
 
     private static class Common {
+
         private String fallback(String s, Integer i) {
             return null;
         }
@@ -90,7 +88,7 @@ public class FallbackMethodTest {
         }
     }
 
-    private static class Service extends Common{
+    private static class Service extends Common {
 
         @HystrixCommand(fallbackMethod = "fallback")
         public String command(String s, Integer i) {
@@ -102,17 +100,13 @@ public class FallbackMethodTest {
             return null;
         }
 
-
         @HystrixCommand(fallbackMethod = "fallbackV2")
         public String extCommandV2(String s, Integer i, Throwable throwable) {
             return null;
         }
 
-
         public String fallback(String s, Integer i, Throwable throwable) {
             return null;
         }
-
     }
-
 }

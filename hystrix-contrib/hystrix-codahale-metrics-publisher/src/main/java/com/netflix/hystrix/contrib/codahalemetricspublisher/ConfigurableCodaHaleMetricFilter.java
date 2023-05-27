@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.netflix.hystrix.contrib.codahalemetricspublisher;
 
 import com.codahale.metrics.Metric;
@@ -30,9 +29,7 @@ import org.slf4j.LoggerFactory;
  * If this is the case, metrics will be filtered unless METRIC_NAME = true is set in
  * the properties
  *
- *
  *  eg HystrixCommand.IndiciaService.GetIndicia.countFailure = true
- *
  *
  * For detail on how the metric names are constructed, refer to the source of the
  *
@@ -46,41 +43,29 @@ import org.slf4j.LoggerFactory;
  *
  *  @author Simon Irving
  */
-public class ConfigurableCodaHaleMetricFilter implements MetricFilter{
+public class ConfigurableCodaHaleMetricFilter implements MetricFilter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfigurableCodaHaleMetricFilter.class);
 
     private DynamicPropertyFactory archaiusPropertyFactory;
 
-
-    public ConfigurableCodaHaleMetricFilter(DynamicPropertyFactory archaiusPropertyFactory)
-    {
+    public ConfigurableCodaHaleMetricFilter(DynamicPropertyFactory archaiusPropertyFactory) {
         this.archaiusPropertyFactory = archaiusPropertyFactory;
     }
 
     @Override
     public boolean matches(String s, Metric metric) {
-
-        if (!isFilterEnabled())
-        {
+        if (!isFilterEnabled()) {
             return true;
         }
-
         boolean matchesFilter = archaiusPropertyFactory.getBooleanProperty(s, false).get();
-
-        LOGGER.debug("Does metric [{}] match filter? [{}]",s,matchesFilter);
-
+        LOGGER.debug("Does metric [{}] match filter? [{}]", s, matchesFilter);
         return matchesFilter;
     }
 
     protected boolean isFilterEnabled() {
-
         boolean filterEnabled = archaiusPropertyFactory.getBooleanProperty("filter.graphite.metrics", false).get();
-
         LOGGER.debug("Is filter enabled? [{}]", filterEnabled);
-
         return filterEnabled;
     }
-
-
 }

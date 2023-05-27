@@ -13,7 +13,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
  * Created by dmgcodevil.
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = {AopCglibConfig.class, InheritedFallbackTest.CommandTestConfig.class})
+@ContextConfiguration(classes = { AopCglibConfig.class, InheritedFallbackTest.CommandTestConfig.class })
 public class InheritedFallbackTest extends BasicCommandFallbackTest {
 
     @Autowired
@@ -26,6 +26,7 @@ public class InheritedFallbackTest extends BasicCommandFallbackTest {
 
     @Configurable
     public static class CommandTestConfig {
+
         @Bean
         public UserService userService() {
             return new SubClass();
@@ -34,5 +35,4 @@ public class InheritedFallbackTest extends BasicCommandFallbackTest {
 
     public static class SubClass extends BasicCommandFallbackTest.UserService {
     }
-
 }

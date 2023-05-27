@@ -31,7 +31,6 @@ import rx.Single;
 import rx.Subscriber;
 import rx.functions.Action1;
 import rx.functions.Func0;
-
 import static com.netflix.hystrix.contrib.javanica.test.common.CommonUtils.getHystrixCommandByKey;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -40,7 +39,6 @@ import static org.junit.Assert.assertTrue;
  * Created by dmgcodevil
  */
 public abstract class BasicObservableTest extends BasicHystrixTest {
-
 
     private UserService userService;
 
@@ -56,7 +54,6 @@ public abstract class BasicObservableTest extends BasicHystrixTest {
         // blocking
         Observable<User> observable = userService.getUser("1", "name: ");
         assertEquals("name: 1", observable.toBlocking().single().getName());
-
         // non-blocking
         // - this is a verbose anonymous inner-class approach and doesn't do assertions
         Observable<User> fUser = userService.getUser("1", "name: ");
@@ -76,9 +73,7 @@ public abstract class BasicObservableTest extends BasicHystrixTest {
             public void onNext(User v) {
                 System.out.println("onNext: " + v);
             }
-
         });
-
         Observable<User> fs = userService.getUser("1", "name: ");
         fs.subscribe(new Action1<User>() {
 
@@ -93,7 +88,7 @@ public abstract class BasicObservableTest extends BasicHystrixTest {
     }
 
     @Test
-    public void testGetCompletableUser(){
+    public void testGetCompletableUser() {
         userService.getCompletableUser("1", "name: ");
         com.netflix.hystrix.HystrixInvokableInfo getUserCommand = getHystrixCommandByKey("getCompletableUser");
         assertTrue(getUserCommand.getExecutionEvents().contains(HystrixEventType.SUCCESS));
@@ -103,6 +98,7 @@ public abstract class BasicObservableTest extends BasicHystrixTest {
     public void testGetCompletableUserWithRegularFallback() {
         Completable completable = userService.getCompletableUserWithRegularFallback(null, "name: ");
         completable.<User>toObservable().subscribe(new Action1<User>() {
+
             @Override
             public void call(User user) {
                 assertEquals("default_id", user.getId());
@@ -117,6 +113,7 @@ public abstract class BasicObservableTest extends BasicHystrixTest {
     public void testGetCompletableUserWithRxFallback() {
         Completable completable = userService.getCompletableUserWithRxFallback(null, "name: ");
         completable.<User>toObservable().subscribe(new Action1<User>() {
+
             @Override
             public void call(User user) {
                 assertEquals("default_id", user.getId());
@@ -132,6 +129,7 @@ public abstract class BasicObservableTest extends BasicHystrixTest {
         final String id = "1";
         Single<User> user = userService.getSingleUser(id, "name: ");
         user.subscribe(new Action1<User>() {
+
             @Override
             public void call(User user) {
                 assertEquals(id, user.getId());
@@ -142,9 +140,10 @@ public abstract class BasicObservableTest extends BasicHystrixTest {
     }
 
     @Test
-    public void testGetSingleUserWithRegularFallback(){
+    public void testGetSingleUserWithRegularFallback() {
         Single<User> user = userService.getSingleUserWithRegularFallback(null, "name: ");
         user.subscribe(new Action1<User>() {
+
             @Override
             public void call(User user) {
                 assertEquals("default_id", user.getId());
@@ -156,9 +155,10 @@ public abstract class BasicObservableTest extends BasicHystrixTest {
     }
 
     @Test
-    public void testGetSingleUserWithRxFallback(){
+    public void testGetSingleUserWithRxFallback() {
         Single<User> user = userService.getSingleUserWithRxFallback(null, "name: ");
         user.subscribe(new Action1<User>() {
+
             @Override
             public void call(User user) {
                 assertEquals("default_id", user.getId());
@@ -186,7 +186,6 @@ public abstract class BasicObservableTest extends BasicHystrixTest {
     @Test
     public void testGetUserWithRxFallback() {
         final User exUser = new User("def", "def");
-
         // blocking
         assertEquals(exUser, userService.getUserRxFallback(" ", "").toBlocking().single());
         assertEquals(1, HystrixRequestLog.getCurrentRequest().getAllExecutedCommands().size());
@@ -200,7 +199,6 @@ public abstract class BasicObservableTest extends BasicHystrixTest {
     @Test
     public void testGetUserWithRxCommandFallback() {
         final User exUser = new User("def", "def");
-
         // blocking
         Observable<User> userObservable = userService.getUserRxCommandFallback(" ", "");
         assertEquals(exUser, userObservable.toBlocking().single());
@@ -213,7 +211,6 @@ public abstract class BasicObservableTest extends BasicHystrixTest {
         // and that fallback command was successful
         assertTrue(rxCommandFallback.getExecutionEvents().contains(HystrixEventType.SUCCESS));
     }
-
 
     public static class UserService {
 
@@ -232,7 +229,6 @@ public abstract class BasicObservableTest extends BasicHystrixTest {
             } else {
                 throw new IllegalStateException();
             }
-
         }
 
         @HystrixCommand
@@ -263,6 +259,7 @@ public abstract class BasicObservableTest extends BasicHystrixTest {
 
         public Completable completableUserRxFallback(final String id, final String name) {
             return Completable.fromCallable(new Func0<User>() {
+
                 @Override
                 public User call() {
                     return new User("default_id", "default_name");
@@ -312,9 +309,9 @@ public abstract class BasicObservableTest extends BasicHystrixTest {
             return createObservable(id, name);
         }
 
-
         private Observable<User> createObservable(final String id, final String name) {
             return Observable.create(new Observable.OnSubscribe<User>() {
+
                 @Override
                 public void call(Subscriber<? super User> observer) {
                     try {
@@ -336,6 +333,7 @@ public abstract class BasicObservableTest extends BasicHystrixTest {
         }
 
         private static final class GetUserException extends RuntimeException {
+
             public GetUserException(String message) {
                 super(message);
             }

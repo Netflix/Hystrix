@@ -16,7 +16,6 @@
 package com.netflix.hystrix.examples.demo;
 
 import java.net.HttpCookie;
-
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandGroupKey;
 
@@ -28,10 +27,10 @@ import com.netflix.hystrix.HystrixCommandGroupKey;
 public class GetUserAccountCommand extends HystrixCommand<UserAccount> {
 
     private final HttpCookie httpCookie;
+
     private final UserCookie userCookie;
 
     /**
-     * 
      * @param cookie
      * @throws IllegalArgumentException
      *             if cookie is invalid meaning the user is not authenticated
@@ -51,12 +50,10 @@ public class GetUserAccountCommand extends HystrixCommand<UserAccount> {
         } catch (InterruptedException e) {
             // do nothing
         }
-
         /* fail 5% of the time to show how fallback works */
         if (Math.random() > 0.95) {
             throw new RuntimeException("random failure processing UserAccount network response");
         }
-
         /* latency spike 5% of the time so timeouts can be triggered occasionally */
         if (Math.random() > 0.95) {
             // random latency spike
@@ -66,7 +63,6 @@ public class GetUserAccountCommand extends HystrixCommand<UserAccount> {
                 // do nothing
             }
         }
-
         /* success ... create UserAccount with data "from" the remote service response */
         return new UserAccount(86975, "John James", 2, true, false, true);
     }
@@ -99,9 +95,10 @@ public class GetUserAccountCommand extends HystrixCommand<UserAccount> {
      * A real version of this could handle decrypting a secure HTTPS cookie.
      */
     private static class UserCookie {
+
         /**
          * Parse an HttpCookie into a UserCookie or IllegalArgumentException if invalid cookie
-         * 
+         *
          * @param cookie
          * @return UserCookie
          * @throws IllegalArgumentException
@@ -125,7 +122,9 @@ public class GetUserAccountCommand extends HystrixCommand<UserAccount> {
         }
 
         private final int userId;
+
         private final String name;
+
         private final int accountType;
     }
 }

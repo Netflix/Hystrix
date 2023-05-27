@@ -19,11 +19,10 @@ import com.netflix.hystrix.contrib.javanica.test.common.command.BasicCommandTest
 import com.netflix.hystrix.contrib.javanica.test.common.domain.User;
 import org.junit.BeforeClass;
 
-
 public class CommandTest extends BasicCommandTest {
 
     @BeforeClass
-    public static void setUpEnv(){
+    public static void setUpEnv() {
         System.setProperty("weavingMode", "compile");
     }
 

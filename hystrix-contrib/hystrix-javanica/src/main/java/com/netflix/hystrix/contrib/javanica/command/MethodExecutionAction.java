@@ -15,15 +15,12 @@
  */
 package com.netflix.hystrix.contrib.javanica.command;
 
-
 import com.netflix.hystrix.contrib.javanica.command.closure.AsyncClosureFactory;
 import com.netflix.hystrix.contrib.javanica.command.closure.Closure;
 import com.netflix.hystrix.contrib.javanica.exception.CommandActionExecutionException;
 import com.netflix.hystrix.contrib.javanica.exception.ExceptionUtils;
-
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-
 import static com.netflix.hystrix.contrib.javanica.utils.EnvUtils.isCompileWeaving;
 import static com.netflix.hystrix.contrib.javanica.utils.ajc.AjcUtils.invokeAjcMethod;
 
@@ -34,13 +31,15 @@ import static com.netflix.hystrix.contrib.javanica.utils.ajc.AjcUtils.invokeAjcM
  */
 public class MethodExecutionAction implements CommandAction {
 
-    private static final Object[] EMPTY_ARGS = new Object[]{};
+    private static final Object[] EMPTY_ARGS = new Object[] {};
 
     private final Object object;
-    private final Method method;
-    private final Object[] _args;
-    private final MetaHolder metaHolder;
 
+    private final Method method;
+
+    private final Object[] _args;
+
+    private final MetaHolder metaHolder;
 
     public MethodExecutionAction(Object object, Method method, MetaHolder metaHolder) {
         this.object = object;
@@ -49,7 +48,7 @@ public class MethodExecutionAction implements CommandAction {
         this.metaHolder = metaHolder;
     }
 
-    public MethodExecutionAction(Object object, Method method, Object[] args, MetaHolder metaHolder){
+    public MethodExecutionAction(Object object, Method method, Object[] args, MetaHolder metaHolder) {
         this.object = object;
         this.method = method;
         this._args = args;
@@ -85,11 +84,10 @@ public class MethodExecutionAction implements CommandAction {
      */
     @Override
     public Object executeWithArgs(ExecutionType executionType, Object[] args) throws CommandActionExecutionException {
-        if(ExecutionType.ASYNCHRONOUS == executionType){
+        if (ExecutionType.ASYNCHRONOUS == executionType) {
             Closure closure = AsyncClosureFactory.getInstance().createClosure(metaHolder, method, object, args);
             return executeClj(closure.getClosureObj(), closure.getClosureMethod());
         }
-
         return execute(object, method, args);
     }
 
@@ -109,7 +107,8 @@ public class MethodExecutionAction implements CommandAction {
     private Object execute(Object o, Method m, Object... args) throws CommandActionExecutionException {
         Object result = null;
         try {
-            m.setAccessible(true); // suppress Java language access
+            // suppress Java language access
+            m.setAccessible(true);
             if (isCompileWeaving() && metaHolder.getAjcMethod() != null) {
                 result = invokeAjcMethod(metaHolder.getAjcMethod(), o, metaHolder, args);
             } else {
@@ -123,10 +122,11 @@ public class MethodExecutionAction implements CommandAction {
         return result;
     }
 
-    private Object executeClj(Object o, Method m, Object... args){
+    private Object executeClj(Object o, Method m, Object... args) {
         Object result = null;
         try {
-            m.setAccessible(true); // suppress Java language access
+            // suppress Java language access
+            m.setAccessible(true);
             result = m.invoke(o, args);
         } catch (IllegalAccessException e) {
             propagateCause(e);
@@ -144,5 +144,4 @@ public class MethodExecutionAction implements CommandAction {
     private void propagateCause(Throwable throwable) throws CommandActionExecutionException {
         ExceptionUtils.propagateCause(throwable);
     }
-
 }

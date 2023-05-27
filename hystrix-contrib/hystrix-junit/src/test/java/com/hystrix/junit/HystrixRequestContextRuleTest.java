@@ -6,6 +6,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 public final class HystrixRequestContextRuleTest {
+
     @Rule
     public HystrixRequestContextRule request = new HystrixRequestContextRule();
 

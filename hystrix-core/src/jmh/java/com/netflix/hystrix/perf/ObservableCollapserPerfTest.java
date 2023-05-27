@@ -46,7 +46,6 @@ import rx.Subscription;
 import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -58,29 +57,28 @@ public class ObservableCollapserPerfTest {
 
     @State(Scope.Thread)
     public static class CollapserState {
-        @Param({"1", "10", "100", "1000"})
+
+        @Param({ "1", "10", "100", "1000" })
         int numToCollapse;
 
-        @Param({"1", "10", "100"})
+        @Param({ "1", "10", "100" })
         int numResponsesPerArg;
 
-        @Param({"1", "1000", "1000000"})
+        @Param({ "1", "1000", "1000000" })
         int blackholeConsumption;
 
         HystrixRequestContext reqContext;
+
         Observable<String> executionHandle;
 
         @Setup(Level.Invocation)
         public void setUp() {
             reqContext = HystrixRequestContext.initializeContext();
-
             List<Observable<String>> os = new ArrayList<Observable<String>>();
-
             for (int i = 0; i < numToCollapse; i++) {
                 TestCollapserWithMultipleResponses collapser = new TestCollapserWithMultipleResponses(i, numResponsesPerArg, blackholeConsumption);
                 os.add(collapser.observe());
             }
-
             executionHandle = Observable.merge(os);
         }
 
@@ -88,17 +86,21 @@ public class ObservableCollapserPerfTest {
         public void tearDown() {
             reqContext.shutdown();
         }
-
     }
 
     //TODO wire in synthetic timer
     private static class TestCollapserWithMultipleResponses extends HystrixObservableCollapser<String, String, String, String> {
 
         private final String arg;
+
         private final static Map<String, Integer> emitsPerArg;
+
         private final int blackholeConsumption;
+
         private final boolean commandConstructionFails;
+
         private final Func1<String, String> keyMapper;
+
         private final Action1<HystrixCollapser.CollapsedRequest<String, String>> onMissingResponseHandler;
 
         static {
@@ -112,18 +114,19 @@ public class ObservableCollapserPerfTest {
             this.blackholeConsumption = blackholeConsumption;
             commandConstructionFails = false;
             keyMapper = new Func1<String, String>() {
+
                 @Override
                 public String call(String s) {
                     return s.substring(0, s.indexOf(":"));
                 }
             };
             onMissingResponseHandler = new Action1<HystrixCollapser.CollapsedRequest<String, String>>() {
+
                 @Override
                 public void call(HystrixCollapser.CollapsedRequest<String, String> collapsedReq) {
                     collapsedReq.setResponse("missing:missing");
                 }
             };
-
         }
 
         @Override
@@ -137,13 +140,11 @@ public class ObservableCollapserPerfTest {
                 throw new RuntimeException("Exception thrown in command construction");
             } else {
                 List<Integer> args = new ArrayList<Integer>();
-
                 for (HystrixCollapser.CollapsedRequest<String, String> collapsedRequest : collapsedRequests) {
                     String stringArg = collapsedRequest.getArgument();
                     int intArg = Integer.parseInt(stringArg);
                     args.add(intArg);
                 }
-
                 return new TestCollapserCommandWithMultipleResponsePerArgument(args, emitsPerArg, blackholeConsumption);
             }
         }
@@ -153,7 +154,6 @@ public class ObservableCollapserPerfTest {
         @Override
         protected Func1<String, String> getBatchReturnTypeKeySelector() {
             return keyMapper;
-
         }
 
         @Override
@@ -164,14 +164,12 @@ public class ObservableCollapserPerfTest {
                 public String call(String s) {
                     return s;
                 }
-
             };
         }
 
         @Override
         protected void onMissingResponse(HystrixCollapser.CollapsedRequest<String, String> r) {
             onMissingResponseHandler.call(r);
-
         }
 
         @Override
@@ -182,7 +180,6 @@ public class ObservableCollapserPerfTest {
                 public String call(String s) {
                     return s;
                 }
-
             };
         }
     }
@@ -190,7 +187,9 @@ public class ObservableCollapserPerfTest {
     private static class TestCollapserCommandWithMultipleResponsePerArgument extends HystrixObservableCommand<String> {
 
         private final List<Integer> args;
+
         private final Map<String, Integer> emitsPerArg;
+
         private final int blackholeConsumption;
 
         TestCollapserCommandWithMultipleResponsePerArgument(List<Integer> args, Map<String, Integer> emitsPerArg, int blackholeConsumption) {
@@ -203,11 +202,12 @@ public class ObservableCollapserPerfTest {
         @Override
         protected Observable<String> construct() {
             return Observable.create(new Observable.OnSubscribe<String>() {
+
                 @Override
                 public void call(Subscriber<? super String> subscriber) {
                     try {
                         Blackhole.consumeCPU(blackholeConsumption);
-                        for (Integer arg: args) {
+                        for (Integer arg : args) {
                             int numEmits = emitsPerArg.get(arg.toString());
                             for (int j = 1; j < numEmits + 1; j++) {
                                 subscriber.onNext(arg + ":" + (arg * j));
@@ -223,7 +223,7 @@ public class ObservableCollapserPerfTest {
     }
 
     @Benchmark
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode({ Mode.Throughput })
     @OutputTimeUnit(TimeUnit.SECONDS)
     public List<String> observeCollapsedAndWait(CollapserState collapserState) {
         return collapserState.executionHandle.toList().toBlocking().single();

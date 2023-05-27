@@ -27,13 +27,14 @@ import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
-
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 public class RollingMaxPerfTest {
+
     @State(Scope.Thread)
     public static class CounterState {
+
         HystrixRollingNumber counter;
 
         @Setup(Level.Iteration)
@@ -44,6 +45,7 @@ public class RollingMaxPerfTest {
 
     @State(Scope.Thread)
     public static class ValueState {
+
         final Random r = new Random();
 
         int value;
@@ -55,7 +57,7 @@ public class RollingMaxPerfTest {
     }
 
     @Benchmark
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode({ Mode.Throughput })
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public HystrixRollingNumber writeOnly(CounterState counterState, ValueState valueState) {
         counterState.counter.updateRollingMax(HystrixRollingNumberEvent.COMMAND_MAX_ACTIVE, valueState.value);
@@ -63,7 +65,7 @@ public class RollingMaxPerfTest {
     }
 
     @Benchmark
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode({ Mode.Throughput })
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public long readOnly(CounterState counterState) {
         HystrixRollingNumber counter = counterState.counter;
@@ -73,7 +75,7 @@ public class RollingMaxPerfTest {
     @Benchmark
     @Group("writeHeavy")
     @GroupThreads(7)
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode({ Mode.Throughput })
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public HystrixRollingNumber writeHeavyUpdateMax(CounterState counterState, ValueState valueState) {
         counterState.counter.updateRollingMax(HystrixRollingNumberEvent.COMMAND_MAX_ACTIVE, valueState.value);
@@ -83,7 +85,7 @@ public class RollingMaxPerfTest {
     @Benchmark
     @Group("writeHeavy")
     @GroupThreads(1)
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode({ Mode.Throughput })
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public long writeHeavyReadMetrics(CounterState counterState) {
         HystrixRollingNumber counter = counterState.counter;
@@ -93,7 +95,7 @@ public class RollingMaxPerfTest {
     @Benchmark
     @Group("evenSplit")
     @GroupThreads(4)
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode({ Mode.Throughput })
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public HystrixRollingNumber evenSplitUpdateMax(CounterState counterState, ValueState valueState) {
         counterState.counter.updateRollingMax(HystrixRollingNumberEvent.COMMAND_MAX_ACTIVE, valueState.value);
@@ -103,7 +105,7 @@ public class RollingMaxPerfTest {
     @Benchmark
     @Group("evenSplit")
     @GroupThreads(4)
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode({ Mode.Throughput })
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public long evenSplitReadMetrics(CounterState counterState) {
         HystrixRollingNumber counter = counterState.counter;
@@ -113,7 +115,7 @@ public class RollingMaxPerfTest {
     @Benchmark
     @Group("readHeavy")
     @GroupThreads(1)
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode({ Mode.Throughput })
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public HystrixRollingNumber readHeavyUpdateMax(CounterState counterState, ValueState valueState) {
         counterState.counter.updateRollingMax(HystrixRollingNumberEvent.COMMAND_MAX_ACTIVE, valueState.value);
@@ -123,7 +125,7 @@ public class RollingMaxPerfTest {
     @Benchmark
     @Group("readHeavy")
     @GroupThreads(7)
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode({ Mode.Throughput })
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public long readHeavyReadMetrics(CounterState counterState) {
         HystrixRollingNumber counter = counterState.counter;

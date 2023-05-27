@@ -15,7 +15,6 @@
  */
 package com.netflix.hystrix.contrib.javanica.test.spring.error;
 
-
 import com.netflix.hystrix.contrib.javanica.test.common.error.BasicErrorPropagationTest;
 import com.netflix.hystrix.contrib.javanica.test.spring.conf.AopCglibConfig;
 import org.junit.runner.RunWith;
@@ -30,9 +29,8 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
  * https://github.com/Netflix/Hystrix/wiki/How-To-Use#ErrorPropagation
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = {AopCglibConfig.class, ErrorPropagationTest.ErrorPropagationTestConfig.class})
+@ContextConfiguration(classes = { AopCglibConfig.class, ErrorPropagationTest.ErrorPropagationTestConfig.class })
 public class ErrorPropagationTest extends BasicErrorPropagationTest {
-
 
     @Autowired
     private BasicErrorPropagationTest.UserService userService;
@@ -42,7 +40,6 @@ public class ErrorPropagationTest extends BasicErrorPropagationTest {
         return userService;
     }
 
-
     @Configurable
     public static class ErrorPropagationTestConfig {
 
@@ -51,5 +48,4 @@ public class ErrorPropagationTest extends BasicErrorPropagationTest {
             return new UserService();
         }
     }
-    
 }

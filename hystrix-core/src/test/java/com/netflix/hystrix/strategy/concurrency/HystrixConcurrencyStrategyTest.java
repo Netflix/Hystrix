@@ -17,19 +17,15 @@ package com.netflix.hystrix.strategy.concurrency;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
 import java.lang.IllegalStateException;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
 import rx.functions.Action1;
 import rx.functions.Func1;
-
 import com.netflix.config.ConfigurationManager;
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandGroupKey;
@@ -37,6 +33,7 @@ import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.HystrixRequestLog;
 
 public class HystrixConcurrencyStrategyTest {
+
     @Before
     public void prepareForTest() {
         /* we must call this to simulate a new request lifecycle running and clearing caches */
@@ -46,7 +43,6 @@ public class HystrixConcurrencyStrategyTest {
     @After
     public void cleanup() {
         shutdownContextIfExists();
-
         // force properties to be clean as well
         ConfigurationManager.getConfigInstance().clear();
     }
@@ -87,22 +83,18 @@ public class HystrixConcurrencyStrategyTest {
             }
             return "Hello";
         }
-
     }
 
     @Test
     public void testThreadContextOnTimeout() {
         final AtomicBoolean isInitialized = new AtomicBoolean();
-        new TimeoutCommand().toObservable()
-                .doOnError(new Action1<Throwable>() {
-                    @Override
-                    public void call(Throwable throwable) {
-                        isInitialized.set(HystrixRequestContext.isCurrentThreadInitialized());
-                    }
-                })
-                .materialize()
-                .toBlocking().single();
+        new TimeoutCommand().toObservable().doOnError(new Action1<Throwable>() {
 
+            @Override
+            public void call(Throwable throwable) {
+                isInitialized.set(HystrixRequestContext.isCurrentThreadInitialized());
+            }
+        }).materialize().toBlocking().single();
         System.out.println("initialized = " + HystrixRequestContext.isCurrentThreadInitialized());
         System.out.println("initialized inside onError = " + isInitialized.get());
         assertEquals(true, isInitialized.get());
@@ -112,9 +104,7 @@ public class HystrixConcurrencyStrategyTest {
     public void testNoRequestContextOnSimpleConcurencyStrategyWithoutException() throws Exception {
         shutdownContextIfExists();
         ConfigurationManager.getConfigInstance().setProperty("hystrix.command.default.requestLog.enabled", "false");
-
         new SimpleCommand().execute();
-
         assertTrue("We are able to run the simple command without a context initialization error.", true);
     }
 
@@ -125,13 +115,13 @@ public class HystrixConcurrencyStrategyTest {
             HystrixRequestContext.getContextForCurrentThread().shutdown();
         }
     }
-    private static class DummyHystrixConcurrencyStrategy extends HystrixConcurrencyStrategy {}
 
-  public static class TimeoutCommand extends HystrixCommand<Void> {
-        static final HystrixCommand.Setter properties = HystrixCommand.Setter
-                .withGroupKey(HystrixCommandGroupKey.Factory.asKey("TimeoutTest"))
-                .andCommandPropertiesDefaults(HystrixCommandProperties.Setter()
-                        .withExecutionTimeoutInMilliseconds(50));
+    private static class DummyHystrixConcurrencyStrategy extends HystrixConcurrencyStrategy {
+    }
+
+    public static class TimeoutCommand extends HystrixCommand<Void> {
+
+        static final HystrixCommand.Setter properties = HystrixCommand.Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("TimeoutTest")).andCommandPropertiesDefaults(HystrixCommandProperties.Setter().withExecutionTimeoutInMilliseconds(50));
 
         public TimeoutCommand() {
             super(properties);
@@ -143,5 +133,4 @@ public class HystrixConcurrencyStrategyTest {
             return null;
         }
     }
-
 }

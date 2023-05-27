@@ -1,12 +1,12 @@
 /**
  * Copyright 2012 Netflix, Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,7 +16,6 @@
 package com.netflix.hystrix.strategy.concurrency;
 
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,23 +37,24 @@ import org.slf4j.LoggerFactory;
  * <li>HystrixRequestVariables created on a child thread are available on sibling and parent threads.</li>
  * <li>HystrixRequestVariables created on a child thread will be cleaned up by the parent thread via the {@link #shutdown} method.</li>
  * </ul>
- * 
+ *
  * <p>
  * Note on thread-safety: By design a HystrixRequestVariables is intended to be accessed by all threads in a user request, thus anything stored in a HystrixRequestVariables must be thread-safe and
  * plan on being accessed/mutated concurrently.
  * <p>
  * For example, a HashMap would likely not be a good choice for a RequestVariable value, but ConcurrentHashMap would.
- * 
+ *
  * @param <T>
  *            Type to be stored on the HystrixRequestVariable
  *            <p>
  *            Example 1: {@code HystrixRequestVariable<ConcurrentHashMap<String, DataObject>>} <p>
  *            Example 2: {@code HystrixRequestVariable<PojoThatIsThreadSafe>}
- * 
+ *
  * @ExcludeFromJavadoc
  * @ThreadSafe
  */
 public class HystrixRequestVariableDefault<T> implements HystrixRequestVariable<T> {
+
     static final Logger logger = LoggerFactory.getLogger(HystrixRequestVariableDefault.class);
 
     /**
@@ -66,7 +66,7 @@ public class HystrixRequestVariableDefault<T> implements HystrixRequestVariable<
 
     /**
      * Get the current value for this variable for the current request context.
-     * 
+     *
      * @return the value of the variable for the current request,
      *         or null if no value has been set and there is no initial value
      */
@@ -76,13 +76,11 @@ public class HystrixRequestVariableDefault<T> implements HystrixRequestVariable<
             throw new IllegalStateException(HystrixRequestContext.class.getSimpleName() + ".initializeContext() must be called at the beginning of each request before RequestVariable functionality can be used.");
         }
         ConcurrentHashMap<HystrixRequestVariableDefault<?>, LazyInitializer<?>> variableMap = HystrixRequestContext.getContextForCurrentThread().state;
-
         // short-circuit the synchronized path below if we already have the value in the ConcurrentHashMap
         LazyInitializer<?> v = variableMap.get(this);
         if (v != null) {
             return (T) v.get();
         }
-
         /*
          * Optimistically create a LazyInitializer to put into the ConcurrentHashMap.
          * 
@@ -113,9 +111,9 @@ public class HystrixRequestVariableDefault<T> implements HystrixRequestVariable<
      * <p>
      * This is called the first time the value of the HystrixRequestVariable is fetched in a request. Override this to provide an initial value for a HystrixRequestVariable on each request on which it
      * is used.
-     * 
+     *
      * The default implementation returns null.
-     * 
+     *
      * @return initial value of the HystrixRequestVariable to use for the instance being constructed
      */
     public T initialValue() {
@@ -127,7 +125,7 @@ public class HystrixRequestVariableDefault<T> implements HystrixRequestVariable<
      * <p>
      * Note, if a value already exists, the set will result in overwriting that value. It is up to the caller to ensure the existing value is cleaned up. The {@link #shutdown} method will not be
      * called
-     * 
+     *
      * @param value
      *            the value to set
      */
@@ -149,7 +147,8 @@ public class HystrixRequestVariableDefault<T> implements HystrixRequestVariable<
     }
 
     @SuppressWarnings("unchecked")
-    /* package */static <T> void remove(HystrixRequestContext context, HystrixRequestVariableDefault<T> v) {
+    static </* package */
+    T> void remove(HystrixRequestContext context, HystrixRequestVariableDefault<T> v) {
         // remove first so no other threads get it
         LazyInitializer<?> o = context.state.remove(v);
         if (o != null) {
@@ -167,7 +166,7 @@ public class HystrixRequestVariableDefault<T> implements HystrixRequestVariable<
      * By default does nothing.
      * <p>
      * NOTE: Do not call <code>get()</code> from within this method or <code>initialValue()</code> will be invoked again. The current value is passed in as an argument.
-     * 
+     *
      * @param value
      *            the value of the HystrixRequestVariable being removed
      */
@@ -181,10 +180,12 @@ public class HystrixRequestVariableDefault<T> implements HystrixRequestVariable<
      * <p>
      * This class can be instantiated and garbage collected without calling initialValue() as long as the get() method is not invoked and can thus be used with compareAndSet in
      * ConcurrentHashMap.putIfAbsent and allow "losers" in a thread-race to be discarded.
-     * 
+     *
      * @param <T>
      */
-    /* package */static final class LazyInitializer<T> {
+    /* package */
+    static final class LazyInitializer<T> {
+
         // @GuardedBy("synchronization on get() or construction")
         private T value;
 

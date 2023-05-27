@@ -17,18 +17,16 @@ package com.netflix.hystrix.contrib.metrics.controller;
 
 /**
  * @author justinjose28
- * 
  */
 public class HystrixConfigControllerTest extends HystricsMetricsControllerTest {
 
-	@Override
-	protected String getPath() {
-		return "hystrix/config.stream";
-	}
+    @Override
+    protected String getPath() {
+        return "hystrix/config.stream";
+    }
 
-	@Override
-	protected boolean isStreamValid(String data) {
-		return data.contains("\"type\":\"HystrixConfig\"");
-	}
-
+    @Override
+    protected boolean isStreamValid(String data) {
+        return data.contains("\"type\":\"HystrixConfig\"");
+    }
 }

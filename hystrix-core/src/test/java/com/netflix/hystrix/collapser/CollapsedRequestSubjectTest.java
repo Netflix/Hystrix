@@ -17,24 +17,20 @@ package com.netflix.hystrix.collapser;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-
 import org.junit.Test;
-
 import rx.Observable;
 
 public class CollapsedRequestSubjectTest {
+
     @Test
     public void testSetResponseSuccess() throws InterruptedException, ExecutionException {
         CollapsedRequestSubject<String, String> cr = new CollapsedRequestSubject<String, String>("hello");
         Observable<String> o = cr.toObservable();
         Future<String> v = o.toBlocking().toFuture();
-
         cr.setResponse("theResponse");
-
         // fetch value
         assertEquals("theResponse", v.get());
     }
@@ -44,9 +40,7 @@ public class CollapsedRequestSubjectTest {
         CollapsedRequestSubject<String, String> cr = new CollapsedRequestSubject<String, String>("hello");
         Observable<String> o = cr.toObservable();
         Future<String> v = o.toBlocking().toFuture();
-
         cr.setResponse(null);
-
         // fetch value
         assertEquals(null, v.get());
     }
@@ -56,9 +50,7 @@ public class CollapsedRequestSubjectTest {
         CollapsedRequestSubject<String, String> cr = new CollapsedRequestSubject<String, String>("hello");
         Observable<String> o = cr.toObservable();
         Future<String> v = o.toBlocking().toFuture();
-
         cr.setException(new RuntimeException("anException"));
-
         // fetch value
         try {
             v.get();
@@ -73,16 +65,12 @@ public class CollapsedRequestSubjectTest {
         CollapsedRequestSubject<String, String> cr = new CollapsedRequestSubject<String, String>("hello");
         Observable<String> o = cr.toObservable();
         Future<String> v = o.toBlocking().toFuture();
-
         cr.setResponse("theResponse");
-
         try {
             cr.setException(new RuntimeException("anException"));
             fail("expected IllegalState");
         } catch (IllegalStateException e) {
-
         }
-
         assertEquals("theResponse", v.get());
     }
 
@@ -91,16 +79,12 @@ public class CollapsedRequestSubjectTest {
         CollapsedRequestSubject<String, String> cr = new CollapsedRequestSubject<String, String>("hello");
         Observable<String> o = cr.toObservable();
         Future<String> v = o.toBlocking().toFuture();
-
         cr.setException(new RuntimeException("anException"));
-
         try {
             cr.setResponse("theResponse");
             fail("expected IllegalState");
         } catch (IllegalStateException e) {
-
         }
-
         try {
             v.get();
             fail("expected exception");
@@ -114,16 +98,12 @@ public class CollapsedRequestSubjectTest {
         CollapsedRequestSubject<String, String> cr = new CollapsedRequestSubject<String, String>("hello");
         Observable<String> o = cr.toObservable();
         Future<String> v = o.toBlocking().toFuture();
-
         cr.setResponse("theResponse");
-
         try {
             cr.setResponse("theResponse2");
             fail("expected IllegalState");
         } catch (IllegalStateException e) {
-
         }
-
         assertEquals("theResponse", v.get());
     }
 
@@ -132,16 +112,13 @@ public class CollapsedRequestSubjectTest {
         CollapsedRequestSubject<String, String> cr = new CollapsedRequestSubject<String, String>("hello");
         Observable<String> o = cr.toObservable();
         Future<String> f = o.toBlocking().toFuture();
-
         // cancel/unsubscribe
         f.cancel(true);
-
         try {
             cr.setResponse("theResponse");
         } catch (IllegalStateException e) {
             fail("this should have done nothing as it was unsubscribed already");
         }
-
         // expect CancellationException after cancelling
         f.get();
     }
@@ -151,16 +128,13 @@ public class CollapsedRequestSubjectTest {
         CollapsedRequestSubject<String, String> cr = new CollapsedRequestSubject<String, String>("hello");
         Observable<String> o = cr.toObservable();
         Future<String> f = o.toBlocking().toFuture();
-
         // cancel/unsubscribe
         f.cancel(true);
-
         try {
             cr.setException(new RuntimeException("anException"));
         } catch (IllegalStateException e) {
             fail("this should have done nothing as it was unsubscribed already");
         }
-
         // expect CancellationException after cancelling
         f.get();
     }
@@ -170,12 +144,9 @@ public class CollapsedRequestSubjectTest {
         CollapsedRequestSubject<String, String> cr = new CollapsedRequestSubject<String, String>("hello");
         Observable<String> o = cr.toObservable();
         Future<String> v = o.toBlocking().toFuture();
-
         cr.setResponse("theResponse");
-
         // unsubscribe after the value is sent
         v.cancel(true);
-
         // still get value as it was set before canceling
         assertEquals("theResponse", v.get());
     }

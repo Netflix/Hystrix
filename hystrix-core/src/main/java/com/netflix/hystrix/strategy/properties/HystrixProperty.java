@@ -22,7 +22,7 @@ import com.netflix.hystrix.strategy.properties.HystrixPropertiesChainedArchaiusP
 
 /**
  * Generic interface to represent a property value so Hystrix can consume properties without being tied to any particular backing implementation.
- * 
+ *
  * @param <T>
  *            Type of property value
  */
@@ -42,7 +42,6 @@ public interface HystrixProperty<T> {
                 public T get() {
                     return value;
                 }
-
             };
         }
 
@@ -56,7 +55,6 @@ public interface HystrixProperty<T> {
                 public Integer get() {
                     return value.get();
                 }
-
             };
         }
 
@@ -70,7 +68,6 @@ public interface HystrixProperty<T> {
                 public Long get() {
                     return value.get();
                 }
-
             };
         }
 
@@ -84,7 +81,6 @@ public interface HystrixProperty<T> {
                 public String get() {
                     return value.get();
                 }
-
             };
         }
 
@@ -98,13 +94,12 @@ public interface HystrixProperty<T> {
                 public Boolean get() {
                     return value.get();
                 }
-
             };
         }
 
         /**
          * When retrieved this will return the value from the given {@link HystrixProperty} or if that returns null then return the <code>defaultValue</code>.
-         * 
+         *
          * @param value
          *            {@link HystrixProperty} of property value that can return null (meaning no value)
          * @param defaultValue
@@ -123,13 +118,12 @@ public interface HystrixProperty<T> {
                         return v;
                     }
                 }
-
             };
         }
 
         /**
          * When retrieved this will iterate over the contained {@link HystrixProperty} instances until a non-null value is found and return that.
-         * 
+         *
          * @param values properties to iterate over
          * @return first non-null value or null if none found
          */
@@ -146,7 +140,6 @@ public interface HystrixProperty<T> {
                     }
                     return null;
                 }
-
             };
         }
 
@@ -160,7 +153,6 @@ public interface HystrixProperty<T> {
                 public T get() {
                     return chainedProperty.get();
                 }
-
             };
         }
 
@@ -171,10 +163,7 @@ public interface HystrixProperty<T> {
                 public T get() {
                     return null;
                 }
-
             };
         }
-
     }
-
 }

@@ -21,7 +21,6 @@ import rx.Observable;
 import rx.functions.Action0;
 import rx.functions.Func1;
 import rx.functions.Func2;
-
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -32,36 +31,38 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @param <Output> type of data emitted to stream subscribers (often is the same as A but does not have to be)
  */
 public abstract class BucketedRollingCounterStream<Event extends HystrixEvent, Bucket, Output> extends BucketedCounterStream<Event, Bucket, Output> {
+
     private Observable<Output> sourceStream;
+
     private final AtomicBoolean isSourceCurrentlySubscribed = new AtomicBoolean(false);
 
-    protected BucketedRollingCounterStream(HystrixEventStream<Event> stream, final int numBuckets, int bucketSizeInMs,
-                                           final Func2<Bucket, Event, Bucket> appendRawEventToBucket,
-                                           final Func2<Output, Bucket, Output> reduceBucket) {
+    protected BucketedRollingCounterStream(HystrixEventStream<Event> stream, final int numBuckets, int bucketSizeInMs, final Func2<Bucket, Event, Bucket> appendRawEventToBucket, final Func2<Output, Bucket, Output> reduceBucket) {
         super(stream, numBuckets, bucketSizeInMs, appendRawEventToBucket);
         Func1<Observable<Bucket>, Observable<Output>> reduceWindowToSummary = new Func1<Observable<Bucket>, Observable<Output>>() {
+
             @Override
             public Observable<Output> call(Observable<Bucket> window) {
                 return window.scan(getEmptyOutputValue(), reduceBucket).skip(numBuckets);
             }
         };
-        this.sourceStream = bucketedStream      //stream broken up into buckets
-                .window(numBuckets, 1)          //emit overlapping windows of buckets
-                .flatMap(reduceWindowToSummary) //convert a window of bucket-summaries into a single summary
-                .doOnSubscribe(new Action0() {
-                    @Override
-                    public void call() {
-                        isSourceCurrentlySubscribed.set(true);
-                    }
-                })
-                .doOnUnsubscribe(new Action0() {
-                    @Override
-                    public void call() {
-                        isSourceCurrentlySubscribed.set(false);
-                    }
-                })
-                .share()                        //multiple subscribers should get same data
-                .onBackpressureDrop();          //if there are slow consumers, data should not buffer
+        this.sourceStream = //stream broken up into buckets
+        bucketedStream.window(numBuckets, //emit overlapping windows of buckets
+        1).flatMap(//convert a window of bucket-summaries into a single summary
+        reduceWindowToSummary).doOnSubscribe(new Action0() {
+
+            @Override
+            public void call() {
+                isSourceCurrentlySubscribed.set(true);
+            }
+        }).doOnUnsubscribe(new Action0() {
+
+            @Override
+            public void call() {
+                isSourceCurrentlySubscribed.set(false);
+            }
+        }).//multiple subscribers should get same data
+        share().//if there are slow consumers, data should not buffer
+        onBackpressureDrop();
     }
 
     @Override
@@ -69,7 +70,8 @@ public abstract class BucketedRollingCounterStream<Event extends HystrixEvent, B
         return sourceStream;
     }
 
-    /* package-private */ boolean isSourceCurrentlySubscribed() {
+    /* package-private */
+    boolean isSourceCurrentlySubscribed() {
         return isSourceCurrentlySubscribed.get();
     }
 }

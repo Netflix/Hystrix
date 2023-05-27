@@ -1,12 +1,12 @@
 /**
  * Copyright 2013 Netflix, Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,7 +24,6 @@ import com.netflix.hystrix.strategy.properties.HystrixProperty;
 import com.netflix.hystrix.util.PlatformSpecific;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -60,7 +59,7 @@ public abstract class HystrixConcurrencyStrategy {
      * <b>Default Implementation</b>
      * <p>
      * Implementation using standard java.util.concurrent.ThreadPoolExecutor
-     * 
+     *
      * @param threadPoolKey
      *            {@link HystrixThreadPoolKey} representing the {@link HystrixThreadPool} that this {@link ThreadPoolExecutor} will be used for.
      * @param corePoolSize
@@ -77,14 +76,10 @@ public abstract class HystrixConcurrencyStrategy {
      */
     public ThreadPoolExecutor getThreadPool(final HystrixThreadPoolKey threadPoolKey, HystrixProperty<Integer> corePoolSize, HystrixProperty<Integer> maximumPoolSize, HystrixProperty<Integer> keepAliveTime, TimeUnit unit, BlockingQueue<Runnable> workQueue) {
         final ThreadFactory threadFactory = getThreadFactory(threadPoolKey);
-
         final int dynamicCoreSize = corePoolSize.get();
         final int dynamicMaximumSize = maximumPoolSize.get();
-
         if (dynamicCoreSize > dynamicMaximumSize) {
-            logger.error("Hystrix ThreadPool configuration at startup for : " + threadPoolKey.name() + " is trying to set coreSize = " +
-                    dynamicCoreSize + " and maximumSize = " + dynamicMaximumSize + ".  Maximum size will be set to " +
-                    dynamicCoreSize + ", the coreSize value, since it must be equal to or greater than the coreSize value");
+            logger.error("Hystrix ThreadPool configuration at startup for : " + threadPoolKey.name() + " is trying to set coreSize = " + dynamicCoreSize + " and maximumSize = " + dynamicMaximumSize + ".  Maximum size will be set to " + dynamicCoreSize + ", the coreSize value, since it must be equal to or greater than the coreSize value");
             return new ThreadPoolExecutor(dynamicCoreSize, dynamicCoreSize, keepAliveTime.get(), unit, workQueue, threadFactory);
         } else {
             return new ThreadPoolExecutor(dynamicCoreSize, dynamicMaximumSize, keepAliveTime.get(), unit, workQueue, threadFactory);
@@ -93,19 +88,15 @@ public abstract class HystrixConcurrencyStrategy {
 
     public ThreadPoolExecutor getThreadPool(final HystrixThreadPoolKey threadPoolKey, HystrixThreadPoolProperties threadPoolProperties) {
         final ThreadFactory threadFactory = getThreadFactory(threadPoolKey);
-
         final boolean allowMaximumSizeToDivergeFromCoreSize = threadPoolProperties.getAllowMaximumSizeToDivergeFromCoreSize().get();
         final int dynamicCoreSize = threadPoolProperties.coreSize().get();
         final int keepAliveTime = threadPoolProperties.keepAliveTimeMinutes().get();
         final int maxQueueSize = threadPoolProperties.maxQueueSize().get();
         final BlockingQueue<Runnable> workQueue = getBlockingQueue(maxQueueSize);
-
         if (allowMaximumSizeToDivergeFromCoreSize) {
             final int dynamicMaximumSize = threadPoolProperties.maximumSize().get();
             if (dynamicCoreSize > dynamicMaximumSize) {
-                logger.error("Hystrix ThreadPool configuration at startup for : " + threadPoolKey.name() + " is trying to set coreSize = " +
-                        dynamicCoreSize + " and maximumSize = " + dynamicMaximumSize + ".  Maximum size will be set to " +
-                        dynamicCoreSize + ", the coreSize value, since it must be equal to or greater than the coreSize value");
+                logger.error("Hystrix ThreadPool configuration at startup for : " + threadPoolKey.name() + " is trying to set coreSize = " + dynamicCoreSize + " and maximumSize = " + dynamicMaximumSize + ".  Maximum size will be set to " + dynamicCoreSize + ", the coreSize value, since it must be equal to or greater than the coreSize value");
                 return new ThreadPoolExecutor(dynamicCoreSize, dynamicCoreSize, keepAliveTime, TimeUnit.MINUTES, workQueue, threadFactory);
             } else {
                 return new ThreadPoolExecutor(dynamicCoreSize, dynamicMaximumSize, keepAliveTime, TimeUnit.MINUTES, workQueue, threadFactory);
@@ -118,6 +109,7 @@ public abstract class HystrixConcurrencyStrategy {
     private static ThreadFactory getThreadFactory(final HystrixThreadPoolKey threadPoolKey) {
         if (!PlatformSpecific.isAppEngineStandardEnvironment()) {
             return new ThreadFactory() {
+
                 private final AtomicInteger threadNumber = new AtomicInteger(0);
 
                 @Override
@@ -126,7 +118,6 @@ public abstract class HystrixConcurrencyStrategy {
                     thread.setDaemon(true);
                     return thread;
                 }
-
             };
         } else {
             return PlatformSpecific.getAppEngineThreadFactory();
@@ -142,7 +133,7 @@ public abstract class HystrixConcurrencyStrategy {
      * <b>Default Implementation</b>
      * <p>
      * Implementation returns {@link SynchronousQueue} when maxQueueSize <= 0 or {@link LinkedBlockingQueue} when maxQueueSize > 0.
-     * 
+     *
      * @param maxQueueSize
      *            The max size of the queue requested via properties (or system default if no properties set).
      * @return instance of {@code BlockingQueue<Runnable>}
@@ -171,7 +162,7 @@ public abstract class HystrixConcurrencyStrategy {
      * <b>Default Implementation</b>
      * <p>
      * Pass-thru that does no wrapping.
-     * 
+     *
      * @param callable
      *            {@code Callable<T>} to be executed via a {@link ThreadPoolExecutor}
      * @return {@code Callable<T>} either as a pass-thru or wrapping the one given
@@ -189,7 +180,7 @@ public abstract class HystrixConcurrencyStrategy {
      * <p>
      * If this method is implemented it is generally necessary to also implemented {@link #wrapCallable(Callable)} in order to copy state
      * from parent to child thread.
-     * 
+     *
      * @param rv
      *            {@link HystrixRequestVariableLifecycle} with lifecycle implementations from Hystrix
      * @return {@code HystrixRequestVariable<T>}
@@ -197,5 +188,4 @@ public abstract class HystrixConcurrencyStrategy {
     public <T> HystrixRequestVariable<T> getRequestVariable(final HystrixRequestVariableLifecycle<T> rv) {
         return new HystrixLifecycleForwardingRequestVariable<T>(rv);
     }
-    
 }

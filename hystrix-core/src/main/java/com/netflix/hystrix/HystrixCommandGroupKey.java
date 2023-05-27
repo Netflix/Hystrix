@@ -25,20 +25,20 @@ import com.netflix.hystrix.util.InternMap;
  * This interface is intended to work natively with Enums so that implementing code can have an enum with the owners that implements this interface.
  */
 public interface HystrixCommandGroupKey extends HystrixKey {
+
     class Factory {
+
         private Factory() {
         }
 
         // used to intern instances so we don't keep re-creating them millions of times for the same key
-        private static final InternMap<String, HystrixCommandGroupDefault> intern
-                = new InternMap<String, HystrixCommandGroupDefault>(
-                new InternMap.ValueConstructor<String, HystrixCommandGroupDefault>() {
-                    @Override
-                    public HystrixCommandGroupDefault create(String key) {
-                        return new HystrixCommandGroupDefault(key);
-                    }
-                });
+        private static final InternMap<String, HystrixCommandGroupDefault> intern = new InternMap<String, HystrixCommandGroupDefault>(new InternMap.ValueConstructor<String, HystrixCommandGroupDefault>() {
 
+            @Override
+            public HystrixCommandGroupDefault create(String key) {
+                return new HystrixCommandGroupDefault(key);
+            }
+        });
 
         /**
          * Retrieve (or create) an interned HystrixCommandGroup instance for a given name.
@@ -47,16 +47,18 @@ public interface HystrixCommandGroupKey extends HystrixKey {
          * @return HystrixCommandGroup instance that is interned (cached) so a given name will always retrieve the same instance.
          */
         public static HystrixCommandGroupKey asKey(String name) {
-           return intern.interned(name);
+            return intern.interned(name);
         }
 
         private static class HystrixCommandGroupDefault extends HystrixKey.HystrixKeyDefault implements HystrixCommandGroupKey {
+
             public HystrixCommandGroupDefault(String name) {
                 super(name);
             }
         }
 
-        /* package-private */ static int getGroupCount() {
+        /* package-private */
+        static int getGroupCount() {
             return intern.size();
         }
     }

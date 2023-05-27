@@ -19,7 +19,6 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.netflix.hystrix.contrib.javanica.cache.annotation.CacheKey;
-
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.Set;
@@ -33,9 +32,13 @@ import java.util.Set;
 public class CacheInvocationParameter {
 
     private final Class<?> rawType;
+
     private final Object value;
+
     private final CacheKey cacheKeyAnnotation;
+
     private final Set<Annotation> annotations;
+
     private final int position;
 
     public CacheInvocationParameter(Class<?> rawType, Object value, Annotation[] annotations, int position) {
@@ -102,11 +105,11 @@ public class CacheInvocationParameter {
 
     private Annotation cacheKeyAnnotation() {
         return Iterables.tryFind(annotations, new Predicate<Annotation>() {
+
             @Override
             public boolean apply(Annotation input) {
                 return input.annotationType().equals(CacheKey.class);
             }
         }).orNull();
     }
-
 }

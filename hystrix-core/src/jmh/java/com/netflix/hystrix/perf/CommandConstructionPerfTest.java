@@ -21,7 +21,6 @@ import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
-
 import java.util.concurrent.TimeUnit;
 
 public class CommandConstructionPerfTest {
@@ -29,10 +28,11 @@ public class CommandConstructionPerfTest {
     static HystrixCommandGroupKey groupKey = HystrixCommandGroupKey.Factory.asKey("Group");
 
     @Benchmark
-    @BenchmarkMode({Mode.SingleShotTime})
+    @BenchmarkMode({ Mode.SingleShotTime })
     @OutputTimeUnit(TimeUnit.MICROSECONDS)
     public HystrixCommand constructHystrixCommandByGroupKeyOnly() {
         return new HystrixCommand<Integer>(groupKey) {
+
             @Override
             protected Integer run() throws Exception {
                 return 1;

@@ -22,7 +22,6 @@ import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.metric.HystrixCommandCompletion;
 import com.netflix.hystrix.metric.HystrixCommandCompletionStream;
 import rx.functions.Func2;
-
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -45,12 +44,12 @@ public class HealthCountsStream extends BucketedRollingCounterStream<HystrixComm
     private static final int NUM_EVENT_TYPES = HystrixEventType.values().length;
 
     private static final Func2<HystrixCommandMetrics.HealthCounts, long[], HystrixCommandMetrics.HealthCounts> healthCheckAccumulator = new Func2<HystrixCommandMetrics.HealthCounts, long[], HystrixCommandMetrics.HealthCounts>() {
+
         @Override
         public HystrixCommandMetrics.HealthCounts call(HystrixCommandMetrics.HealthCounts healthCounts, long[] bucketEventCounts) {
             return healthCounts.plus(bucketEventCounts);
         }
     };
-
 
     public static HealthCountsStream getInstance(HystrixCommandKey commandKey, HystrixCommandProperties properties) {
         final int healthCountBucketSizeInMs = properties.metricsHealthSnapshotIntervalInMilliseconds().get();
@@ -58,7 +57,6 @@ public class HealthCountsStream extends BucketedRollingCounterStream<HystrixComm
             throw new RuntimeException("You have set the bucket size to 0ms.  Please set a positive number, so that the metric stream can be properly consumed");
         }
         final int numHealthCountBuckets = properties.metricsRollingStatisticalWindowInMilliseconds().get() / healthCountBucketSizeInMs;
-
         return getInstance(commandKey, numHealthCountBuckets, healthCountBucketSizeInMs);
     }
 
@@ -71,9 +69,7 @@ public class HealthCountsStream extends BucketedRollingCounterStream<HystrixComm
             synchronized (HealthCountsStream.class) {
                 HealthCountsStream existingStream = streams.get(commandKey.name());
                 if (existingStream == null) {
-                    HealthCountsStream newStream = new HealthCountsStream(commandKey, numBuckets, bucketSizeInMs,
-                            HystrixCommandMetrics.appendEventToBucket);
-
+                    HealthCountsStream newStream = new HealthCountsStream(commandKey, numBuckets, bucketSizeInMs, HystrixCommandMetrics.appendEventToBucket);
                     streams.putIfAbsent(commandKey.name(), newStream);
                     healthStream = newStream;
                 } else {
@@ -93,8 +89,7 @@ public class HealthCountsStream extends BucketedRollingCounterStream<HystrixComm
         streams.remove(key.name());
     }
 
-    private HealthCountsStream(final HystrixCommandKey commandKey, final int numBuckets, final int bucketSizeInMs,
-                               Func2<long[], HystrixCommandCompletion, long[]> reduceCommandCompletion) {
+    private HealthCountsStream(final HystrixCommandKey commandKey, final int numBuckets, final int bucketSizeInMs, Func2<long[], HystrixCommandCompletion, long[]> reduceCommandCompletion) {
         super(HystrixCommandCompletionStream.getInstance(commandKey), numBuckets, bucketSizeInMs, reduceCommandCompletion, healthCheckAccumulator);
     }
 

@@ -13,9 +13,8 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
  * Created by dmgcodevil.
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = {AopCglibConfig.class, DefaultIgnoreExceptionsTest.DefaultIgnoreExceptionsTestConfig.class})
+@ContextConfiguration(classes = { AopCglibConfig.class, DefaultIgnoreExceptionsTest.DefaultIgnoreExceptionsTestConfig.class })
 public class DefaultIgnoreExceptionsTest extends BasicDefaultIgnoreExceptionsTest {
-
 
     @Autowired
     private BasicDefaultIgnoreExceptionsTest.Service service;

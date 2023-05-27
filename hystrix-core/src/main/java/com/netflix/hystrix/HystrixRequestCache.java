@@ -1,12 +1,12 @@
 /**
  * Copyright 2012 Netflix, Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,7 +23,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.internal.operators.CachedObservable;
-
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -32,6 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * This is used for short-lived caching of {@link HystrixCommand} instances to allow de-duping of command executions within a request.
  */
 public class HystrixRequestCache {
+
     @SuppressWarnings("unused")
     private static final Logger logger = LoggerFactory.getLogger(HystrixRequestCache.class);
 
@@ -39,6 +39,7 @@ public class HystrixRequestCache {
     private final static ConcurrentHashMap<RequestCacheKey, HystrixRequestCache> caches = new ConcurrentHashMap<RequestCacheKey, HystrixRequestCache>();
 
     private final RequestCacheKey rcKey;
+
     private final HystrixConcurrencyStrategy concurrencyStrategy;
 
     /**
@@ -57,7 +58,6 @@ public class HystrixRequestCache {
         public void shutdown(ConcurrentHashMap<ValueCacheKey, HystrixCachedObservable<?>> value) {
             // nothing to shutdown
         }
-
     });
 
     private HystrixRequestCache(RequestCacheKey rcKey, HystrixConcurrencyStrategy concurrencyStrategy) {
@@ -91,12 +91,13 @@ public class HystrixRequestCache {
 
     /**
      * Retrieve a cached Future for this request scope if a matching command has already been executed/queued.
-     * 
+     *
      * @return {@code Future<T>}
      */
     // suppressing warnings because we are using a raw Future since it's in a heterogeneous ConcurrentHashMap cache
     @SuppressWarnings({ "unchecked" })
-    /* package */<T> HystrixCachedObservable<T> get(String cacheKey) {
+    </* package */
+    T> HystrixCachedObservable<T> get(String cacheKey) {
         ValueCacheKey key = getRequestCacheKey(cacheKey);
         if (key != null) {
             ConcurrentHashMap<ValueCacheKey, HystrixCachedObservable<?>> cacheInstance = requestVariableForCache.get(concurrencyStrategy);
@@ -113,17 +114,18 @@ public class HystrixRequestCache {
      * Put the Future in the cache if it does not already exist.
      * <p>
      * If this method returns a non-null value then another thread won the race and it should be returned instead of proceeding with execution of the new Future.
-     * 
+     *
      * @param cacheKey
      *            key as defined by {@link HystrixCommand#getCacheKey()}
      * @param f
      *            Future to be cached
-     * 
+     *
      * @return null if nothing else was in the cache (or this {@link HystrixCommand} does not have a cacheKey) or previous value if another thread beat us to adding to the cache
      */
     // suppressing warnings because we are using a raw Future since it's in a heterogeneous ConcurrentHashMap cache
     @SuppressWarnings({ "unchecked" })
-    /* package */<T> HystrixCachedObservable<T> putIfAbsent(String cacheKey, HystrixCachedObservable<T> f) {
+    </* package */
+    T> HystrixCachedObservable<T> putIfAbsent(String cacheKey, HystrixCachedObservable<T> f) {
         ValueCacheKey key = getRequestCacheKey(cacheKey);
         if (key != null) {
             /* look for the stored value */
@@ -143,7 +145,7 @@ public class HystrixRequestCache {
 
     /**
      * Clear the cache for a given cacheKey.
-     * 
+     *
      * @param cacheKey
      *            key as defined by {@link HystrixCommand#getCacheKey()}
      */
@@ -154,7 +156,6 @@ public class HystrixRequestCache {
             if (cacheInstance == null) {
                 throw new IllegalStateException("Request caching is not available. Maybe you need to initialize the HystrixRequestContext?");
             }
-
             /* remove this cache key */
             cacheInstance.remove(key);
         }
@@ -165,7 +166,7 @@ public class HystrixRequestCache {
      * <p>
      * We prefix with {@link HystrixCommandKey} or {@link HystrixCollapserKey} since the cache is heterogeneous and we don't want to accidentally return cached Futures from different
      * types.
-     * 
+     *
      * @return ValueCacheKey
      */
     private ValueCacheKey getRequestCacheKey(String cacheKey) {
@@ -177,7 +178,9 @@ public class HystrixRequestCache {
     }
 
     private static class ValueCacheKey {
+
         private final RequestCacheKey rvKey;
+
         private final String valueCacheKey;
 
         private ValueCacheKey(RequestCacheKey rvKey, String valueCacheKey) {
@@ -215,12 +218,15 @@ public class HystrixRequestCache {
                 return false;
             return true;
         }
-
     }
 
     private static class RequestCacheKey {
-        private final short type; // used to differentiate between Collapser/Command if key is same between them
+
+        // used to differentiate between Collapser/Command if key is same between them
+        private final short type;
+
         private final String key;
+
         private final HystrixConcurrencyStrategy concurrencyStrategy;
 
         private RequestCacheKey(HystrixCommandKey commandKey, HystrixConcurrencyStrategy concurrencyStrategy) {
@@ -276,7 +282,5 @@ public class HystrixRequestCache {
                 return false;
             return true;
         }
-
     }
-
 }

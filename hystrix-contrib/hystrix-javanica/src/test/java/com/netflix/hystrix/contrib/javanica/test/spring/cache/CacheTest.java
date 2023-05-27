@@ -33,12 +33,11 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
  * @author dmgcodevil
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = {AopCglibConfig.class, CacheTest.CacheTestConfig.class})
+@ContextConfiguration(classes = { AopCglibConfig.class, CacheTest.CacheTestConfig.class })
 public class CacheTest extends BasicCacheTest {
 
     @Autowired
     private ApplicationContext applicationContext;
-
 
     @Override
     protected UserService createUserService() {
@@ -50,6 +49,7 @@ public class CacheTest extends BasicCacheTest {
      */
     @Configurable
     public static class CacheTestConfig {
+
         @Bean
         @Scope(value = "prototype")
         public UserService userService() {
@@ -61,5 +61,4 @@ public class CacheTest extends BasicCacheTest {
             return new HystrixCacheAspect();
         }
     }
-
 }

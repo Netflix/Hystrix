@@ -25,7 +25,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = {AopCglibConfig.class, CommandPropertiesTest.CommandPropertiesTestConfig.class})
+@ContextConfiguration(classes = { AopCglibConfig.class, CommandPropertiesTest.CommandPropertiesTestConfig.class })
 public class CommandPropertiesTest extends BasicCommandPropertiesTest {
 
     @Autowired
@@ -36,7 +36,6 @@ public class CommandPropertiesTest extends BasicCommandPropertiesTest {
         return userService;
     }
 
-
     @Configurable
     public static class CommandPropertiesTestConfig {
 
@@ -45,5 +44,4 @@ public class CommandPropertiesTest extends BasicCommandPropertiesTest {
             return new UserService();
         }
     }
-
 }

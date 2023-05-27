@@ -20,6 +20,5 @@ package com.netflix.hystrix.contrib.javanica.util.bridge;
  */
 public interface GenericInterface<P1, R extends Parent> {
 
-
     R foo(P1 p1);
 }

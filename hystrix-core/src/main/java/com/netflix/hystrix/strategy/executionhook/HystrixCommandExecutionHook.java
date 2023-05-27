@@ -1,12 +1,12 @@
 /**
  * Copyright 2013 Netflix, Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -36,9 +36,9 @@ import com.netflix.hystrix.strategy.HystrixPlugins;
  * <p>
  * Methods are also invoked synchronously and will add to execution time of the commands so all behavior should be fast. If anything time-consuming is to be done it should be spawned asynchronously
  * onto separate worker threads.
- * 
+ *
  * @since 1.2
- * */
+ */
 public abstract class HystrixCommandExecutionHook {
 
     /**
@@ -61,7 +61,8 @@ public abstract class HystrixCommandExecutionHook {
      * @since 1.4
      */
     public <T> T onEmit(HystrixInvokable<T> commandInstance, T value) {
-        return value; //by default, just pass through
+        //by default, just pass through
+        return value;
     }
 
     /**
@@ -74,7 +75,8 @@ public abstract class HystrixCommandExecutionHook {
      * @since 1.2
      */
     public <T> Exception onError(HystrixInvokable<T> commandInstance, FailureType failureType, Exception e) {
-        return e; //by default, just pass through
+        //by default, just pass through
+        return e;
     }
 
     /**
@@ -132,7 +134,8 @@ public abstract class HystrixCommandExecutionHook {
      * @since 1.4
      */
     public <T> T onExecutionEmit(HystrixInvokable<T> commandInstance, T value) {
-        return value; //by default, just pass through
+        //by default, just pass through
+        return value;
     }
 
     /**
@@ -144,7 +147,8 @@ public abstract class HystrixCommandExecutionHook {
      * @since 1.4
      */
     public <T> Exception onExecutionError(HystrixInvokable<T> commandInstance, Exception e) {
-        return e; //by default, just pass through
+        //by default, just pass through
+        return e;
     }
 
     /**
@@ -178,7 +182,8 @@ public abstract class HystrixCommandExecutionHook {
      * @since 1.4
      */
     public <T> T onFallbackEmit(HystrixInvokable<T> commandInstance, T value) {
-        return value; //by default, just pass through
+        //by default, just pass through
+        return value;
     }
 
     /**
@@ -231,10 +236,10 @@ public abstract class HystrixCommandExecutionHook {
      * DEPRECATED: Change usages of this to {@link #onExecutionStart}.
      *
      * Invoked before {@link HystrixCommand#run()} is about to be executed.
-     * 
+     *
      * @param commandInstance
      *            The executing HystrixCommand instance.
-     * 
+     *
      * @since 1.2
      */
     @Deprecated
@@ -270,7 +275,7 @@ public abstract class HystrixCommandExecutionHook {
      * @param response
      *            from {@link HystrixCommand#run()}
      * @return T response object that can be modified, decorated, replaced or just returned as a pass-thru.
-     * 
+     *
      * @since 1.2
      */
     @Deprecated
@@ -305,13 +310,13 @@ public abstract class HystrixCommandExecutionHook {
      * DEPRECATED: Change usages of this to {@link #onExecutionError}
      *
      * Invoked after failed execution of {@link HystrixCommand#run()} with thrown Exception.
-     * 
+     *
      * @param commandInstance
      *            The executing HystrixCommand instance.
      * @param e
      *            Exception thrown by {@link HystrixCommand#run()}
      * @return Exception that can be decorated, replaced or just returned as a pass-thru.
-     * 
+     *
      * @since 1.2
      */
     @Deprecated
@@ -343,10 +348,10 @@ public abstract class HystrixCommandExecutionHook {
      * DEPRECATED: Change usages of this to {@link #onFallbackStart}
      *
      * Invoked before {@link HystrixCommand#getFallback()} is about to be executed.
-     * 
+     *
      * @param commandInstance
      *            The executing HystrixCommand instance.
-     * 
+     *
      * @since 1.2
      */
     @Deprecated
@@ -359,13 +364,13 @@ public abstract class HystrixCommandExecutionHook {
      * or to {@link #onFallbackSuccess} if you want to write a hook that handles success of the fallback method
      *
      * Invoked after successful execution of {@link HystrixCommand#getFallback()} with response value.
-     * 
+     *
      * @param commandInstance
      *            The executing HystrixCommand instance.
      * @param fallbackResponse
      *            from {@link HystrixCommand#getFallback()}
      * @return T response object that can be modified, decorated, replaced or just returned as a pass-thru.
-     * 
+     *
      * @since 1.2
      */
     @Deprecated
@@ -398,13 +403,13 @@ public abstract class HystrixCommandExecutionHook {
      * DEPRECATED: Change usages of this to {@link #onFallbackError}.
      *
      * Invoked after failed execution of {@link HystrixCommand#getFallback()} with thrown exception.
-     * 
+     *
      * @param commandInstance
      *            The executing HystrixCommand instance.
      * @param e
      *            Exception thrown by {@link HystrixCommand#getFallback()}
      * @return Exception that can be decorated, replaced or just returned as a pass-thru.
-     * 
+     *
      * @since 1.2
      */
     @Deprecated
@@ -417,10 +422,10 @@ public abstract class HystrixCommandExecutionHook {
      * DEPRECATED: Change usages of this to {@link #onStart}.
      *
      * Invoked before {@link HystrixCommand} executes.
-     * 
+     *
      * @param commandInstance
      *            The executing HystrixCommand instance.
-     * 
+     *
      * @since 1.2
      */
     @Deprecated
@@ -435,13 +440,13 @@ public abstract class HystrixCommandExecutionHook {
      * Invoked after completion of {@link HystrixCommand} execution that results in a response.
      * <p>
      * The response can come either from {@link HystrixCommand#run()} or {@link HystrixCommand#getFallback()}.
-     * 
+     *
      * @param commandInstance
      *            The executing HystrixCommand instance.
      * @param response
      *            from {@link HystrixCommand#run()} or {@link HystrixCommand#getFallback()}.
      * @return T response object that can be modified, decorated, replaced or just returned as a pass-thru.
-     * 
+     *
      * @since 1.2
      */
     @Deprecated
@@ -476,7 +481,7 @@ public abstract class HystrixCommandExecutionHook {
      * DEPRECATED: Change usages of this to {@link #onError}.
      *
      * Invoked after failed completion of {@link HystrixCommand} execution.
-     * 
+     *
      * @param commandInstance
      *            The executing HystrixCommand instance.
      * @param failureType
@@ -486,7 +491,7 @@ public abstract class HystrixCommandExecutionHook {
      * @param e
      *            Exception thrown by {@link HystrixCommand}
      * @return Exception that can be decorated, replaced or just returned as a pass-thru.
-     * 
+     *
      * @since 1.2
      */
     @Deprecated
@@ -499,10 +504,10 @@ public abstract class HystrixCommandExecutionHook {
      * DEPRECATED: Change usages of this to {@link #onThreadStart}.
      *
      * Invoked at start of thread execution when {@link HystrixCommand} is executed using {@link ExecutionIsolationStrategy#THREAD}.
-     * 
+     *
      * @param commandInstance
      *            The executing HystrixCommand instance.
-     * 
+     *
      * @since 1.2
      */
     @Deprecated
@@ -516,10 +521,10 @@ public abstract class HystrixCommandExecutionHook {
      * Invoked at completion of thread execution when {@link HystrixCommand} is executed using {@link ExecutionIsolationStrategy#THREAD}.
      * This will get invoked if the Hystrix thread successfully executes, regardless of whether the calling thread
      * encountered a timeout.
-     * 
+     *
      * @param commandInstance
      *            The executing HystrixCommand instance.
-     * 
+     *
      * @since 1.2
      */
     @Deprecated

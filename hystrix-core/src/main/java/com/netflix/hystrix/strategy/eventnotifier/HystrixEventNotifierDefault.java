@@ -15,10 +15,9 @@
  */
 package com.netflix.hystrix.strategy.eventnotifier;
 
-
 /**
  * Default implementations of {@link HystrixEventNotifier} that does nothing.
- * 
+ *
  * @ExcludeFromJavadoc
  */
 public class HystrixEventNotifierDefault extends HystrixEventNotifier {
@@ -26,12 +25,9 @@ public class HystrixEventNotifierDefault extends HystrixEventNotifier {
     private static HystrixEventNotifierDefault INSTANCE = new HystrixEventNotifierDefault();
 
     private HystrixEventNotifierDefault() {
-
     }
 
     public static HystrixEventNotifier getInstance() {
         return INSTANCE;
     }
-
-
 }

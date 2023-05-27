@@ -33,14 +33,18 @@ public class CreditCardAuthorizationResult {
     }
 
     private final boolean success;
+
     private final boolean isDuplicate;
+
     private final String authorizationCode;
+
     private final String transactionID;
+
     private final String errorMessage;
 
     /**
      * Private constructor that normally would be a horrible API as it re-uses different arguments for different state.
-     * 
+     *
      * @param success
      * @param value
      * @param isResponseDuplicate
@@ -68,7 +72,7 @@ public class CreditCardAuthorizationResult {
 
     /**
      * Whether this result was a duplicate transaction.
-     * 
+     *
      * @return boolean
      */
     public boolean isDuplicateTransaction() {
@@ -79,7 +83,7 @@ public class CreditCardAuthorizationResult {
      * If <code>isSuccess() == true</code> this will return the authorization code.
      * <p>
      * If <code>isSuccess() == false</code> this will return NULL.
-     * 
+     *
      * @return String
      */
     public String getAuthorizationCode() {
@@ -90,7 +94,7 @@ public class CreditCardAuthorizationResult {
      * If <code>isSuccess() == true</code> this will return the transaction ID.
      * <p>
      * If <code>isSuccess() == false</code> this will return NULL.
-     * 
+     *
      * @return String
      */
     public String getTransactionID() {
@@ -101,7 +105,7 @@ public class CreditCardAuthorizationResult {
      * If <code>isSuccess() == false</code> this will return the error message.
      * <p>
      * If <code>isSuccess() == true</code> this will return NULL.
-     * 
+     *
      * @return String
      */
     public String getErrorMessage() {

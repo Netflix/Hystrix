@@ -22,7 +22,6 @@ package com.netflix.hystrix.util;
  * 
  * From http://gee.cs.oswego.edu/cgi-bin/viewcvs.cgi/jsr166/src/jsr166e/
  */
-
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
@@ -47,12 +46,15 @@ import java.io.Serializable;
  * @author Doug Lea
  */
 public class LongMaxUpdater extends Striped64 implements Serializable {
+
     private static final long serialVersionUID = 7249069246863182397L;
 
     /**
      * Version of max for use in retryUpdate
      */
-    final long fn(long v, long x) { return v > x ? v : x; }
+    final long fn(long v, long x) {
+        return v > x ? v : x;
+    }
 
     /**
      * Creates a new instance with initial maximum of {@code
@@ -68,14 +70,15 @@ public class LongMaxUpdater extends Striped64 implements Serializable {
      * @param x the value to update
      */
     public void update(long x) {
-        Cell[] as; long b, v; HashCode hc; Cell a; int n;
-        if ((as = cells) != null ||
-            (b = base) < x && !casBase(b, x)) {
+        Cell[] as;
+        long b, v;
+        HashCode hc;
+        Cell a;
+        int n;
+        if ((as = cells) != null || (b = base) < x && !casBase(b, x)) {
             boolean uncontended = true;
             int h = (hc = threadHashCode.get()).code;
-            if (as == null || (n = as.length) < 1 ||
-                (a = as[(n - 1) & h]) == null ||
-                ((v = a.value) < x && !(uncontended = a.cas(v, x))))
+            if (as == null || (n = as.length) < 1 || (a = as[(n - 1) & h]) == null || ((v = a.value) < x && !(uncontended = a.cas(v, x))))
                 retryUpdate(x, hc, uncontended);
         }
     }
@@ -167,7 +170,7 @@ public class LongMaxUpdater extends Striped64 implements Serializable {
      * primitive conversion.
      */
     public int intValue() {
-        return (int)max();
+        return (int) max();
     }
 
     /**
@@ -175,7 +178,7 @@ public class LongMaxUpdater extends Striped64 implements Serializable {
      * after a widening primitive conversion.
      */
     public float floatValue() {
-        return (float)max();
+        return (float) max();
     }
 
     /**
@@ -183,21 +186,18 @@ public class LongMaxUpdater extends Striped64 implements Serializable {
      * primitive conversion.
      */
     public double doubleValue() {
-        return (double)max();
+        return (double) max();
     }
 
-    private void writeObject(java.io.ObjectOutputStream s)
-        throws java.io.IOException {
+    private void writeObject(java.io.ObjectOutputStream s) throws java.io.IOException {
         s.defaultWriteObject();
         s.writeLong(max());
     }
 
-    private void readObject(ObjectInputStream s)
-        throws IOException, ClassNotFoundException {
+    private void readObject(ObjectInputStream s) throws IOException, ClassNotFoundException {
         s.defaultReadObject();
         busy = 0;
         cells = null;
         base = s.readLong();
     }
-
 }

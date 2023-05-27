@@ -22,16 +22,12 @@ abstract public class TestHystrixCommand<T> extends HystrixCommand<T> implements
     private final TestCommandBuilder builder;
 
     public TestHystrixCommand(TestCommandBuilder builder) {
-        super(builder.owner, builder.dependencyKey, builder.threadPoolKey, builder.circuitBreaker, builder.threadPool,
-                builder.commandPropertiesDefaults, builder.threadPoolPropertiesDefaults, builder.metrics,
-                builder.fallbackSemaphore, builder.executionSemaphore, TEST_PROPERTIES_FACTORY, builder.executionHook);
+        super(builder.owner, builder.dependencyKey, builder.threadPoolKey, builder.circuitBreaker, builder.threadPool, builder.commandPropertiesDefaults, builder.threadPoolPropertiesDefaults, builder.metrics, builder.fallbackSemaphore, builder.executionSemaphore, TEST_PROPERTIES_FACTORY, builder.executionHook);
         this.builder = builder;
     }
 
     public TestHystrixCommand(TestCommandBuilder builder, HystrixCommandExecutionHook executionHook) {
-        super(builder.owner, builder.dependencyKey, builder.threadPoolKey, builder.circuitBreaker, builder.threadPool,
-                builder.commandPropertiesDefaults, builder.threadPoolPropertiesDefaults, builder.metrics,
-                builder.fallbackSemaphore, builder.executionSemaphore, TEST_PROPERTIES_FACTORY, executionHook);
+        super(builder.owner, builder.dependencyKey, builder.threadPoolKey, builder.circuitBreaker, builder.threadPool, builder.commandPropertiesDefaults, builder.threadPoolPropertiesDefaults, builder.metrics, builder.fallbackSemaphore, builder.executionSemaphore, TEST_PROPERTIES_FACTORY, executionHook);
         this.builder = builder;
     }
 
