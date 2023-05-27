@@ -89,20 +89,16 @@ public class HystrixContextScheduler extends Scheduler {
 
         @Override
         public Subscription schedule(Action0 action, long delayTime, TimeUnit unit) {
-            if (threadPool != null) {
-                if (!threadPool.isQueueSpaceAvailable()) {
-                    throw new RejectedExecutionException("Rejected command because thread-pool queueSize is at rejection threshold.");
-                }
+            if (threadPool != null && !threadPool.isQueueSpaceAvailable()) {
+                throw new RejectedExecutionException("Rejected command because thread-pool queueSize is at rejection threshold.");
             }
             return worker.schedule(new HystrixContextSchedulerAction(concurrencyStrategy, action), delayTime, unit);
         }
 
         @Override
         public Subscription schedule(Action0 action) {
-            if (threadPool != null) {
-                if (!threadPool.isQueueSpaceAvailable()) {
-                    throw new RejectedExecutionException("Rejected command because thread-pool queueSize is at rejection threshold.");
-                }
+            if (threadPool != null && !threadPool.isQueueSpaceAvailable()) {
+                throw new RejectedExecutionException("Rejected command because thread-pool queueSize is at rejection threshold.");
             }
             return worker.schedule(new HystrixContextSchedulerAction(concurrencyStrategy, action));
         }

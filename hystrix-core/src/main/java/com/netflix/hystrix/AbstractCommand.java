@@ -471,11 +471,8 @@ abstract class AbstractCommand<R> implements HystrixInvokableInfo<R>, HystrixObs
                     throw new HystrixRuntimeException(FailureType.BAD_REQUEST_EXCEPTION, _cmd.getClass(), getLogMessagePrefix() + " command executed multiple times - this is not permitted.", ex, null);
                 }
                 commandStartTimestamp = System.currentTimeMillis();
-                if (properties.requestLogEnabled().get()) {
-                    // log this command execution regardless of what happened
-                    if (currentRequestLog != null) {
-                        currentRequestLog.addExecutedCommand(_cmd);
-                    }
+                if (properties.requestLogEnabled().get() && currentRequestLog != null) {
+                    currentRequestLog.addExecutedCommand(_cmd);
                 }
                 final boolean requestCacheEnabled = isRequestCachingEnabled();
                 final String cacheKey = getCacheKey();

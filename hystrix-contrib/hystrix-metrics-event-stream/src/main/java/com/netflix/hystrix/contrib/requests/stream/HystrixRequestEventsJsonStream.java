@@ -78,17 +78,15 @@ public class HystrixRequestEventsJsonStream {
         json.writeArrayFieldStart("events");
         ExecutionResult.EventCounts eventCounts = executionSignature.getEventCounts();
         for (HystrixEventType eventType : HystrixEventType.values()) {
-            if (eventType != HystrixEventType.COLLAPSED) {
-                if (eventCounts.contains(eventType)) {
-                    int eventCount = eventCounts.getCount(eventType);
-                    if (eventCount > 1) {
-                        json.writeStartObject();
-                        json.writeStringField("name", eventType.name());
-                        json.writeNumberField("count", eventCount);
-                        json.writeEndObject();
-                    } else {
-                        json.writeString(eventType.name());
-                    }
+            if (eventType != HystrixEventType.COLLAPSED && eventCounts.contains(eventType)) {
+                int eventCount = eventCounts.getCount(eventType);
+                if (eventCount > 1) {
+                    json.writeStartObject();
+                    json.writeStringField("name", eventType.name());
+                    json.writeNumberField("count", eventCount);
+                    json.writeEndObject();
+                } else {
+                    json.writeString(eventType.name());
                 }
             }
         }

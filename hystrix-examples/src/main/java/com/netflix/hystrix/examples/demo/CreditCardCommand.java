@@ -110,16 +110,14 @@ public class CreditCardCommand extends HystrixCommand<CreditCardAuthorizationRes
             return CreditCardAuthorizationResult.createFailedResponse(result.getReasonResponseCode() + " : " + result.getResponseText());
         } else {
             // check for duplicate transaction
-            if (result.getReasonResponseCode().getResponseReasonCode() == 11) {
-                if (result.getTarget().getAuthorizationCode() != null) {
-                    // We will treat this as a success as this is telling us we have a successful authorization code
-                    // just that we attempted to re-post it again during the 'duplicateWindow' time period.
-                    // This is part of the idempotent behavior we require so that we can safely timeout and/or fail and allow
-                    // client applications to re-attempt submitting a credit card transaction for the same order again.
-                    // In those cases if the client saw a failure but the transaction actually succeeded, this will capture the
-                    // duplicate response and behave to the client as a success.
-                    return CreditCardAuthorizationResult.createDuplicateSuccessResponse(result.getTarget().getTransactionId(), result.getTarget().getAuthorizationCode());
-                }
+            if (result.getReasonResponseCode().getResponseReasonCode() == 11 && result.getTarget().getAuthorizationCode() != null) {
+                // We will treat this as a success as this is telling us we have a successful authorization code
+                // just that we attempted to re-post it again during the 'duplicateWindow' time period.
+                // This is part of the idempotent behavior we require so that we can safely timeout and/or fail and allow
+                // client applications to re-attempt submitting a credit card transaction for the same order again.
+                // In those cases if the client saw a failure but the transaction actually succeeded, this will capture the
+                // duplicate response and behave to the client as a success.
+                return CreditCardAuthorizationResult.createDuplicateSuccessResponse(result.getTarget().getTransactionId(), result.getTarget().getAuthorizationCode());
             }
             // handle all other errors
             return CreditCardAuthorizationResult.createFailedResponse(result.getReasonResponseCode() + " : " + result.getResponseText());
