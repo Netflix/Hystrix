@@ -22,6 +22,7 @@ import com.netflix.hystrix.AbstractCommand.TryableSemaphoreActual;
 import com.netflix.hystrix.HystrixCircuitBreakerTest.TestCircuitBreaker;
 import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
 import com.netflix.hystrix.exception.HystrixBadRequestException;
+import com.netflix.hystrix.exception.HystrixOnCancelException;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
 import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.concurrency.HystrixContextRunnable;
@@ -753,6 +754,130 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
         assertCommandExecutionEvents(command, HystrixEventType.TIMEOUT, HystrixEventType.FALLBACK_FAILURE);
         assertEquals(0, command.getBuilder().metrics.getCurrentConcurrentExecutionCount());
         assertSaneHystrixRequestLog(1);
+    }
+
+    @Test
+    public void testExecutionOnTimeoutWithInterruptionOnCancelSuccess() {
+        OnCancelCommand command = new OnCancelCommand();
+
+        try {
+            command.execute();
+
+            fail();
+        } catch (HystrixRuntimeException ex) {
+            assertTrue(ex.getFailureType() == HystrixRuntimeException.FailureType.TIMEOUT);
+            assertTrue(command.wasOnCancelExecuted());
+        } catch (Exception ex) {
+            fail();
+        }
+    }
+
+    @Test
+    public void testExecutionOnTimeoutWithInterruptionOnCancelFail() throws Exception {
+        RuntimeException toBeThrown = new RuntimeException();
+
+        OnCancelCommand command = new OnCancelFailingCommand(toBeThrown);
+
+        try {
+            command.execute();
+
+            fail();
+        } catch (HystrixRuntimeException ex) {
+            assertTrue(command.wasOnCancelExecuted());
+
+            assertTrue(ex.getFailureType() == HystrixRuntimeException.FailureType.COMMAND_EXCEPTION);
+
+            Throwable cause = ex.getCause();
+            assertTrue(cause instanceof HystrixOnCancelException);
+            assertTrue(cause.getCause() == toBeThrown);
+
+            assertFalse(command.getRunThread().isInterrupted());
+        } catch (Exception ex) {
+            fail();
+        }
+    }
+
+    @Test
+    public void testExecutionOnTimeoutWithoutInterruptionOnCancelSuccess() {
+        OnCancelCommand command = new OnCancelCommand(false);
+
+        try {
+            command.execute();
+
+            fail();
+        } catch (HystrixRuntimeException ex) {
+            assertTrue(ex.getFailureType() == HystrixRuntimeException.FailureType.TIMEOUT);
+            assertTrue(command.wasOnCancelExecuted());
+        } catch (Exception ex) {
+            fail();
+        }
+    }
+
+    @Test
+    public void testExecutionOnFutureCancelWithInterruptionOnCancelSuccess() throws Exception {
+        OnCancelCommand command = new OnCancelCommand();
+        Future<Boolean> future = command.queue();
+
+        Thread.sleep(100L);
+
+        future.cancel(true);
+
+        assertTrue(command.wasOnCancelExecuted());
+
+        boolean isCancelled = false;
+        try {
+            future.get();
+        } catch (CancellationException ex) {
+            isCancelled = true;
+        } catch (Exception ex) {}
+
+        assertTrue(isCancelled);
+    }
+
+    @Test
+    public void testExecutionOnFutureCancelWithInterruptionOnCancelFail() throws Exception {
+        RuntimeException toBeThrown = new RuntimeException();
+
+        OnCancelCommand command = new OnCancelFailingCommand(toBeThrown);
+        Future<Boolean> future = command.queue();
+
+        Thread.sleep(100L);
+
+        try {
+            future.cancel(true);
+
+            fail();
+        } catch (HystrixRuntimeException ex) {
+            assertTrue(command.wasOnCancelExecuted());
+
+            assertTrue(ex.getFailureType() == HystrixRuntimeException.FailureType.COMMAND_EXCEPTION);
+            assertTrue(ex.getCause() == toBeThrown);
+
+            assertFalse(command.getRunThread().isInterrupted());
+        } catch (Exception ex) {
+            fail();
+        }
+    }
+
+    @Test
+    public void testExecutionOnFutureCancelWithoutInterruptionOnCancelSuccess() throws Exception {
+        OnCancelCommand command = new OnCancelCommand(false);
+        Future<Boolean> future = command.queue();
+
+        Thread.sleep(100L);
+
+        future.cancel(true);
+
+        assertTrue(command.wasOnCancelExecuted());
+
+        boolean isCancelled = false;
+        try {
+            future.get();
+        } catch (CancellationException ex) {
+            isCancelled = true;
+        } catch (Exception ex) {}
+
+        assertTrue(isCancelled);
     }
 
     /**
@@ -5034,6 +5159,72 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
             return true;
         }
 
+    }
+
+    /**
+     * Execution of OnInterruption callback
+     */
+    private static class OnCancelCommand extends TestHystrixCommand<Boolean> {
+
+        private final CountDownLatch latch = new CountDownLatch(1);
+        private final AtomicReference<Thread> runThread = new AtomicReference<Thread>();
+
+        private OnCancelCommand() {
+            this(true);
+        }
+
+        private OnCancelCommand(final boolean interrupt) {
+            super(testPropsBuilder()
+                .setCommandPropertiesDefaults(
+                    HystrixCommandPropertiesTest.getUnitTestPropertiesSetter()
+                        .withCircuitBreakerForceClosed(true)
+                        .withExecutionIsolationThreadInterruptOnFutureCancel(interrupt)
+                        .withExecutionIsolationThreadInterruptOnTimeout(interrupt)));
+        }
+
+        @Override
+        protected Boolean run() throws Exception {
+            runThread.set(Thread.currentThread());
+
+            latch.await(10, TimeUnit.SECONDS);
+
+            return false;
+        }
+
+        @Override
+        protected void onCancel() {
+            latch.countDown();
+        }
+
+        public boolean wasOnCancelExecuted() {
+            return latch.getCount() == 0L;
+        }
+
+        public Thread getRunThread() {
+            return runThread.get();
+        }
+    }
+
+    private static class OnCancelFailingCommand extends OnCancelCommand {
+
+        private final RuntimeException toBeThrown;
+
+        private OnCancelFailingCommand(RuntimeException toBeThrown) {
+            this(true, toBeThrown);
+        }
+
+        private OnCancelFailingCommand(boolean interrupt, RuntimeException toBeThrown) {
+            super(interrupt);
+
+            this.toBeThrown = toBeThrown;
+        }
+
+        @Override
+        protected void onCancel() {
+            super.onCancel();
+
+            throw toBeThrown;
+        }
     }
 
     /**

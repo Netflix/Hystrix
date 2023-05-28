@@ -19,6 +19,7 @@ import com.netflix.hystrix.HystrixCircuitBreaker.NoOpCircuitBreaker;
 import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
 import com.netflix.hystrix.exception.ExceptionNotWrappedByHystrix;
 import com.netflix.hystrix.exception.HystrixBadRequestException;
+import com.netflix.hystrix.exception.HystrixOnCancelException;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
 import com.netflix.hystrix.exception.HystrixRuntimeException.FailureType;
 import com.netflix.hystrix.exception.HystrixTimeoutException;
@@ -334,6 +335,8 @@ import java.util.concurrent.atomic.AtomicReference;
             }
         });
     }
+
+    protected abstract Observable<Void> getOnCancelObservable();
 
     protected abstract Observable<R> getExecutionObservable();
 
@@ -1025,7 +1028,7 @@ import java.util.concurrent.atomic.AtomicReference;
         /**
          * All other error handling
          */
-        logger.debug("Error executing HystrixCommand.run(). Proceeding to fallback logic ...", underlying);
+        logger.debug("Error executing HystrixCommand.run() or HystrixCommand.onCancel(). Proceeding to fallback logic ...", underlying);
 
         // report failure
         eventNotifier.markEvent(HystrixEventType.FAILURE, commandKey);
@@ -1150,10 +1153,24 @@ import java.util.concurrent.atomic.AtomicReference;
                         s.unsubscribe();
 
                         final HystrixContextRunnable timeoutRunnable = new HystrixContextRunnable(originalCommand.concurrencyStrategy, hystrixRequestContext, new Runnable() {
-
                             @Override
                             public void run() {
-                                child.onError(new HystrixTimeoutException());
+                                // TODO Add hook
+                                originalCommand.getOnCancelObservable().subscribe(
+                                    new Subscriber<Void>() {
+                                        @Override
+                                        public void onCompleted() {
+                                            child.onError(new HystrixTimeoutException());
+                                        }
+
+                                        @Override
+                                        public void onError(Throwable ex) {
+                                            child.onError(new HystrixOnCancelException(ex));
+                                        }
+
+                                        @Override
+                                        public void onNext(Void ignored) {}
+                                    });
                             }
                         });
 
