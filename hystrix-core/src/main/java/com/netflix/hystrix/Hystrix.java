@@ -66,16 +66,20 @@ public class Hystrix {
      * Reset logic that doesn't have time/TimeUnit arguments.
      */
     private static void _reset() {
+        // basic component should be reset first.
+        HystrixPlugins.reset();
+        HystrixPropertiesFactory.reset();
+
+        // clear circuit breakers
+        HystrixCircuitBreaker.Factory.reset();
+
         // clear metrics
         HystrixCommandMetrics.reset();
         HystrixThreadPoolMetrics.reset();
         HystrixCollapserMetrics.reset();
         // clear collapsers
         HystrixCollapser.reset();
-        // clear circuit breakers
-        HystrixCircuitBreaker.Factory.reset();
-        HystrixPlugins.reset();
-        HystrixPropertiesFactory.reset();
+
         currentCommand.set(new ConcurrentStack<HystrixCommandKey>());
     }
 
