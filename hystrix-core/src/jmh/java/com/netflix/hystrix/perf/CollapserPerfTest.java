@@ -36,7 +36,6 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.infra.Blackhole;
 import rx.Observable;
-import rx.Subscription;
 
 import java.util.ArrayList;
 import java.util.Collection;

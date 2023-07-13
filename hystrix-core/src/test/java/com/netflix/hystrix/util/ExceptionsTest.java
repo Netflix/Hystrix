@@ -1,6 +1,5 @@
 package com.netflix.hystrix.util;
 
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
