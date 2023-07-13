@@ -17,6 +17,7 @@ package com.netflix.hystrix.contrib.rxnetty.metricsstream;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.config.ConfigurationManager;
 import com.netflix.hystrix.HystrixCommandMetrics;
 import com.netflix.hystrix.HystrixCommandMetricsSamples;
 import io.netty.buffer.ByteBuf;
@@ -25,6 +26,7 @@ import io.reactivex.netty.pipeline.PipelineConfigurators;
 import io.reactivex.netty.protocol.http.client.HttpClient;
 import io.reactivex.netty.protocol.http.client.HttpClientRequest;
 import io.reactivex.netty.protocol.http.client.HttpClientResponse;
+import io.reactivex.netty.protocol.http.client.HttpResponseHeaders;
 import io.reactivex.netty.protocol.http.server.HttpServer;
 import io.reactivex.netty.protocol.http.server.HttpServerRequest;
 import io.reactivex.netty.protocol.http.server.HttpServerResponse;
@@ -107,6 +109,41 @@ public class HystrixMetricsStreamHandlerTest {
         JsonNode jsonNode = mapper.readTree(sse.contentAsString());
         assertEquals("Expected hystrix key name", HystrixCommandMetricsSamples.SAMPLE_1.getCommandKey().name(), jsonNode.get("name").asText());
     }
+
+    @Test
+    public void testCorsHeaders() throws Exception {
+        replayAll();
+
+        Observable<HttpResponseHeaders> objectObservable = client.submit(HttpClientRequest.createGet(DEFAULT_HYSTRIX_PREFIX))
+                .map(new Func1<HttpClientResponse<ServerSentEvent>, HttpResponseHeaders>() {
+                    @Override
+                    public HttpResponseHeaders call(HttpClientResponse<ServerSentEvent> serverSentEventHttpClientResponse) {
+                        return serverSentEventHttpClientResponse.getHeaders();
+                    }
+                });
+
+        Object first = Observable.amb(objectObservable, Observable.timer(5000, TimeUnit.MILLISECONDS)).toBlocking().first();
+
+        assertEquals( "*", ((HttpResponseHeaders)first).get("Access-Control-Allow-Origin")  );
+        assertEquals( "POST, GET, OPTIONS, PUT, DELETE, HEAD", ((HttpResponseHeaders)first).get("Access-Control-Allow-Methods")  );
+
+        ConfigurationManager.getConfigInstance().setProperty("hystrix.config.stream.accessControlAllowOrigin", "localhost");
+        ConfigurationManager.getConfigInstance().setProperty("hystrix.config.stream.accessControlAllowMethods", "GET");
+
+        objectObservable = client.submit(HttpClientRequest.createGet(DEFAULT_HYSTRIX_PREFIX))
+                .map(new Func1<HttpClientResponse<ServerSentEvent>, HttpResponseHeaders>() {
+                    @Override
+                    public HttpResponseHeaders call(HttpClientResponse<ServerSentEvent> serverSentEventHttpClientResponse) {
+                        return serverSentEventHttpClientResponse.getHeaders();
+                    }
+                });
+
+        first = Observable.amb(objectObservable, Observable.timer(5000, TimeUnit.MILLISECONDS)).toBlocking().first();
+
+        assertEquals( "localhost", ((HttpResponseHeaders)first).get("Access-Control-Allow-Origin")  );
+        assertEquals( "GET", ((HttpResponseHeaders)first).get("Access-Control-Allow-Methods")  );
+    }
+
 
     // We try a few times in case we hit into used port.
     private HttpServer<ByteBuf, ByteBuf> createServer() {

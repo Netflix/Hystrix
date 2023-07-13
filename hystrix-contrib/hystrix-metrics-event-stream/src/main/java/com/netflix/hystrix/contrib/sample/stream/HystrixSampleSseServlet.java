@@ -15,6 +15,8 @@
  */
 package com.netflix.hystrix.contrib.sample.stream;
 
+import com.netflix.config.DynamicPropertyFactory;
+import com.netflix.config.DynamicStringProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -39,6 +41,12 @@ public abstract class HystrixSampleSseServlet extends HttpServlet {
 
     //wake up occasionally and check that poller is still alive.  this value controls how often
     protected static final int DEFAULT_PAUSE_POLLER_THREAD_DELAY_IN_MS = 500;
+
+    protected static DynamicStringProperty accessControlAllowOrigin =
+            DynamicPropertyFactory.getInstance().getStringProperty("hystrix.config.stream.accessControlAllowOrigin", "*");
+    protected static DynamicStringProperty accessControlAllowMethods =
+            DynamicPropertyFactory.getInstance().getStringProperty("hystrix.config.stream.accessControlAllowMethods", "POST, GET, OPTIONS, PUT, DELETE, HEAD");
+
 
     private final int pausePollerThreadDelayInMs;
 
@@ -127,6 +135,8 @@ public abstract class HystrixSampleSseServlet extends HttpServlet {
                 response.setHeader("Content-Type", "text/event-stream;charset=UTF-8");
                 response.setHeader("Cache-Control", "no-cache, no-store, max-age=0, must-revalidate");
                 response.setHeader("Pragma", "no-cache");
+                response.setHeader("Access-Control-Allow-Origin", accessControlAllowOrigin.getValue());
+                response.setHeader("Access-Control-Allow-Methods", accessControlAllowMethods.getValue());
 
                 final PrintWriter writer = response.getWriter();
 
