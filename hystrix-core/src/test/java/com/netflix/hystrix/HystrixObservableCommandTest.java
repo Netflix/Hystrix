@@ -4359,7 +4359,6 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
         try {
             Thread.sleep(100);
         } catch (InterruptedException ex) {
-
         }
         //HystrixCircuitBreaker.Factory.reset();
     }

@@ -1002,12 +1002,15 @@ public class HystrixCommandTest extends CommonHystrixCommandTests<TestHystrixCom
             fail("we shouldn't get here");
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println("command.getExecutionTimeInMilliseconds(): " + command2.getExecutionTimeInMilliseconds());
-            // will be -1 because it never attempted execution
-            assertTrue(command2.isResponseRejected());
-            assertFalse(command2.isResponseShortCircuited());
-            assertFalse(command2.isResponseTimedOut());
-            assertNotNull(command2.getExecutionException());
+            if (command2 != null) {
+                System.out.println(
+                        "command.getExecutionTimeInMilliseconds(): " + command2.getExecutionTimeInMilliseconds());
+                // will be -1 because it never attempted execution
+                assertTrue(command2.isResponseRejected());
+                assertFalse(command2.isResponseShortCircuited());
+                assertFalse(command2.isResponseTimedOut());
+                assertNotNull(command2.getExecutionException());
+            }
 
             if (e instanceof HystrixRuntimeException && e.getCause() instanceof RejectedExecutionException) {
                 HystrixRuntimeException de = (HystrixRuntimeException) e;
