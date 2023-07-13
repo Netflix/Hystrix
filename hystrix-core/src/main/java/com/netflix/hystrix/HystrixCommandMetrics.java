@@ -35,6 +35,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Used by {@link HystrixCommand} to record metrics.
@@ -389,9 +390,9 @@ public class HystrixCommandMetrics extends HystrixMetrics {
      * Error percentage;
      */
     public static class HealthCounts {
-        private final long totalCount;
-        private final long errorCount;
-        private final int errorPercentage;
+        private long totalCount;
+        private long errorCount;
+        private int errorPercentage;
 
         HealthCounts(long total, long error) {
             this.totalCount = total;
@@ -402,8 +403,6 @@ public class HystrixCommandMetrics extends HystrixMetrics {
                 this.errorPercentage = 0;
             }
         }
-
-        private static final HealthCounts EMPTY = new HealthCounts(0, 0);
 
         public long getTotalRequests() {
             return totalCount;
@@ -417,23 +416,25 @@ public class HystrixCommandMetrics extends HystrixMetrics {
             return errorPercentage;
         }
 
-        public HealthCounts plus(long[] eventTypeCounts) {
-            long updatedTotalCount = totalCount;
-            long updatedErrorCount = errorCount;
-
+        public synchronized HealthCounts plus(long[] eventTypeCounts) {
             long successCount = eventTypeCounts[HystrixEventType.SUCCESS.ordinal()];
             long failureCount = eventTypeCounts[HystrixEventType.FAILURE.ordinal()];
             long timeoutCount = eventTypeCounts[HystrixEventType.TIMEOUT.ordinal()];
             long threadPoolRejectedCount = eventTypeCounts[HystrixEventType.THREAD_POOL_REJECTED.ordinal()];
             long semaphoreRejectedCount = eventTypeCounts[HystrixEventType.SEMAPHORE_REJECTED.ordinal()];
 
-            updatedTotalCount += (successCount + failureCount + timeoutCount + threadPoolRejectedCount + semaphoreRejectedCount);
-            updatedErrorCount += (failureCount + timeoutCount + threadPoolRejectedCount + semaphoreRejectedCount);
-            return new HealthCounts(updatedTotalCount, updatedErrorCount);
+            totalCount += (successCount + failureCount + timeoutCount + threadPoolRejectedCount + semaphoreRejectedCount);
+            errorCount += (failureCount + timeoutCount + threadPoolRejectedCount + semaphoreRejectedCount);
+            if (totalCount > 0) {
+                this.errorPercentage = (int) ((double) errorCount / totalCount * 100);
+            } else {
+                this.errorPercentage = 0;
+            }
+            return this;
         }
 
         public static HealthCounts empty() {
-            return EMPTY;
+            return new HealthCounts(0, 0);
         }
 
         public String toString() {
