@@ -1,12 +1,12 @@
 /**
  * Copyright 2013 Netflix, Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -291,7 +291,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
     /**
      * Allow the Collapser to mark this command instance as being used for a collapsed request and how many requests were collapsed.
-     * 
+     *
      * @param sizeOfBatch number of commands in request batch
      */
     /* package */void markAsCollapsedCommand(HystrixCollapserKey collapserKey, int sizeOfBatch) {
@@ -307,7 +307,7 @@ import java.util.concurrent.atomic.AtomicReference;
      * A lazy {@link Observable} can be obtained from {@link #toObservable()}.
      * <p>
      * See https://github.com/Netflix/RxJava/wiki for more information.
-     * 
+     *
      * @return {@code Observable<R>} that executes and calls back with the result of command execution or a fallback if the command fails for any reason.
      * @throws HystrixRuntimeException
      *             if a fallback does not exist
@@ -347,7 +347,7 @@ import java.util.concurrent.atomic.AtomicReference;
      * An eager {@link Observable} can be obtained from {@link #observe()}.
      * <p>
      * See https://github.com/ReactiveX/RxJava/wiki for more information.
-     * 
+     *
      * @return {@code Observable<R>} that executes and calls back with the result of command execution or a fallback if the command fails for any reason.
      * @throws HystrixRuntimeException
      *             if a fallback does not exist
@@ -382,7 +382,7 @@ import java.util.concurrent.atomic.AtomicReference;
         final Action0 unsubscribeCommandCleanup = new Action0() {
             @Override
             public void call() {
-                circuitBreaker.markNonSuccess();
+                circuitBreaker.markSuccess();
                 if (_cmd.commandState.compareAndSet(CommandState.OBSERVABLE_CHAIN_CREATED, CommandState.UNSUBSCRIBED)) {
                     if (!_cmd.executionResult.containsTerminalEvent()) {
                         _cmd.eventNotifier.markEvent(HystrixEventType.CANCELLED, _cmd.commandKey);
@@ -599,6 +599,22 @@ import java.util.concurrent.atomic.AtomicReference;
             }
         };
 
+        final Action0 handleUnsubscribe = new Action0() {
+            @Override
+            public void call() {
+                // cases where unsubscribe is a failure
+                if (_cmd.isResponseRejected() ||
+                        _cmd.isCommandTimedOut.get() == TimedOutStatus.TIMED_OUT ||
+                        _cmd.getEventCounts().noEvents() ||
+                        _cmd.isFailedExecution()) {
+                    return;
+                }
+
+                // everything else should be a success, e.g. zipping a shorter observable with a longer one
+                markOnCompleted.call();
+            }
+        };
+
         final Func1<Throwable, Observable<R>> handleFallback = new Func1<Throwable, Observable<R>>() {
             @Override
             public Observable<R> call(Throwable t) {
@@ -643,6 +659,7 @@ import java.util.concurrent.atomic.AtomicReference;
         return execution.doOnNext(markEmits)
                 .doOnCompleted(markOnCompleted)
                 .onErrorResumeNext(handleFallback)
+                .doOnUnsubscribe(handleUnsubscribe)
                 .doOnEach(setRequestContext);
     }
 
@@ -1229,7 +1246,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
     /**
      * Get the TryableSemaphore this HystrixCommand should use if a fallback occurs.
-     * 
+     *
      * @return TryableSemaphore
      */
     protected TryableSemaphore getFallbackSemaphore() {
@@ -1250,7 +1267,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
     /**
      * Get the TryableSemaphore this HystrixCommand should use for execution if not running in a separate thread.
-     * 
+     *
      * @return TryableSemaphore
      */
     protected TryableSemaphore getExecutionSemaphore() {
@@ -1325,7 +1342,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
     /**
      * The {@link HystrixCommandProperties} associated with this {@link AbstractCommand} instance.
-     * 
+     *
      * @return HystrixCommandProperties
      */
     public HystrixCommandProperties getProperties() {
@@ -1554,7 +1571,7 @@ import java.util.concurrent.atomic.AtomicReference;
      * <p>
      * This will only throw an HystrixRuntimeException, HystrixBadRequestException, IllegalStateException
      * or any exception that implements ExceptionNotWrappedByHystrix.
-     * 
+     *
      * @param e initial exception
      * @return HystrixRuntimeException, HystrixBadRequestException or IllegalStateException
      */
@@ -1712,7 +1729,7 @@ import java.util.concurrent.atomic.AtomicReference;
      * To enable caching override this method and return a string key uniquely representing the state of a command instance.
      * <p>
      * If multiple command instances in the same request scope match keys then only the first will be executed and all others returned from cache.
-     * 
+     *
      * @return cacheKey
      */
     protected String getCacheKey() {
@@ -1754,7 +1771,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
     /**
      * If this command has completed execution either successfully, via fallback or failure.
-     * 
+     *
      * @return boolean
      */
     public boolean isExecutionComplete() {
@@ -1767,7 +1784,7 @@ import java.util.concurrent.atomic.AtomicReference;
      * This should be called only once execute()/queue()/fireOrForget() are called otherwise it will always return false.
      * <p>
      * This specifies if a thread execution actually occurred, not just if it is configured to be executed in a thread.
-     * 
+     *
      * @return boolean
      */
     public boolean isExecutedInThread() {
@@ -1776,7 +1793,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
     /**
      * Whether the response was returned successfully either by executing <code>run()</code> or from cache.
-     * 
+     *
      * @return boolean
      */
     public boolean isSuccessfulExecution() {
@@ -1785,7 +1802,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
     /**
      * Whether the <code>run()</code> resulted in a failure (exception).
-     * 
+     *
      * @return boolean
      */
     public boolean isFailedExecution() {
@@ -1798,7 +1815,7 @@ import java.util.concurrent.atomic.AtomicReference;
      * If <code>isFailedExecution() == true</code> then this would represent the Exception thrown by the <code>run()</code> method.
      * <p>
      * If <code>isFailedExecution() == false</code> then this would return null.
-     * 
+     *
      * @return Throwable or null
      */
     public Throwable getFailedExecutionException() {
@@ -1828,7 +1845,7 @@ import java.util.concurrent.atomic.AtomicReference;
     /**
      * Whether the response received from was the result of some type of failure
      * and <code>getFallback()</code> being called.
-     * 
+     *
      * @return boolean
      */
     public boolean isResponseFromFallback() {
@@ -1838,7 +1855,7 @@ import java.util.concurrent.atomic.AtomicReference;
     /**
      * Whether the response received was the result of a timeout
      * and <code>getFallback()</code> being called.
-     * 
+     *
      * @return boolean
      */
     public boolean isResponseTimedOut() {
@@ -1848,7 +1865,7 @@ import java.util.concurrent.atomic.AtomicReference;
     /**
      * Whether the response received was a fallback as result of being
      * short-circuited (meaning <code>isCircuitBreakerOpen() == true</code>) and <code>getFallback()</code> being called.
-     * 
+     *
      * @return boolean
      */
     public boolean isResponseShortCircuited() {
@@ -1857,7 +1874,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
     /**
      * Whether the response is from cache and <code>run()</code> was not invoked.
-     * 
+     *
      * @return boolean
      */
     public boolean isResponseFromCache() {
@@ -1895,7 +1912,7 @@ import java.util.concurrent.atomic.AtomicReference;
      * List of HystrixCommandEventType enums representing events that occurred during execution.
      * <p>
      * Examples of events are SUCCESS, FAILURE, TIMEOUT, and SHORT_CIRCUITED
-     * 
+     *
      * @return {@code List<HystrixEventType>}
      */
     public List<HystrixEventType> getExecutionEvents() {
@@ -1947,7 +1964,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
     /**
      * The execution time of this command instance in milliseconds, or -1 if not executed.
-     * 
+     *
      * @return int
      */
     public int getExecutionTimeInMilliseconds() {
@@ -1955,7 +1972,7 @@ import java.util.concurrent.atomic.AtomicReference;
     }
 
     /**
-     * Time in Nanos when this command instance's run method was called, or -1 if not executed 
+     * Time in Nanos when this command instance's run method was called, or -1 if not executed
      * for e.g., command threw an exception
       *
       * @return long
