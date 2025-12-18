@@ -248,6 +248,11 @@ public abstract class HystrixObservableCommand<R> extends AbstractCommand<R> imp
     }
 
     @Override
+    protected Observable<Void> getOnCancelObservable() {
+        return Observable.empty();
+    }
+
+    @Override
     final protected Observable<R> getExecutionObservable() {
         return construct();
     }
