@@ -15,6 +15,7 @@
  */
 package com.netflix.hystrix.contrib.sample.stream;
 
+import com.netflix.config.ConfigurationManager;
 import com.netflix.hystrix.config.HystrixConfiguration;
 import org.junit.After;
 import org.junit.Before;
@@ -34,10 +35,14 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -110,6 +115,30 @@ public class HystrixConfigSseServletTest {
         servlet.doGet(mockReq, mockResp);
 
         verify(mockResp).sendError(503, "Service has been shut down.");
+    }
+
+    @Test
+    public void servletShouldPopulateCorsHeaders() throws ServletException, IOException {
+        servlet = new HystrixConfigSseServlet(streamOfOnNexts, 10);
+        try {
+            servlet.init();
+        } catch (ServletException ex) {
+
+        }
+
+        servlet.doGet(mockReq, mockResp);
+
+        verify(mockResp).setHeader( "Access-Control-Allow-Origin", "*" );
+        verify(mockResp).setHeader( "Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE, HEAD" );
+
+        ConfigurationManager.getConfigInstance().setProperty("hystrix.config.stream.accessControlAllowOrigin", "localhost");
+        ConfigurationManager.getConfigInstance().setProperty("hystrix.config.stream.accessControlAllowMethods", "GET");
+
+        reset(mockResp);
+        servlet.doGet(mockReq, mockResp);
+
+        verify(mockResp).setHeader( "Access-Control-Allow-Origin", "localhost" );
+        verify(mockResp).setHeader( "Access-Control-Allow-Methods", "GET" );
     }
 
     @Test
