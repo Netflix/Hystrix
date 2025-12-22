@@ -18,7 +18,7 @@ package com.netflix.hystrix;
 import com.hystrix.junit.HystrixRequestContextRule;
 import com.netflix.config.ConfigurationManager;
 import com.netflix.hystrix.AbstractCommand.TryableSemaphoreActual;
-import com.netflix.hystrix.HystrixCircuitBreakerTest.TestCircuitBreaker;
+import com.netflix.hystrix.AbstractHystrixCircuitBreaker.TestCircuitBreaker;
 import com.netflix.hystrix.HystrixCommandProperties.ExecutionIsolationStrategy;
 import com.netflix.hystrix.exception.HystrixBadRequestException;
 import com.netflix.hystrix.exception.HystrixRuntimeException;
