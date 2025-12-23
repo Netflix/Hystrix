@@ -110,12 +110,11 @@ public interface HystrixThreadPool {
             }
 
             // if we get here this is the first time so we need to initialize
-            synchronized (HystrixThreadPool.class) {
-                if (!threadPools.containsKey(key)) {
-                    threadPools.put(key, new HystrixThreadPoolDefault(threadPoolKey, propertiesBuilder));
-                }
+            HystrixThreadPool hystrixThreadPool=threadPools.putIfAbsent(key,new HystrixThreadPoolDefault(threadPoolKey, propertiesBuilder));
+            if(hystrixThreadPool==null){
+                return threadPools.get(key);
             }
-            return threadPools.get(key);
+            return hystrixThreadPool;
         }
 
         /**
