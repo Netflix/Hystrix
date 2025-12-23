@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -30,15 +30,14 @@ public interface HystrixCommandGroupKey extends HystrixKey {
         }
 
         // used to intern instances so we don't keep re-creating them millions of times for the same key
-        private static final InternMap<String, HystrixCommandGroupDefault> intern
-                = new InternMap<String, HystrixCommandGroupDefault>(
-                new InternMap.ValueConstructor<String, HystrixCommandGroupDefault>() {
+        private static final InternMap<String, HystrixCommandGroupKey> intern
+                = new InternMap<String, HystrixCommandGroupKey>(
+                new InternMap.ValueConstructor<String, HystrixCommandGroupKey>() {
                     @Override
-                    public HystrixCommandGroupDefault create(String key) {
-                        return new HystrixCommandGroupDefault(key);
+                    public HystrixCommandGroupKey create(String key) {
+                        return new HystrixCommandGroupKeyDefault(key);
                     }
                 });
-
 
         /**
          * Retrieve (or create) an interned HystrixCommandGroup instance for a given name.
@@ -47,11 +46,11 @@ public interface HystrixCommandGroupKey extends HystrixKey {
          * @return HystrixCommandGroup instance that is interned (cached) so a given name will always retrieve the same instance.
          */
         public static HystrixCommandGroupKey asKey(String name) {
-           return intern.interned(name);
+            return intern.interned(name);
         }
 
-        private static class HystrixCommandGroupDefault extends HystrixKey.HystrixKeyDefault implements HystrixCommandGroupKey {
-            public HystrixCommandGroupDefault(String name) {
+        private static class HystrixCommandGroupKeyDefault extends HystrixKey.HystrixKeyDefault implements HystrixCommandGroupKey {
+            public HystrixCommandGroupKeyDefault(String name) {
                 super(name);
             }
         }

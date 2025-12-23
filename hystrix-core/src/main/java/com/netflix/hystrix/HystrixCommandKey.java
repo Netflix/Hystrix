@@ -1,12 +1,12 @@
 /**
  * Copyright 2012 Netflix, Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,19 +28,18 @@ public interface HystrixCommandKey extends HystrixKey {
         }
 
         // used to intern instances so we don't keep re-creating them millions of times for the same key
-        private static final InternMap<String, HystrixCommandKeyDefault> intern
-                = new InternMap<String, HystrixCommandKeyDefault>(
-                new InternMap.ValueConstructor<String, HystrixCommandKeyDefault>() {
+        private static final InternMap<String, HystrixCommandKey> intern
+                = new InternMap<String, HystrixCommandKey>(
+                new InternMap.ValueConstructor<String, HystrixCommandKey>() {
                     @Override
-                    public HystrixCommandKeyDefault create(String key) {
+                    public HystrixCommandKey create(String key) {
                         return new HystrixCommandKeyDefault(key);
                     }
                 });
 
-
         /**
          * Retrieve (or create) an interned HystrixCommandKey instance for a given name.
-         * 
+         *
          * @param name command name
          * @return HystrixCommandKey instance that is interned (cached) so a given name will always retrieve the same instance.
          */
@@ -58,5 +57,4 @@ public interface HystrixCommandKey extends HystrixKey {
             return intern.size();
         }
     }
-
 }
