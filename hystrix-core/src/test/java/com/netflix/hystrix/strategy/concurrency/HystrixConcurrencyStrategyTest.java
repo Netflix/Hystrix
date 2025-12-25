@@ -18,7 +18,6 @@ package com.netflix.hystrix.strategy.concurrency;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import java.lang.IllegalStateException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategy;

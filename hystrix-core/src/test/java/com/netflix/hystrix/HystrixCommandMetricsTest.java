@@ -25,7 +25,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import rx.Observable;
 import rx.Subscriber;
-import rx.observers.SafeSubscriber;
 
 import java.util.ArrayList;
 import java.util.List;

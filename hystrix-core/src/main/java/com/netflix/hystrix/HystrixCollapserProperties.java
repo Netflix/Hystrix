@@ -17,7 +17,6 @@ package com.netflix.hystrix;
 
 import static com.netflix.hystrix.strategy.properties.HystrixPropertiesChainedProperty.forBoolean;
 import static com.netflix.hystrix.strategy.properties.HystrixPropertiesChainedProperty.forInteger;
-import static com.netflix.hystrix.strategy.properties.HystrixPropertiesChainedProperty.forString;
 
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 import com.netflix.hystrix.strategy.properties.HystrixProperty;

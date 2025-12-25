@@ -20,7 +20,6 @@ import com.netflix.hystrix.metric.HystrixCommandExecutionStarted;
 import com.netflix.hystrix.metric.HystrixEventStream;
 import rx.Observable;
 import rx.Subscription;
-import rx.functions.Func0;
 import rx.functions.Func1;
 import rx.functions.Func2;
 import rx.subjects.BehaviorSubject;

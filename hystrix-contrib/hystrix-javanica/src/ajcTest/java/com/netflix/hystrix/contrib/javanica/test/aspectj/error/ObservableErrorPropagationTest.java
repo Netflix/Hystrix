@@ -15,7 +15,6 @@
  */
 package com.netflix.hystrix.contrib.javanica.test.aspectj.error;
 
-import com.netflix.hystrix.contrib.javanica.test.common.error.BasicErrorPropagationTest;
 import com.netflix.hystrix.contrib.javanica.test.common.error.BasicObservableErrorPropagationTest;
 import org.junit.BeforeClass;
 

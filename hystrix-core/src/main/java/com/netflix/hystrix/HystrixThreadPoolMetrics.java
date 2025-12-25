@@ -20,8 +20,6 @@ import com.netflix.hystrix.metric.consumer.CumulativeThreadPoolEventCounterStrea
 import com.netflix.hystrix.metric.consumer.RollingThreadPoolMaxConcurrencyStream;
 import com.netflix.hystrix.metric.consumer.RollingThreadPoolEventCounterStream;
 import com.netflix.hystrix.util.HystrixRollingNumberEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import rx.functions.Func0;
 import rx.functions.Func2;
 
