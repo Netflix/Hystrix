@@ -425,7 +425,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
      * Test a command execution that fails asynchronously, has getFallback implemented but that fails as well (synchronously).
      */
     @Test
-    public void testSemaphoreIsolatedObserveAyncFailureWithSyncFallbackFailure() {
+    public void testSemaphoreIsolatedObserveAsyncFailureWithSyncFallbackFailure() {
         testObserveFailureWithFallbackFailure(ExecutionIsolationStrategy.SEMAPHORE, true, false);
     }
 
@@ -457,7 +457,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
      * Test a command execution that fails asynchronously, has getFallback implemented but that fails as well (synchronously).
      */
     @Test
-    public void testThreadIsolatedObserveAyncFailureWithSyncFallbackFailure() {
+    public void testThreadIsolatedObserveAsyncFailureWithSyncFallbackFailure() {
         testObserveFailureWithFallbackFailure(ExecutionIsolationStrategy.THREAD, false, true);
     }
 
@@ -1818,7 +1818,7 @@ public class HystrixObservableCommandTest extends CommonHystrixCommandTests<Test
      * Test that synchronous BadRequestException behavior works the same on a cached response for a semaphore-isolated command.
      */
     @Test
-    public void testSyncBadRequestExceptionOnResponseFromCacheInSempahore() {
+    public void testSyncBadRequestExceptionOnResponseFromCacheInSemaphore() {
         testBadRequestExceptionOnResponseFromCache(ExecutionIsolationStrategy.SEMAPHORE, KnownHystrixBadRequestFailureTestCommand.SYNC_EXCEPTION);
     }
 

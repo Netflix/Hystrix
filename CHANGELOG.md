@@ -71,7 +71,7 @@
 
 ### Version 1.5.8 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.5.8%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.5.8/)) ###
 
-* [Pull 1419](https://github.com/Netflix/Hystrix/pull/1419) When user has not opted in to letting core/maximum threadpools diverge, ensure dynamic updates to coreSize apply to both
+* [Pull 1419](https://github.com/Netflix/Hystrix/pull/1419) When user has not opted into letting core/maximum threadpools diverge, ensure dynamic updates to coreSize apply to both
 * [Pull 1415](https://github.com/Netflix/Hystrix/pull/1415) Fix spelling mistake in comments.  Thanks @starlight36 !
 
 ### Version 1.5.7 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.5.7%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.5.7/)) ###
@@ -86,7 +86,7 @@
 * [Pull 1385](https://github.com/Netflix/Hystrix/pull/1385) Bump jmh Gradle plugin to 0.3.1.  Thanks @monkey-mas!
 * [Pull 1382](https://github.com/Netflix/Hystrix/pull/1382) Bump jmh to 1.15.  Thanks @monkey-mas!
 * [Pull 1380](https://github.com/Netflix/Hystrix/pull/1380) Add jmh test for open-circuit case
-* [Pull 1376](https://github.com/Netflix/Hystrix/pull/1376) Clean up documentation around thread keep-alive.  Thanks @bitb !
+* [Pull 1376](https://github.com/Netflix/Hystrix/pull/1376) Clean up documentation around thread keep-alive.  Thanks @bltb !
 * [Pull 1375](https://github.com/Netflix/Hystrix/pull/1375) Remove cancelled tasks from threadpool queue
 * [Pull 1371](https://github.com/Netflix/Hystrix/pull/1371) Allow core and maximum size of threadpools to diverge.
 
@@ -458,7 +458,7 @@ This version should be the exact same as 1.4.20, but suffered problems during th
 * [Pull 754](https://github.com/Netflix/Hystrix/pull/754) Only fire onFallbackStart/onFallbackError hooks when a user-supplied fallback is invoked
 * [Pull 753](https://github.com/Netflix/Hystrix/pull/753) Add timeout to dashboard for semaphore commands
 * [Pull 750](https://github.com/Netflix/Hystrix/pull/750) First pass at jmh performance benchmarking
-* [Pull 748](https://github.com/Netflix/Hystrix/pull/748) Fix return value of HystrixCircuiBreakerImpl.isOpen when it loses a race to open a circuit
+* [Pull 748](https://github.com/Netflix/Hystrix/pull/748) Fix return value of HystrixCircuitBreakerImpl.isOpen when it loses a race to open a circuit
 * [Pull 746](https://github.com/Netflix/Hystrix/pull/746) Improve Javadoc for HystrixCommandProperties.Setter
 
 
@@ -469,7 +469,7 @@ This version should be the exact same as 1.4.20, but suffered problems during th
 * [Pull 741](https://github.com/Netflix/Hystrix/pull/741) Bugfix to java.lang.Error handling
 * [Pull 735](https://github.com/Netflix/Hystrix/pull/735) (Javanica) BatchHystrixCommand
 * [Pull 739](https://github.com/Netflix/Hystrix/pull/739) Mark some java.lang.Errors as unrecoverable and never trigger fallback
-* [Pull 738](https://github.com/Netflix/Hystrix/pull/738) Filter out thread pools with no thread activity from hystrics-metrics-event-stream
+* [Pull 738](https://github.com/Netflix/Hystrix/pull/738) Filter out thread pools with no thread activity from hystrix-metrics-event-stream
 * [Pull 732](https://github.com/Netflix/Hystrix/pull/732) Comment out flaky unit test
 
 ### Version 1.4.3 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.4.3%22), [Bintray](https://bintray.com/netflixoss/maven/Hystrix/1.4.3/)) ###
@@ -497,7 +497,7 @@ This version adds HystrixObservableCommand and implements both it and HystrixCom
 A HystrixObservableCommand allows for fully non-blocking commands that can be composed as part of a larger Observable chain.  See [the wiki](https://github.com/Netflix/Hystrix/wiki/How-To-Use#reactive-commands) for more details on usage.  Here's an example (using Java 8):
 
 ```java
-public class ObservableHttpCommand extends HystrixObsverableCommand<BackendResponse> {
+public class ObservableHttpCommand extends HystrixObservableCommand<BackendResponse> {
 
 @Override
 protected Observable<BackendResponse> construct() {
@@ -564,7 +564,7 @@ NOTE: This code is believed to be production worthy.  As of now, there are no kn
 * [Pull 647](https://github.com/Netflix/Hystrix/pull/647) Tie command property to thread interrupt
 * [Pull 645](https://github.com/Netflix/Hystrix/pull/645) Remove incorrect reference to async timeout
 * [Pull 644](https://github.com/Netflix/Hystrix/pull/644) Add RequestCollapser metrics to Yammer Metrics Publisher
-* [Pull 643](https://github.com/Netflix/Hystrix/pull/643) Stress-test HystrixObservalbeCollapser
+* [Pull 643](https://github.com/Netflix/Hystrix/pull/643) Stress-test HystrixObservableCollapser
 * [Pull 642](https://github.com/Netflix/Hystrix/pull/642) Fix flakiness of HystrixObservableCommandTest.testRejectedViaSemaphoreIsolation
 * [Pull 641](https://github.com/Netflix/Hystrix/pull/641) Fix flakiness of testSemaphorePermitsInUse
 * [Pull 608](https://github.com/Netflix/Hystrix/pull/608) Make HystrixObservableCommand handle both sync and async exceptions
@@ -596,7 +596,7 @@ _NOTE: This code is believed to be production worthy but is still a "Release Can
 * [Pull 527](https://github.com/Netflix/Hystrix/pull/527) Creating a synthetic exception in the semaphore execution and short-circuited case
 * [Pull 526](https://github.com/Netflix/Hystrix/pull/526) Move onRunSuccess/onRunError and thread-pool book-keeping to Hystrix thread
 * [Pull 524](https://github.com/Netflix/Hystrix/pull/524) Change calls from getExecutedCommands() to getAllExecutedCommands()
-* [Pull 516](https://github.com/Netflix/Hystrix/pull/516) Updated HystrixServoMetricsPublisher initalization of singleton
+* [Pull 516](https://github.com/Netflix/Hystrix/pull/516) Updated HystrixServoMetricsPublisher initialization of singleton
 * [Pull 489](https://github.com/Netflix/Hystrix/pull/489) Javanica: Request Caching
 * [Pull 512](https://github.com/Netflix/Hystrix/pull/512) Add execution hook Javadoc
 * [Pull 511](https://github.com/Netflix/Hystrix/pull/511) Fix missing onComplete hook call when command short-circuits and missing onRunSuccess hook call in thread-timeout case
@@ -613,7 +613,7 @@ _NOTE: This code is believed to be production worthy but is still a "Release Can
 * [Pull 449](https://github.com/Netflix/Hystrix/pull/449) Move thread completion bookkeeping to end of chain
 * [Pull 447](https://github.com/Netflix/Hystrix/pull/447) Synchronous queue fix
 * [Pull 376](https://github.com/Netflix/Hystrix/pull/376) Javanica README cleanup
-* [Pull 378](https://github.com/Netflix/Hystrix/pull/378) Exection hook call sequences (based on work submitted in [Pull 327](https://github.com/Netflix/Hystrix/pull/327))
+* [Pull 378](https://github.com/Netflix/Hystrix/pull/378) Execution hook call sequences (based on work submitted in [Pull 327](https://github.com/Netflix/Hystrix/pull/327))
 * [Pull 374](https://github.com/Netflix/Hystrix/pull/374) RequestBatch logging
 * [Pull 371](https://github.com/Netflix/Hystrix/pull/371) Defer creation of IllegalStateException in collapser flow (based on work submitted in [Pull 264](https://github.com/Netflix/Hystrix/pull/264))
 * [Pull 369](https://github.com/Netflix/Hystrix/pull/369) Added basic auth to Hystrix Dashboard (based on work submitted in [Pull 336](https://github.com/Netflix/Hystrix/pull/336))
@@ -788,7 +788,7 @@ Here is a very basic example using Java 8 to make an HTTP call via Netty and rec
 
 ### Version 1.3.11 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.3.11%22)) ###
 
-* We'll ignore this release ever happened. Exact same binary as 1.3.10. (It helps to push code to Github before releasing.)
+* We'll ignore this release ever happened. Exact same binary as 1.3.10. (It helps to push code to GitHub before releasing.)
 
 ### Version 1.3.10 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.3.10%22)) ###
 
@@ -883,7 +883,7 @@ This release is a major refactoring of the Hystrix codebase. To assert correctne
 
 ### Version 1.2.16 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.2.16%22)) ###
 
-* [Pull 132](https://github.com/Netflix/Hystrix/pull/132) Add `with-context` macro for conviently wrapping collapsers in thier own context
+* [Pull 132](https://github.com/Netflix/Hystrix/pull/132) Add `with-context` macro for conveniently wrapping collapsers in their own context
 * [Pull 136](https://github.com/Netflix/Hystrix/pull/136) Fixed the mock stream
 * [Pull 137](https://github.com/Netflix/Hystrix/pull/137) Limit scope of CurrentThreadExecutingCommand
 
@@ -977,12 +977,12 @@ See the module README for more information: https://github.com/Netflix/Hystrix/t
 ### Version 1.1.7 ([Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.netflix.hystrix%22%20AND%20v%3A%221.1.7%22)) ###
 
 * [Pull 67](https://github.com/Netflix/Hystrix/pull/67) Unit tests for request log and checked exceptions
-* [Pull 66](https://github.com/Netflix/Hystrix/pull/66) Making provided scope transtive
+* [Pull 66](https://github.com/Netflix/Hystrix/pull/66) Making provided scope transitive
 * [Pull 65](https://github.com/Netflix/Hystrix/pull/65) Fixed gitignore definition of build output directories
 * [Issue 63](https://github.com/Netflix/Hystrix/issues/63) Add "throws Exception" to HystrixCommand run() method
 * [Pull 62](https://github.com/Netflix/Hystrix/pull/62) applying js fixes to threadPool ui
 * [Pull 61](https://github.com/Netflix/Hystrix/pull/61) Request log with timeouts
-* [Issue 55](https://github.com/Netflix/Hystrix/issues/55) HysrixRequestLog: Missing Events and Time on Timeouts
+* [Issue 55](https://github.com/Netflix/Hystrix/issues/55) HystrixRequestLog: Missing Events and Time on Timeouts
 * [Issue 20](https://github.com/Netflix/Hystrix/issues/20) TotalExecutionTime not tracked on queue()
 * [Pull 57](https://github.com/Netflix/Hystrix/pull/57) Dashboard js fix
 * [Issue 39](https://github.com/Netflix/Hystrix/issues/39) HystrixPlugins Bootstrapping Problem - Race Conditions

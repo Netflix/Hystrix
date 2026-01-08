@@ -2117,7 +2117,7 @@ public class HystrixCollapserTest {
              * This is a hack that overrides 'clear' of a WeakReference to match the required API
              * but then removes the strong-reference we have inside 'tasks'.
              * <p>
-             * We do this so our unit tests know if the WeakReference is cleared correctly, and if so then the ATack is removed from 'tasks'
+             * We do this so our unit tests know if the WeakReference is cleared correctly, and if so then the ATask is removed from 'tasks'
              */
             return new SoftReference<TimerListener>(collapseTask) {
                 @Override

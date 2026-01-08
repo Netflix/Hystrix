@@ -175,7 +175,7 @@ public class HystrixCommandMetricsTest {
 
             @Override
             public void onError(Throwable e) {
-                System.out.println("Error duing command execution");
+                System.out.println("Error doing command execution");
                 e.printStackTrace();
                 latch.countDown();
             }

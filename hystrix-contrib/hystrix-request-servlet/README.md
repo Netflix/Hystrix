@@ -48,7 +48,7 @@ You install it by adding the following to your web.xml:
 
 ### [HystrixRequestLogViaLoggerServletFilter](https://github.com/Netflix/Hystrix/tree/master/hystrix-contrib/hystrix-request-servlet/src/main/java/com/netflix/hystrix/contrib/requestservlet/HystrixRequestLogViaLoggerServletFilter.java)
 
-This logs an INFO message with the output from [HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString()](http://netflix.github.com/Hystrix/javadoc/com/netflix/hystrix/HystrixRequestLog.html#getExecutedCommandsAsString(\)) at the end of each requet.
+This logs an INFO message with the output from [HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString()](http://netflix.github.com/Hystrix/javadoc/com/netflix/hystrix/HystrixRequestLog.html#getExecutedCommandsAsString(\)) at the end of each request.
 
 You install it by adding the following to your web.xml:
 

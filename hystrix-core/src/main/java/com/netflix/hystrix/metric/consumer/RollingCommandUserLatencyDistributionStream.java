@@ -46,7 +46,7 @@ import java.util.concurrent.ConcurrentMap;
  * The distributions can be queried on 2 dimensions:
  * * Execution time or total time
  * ** Execution time is the time spent executing the user-provided execution method.
- * ** Total time is the time spent from the perspecitve of the consumer, and includes all Hystrix bookkeeping.
+ * ** Total time is the time spent from the perspective of the consumer, and includes all Hystrix bookkeeping.
  */
 public class RollingCommandUserLatencyDistributionStream extends RollingDistributionStream<HystrixCommandCompletion> {
     private static final ConcurrentMap<String, RollingCommandUserLatencyDistributionStream> streams = new ConcurrentHashMap<String, RollingCommandUserLatencyDistributionStream>();

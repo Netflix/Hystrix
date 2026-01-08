@@ -177,7 +177,7 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
          * @param groupKey
          *            {@link HystrixCommandGroupKey} used to group together multiple {@link HystrixCommand} objects.
          *            <p>
-         *            The {@link HystrixCommandGroupKey} is used to represent a common relationship between commands. For example, a library or team name, the system all related commands interace
+         *            The {@link HystrixCommandGroupKey} is used to represent a common relationship between commands. For example, a library or team name, the system all related commands interface
          *            with,
          *            common business purpose etc.
          */
@@ -193,7 +193,7 @@ public abstract class HystrixCommand<R> extends AbstractCommand<R> implements Hy
          * @param groupKey
          *            {@link HystrixCommandGroupKey} used to group together multiple {@link HystrixCommand} objects.
          *            <p>
-         *            The {@link HystrixCommandGroupKey} is used to represent a common relationship between commands. For example, a library or team name, the system all related commands interace
+         *            The {@link HystrixCommandGroupKey} is used to represent a common relationship between commands. For example, a library or team name, the system all related commands interface
          *            with,
          *            common business purpose etc.
          */

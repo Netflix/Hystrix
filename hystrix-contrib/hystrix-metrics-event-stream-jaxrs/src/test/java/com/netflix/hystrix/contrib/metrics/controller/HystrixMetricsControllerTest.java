@@ -50,7 +50,7 @@ import com.netflix.hystrix.contrib.metrics.HystrixStreamFeature;
  * 
  */
 @Path("/hystrix")
-public class HystricsMetricsControllerTest extends JerseyTest {
+public class HystrixMetricsControllerTest extends JerseyTest {
 	protected static final AtomicInteger requestCount = new AtomicInteger(0);
 
 	@POST
@@ -77,7 +77,7 @@ public class HystricsMetricsControllerTest extends JerseyTest {
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to load config file");
 		}
-		return new ResourceConfig(HystricsMetricsControllerTest.class, HystrixStreamFeature.class);
+		return new ResourceConfig(HystrixMetricsControllerTest.class, HystrixStreamFeature.class);
 	}
 
 	protected String getPath() {

@@ -123,7 +123,7 @@ public class HystrixServoMetricsPublisherCommandTest {
         assertEquals(4L, servoPublisher.getRollingMonitor("success", HystrixEventType.SUCCESS).getValue());
         assertEquals(5L, servoPublisher.getRollingMonitor("timeout", HystrixEventType.TIMEOUT).getValue());
         assertEquals(1L, servoPublisher.getRollingMonitor("failure", HystrixEventType.FAILURE).getValue());
-        assertEquals(6L, servoPublisher.getRollingMonitor("falback_success", HystrixEventType.FALLBACK_SUCCESS).getValue());
+        assertEquals(6L, servoPublisher.getRollingMonitor("fallback_success", HystrixEventType.FALLBACK_SUCCESS).getValue());
     }
 
     @Test
