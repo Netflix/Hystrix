@@ -41,11 +41,10 @@ import static com.netflix.hystrix.contrib.javanica.conf.HystrixPropertiesManager
 import static com.netflix.hystrix.contrib.javanica.conf.HystrixPropertiesManager.FALLBACK_ENABLED;
 import static com.netflix.hystrix.contrib.javanica.conf.HystrixPropertiesManager.FALLBACK_ISOLATION_SEMAPHORE_MAX_CONCURRENT_REQUESTS;
 import static com.netflix.hystrix.contrib.javanica.conf.HystrixPropertiesManager.METRICS_HEALTH_SNAPSHOT_INTERVAL_IN_MILLISECONDS;
-import static com.netflix.hystrix.contrib.javanica.conf.HystrixPropertiesManager.METRICS_ROLLING_PERCENTILE_BUCKET_SIZE;
 import static com.netflix.hystrix.contrib.javanica.conf.HystrixPropertiesManager.METRICS_ROLLING_PERCENTILE_ENABLED;
+import static com.netflix.hystrix.contrib.javanica.conf.HystrixPropertiesManager.METRICS_ROLLING_PERCENTILE_TIME_IN_MILLISECONDS;
 import static com.netflix.hystrix.contrib.javanica.conf.HystrixPropertiesManager.METRICS_ROLLING_PERCENTILE_NUM_BUCKETS;
 import static com.netflix.hystrix.contrib.javanica.conf.HystrixPropertiesManager.METRICS_ROLLING_STATS_TIME_IN_MILLISECONDS;
-import static com.netflix.hystrix.contrib.javanica.conf.HystrixPropertiesManager.METRICS_ROLLING_PERCENTILE_TIME_IN_MILLISECONDS;
 import static com.netflix.hystrix.contrib.javanica.conf.HystrixPropertiesManager.METRICS_ROLLING_STATS_NUM_BUCKETS;
 import static com.netflix.hystrix.contrib.javanica.conf.HystrixPropertiesManager.REQUEST_CACHE_ENABLED;
 import static com.netflix.hystrix.contrib.javanica.conf.HystrixPropertiesManager.REQUEST_LOG_ENABLED;
@@ -144,9 +143,8 @@ public abstract class BasicCommandPropertiesTest extends BasicHystrixTest {
         assertEquals(false, command.getProperties().metricsRollingPercentileEnabled().get().booleanValue());
         assertEquals(400, command.getProperties().metricsRollingPercentileWindowInMilliseconds().get().intValue());
         assertEquals(5, command.getProperties().metricsRollingPercentileWindowBuckets().get().intValue());
-        assertEquals(6, command.getProperties().metricsRollingPercentileBucketSize().get().intValue());
-        assertEquals(10, command.getProperties().metricsRollingStatisticalWindowBuckets().get().intValue());
         assertEquals(500, command.getProperties().metricsRollingStatisticalWindowInMilliseconds().get().intValue());
+        assertEquals(10, command.getProperties().metricsRollingStatisticalWindowBuckets().get().intValue());
         assertEquals(312, command.getProperties().metricsHealthSnapshotIntervalInMilliseconds().get().intValue());
         assertEquals(false, command.getProperties().requestCacheEnabled().get().booleanValue());
         assertEquals(true, command.getProperties().requestLogEnabled().get().booleanValue());
@@ -200,10 +198,9 @@ public abstract class BasicCommandPropertiesTest extends BasicHystrixTest {
                         @HystrixProperty(name = CIRCUIT_BREAKER_FORCE_CLOSED, value = "true"),
                         @HystrixProperty(name = METRICS_ROLLING_PERCENTILE_ENABLED, value = "false"),
                         @HystrixProperty(name = METRICS_ROLLING_PERCENTILE_TIME_IN_MILLISECONDS, value = "400"),
+                        @HystrixProperty(name = METRICS_ROLLING_PERCENTILE_NUM_BUCKETS, value = "5"),
                         @HystrixProperty(name = METRICS_ROLLING_STATS_TIME_IN_MILLISECONDS, value = "500"),
                         @HystrixProperty(name = METRICS_ROLLING_STATS_NUM_BUCKETS, value = "10"),
-                        @HystrixProperty(name = METRICS_ROLLING_PERCENTILE_NUM_BUCKETS, value = "5"),
-                        @HystrixProperty(name = METRICS_ROLLING_PERCENTILE_BUCKET_SIZE, value = "6"),
                         @HystrixProperty(name = METRICS_HEALTH_SNAPSHOT_INTERVAL_IN_MILLISECONDS, value = "312"),
                         @HystrixProperty(name = REQUEST_CACHE_ENABLED, value = "false"),
                         @HystrixProperty(name = REQUEST_LOG_ENABLED, value = "true")

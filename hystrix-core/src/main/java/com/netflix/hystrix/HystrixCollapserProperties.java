@@ -35,12 +35,11 @@ public abstract class HystrixCollapserProperties {
     private static final Integer default_maxRequestsInBatch = Integer.MAX_VALUE;
     private static final Integer default_timerDelayInMilliseconds = 10;
     private static final Boolean default_requestCacheEnabled = true;
-    /* package */ static final Integer default_metricsRollingStatisticalWindow = 10000;// default => statisticalWindow: 10000 = 10 seconds (and default of 10 buckets so each bucket is 1 second)
+    /* package */ static final Integer default_metricsRollingStatisticalWindowInMilliseconds = 10000;// default => statisticalWindow: 10000 = 10 seconds (and default of 10 buckets so each bucket is 1 second)
     private static final Integer default_metricsRollingStatisticalWindowBuckets = 10;// default => statisticalWindowBuckets: 10 = 10 buckets in a 10 second window so each bucket is 1 second
     private static final Boolean default_metricsRollingPercentileEnabled = true;
-    private static final Integer default_metricsRollingPercentileWindow = 60000; // default to 1 minute for RollingPercentile
+    private static final Integer default_metricsRollingPercentileWindowInMilliseconds = 60000; // default to 1 minute for RollingPercentile
     private static final Integer default_metricsRollingPercentileWindowBuckets = 6; // default to 6 buckets (10 seconds each in 60 second window)
-    private static final Integer default_metricsRollingPercentileBucketSize = 100; // default to 100 values max per bucket
 
     private final HystrixProperty<Integer> maxRequestsInBatch;
     private final HystrixProperty<Integer> timerDelayInMilliseconds;
@@ -50,7 +49,8 @@ public abstract class HystrixCollapserProperties {
     private final HystrixProperty<Boolean> metricsRollingPercentileEnabled; // Whether monitoring should be enabled
     private final HystrixProperty<Integer> metricsRollingPercentileWindowInMilliseconds; // number of milliseconds that will be tracked in RollingPercentile
     private final HystrixProperty<Integer> metricsRollingPercentileWindowBuckets; // number of buckets percentileWindow will be divided into
-    private final HystrixProperty<Integer> metricsRollingPercentileBucketSize; // how many values will be stored in each percentileWindowBucket
+    @Deprecated
+    private final HystrixProperty<Integer> metricsRollingPercentileBucketSize;
 
     protected HystrixCollapserProperties(HystrixCollapserKey collapserKey) {
         this(collapserKey, new Setter(), "hystrix");
@@ -64,12 +64,12 @@ public abstract class HystrixCollapserProperties {
         this.maxRequestsInBatch = getProperty(propertyPrefix, key, "maxRequestsInBatch", builder.getMaxRequestsInBatch(), default_maxRequestsInBatch);
         this.timerDelayInMilliseconds = getProperty(propertyPrefix, key, "timerDelayInMilliseconds", builder.getTimerDelayInMilliseconds(), default_timerDelayInMilliseconds);
         this.requestCacheEnabled = getProperty(propertyPrefix, key, "requestCache.enabled", builder.getRequestCacheEnabled(), default_requestCacheEnabled);
-        this.metricsRollingStatisticalWindowInMilliseconds = getProperty(propertyPrefix, key, "metrics.rollingStats.timeInMilliseconds", builder.getMetricsRollingStatisticalWindowInMilliseconds(), default_metricsRollingStatisticalWindow);
+        this.metricsRollingStatisticalWindowInMilliseconds = getProperty(propertyPrefix, key, "metrics.rollingStats.timeInMilliseconds", builder.getMetricsRollingStatisticalWindowInMilliseconds(), default_metricsRollingStatisticalWindowInMilliseconds);
         this.metricsRollingStatisticalWindowBuckets = getProperty(propertyPrefix, key, "metrics.rollingStats.numBuckets", builder.getMetricsRollingStatisticalWindowBuckets(), default_metricsRollingStatisticalWindowBuckets);
         this.metricsRollingPercentileEnabled = getProperty(propertyPrefix, key, "metrics.rollingPercentile.enabled", builder.getMetricsRollingPercentileEnabled(), default_metricsRollingPercentileEnabled);
-        this.metricsRollingPercentileWindowInMilliseconds = getProperty(propertyPrefix, key, "metrics.rollingPercentile.timeInMilliseconds", builder.getMetricsRollingPercentileWindowInMilliseconds(), default_metricsRollingPercentileWindow);
+        this.metricsRollingPercentileWindowInMilliseconds = getProperty(propertyPrefix, key, "metrics.rollingPercentile.timeInMilliseconds", builder.getMetricsRollingPercentileWindowInMilliseconds(), default_metricsRollingPercentileWindowInMilliseconds);
         this.metricsRollingPercentileWindowBuckets = getProperty(propertyPrefix, key, "metrics.rollingPercentile.numBuckets", builder.getMetricsRollingPercentileWindowBuckets(), default_metricsRollingPercentileWindowBuckets);
-        this.metricsRollingPercentileBucketSize = getProperty(propertyPrefix, key, "metrics.rollingPercentile.bucketSize", builder.getMetricsRollingPercentileBucketSize(), default_metricsRollingPercentileBucketSize);
+        this.metricsRollingPercentileBucketSize = getProperty(propertyPrefix, key, "metrics.rollingPercentile.bucketSize", builder.getMetricsRollingPercentileBucketSize(), default_metricsRollingPercentileWindowInMilliseconds / default_metricsRollingPercentileWindowBuckets);
     }
 
     private static HystrixProperty<Integer> getProperty(String propertyPrefix, HystrixCollapserKey key, String instanceProperty, Integer builderOverrideValue, Integer defaultValue) {
@@ -173,10 +173,11 @@ public abstract class HystrixCollapserProperties {
     }
 
     /**
-     * Maximum number of values stored in each bucket of the rolling percentile. This is passed into {@link HystrixRollingPercentile} inside {@link HystrixCollapserMetrics}.
+     * {@link #metricsRollingPercentileWindowInMilliseconds()} / {@link #metricsRollingPercentileWindowBuckets()}
      *
      * @return {@code HystrixProperty<Integer>}
      */
+    @Deprecated
     public HystrixProperty<Integer> metricsRollingPercentileBucketSize() {
         return metricsRollingPercentileBucketSize;
     }
@@ -219,6 +220,7 @@ public abstract class HystrixCollapserProperties {
         private Boolean requestCacheEnabled = null;
         private Integer metricsRollingStatisticalWindowInMilliseconds = null;
         private Integer metricsRollingStatisticalWindowBuckets = null;
+        @Deprecated
         private Integer metricsRollingPercentileBucketSize = null;
         private Boolean metricsRollingPercentileEnabled = null;
         private Integer metricsRollingPercentileWindowInMilliseconds = null;
@@ -255,6 +257,10 @@ public abstract class HystrixCollapserProperties {
             return metricsRollingStatisticalWindowBuckets;
         }
 
+        /**
+         * {@link #getMetricsRollingPercentileWindowInMilliseconds()} / {@link #getMetricsRollingPercentileWindowBuckets()}
+         */
+        @Deprecated
         public Integer getMetricsRollingPercentileBucketSize() {
             return metricsRollingPercentileBucketSize;
         }
@@ -305,6 +311,10 @@ public abstract class HystrixCollapserProperties {
             return this;
         }
 
+        /**
+         * {@link #metricsRollingPercentileWindowInMilliseconds} / {@link #metricsRollingPercentileWindowBuckets}
+         */
+        @Deprecated
         public Setter withMetricsRollingPercentileBucketSize(int value) {
             this.metricsRollingPercentileBucketSize = value;
             return this;

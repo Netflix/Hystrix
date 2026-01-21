@@ -53,7 +53,6 @@ public class HystrixCommandPropertiesTest {
                 .withRequestCacheEnabled(true)
                 .withMetricsRollingPercentileWindowInMilliseconds(60000)
                 .withMetricsRollingPercentileWindowBuckets(12)
-                .withMetricsRollingPercentileBucketSize(1000)
                 .withMetricsHealthSnapshotIntervalInMilliseconds(100);
     }
 
@@ -148,17 +147,12 @@ public class HystrixCommandPropertiesTest {
             }
 
             @Override
-            public HystrixProperty<Integer> metricsRollingPercentileBucketSize() {
-                return HystrixProperty.Factory.asProperty(builder.getMetricsRollingPercentileBucketSize());
-            }
-
-            @Override
             public HystrixProperty<Boolean> metricsRollingPercentileEnabled() {
                 return HystrixProperty.Factory.asProperty(builder.getMetricsRollingPercentileEnabled());
             }
 
             @Override
-            public HystrixProperty<Integer> metricsRollingPercentileWindow() {
+            public HystrixProperty<Integer> metricsRollingPercentileWindowInMilliseconds() {
                 return HystrixProperty.Factory.asProperty(builder.getMetricsRollingPercentileWindowInMilliseconds());
             }
 
@@ -298,7 +292,7 @@ public class HystrixCommandPropertiesTest {
     @Test
     public void testIntegerCodeDefault() {
         HystrixCommandProperties properties = new TestPropertiesCommand(TestKey.TEST, new HystrixCommandProperties.Setter(), "unitTestPrefix");
-        assertEquals(HystrixCommandProperties.default_metricsRollingStatisticalWindow, properties.metricsRollingStatisticalWindowInMilliseconds().get());
+        assertEquals(HystrixCommandProperties.default_metricsRollingStatisticalWindowInMilliseconds, properties.metricsRollingStatisticalWindowInMilliseconds().get());
     }
 
     @Test
