@@ -207,6 +207,22 @@ public class HystrixTimerTest {
 
     }
 
+    @Test
+    public void testCancelledTasksInQueueGetRemoved() {
+        HystrixTimer timer = HystrixTimer.getInstance();
+        TestListener l1 = new TestListener(1000, "A");
+        Reference<TimerListener> l1ref = timer.addTimerListener(l1);
+
+        assertTrue(timer.executor.get().getThreadPool().getQueue().size() > 0);
+
+        l1ref.clear();
+
+        System.out.println("l1 ticks: " + l1.tickCount.get());
+        assertTrue(l1.tickCount.get() == 0);
+
+        assertTrue(timer.executor.get().getThreadPool().getQueue().size() == 0);
+    }
+
     private static class TestListener implements TimerListener {
 
         private final int interval;
