@@ -276,7 +276,7 @@ case 3: async command, async fallback
 
 **Unsupported(prohibited)**
 
-case 1: sync command, async fallback command. This case isn't supported because in the essence a caller does not get a future buy calling ```getUserById``` and future is provided by fallback isn't available for a caller anyway, thus execution of a command forces to complete ```fallbackAsync``` before a caller gets a result, having said it turns out there is no benefits of async fallback execution. But it can be convenient if a fallback is used for both sync and async commands, if you see this case is very helpful and will be nice to have then create issue to add support for this case.
+case 1: sync command, async fallback command. This case isn't supported because in the essence a caller does not get a future by calling ```getUserById``` and future is provided by fallback isn't available for a caller anyway, thus execution of a command forces to complete ```fallbackAsync``` before a caller gets a result, having said it turns out there is no benefits of async fallback execution. But it can be convenient if a fallback is used for both sync and async commands, if you see this case is very helpful and will be nice to have then create issue to add support for this case.
 
 ```java
         @HystrixCommand(fallbackMethod = "fallbackAsync")
