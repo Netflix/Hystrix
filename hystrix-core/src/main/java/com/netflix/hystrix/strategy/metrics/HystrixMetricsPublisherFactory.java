@@ -97,22 +97,22 @@ public class HystrixMetricsPublisherFactory {
 
     /* package */ HystrixMetricsPublisherFactory()  {}
 
-    // String is CommandKey.name() (we can't use CommandKey directly as we can't guarantee it implements hashcode/equals correctly)
     private final ConcurrentHashMap<String, HystrixMetricsPublisherCommand> commandPublishers = new ConcurrentHashMap<String, HystrixMetricsPublisherCommand>();
 
     /* package */ HystrixMetricsPublisherCommand getPublisherForCommand(HystrixCommandKey commandKey, HystrixCommandGroupKey commandOwner, HystrixCommandMetrics metrics, HystrixCircuitBreaker circuitBreaker, HystrixCommandProperties properties) {
         // attempt to retrieve from cache first
-        HystrixMetricsPublisherCommand publisher = commandPublishers.get(commandKey.name());
+        String cacheKey = commandOwner.name() + commandKey.name();
+        HystrixMetricsPublisherCommand publisher = commandPublishers.get(cacheKey);
         if (publisher != null) {
             return publisher;
         } else {
             synchronized (this) {
-                HystrixMetricsPublisherCommand existingPublisher = commandPublishers.get(commandKey.name());
+                HystrixMetricsPublisherCommand existingPublisher = commandPublishers.get(cacheKey);
                 if (existingPublisher != null) {
                     return existingPublisher;
                 } else {
                     HystrixMetricsPublisherCommand newPublisher = HystrixPlugins.getInstance().getMetricsPublisher().getMetricsPublisherForCommand(commandKey, commandOwner, metrics, circuitBreaker, properties);
-                    commandPublishers.putIfAbsent(commandKey.name(), newPublisher);
+                    commandPublishers.putIfAbsent(cacheKey, newPublisher);
                     newPublisher.initialize();
                     return newPublisher;
                 }
