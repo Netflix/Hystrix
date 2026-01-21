@@ -1,4 +1,4 @@
-rootProject.name='hystrix'
+rootProject.name='Hystrix'
 include 'hystrix-core', \
 'hystrix-examples', \
 'hystrix-examples-webapp', \
