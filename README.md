@@ -213,8 +213,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 
-[travis]:https://travis-ci.org/Netflix/Hystrix
-[travis img]:https://travis-ci.org/Netflix/Hystrix.svg?branch=master
+[travis]:https://travis-ci.com/Netflix/Hystrix
+[travis img]:https://travis-ci.com/Netflix/Hystrix.svg?branch=master
 
 [maven]:http://search.maven.org/#search|gav|1|g:"com.netflix.hystrix"%20AND%20a:"hystrix-core"
 [maven img]:https://maven-badges.herokuapp.com/maven-central/com.netflix.hystrix/hystrix-core/badge.svg
