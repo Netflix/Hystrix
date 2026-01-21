@@ -269,9 +269,9 @@ public class RollingCommandMaxConcurrencyStreamTest extends CommandStreamTest {
 
         Thread.sleep(150);
 
-        for (Command cmd: shortCircuited) {
+        shortCircuited.forEach(cmd -> {
             cmd.observe();
-        }
+        });
 
         assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
@@ -312,14 +312,14 @@ public class RollingCommandMaxConcurrencyStreamTest extends CommandStreamTest {
 
         Thread.sleep(30);
 
-        for (final Command rejectedCmd: rejected) {
+        rejected.forEach(rejectedCmd -> {
             threadPool.submit(new HystrixContextRunnable(new Runnable() {
                 @Override
                 public void run() {
                     rejectedCmd.observe();
                 }
             }));
-        }
+        });
 
         assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());
@@ -355,9 +355,9 @@ public class RollingCommandMaxConcurrencyStreamTest extends CommandStreamTest {
 
         Thread.sleep(30);
 
-        for (final Command rejectedCmd: rejected) {
+        rejected.forEach(rejectedCmd -> {
             rejectedCmd.observe();
-        }
+        });
 
         assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         System.out.println("ReqLog : " + HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString());

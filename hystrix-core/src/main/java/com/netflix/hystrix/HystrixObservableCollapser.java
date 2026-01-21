@@ -173,10 +173,10 @@ public abstract class HystrixObservableCollapser<K, BatchReturnType, ResponseTyp
 
                 // index the requests by key
                 final Map<K, CollapsedRequest<ResponseType, RequestArgumentType>> requestsByKey = new HashMap<K, CollapsedRequest<ResponseType, RequestArgumentType>>(requests.size());
-                for (CollapsedRequest<ResponseType, RequestArgumentType> cr : requests) {
+                requests.forEach(cr -> {
                     K requestArg = requestKeySelector.call(cr.getArgument());
                     requestsByKey.put(requestArg, cr);
-                }
+                });
                 final Set<K> seenKeys = new HashSet<K>();
 
                 // observe the responses and join with the requests by key
