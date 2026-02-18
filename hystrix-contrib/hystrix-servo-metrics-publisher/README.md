@@ -1,6 +1,6 @@
 # hystrix-servo-metrics-publisher
 
-This is an implementation of [HystrixMetricsPublisher](http://netflix.github.com/Hystrix/javadoc/index.html?com/netflix/hystrix/strategy/metrics/HystrixMetricsPublisher.html) that publishes metrics using [Netflix Servo](https://github.com/Netflix/servo).
+This is an implementation of [HystrixMetricsPublisher](http://netflix.github.io/Hystrix/javadoc/index.html?com/netflix/hystrix/strategy/metrics/HystrixMetricsPublisher.html) that publishes metrics using [Netflix Servo](https://github.com/Netflix/servo).
 
 Servo enables metrics to be exposed via JMX or published to Graphite or CloudWatch.
 

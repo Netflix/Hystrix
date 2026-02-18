@@ -575,7 +575,7 @@
   NEVER EXECUTE A HystrixExecutable MORE THAN ONCE.
 
   See:
-    http://netflix.github.com/Hystrix/javadoc/com/netflix/hystrix/HystrixCommand.html#execute()
+    http://netflix.github.io/Hystrix/javadoc/com/netflix/hystrix/HystrixCommand.html#execute()
   "
   [definition & args]
   (.execute ^HystrixExecutable (apply instantiate definition args)))
@@ -617,7 +617,7 @@
       @qc)
 
   See:
-    http://netflix.github.com/Hystrix/javadoc/com/netflix/hystrix/HystrixCommand.html#queue()
+    http://netflix.github.io/Hystrix/javadoc/com/netflix/hystrix/HystrixCommand.html#queue()
   "
   [definition & args]
   (let [^HystrixExecutable instance (apply instantiate definition args)]

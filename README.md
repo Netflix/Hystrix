@@ -3,7 +3,7 @@
 # Hystrix: Latency and Fault Tolerance for Distributed Systems
 
 [![NetflixOSS Lifecycle](https://img.shields.io/osslifecycle/Netflix/hystrix.svg)]()
-[![][travis img]][travis]
+[![CI](https://github.com/Netflix/Hystrix/actions/workflows/nebula-ci.yml/badge.svg)](https://github.com/Netflix/Hystrix/actions/workflows/nebula-ci.yml)
 [![][maven img]][maven]
 [![][license img]][license]
 
@@ -27,7 +27,7 @@ Hystrix is a latency and fault tolerance library designed to isolate points of a
 
 See the [Wiki](https://github.com/Netflix/Hystrix/wiki/) for full documentation, examples, operational details and other information.
 
-See the [Javadoc](http://netflix.github.com/Hystrix/javadoc) for the API.
+See the [Javadoc](http://netflix.github.io/Hystrix/javadoc) for the API.
 
 ## Communication
 
@@ -212,9 +212,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-
-[travis]:https://travis-ci.org/Netflix/Hystrix
-[travis img]:https://travis-ci.org/Netflix/Hystrix.svg?branch=master
 
 [maven]:http://search.maven.org/#search|gav|1|g:"com.netflix.hystrix"%20AND%20a:"hystrix-core"
 [maven img]:https://maven-badges.herokuapp.com/maven-central/com.netflix.hystrix/hystrix-core/badge.svg
