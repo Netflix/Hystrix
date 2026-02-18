@@ -48,7 +48,7 @@ You install it by adding the following to your web.xml:
 
 ### [HystrixRequestLogViaLoggerServletFilter](https://github.com/Netflix/Hystrix/tree/master/hystrix-contrib/hystrix-request-servlet/src/main/java/com/netflix/hystrix/contrib/requestservlet/HystrixRequestLogViaLoggerServletFilter.java)
 
-This logs an INFO message with the output from [HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString()](http://netflix.github.com/Hystrix/javadoc/com/netflix/hystrix/HystrixRequestLog.html#getExecutedCommandsAsString(\)) at the end of each requet.
+This logs an INFO message with the output from [HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString()](http://netflix.github.io/Hystrix/javadoc/com/netflix/hystrix/HystrixRequestLog.html#getExecutedCommandsAsString(\)) at the end of each requet.
 
 You install it by adding the following to your web.xml:
 
@@ -67,7 +67,7 @@ You install it by adding the following to your web.xml:
 
 ### [HystrixRequestLogViaResponseHeaderServletFilter](https://github.com/Netflix/Hystrix/tree/master/hystrix-contrib/hystrix-request-servlet/src/main/java/com/netflix/hystrix/contrib/requestservlet/HystrixRequestLogViaResponseHeaderServletFilter.java)
 
-This adds the output of [HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString()](http://netflix.github.com/Hystrix/javadoc/com/netflix/hystrix/HystrixRequestLog.html#getExecutedCommandsAsString(\)) to the HTTP response as header "X-HystrixLog".
+This adds the output of [HystrixRequestLog.getCurrentRequest().getExecutedCommandsAsString()](http://netflix.github.io/Hystrix/javadoc/com/netflix/hystrix/HystrixRequestLog.html#getExecutedCommandsAsString(\)) to the HTTP response as header "X-HystrixLog".
 
 Note that this will not work if the response has been flushed already (such as on a progressively rendered page).
 
