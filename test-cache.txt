@@ -1,0 +1,2 @@
+# Test file for cache poisoning
+echo "This is a test"
