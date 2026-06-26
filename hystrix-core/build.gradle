@@ -1,13 +1,12 @@
-apply plugin: 'osgi'
-apply plugin: 'me.champeau.gradle.jmh'
+apply plugin: 'me.champeau.jmh'
 
 dependencies {
-    compileApi 'com.netflix.archaius:archaius-core:0.4.1'
-    compileApi 'io.reactivex:rxjava:1.2.0'
-    compile 'org.slf4j:slf4j-api:1.7.0'
-    compileApi 'org.hdrhistogram:HdrHistogram:2.1.9'
-    testCompile 'junit:junit-dep:4.10'
-    testCompile project(':hystrix-junit')
+    api 'com.netflix.archaius:archaius-core:0.4.1'
+    api 'io.reactivex:rxjava:1.2.0'
+    implementation 'org.slf4j:slf4j-api:1.7.0'
+    api 'org.hdrhistogram:HdrHistogram:2.1.9'
+    testImplementation 'junit:junit-dep:4.10'
+    testImplementation project(':hystrix-junit')
 }
 
 
@@ -23,17 +22,6 @@ javadoc {
         windowTitle = "Hystrix Javadoc ${project.version}"
     }
     options.addStringOption('top').value = '<a href="https://github.com/Netflix/Hystrix"><img width="92" height="79" border="0" align="left" src="http://netflix.github.com/Hystrix/images/hystrix-logo-small.png"></a><h2 class="title" style="padding-top:40px">Hystrix: Latency and Fault Tolerance for Distributed Systems</h2>'
-}
-
-jar {
-    manifest {
-        name = 'hystrix-core'
-        instruction 'Bundle-Vendor', 'Netflix'
-        instruction 'Bundle-DocURL', 'https://github.com/Netflix/Hystrix'
-        instruction 'Import-Package', '!org.junit,!junit.framework,!org.mockito.*,*'
-        instruction 'Eclipse-ExtensibleAPI', 'true'
-        instruction 'Embed-Dependency', '*;scope=compile'
-    }
 }
 
 jmh {

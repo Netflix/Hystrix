@@ -1,9 +1,9 @@
 dependencies {
-    compileApi 'org.javassist:javassist:3.19+'
+    api 'org.javassist:javassist:3.19+'
 
     jar {
         // make a fatjar otherwise it's painful getting the boot-class-path correct when deploying
-        from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+        from { configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
         manifest {
             attributes( 
                 "Agent-Class": "com.netflix.hystrix.contrib.networkauditor.HystrixNetworkAuditorAgent", 

@@ -1,11 +1,23 @@
+buildscript {
+    repositories {
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        classpath "org.gretty:gretty:3.0.5"
+    }
+}
+
+apply plugin: "org.gretty"
 apply plugin: 'war'
-apply from: 'https://raw.github.com/akhikhl/gretty/master/pluginScripts/gretty.plugin'
+
 
 dependencies {
-    compileApi project(':hystrix-core')
-    compileApi project(':hystrix-examples')
-    compileApi project(':hystrix-request-servlet')
-    compileApi project(':hystrix-metrics-event-stream')
+    api project(':hystrix-core')
+    api project(':hystrix-examples')
+    api project(':hystrix-request-servlet')
+    api project(':hystrix-metrics-event-stream')
 }
 
 gretty {

@@ -52,7 +52,7 @@ It doesn't matter which approach you use to create proxies in Spring, javanica w
 More about Spring AOP + AspectJ read [here] (http://docs.spring.io/spring/docs/current/spring-framework-reference/html/aop.html)
 
 ## Aspect weaving
-Javanica supports two weaving modes: compile and runtime. Load time weaving hasn't been tested but it should work. If you tried LTW mode and got any problems then raise javanica issue or create pull request with fix.
+Javanica supports two weaving modes: implementation and runtime. Load time weaving hasn't been tested but it should work. If you tried LTW mode and got any problems then raise javanica issue or create pull request with fix.
 - CTW. To use CTW mode you need to use specific jar version: **hystrix-javanica-ctw-X.Y.Z** . This jar is assembled with aspects compiled with using [AJC](https://eclipse.org/aspectj/doc/next/devguide/ajc-ref.html) compiler. If you will try to use regular hystrix-javanica-X.Y.Z with CTW then you get ``` NoSuchMethodError aspectOf() ``` at runtime from building with iajc. Also, you need to start your app with using java property: ```-DWeavingMode=compile```.
 **NOTE**: Javanica depends on aspectj library and uses internal features of aspectj and these features aren't provided as a part of open API thus it can change from version to version. Javanica tested with latest aspectj version 1.8.7. If you updated aspectj version and noticed any issues then please don't hestitate to create new issue or contribute.
 - RTW works, you can use regular hystrix-javanica-X.Y.Z

@@ -1,7 +1,8 @@
 dependencies {
-    compileApi project(':hystrix-core')
-	compile project(':hystrix-serialization')
-    provided 'javax.servlet:servlet-api:2.5'
-    testCompile 'junit:junit-dep:4.10'
-    testCompile 'org.mockito:mockito-all:1.9.5'
+    api project(':hystrix-core')
+	implementation project(':hystrix-serialization')
+    compileOnly 'javax.servlet:servlet-api:2.5'
+    testImplementation 'javax.servlet:servlet-api:2.5'
+    testImplementation 'junit:junit-dep:4.10'
+    testImplementation 'org.mockito:mockito-all:1.9.5'
 }

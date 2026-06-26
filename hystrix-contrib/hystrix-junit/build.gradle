@@ -1,4 +1,4 @@
 dependencies {
-  compileApi project(':hystrix-core')
-  compileApi "junit:junit:4.11"
+  api project(':hystrix-core')
+  api "junit:junit:4.11"
 }

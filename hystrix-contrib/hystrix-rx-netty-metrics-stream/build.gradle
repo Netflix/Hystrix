@@ -1,8 +1,11 @@
 dependencies {
-    compileApi project(':hystrix-core')
-	compile project(':hystrix-serialization')
-    compileApi 'io.reactivex:rxnetty:0.4.17'
-    testCompile 'junit:junit-dep:4.10'
-    testCompile 'org.powermock:powermock-easymock-release-full:1.5.5'
-    testCompile 'org.easymock:easymock:3.2'
+    api project(':hystrix-core')
+	implementation project(':hystrix-serialization')
+    api 'io.reactivex:rxnetty:0.4.17'
+    implementation 'io.netty:netty-transport:4.1.3.Final'
+    implementation 'io.netty:netty-buffer:4.1.3.Final'
+    implementation 'io.netty:netty-codec-http:4.1.3.Final'
+    testImplementation 'junit:junit-dep:4.10'
+    testImplementation 'org.powermock:powermock-easymock-release-full:1.5.5'
+    testImplementation 'org.easymock:easymock:3.2'
 }

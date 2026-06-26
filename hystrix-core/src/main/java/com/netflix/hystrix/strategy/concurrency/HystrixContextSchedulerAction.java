@@ -30,17 +30,17 @@ import com.netflix.hystrix.strategy.HystrixPlugins;
  * 
  * @ExcludeFromJavadoc
  */
-public class HystrixContexSchedulerAction implements Action0 {
+public class HystrixContextSchedulerAction implements Action0 {
 
     private final Action0 actual;
     private final HystrixRequestContext parentThreadState;
     private final Callable<Void> c;
 
-    public HystrixContexSchedulerAction(Action0 action) {
+    public HystrixContextSchedulerAction(Action0 action) {
         this(HystrixPlugins.getInstance().getConcurrencyStrategy(), action);
     }
 
-    public HystrixContexSchedulerAction(final HystrixConcurrencyStrategy concurrencyStrategy, Action0 action) {
+    public HystrixContextSchedulerAction(final HystrixConcurrencyStrategy concurrencyStrategy, Action0 action) {
         this.actual = action;
         this.parentThreadState = HystrixRequestContext.getContextForCurrentThread();
 

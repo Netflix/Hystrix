@@ -1,22 +1,19 @@
 repositories {
     mavenCentral()
-    jcenter()
 }
 
-sourceCompatibility = JavaVersion.VERSION_1_6
-targetCompatibility = JavaVersion.VERSION_1_6
 
 dependencies {
-    compileApi project(':hystrix-core')
+    api project(':hystrix-core')
 
 	//if we bump into the the 2.8.0 series, we are forced to use Java7
-    compileApi 'com.fasterxml.jackson.core:jackson-core:2.7.5'
-    compileApi 'com.fasterxml.jackson.core:jackson-databind:2.7.5'
-    compileApi 'com.fasterxml.jackson.core:jackson-annotations:2.7.5'
-    compile 'com.fasterxml.jackson.module:jackson-module-afterburner:2.7.5'
+    api 'com.fasterxml.jackson.core:jackson-core:2.7.5'
+    api 'com.fasterxml.jackson.core:jackson-databind:2.7.5'
+    api 'com.fasterxml.jackson.core:jackson-annotations:2.7.5'
+    implementation 'com.fasterxml.jackson.module:jackson-module-afterburner:2.7.5'
 	
-    testCompile 'junit:junit-dep:4.10'
-    testCompile 'org.mockito:mockito-all:1.9.5'
-	testCompile project(':hystrix-core').sourceSets.test.output
-	testCompile project(':hystrix-junit')
+    testImplementation 'junit:junit-dep:4.10'
+    testImplementation 'org.mockito:mockito-all:1.9.5'
+	testImplementation project(':hystrix-core').sourceSets.test.output
+	testImplementation project(':hystrix-junit')
 }

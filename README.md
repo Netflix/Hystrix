@@ -1,4 +1,4 @@
-<img src="https://netflix.github.com/Hystrix/images/hystrix-logo-tagline-850.png">
+<img src="https://netflix.github.io/Hystrix/images/hystrix-logo-tagline-850.png">
 
 # Hystrix: Latency and Fault Tolerance for Distributed Systems
 
@@ -149,7 +149,7 @@ $ cd Hystrix/
 $ ./gradlew build
 ```
 
-Futher details on building can be found on the [Getting Started](https://github.com/Netflix/Hystrix/wiki/Getting-Started) page of the wiki.
+Further details on building can be found on the [Getting Started](https://github.com/Netflix/Hystrix/wiki/Getting-Started) page of the wiki.
 
 ## Run Demo
 
